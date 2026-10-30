@@ -1,0 +1,46 @@
+{
+  "Common": {
+    "appName": "Kasbi POS",
+    "tagline": "Système de Caisse Cloud pour Commerces au Maroc",
+    "loading": "Chargement...",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "search": "Rechercher...",
+    "currency": "DH"
+  },
+  "Auth": {
+    "login": "Connexion",
+    "register": "Créer un compte",
+    "logout": "Déconnexion",
+    "email": "Adresse Email",
+    "password": "Mot de passe",
+    "fullName": "Nom complet",
+    "shopName": "Nom du commerce",
+    "loginWithGoogle": "Continuer avec Google",
+    "or": "ou",
+    "alreadyHaveAccount": "Vous avez déjà un compte ?",
+    "dontHaveAccount": "Pas encore de compte ?"
+  },
+  "Pos": {
+    "title": "Point de Vente",
+    "cart": "Panier",
+    "total": "Total TTC",
+    "subtotal": "Sous-total HT",
+    "tax": "TVA",
+    "checkout": "Encaisser (F10)",
+    "payCash": "Espèces",
+    "changeDue": "Monnaie à rendre",
+    "emptyCart": "Panier vide. Scannez un code-barres ou recherchez un article."
+  },
+  "Products": {
+    "title": "Gestion des Produits",
+    "addProduct": "Ajouter un produit",
+    "sku": "Référence (SKU)",
+    "barcode": "Code-barres",
+    "price": "Prix de vente",
+    "cost": "Prix de revient",
+    "stock": "Stock disponible"
+  }
+}

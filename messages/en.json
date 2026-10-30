@@ -1,0 +1,46 @@
+{
+  "Common": {
+    "appName": "Kasbi POS",
+    "tagline": "Cloud Multi-Tenant POS for Businesses in Morocco",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search...",
+    "currency": "MAD"
+  },
+  "Auth": {
+    "login": "Sign In",
+    "register": "Create Account",
+    "logout": "Sign Out",
+    "email": "Email Address",
+    "password": "Password",
+    "fullName": "Full Name",
+    "shopName": "Business / Shop Name",
+    "loginWithGoogle": "Continue with Google",
+    "or": "or",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?"
+  },
+  "Pos": {
+    "title": "Point of Sale",
+    "cart": "Shopping Cart",
+    "total": "Grand Total",
+    "subtotal": "Subtotal",
+    "tax": "Tax (VAT)",
+    "checkout": "Checkout (F10)",
+    "payCash": "Cash Payment",
+    "changeDue": "Change Due",
+    "emptyCart": "Cart is empty. Scan a barcode or search for items."
+  },
+  "Products": {
+    "title": "Product Management",
+    "addProduct": "Add Product",
+    "sku": "SKU",
+    "barcode": "Barcode",
+    "price": "Sale Price",
+    "cost": "Cost Price",
+    "stock": "Current Stock"
+  }
+}

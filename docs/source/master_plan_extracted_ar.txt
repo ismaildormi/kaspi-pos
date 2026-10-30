@@ -1,0 +1,1628 @@
+﻿MASTER PLAN DOCUMENT
+الخطة الرئيسية الشاملة
+لنظام نقاط بيع سحابي متعدد المستأجرين للمغرب
+Multi-Tenant POS SaaS • Desktop Bridge • PWA • Offline-First
+السعر المستهدف: 10 USD / محل / شهرالسوق الأول: المحلات التجارية في المغربالمنصة: Google AI Studio للبناء التدريجي + GitHub لإدارة الكودالأولوية: Windows Desktop ثم Tablet / Mobile PWA
+الإصدار 1.0 | تاريخ المراجعة: 29 أكتوبر 2026
+هذه الوثيقة خطة تنفيذية وليست رأياً قانونياً أو محاسبياً نهائياً. الأسعار وحدود الخدمات والمواصفات التنظيمية تتغير؛ راجع الروابط الرسمية قبل الإطلاق والتعاقد.
+طريقة استعمال الوثيقة والقرارات المفترضة
+الخطة مصممة كمرجع هندسي واحد، لكن يجب تقسيمها إلى تذاكر صغيرة وPull Requests. لا تطلب من أداة توليد الكود بناء النظام كاملاً في Prompt واحد. اعتبر كل مرحلة ناجحة فقط بعد تشغيل المشروع، وفحص التغييرات، وتنفيذ الاختبارات فعلياً.
+العملة الأساسية في النظام MAD، مع تخزين المال في DECIMAL/NUMERIC وليس FLOAT. السعر التجاري المقترح للاشتراك 10 USD شهرياً لكل محل، مع إمكانية تسعير محلي لاحقاً بالدرهم.
+الحد المجاني الأفضل أن يكون 50 منتجاً نشطاً إجمالاً، لا 50 منتجاً جديداً في كل شهر؛ الحد الشهري غير واضح للمستخدم ويمكن التحايل عليه بسهولة.
+حالة Offline لا تعني أن كل شيء يمكن أن يعمل دائماً دون إنترنت. يمكن البيع نقداً محلياً ثم المزامنة؛ أما التحقق من الاشتراك، والدفع الإلكتروني، وتحديثات الكتالوج المشتركة فتحتاج سياسة صريحة عند الانقطاع.
+Google AI Studio أداة تسريع للتطوير وليست بديلاً عن Git، والاختبارات، ومراجعة الأمن، ونسخ احتياطية خارج بيئة التطوير. يجب تثبيت كل تغيّر في مستودع Git وإمكان إعادة بنائه.
+يجب اعتبار الإصدارات والتراخيص والحدود المدرجة لقطة تحقق أولية بتاريخ الوثيقة، وليست ضماناً بأن كل ميزة من مشروع طرف ثالث تصلح للدمج التجاري.
+الفهرس
+الملخص التنفيذي
+تحليل المنافسين
+خريطة الميزات إلى الحلول والمكتبات
+مصادر مفتوحة المصدر ومخاطر التراخيص
+الخدمات المجانية وحدودها
+البنية التقنية
+مخطط قاعدة البيانات
+هيكل API
+خارطة طريق من 4 مراحل
+حسابات الربحية
+الامتثال القانوني والضريبي
+أهم 10 مخاطر وتخفيفها
+الإضافات والتوصيات الخبيرة
+15 Prompt للبناء في Google AI Studio
+أسماء تجارية أولية ومراجع التحقق
+1. الملخص التنفيذي
+المشروع هو نظام POS SaaS متعدد المستأجرين موجه للمحلات الصغيرة والمتوسطة في المغرب: بقالة، ملابس، مستحضرات تجميل، إكسسوارات، مكتبات، متاجر إلكترونيات، مخابز ومقاهٍ صغيرة. يحصل كل محل على بيئة بيانات معزولة، وكاشير سريع، وإدارة مخزون، وتقارير، وطباعة حرارية، مع اشتراك شهري منخفض.
+القيمة المضافة
+تجربة Windows أولاً عبر تطبيق Tauri خفيف، مع PWA للتابلت والهاتف دون إجبار التاجر على شراء جهاز POS خاص.
+بيع نقدي يعمل دون اتصال، وسجل عمليات محلي ومزامنة موثوقة عند عودة الاتصال، مع كشف التعارضات بدلاً من الكتابة فوق البيانات بصمت.
+واجهة عربية RTL وفرنسية من البداية، مع أسماء المنتجات والعملات والتواريخ وأرقام الفواتير وفق إعدادات المحل.
+تسعير مفهوم: تجربة 14 يوماً، وخطة مجانية محدودة تساعد على الاكتساب، وخطة Pro بقيمة 10 دولارات شهرياً لكل محل مع خصائص قابلة للتدرج.
+معمارية موصلات (Adapters) مستقلة للطباعة، والفوترة الإلكترونية، ومقدمي الدفع، وGlovo/Jumia؛ لا يصبح أي مزود خارجي قلب النظام.
+التموضع التنافسي المقترح
+لا تنافس فقط على “أرخص اشتراك”. المنافسة الأقوى ستكون في الجمع بين السعر، والسهولة، والعمل دون إنترنت، وطباعة عربية صحيحة، ونقل البيانات من Excel، ودعم قريب من التاجر. حدّد قطاعاً أولياً واحداً (مثلاً متاجر التجزئة العامة) قبل بناء ميزات المطاعم والتوصيل معاً.
+مؤشرات نجاح أول 90 يوماً
+المؤشر
+هدف تجريبي أولي
+طريقة القياس
+الوقت إلى أول بيع
+أقل من 10 دقائق بعد الاستيراد
+قياس وقت الإعداد التجريبي مع 10 محلات
+نجاح البيع المحلي
+99.9% من عمليات البيع التجريبية لا تضيع بعد إغلاق التطبيق
+اختبارات انقطاع كهرباء/شبكة وإعادة التشغيل
+مزامنة العمليات
+كل عملية محلية تصل مرة واحدة منطقياً إلى الخادم
+اختبارات idempotency وإعادة إرسال الطابور
+دقة المخزون
+عدم إنشاء حركة مخزون مزدوجة للفاتورة نفسها
+مقارنة ledger مع الرصيد بعد اختبارات متوازية
+الاحتفاظ
+قياس تفعيل اليوم 7 واليوم 30 لا الاكتفاء بالتسجيلات
+Analytics مع احترام الخصوصية
+الدعم
+حل 80% من المشكلات المتكررة عبر قاعدة معرفة
+تصنيف تذاكر الدعم أسبوعياً
+2. تحليل المنافسين
+الأسعار والميزات التالية مأخوذة من صفحات عامة متاحة وقت إعداد الوثيقة؛ ليست نتائج اختبار عملي موحد. كثير من المقارنات المنشورة من المنافسين أنفسهم، لذلك يلزم إجراء عروض تجريبية مباشرة قبل اتخاذ قرار تجاري.
+المنافس
+السعر المنشور / المتاح
+نقاط القوة الظاهرة
+نقاط الضعف أو القيود المرصودة
+ماذا نتعلم منه
+Caissa
+موقعه يعرض إعداداً لمرة واحدة بقيمة 8,000 MAD، نسخة على PC مجانية شهرياً، واستضافة مقدّم الخدمة بحوالي 299 MAD/شهر؛ تطوير إضافي بسعر يبدأ حسب العرض.
+تخصيص، إعداد ونقل كتالوج، تدريب، إيصالات FR/AR، خيار الاستضافة الذاتية.
+تكلفة تهيئة أولية مرتفعة؛ تجربة SaaS ذاتية التسجيل ليست هي نموذج القيمة الأساسي المنشور.
+اجعل نقل Excel والإعداد الذاتي سلساً، وقدم خدمة تهيئة مدفوعة اختيارية.
+Lacaisse.ma
+قاعدة 199 MAD HT/شهر؛ الفوترة 100 MAD إضافية؛ المخزون 100–400 MAD حسب العرض؛ بعض وحدات المطاعم مجانية وأخرى مدفوعة.
+تسعير محلي بالدرهم، دعم وعتاد، KDS وQR في عروض معينة.
+التكلفة الفعلية تختلف حسب الموديولات؛ يجب مقارنة الحزمة الكاملة لا سعر البداية.
+وضّح ما يشمله السعر ولا تخفِ الطباعة/المخزون وراء إضافات غير متوقعة.
+POSNEX
+Free: 0 DH (محل واحد، مستخدمان، 50 منتجاً)؛ Pro: 150 DH/شهر؛ Business: 299 DH/شهر، وفق الصفحة المنشورة.
+Offline-first، العربية/الفرنسية/الإنجليزية، مخزون وشراء وفواتير وولاء، ميزات مطاعم وفروع حسب الخطة.
+خطة مجانية محدودة؛ يلزم اختبار الأداء والدعم والتصدير فعلياً بدلاً من الاعتماد على ادعاءات الموقع.
+حدد حدود الخطة المجانية بوضوح وقدم تسعيراً مناسباً لحجم المحل.
+iGoodar
+Basic مجاناً لمحل/مستخدم؛ Pro بـ3,000 DH مرة واحدة؛ Connect بـ2,000 DH سنوياً مع 1,000 DH إعداد أولي وفق الصفحة العامة.
+عمل محلي على Windows، Offline، مخزون وتقارير وطباعة في Pro؛ Connect للوصول البعيد والنسخ السحابي.
+النموذج الأساسي ليس SaaS خالصاً؛ المزامنة والتجربة السحابية مرتبطة بعرض Connect.
+اجمع بساطة تطبيق محلي مع سحابة متزامنة، مع إبقاء النسخة المحلية قابلة للعمل.
+GIGAPOS
+النتيجة العامة المتاحة هي GIGAPOS SaaS في السعودية: نحو 39 SAR و99 SAR شهرياً لخطتين. لم أتحقق من كونه منافساً مغربياً مباشراً.
+تدرج خطط، فواتير إلكترونية بحسب منظومة السعودية، وفروع/API في الخطة الأعلى.
+السوق القانوني سعودي وليس مرجعاً لمتطلبات DGI المغربية؛ السعر لا يقارن مباشرة دون تحويل ونطاق الميزات.
+لا تنقل تكاملات ZATCA إلى المغرب؛ افصل محرك الضرائب عن منطق الفاتورة.
+Nexus POS / NexPOS
+لم أجد تعريفاً حاسماً لمنتج مغربي باسم Nexus POS. منتج قريب بالاسم هو NexPOS.co: Free، Essential حوالي 7.99 USD/شهر، Professional حوالي 29.99 USD/شهر. هذه المطابقة غير مؤكدة.
+خطط مدفوعة تتوسع إلى المخزون، الطاولات، KDS، الولاء، الفروع وOffline حسب صفحة المنتج.
+التباس الاسم؛ لا تعتمد المقارنة قبل تأكيد الرابط والمنتج المقصود.
+سجل اسم المنافس ورابطه في ملف منافسين داخلي حتى لا تختلط منتجات متشابهة الاسم.
+Loyverse
+POS مجاني؛ إضافات شهرية منشورة: Unlimited Sales History بـ5 USD/محل، Employee Management بـ25 USD، Advanced Inventory بـ25 USD؛ كل إضافة مع تجربة 14 يوماً.
+منتج معروف، كاشير ومخزون أساسي وولاء وKDS وإدارة متاجر في الخطة المجانية وفق صفحته.
+الميزات المتقدمة تجمع رسوم إضافات؛ يجب التأكد من ملاءمة الإعداد المحلي والفوترة المغربية والتكاملات.
+البدء المجاني قوي للاكتساب؛ اجعل الترقية مرتبطة بقيمة واضحة وليست بحجب أساسيات التشغيل.
+Square
+برنامج POS الأساسي مجاني في الأسواق المدعومة؛ الصفحة الأمريكية تعرض رسوم معالجة حضورية مثل 2.6% + 15¢ للخطة المجانية. معالجة البطاقات متاحة فقط في دول محددة، والمغرب غير مدرج ضمنها في القائمة المنشورة.
+قوة كبيرة في تجربة الاستخدام، المدفوعات، الإضافات والتكاملات.
+لا تعتبره مزود دفع متاحاً مباشرة للتاجر المغربي؛ الدعم الإقليمي مهم جداً.
+استخدمه معياراً لتجربة المستخدم وليس اعتماداً تقنياً أو بوابة دفع للمغرب.
+روابط تحقق المنافسين: Caissa caissa.ma؛ Lacaisse caisse.ma؛ POSNEX posnex.ma/tarifs؛ iGoodar igoodar.com/fr/commencer؛ GIGAPOS gigapos.cc/pricing؛ NexPOS nexpos.co/fr-ma؛ Loyverse loyverse.com/pricing؛ Square squareup.com/us/en/point-of-sale/software/pricing.
+مصفوفة مقارنة مختصرة بحسب الأولوية المغربية
+قدرة
+أهمية للسوق المحلي
+الحد الأدنى الذي ينبغي بناؤه
+ميزة مدفوعة لاحقاً
+عربي/فرنسي وRTL
+عالية جداً
+واجهات، بحث، طباعة، ملفات CSV
+لغة ثالثة/تخصيص المصطلحات
+عمل دون إنترنت
+عالية جداً
+بيع نقدي، قراءة المخزون، طابور مزامنة
+أجهزة متعددة تعمل في LAN
+طابعة 58/80mm
+عالية
+ESC/POS عبر Tauri واختبارات عربية
+قوالب متعددة ومطابع مطبخ
+Excel/CSV
+عالية جداً
+استيراد مع معاينة وأخطاء مفهومة
+ترحيل مدفوع من أنظمة منافسة
+الفواتير/الضرائب المغربية
+عالية
+حقول قانونية قابلة للتهيئة وترقيم ثابت
+موصل DGI بعد ظهور المواصفات النهائية
+KDS/طاولات
+مرتفعة لقطاع المطاعم
+تُضاف بعد ثبات Retail POS
+شاشات مطبخ متعددة وتوزيع محطات
+Glovo/Jumia
+مشروطة بالتعاقد
+طبقة تكامل لا تعتمد على API غير متاح
+إدارة طلبات وتوفر المخزون ثنائي الاتجاه
+3. الميزات الكاملة mapped to الحلول المجانية
+الميزة
+منافسون يقدمونها / معيار
+الحل المقترح للمشروع
+المكتبة / الخدمة
+ملاحظات التنفيذ
+المنتجات والتصنيفات
+POSNEX، iGoodar، Loyverse
+CRUD + SKU/باركود + variants + CSV
+PostgreSQL، Zod، Papa Parse
+SKU فريد داخل المستأجر؛ التحقق من CSV في Preview قبل الاستيراد.
+المخزون وتنبيهات النقص
+POSNEX، Loyverse
+دفتر حركات append-only + رصيد محسوب/مخزن مؤقت
+PostgreSQL transactions؛ InvenTree كمرجع
+لا تعدل كمية المنتج فقط؛ سجّل كل حركة وسببها ومرجعها.
+POS سريع
+جميع المقارنين
+سلة محلية، بحث سريع، اختصارات لوحة المفاتيح
+React/TypeScript، Zustand أو TanStack Query
+احسب المجموع على الخادم أيضاً، واحفظ السعر/الضريبة snapshot عند البيع.
+الباركود
+Loyverse، OSPOS
+كاميرا أو قارئ USB Keyboard Wedge
+@zxing/browser؛ html5-qrcode بحذر
+html5-qrcode أعلن أنه في وضع صيانة؛ اختبر ZXing والماسح USB أولاً.
+تقارير يومية/شهرية/سنوية
+POSNEX، Square، Loyverse
+Aggregations SQL مع فلاتر tenant/store/timezone
+Recharts أو Chart.js
+الرسوم من استعلامات دقيقة؛ أوقات المحل المحلية مع تخزين UTC.
+العملاء والولاء
+Loyverse، Square
+سجل نقاط غير قابل للتعديل + دفتر عكس للحركات
+جداول loyalty_points مخصصة
+لا تخزن balance فقط؛ كل استرجاع بيع يجب أن يعكس نقاطه.
+الفواتير المغربية
+Caissa، Lacaisse.ma، أنظمة محلية
+Invoice service + قالب قابل للتهيئة + سلسلة أرقام
+PDF generation؛ نموذج بيانات مستقل عن PDF
+لا تدّعِ توافق DGI الإلكتروني الرسمي دون المواصفات/اعتماد مناسب.
+المطاعم/KDS والطاولات
+POSNEX، Loyverse، NexPOS
+جداول tables/orders/order_items/kitchen_tickets
+React Query/WebSocket أو SSE
+فصل عملية الطلب عن البيع النهائي، ويدعم تقسيم/نقل الطاولة.
+الطباعة الحرارية
+Caissa، Lacaisse.ma، Loyverse
+Local print bridge في Tauri Rust
+Tauri commands + ESC/POS
+المتصفح وحده لا يضمن USB خام أو kick drawer متسقاً على كل نظام.
+درج النقود
+POS hardware ecosystem
+أمر pulse عبر الطابعة بعد البيع المصرّح
+ESC/POS drawer kick
+صلاحية خاصة، سجلّ audit، وعدم فتح الدرج تلقائياً من زر غير مصرح.
+Glovo/Jumia
+بحسب السوق والعقد
+Connectors قابلة للإطفاء لكل مزود
+Provider adapter + webhook queue
+يتطلب الوصول إلى API/partner credentials وسياسات كل منصة؛ لا تعتمد scraping.
+Offline + Sync
+POSNEX، iGoodar، Odoo POS
+قاعدة محلية + outbox + idempotency + versioning
+IndexedDB/Dexie للـPWA؛ SQLite عبر Tauri
+تعريف حل تضارب للأسعار والمخزون؛ تجنب last-write-wins في الرصيد المالي.
+Push/Email/SMS
+Square وSaaS POS
+قناة إشعار موحّدة وموافقة العميل
+FCM/Web Push، Resend/Brevo؛ SMS مدفوع
+الرسائل القصيرة غالباً ليست مجانية؛ ضع حدوداً وافتراض opt-in.
+الفروع المتعددة
+POSNEX، Loyverse، Square
+store_id مع قواعد الوصول ومخزون مستقل
+PostgreSQL + RBAC
+الفروع ضمن tenant واحد، أما محل مستقل فهو tenant مستقل لأغراض الفوترة.
+اشتراكات MoR
+SaaS عالمية
+بوابة Hosted Checkout + webhook idempotent
+Paddle أو Lemon Squeezy بعد موافقة حساب البائع
+لا تخزن بيانات البطاقة. تحقق من استلام الأرباح في المغرب قبل الاعتماد.
+Auth
+كافة الأنظمة
+OIDC/JWT + عضويات tenants + جلسات قصيرة
+Supabase Auth أو Firebase Auth
+اختيار مزود واحد. المصادقة لا تكفي: كل API يفحص عضوية المستأجر والصلاحية.
+Trial + Free
+POSNEX وNexPOS
+14 يوم Trial ثم 50 SKU active في Free
+Entitlements في الخادم
+لا تعتمد على إخفاء زر فقط؛ تحقق عند API وعمليات الاستيراد.
+النسخ الاحتياطي
+Caissa، iGoodar Connect
+نسخ يومية مشفرة + اختبار استرجاع
+pg_dump/PITR بحسب DB + R2
+وجود ملف backup ليس كافياً؛ نفّذ اختبار Restore دوري مع RPO/RTO معلومين.
+سجل التدقيق
+ميزة أساسية لقطاع التجزئة
+audit_logs لكل تعديل حساس
+PostgreSQL JSONB
+من عدّل السعر؟ من ألغى البيع؟ من غيّر الضرائب؟ مع actor/time/reason.
+صلاحيات الموظفين والورديات
+Loyverse/Square
+RBAC + cash_sessions + Z report
+جداول التطبيق الخاصة
+منع الخصم/إرجاع/فتح درج نقد/إغلاق وردية دون إذن مناسب.
+4. مصادر مفتوحة المصدر (Open Source Resources)
+القاعدة: لا تدمج مشروعاً فقط لأنه منشور على GitHub. افحص LICENSE وNOTICE والاعتمادات العابرة، ونشاط الصيانة، والاعتمادات التقنية، وشروط SaaS/العلامة التجارية. بعض الأنظمة “source available” أو ذات ميزات تجارية مغلقة وليست رخصة مفتوحة معتمدة.
+4.1 مشاريع POS يمكن دراستها
+المشروع
+الرابط المباشر
+الرخصة / الحالة المبدئية
+كيف نستفيد
+تنبيه
+Open Source Point of Sale (OSPOS)
+https://github.com/opensourcepos/opensourcepos
+MIT مع شرط الاحتفاظ بتوقيع/تذييل المشروع في كل صفحة وفق README/LICENSE
+مرجع للمنتجات، المخزون، الفواتير، العملاء وتقارير البيع
+لا تزيل التذييل ولا تدّع ملكية كوده؛ الأنسب دراسة الأفكار/التكاملات أولاً.
+Floreant POS
+https://github.com/floreantpos/floreantpos
+المستودع الظاهر MRPL 1.2؛ تحقق من الأصل والإصدار قبل أي استخدام
+مرجع للمطاعم، الطاولات والتذاكر
+Java desktop تقليدي؛ ليس أساساً مناسباً لواجهة SaaS حديثة دون إعادة تصميم.
+ERPNext
+https://github.com/frappe/erpnext
+GPL-3.0
+دراسة تدفق المخزون/المشتريات/البيع/الحسابات؛ قد يناسب تكامل ERP
+التزام GPL وشكل الدمج/التوزيع يحتاج مراجعة قانونية؛ لا تنسخ وحدات عشوائياً في SaaS.
+Odoo POS
+https://github.com/odoo/odoo/tree/20.0/addons/point_of_sale
+مستودع Odoo يضم أجزاء Community وأجزاء Enterprise برخص مختلفة
+مرجع جيد لتجربة POS وOffline وHardware Proxy
+راجع LICENSE لكل addon واعتماد؛ لا تفترض أن كل ما في الموقع التجاري مفتوح.
+Openbravo POS archive/fork
+https://github.com/stas/pos
+مستودع Fork تاريخي/قديم؛ تحقق من الرخصة والنشاط
+أفكار لشاشات الكاشير وتقارير قديمة
+لا تعتمد عليه كمكون production حديث دون تدقيق وصيانة.
+uniCenta / uniCenta-oPOS
+https://github.com/topics/unicenta-opos
+لم أتمكن من إثبات رابط مستودع رسمي حديث واحد من نتائج البحث الحالية
+استخدم أسماءه لمزيد من الاستكشاف لا للاعتماد المباشر
+لا تضعه في قائمة “موثّق ومدمج” قبل التحقق من المالك والنسخة والرخصة.
+xpos / Retailer-POS
+لم يُثبت مستودع محدد مطابق بالاسم
+الاسم عام ونتائج البحث غير كافية لتعيين منتج واحد
+يضاف إلى قائمة البحث لاحقاً
+لا توجد روابط مخترعة هنا عمداً؛ يلزم رابط من صاحب المشروع أو اكتشاف موثق.
+4.2 المخزون وERP
+المشروع
+GitHub
+الرخصة الظاهرة / الدور
+التوصية
+InvenTree
+https://github.com/inventree/InvenTree
+MIT؛ نظام مخزون مفتوح المصدر
+مرجع لتصميم المواقع/المخازن وحركات المخزون، وليس ضرورة لدمجه داخل التطبيق.
+ERPNext Stock
+https://github.com/frappe/erpnext
+GPL-3.0؛ إدارة مخزون/مشتريات ضمن ERP
+مرجع وظيفي أو تكامل منفصل بعد مراجعة الرخصة.
+Dolibarr ERP/CRM
+https://github.com/Dolibarr/dolibarr
+GPL-3.0 وفق المشروع؛ ERP/CRM
+يمكن مقارنة المشتريات والفواتير والعملاء، لكن لا تُدخل كوداً قبل مراجعة متطلبات GPL.
+PostgreSQL
+https://github.com/postgres/postgres
+PostgreSQL License permissive
+الخيار المفضل للبيانات العلائقية، القيود والتقارير.
+Prisma ORM
+https://github.com/prisma/prisma
+تحقق من ترخيص الإصدار والميزات؛ ORM/Schema tooling
+مناسب لـ TypeScript، مع استخدام SQL/migrations واضح وتقييم أثره على التحكم بالمعاملات.
+4.3 الفوترة والمحاسبة
+المشروع / الاسم
+الرابط
+الحالة والترخيص
+الملاءمة
+Invoice Ninja
+https://github.com/invoiceninja/invoiceninja
+Source-available تحت Elastic License، وليس ترخيصاً مفتوحاً تقليدياً وفق وصف المستودع
+مرجع UX/API فقط ما لم تسمح شروط الترخيص بالاستخدام المقصود.
+ERPNext / Dolibarr
+https://github.com/frappe/erpnext  |  https://github.com/Dolibarr/dolibarr
+مشاريع ERP مفتوحة لكن تراخيص copyleft
+مرجع للدفاتر والضرائب؛ لا تستورد الكود بلا مراجعة قانونية.
+EFact
+لم يتأكد رابط GitHub رسمي مطابق للاسم من البحث الحالي
+غير متحقق كمصدر مفتوح في هذه الوثيقة
+لا تعتمد عليه كاعتماد إنتاجي قبل تسليم URL وLICENSE.
+Hisab
+لم يتأكد رابط GitHub رسمي مطابق للاسم من البحث الحالي
+قد يشير الاسم إلى أكثر من خدمة/مشروع
+نفس القاعدة: الاسم لا يثبت أن المنتج مفتوح المصدر.
+مقترح معماري
+مكوّن Invoice داخلي مستقل
+Schema + Numbering + PDF/JSON export
+أنشئ طبقة Invoice Provider؛ أضف DGI connector لاحقاً بعد نشر المواصفات الرسمية.
+4.4 الطباعة والعتاد
+المشروع
+الرابط
+الرخصة / ملاحظة
+الاستعمال المقترح
+Tauri
+https://github.com/tauri-apps/tauri
+Apache-2.0/MIT بحسب مكونات المشروع
+Shell للـWindows مع Rust commands لUSB/Serial/Network والطباعة المحلية.
+node-escpos
+https://github.com/lsongdev/node-escpos
+تحقق من LICENSE للحزمة/الإصدار الذي ستثبته
+مرجع/مكتبة ESC/POS عند استخدام Node؛ قد يكون ربط Rust مباشر أوضح داخل Tauri.
+escpos-direct
+https://github.com/Fransuelton/escpos-direct
+MIT؛ المشروع يذكر دعم USB/WebUSB والاختبار على أجهزة محددة فقط
+تجارب طباعة واختبارات؛ لا تفترض التوافق مع كل الطابعات.
+escpos-php
+https://github.com/mike42/escpos-php
+MIT؛ مكتبة PHP وليست مباشرة لحزمة Tauri
+مرجع لأوامر الطباعة/الباركود وملفات الاختبار.
+Barcode scanner: ZXing browser
+https://github.com/zxing-js/browser
+MIT
+اختيار أولي للماسح بالكاميرا داخل المتصفح.
+html5-qrcode
+https://github.com/mebjas/html5-qrcode
+المستودع يعلن أنه في وضع الصيانة حتى إشعار آخر
+بديل تجريبي فقط، لا يكون اعتماداً وحيداً طويل الأمد.
+4.5 Offline sync وقاعدة محلية
+المشروع
+GitHub
+الرخصة / الاستخدام
+القرار
+Dexie.js
+https://github.com/dexie/Dexie.js
+Apache-2.0؛ طبقة مريحة فوق IndexedDB
+الخيار العملي للـPWA، مع outbox محلية صريحة.
+PouchDB
+https://github.com/apache/pouchdb
+Apache-2.0؛ يعمل في المتصفح ويستهدف offline/sync مع CouchDB
+اختيار جيد إذا أردت replication من نوع CouchDB؛ تأكد أن نموذج البيانات مناسب.
+WatermelonDB
+https://github.com/Nozbe/WatermelonDB
+MIT؛ SQLite-based وموجه بقوة إلى React Native/offline-first
+ليس خياراً تلقائياً لتطبيق ويب/PWA؛ خذه فقط إذا تغيرت المنصة.
+RxDB
+https://github.com/pubkey/rxdb
+أداة reactive/offline-first؛ راجع رخصة الميزات والـplugins بالنسخة المختارة
+قيّم الترخيص والتكلفة والـreplication قبل الاعتماد.
+SQLite
+https://www.sqlite.org/
+Public domain
+مناسب للتخزين المحلي عبر Tauri؛ النسخ الاحتياطي والمigrations يجب أن تكونا مدروستين.
+4.6 الولاء والتحليلات
+المشروع
+GitHub
+ملاحظة الترخيص / النضج
+التوصية
+Open Loyalty community forks
+https://github.com/OpenLoyalty
+المستودعات العامة متفرقة؛ بعض الإصدارات القديمة محدودة وغير مناسبة تجارياً دون تحقق
+ابنِ loyalty ledger بسيطاً داخلياً؛ لا تعتمد مشروعاً قديماً لمجرد الاسم.
+Recharts
+https://github.com/recharts/recharts
+MIT
+مناسب لـReact ولوحات التحكم.
+Chart.js
+https://github.com/chartjs/Chart.js
+MIT
+بديل صغير ومرن للرسوم.
+Metabase
+https://github.com/metabase/metabase
+تحقق من الترخيص وخيارات embedding التجارية في الإصدار المستهدف
+للتحليلات الداخلية/الدعم لا كجزء مضمّن للعميل دون مراجعة.
+OpenTelemetry
+https://github.com/open-telemetry/opentelemetry-js
+Apache-2.0
+قياس latency وأخطاء API موزعة عند زيادة الحجم.
+سياسة المصادر المطلوبة للمشروع
+أنشئ catalog/sources.json وcatalog/sources.csv، مع حقول: name, repository, website, license, verified_version, last_checked, platform, usage, state, integration_mode, tests, blockers, notes.
+حالات المصدر: discovered, inspected, verified, integration-planned, integrating, integrated, tested, blocked, incompatible, deprecated, replaced.
+لا تضع "integrated" إلا إذا كان الكود يستعمل المكوّن بالفعل؛ ولا تضع "tested" إلا مع نتيجة اختبار مسجلة ورقم commit.
+احتفظ بنسخة LICENSE/NOTICE لكل dependency، وشغّل فحص تراخيص دوري مثل license-checker أو ORT، وراجع التراخيص التي تمنع إزالة العلامة/التذييل أو تفرض إتاحة المصدر.
+5. السيرفرات والخدمات المجانية (Free Tiers)
+الهدف الصحيح ليس “صفر دولار مهما كبر النظام”، بل تكلفة منخفضة ومحدودة يمكن التنبؤ بها. الخطة المجانية مناسبة لتجربة MVP، لكنها لا تقدم بالضرورة SLA أو استرجاعاً مضموناً أو حماية من تجاوز الفاتورة.
+الخدمة
+المجاني المنشور / المرصود
+الحدود المهمة
+بديل احتياطي
+متى نرقّي؟
+Cloudflare Pages
+أصول ثابتة غير محدودة الطلب وفق الصفحة؛ 500 build شهرياً بالخطة Free وفق الحدود المنشورة.
+Pages Functions تُحسب ضمن Workers quotas؛ Free Workers نحو 100,000 طلب/يوم. Next.js SSR يحتاج إعداداً متوافقاً مثل Workers/OpenNext وليس افتراض نشر static عادي.
+Cloud Run أو Vercel بحسب الحمل.
+بناء SSR/Functions يتجاوز الحصة، أو نحتاج تحكماً/دعماً أعلى.
+Cloudflare R2
+10 GB-month، 1 مليون Class A و10 ملايين Class B شهرياً؛ Egress مجاني في النموذج القياسي.
+الطلبات والتخزين يُقاسان شهرياً؛ انتبه للملفات/الفواتير/النسخ المتعددة وعمليات النسخ.
+Object Storage آخر أو تخزين مستقل مشفر.
+تجاوز 10GB أو حدود عمليات القراءة/الكتابة، أو الحاجة لسياسة احتفاظ/نسخ أكثر صرامة.
+Google Cloud Run
+حتى 2 مليون request شهرياً وفق صفحة Google؛ وتوجد حصص مجانية للحوسبة.
+تعتمد التكلفة على CPU/RAM/الوقت والطلبات والمنطقة ونقل البيانات؛ الخادم لا يعوض قاعدة بيانات دائمة.
+Oracle VM أو خدمة containers بديلة.
+الحمل المستمر، تقارير ثقيلة، نقل بيانات كبير، أو الحاجة إلى حد أدنى متاح دائماً.
+Oracle Cloud Always Free
+الوثائق المنشورة تذكر إجمالي 1,500 OCPU-hour و9,000 GB-hour شهرياً لـAmpere A1، أي ما يعادل تقريباً 2 OCPU و12GB RAM في نطاق Free المذكور.
+ليس 4 OCPU و24GB على نحو يمكن افتراضه لكل حساب/منطقة؛ سعة المضيف غير مضمونة وقد تفشل عملية الإنشاء. قواعد البيانات والنسخ الاحتياطية والتوافر العالي تحتاج إدارة.
+Cloud Run + Postgres managed، أو VM مدفوع صغير.
+أول حاجة إلى SLA/استرجاع موثوق، أو إدارة وقت الخادم أصبحت عبئاً، أو ضغط ذاكرة/IO.
+Supabase Free
+50,000 MAU، قاعدة 500MB، تخزين ملفات 1GB، Egress 5GB بحسب صفحة التسعير الحالية.
+المشاريع المجانية قد تتوقف بعد أسبوع من الخمول؛ مشروعان مجانيان نشطان وفق الصفحة. ليست خطة إنتاج طويلة الأجل مع دعم/SLA.
+PostgreSQL على managed service أخرى؛ أو Firestore إذا قُبل نموذج NoSQL.
+قاعدة أكبر، حاجة لنسخ يومية مضمونة/SLA، توقف المشروع غير مقبول.
+Firebase Auth
+خطة Spark لها حد يومي مجاني 3,000 DAU لمعظم مزودي الدخول؛ حدود MAU مختلفة عند Identity Platform/Blaze.
+OTP/SMS ليس مجانياً بلا حدود؛ لا تخلط حد Authentication بحد Firestore.
+Supabase Auth أو خدمة OIDC أخرى.
+احتياج SSO/دعم مؤسسي أو تغيير الأسعار/الحدود أو طلب تدقيق أمني.
+Firestore
+تظهر الخطة المجانية 1GiB تخزين و10GiB Egress/شهر، مع 50K reads و20K writes و20K deletes يومياً ضمن الجدول المنشور.
+التقارير العلائقية وتسوية المخزون أصعب في NoSQL، وقد تقود القراءة المتكررة إلى تكلفة.
+PostgreSQL؛ المفضل لهذا المشروع.
+قبل أن تصبح الاستعلامات التحليلية كثيفة؛ لا تنتظر إعادة كتابة النظام.
+Resend
+3,000 رسالة/شهر، بحد يومي 100 رسالة وفق صفحة التسعير المنشورة.
+حصة الرسائل اليومية هي الحد الذي قد يعيق رسائل reset/notifications في أيام الضغط؛ البريد التسويقي يختلف عن transactional.
+Brevo أو مزود SMTP موثوق.
+يتجاوز الإرسال 100/يوم أو تحتاج دعم/تسليم أعلى.
+Brevo
+300 رسالة بريد يومياً في الخطة المجانية.
+لا تبنِ رسائل مهمة جداً على خطة تسويقية مجانية وحدها؛ SMS له تكلفة وشروط منفصلة.
+Resend أو SMTP تجاري.
+زيادة الإرسال، تعدد النطاقات، أو متطلبات التوصيل والإحصاءات.
+FCM / Web Push
+FCM خدمة بدون رسوم مباشرة في حالات الاستخدام الشائعة؛ تكاليف المنصات/الـSMS منفصلة.
+الإذن متغير حسب المتصفح والنظام؛ Web Push على iOS له شروط. لا تخزن أسراراً في العميل.
+Web Push standard أو ntfy لرسائل داخلية فقط.
+الاحتياج إلى دعم/SLA أو قناة SMS/WhatsApp رسمية.
+Sentry / UptimeRobot
+خطط مجانية محدودة؛ تحقق من عدد الأحداث والمراقبات عند التفعيل.
+قد تغطي التراخيص المجانية مرحلة البداية فقط؛ راجع سياسة بيانات الأخطاء لتجنب إرسال بيانات العملاء.
+OpenTelemetry + سجلات خادم + health checks مستقلة.
+الحاجة إلى retention أطول/تنبيهات فريق/SLA.
+Tauri + SQLite
+مشاريع مفتوحة المصدر دون رسم لكل مستخدم بحد ذاتها.
+تكلفة التنفيذ والصيانة وتوقيع التطبيقات واختبار الأجهزة ليست مجانية.
+متصفح + IndexedDB للطوارئ/الأجهزة التي لا تريد تثبيت عميل.
+عند نشر تحديثات مؤسسية أو احتياج توقيع وتوزيع مركزي.
+Paddle / Lemon Squeezy
+لا رسوم شهرية أساسية منشورة لنموذج الدفع على الاستخدام؛ الأساس الشائع 5% + 0.50 USD لكل معاملة.
+قد تضاف رسوم للمدفوعات الدولية/PayPal/الاشتراكات/التحويل بحسب المزود. تحقّق من حساب البائع والسحب إلى المغرب.
+بوابة محلية متوافقة تعاقدياً/فواتير بنكية أو رابط دفع محلي بعد مراجعة قانونية.
+ارتفاع حجم المعاملات، اختلاف متوسط الاشتراك أو طلب تسويات/دعم خاص.
+التوصية التشغيلية للخدمات
+لأول 10–100 محل: ابدأ بواجهة static/PWA، API صغير على Cloud Run، PostgreSQL على Supabase Pro عندما يصبح التشغيل حقيقياً أو قاعدة بيانات على بنية مدارة موثوقة، وR2 للملفات. في التجربة يمكنك استخدام الحصة المجانية، لكن لا تجعل نظام المبيعات يعتمد على مشروع يتوقف بعد أسبوع من الخمول أو على VM لا تعرف كيفية استرجاعها.
+لا تستعمل Firestore وPostgreSQL معاً للمعلومات التجارية الأساسية دون سبب قوي. قاعدة واحدة للمعاملات المالية تبسط الاتساق والتقارير والنسخ الاحتياطية. Firebase Auth يمكن أن يبقى مزود هوية منفصلاً، لكن اختَر مخططاً واحداً لمسار المصادقة والمستخدمين.
+6. البنية التقنية (Architecture)
+6.1 المخطط المعماري النصي
+                 ┌──────────────────────────────────────────┐                 │ Frontend React/TypeScript + PWA           │                 │ Arabic RTL / French / Keyboard-first POS  │                 └─────────────────┬────────────────────────┘                                   │               ┌───────────────────┴─────────────────────┐               │                                         │    ┌──────────▼──────────┐                    ┌─────────▼─────────┐    │ Tauri Desktop       │                    │ PWA Browser       │    │ SQLite local        │                    │ IndexedDB/Dexie   │    │ Rust Local Bridge   │                    │ Service Worker    │    └──────────┬──────────┘                    └─────────┬─────────┘               │                                         │               └───────────────────┬─────────────────────┘                                   │ HTTPS + Access Token                         ┌─────────▼──────────┐                         │ API / Cloud Run    │                         │ AuthZ + Tenant     │                         │ Idempotency + Sync │                         └───┬───────────┬────┘                             │           │                ┌────────────▼─┐     ┌───▼──────────────────┐                │ PostgreSQL   │     │ R2 Object Storage    │                │ tenant_id    │     │ exports / backups /  │                │ RLS/constraints│   │ receipts/artifacts   │                └──────────────┘     └──────────────────────┘                             │              ┌──────────────┴────────────────────┐              │ Webhook inbox / background jobs   │              │ Paddle/Lemon • Email/Push         │              │ Glovo/Jumia adapters when allowed │              └───────────────────────────────────┘ Tauri command examples: print_receipt(payload), open_cash_drawer(store_id), get_printer_status(), export_local_backup(), apply_local_migration().
+6.2 الاختيارات التقنية المقترحة
+الطبقة
+الاختيار الأولي
+القرار / سبب الاختيار
+UI
+React + TypeScript + Vite أو Next.js وفق حاجة SSR
+لوحة الإدارة/التسويق قد تستخدم SSR؛ POS نفسه تطبيق تفاعلي. إذا استُخدم Cloudflare Pages static، لا تفترض دعم Next.js SSR تلقائياً.
+API
+Node.js + TypeScript (Fastify أو NestJS) على Cloud Run
+فصل API عن واجهة البناء، تحقق DTO، OpenAPI، logs، واختبارات. لا تضع قواعد البيع الحرجة في المتصفح فقط.
+DB
+PostgreSQL
+العلاقات والمعاملات والقيود ممتازة لبيع/مخزون/تقارير؛ استخدم DECIMAL وtransactions.
+Auth
+Supabase Auth أو Firebase Auth (واحد فقط)
+يدير إثبات الهوية؛ تطبيقنا يتولى membership، الصلاحيات، tenant access والعمليات الحساسة.
+Local desktop
+SQLite عبر Tauri
+بيانات ثابتة ومigrations، outbox، معاملات البيع؛ لا تعتمد LocalStorage للسجل الأساسي.
+Local PWA
+IndexedDB مع Dexie
+سلة المنتجات والكتالوج المصغّر وطابور المزامنة؛ حد البيانات المتاح وإزالة التخزين يختلفان حسب المتصفح.
+Files
+Cloudflare R2
+ملفات الاستيراد/التصدير والنسخ الاحتياطية؛ التشفير، ACL وlifecycle على مستوى الخادم.
+Charts
+Recharts أو Chart.js
+اختر واحدة فقط في MVP. لا تحتاج منصّة BI كاملة أولاً.
+Observability
+Structured logs + Sentry + uptime monitor
+لا تسجّل كلمات المرور/رموز الدفع/البيانات الشخصية كاملة في logs.
+Monorepo
+pnpm workspaces + apps/web + apps/desktop + packages/shared
+يوحّد types والمنطق، ويسمح بتجميع التطبيق واختباره بصورة متكررة.
+6.3 Offline-First: بروتوكول مزامنة لا مجرد cache
+كل عملية محلية تأخذ UUID عشوائياً كـoperation_id/ client_sale_id، ومعرّف جهاز device_id. تحفظ العملية مع state=pending داخل معاملة محلية قبل عرض “تم الحفظ”.
+تحتفظ outbox بسجل immutable للعمليات: create_sale, refund_sale, inventory_adjustment, customer_upsert. لا تُرسل زيادة المخزون كقيمة نهائية؛ أرسل عملية ذات معنى ومرجعاً فريداً.
+كل API كتابة يقبل Idempotency-Key. الخادم يحفظ المفتاح والنتيجة؛ إعادة إرسال نفس المفتاح لا تنشئ بيعاً ثانياً أو خصماً ثانياً.
+تستقبل الأجهزة cursor/updated_at/version وتطلب changes منذ آخر cursor. يجب وجود pagination وretention واضح؛ updated_at وحده غير كافٍ عند تغير البيانات بسرعة دون cursor ثابت.
+التضارب في السعر أو اسم المنتج يمكن حله بآخر نسخة خادمية/نسخة المنتج؛ التضارب في النقد، والبيع، وحركات المخزون يحتاج تسوية/رفضاً/مراجعة، ولا يُحل دائماً بآخر كتابة.
+عند إلغاء الاشتراك أثناء الانقطاع: اسمح بوضع Offline محدوداً وفق grace period مخزّن مسبقاً وبسياسة واضحة؛ لا تمنع فجأة الوصول إلى بيانات يحتاجها المحل، ولا تسمح بفترة مفتوحة بلا تجديد.
+اختبر إغلاق التطبيق أثناء البيع، إعادة التشغيل، تغيير ساعة الجهاز، تكرار الرسائل، انقطاع الشبكة في منتصف الطلب، وتزامن جهازين يبيعان آخر وحدة.
+6.4 Multi-Tenancy والعزل
+كل جدول مملوك للتاجر يحتوي tenant_id NOT NULL، باستثناء جداول الهوية/الكتالوج العام التي لها مبرر موثق.
+لا تقبل tenant_id من body كدليل صلاحية. استخرج عضويات المستخدم من الخادم، ثم حدد tenant الفعال بعد تحقق العضوية.
+مع PostgreSQL، فعّل Row-Level Security عندما يلائم نمط ORM، لكن لا تعتبر RLS وحدها كافية: أضف authorization tests وقيوداً مركبة وفحصاً في طبقة الخدمة.
+استخدم unique constraints مركبة مثل UNIQUE(tenant_id, sku) وUNIQUE(tenant_id, receipt_number). استخدم Foreign Keys مركبة (tenant_id, product_id) لمنع ربط سطر بيع بمنتج من tenant آخر.
+اختبر التلاعب بمعرفات UUID عبر API، لا تكتفِ باختبار الواجهة. أضف اختباراً لكل endpoint يطلب كائناً من tenant آخر ويجب أن يفشل.
+6.5 الطباعة الحرارية عبر Tauri Bridge
+واجهة الويب تبني Receipt DTO موحّداً، وتستدعي Tauri command عبر API ضيق ومحدد؛ لا تسمح بتنفيذ أوامر نظام عامة أو shell input من واجهة المستخدم.
+في Rust، عرّف transports منفصلة: USB/Serial/Network/Windows spooler؛ لا تفترض أن كل الطابعات متوافقة مع نفس الطريقة. ابدأ بطابعات ESC/POS معروفة في Windows.
+طبّق محوّل نصوص/خطوط خاصة بالعربية، واختبر اتجاه RTL، تشكيل الحروف، الحروف المتصلة، الأرقام، عرض 58mm و80mm، والقصّ والرموز/QR. قد تتطلب طابعات معيّنة raster image بدل النص الخام.
+فتح درج النقود غالباً نبضة ESC/POS على منفذ درج الطابعة. اربطه بعملية بيع مدفوعة أو بصلاحية “open drawer”، وسجّل الحدث في audit_logs.
+أضف اختباراً دون طابعة (fake transport) واختباراً على 3 طابعات حقيقية على الأقل قبل وصف الجهاز بأنه مدعوم؛ اعرض للأداة أخطاء مفهومة ولا تجعل فشل الطباعة يلغي عملية بيع محفوظة.
+7. مخطط قاعدة البيانات
+النموذج التالي PostgreSQL-first. استخدم UUID كمعرّف عام، NUMERIC لحقول المال، TIMESTAMPTZ للتواريخ، JSONB للـsnapshots وprovider payloads، وأضف created_at/updated_at حيث يلزم. لتقليل الأخطاء المالية، لا تستخدم FLOAT/DOUBLE للمال. جميع الكيانات التجارية أدناه تحتاج tenant_id وقيود عزل مناسبة.
+جدول tenants
+يمثل العميل التجاري/المحل المشترك في خطة الاشتراك. لا تخلط tenant مع الفرع؛ tenant قد يملك عدة stores.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+مولّد من الخادم
+legal_name
+TEXT
+الاسم القانوني
+display_name
+TEXT
+اسم العرض على التذكرة
+slug
+TEXT UNIQUE
+مسار/معرف سهل؛ لا يكفي للأمان
+ice
+TEXT NULL
+ICE بعد التحقق من قواعد التاجر
+tax_id
+TEXT NULL
+Identifiant fiscal حسب الحاجة
+rc_number
+TEXT NULL
+رقم السجل التجاري إن انطبق
+address
+TEXT NULL
+عنوان الفوترة/التاجر
+city
+TEXT NULL
+المدينة
+country_code
+CHAR(2)
+افتراضي MA
+currency
+CHAR(3)
+افتراضي MAD
+timezone
+TEXT
+افتراضي Africa/Casablanca
+status
+TEXT
+trialing/active/past_due/suspended/closed
+created_at
+TIMESTAMPTZ
+NOT NULL DEFAULT now()
+updated_at
+TIMESTAMPTZ
+NOT NULL
+جدول users
+ملف حساب داخل النظام؛ إثبات الهوية الفعلي يبقى عند Firebase/Supabase/Auth provider.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+معرّف داخلي
+auth_provider
+TEXT
+firebase/supabase/oidc
+provider_subject
+TEXT
+UNIQUE مع auth_provider
+email
+CITEXT/TEXT
+يُتحقق منه؛ يمكن أن يتكرر حسب سياسة عضويات العمل
+full_name
+TEXT
+اسم العرض
+phone
+TEXT NULL
+بيانات شخصية؛ لا تجمعها بلا حاجة
+default_tenant_id
+UUID FK NULL
+تفضيل واجهة لا يمنح صلاحية بذاته
+is_active
+BOOLEAN
+قفل وصول داخلي
+last_login_at
+TIMESTAMPTZ NULL
+created_at
+TIMESTAMPTZ
+جدول tenant_memberships
+جدول ضروري إضافي يربط المستخدم بالمستأجر والدور. هذا أفضل من تخزين tenant واحد داخل users.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+tenant_id
+UUID FK
+REFERENCES tenants(id)
+user_id
+UUID FK
+REFERENCES users(id)
+role
+TEXT
+owner/admin/manager/cashier/auditor
+permissions_override
+JSONB
+NULL غالباً؛ صلاحيات إضافية لا تستبدل السياسة الأساسية
+status
+TEXT
+invited/active/revoked
+created_at
+TIMESTAMPTZ
+UNIQUE
+(tenant_id,user_id)
+عضوية واحدة فعالة لكل مستخدم/مستأجر
+جدول stores
+الفروع/المواقع تحت tenant واحد.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+tenant_id
+UUID FK
+NOT NULL؛ composite unique (tenant_id,id)
+code
+TEXT
+UNIQUE(tenant_id,code)
+name
+TEXT
+address
+TEXT NULL
+phone
+TEXT NULL
+timezone
+TEXT
+قد يختلف عن الافتراضي
+is_active
+BOOLEAN
+created_at
+TIMESTAMPTZ
+جدول subscriptions
+الحالة التجارية الحالية والاشتراك الخارجي.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+tenant_id
+UUID FK
+واحد إلى عدة تاريخياً أو اشتراك واحد نشط حسب سياسة النظام
+provider
+TEXT
+paddle/lemonsqueezy/manual
+provider_customer_id
+TEXT NULL
+لا تفترض أن الـID سرياً؛ لا تستخدمه كإذن
+provider_subscription_id
+TEXT NULL
+UNIQUE(provider,provider_subscription_id)
+plan_code
+TEXT
+free/pro/trial
+status
+TEXT
+trialing/active/past_due/canceled/paused
+billing_interval
+TEXT
+monthly/yearly
+current_period_start
+TIMESTAMPTZ NULL
+current_period_end
+TIMESTAMPTZ NULL
+trial_end_at
+TIMESTAMPTZ NULL
+cancel_at_period_end
+BOOLEAN
+created_at/updated_at
+TIMESTAMPTZ
+جدول payments
+سجل مالي داخلي لنتيجة الدفع فقط؛ لا تخزن بيانات البطاقة.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+tenant_id
+UUID FK
+subscription_id
+UUID FK NULL
+provider
+TEXT
+provider_transaction_id
+TEXT
+UNIQUE per provider
+amount
+NUMERIC(12,2)
+المبلغ بعملة transaction
+currency
+CHAR(3)
+USD/MAD بحسب المعاملة
+provider_fee
+NUMERIC(12,2) NULL
+من مزود الدفع إذا وصل
+status
+TEXT
+pending/paid/failed/refunded/disputed
+paid_at
+TIMESTAMPTZ NULL
+provider_payload
+JSONB
+مع إزالة البيانات الحساسة
+created_at
+TIMESTAMPTZ
+جدول categories
+تصنيفات منتجات على مستوى tenant.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+tenant_id
+UUID FK
+parent_id
+UUID FK NULL
+شجرة تصنيفات، FK داخل نفس tenant
+name
+TEXT
+sort_order
+INTEGER
+is_active
+BOOLEAN
+created_at/updated_at
+TIMESTAMPTZ
+UNIQUE
+(tenant_id,name,parent_id)
+سياسة NULL في الفهارس تحتاج تصميم partial index
+جدول products
+الكتالوج التجاري؛ افصل سعر البيع عن تكلفة الشراء وعن الضريبة.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+tenant_id
+UUID FK
+category_id
+UUID FK NULL
+ضمن نفس tenant
+sku
+TEXT
+UNIQUE(tenant_id,sku)
+barcode
+TEXT NULL
+فهرس فريد مشروط إذا اقتضت سياسة التكرار
+name
+TEXT
+description
+TEXT NULL
+unit
+TEXT
+piece/kg/liter/service
+sale_price
+NUMERIC(12,2)
+السعر الأساسي
+cost_price
+NUMERIC(12,2) NULL
+وصول محدود حسب الدور
+tax_code
+TEXT NULL
+كود داخلي قابل للتهيئة
+tax_rate
+NUMERIC(5,2)
+لا تعتبره ثابتاً في الكود
+track_stock
+BOOLEAN
+is_active
+BOOLEAN
+version
+BIGINT
+للكشف عن تعديلين متزامنين
+created_at/updated_at
+TIMESTAMPTZ
+جدول sales
+رأس المعاملة؛ لا تحذف البيع النهائي، بل ألغِه/اعكسه بسبب وسجل audit.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+tenant_id
+UUID FK
+store_id
+UUID FK
+Composite FK (tenant_id,store_id)
+cashier_user_id
+UUID FK
+customer_id
+UUID FK NULL
+client_sale_id
+UUID
+معرّف العميل المحلي، UNIQUE مع tenant_id
+idempotency_key
+TEXT
+UNIQUE(tenant_id,idempotency_key)
+receipt_number
+TEXT
+UNIQUE(tenant_id,store_id,receipt_number)
+status
+TEXT
+draft/completed/voided/refunded/part_refunded
+subtotal
+NUMERIC(12,2)
+discount_total
+NUMERIC(12,2)
+tax_total
+NUMERIC(12,2)
+grand_total
+NUMERIC(12,2)
+paid_total
+NUMERIC(12,2)
+change_due
+NUMERIC(12,2)
+payment_method
+TEXT
+cash/card/transfer/split/credit
+channel
+TEXT
+pos/online/glovo/jumia
+device_id
+UUID NULL
+offline_created_at
+TIMESTAMPTZ NULL
+وقت الجهاز مع الحذر من الساعة غير الصحيحة
+completed_at
+TIMESTAMPTZ NULL
+وقت الخادم هو مرجع التدقيق
+created_at
+TIMESTAMPTZ
+جدول sale_items
+نسخة تاريخية من بيانات المنتج وقت البيع حتى لو تغيّر الاسم أو السعر لاحقاً.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+tenant_id
+UUID FK
+sale_id
+UUID FK
+Composite FK tenant_id + sale_id
+product_id
+UUID FK NULL
+NULL مسموح بعد حذف/أرشفة المنتج مع snapshot محفوظ
+product_name_snapshot
+TEXT
+sku_snapshot
+TEXT NULL
+quantity
+NUMERIC(12,3)
+دعم الوزن/الكسور عند الحاجة
+unit_price
+NUMERIC(12,2)
+السعر الفعلي
+discount_amount
+NUMERIC(12,2)
+tax_rate
+NUMERIC(5,2)
+نسخة وقت البيع
+tax_amount
+NUMERIC(12,2)
+line_total
+NUMERIC(12,2)
+cost_snapshot
+NUMERIC(12,2) NULL
+لتحليل الهامش مع صلاحيات
+جدول customers
+الحد الأدنى من بيانات العملاء؛ لا تطلب CIN/بيانات حساسة دون ضرورة قانونية واضحة.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+tenant_id
+UUID FK
+name
+TEXT
+phone
+TEXT NULL
+فهرس محلي؛ حدّ من كشفه
+email
+TEXT NULL
+tax_identifier
+TEXT NULL
+يُطلب عند حاجة الفاتورة فقط
+address
+TEXT NULL
+marketing_consent
+BOOLEAN
+موافقة منفصلة مع timestamps ومصدرها
+created_at/updated_at
+TIMESTAMPTZ
+UNIQUE optional
+(tenant_id, normalized_phone)
+لا تفرضه إذا كان رقم الأسرة مشتركاً
+جدول loyalty_points
+دفتر نقاط لا يتم تعديل الحركات التاريخية؛ الاسترداد ينشئ حركة سالبة مقابلة.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+tenant_id
+UUID FK
+customer_id
+UUID FK
+sale_id
+UUID FK NULL
+مرجع البيع المولد للنقاط
+delta_points
+INTEGER
+موجب/سالب
+reason
+TEXT
+earn/redeem/refund/adjustment/expiry
+idempotency_key
+TEXT
+UNIQUE(tenant_id,idempotency_key)
+expires_at
+TIMESTAMPTZ NULL
+actor_user_id
+UUID FK NULL
+created_at
+TIMESTAMPTZ
+جدول inventory_movements
+المصدر الموثوق لحركة كل كمية: شراء، بيع، إرجاع، تلف، جرد، نقل بين مخازن.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+tenant_id
+UUID FK
+store_id
+UUID FK
+product_id
+UUID FK
+movement_type
+TEXT
+sale/purchase/return/adjustment/transfer_in/transfer_out/waste
+quantity_delta
+NUMERIC(12,3)
+إشارة +/−
+unit_cost
+NUMERIC(12,2) NULL
+reference_type
+TEXT NULL
+sale/purchase/transfer
+reference_id
+UUID NULL
+idempotency_key
+TEXT
+UNIQUE(tenant_id,idempotency_key)
+created_by
+UUID FK NULL
+created_at
+TIMESTAMPTZ
+جدول invoices
+التمثيل المنظم للفواتير بعيداً عن عرض PDF.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+tenant_id
+UUID FK
+store_id
+UUID FK
+sale_id
+UUID FK NULL
+بيع واحد قد يكون له فاتورة وفق سياسة العمل
+customer_id
+UUID FK NULL
+invoice_number
+TEXT
+UNIQUE(tenant_id,invoice_number)
+status
+TEXT
+draft/issued/voided/credited
+issued_at
+TIMESTAMPTZ NULL
+due_date
+DATE NULL
+seller_snapshot
+JSONB
+هوية/عنوان/معرفات وقت الإصدار
+buyer_snapshot
+JSONB
+subtotal/tax_total/grand_total
+NUMERIC(12,2)
+أعمدة منفصلة موصى بها، لا حقل واحد
+currency
+CHAR(3)
+schema_version
+INTEGER
+للتغييرات المستقبلية
+external_compliance_ref
+TEXT NULL
+خانة مرنة لمعرّف خارجي رسمي عند توفره
+created_at
+TIMESTAMPTZ
+جدول notifications
+طابور وإثبات نتيجة الإشعارات.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+tenant_id
+UUID FK
+قد تكون إشعارات المنصة الداخلية بلا tenant عند الحاجة
+recipient_user_id
+UUID FK NULL
+customer_id
+UUID FK NULL
+channel
+TEXT
+email/push/sms/in_app
+template_key
+TEXT
+status
+TEXT
+queued/sent/failed/suppressed
+provider_message_id
+TEXT NULL
+scheduled_at
+TIMESTAMPTZ NULL
+sent_at
+TIMESTAMPTZ NULL
+error_code
+TEXT NULL
+بدون أسرار
+created_at
+TIMESTAMPTZ
+جدول audit_logs
+سجل أمني/تشغيلي للأحداث الحساسة؛ مقيد الوصول ولا يحفظ أسراراً.
+الحقل
+النوع المقترح
+القيود / الملاحظة
+id
+UUID PK
+tenant_id
+UUID FK
+actor_user_id
+UUID FK NULL
+action
+TEXT
+product.price_changed/sale.refunded/role.changed/...
+entity_type
+TEXT
+entity_id
+UUID NULL
+before_state
+JSONB NULL
+إزالة PII غير اللازمة
+after_state
+JSONB NULL
+ip_address
+INET NULL
+جمعه بحسب الحاجة وسياسة الخصوصية
+device_id
+UUID NULL
+created_at
+TIMESTAMPTZ
+يفضل عدم التعديل بعد الكتابة
+جداول إضافية ضرورية عملياً
+الجدول
+السبب
+حقول حرجة مقترحة
+devices
+ربط كل نسخة محلية بمحل/مستخدم/إصدار
+id, tenant_id, store_id, device_fingerprint, app_version, last_sync_at, revoked_at
+sync_operations
+منع التنفيذ المكرر وتتبع المزامنة
+tenant_id, device_id, client_op_id, operation_type, status, server_result, received_at
+webhook_events
+إزالة التكرار في webhooks الدفع
+provider, event_id UNIQUE, signature_valid, received_at, processed_at, status, payload_redacted
+cash_sessions
+فتح/إغلاق الوردية وتسوية الصندوق
+tenant_id, store_id, user_id, opening_cash, counted_cash, expected_cash, discrepancy, opened_at, closed_at
+suppliers / purchase_orders
+المخزون يحتاج استقبال مشتريات ومورّدين لاحقاً
+supplier_id, purchase_order_id, status, lines, received_at
+kitchen_tickets / dining_tables
+خاص بالمطاعم بعد MVP
+store_id, table_id, ticket_status, station, sent_at, ready_at
+backup_jobs
+تتبع نجاح النسخ والاسترجاع
+started_at, completed_at, artifact_uri, checksum, status, restore_tested_at
+8. هيكل الـ API (Endpoints)
+Prefix المقترح: /api/v1. المصادقة تتم عبر Access Token من مزود الهوية، ثم يتحقق الخادم من العضوية والصلاحية. استخدم JSON، أخطاء قياسية، pagination، rate limiting، وOpenAPI. كل عمليات الكتابة المهمة تقبل Idempotency-Key.
+المجال
+Method + Path
+الوصف / الضوابط
+Auth
+GET /api/v1/me
+إرجاع المستخدم والعضويات والصلاحيات الفعلية.
+Auth
+POST /api/v1/tenants
+إنشاء tenant لأول مرة؛ تحقق من spam وlimits.
+Auth
+POST /api/v1/tenants/{tenantId}/switch
+التبديل إلى tenant بعد التحقق من membership؛ لا يثق بمعرّف يرسله العميل وحده.
+Auth
+POST /api/v1/invitations
+دعوة موظف عبر البريد مع token منتهي الصلاحية.
+Auth
+POST /api/v1/invitations/{id}/accept
+قبول الدعوة مع منع إعادة الاستخدام.
+Products
+GET /api/v1/products?query=&cursor=
+بحث سريع مع tenant_id وstore scope عند الحاجة.
+Products
+POST /api/v1/products
+إنشاء منتج، مع تحقق SKU/Barcode والسعر والحد المجاني.
+Products
+GET /api/v1/products/{id}
+قراءة منتج داخل tenant فقط.
+Products
+PATCH /api/v1/products/{id}
+تعديل مع version/ETag لاكتشاف تعديل متزامن.
+Products
+POST /api/v1/products/imports
+رفع CSV مؤقت وإرجاع Import Job؛ الملف لا ينفذ مباشرة دون معاينة.
+Products
+GET /api/v1/products/imports/{jobId}
+أخطاء الصفوف وتقرير المعاينة.
+Products
+POST /api/v1/products/exports
+تصدير غير متزامن عند الحجم الكبير.
+Inventory
+GET /api/v1/stores/{storeId}/stock
+ملخص المخزون بحسب الفرع/المخزن.
+Inventory
+POST /api/v1/inventory/adjustments
+حركة تعديل مع السبب والصلاحية وidempotency.
+Sales
+POST /api/v1/sales
+إنشاء/إتمام بيع؛ transaction واحدة لحفظ الرأس والبنود والدفع وحركة المخزون.
+Sales
+GET /api/v1/sales?from=&to=&cursor=
+قائمة مبيعات مع فلاتر فرع/حالة/وقت.
+Sales
+GET /api/v1/sales/{id}
+قراءة البيع + snapshot البنود.
+Sales
+POST /api/v1/sales/{id}/refunds
+إرجاع جزئي/كلي؛ ينشئ reversal ويحفظ السبب والصلاحية.
+Sales
+POST /api/v1/sales/{id}/void
+إلغاء حسب الحالة والسياسات مع audit trail.
+Customers
+GET /api/v1/customers?query=
+البحث عن عميل مع احترام وصول الموظف.
+Customers
+POST /api/v1/customers
+إنشاء عميل والحقول الضرورية فقط.
+Loyalty
+POST /api/v1/loyalty/redeem
+استرداد نقاط ضمن معاملة تمنع تجاوز الرصيد.
+Reports
+GET /api/v1/reports/sales-summary?from=&to=&storeId=
+ملخص مبيعات وصافي/ضريبة/خصم حسب timezone.
+Reports
+GET /api/v1/reports/top-products?from=&to=
+أعلى المنتجات مبيعاً من sale_items snapshot.
+Reports
+GET /api/v1/reports/inventory-valuation?storeId=
+تقييم المخزون؛ يحدد طريقة التكلفة ويذكر افتراضاتها.
+Invoices
+POST /api/v1/invoices
+إنشاء فاتورة مرقمة من خدمة الخادم، دون إعادة ترقيم عند إعادة المحاولة.
+Invoices
+GET /api/v1/invoices/{id}/pdf
+إنشاء/إرجاع PDF من snapshot الفاتورة.
+Subscriptions
+GET /api/v1/subscription
+حالة خطة المستأجر والحقوق المفعلة.
+Subscriptions
+POST /api/v1/checkout-sessions
+إنشاء Hosted Checkout من الخادم، السعر مستمد من الخطة وليس من العميل.
+Subscriptions
+POST /api/v1/subscription/cancel
+إلغاء نهاية الدورة/وفق شروط المزود.
+Webhooks
+POST /api/v1/webhooks/paddle
+تحقق التوقيع، احفظ event_id، وأعد 2xx بسرعة بعد إدخال الطابور.
+Webhooks
+POST /api/v1/webhooks/lemonsqueezy
+تحقق HMAC/التوقيع حسب وثائق المزود، وحماية إعادة الإرسال.
+Sync
+POST /api/v1/sync/push
+دفعة عمليات محلية؛ لكل عملية client_op_id وإصدار schema.
+Sync
+GET /api/v1/sync/pull?cursor=
+التغييرات منذ cursor مع pagination ومؤشر جديد.
+Devices
+POST /api/v1/devices/register
+تسجيل جهاز؛ أجهزة موثوقة/مبطلَة وسجلات آخر تزامن.
+Health
+GET /healthz
+فحص process، لا يعرض تفاصيل DB/الأسرار.
+Health
+GET /readyz
+الجاهزية تعتمد على اتصالات ضرورية؛ access داخلي/مقيد عند الحاجة.
+شكل خطأ API مقترح
+كل خطأ يعيد code ثابتاً، message مفهوماً، request_id، وdetails آمنة. مثال: {"error":{"code":"SKU_ALREADY_EXISTS","message":"رمز المنتج مستخدم داخل هذا المحل","request_id":"..."}}. لا تعرض stack traces ولا SQL ولا provider secrets للعميل.
+9. خارطة طريق من 4 مراحل (10 أسابيع)
+المدة تفترض مطوراً خبيراً أو فريقاً صغيراً، وقرارات تقنية ثابتة، ووقتاً للتجارب. إن كان البناء بالكامل عبر AI Studio دون مراجعة كود/اختبار، فالجدول أكثر تفاؤلاً من الواقع. اعتبر كل أسبوع هدفاً لقبول المنتج وليس وعداً بأن المكونات تنتج تلقائياً.
+المرحلة
+الأسابيع
+Must-have
+Nice-to-have
+معيار قبول قبل الانتقال
+1 — Core MVP
+1–2
+تهيئة repo/CI؛ auth؛ tenant/roles؛ onboarding؛ stores؛ categories/products؛ CSV preview/import؛ شاشة POS؛ حساب subtotal/discount/tax/total؛ حفظ بيع؛ basic sales history.
+لوحة ألوان/ثيمات، قوالب متعددة، لقطات dashboard زخرفية.
+يمكن إنشاء tenant، إضافة 20 منتجاً، إجراء بيع، إعادة تحميل الصفحة، رؤية البيع مرة واحدة، مع اختبار منع tenant leakage.
+2 — Reports + Subscriptions
+3–4
+مبيعات يومية/شهرية؛ تقارير بحسب store؛ customers؛ إعداد plan entitlements؛ Trial 14 يوماً؛ free cap؛ Hosted Checkout sandbox؛ webhooks idempotent؛ إدارة حالة past_due/canceled.
+تحليلات تنبؤية، حملات تسويقية.
+تنجح دورة الدفع التجريبية وwebhook مكرر دون تكرار اشتراك/دفعة؛ التقارير تُطابق بيانات الاختبار.
+3 — Print + Offline
+5–6
+Tauri shell؛ SQLite migrations؛ print bridge؛ قوالب 58/80mm؛ outbox؛ sync push/pull؛ idempotency؛ حالات انقطاع/retry؛ نسخ احتياطية مع اختبار restore.
+Bluetooth أو دعم كل الطابعات، مزامنة LAN متقدمة.
+20 سيناريو انقطاع/إعادة إرسال؛ لا تتكرر المبيعات أو حركات المخزون؛ نجاح طباعة عربية على طابعات مرجعية موثقة.
+4 — Advanced
+7–10
+KDS/طاولات إذا كان قطاع المطاعم مستهدفاً؛ multi-store inventory/transfers؛ roles متقدمة؛ طلبات الإرجاع؛ notifications؛ audit logs؛ مراقبة وأمن؛ موصلات تجريبية للمنصات المتاحة قانونياً.
+تكامل Glovo/Jumia كامل، loyalty campaigns، API ecosystem.
+اختبارات UAT مع 5–10 محلات؛ خطأ/تعطل موصل خارجي لا يوقف البيع؛ التصدير والنسخ واسترجاع tenant تم اختبارها.
+ترتيب بناء أكثر أماناً داخل كل مرحلة
+مخطط البيانات والاختبارات قبل تصميم كل شاشة نهائية.
+واجهات فارغة قابلة للتنقل فقط بعد تعريف حالات التحميل/الخطأ/الفراغ، لكن لا تعتبرها إنجاز ميزة.
+تنفيذ endpoint + validation + permissions + transaction ثم ربط UI.
+كتابة اختبارات لنجاح العملية ولحالة الرفض/تكرار الطلب/tenant آخر.
+مراجعة التغييرات وcommit صغير وREADME تحديث؛ ثم نشر staging وتجربة يدوية.
+10. حسابات الربحية (Unit Economics)
+النموذج التالي تقدير تخطيطي وليس عرض أسعار من مزود استضافة. يفترض اشتراكاً مدفوعاً بقيمة 10 USD شهرياً، ورسماً أساسياً من Paddle يساوي 5% + 0.50 USD لكل معاملة شهرية؛ أي 1.00 USD على عملية بقيمة 10 USD. يفترض وجود دفعة اشتراك واحدة لكل محل شهرياً. لا يشمل الاسترجاع/Chargeback أو الرسوم الإضافية الدولية أو فروق الصرف أو الضرائب أو الرواتب والتسويق والدعم.
+المشتركون
+الإيراد الشهري الإجمالي
+رسوم الدفع المقدرة
+ميزانية تشغيل شهرية مفترضة
+الربح التشغيلي التقريبي
+10
+$100
+$10
+$25
+$65
+50
+$500
+$50
+$25
+$425
+100
+$1,000
+$100
+$25
+$875
+500
+$5,000
+$500
+$80
+$4,420
+1,000
+$10,000
+$1,000
+$180
+$8,820
+افتراضات ميزانية التشغيل المستخدمة
+حتى 100 محل: 25 USD/شهر كحزمة تقديرية صغيرة تشمل نطاقاً أساسياً/بريد/مراقبة/احتياطاً؛ لا يعني هذا أن كل خدمة مجانية ستستمر بلا حدود.
+500 محل: 80 USD/شهر كاحتياط تشغيل متوسط؛ يعتمد على نمط الطلبات وحجم قاعدة البيانات وعدد النسخ الاحتياطية والدعم.
+1,000 محل: 180 USD/شهر كافتراض بنية أولية قابلة للتوسع؛ هذا ليس تسعيراً مضموناً وقد يكون أقل أو أكثر بحسب الاستهلاك والأمان والتوافر.
+نقطة التحول (Break-even)
+حالة التكاليف الثابتة فقط
+صافي المساهمة لكل اشتراك
+عدد المحلات لتغطية التكلفة الثابتة
+ملاحظات
+تشغيل 25 USD/شهر
+$9.00 تقريباً
+3 محلات (ceil 25/9)
+قبل الأجور، التسويق، الضرائب والمرتجعات.
+تشغيل 80 USD/شهر
+$9.00 تقريباً
+9 محلات
+القيمة الحقيقية أعلى إذا خصصت وقت دعم لكل تاجر.
+تشغيل 180 USD/شهر
+$9.00 تقريباً
+20 محلاً
+افترض رسوم إضافية محتملة واحتفظ بهامش أمان.
+تحليل حساسية السعر
+سعر الاشتراك
+رسم 5% + 0.50 USD
+النسبة من السعر
+صافي المساهمة قبل الاستضافة
+المغزى
+$5
+$0.75
+15%
+$4.25
+سعر منخفض يتأثر بالرسوم الثابتة بشدة.
+$10
+$1.00
+10%
+$9.00
+مناسب كنموذج أولي إذا بقي الدعم قليل التكلفة.
+$15
+$1.25
+8.3%
+$13.75
+أفضل هامش، لكن يحتاج قيمة متصورة أعلى.
+$25
+$1.75
+7%
+$23.25
+قد يناسب خطة للفروع أو المطاعم المتقدمة.
+متى نرقّي الستاك؟
+قبل الإطلاق المدفوع: نسخة DB backup منفصلة، استرجاع موثّق، monitoring، budget alerts، وسرّ تشغيلي خارج الكود.
+عند نمو الاستخدام: راقب p95 latency، معدل فشل الـsync، database CPU/connections، حجم الصور وegress، عدد رسائل البريد، وقت النسخ والاسترجاع.
+لا ترقِّ لأن عدد المحلات وحده وصل رقماً معيناً؛ رقِّ عند وصول مؤشرات الاستهلاك/الموثوقية إلى حدود معرفة مسبقاً.
+الربح الصافي الحقيقي يطرح: وقت المؤسس/الدعم، اكتساب العميل CAC، الضرائب المغربية، محاسب/محام، رسوم التحويل البنكي، refunds/chargebacks، وأي التزامات قانونية. أرقام الجدول ليست صافي ربح قانوني بعد الضرائب.
+11. الجانب القانوني والامتثال
+القسم التالي قائمة عمل للتحضير والمراجعة مع محاسب/مستشار قانوني مغربي. لا تعتبره رأياً قانونياً أو شهادة امتثال. يجب تحديثه عند صدور نص رسمي أو دليل تقني جديد، وقبل تسويق النظام على أنه “متوافق مع DGI”.
+11.1 DGI والمادة 145 والفواتير
+ارجع إلى النسخة الرسمية من CGI 2026 المنشورة عبر وزارة الاقتصاد والمالية/DGI. المادة 145-III تتصل ببيانات الفاتورة؛ يجب تصميم الحقول بحيث تشمل هوية البائع، المعرفات الضريبية المناسبة، التاريخ، بيانات العميل عند الاقتضاء، وصف/كمية/سعر السلع أو الخدمات، مبالغ TVA، ومراجع/طريقة الأداء والبيانات الإلزامية الأخرى وفق الحالة القانونية.
+تُذكر المادة 145-VIII في التحليلات القانونية المنشورة بخصوص ICE، والمادة 145-IX كأساس للنظام المعلوماتي للفوترة/الفوترة الإلكترونية وفق كيفيات تحدد تنظيمياً. يجب مراجعة النص الرسمي العربي/الفرنسي الساري لا النقل عن مدونة أو مقالة وحدها.
+حتى تاريخ إعداد هذه الوثيقة، لم أعثر في البحث الحالي على مواصفات تقنية رسمية مكتملة ومؤكدة من DGI تحدد إلزاماً عاما معتمداً لـUBL/CII، أو API، أو توقيعاً محدداً، أو بوابة موحدة لكل التجار. لذلك لا تكتب “UBL متوافق مع DGI” ما لم توجد مواصفات رسمية تنص على ذلك.
+UBL وUN/CEFACT CII معيَاران دوليان مختلفان لبنى الفواتير. جهّز data model مستقلّاً عن PDF، وversioned adapters للـXML، لكن لا تختر واحداً نهائياً ولا تفرضه على كل فاتورة مغربية قبل صدور المواصفات/النص المناسب.
+أنشئ Invoice Snapshot غير قابل للتعديل بعد الإصدار، وترقيم فاتورة ثابت ومتسلسل وفق السياسة القانونية، ووظيفة Credit Note/إلغاء واضحة، وتصديراً قابلاً للتدقيق. لا تعِد استعمال رقم فاتورة ملغاة بلا قرار قانوني موثق.
+اختبر حالات التاجر الخاضع/غير الخاضع للضريبة، B2B/B2C، الفاتورة وticket de caisse حيث يسمح القانون، الخصومات، الإرجاع، الفواتير بالآجل، وعرض الضريبة بشكل منفصل عند اللزوم.
+المراجع الأساسية: [CGI 2026 – وزارة الاقتصاد والمالية](https://www.finances.gov.ma/Publication/dgi/2025/CGI-2026-FR.pdf)؛ [خبر رسمي عن نشر CGI 2026](https://www.maroc.ma/fr/actualites/la-dgi-publie-ledition-2026-du-code-general-des-impots). راجع كذلك النشرات/المذكرات الدورية الرسمية وأي مرسوم منشور في الجريدة الرسمية قبل إطلاق التكامل.
+11.2 CNDP والقانون 09-08
+حدّد صفة الأطراف: التاجر غالباً مسؤول عن معالجة بيانات عملائه، ومشغل SaaS قد يكون معالجاً/مقدّم خدمة أو قد يتحمل أدواراً مستقلة في أغراض معينة. وثّق الأدوار في عقد المعالجة وسياسة الخصوصية.
+الموقع الرسمي لـCNDP يوضح أن المعالجات تخضع عادة للتصريح المسبق ما لم تكن مستثناة أو معفاة أو خاضعة لترخيص مسبق. بعض الفئات—مثل البيانات الحساسة أو رقم البطاقة الوطنية أو تغيّر الغرض أو الربط بين قواعد مختلفة—قد تتطلب ترخيصاً، بحسب الشروط القانونية.
+تذكر CNDP كذلك إجراءات متعلقة بنقل البيانات إلى الخارج. بما أن Cloudflare/Firebase/Paddle/خدمات البريد قد تعالج البيانات خارج المغرب، فلا تعتبر خيار الاستضافة مجرد قرار تقني؛ راجع إجراء النقل الدولي والمستندات المطلوبة قبل تشغيل بيانات شخصية حقيقية.
+اجمع أقل قدر ممكن من بيانات العملاء. اجعل موافقة التسويق منفصلة عن معالجة البيع/الفاتورة، ووفّر آلية تصحيح/تصدير/حذف حيث يسمح الاحتفاظ القانوني، وحدد retention لا يتعارض مع حفظ الدفاتر والفواتير.
+عقد التاجر يجب أن يوضح النسخ الاحتياطية، ومسؤوليات الوصول، والمعالجة من الموردين الفرعيين، والإبلاغ عن الحوادث، وتصدير/إنهاء الحساب، ومدد الاحتفاظ بعد الإلغاء.
+مراجع: [CNDP – Formalités](https://www.cndp.ma/formalites/)؛ [CNDP – Conditions](https://www.cndp.ma/conditions/)؛ [CNDP – Notifier un traitement](https://www.cndp.ma/notifier-un-traitement/).
+11.3 الضرائب وPaddle / Lemon Squeezy
+خدمة Merchant of Record (MoR) تتولى عادة تحصيل بعض الضرائب غير المباشرة من المشتري وتحويلها بحسب نطاق الخدمة. لا يعني ذلك إعفاء كيانك المغربي من التصريح بالإيرادات أو الضريبة على الشركات/الدخل أو المحاسبة أو التزامات التحويلات الأجنبية.
+رسوم Paddle المنشورة 5% + 0.50 USD لكل checkout transaction. أسعار Lemon Squeezy الأساسية مماثلة، لكن قد توجد رسوم إضافية للمعاملات الدولية أو PayPal أو الاشتراكات والتحويلات. اقرأ الاتفاق الذي سيقبل حسابك الفعلي لا الملخص التسويقي فقط.
+قبل البناء النهائي للفوترة: تحقق من أهلية بائع مغربي، وطريقة السحب المتاحة لحسابك، ومتطلبات إثبات النشاط، وفواتير المزود، والتحويل البنكي والصرف، وسياسة الاسترجاع والاشتراكات التجريبية.
+إن كانت الخدمة موجهة حصراً لمحلات داخل المغرب، قارِن MoR ببوابة دفع محلية أو التحصيل البنكي/التحويل أو روابط دفع محلية. اختيار MoR يجب أن يأتي بعد دراسة تدفق الأموال والمحاسبة والقانون المحلي، لا لأن صفحة السعر سهلة.
+مراجع: [Paddle Pricing](https://www.paddle.com/pricing)؛ [Paddle Supported Countries](https://www.paddle.com/help/start/account-verification/which-countries-are-supported-by-paddle)؛ [Lemon Squeezy Pricing](https://www.lemonsqueezy.com/pricing)؛ [Lemon Squeezy Fees](https://docs.lemonsqueezy.com/help/getting-started/fees).
+11.4 العلامة التجارية وOMPIC
+افحص الاسم والشعار في قاعدة علامات OMPIC، وبحث الأسماء التجارية والمجالات، قبل شراء شعار مكلف أو بناء هوية متكاملة.
+الحجز أو تسجيل اسم تجاري ليس هو نفسه حماية علامة لخدمات البرمجيات. اختر فئات نيس المناسبة للبرمجيات والخدمات، واستشر مختصاً عند الحاجة.
+رسوم الإيداع تختلف حسب نوع مقدم الطلب وطريقة الإيداع والفئات؛ ظهرت في مواد إرشادية لعام 2026 أمثلة تبدأ تقريباً من 1,250 DH TTC إلكترونياً لفئة واحدة لبعض الفئات المؤهلة، وقرابة 1,865 DH وفق سعر آخر. اعتمد السعر الذي يظهر في بوابة OMPIC الرسمية وقت الإيداع ولا تعتبر هذه الأرقام عرضاً نهائياً.
+احجز الاسم التجاري والنطاق المناسبين في أقرب وقت بعد البحث القانوني، واحتفظ بإثباتات استعمال العلامة وتصميم الشعار وتاريخ الإصدارات.
+المرجع: [OMPIC](https://www.ompic.ma/). الأسعار المشار إليها تقريبية من مواد محدثة، ويجب تأكيدها في القناة الرسمية قبل الدفع.
+12. أهم 10 مخاطر وخطة التخفيف
+# / الخطر
+الأثر
+خطة التخفيف العملية
+اختبار/إشارة إنذار
+1. تسرب بيانات بين المستأجرين
+كارثي: كشف بيانات/مبيعات/عملاء
+tenant_id في كل جدول؛ RLS + service authorization؛ composite FKs؛ اختبارات cross-tenant لكل endpoint.
+اختبار مستخدم tenant A لقراءة/تعديل IDs لـtenant B يجب أن يفشل 100%.
+2. ضياع/تكرار مبيعات Offline
+خسارة مالية ومخزون غير دقيق
+SQLite/IndexedDB، outbox، idempotency، operation UUID، تسوية تعارضات صريحة.
+إعادة إرسال 100 عملية عدة مرات دون تكرار بيع أو مخزون.
+3. إخلال بطباعة عربية أو درج نقد
+تأخير البيع ودعم مرتفع
+Tauri bridge محدود؛ قائمة طابعات مصادق عليها؛ اختبار 58/80mm؛ محول raster للنصوص عند اللزوم.
+اختبارات طباعة فعلية على Windows + فصل فشل الطباعة عن حفظ البيع.
+4. فهم غير صحيح لمتطلبات DGI
+مسؤولية قانونية وتغيير معماري مكلف
+فصل Invoice DTO عن PDF؛ مراقبة CGI/المراسيم الرسمية؛ مراجعة محاسب/محام؛ تجنب claims غير المثبتة.
+مراجعة دورية رسمية قبل إطلاق ميزة معلنة كامتثال إلكتروني.
+5. تجاوز مجانية الخدمات/تغير الأسعار
+تكاليف مفاجئة أو إيقاف خدمة
+Budget alerts، quotas، rate limits، نمذجة شهريّة، بديل مجرّب، مراقبة usage.
+تنبيه عند 50/75/90% من الميزانية/الحصة.
+6. مزود دفع لا يقبل البائع أو لا يسحب للمغرب
+لا يمكن تحصيل الاشتراكات
+تحقق KYC/Seller eligibility والسحب قبل ربط الإنتاج؛ provider adapter ومزود بديل.
+موافقة حساب حقيقية وتجربة دفع وسحب قبل public launch.
+7. التراخيص/حقوق البرمجيات
+حظر العلامة أو مطالبات قانونية
+SBOM، LICENSE/NOTICE، مراجعة AGPL/GPL/Elastic/تذييل OSPOS؛ لا تنسخ أكواد بلا مراجعة.
+فحص في CI قبل كل release.
+8. التكامل مع Glovo/Jumia غير متاح
+تأخير خارطة الطريق أو مخالفة الشروط
+Feature flag، adapter، اتفاق شراكة/API رسمي، وضع يدوي بديل للطلبات.
+لا يبدأ integration sprint قبل إثبات بيانات الدخول والـAPI sandbox.
+9. النسخ الاحتياطي لا يسترجع فعلياً
+فقدان بيانات عند حادث
+نسخ مشفرة في موقع/حساب منفصل، checksums، retention، runbook واسترجاع ربع شهري/شهري.
+Restore test يسجل مدة RTO ونقطة البيانات RPO.
+10. ضعف المنتج/الدعم مقابل السعر
+Churn وسمعة سلبية
+ابدأ بقطاع واحد؛ مقابلات محلات؛ onboarding/استيراد؛ مركز مساعدة؛ قياس الاستخدام.
+تتبع activation، churn، tickets/account، time-to-first-sale وNPS/CSAT.
+13. Expert Touch — إضافات وخيارات أفضل
+13.1 سبع ميزات إضافية ذات قيمة
+الميزة الإضافية
+لماذا تهم التاجر المغربي
+ترتيب مقترح
+إغلاق الوردية وZ-Report
+مصالحة النقد الافتتاحي، المبيعات، المصروفات، المبالغ الفعلية والفارق؛ مهمة عند تعدد الكاشير.
+Must-have قبل التوسع
+الإرجاع والخصم بموافقة مدير
+تقليل الغش والخصومات العشوائية مع سبب وسجل تدقيق.
+Must-have
+شراء من المورد وجرد المخزون
+المخزون لا يكتمل من المبيعات فقط؛ يحتاج إدخال مشتريات وجرد وتسويات.
+Must-have مبكر للمخزون الجاد
+دعم البيع بالدين/الزبون الآجل
+شائع في بعض قطاعات التجزئة؛ يحتاج دفتر مستحقات، قبض جزئي، كشف حساب.
+بعد استقرار MVP
+إدارة أسعار الجملة/البيع للمحترفين
+قوائم أسعار بحسب العميل أو كمية الشراء دون نسخ المنتجات.
+مرحلة 4
+قائمة أجهزة وطابعات مُعتمدة
+إزالة الغموض عن التوافق؛ اختبار الطابعة والباركود ودرج النقد قبل الشراء.
+Must-have للدعم
+تصدير كامل وقفل الحساب
+يمنع حبس العميل داخل النظام ويزيد الثقة؛ export CSV/JSON/PDF وسجلّ لما صُدّر.
+Must-have
+مساعد استيراد Excel ذكي
+يكشف التكرار، أسعار غير صالحة، باركود مكرر، تصنيف ناقص قبل الإضافة.
+تميّز مهم
+واجهة عميل على شاشة ثانية
+تعرض البنود والمبلغ/QR دون كشف بيانات الموظفين.
+بعد الطباعة
+وضع تدريب / بيانات تجريبية
+يسمح بتدريب الموظفين دون تلويث المبيعات الحقيقية؛ لا يخلط test transactions مع production.
+قيمة عالية للتفعيل
+13.2 تحسين الستاك المقترح
+استخدم PostgreSQL للبيانات المالية والمخزون؛ لا تبدأ بـFirestore إذا كنت تحتاج علاقات وتقارير مركبة ومعاملات رصيد. يمكن استخدام Firebase Auth دون Firestore.
+الترشيح الأولي: React + TypeScript + Vite للـPOS/لوحة الإدارة؛ Tauri + Rust للطباعة؛ Cloud Run API؛ PostgreSQL managed؛ R2 للملفات. استعمل Next.js إذا كانت صفحات التسويق/SSR مهمة، مع التأكد من مسار نشر Cloudflare المتوافق.
+ضع domain logic في packages/domain أو packages/shared: currency, totals, rounding, tax computation, idempotency types, sync schema. لا تكرر حساب الضريبة في UI/Tauri/API بشكل متعارض.
+اعتمد integer minor units فقط إذا كانت كل العملات وقواعد الكسور يمكن تمثيلها بدقة في العملة المختارة؛ وإلا استخدم NUMERIC(12,2) في PostgreSQL وDecimal library في TypeScript. لا تستخدم JS floating point للمال.
+استخدم Prisma/Drizzle أو SQL migrations، وليس ثلاثة ORM معاً. مع PostgreSQL، اجعل معاملات البيع وتحديث دفتر المخزون atomic.
+اجعل موصلات الطباعة والدفع والإشعارات والتوصيل interfaces منفصلة، مع fake implementations للتطوير. لا تسمح بفشل موصل خارجي أن يوقف حفظ البيع المحلي.
+تجربة المستخدم يجب أن تكون Keyboard-first: F2 بحث، Enter إضافة، +/- كمية، Esc إغلاق، وواجهة تلامس واضحة. يجب أن تعمل لوحة المفاتيح العربية/الفرنسية والماسح USB.
+13.3 أخطاء شائعة يجب تجنبها
+بناء dashboard جميل قبل التأكد من دقة البيع والمخزون والنسخ/الاسترجاع.
+إرسال بيانات البطاقة أو مفاتيح الدفع السرية إلى JavaScript أو تخزينها في localStorage أو مستودع Git.
+اعتبار إخفاء زر في الواجهة بديلاً عن Authorization في API.
+تعديل كمية المخزون مباشرة دون movement ledger أو تخزين إجمالي البيع بلا snapshots للضريبة والسعر.
+افتراض أن PWA تعالج USB/درج النقد بنفس موثوقية تطبيق سطح المكتب.
+افتراض أن كل API تكامل تجاري متاحة دون عقد/حساب شريك/موافقة منصة.
+وصف خدمة بأنها “DGI compliant” قبل المواصفات الرسمية والاختبارات والمراجعة القانونية.
+الاعتماد على free tier لتشغيل قاعدة البيانات من دون نسخة مستقلة واختبار استرجاع.
+دمج مشروع مفتوح المصدر في منتج تجاري دون مراجعة شروط الرخصة والعلامة والتذييل.
+طلب من Google AI Studio إعادة كتابة المشروع كاملاً كل مرة؛ هذا يعرّض العمل المنجز للتلف ويزيد صعوبة المراجعة.
+14. مخرجات جاهزة لـ Google AI Studio (15 Prompts مرتبة)
+استعمل Prompt واحداً في كل جلسة/مرحلة، مع مزامنة المستودع بعد مراجعة التغييرات. ثبّت هذه القواعد في بداية كل Prompt: افحص الملفات الموجودة أولاً، لا تهدم بنية قائمة، لا تختلق نتائج اختبارات، اذكر الملفات المعدّلة، شغّل الاختبارات الممكنة فعلياً، وأوقف التنفيذ مع تقرير واضح إذا احتاجت خطوة إلى مفتاح/حساب/صلاحية غير متاحة.
+Prompt 1: فحص المشروع وإنشاء خطة تنفيذ قابلة للبناء
+أنت مهندس Staff Full-Stack. افحص مساحة العمل الحالية قبل تعديل أي ملف: package.json، lockfile، src/app، إعدادات TypeScript، Vite/Next، الاختبارات، متغيرات البيئة، ومستودع Git إن وُجد. لا تستبدل المشروع ولا تنشئ نسخة موازية. أنشئ/حدّث README.md وdocs/architecture.md وdocs/decisions.md وcatalog/sources.json وcatalog/sources.csv. اعتمد React + TypeScript، PWA، API منفصل، PostgreSQL، Tauri لاحقاً. سجّل ما هو موجود وما هو ناقص مع حالات discovered/verified/blocked. لا تكتب أن ميزة موجودة إلا إذا تحققت من الكود. في النهاية اعرض خطة صغيرة بترتيب الملفات ونتائج الاختبارات التي شغلتها فعلاً، ثم نفّذ فقط إعداد الأساس القابل للبناء.
+Prompt 2: هيكل UI متعدد اللغات وواجهة تطبيق POS
+على نفس المشروع الناتج من Prompt 1، ابنِ shell متجاوباً بواجهة احترافية للمحل، ألوان هادئة، خطوط مقروءة، دعم RTL للعربية وLTR للفرنسية، وlanguage switch محفوظ. الصفحات: Login، Onboarding، Dashboard، Products، POS، Sales، Customers، Settings. أنشئ حالات loading/empty/error/permission-denied. لا تستخدم بيانات إنتاج وهمية داخل منطق البيع؛ يمكن وضع seed data في development فقط مع وسم DEMO. استخدم مكونات قابلة لإعادة الاستخدام وkeyboard shortcuts موثقة. لا تبنِ auth مزيفاً ولا تخزن أسراراً في frontend. شغّل typecheck/build وسجل الملفات المتغيرة.
+Prompt 3: Auth وMulti-Tenancy وRBAC
+نفّذ المصادقة باستخدام مزود واحد قابل للتهيئة (Supabase Auth أو Firebase Auth، اختر الموجود بالفعل ولا تضف الاثنين). أنشئ tenants وusers وtenant_memberships وstores. كل طلب API يستخرج هوية المستخدم من token، ثم يتحقق من عضويته ودوره على tenant/store المطلوب. لا تثق بأي tenant_id يرسله العميل دون فحص. أضف سياسة owner/admin/manager/cashier/auditor. أضف اختبارات تمنع مستخدم tenant A من القراءة/التعديل في tenant B. إذا كان المشروع لا يحتوي API أو DB، ابدأ بإعداد migrations وخادم API، ولا تحاكيها في localStorage. وثّق خطوات إعداد secrets داخل environment فقط.
+Prompt 4: قاعدة PostgreSQL وMigrations وقيود العزل
+أنشئ migrations قابلة لإعادة التشغيل لقاعدة PostgreSQL: tenants, users, tenant_memberships, stores, categories, products, customers, subscriptions. كل جدول تجاري يحتوي tenant_id NOT NULL وقيود unique مركبة (tenant_id, sku) وغيرها. استخدم UUID وTIMESTAMPTZ وNUMERIC للمال، لا FLOAT. أضف foreign keys تمنع ربط صف بtenant مختلف متى كان ذلك ممكناً، وفهارس للبحث والباركود. أضف seed development فقط. إذا اخترت ORM، احتفظ بالـmigrations والـSQL الظاهر. اختبر migrate up ومن ثم rollback أو documented forward migration. لا تتصل بقاعدة إنتاج ولا تضع connection string في الكود.
+Prompt 5: إدارة المنتجات والباركود وCSV
+ابنِ CRUD للمنتجات والتصنيفات: name, sku, barcode, category_id, unit, sale_price, cost_price, tax_code, tax_rate, track_stock, is_active, version. طبّق صلاحيات tenant/store، تحقق server-side، بحثاً سريعاً، وفرزاً وترقيماً. أضف CSV import/export مع خطوة Preview تعرض الصفوف الصحيحة والخاطئة والباركود/SKU المتكرر قبل الحفظ؛ لا تستورد مباشرة. حد الخطة المجانية هو 50 منتجاً نشطاً إجمالاً، ويُفرض في API وليس فقط الواجهة. أضف اختبارات للتكرارات والأسعار غير الصالحة وملفات ضخمة. استخدم ZXing browser للكاميرا إذا كان مناسباً، وراعِ إدخال USB كلوحة مفاتيح.
+Prompt 6: نقطة البيع ومعاملات البيع
+ابنِ شاشة POS keyboard-first فيها بحث/مسح، سلة، تغيير كمية، خصم مصرح، اختيار عميل، طريقة دفع نقداً أو split payment في بنية قابلة للتوسع، المجموع والضريبة والتغيير. أنشئ sales وsale_items مع snapshots لاسم المنتج وSKU والسعر والخصم والضريبة عند البيع. تنفيذ البيع يكون في transaction واحدة على الخادم، مع client_sale_id وIdempotency-Key فريدين. احفظ البيع قبل محاولة الطباعة؛ فشل الطباعة لا يلغي البيع. أضف sales history وإيصالاً قابلاً للمعاينة. اختبر النقر مرتين/إعادة إرسال الطلب/نفاد المخزون/سعر تغيّر بعد فتح السلة. لا تستخدم حسابات FLOAT للمال.
+Prompt 7: دفتر المخزون والمشتريات والإرجاع والولاء
+أضف inventory_movements كسجل append-only بحركات sale, purchase, return, adjustment, transfer, waste. لا تعدّل كمية المنتج مباشرة بلا حركة. البيع ينشئ حركة خصم واحدة باستخدام reference_id + idempotency. أضف شاشة تعديل مخزون بصلاحية وسبب إلزامي، وابدأ العملاء وسجل loyalty_points. كل حركة نقاط موجبة أو سالبة ولها سبب ومرجع، والاسترجاع يعكس النقاط السابقة ولا يحذفها. أضف اختبارات أن البيع المكرر لا يخصم الكمية مرتين وأن tenant لا يستطيع تعديل حركة tenant آخر. وثّق استراتيجية احتساب المخزون والهامش.
+Prompt 8: التقارير ولوحة التحكم
+ابنِ التقارير من البيانات الموثوقة في PostgreSQL لا من قيم hard-coded. مطلوب: إجمالي المبيعات اليوم/الشهر/السنة، عدد الفواتير، متوسط السلة، الخصومات، الضريبة، طرق الدفع، أعلى المنتجات، المبيعات لكل فرع، مخزون منخفض. كل report endpoint يتحقق من tenant_id وstore permissions ويستعمل حدود تاريخية واضحة وtimezone Africa/Casablanca أو timezone الفرع. استعمل Recharts أو Chart.js الموجود، لا تضف الاثنين. أضف tests لحدود الأيام المحلية، السنة، الإرجاع، البيع الملغي، والفلاتر. لا تعرض الربح إذا كانت تكلفة المنتجات ناقصة دون توضيح ذلك.
+Prompt 9: الفواتير المغربية والاستعداد للمتطلبات الرسمية
+أنشئ خدمة Invoice منفصلة عن PDF: invoice number, issue time, seller/buyer snapshots، تفاصيل البنود، مبالغ TVA، المبلغ الإجمالي، طرق الأداء، وschema_version. لا تصف النظام بأنه معتمد أو متوافق نهائياً مع DGI e-invoicing، ولا تفترض UBL أو CII/API قبل المواصفات القانونية الرسمية السارية. اجعل طبقة exporter/adapters قابلة لإضافة XML format مستقبلاً. يجب أن تكون الفاتورة الصادرة immutable وتستخدم تسلسلاً ثابتاً؛ الإلغاء/credit note عملية منفصلة. أضف قوالب PDF وتحقق حقول CGI التي يراجعها فريق قانوني/محاسبي. أضف ملاحظة في docs/legal-open-items.md عن النقاط التي تتطلب تحققاً رسمياً.
+Prompt 10: Trial وFreemium واشتراكات Hosted Checkout
+أضف plan entitlements، فترة Trial 14 يوماً، Free حتى 50 active products، وPro بقيمة 10 USD/month. لا تنفذ مدفوعات بطاقات داخل النظام ولا تخزن بيانات بطاقة. أنشئ Hosted Checkout عبر Paddle أو Lemon Squeezy فقط إذا كانت بيانات sandbox مهيأة؛ لا تنشئ أسعاراً يرسلها العميل. أنشئ webhook inbox مع تحقق توقيع حسب وثائق المزود، event_id unique، idempotent processing، سجل حالة subscription، past_due/canceled/grace period. اختبر webhook مكرر وتبديل الخطة وتوقيع خاطئ. إذا لم تتوفر المفاتيح، اكتب adapter interface وsandbox mock معلّم بوضوح ولا تدع mock يمر باعتباره دفعاً حقيقياً.
+Prompt 11: Offline-first ومزامنة PWA
+نفّذ local data layer للـPWA باستخدام IndexedDB/Dexie. احفظ catalog cache وطابور outbox لعمليات البيع/التعديل، كل عملية لها client_op_id UUID وschema_version وdevice_id وcreated_at. أضف Sync Service لpush/pull مع cursor، إعادة محاولة بتأخير تدريجي، idempotency server-side وحالات pending/synced/conflict/failed. لا تستخدم last-write-wins للعمليات المالية أو الكميات. ضع UI لعرض حالة المزامنة والأخطاء. إذا كان حل النزاع لا يمكن حسمه تلقائياً، أنشئ مراجعة إدارية. اكتب اختبارات انقطاع الشبكة، إعادة التشغيل، التكرار، تغيير الساعة، واختلاف نسخة المخزون.
+Prompt 12: Tauri وSQLite والطابعة الحرارية ودرج النقد
+أضف مجلد/تطبيق Tauri Desktop فوق نفس واجهة React، مع Rust commands ضيقة: print_receipt, test_printer, get_printer_status, open_cash_drawer, export_local_backup. استخدم SQLite محلياً مع migrations، outbox ونظام backup. نفّذ ESC/POS عبر transport adapters ولا تستخدم shell command عام أو نصاً غير موثوق لتنفيذ أوامر نظام. اختبر على Windows. أضف إعدادات 58mm/80mm، قص الورق، QR/barcode، وطباعة عربية RTL مع تشكيل صحيح؛ وثّق الطابعات التي اختبرت فعلاً ولا تدعِ توافقاً عاماً. فتح الدرج يحتاج صلاحية وسجل audit. إذا غاب عتاد حقيقي، اكتب fake transport واختبارات وحدة واذكر بوضوح أن اختبار الجهاز الحقيقي ما زال مطلوباً.
+Prompt 13: الفروع والمطاعم وKDS
+أضف stores مستقلة داخل tenant مع صلاحيات بحسب الفرع، inventory transfers، وتقارير موحدة. أنشئ restaurant modules منفصلة: dining_tables, kitchen_tickets, order_items, preparation_stations. عند إرسال طلب للمطبخ، أنشئ ticket لا بيعاً نهائياً حتى يحاسب العميل وفق سياسة النظام. ادعم الحالات new/in_progress/ready/served/canceled، وإعادة إرسال ticket لا تكرر الطلب. لا تجعل ميزات المطاعم تزيد تعقيد retail flow؛ استخدم feature flags. أضف اختبارات نقل طاولة، split bill، إلغاء بند بعد إرساله للمطبخ، وصلاحيات مشرف/نادل.
+Prompt 14: الإشعارات والنسخ الاحتياطية وتكاملات الطرف الثالث
+أنشئ Notification Service يدعم email عبر Resend أو Brevo وPush عبر FCM/Web Push، مع opt-in وrate limits وطابور retry. SMS غير مفعل افتراضياً لأنه قد تكون له رسوم. أنشئ backup job لPostgreSQL وملفات مهمة، تشفيراً، checksum، retention، وrunbook استرجاع. أضف adapters منفصلة لـGlovo وJumia، لكن لا تتصل أو تدّع تكاملاً من دون API رسمي/عقد/credentials؛ استخدم interface + mock مع feature flag disabled. أضف webhook retry والـdead-letter log وقياسات تكلفة. تأكد من إزالة PII/secrets من logs.
+Prompt 15: اختبارات قبول وأمان وتجهيز Staging/Release
+راجع كامل المستودع كما هو ولا تعِد كتابته. أنشئ اختبارات unit/integration/end-to-end تغطي: tenant isolation، حسابات المال والضريبة، repeated checkout/idempotency، مزامنة offline، stock ledger، refund، صلاحيات الخصم/الدرج، import CSV، webhooks مكررة، backup/restore، RTL/Arabic receipt. شغّل lint/typecheck/build/tests المتاحة فعلاً وسجل كل أمر ونتيجته؛ لا تكتب PASS إذا لم ينفذ. افحص الأسرار والتبعيات والرخص عبر SBOM/license report، أضف environment.example بلا أسرار، healthz/readyz، budget alerts، logging، release checklist، rollback plan، وملاحظات عن أي اختبار حقيقي يحتاج طابعة أو حساب دفع. لا تنشر Production ولا تنفذ عمليات خارجية دون مفاتيح وموافقة واضحة.
+15. ثلاثة أسماء تجارية أولية والنطاقات
+الأسماء التالية أفكار أولية، وليست فحصاً قانونياً للاسم أو تأكيداً لحجز النطاق. البحث على الويب لا يثبت أن النطاق غير مسجل، وقد تتغير الحالة لحظياً. قبل اعتماد الاسم: افحص .ma عبر جهة تسجيل معتمدة، وافحص .com عبر Registrar/RDAP، وافحص OMPIC وقواعد العلامات في أسواقك المستهدفة.
+الاسم المقترح
+النطاقات المرشحة
+سبب الاختيار
+الحالة التي يمكن تأكيدها من هذا البحث
+Kasbi POS
+kasbipos.ma / kasbipos.com
+إيحاء بالكسب والتجارة وسهل النطق مغربياً.
+لم يظهر تطابق واضح في نتائج البحث السطحية التي أجريت للاسم؛ هذا ليس تأكيد توفر أو سلامة العلامة.
+Mizan Caisse
+mizancaisse.ma / mizancaisse.com
+يوحي بالتوازن والحساب؛ مناسب للفواتير والبيع.
+لم يؤكد البحث توفر النطاق؛ ظهرت علامة/تطبيق باسم MizanPOS في متجر التطبيقات، لذلك خطر الالتباس أعلى ويجب إعطاء الأولوية لفحص العلامة.
+Darb POS
+darbpos.ma / darbpos.com
+قصير ومرتبط بمسار/تدفق البيع، يمكن تطوير هوية بصرية عليه.
+الحالة غير محسومة؛ يجب التحقق من .ma/.com وقاعدة العلامات قبل استخدامه.
+التوصية: لا تتعلق باسم حتى انتهاء بحث العلامة والنطاق. إن كان النطاق .com أو .ma غير متاح، لا تستخدم تحويراً يسبب تشابهاً واضحاً مع علامة قائمة. من الأسماء أعلاه، يحتاج Mizan Caisse إلى تدقيق إضافي بسبب ظهور منتج قريب باسم MizanPOS.
+مراجع رسمية وصفحات التحقق المستخدمة
+Caissa pricing / setup — https://caissa.ma/ — صفحة أسعار عامة للمقارنة.
+Lacaisse.ma pricing — https://caisse.ma/ — أسعار الأساس والوحدات.
+POSNEX pricing — https://posnex.ma/tarifs — الخطط Free / Pro / Business.
+iGoodar offers — https://igoodar.com/fr/commencer — Basic/Pro/Connect.
+GIGAPOS pricing — https://gigapos.cc/pricing/ — النتيجة المتاحة لخدمة سعودية؛ ليست إثباتاً لمنافس مغربي.
+NexPOS Morocco page — https://www.nexpos.co/fr-ma — اسم قريب من Nexus؛ المطابقة غير مؤكدة.
+Loyverse pricing — https://loyverse.com/pricing — الأسعار والإضافات المجانية/المدفوعة.
+Square pricing — https://squareup.com/us/en/point-of-sale/software/pricing — أسعار الولايات المتحدة.
+Square payment countries — https://squareup.com/help/us/en/article/5085-accepted-cards — قائمة الدول التي تعالج المدفوعات.
+Paddle Pricing — https://www.paddle.com/pricing — الرسوم المنشورة 5% + 0.50 USD.
+Paddle seller countries — https://www.paddle.com/help/start/account-verification/which-countries-are-supported-by-paddle — الدول غير المدعومة؛ يلزم فحص حساب البائع والسحب.
+Lemon Squeezy pricing — https://www.lemonsqueezy.com/pricing — رسوم الأساس.
+Lemon Squeezy fees — https://docs.lemonsqueezy.com/help/getting-started/fees — رسوم إضافية محتملة.
+Cloud Run pricing — https://cloud.google.com/run/pricing — القيود والتكلفة حسب الاستهلاك.
+Oracle Always Free docs — https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm — موارد Always Free المنشورة.
+Cloudflare Pages limits — https://developers.cloudflare.com/pages/platform/limits/ — حدود البناء والنطاقات.
+Cloudflare Pages Functions pricing — https://developers.cloudflare.com/pages/functions/pricing/ — حصة Functions/Workers.
+Cloudflare R2 pricing — https://developers.cloudflare.com/r2/pricing/ — التخزين والطلبات وEgress.
+Supabase pricing — https://supabase.com/pricing — حدود DB/MAU/storage/free pause.
+Firebase pricing — https://firebase.google.com/pricing — خطة Spark/Firestore/Auth.
+Resend pricing — https://resend.com/pricing — حصة البريد اليومي/الشهري.
+Brevo Free plan — https://help.brevo.com/hc/en-us/articles/208589409-About-Brevo-s-pricing-plans — 300 رسالة يومياً.
+CGI 2026 official PDF — https://www.finances.gov.ma/Publication/dgi/2025/CGI-2026-FR.pdf — النص الرسمي العام للضرائب 2026؛ راجع المادة 145 في النسخة الرسمية.
+Official Morocco CGI 2026 announcement — https://www.maroc.ma/fr/actualites/la-dgi-publie-ledition-2026-du-code-general-des-impots — إعلان رسمي عن إصدار CGI 2026.
+CNDP formalities — https://www.cndp.ma/formalites/ — التصريح/الترخيص المسبق.
+CNDP conditions — https://www.cndp.ma/conditions/ — أمن البيانات والمعالجة ونقلها.
+OMPIC — https://www.ompic.ma/ — العلامات والإجراءات الرسمية.
+OSPOS GitHub — https://github.com/opensourcepos/opensourcepos — POS مفتوح مع شروط تذييل.
+Floreant POS GitHub — https://github.com/floreantpos/floreantpos — مستودع POS مطاعم.
+ERPNext GitHub — https://github.com/frappe/erpnext — GPL-3.0 ERP/POS.
+Tauri GitHub — https://github.com/tauri-apps/tauri — Desktop bridge framework.
+Dexie.js GitHub — https://github.com/dexie/Dexie.js — IndexedDB wrapper.
+PouchDB GitHub — https://github.com/apache/pouchdb — Offline DB.
+ESC/POS direct GitHub — https://github.com/Fransuelton/escpos-direct — طباعة حرارية؛ تحقق من الأجهزة.
+ZXing browser GitHub — https://github.com/zxing-js/browser — Barcode/QR browser scanning.
+Recharts GitHub — https://github.com/recharts/recharts — MIT chart library.
+Chart.js GitHub — https://github.com/chartjs/Chart.js — MIT chart library.
+InvenTree GitHub — https://github.com/inventree/InvenTree — MIT inventory reference.
+Invoice Ninja GitHub — https://github.com/invoiceninja/invoiceninja — Source-available; Elastic License.
+قائمة قبول الإطلاق (Go-Live Checklist)
+المجال
+شرط الإطلاق
+الأمن
+اختبارات tenant isolation كاملة؛ no secrets in repo/client; rate limit؛ صلاحيات RBAC مغطاة.
+البيانات
+migrations مجربة؛ backup + restore ناجح؛ export tenant مثبت؛ سياسة retention مكتوبة.
+POS/المخزون
+اختبارات قيمة المال/الضريبة والإرجاع؛ ledger مطابق؛ idempotency وoffline sync مثبتان.
+الأجهزة
+قائمة طابعات معتمدة على Windows؛ طباعة عربية 58mm/80mm؛ فشل الطابعة لا يفسد البيع؛ درج نقد محمي.
+الدفع
+اعتماد حساب البائع والسحب؛ sandbox e2e؛ توقيع webhook وduplicate delivery tested؛ refunds policy واضحة.
+القانون
+مراجعة محاسب/محام للفاتورة وCGI 2026؛ CNDP formalities ونقل البيانات؛ شروط الخدمة/الخصوصية.
+التشغيل
+staging منفصل؛ alerts؛ runbook؛ owner للطوارئ؛ rollback؛ جدول دعم/استرجاع.
+التسويق
+الميزات المعلن عنها متوافقة مع ما تم اختباره؛ وضوح Free/Trial/paid limits؛ لا ادعاء DGI/Glovo/Jumia دون إثبات.

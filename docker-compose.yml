@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pos_saas_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pos_user
+      POSTGRES_PASSWORD: pos_password
+      POSTGRES_DB: pos_saas
+    ports:
+      - "5432:5432"
+    volumes:
+      - pos_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pos_user -d pos_saas"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pos_network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pos_saas_app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://pos_user:pos_password@postgres:5432/pos_saas?schema=public"
+      NODE_ENV: production
+      PORT: 3000
+      NEXTAUTH_URL: "http://localhost:3000"
+      AUTH_SECRET: "your-production-secret-min-32-chars-long"
+    ports:
+      - "3000:3000"
+    networks:
+      - pos_network
+    profiles:
+      - full
+
+networks:
+  pos_network:
+    driver: bridge
+
+volumes:
+  pos_pgdata:
