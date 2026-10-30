@@ -43,6 +43,28 @@ export function middleware(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const hasAuth = Boolean(sessionToken || authHeader?.startsWith("Bearer "));
 
+  // 3. Platform Super Admin routes protection (/admin and /api/admin)
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+    if (!hasAuth) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json(
+          {
+            error: {
+              code: "UNAUTHORIZED",
+              message: "Platform Super Admin authentication required",
+              request_id: crypto.randomUUID(),
+            },
+          },
+          { status: 401 }
+        );
+      }
+      const loginUrl = new URL("/ar/login", request.url);
+      loginUrl.searchParams.set("from", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    return NextResponse.next();
+  }
+
   // 3. API route protection under /api/v1
   if (pathname.startsWith("/api/v1")) {
     const isPublic = PUBLIC_API_PATHS.some(

@@ -172,10 +172,10 @@ async function runAllInOneIntegrationTests() {
   });
 
   const updatedProd1 = await prisma.product.findUnique({ where: { id: product1.id } });
-  if (toDecimal(stock1?.quantity || 0).toFixed(3) !== "10.000" || updatedProd1?.batchNumber !== `LOT-L1-${testSuffix}`) {
+  if (!stock1 || toDecimal(stock1.quantity).toFixed(3) !== "10.000" || updatedProd1?.batchNumber !== `LOT-L1-${testSuffix}`) {
     throw new Error(`Stock level or batch number mismatch: qty=${stock1?.quantity}, batch=${updatedProd1?.batchNumber}`);
   }
-  console.log(`✅ PO Received: Stock updated to ${stock1.quantity} and batch ${updatedProd1.batchNumber} recorded`);
+  console.log(`✅ PO Received: Stock updated to ${stock1?.quantity} and batch ${updatedProd1?.batchNumber} recorded`);
 
   // ========================================================
   // TEST 2: Customer Credit & Debt Ledger
@@ -232,10 +232,10 @@ async function runAllInOneIntegrationTests() {
   });
 
   const verifiedCustomer = await prisma.customer.findUnique({ where: { id: customer.id } });
-  if (toDecimal(verifiedCustomer?.currentCreditBalance || 0).toFixed(2) !== "250.00") {
+  if (!verifiedCustomer || toDecimal(verifiedCustomer.currentCreditBalance).toFixed(2) !== "250.00") {
     throw new Error(`Expected balance 250.00 but got ${verifiedCustomer?.currentCreditBalance}`);
   }
-  console.log(`✅ Customer credit cycle verified: Balance is exactly ${verifiedCustomer.currentCreditBalance} MAD`);
+  console.log(`✅ Customer credit cycle verified: Balance is exactly ${verifiedCustomer?.currentCreditBalance} MAD`);
 
   // ========================================================
   // TEST 3: Invoicing & Quotes (Devis) with Moroccan ICE

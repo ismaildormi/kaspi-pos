@@ -69,6 +69,7 @@
 | P2-22 | **Loyalty Program (All-in-One)**: 1 pt per 10 MAD spent rule, balance query, points redemption (`/api/v1/customers/[id]/loyalty/redeem`) | tenant, money | integration tests: sale triggers point earning; redemption discounts correctly |
 | P2-23 | **Restaurant Mode & KDS (All-in-One)**: Dining Tables management (`/api/v1/restaurant/tables`), Kitchen Display System tickets (`/api/v1/restaurant/kds/tickets`), workflow status transitions | tenant | integration tests: table assignment, KDS ticket lifecycles |
 | P2-24 | **Advanced Reporting (All-in-One)**: Sales summary (`/api/v1/reports/sales-summary`), Top products (`/api/v1/reports/top-products`), Tax breakdown report (`/api/v1/reports/tax-summary`) | tenant, money | integration tests: revenue, VAT breakdown per rate |
+| P2-25 | **Super Admin Platform Owner Infrastructure**: `User.isSuperAdmin` schema migration, `/admin` route group, middleware guard, live MRR/Tenant stats aggregation, and tenant directory table | security | [x] VERIFIED |
 
 ---
 
@@ -132,3 +133,4 @@
 | P5-12 | E2E tests (Playwright): register → products → sale → refund → report; RTL screenshots | — |
 | P5-13 | License report / SBOM, `catalog/sources.*` updated to `tested` where true | — |
 | P5-14 | Release checklist, rollback plan, staging deployment docs | — |
+| P5-15 | **External AI (NEVEA) API Bridge & Integration (DEFERRED to Phase 5)**: Scoped API bridge with HMAC validation, rate-limiting, and platform oversight telemetry | security | DEFERRED |

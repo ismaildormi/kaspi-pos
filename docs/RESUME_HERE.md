@@ -4,20 +4,34 @@
 
 ## Where we are
 - **Docker Compose Running:** `pos_saas_db` healthy on port 5432.
-- **Database Migrated:** 43 tables in PostgreSQL. Migration `20261030030900_all_in_one_features` applied.
-- **All-in-One Modules Implemented & Tested:**
-  1. **Advanced Inventory:** `Supplier` CRUD, `PurchaseOrder` creation, atomic PO receiving updating `StockLevel` and `InventoryMovement` with batch number and expiry tracking.
-  2. **Invoicing & Credit:** Invoices and Quotes (Devis) with Moroccan ICE/IF/RC snapshots, printable HTML/PDF generator, Customer Credit ledger (Carnet de Crédit) with strict limit enforcement.
-  3. **Loyalty Program:** Points calculation (1 point per 10 MAD), balance ledger, and redemption API.
-  4. **Restaurant Mode & KDS:** Table management, Kitchen Display System tickets and real-time status transitions.
-  5. **Advanced Reporting:** Sales summary, Top products, and Moroccan TVA breakdown report.
+- **Database Migrated:** 43 tables + `is_super_admin` on `User`. Migration `20261030032000_add_super_admin` applied.
+- **Platform Owner (Super Admin) Infrastructure Complete:**
+  - `User.isSuperAdmin` boolean field with database migration.
+  - Dedicated `/admin` route group & layout completely isolated from shop tenants.
+  - Protected by `src/middleware.ts` and `src/server/admin/guard.ts`.
+  - Admin Dashboard UI (`src/app/admin/page.tsx`) with live metrics:
+    - Total registered Tenants (shops) & monthly growth.
+    - Total active subscriptions ($10/mo).
+    - Monthly Recurring Revenue (MRR in USD).
+    - Platform GMV (MAD).
+    - Full Directory Data Table of all registered tenants.
+  - `docs/SECURITY_MODEL.md` created, documenting Super Admin vs Tenant isolation.
+  - External AI Assistant (NEVEA) API Bridge deferred to Phase 5 in `docs/IMPLEMENTATION_PLAN.md`.
 - **Verification:**
-  - `npx tsx src/server/__tests__/all-in-one-integration.ts` passed 100% against PostgreSQL.
+  - `npx tsx src/server/__tests__/super-admin-integration.ts` passed 100% against PostgreSQL.
   - `npx tsc --noEmit` passed with 0 errors.
-  - `npm run build` completed successfully (21 routes generated).
+  - `npm run build` compiled 22 pages and API routes with standalone output.
 
 ## Next micro-task
-Proceed to **Phase 2 POS Frontend UI & Register Screen**:
+Proceed to **Phase 2 POS Frontend UI & Cash Register**:
+1. Build the POS cash register screen with fast keyboard shortcuts (F2 barcode search, Enter, ± quantity, cart preview, payment modal).
+2. Connect POS UI to `POST /api/v1/sales` with offline Dexie.js queue.
+3. Build the UI tabs for:
+   - "Fournisseurs & Commandes" (Purchase Orders)
+   - "Factures & Devis" (PDF generation & printing)
+   - "Crédits Clients" (Carnet de Crédit)
+   - "Écran Cuisine (KDS)" & "Tables" (Restaurant mode)
+   - "Rapports & TVA" (Dashboard & Tax declaration)
 1. Implement the POS keyboard-first cash register interface (F2 search, Enter, cart preview, keypad).
 2. Connect POS UI to `POST /api/v1/sales` with offline Dexie.js queue.
 3. Build the UI tabs for:

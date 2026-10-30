@@ -277,6 +277,7 @@ model User {
   passwordHash    String?   @map("password_hash")
   phone           String?
   defaultTenantId String?   @map("default_tenant_id") @db.Uuid
+  isSuperAdmin    Boolean   @default(false) @map("is_super_admin")
   isActive        Boolean   @default(true) @map("is_active")
   lastLoginAt     DateTime? @map("last_login_at") @db.Timestamptz(6)
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
