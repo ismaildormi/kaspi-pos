@@ -51,12 +51,21 @@ Phase 2: All-in-One Modules & POS Cashier UI [IN PROGRESS]
   - Customer Quick-Selection & Thermal Receipt Generator [STEP 3 IN PROGRESS]
 Phase 3: Automated Billing & Paddle MoR Subscriptions
 Phase 4: ESC/POS Thermal Printing & Tauri Desktop Windows App
-Phase 5: Ultimate KASPI AI Assistant & Ecosystem Moats
-  - AI Assistant Architecture: Vercel AI SDK + ai-failover (Zero-Downtime Free Tier)
-  - Primary Model: Google Gemini 2.5 Flash (Free tier: 15 RPM, 1500 RPD)
-  - Fallback Model: Groq Llama 3.3 70B Versatile (Free tier: 30 RPM, 14.4K RPD)
+Phase 5: Ultimate KASPI AI Assistant & Ecosystem Moats [VERIFIED]
+  - AI Assistant Architecture: Vercel AI SDK + Multi-Key Multi-Gateway Router
+  - Key Pool: 5 API keys across 3 providers (OpenRouter, Gemini 1 & 2, Groq 1 & 2)
+  - Zero-Downtime Failover: Priority 1 (OpenRouter) -> Priority 2 (Gemini) -> Priority 3 (Groq)
   - Persistent Memory: PostgreSQL AIChatSession & AIChatMessage via Prisma
   - Real-time Function Calling: getTodaySales, getLowStockProducts, getTopSellingProducts
   - Client UI: Floating AIChatWidget with streaming & RTL Arabic / LTR French support
   - NEVEA AI Supervisor Bridge, Smart Migration (Caissa/POSNEX), and Hardening
+Phase 6: Enterprise & Automation (Marjane-Grade ERP) [ARCHITECTED]
+  - HQ Centralized Multi-Store Dashboard & Global Price Control
+  - Inter-Store Stock Transfers (Atomic draft -> in_transit -> completed/canceled)
+  - Smart OCR for Supplier Invoices (Gemini 3.5 Flash Vision -> auto PO draft)
+  - WhatsApp Business Automation (Digital receipts + End-of-Day Z-Report to owner)
+  - Voice Commands AI POS (Moroccan Darija/AR/FR speech-to-cart tokenization)
+  - Advanced Procurement Lifecycle (draft -> sent -> ordered -> partially_received -> received -> canceled)
+  - Predictive Stock Analytics (Sales velocity & days-remaining forecast)
+  - Granular RBAC: Branch Manager, Warehouse Keeper, Accountant roles added
 ================================================================================

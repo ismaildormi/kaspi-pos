@@ -1,6 +1,6 @@
 # IMPLEMENTATION PLAN
 
-> 5 phases, micro-tasks. Each task = one Inspect → Plan → Code → Test → Fix → Document loop, ideally one commit.
+> 6 phases, micro-tasks. Each task = one Inspect → Plan → Code → Test → Fix → Document loop, ideally one commit.
 > Status markers: `[ ]` todo · `[~]` in progress · `[x]` done (verified by an executed command, recorded in BUILD_STATUS) · `[!]` blocked (see KNOWN_ISSUES).
 > **Mapping to the Master Plan's 4-phase/10-week roadmap:** Plan-Ph1 (Core MVP) → our Phases 1–2; Plan-Ph2 (Reports+Subscriptions) → Phase 3; Plan-Ph3 (Print+Offline) → Phase 4; Plan-Ph4 (Advanced) → Phase 5.
 
@@ -139,3 +139,18 @@
 | P5-18 | **Anonymized Market Business Intelligence (B2B)**: Regional market insights aggregation across Moroccan commerce sectors for secondary monetization | data | planned |
 | P5-19 | **Oracle Cloud Always Free Deployment Optimization**: Multi-tenant Docker and PostgreSQL tuning for Oracle Always Free Tier (4 ARM cores / 24GB RAM) for $0/mo infrastructure floor | ops | planned |
 | P5-20 | **KASPI AI Assistant (Multi-Key Pool & Multi-Gateway Router)**: 5 API keys across 3 providers (OpenRouter, Gemini 1/2, Groq 1/2), key rotation with zero-downtime failover, persistent chat memory in PostgreSQL (AIChatSession, AIChatMessage), tenant function calling tools (sales, stock alerts, top products), and floating AIChatWidget in tenant & admin layouts | ai, ui, data | VERIFIED |
+
+---
+
+## Phase 6 — Enterprise & Automation
+**Exit criteria:** Multi-store stock transfers execute atomically across stores; OCR pipeline parses sample supplier invoice images into structured PO drafts with ≥80% confidence; WhatsApp webhook/API mocks dispatch digital receipts and formatted Z-Reports; Darija voice-to-cart tokenizer maps spoken phrases to SKU catalog; predictive velocity calculates stockout dates across 30-day sales windows; extended RBAC enforces branch isolation.
+
+| ID | Task | Touches | Acceptance | Status |
+|---|---|---|---|---|
+| P6-01 | **HQ Dashboard (Multi-Store HQ)**: Centralized multi-branch analytics, inter-store comparison, global pricing policies, and atomic store-to-store `StockTransfer` (`draft` → `in_transit` → `completed` / `canceled`) with source/destination stock movement reconciliation | tenant, money | `stock_transfers` & `stock_transfer_items` DB state machine verified; branch-level sales comparison API | [ ] |
+| P6-02 | **Smart OCR for Invoices (AI Vision)**: Automated supplier invoice digitizer using Gemini Vision (`gemini-3.5-flash-lite`); extracts supplier ICE/name, invoice date, line items, unit costs, and tax breakdowns into `InvoiceScanJob` and auto-populates `PurchaseOrder` drafts | tenant, money | unit & integration tests on mock invoice photos; JSON schema extraction with confidence scoring | [ ] |
+| P6-03 | **WhatsApp Business Integration (Receipts & Z-Reports)**: Paperless digital receipt dispatch via WhatsApp Cloud API / Twilio gateway to opt-in customer numbers (`whatsapp_phone`), plus automated nightly End-of-Day `ZReport` dispatch to tenant owner's mobile | tenant, money | receipt dispatch mock test; Z-Report calculation matches cash sessions + transaction totals | [ ] |
+| P6-04 | **Voice Commands (AI POS - Moroccan Darija/FR/AR)**: Web Speech API / Whisper audio ingestion with Darija/Arabic/French intent parser; maps spoken cashier commands (e.g., "zid jouj coca w wahed bimo", "ajouter deux lait") to product barcode/SKU and adds to active cart | ui, ai | voice command unit tests with sample Darija phonetic transcripts; cart insertion verified | [ ] |
+| P6-05 | **Advanced Procurement Lifecycle**: Full enterprise PO state machine (`draft` → `sent` → `ordered` → `partially_received` → `received` → `canceled`); supports multi-stage delivery, supplier backorders, and unit cost variance auditing | tenant, money | state machine integration tests; partial receipt creates ledger movements and updates PO status | [ ] |
+| P6-06 | **Predictive Stock Analytics & Reorder Engine**: Rolling 30-day velocity calculation (`daily_velocity`), stockout estimation (`days_remaining`, `predicted_stockout_at`), and automated supplier purchase order suggestions (`suggested_reorder_qty`) stored in `StockPrediction` | tenant, data | cron/scheduler calculation tests; accurate days-to-stockout projection against simulated sales | [ ] |
+| P6-07 | **Advanced RBAC Matrix Extension**: Implementation of `branch_manager` (scoped to assigned stores), `warehouse_keeper` (stock movements & PO receiving only), and `accountant` (invoices, reports, credit ledgers, no cashier permissions) with strict route and API guards | security, tenant | permission matrix unit tests for all 8 roles; branch-scoped access tests | [ ] |

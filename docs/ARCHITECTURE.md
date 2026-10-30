@@ -132,20 +132,23 @@ Sale: `subtotal = Σnet`, `tax_total = Σtax`, `grand_total = Σgross` (cart-lev
 5. Server time (`completed_at`) is the audit reference; `offline_created_at` is kept but never trusted for ordering of money.
 6. Backoff: 1s, 2s, 4s … max 5 min, jitter; triggered on `online` event and interval.
 
-## 7. RBAC Matrix (initial)
-| Permission | owner | admin | manager | cashier | auditor |
-|---|---|---|---|---|---|
-| tenant.settings / billing | ✔ | ✔ (no billing cancel) | | | |
-| members.manage | ✔ | ✔ | | | |
-| products.write / prices | ✔ | ✔ | ✔ | | |
-| products.read / cost_price.read | ✔/✔ | ✔/✔ | ✔/✔ | ✔/✗ | ✔/✔ |
-| sales.create | ✔ | ✔ | ✔ | ✔ | |
-| sales.refund / void / discount>threshold | ✔ | ✔ | ✔ | approval | |
-| inventory.adjust | ✔ | ✔ | ✔ | | |
-| cash_drawer.open (no sale) | ✔ | ✔ | ✔ | | |
-| cash_session.open/close | ✔ | ✔ | ✔ | ✔ (own) | |
-| reports.read | ✔ | ✔ | ✔ | own shift | ✔ |
-| audit_logs.read | ✔ | ✔ | | | ✔ |
+## 7. RBAC Matrix (Extended 8 Roles)
+| Permission | owner | admin | branch_manager | manager | warehouse_keeper | accountant | cashier | auditor |
+|---|---|---|---|---|---|---|---|---|
+| tenant.settings / billing | ✔ | ✔ (no cancel) | | | | | | |
+| members.manage | ✔ | ✔ | assigned branch | | | | | |
+| stores.manage / create | ✔ | ✔ | | | | | | |
+| products.write / prices | ✔ | ✔ | | ✔ | | | | |
+| products.read / cost_price | ✔/✔ | ✔/✔ | ✔/✔ | ✔/✔ | ✔/✗ | ✔/✔ | ✔/✗ | ✔/✔ |
+| sales.create | ✔ | ✔ | ✔ | ✔ | | | ✔ | |
+| sales.refund / void | ✔ | ✔ | ✔ | ✔ | | | approval | |
+| stock_transfers.initiate/receive | ✔ | ✔ | ✔ | ✔ | ✔ | | | |
+| inventory.adjust | ✔ | ✔ | ✔ | ✔ | ✔ | | | |
+| procurement.po.create/receive | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ (create/view) | | |
+| invoices.read / write | ✔/✔ | ✔/✔ | ✔/✔ | ✔/✔ | | ✔/✔ | view | ✔/✗ |
+| z_reports.view / close | ✔/✔ | ✔/✔ | ✔/✔ | ✔/✔ | | ✔/✔ | own session | ✔/✗ |
+| reports.read (consolidated HQ) | ✔ | ✔ | assigned stores | assigned stores | | ✔ | own shift | ✔ |
+| audit_logs.read | ✔ | ✔ | assigned branch | | | | | ✔ |
 
 ## 8. Environments
 - **dev**: Postgres 16 via `docker compose` (or any local Postgres via `DATABASE_URL`); `.env.local`.
@@ -169,3 +172,47 @@ Sale: `subtotal = Σnet`, `tax_total = Σtax`, `grand_total = Σgross` (cart-lev
 - **Client Presentation**:
   - Reusable `AIChatWidget` floating panel in bottom-right corner.
   - Streaming responses via `useChat` hook, with RTL Arabic and LTR French/English typography.
+
+## 10. Phase 6 Enterprise Architecture (Multi-Store, OCR, WhatsApp, Voice & Predictions)
+
+### 10.1 Multi-Store HQ & Atomic Stock Transfers
+- **HQ Aggregation**: Centralized tenant-level view rolling up sales, GMV, and inventory health across branches.
+- **Atomic Stock Transfers (`stock_transfers` & `stock_transfer_items`)**:
+  - State machine: `draft` → `in_transit` → `completed` (or `canceled`).
+  - When marked `in_transit`: Stock is deducted from `source_store_id` via an `inventory_movement` record with type `transfer_out`.
+  - When marked `completed`: Stock is credited to `dest_store_id` via `transfer_in`.
+  - Supports discrepancy tracking (`received_qty` vs `quantity`) for partial shrinkage identification.
+
+### 10.2 Smart OCR for Supplier Invoices (Gemini Vision)
+- **Workflow**:
+  1. Cashier or warehouse keeper captures or uploads paper supplier invoice photo.
+  2. Creates an `InvoiceScanJob` record with status `pending`.
+  3. Worker sends image payload to Google Gemini 3.5 Flash Vision (`gemini-3.5-flash-lite`) with structured JSON schema prompt.
+  4. Extracted fields: Supplier ICE, Invoice Number, Issue Date, Line items (Item description, Quantity, Unit Price HT, Tax Rate), Subtotal HT, Total TVA, Total TTC.
+  5. Matches or creates `Supplier` record, checks existing products by barcode/name, and creates a pre-populated `PurchaseOrder` in `draft` status for human verification.
+
+### 10.3 WhatsApp Business Notifications Engine
+- **Digital Receipts**:
+  - Replaces thermal paper printing on customer request.
+  - Generates compact receipt summary and web-view link sent via WhatsApp Cloud API or Twilio.
+  - Respects Moroccan CNDP privacy guidelines via explicit customer opt-in (`customers.whatsapp_consent = true`).
+- **Automated End-of-Day Z-Report**:
+  - Daily scheduled job aggregates store cash sessions, card sales, customer credits, and tax breakdown into a `ZReport` record.
+  - Automatically formats a Darija/French markdown summary and pushes it directly to the business owner's verified WhatsApp number at closing time.
+
+### 10.4 AI Voice POS (Speech-to-Cart)
+- **Input Pipeline**: Web Speech API (in-browser) or audio chunk streaming to Whisper/Gemini.
+- **Moroccan Darija / French / Arabic Intent Resolution**:
+  - Tokenizes phrases like:
+    - `"zid jouj coca w wahed bimo"` → `[action: ADD, qty: 2, query: "coca"], [action: ADD, qty: 1, query: "bimo"]`
+    - `"nqqes wahda"` → `[action: DECREMENT, qty: 1, target: LAST_ITEM]`
+    - `"khelles b la carte"` → `[action: SET_PAYMENT, method: CARD]`
+  - Runs fuzzy search against local Dexie product cache and dispatches cart actions to Zustand POS store.
+
+### 10.5 Predictive Stock Analytics & Velocity Forecasting
+- **Rolling Velocity Model**:
+  - Calculates daily sales velocity: \(V = \frac{\sum_{i=1}^{30} \text{SoldUnits}_i}{30}\).
+  - Estimates runway: \(\text{DaysRemaining} = \left\lfloor \frac{\text{CurrentStock}}{V} \right\rfloor\).
+  - Alerts triggered when \(\text{DaysRemaining} \le \text{SupplierLeadTime} + 2\).
+  - Automated reorder recommendation: \(\text{SuggestedQty} = (V \times 14) - \text{CurrentStock}\).
+  - Persisted in `stock_predictions` table for dashboard badge alerts and automated PO drafting.
