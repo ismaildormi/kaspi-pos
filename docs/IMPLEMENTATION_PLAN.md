@@ -1,7 +1,9 @@
 # IMPLEMENTATION PLAN — CORE MVP COMPLETED ✅
 
 > **Overall Project Status: CORE MVP 100% COMPLETE & VERIFIED**
-> All critical capabilities—Multi-Tenant Database & Auth, Keyboard-First POS, Dual-Gateway Billing (Paddle + YouCan Pay), Offline-First Dexie.js Engine, Tauri Desktop Bridge, AI Business Advisor & Vision Onboarding, Smart CSV Migration, and WhatsApp Receipts/Z-Reports—are built, typechecked, and verified against PostgreSQL.
+> All critical capabilities—Multi-Tenant Database & Auth, Keyboard-First POS, Dual-Gateway Billing (Paddle + YouCan Pay), Offline-First Dexie.js Engine, Tauri Desktop Bridge, AI Business Advisor & Vision Onboarding, Smart CSV Migration, WhatsApp Receipts/Z-Reports, and Premium Monochrome (Black & White) Visual Identity—are built, typechecked, and verified against PostgreSQL.
+>
+> **Visual Identity & Design System:** Strict Black & White Monochrome (pure white, zinc-950, zinc-900, zinc-800, white text, solid black/white buttons, initial-letter placeholder squares, no primary color leakage).
 >
 > 6 phases, micro-tasks. Each task = one Inspect → Plan → Code → Test → Fix → Document loop, ideally one commit.
 > Status markers: `[ ]` todo · `[~]` in progress · `[x]` done (verified by an executed command, recorded in BUILD_STATUS) · `[!]` blocked (see KNOWN_ISSUES).

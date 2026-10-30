@@ -2,7 +2,8 @@
 
 import React, { useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { Package, Plus } from "lucide-react";
+import { Package, Plus, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 
 interface ProductGridProps {
@@ -34,45 +35,58 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products }) => {
 
   if (filteredProducts.length === 0) {
     return (
-      <div className="h-64 flex flex-col items-center justify-center text-slate-500 border-2 border-dashed border-slate-800 rounded-2xl p-6 text-center select-none">
-        <Package className="w-10 h-10 mb-2 text-slate-600 stroke-[1.5]" />
-        <p className="text-sm font-medium text-slate-400">Aucun produit trouvé</p>
-        <p className="text-xs text-slate-500 mt-1">
-          Modifiez vos filtres ou effectuez une nouvelle recherche.
+      <div className="h-72 flex flex-col items-center justify-center text-zinc-500 border border-dashed border-zinc-800 rounded-2xl p-8 text-center select-none bg-zinc-950/40">
+        <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 mb-3">
+          <Package className="w-6 h-6 stroke-[1.5]" />
+        </div>
+        <p className="text-sm font-semibold text-white">Aucun produit dans le catalogue</p>
+        <p className="text-xs text-zinc-400 mt-1 max-w-sm">
+          Commencez par ajouter des produits ou importer votre stock depuis un fichier CSV/Excel.
         </p>
+        <div className="flex gap-2 mt-4">
+          <Link
+            href="/dashboard/products/import"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-black font-semibold text-xs hover:bg-zinc-200 transition"
+          >
+            <span>Importer CSV</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+          <Link
+            href="/dashboard/products/ai-onboard"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 text-white border border-zinc-700 font-semibold text-xs hover:bg-zinc-800 transition"
+          >
+            <span>Scan IA</span>
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 overflow-y-auto pb-4 select-none">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 overflow-y-auto pb-4 select-none">
       {filteredProducts.map((product) => {
         const isOutOfStock = product.trackStock && (product.stockQuantity ?? 0) <= 0;
-        const isLowStock =
-          product.trackStock &&
-          (product.stockQuantity ?? 0) > 0 &&
-          (product.stockQuantity ?? 0) <= 5;
+        const initial = (product.name || "P").trim().charAt(0).toUpperCase();
 
         return (
           <button
             key={product.id}
             onClick={() => addToCart(product)}
-            className="group relative flex flex-col justify-between p-3.5 sm:p-4 rounded-2xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 hover:border-emerald-500/50 active:scale-[0.98] transition-all text-start shadow-sm hover:shadow-md cursor-pointer"
+            className="group relative flex flex-col justify-between p-3.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-500 active:scale-[0.98] transition-all text-start shadow-xs hover:shadow-md cursor-pointer"
           >
-            {/* Top row: Category tag & Stock Badge */}
-            <div className="flex items-center justify-between gap-1 w-full text-[11px] mb-2">
-              <span className="text-slate-400 truncate max-w-[90px]">
-                {product.categoryName || product.sku}
-              </span>
+            {/* Top row: Image placeholder / initial + Stock Badge */}
+            <div className="flex items-start justify-between gap-2 w-full mb-3">
+              {/* Product Placeholder Square */}
+              <div className="w-10 h-10 rounded-lg bg-zinc-800 border border-zinc-700/60 flex items-center justify-center text-white font-mono font-bold text-base shrink-0 group-hover:border-zinc-500 transition-colors">
+                {initial}
+              </div>
 
               {product.trackStock && (
                 <span
-                  className={`px-1.5 py-0.5 rounded-full font-mono text-[10px] font-semibold ${
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium border ${
                     isOutOfStock
-                      ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                      : isLowStock
-                      ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                      : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                      ? "bg-zinc-950 text-zinc-500 border-zinc-800"
+                      : "bg-zinc-800 text-zinc-300 border-zinc-700"
                   }`}
                 >
                   {product.stockQuantity} {t("inStock")}
@@ -80,25 +94,28 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products }) => {
               )}
             </div>
 
-            {/* Middle: Product Name */}
-            <div className="my-auto py-1">
-              <h3 className="font-bold text-white text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-emerald-400 transition-colors">
+            {/* Middle: Product Name & SKU/Category */}
+            <div className="my-auto py-0.5">
+              <span className="text-[11px] text-zinc-400 font-mono block truncate">
+                {product.categoryName || product.sku}
+              </span>
+              <h3 className="font-semibold text-white text-sm leading-snug line-clamp-2 mt-0.5 group-hover:text-zinc-100 transition-colors">
                 {product.name}
               </h3>
             </div>
 
             {/* Bottom Row: Price & Add icon */}
-            <div className="flex items-end justify-between gap-2 mt-3 pt-2 border-t border-slate-700/40 w-full">
+            <div className="flex items-end justify-between gap-2 mt-3 pt-2.5 border-t border-zinc-800/80 w-full">
               <div>
-                <span className="text-lg sm:text-xl font-extrabold text-emerald-400 font-mono tracking-tight">
+                <span className="text-lg font-bold text-white font-mono tracking-tight">
                   {product.salePrice.toFixed(2)}
                 </span>
-                <span className="text-xs font-semibold text-slate-400 ms-1">
+                <span className="text-xs font-medium text-zinc-400 ms-1">
                   {tCommon("currency")}
                 </span>
               </div>
 
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 group-hover:bg-emerald-500 text-emerald-400 group-hover:text-slate-950 flex items-center justify-center transition-colors">
+              <div className="w-7 h-7 rounded-lg bg-zinc-800 group-hover:bg-white text-zinc-300 group-hover:text-black flex items-center justify-center transition-all border border-zinc-700 group-hover:border-white">
                 <Plus className="w-4 h-4 stroke-[2.5]" />
               </div>
             </div>

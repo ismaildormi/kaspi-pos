@@ -8,10 +8,9 @@ export default function MockYouCanPayCheckoutPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const token = searchParams.get("token") || "mock_ycp_token_123";
+  const token = searchParams.get("token") || "mock_token_123";
   const tenant = searchParams.get("tenant") || "";
-  const amount = searchParams.get("amount") || "100.00";
-  const currency = searchParams.get("currency") || "MAD";
+  const plan = searchParams.get("plan") || "pro";
   const returnUrl = searchParams.get("return") || "/dashboard/billing";
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -20,14 +19,17 @@ export default function MockYouCanPayCheckoutPage() {
   const handleSimulatePayment = async () => {
     setIsProcessing(true);
     try {
-      // Simulate YouCan Pay Webhook Event
       const webhookPayload = {
-        id: `ycp_evt_${Date.now()}`,
-        order_id: token,
-        status: 1, // Paid
-        amount: 10000, // 100.00 MAD
-        currency: "MAD",
-        metadata: { tenant_id: tenant },
+        event_id: `ycp_mock_${Date.now()}`,
+        event_type: "transaction.paid",
+        data: {
+          transaction_id: `txn_${Date.now()}`,
+          order_id: `order_${Date.now()}`,
+          amount: 10000,
+          currency: "MAD",
+          status: "paid",
+          metadata: { tenant_id: tenant, plan_id: plan },
+        },
       };
 
       await fetch("/api/webhooks/youcanpay", {
@@ -50,43 +52,39 @@ export default function MockYouCanPayCheckoutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-4">
-      <div className="bg-slate-800 border border-slate-700 rounded-3xl p-8 max-w-md w-full shadow-2xl">
-        <div className="flex items-center gap-2 mb-6 text-emerald-400">
-          <Building2 className="w-5 h-5" />
-          <span className="text-xs font-bold uppercase tracking-wider">
-            YouCan Pay Sandbox (Passerelle Nationale Maroc)
+    <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4 select-none">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-md w-full shadow-2xl">
+        <div className="flex items-center gap-2 mb-6 text-zinc-400">
+          <Building2 className="w-5 h-5 text-white" />
+          <span className="text-xs font-bold uppercase tracking-wider text-white">
+            YouCan Pay Sandbox (Moroccan Cards)
           </span>
         </div>
 
-        <h2 className="text-xl font-bold mb-2">Paiement par Carte Marocaine</h2>
-        <p className="text-xs text-slate-400 mb-6">
-          Simulation d&apos;autorisation CMI (CIH, Attijariwafa, BCP, BMCE, Barid Bank) pour Kasbi POS.
+        <h2 className="text-xl font-bold mb-2 text-white">Simulateur YouCan Pay Maroc</h2>
+        <p className="text-xs text-zinc-400 mb-6">
+          Environnement bac à sable pour tester le règlement en Dirhams marocains (cartes CMI, Attijari, CIH, BCP, BMCE).
         </p>
 
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-700 space-y-2 text-xs mb-6 font-mono">
+        <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2 text-xs mb-6 font-mono">
           <div className="flex justify-between">
-            <span className="text-slate-400">Montant :</span>
-            <span className="text-emerald-400 font-bold">{amount} {currency}</span>
+            <span className="text-zinc-500">Plan:</span>
+            <span className="text-white font-bold">{plan.toUpperCase()}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-400">Période :</span>
-            <span className="text-white font-bold">1 Mois</span>
+            <span className="text-zinc-500">Montant:</span>
+            <span className="text-white font-bold">100.00 MAD</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-400">Réseau :</span>
-            <span className="text-emerald-300 font-bold">CMI National</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-400">Token :</span>
-            <span className="text-slate-300 truncate max-w-[150px]">{token}</span>
+            <span className="text-zinc-500">Token Session:</span>
+            <span className="text-zinc-400 truncate max-w-[150px]">{token}</span>
           </div>
         </div>
 
         {isSuccess ? (
-          <div className="p-4 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 flex items-center gap-3 text-xs">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-            <span>Paiement CMI autorisé ! Redirection...</span>
+          <div className="p-4 rounded-xl bg-zinc-800 border border-zinc-700 text-white flex items-center gap-3 text-xs">
+            <CheckCircle2 className="w-5 h-5 text-white shrink-0" />
+            <span>Transaction validée avec succès ! Redirection...</span>
           </div>
         ) : (
           <div className="space-y-3">
@@ -94,17 +92,17 @@ export default function MockYouCanPayCheckoutPage() {
               type="button"
               onClick={handleSimulatePayment}
               disabled={isProcessing}
-              className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full py-3 rounded-2xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40"
             >
               {isProcessing ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Traitement en cours...</span>
+                  <Loader2 className="w-4 h-4 animate-spin text-black" />
+                  <span>Validation du webhook en cours...</span>
                 </>
               ) : (
                 <>
                   <ShieldCheck className="w-4 h-4" />
-                  <span>Valider le Paiement (100.00 MAD)</span>
+                  <span>Simuler le Paiement (100.00 MAD)</span>
                 </>
               )}
             </button>
@@ -112,7 +110,7 @@ export default function MockYouCanPayCheckoutPage() {
             <button
               type="button"
               onClick={() => router.push(returnUrl)}
-              className="w-full py-2.5 rounded-2xl border border-slate-700 text-slate-400 hover:bg-slate-700/50 text-xs font-semibold cursor-pointer"
+              className="w-full py-2.5 rounded-2xl border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 text-xs font-semibold cursor-pointer transition-colors"
             >
               Annuler et retourner
             </button>

@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { Wifi, WifiOff, Clock, User as UserIcon, RefreshCw } from "lucide-react";
+import { Wifi, WifiOff, Clock, User as UserIcon } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
@@ -42,21 +42,21 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
   }, [setIsOnline, refreshOfflineQueueCount]);
 
   return (
-    <header className="h-16 border-b border-slate-800 bg-slate-950 px-4 sm:px-6 flex items-center justify-between gap-4 select-none">
+    <header className="h-16 border-b border-zinc-800 bg-zinc-950 px-4 sm:px-6 flex items-center justify-between gap-4 select-none">
       {/* Brand & Store Info */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center font-extrabold text-emerald-400 text-xl shadow-inner">
+        <div className="w-9 h-9 rounded-lg bg-white text-black flex items-center justify-center font-black text-lg shadow-sm">
           ك
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-extrabold text-white text-base tracking-tight">Kasbi POS</span>
-            <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-medium border border-slate-700">
+            <span className="font-bold text-white text-base tracking-tight">Kasbi POS</span>
+            <span className="text-xs bg-zinc-900 text-zinc-300 px-2 py-0.5 rounded font-mono border border-zinc-800">
               {storeName}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-slate-400">
-            <UserIcon className="w-3.5 h-3.5 text-slate-500" />
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+            <UserIcon className="w-3.5 h-3.5 text-zinc-500" />
             <span>{cashierName}</span>
           </div>
         </div>
@@ -66,21 +66,23 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
       <div className="flex items-center gap-3">
         {/* Offline / Online Status Badge */}
         {isOnline ? (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs font-medium">
+            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
             <Wifi className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{t("onlineMode")}</span>
             {pendingOfflineCount > 0 && (
-              <span className="bg-emerald-500 text-slate-950 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
+              <span className="bg-white text-black px-1.5 py-0.2 rounded-full text-[10px] font-bold">
                 {pendingOfflineCount} {t("syncPending")}
               </span>
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold animate-pulse">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-700 text-white text-xs font-semibold">
+            <span className="w-2 h-2 rounded-full bg-zinc-500" />
             <WifiOff className="w-3.5 h-3.5" />
             <span>{t("offlineMode")}</span>
             {pendingOfflineCount > 0 && (
-              <span className="bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
+              <span className="bg-zinc-700 text-white px-1.5 py-0.2 rounded-full text-[10px] font-bold">
                 {pendingOfflineCount}
               </span>
             )}
@@ -91,12 +93,12 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         {heldCarts.length > 0 && (
           <button
             onClick={onOpenHeldCarts}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs font-medium transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 text-xs font-medium transition cursor-pointer"
             title={t("heldOrders")}
           >
             <Clock className="w-3.5 h-3.5" />
             <span>{t("heldOrders")}</span>
-            <span className="w-5 h-5 rounded-full bg-blue-500 text-white font-bold flex items-center justify-center text-[11px]">
+            <span className="w-5 h-5 rounded-full bg-white text-black font-bold flex items-center justify-center text-[11px]">
               {heldCarts.length}
             </span>
           </button>

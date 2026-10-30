@@ -27,14 +27,13 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Handle barcode scanner input (typically enters barcode string + sends Enter key)
+  // Handle barcode scanner input
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
       const term = searchQuery.trim().toLowerCase();
       if (!term) return;
 
-      // 1. Try exact barcode match first
       const matchedByBarcode = products.find(
         (p) => p.barcode && p.barcode.toLowerCase() === term
       );
@@ -45,7 +44,6 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
         return;
       }
 
-      // 2. Try exact SKU match
       const matchedBySku = products.find((p) => p.sku.toLowerCase() === term);
       if (matchedBySku) {
         addToCart(matchedBySku);
@@ -53,7 +51,6 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
         return;
       }
 
-      // 3. If single product matches query by name, add it directly
       const filtered = products.filter((p) =>
         p.name.toLowerCase().includes(term)
       );
@@ -66,7 +63,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
 
   return (
     <div className="relative w-full">
-      <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none text-slate-400">
+      <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none text-zinc-400">
         <Search className="w-4 h-4" />
       </div>
 
@@ -78,19 +75,19 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
         onKeyDown={handleKeyDown}
         placeholder={t("searchPlaceholder")}
         autoFocus
-        className="w-full h-11 ps-10 pe-16 bg-slate-800/80 hover:bg-slate-800 focus:bg-slate-900 border border-slate-700/80 focus:border-emerald-500 rounded-xl text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
+        className="w-full h-11 ps-10 pe-16 bg-zinc-900 hover:bg-zinc-900/90 focus:bg-zinc-950 border border-zinc-800 focus:border-white rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-white transition-all font-medium"
       />
 
       <div className="absolute inset-y-0 end-0 flex items-center pe-3 gap-1.5">
         {searchQuery ? (
           <button
             onClick={() => setSearchQuery("")}
-            className="p-1 text-slate-400 hover:text-white rounded-md transition"
+            className="p-1 text-zinc-400 hover:text-white rounded-md transition cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         ) : (
-          <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-700/60 text-slate-400 border border-slate-600/50">
+          <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
             <Barcode className="w-3 h-3" />
             <span>F2</span>
           </span>

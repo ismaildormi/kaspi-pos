@@ -24,7 +24,7 @@ export function LanguageSwitcher() {
   };
 
   return (
-    <div className="inline-flex items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200 text-xs font-medium">
+    <div className="inline-flex items-center gap-1 p-1 bg-zinc-900 rounded-lg border border-zinc-800 text-xs font-medium">
       {LOCALES.map((loc) => {
         const isActive = loc.code === currentLocale;
         return (
@@ -35,8 +35,8 @@ export function LanguageSwitcher() {
             onClick={() => handleSelect(loc.code)}
             className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
               isActive
-                ? "bg-white text-emerald-700 shadow-xs font-semibold"
-                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                ? "bg-white text-black shadow-xs font-bold"
+                : "text-zinc-400 hover:text-white hover:bg-zinc-800"
             }`}
             title={loc.label}
           >

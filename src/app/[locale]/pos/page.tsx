@@ -35,7 +35,6 @@ export default function PosPage() {
     async function loadData() {
       setIsLoading(true);
       try {
-        // Fetch from API
         const [prodRes, catRes] = await Promise.all([
           fetch("/api/v1/products"),
           fetch("/api/v1/categories"),
@@ -71,7 +70,7 @@ export default function PosPage() {
           setCategories(catData.data?.categories || []);
         }
       } catch (err) {
-        // If offline on initial load, read from Dexie cache!
+        // Fallback to Dexie cache if offline
         if (offlineDb) {
           try {
             const cached = await offlineDb.offlineProducts.toArray();
@@ -110,7 +109,7 @@ export default function PosPage() {
   }, [cart, isPaymentModalOpen, isHeldModalOpen, openPaymentModal, closePaymentModal]);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-slate-950 text-slate-100 font-sans">
+    <div className="flex flex-col h-screen overflow-hidden bg-zinc-950 text-white font-sans">
       {/* Top Header */}
       <PosHeader onOpenHeldCarts={() => setIsHeldModalOpen(true)} />
 
@@ -127,7 +126,7 @@ export default function PosPage() {
           {/* Products Grid */}
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
-              <div className="h-64 flex items-center justify-center text-slate-500 text-sm font-medium">
+              <div className="h-64 flex items-center justify-center text-zinc-500 text-sm font-medium">
                 Chargement du catalogue...
               </div>
             ) : (
@@ -137,7 +136,7 @@ export default function PosPage() {
         </div>
 
         {/* Right Side (or Left in RTL): Cart & Checkout Panel */}
-        <div className="w-full md:w-96 lg:w-[420px] shrink-0 h-full border-t md:border-t-0 md:border-s border-slate-800">
+        <div className="w-full md:w-96 lg:w-[420px] shrink-0 h-full border-t md:border-t-0 md:border-s border-zinc-800">
           <CartPanel onOpenCustomerModal={() => setIsCustomerModalOpen(true)} />
         </div>
       </div>

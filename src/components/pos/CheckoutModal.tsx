@@ -102,8 +102,8 @@ export const CheckoutModal: React.FC = () => {
 
   const handleConfirmCheckout = async () => {
     const receiptSnapshot: ReceiptData = {
-      shopName: "Kasbi Market (كسب ماركت)",
-      legalName: "Ste Kasbi Retail SARL",
+      shopName: "Kasbi Retail (كسب)",
+      legalName: "Ste Kasbi SARL",
       ice: "002345678000045",
       taxId: "45892134",
       rcNumber: "98765 Casablanca",
@@ -147,20 +147,21 @@ export const CheckoutModal: React.FC = () => {
   const handleClose = () => {
     setSaleResult(null);
     setShowReceiptPreview(false);
+    setShowPhoneInput(false);
     closePaymentModal();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm select-none">
-      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="p-4 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs select-none">
+      <div className="w-full max-w-lg rounded-2xl bg-zinc-950 border border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/40">
           <h3 className="font-bold text-white text-base">
             {saleResult?.completed ? t("saleSuccess") : t("paymentMethods")}
           </h3>
           <button
             onClick={handleClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+            className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -170,15 +171,15 @@ export const CheckoutModal: React.FC = () => {
         {saleResult?.completed ? (
           /* Success Screen with Receipt Preview Toggle */
           <div className="p-5 overflow-y-auto space-y-4">
-            <div className="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center mx-auto">
+            <div className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center mx-auto shadow-sm">
               <CheckCircle2 className="w-8 h-8 stroke-[2.5]" />
             </div>
 
             <div className="text-center">
               <h2 className="text-xl font-bold text-white">{t("saleSuccess")}</h2>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-zinc-400 mt-1">
                 {saleResult.isOffline
-                  ? "Vente stockée localement (Synchronisation automatique en arrière-plan)"
+                  ? "Vente stockée localement (Synchronisation automatique dès reconnexion)"
                   : "Transaction enregistrée avec succès"}
               </p>
             </div>
@@ -187,7 +188,7 @@ export const CheckoutModal: React.FC = () => {
             <div className="flex justify-center">
               <button
                 onClick={() => setShowReceiptPreview(!showReceiptPreview)}
-                className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4"
+                className="flex items-center gap-1.5 text-xs text-zinc-300 hover:text-white font-semibold underline underline-offset-4 cursor-pointer"
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>
@@ -206,8 +207,8 @@ export const CheckoutModal: React.FC = () => {
             {/* WhatsApp Digital Receipt Option */}
             <div className="pt-1">
               {showPhoneInput ? (
-                <div className="p-3 rounded-xl bg-slate-900 border border-emerald-500/30 space-y-2">
-                  <label className="block text-xs font-semibold text-emerald-400">
+                <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 space-y-2">
+                  <label className="block text-xs font-semibold text-zinc-300">
                     Numéro WhatsApp du client (ex: 0612345678) :
                   </label>
                   <div className="flex gap-2">
@@ -216,11 +217,11 @@ export const CheckoutModal: React.FC = () => {
                       value={recipientPhone}
                       onChange={(e) => setRecipientPhone(e.target.value)}
                       placeholder="06 XX XX XX XX"
-                      className="flex-1 px-3 py-2 text-xs rounded-lg bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-emerald-500 font-mono"
+                      className="flex-1 px-3 py-2 text-xs rounded-lg bg-zinc-950 border border-zinc-700 text-white focus:outline-none focus:border-white font-mono"
                     />
                     <button
                       onClick={() => handleSendWhatsApp()}
-                      className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition"
+                      className="px-3 py-2 rounded-lg bg-white hover:bg-zinc-200 text-black font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>Envoyer</span>
@@ -230,9 +231,9 @@ export const CheckoutModal: React.FC = () => {
               ) : (
                 <button
                   onClick={() => handleSendWhatsApp()}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-semibold text-xs border border-emerald-500/30 transition cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-white font-semibold text-xs border border-zinc-800 transition cursor-pointer"
                 >
-                  <MessageSquare className="w-4 h-4" />
+                  <MessageSquare className="w-4 h-4 text-zinc-400" />
                   <span>Envoyer le ticket par WhatsApp</span>
                 </button>
               )}
@@ -241,7 +242,7 @@ export const CheckoutModal: React.FC = () => {
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 onClick={() => printReceipt(saleResult.receiptData)}
-                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm border border-slate-700 transition cursor-pointer"
+                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-sm border border-zinc-800 transition cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
                 <span>{t("printReceipt")}</span>
@@ -249,7 +250,7 @@ export const CheckoutModal: React.FC = () => {
 
               <button
                 onClick={handleClose}
-                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition"
+                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-sm transition cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>{t("newSale")}</span>
@@ -263,45 +264,45 @@ export const CheckoutModal: React.FC = () => {
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => setPaymentMethod("cash")}
-                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-bold transition-all ${
+                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                   selectedPaymentMethod === "cash"
-                    ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-md shadow-emerald-500/10"
-                    : "bg-slate-800/80 border-slate-700 text-slate-400 hover:text-white"
+                    ? "bg-white border-white text-black shadow-sm"
+                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
                 }`}
               >
-                <Banknote className="w-6 h-6 mb-1.5" />
+                <Banknote className="w-5 h-5 mb-1.5" />
                 <span>{t("cash")}</span>
               </button>
 
               <button
                 onClick={() => setPaymentMethod("card")}
-                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-bold transition-all ${
+                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                   selectedPaymentMethod === "card"
-                    ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-md shadow-emerald-500/10"
-                    : "bg-slate-800/80 border-slate-700 text-slate-400 hover:text-white"
+                    ? "bg-white border-white text-black shadow-sm"
+                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
                 }`}
               >
-                <CreditCard className="w-6 h-6 mb-1.5" />
+                <CreditCard className="w-5 h-5 mb-1.5" />
                 <span>{t("card")}</span>
               </button>
 
               <button
                 onClick={() => setPaymentMethod("credit")}
-                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-bold transition-all ${
+                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                   selectedPaymentMethod === "credit"
-                    ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-md shadow-emerald-500/10"
-                    : "bg-slate-800/80 border-slate-700 text-slate-400 hover:text-white"
+                    ? "bg-white border-white text-black shadow-sm"
+                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
                 }`}
               >
-                <UserCheck className="w-6 h-6 mb-1.5" />
+                <UserCheck className="w-5 h-5 mb-1.5" />
                 <span>{t("credit")}</span>
               </button>
             </div>
 
             {/* Total to pay highlight */}
-            <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 flex items-baseline justify-between">
-              <span className="text-sm font-semibold text-slate-400">{t("total")}</span>
-              <span className="text-3xl font-black text-emerald-400 font-mono">
+            <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 flex items-baseline justify-between">
+              <span className="text-sm font-semibold text-zinc-400">{t("total")}</span>
+              <span className="text-3xl font-black text-white font-mono">
                 {grandTotal.toFixed(2)} {tCommon("currency")}
               </span>
             </div>
@@ -310,7 +311,7 @@ export const CheckoutModal: React.FC = () => {
             {selectedPaymentMethod === "cash" && (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+                  <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
                     {t("tendered")} ({tCommon("currency")})
                   </label>
                   <input
@@ -319,7 +320,7 @@ export const CheckoutModal: React.FC = () => {
                     value={amountTendered}
                     onChange={(e) => setAmountTendered(e.target.value)}
                     placeholder={grandTotal.toFixed(2)}
-                    className="w-full h-12 px-4 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono text-xl font-bold focus:border-emerald-500 focus:outline-none"
+                    className="w-full h-12 px-4 rounded-xl bg-zinc-900 border border-zinc-800 text-white font-mono text-xl font-bold focus:border-white focus:outline-none"
                   />
                 </div>
 
@@ -327,7 +328,7 @@ export const CheckoutModal: React.FC = () => {
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     onClick={handleExactCash}
-                    className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 border border-slate-700 transition"
+                    className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-xs font-semibold text-zinc-300 border border-zinc-800 transition cursor-pointer"
                   >
                     {t("exactAmount")}
                   </button>
@@ -335,7 +336,7 @@ export const CheckoutModal: React.FC = () => {
                     <button
                       key={val}
                       onClick={() => handleQuickCash(val)}
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono font-bold text-emerald-400 border border-slate-700 transition"
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-xs font-mono font-bold text-white border border-zinc-800 transition cursor-pointer"
                     >
                       +{val} DH
                     </button>
@@ -343,9 +344,9 @@ export const CheckoutModal: React.FC = () => {
                 </div>
 
                 {/* Change Due Display */}
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-slate-400">{t("changeDue")}</span>
-                  <span className="text-2xl font-black text-emerald-400 font-mono">
+                <div className="p-3.5 rounded-xl bg-zinc-900/50 border border-zinc-800 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-zinc-400">{t("changeDue")}</span>
+                  <span className="text-2xl font-black text-white font-mono">
                     {changeDue.toFixed(2)} {tCommon("currency")}
                   </span>
                 </div>
@@ -354,14 +355,14 @@ export const CheckoutModal: React.FC = () => {
 
             {/* Credit Notice if selected */}
             {selectedPaymentMethod === "credit" && (
-              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs leading-relaxed">
+              <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs leading-relaxed">
                 {customer ? (
                   <>
                     Vente à crédit attribuée à <strong>{customer.name}</strong>.
                     Solde actuel : <strong>{customer.currentCreditBalance.toFixed(2)} DH</strong>.
                   </>
                 ) : (
-                  <span className="text-red-400 font-bold">
+                  <span className="text-zinc-400 font-bold">
                     ⚠️ Veuillez d&apos;abord sélectionner un client avant d&apos;enregistrer une vente à crédit.
                   </span>
                 )}
@@ -371,10 +372,14 @@ export const CheckoutModal: React.FC = () => {
             {/* Submit Button */}
             <button
               onClick={handleConfirmCheckout}
-              disabled={isProcessingPayment || (selectedPaymentMethod === "credit" && !customer)}
-              className="w-full h-14 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-[0.99] disabled:opacity-50 text-slate-950 font-extrabold text-lg shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 cursor-pointer"
+              disabled={
+                isProcessingPayment ||
+                (selectedPaymentMethod === "credit" && !customer)
+              }
+              className="w-full h-13 rounded-xl bg-white hover:bg-zinc-200 active:scale-[0.99] disabled:opacity-30 disabled:cursor-not-allowed text-black font-extrabold text-base shadow-sm transition flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>{isProcessingPayment ? tCommon("loading") : `${t("pay")} ${grandTotal.toFixed(2)} ${tCommon("currency")}`}</span>
+              <CheckCircle2 className="w-5 h-5" />
+              <span>{isProcessingPayment ? "Traitement..." : t("completeSale")}</span>
             </button>
           </div>
         )}

@@ -63,7 +63,7 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
       {/* Print Button */}
       <button
         onClick={handlePrint}
-        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 shadow-md transition"
+        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs border border-zinc-700 shadow-md transition cursor-pointer"
       >
         <Printer className="w-4 h-4" />
         <span>Imprimer Ticket ({width}) • طباعة</span>
