@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
+        isSuperAdmin: user.isSuperAdmin,
       },
       activeTenantId,
       memberships: user.memberships.map((m) => ({

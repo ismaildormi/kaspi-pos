@@ -43,8 +43,13 @@ export function middleware(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const hasAuth = Boolean(sessionToken || authHeader?.startsWith("Bearer "));
 
-  // 3. Platform Super Admin routes protection (/admin and /api/admin)
-  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+  // 3. Platform Super Admin routes protection (/admin, /[locale]/admin and /api/admin)
+  const isAdminPath =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/api/admin") ||
+    routing.locales.some((loc) => pathname.startsWith(`/${loc}/admin`));
+
+  if (isAdminPath) {
     if (!hasAuth) {
       if (pathname.startsWith("/api/")) {
         return NextResponse.json(
@@ -58,7 +63,10 @@ export function middleware(request: NextRequest) {
           { status: 401 }
         );
       }
-      const loginUrl = new URL("/ar/login", request.url);
+      const currentLocale =
+        routing.locales.find((loc) => pathname.startsWith(`/${loc}`)) ||
+        routing.defaultLocale;
+      const loginUrl = new URL(`/${currentLocale}/login`, request.url);
       loginUrl.searchParams.set("from", pathname);
       return NextResponse.redirect(loginUrl);
     }

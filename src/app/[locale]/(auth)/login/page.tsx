@@ -32,7 +32,18 @@ export default function LoginPage() {
       if (res?.error) {
         setError("Email ou mot de passe incorrect.");
       } else {
-        router.push("/pos");
+        // Check session to see if Super Admin, redirect to /admin or /dashboard
+        try {
+          const authCheck = await fetch("/api/auth/session");
+          const sessionData = await authCheck.json();
+          if (sessionData?.user?.isSuperAdmin) {
+            router.push("/admin");
+            return;
+          }
+        } catch {
+          // fallback
+        }
+        router.push("/dashboard");
       }
     } catch {
       setError("Une erreur inattendue est survenue. Veuillez réessayer.");
@@ -57,8 +68,8 @@ export default function LoginPage() {
       {/* Top Header with Language Switcher */}
       <div className="absolute top-4 inset-x-0 px-4 sm:px-8 flex justify-between items-center">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black font-black text-base shadow-sm">
-            ك
+          <div className="relative h-8 w-8 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 p-0.5">
+            <img src="/logo.png" alt="Kasbi POS" className="h-full w-full object-contain" />
           </div>
           <span className="font-bold text-base text-white tracking-tight">
             Kasbi POS

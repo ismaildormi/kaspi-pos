@@ -7,6 +7,7 @@ export interface AdminDashboardStats {
   mrrUsd: string;
   totalGmvMad: string;
   newTenantsThisMonth: number;
+  totalAiMessages: number;
   tenants: Array<{
     id: string;
     legalName: string;
@@ -64,6 +65,9 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   });
   const totalGmvMad = toDecimal(salesAgg._sum.grandTotal || 0).toFixed(2);
 
+  // 3b. Total AI Messages Consumed across the SaaS platform
+  const totalAiMessages = await prisma.aIChatMessage.count();
+
   // 4. Detailed Tenants List with subscriptions and member counts
   const rawTenants = await prisma.tenant.findMany({
     orderBy: { createdAt: "desc" },
@@ -112,6 +116,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     mrrUsd: roundMoney(calculatedMrr).toFixed(2),
     totalGmvMad,
     newTenantsThisMonth,
+    totalAiMessages,
     tenants,
   };
 }

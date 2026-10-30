@@ -39,7 +39,11 @@ export default function RegisterPage() {
       if (!res.ok) {
         setError(data?.error?.message || "Échec de l'inscription.");
       } else {
-        router.push("/pos");
+        if (data?.data?.user?.isSuperAdmin) {
+          router.push("/admin");
+        } else {
+          router.push("/dashboard");
+        }
       }
     } catch {
       setError("Une erreur réseau inattendue est survenue.");
@@ -53,8 +57,8 @@ export default function RegisterPage() {
       {/* Top Header with Language Switcher */}
       <div className="absolute top-4 inset-x-0 px-4 sm:px-8 flex justify-between items-center">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black font-black text-base shadow-sm">
-            ك
+          <div className="relative h-8 w-8 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 p-0.5">
+            <img src="/logo.png" alt="Kasbi POS" className="h-full w-full object-contain" />
           </div>
           <span className="font-bold text-base text-white tracking-tight">
             Kasbi POS

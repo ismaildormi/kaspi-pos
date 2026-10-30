@@ -50,6 +50,10 @@ export async function POST(req: NextRequest) {
     const passwordHash = await hashPassword(password);
     const slug = slugify(shopName);
 
+    // Count existing users: if 0, this first user is the Super Admin!
+    const totalUsers = await prisma.user.count();
+    const isFirstUser = totalUsers === 0;
+
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create Tenant
       const tenant = await tx.tenant.create({
@@ -66,7 +70,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // 2. Create User
+      // 2. Create User (auto Super Admin if first user)
       const user = await tx.user.create({
         data: {
           authProvider: "local",
@@ -77,6 +81,7 @@ export async function POST(req: NextRequest) {
           phone: phone ?? null,
           defaultTenantId: tenant.id,
           isActive: true,
+          isSuperAdmin: isFirstUser,
         },
       });
 
@@ -132,6 +137,7 @@ export async function POST(req: NextRequest) {
           id: result.user.id,
           email: result.user.email,
           fullName: result.user.fullName,
+          isSuperAdmin: result.user.isSuperAdmin,
         },
         tenant: {
           id: result.tenant.id,

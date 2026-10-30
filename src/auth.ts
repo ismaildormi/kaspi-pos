@@ -53,6 +53,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.fullName || user.name,
           image: user.image,
+          isSuperAdmin: user.isSuperAdmin,
         };
       },
     }),
@@ -61,12 +62,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.isSuperAdmin = (user as any).isSuperAdmin;
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
+        (session.user as any).isSuperAdmin = token.isSuperAdmin;
       }
       return session;
     },

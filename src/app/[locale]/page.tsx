@@ -1,10 +1,5 @@
-import { redirect } from "@/i18n/routing";
+import LandingPage from "../page";
 
-interface PageProps {
-  params: Promise<{ locale: string }>;
-}
-
-export default async function HomePage({ params }: PageProps) {
-  const { locale } = await params;
-  redirect({ href: "/pos", locale });
+export default function LocaleHomePage() {
+  return <LandingPage />;
 }

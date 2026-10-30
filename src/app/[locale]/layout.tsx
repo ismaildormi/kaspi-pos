@@ -4,10 +4,9 @@ import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import "@/app/globals.css";
 import { AIChatWidget } from "@/components/ai/AIChatWidget";
+import { UpdateBanner } from "@/components/UpdateBanner";
 
-export function generateStaticParams() {
-  return routing.locales.map((locale) => ({ locale }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function LocaleLayout({
   children,
@@ -26,24 +25,10 @@ export default async function LocaleLayout({
   const dir = locale === "ar" ? "rtl" : "ltr";
 
   return (
-    <html lang={locale} dir={dir}>
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Kasbi POS — نظام نقاط البيع السحابي للمغرب</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className={locale === "ar" ? "font-['Cairo',sans-serif]" : "font-['Inter',sans-serif]"}>
-        <NextIntlClientProvider messages={messages}>
-          {children}
-          <AIChatWidget />
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <div lang={locale} dir={dir} className={locale === "ar" ? "font-['Cairo',sans-serif]" : "font-['Inter',sans-serif]"}>
+      <NextIntlClientProvider messages={messages}>
+        {children}
+      </NextIntlClientProvider>
+    </div>
   );
 }
