@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { usePosStore, type PaymentMethodType } from "@/client/store/usePosStore";
 import { ThermalReceipt, type ReceiptData } from "./ThermalReceipt";
+import { printReceipt } from "@/client/printing";
 
 export const CheckoutModal: React.FC = () => {
   const t = useTranslations("Pos");
@@ -166,8 +167,8 @@ export const CheckoutModal: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
-                onClick={() => window.print()}
-                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm border border-slate-700 transition"
+                onClick={() => printReceipt(saleResult.receiptData)}
+                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm border border-slate-700 transition cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
                 <span>{t("printReceipt")}</span>

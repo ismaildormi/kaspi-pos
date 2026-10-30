@@ -11,6 +11,7 @@ import { HeldCartsModal } from "@/components/pos/HeldCartsModal";
 import { CustomerModal } from "@/components/pos/CustomerModal";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { offlineDb } from "@/client/db";
+import { initBackgroundSync } from "@/client/sync";
 
 export default function PosPage() {
   const [products, setProducts] = useState<PosProduct[]>([]);
@@ -20,6 +21,14 @@ export default function PosPage() {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
   const { openPaymentModal, closePaymentModal, isPaymentModalOpen, cart } = usePosStore();
+
+  // Initialize Dexie background synchronization manager
+  useEffect(() => {
+    const cleanup = initBackgroundSync((res) => {
+      console.info(`[POS Page] Synced ${res.synced} offline sales.`);
+    });
+    return cleanup;
+  }, []);
 
   // Load products and categories (with Dexie caching)
   useEffect(() => {
