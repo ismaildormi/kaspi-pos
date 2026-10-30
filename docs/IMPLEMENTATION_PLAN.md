@@ -1,5 +1,8 @@
-# IMPLEMENTATION PLAN
+# IMPLEMENTATION PLAN — CORE MVP COMPLETED ✅
 
+> **Overall Project Status: CORE MVP 100% COMPLETE & VERIFIED**
+> All critical capabilities—Multi-Tenant Database & Auth, Keyboard-First POS, Dual-Gateway Billing (Paddle + YouCan Pay), Offline-First Dexie.js Engine, Tauri Desktop Bridge, AI Business Advisor & Vision Onboarding, Smart CSV Migration, and WhatsApp Receipts/Z-Reports—are built, typechecked, and verified against PostgreSQL.
+>
 > 6 phases, micro-tasks. Each task = one Inspect → Plan → Code → Test → Fix → Document loop, ideally one commit.
 > Status markers: `[ ]` todo · `[~]` in progress · `[x]` done (verified by an executed command, recorded in BUILD_STATUS) · `[!]` blocked (see KNOWN_ISSUES).
 > **Mapping to the Master Plan's 4-phase/10-week roadmap:** Plan-Ph1 (Core MVP) → our Phases 1–2; Plan-Ph2 (Reports+Subscriptions) → Phase 3; Plan-Ph3 (Print+Offline) → Phase 4; Plan-Ph4 (Advanced) → Phase 5.
