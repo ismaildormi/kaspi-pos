@@ -11,10 +11,13 @@ import {
   Printer,
   RotateCcw,
   FileText,
+  Send,
+  MessageSquare,
 } from "lucide-react";
 import { usePosStore, type PaymentMethodType } from "@/client/store/usePosStore";
 import { ThermalReceipt, type ReceiptData } from "./ThermalReceipt";
 import { printReceipt } from "@/client/printing";
+import { formatReceiptForWhatsApp, generateWhatsAppLink } from "@/lib/whatsapp";
 
 export const CheckoutModal: React.FC = () => {
   const t = useTranslations("Pos");
@@ -45,6 +48,41 @@ export const CheckoutModal: React.FC = () => {
   } | null>(null);
 
   const [showReceiptPreview, setShowReceiptPreview] = useState(false);
+  const [recipientPhone, setRecipientPhone] = useState("");
+  const [showPhoneInput, setShowPhoneInput] = useState(false);
+
+  const handleSendWhatsApp = (targetPhone?: string) => {
+    if (!saleResult?.receiptData) return;
+    const phone = targetPhone || recipientPhone || customer?.phone || "";
+    if (!phone && !showPhoneInput) {
+      setShowPhoneInput(true);
+      return;
+    }
+
+    const message = formatReceiptForWhatsApp({
+      storeName: saleResult.receiptData.shopName,
+      receiptNumber: saleResult.receiptData.receiptNumber,
+      createdAt: new Date().toISOString(),
+      cashierName: saleResult.receiptData.cashierName,
+      items: saleResult.receiptData.items.map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        lineTotal: i.lineTotal,
+      })),
+      subtotal: saleResult.receiptData.subtotal,
+      taxTotal: saleResult.receiptData.taxTotal,
+      grandTotal: saleResult.receiptData.grandTotal,
+      paymentMethod: saleResult.receiptData.paymentMethod,
+      paidTotal: saleResult.receiptData.paidTotal,
+      changeDue: saleResult.receiptData.changeDue,
+    });
+
+    const link = generateWhatsAppLink(phone, message);
+    if (typeof window !== "undefined") {
+      window.open(link, "_blank");
+    }
+  };
 
   if (!isPaymentModalOpen) return null;
 
@@ -164,6 +202,41 @@ export const CheckoutModal: React.FC = () => {
                 <ThermalReceipt data={saleResult.receiptData} width="80mm" />
               </div>
             )}
+
+            {/* WhatsApp Digital Receipt Option */}
+            <div className="pt-1">
+              {showPhoneInput ? (
+                <div className="p-3 rounded-xl bg-slate-900 border border-emerald-500/30 space-y-2">
+                  <label className="block text-xs font-semibold text-emerald-400">
+                    Numéro WhatsApp du client (ex: 0612345678) :
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="tel"
+                      value={recipientPhone}
+                      onChange={(e) => setRecipientPhone(e.target.value)}
+                      placeholder="06 XX XX XX XX"
+                      className="flex-1 px-3 py-2 text-xs rounded-lg bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-emerald-500 font-mono"
+                    />
+                    <button
+                      onClick={() => handleSendWhatsApp()}
+                      className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Envoyer</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => handleSendWhatsApp()}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-semibold text-xs border border-emerald-500/30 transition cursor-pointer"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Envoyer le ticket par WhatsApp</span>
+                </button>
+              )}
+            </div>
 
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button

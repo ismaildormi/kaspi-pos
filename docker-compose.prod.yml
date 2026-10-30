@@ -1,0 +1,74 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kaspi_pos_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kaspi_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_super_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-kaspi_pos_prod}
+    volumes:
+      - kaspi_pgdata:/var/lib/postgresql/data
+      - ./scripts/backup:/backups
+    ports:
+      # Optional: bind to localhost only for direct administrative tunnels
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-kaspi_admin} -d $${POSTGRES_DB:-kaspi_pos_prod}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - kaspi_internal
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kaspi_pos_app
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: "0.0.0.0"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-kaspi_admin}:${POSTGRES_PASSWORD:-change_me_super_secure_password}@postgres:5432/${POSTGRES_DB:-kaspi_pos_prod}?schema=public&connection_limit=20&pool_timeout=10"
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-https://app.kasbi.ma}
+      AUTH_SECRET: ${AUTH_SECRET}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      GOOGLE_API_KEYS: ${GOOGLE_API_KEYS}
+      GROQ_API_KEYS: ${GROQ_API_KEYS}
+      PADDLE_API_KEY: ${PADDLE_API_KEY}
+      PADDLE_WEBHOOK_SECRET: ${PADDLE_WEBHOOK_SECRET}
+      YOUCAN_PRIVATE_KEY: ${YOUCAN_PRIVATE_KEY}
+      YOUCAN_PUBLIC_KEY: ${YOUCAN_PUBLIC_KEY}
+    ports:
+      - "3000:3000"
+    networks:
+      - kaspi_internal
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
+
+networks:
+  kaspi_internal:
+    name: kaspi_internal
+    driver: bridge
+
+volumes:
+  kaspi_pgdata:
+    name: kaspi_pgdata

@@ -30,13 +30,16 @@ Oracle Cloud Infrastructure (OCI) provides an Always Free tier with ARM-based Am
    sudo apt update && sudo apt install -y docker.io docker-compose-plugin git caddy
    sudo usermod -aG docker $USER
    ```
-3. **Deploy with Docker Compose:**
+3. **Deploy with Production Docker Compose:**
    ```bash
    git clone <REPO_URL> /opt/pos-saas
    cd /opt/pos-saas
    cp .env.example .env
-   # Populate production secrets (AUTH_SECRET, DATABASE_URL, etc.)
-   docker compose --profile full up -d --build
+   # Populate production secrets (AUTH_SECRET, DATABASE_URL, AI key pools, Billing API keys, etc.)
+   docker compose -f docker-compose.prod.yml up -d --build
+   
+   # Run production database migrations
+   docker exec -it kaspi_pos_app npx prisma migrate deploy
    ```
 4. **Reverse Proxy & SSL via Caddy:**
    `/etc/caddy/Caddyfile`:
