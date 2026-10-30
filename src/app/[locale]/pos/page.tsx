@@ -8,6 +8,7 @@ import { ProductGrid } from "@/components/pos/ProductGrid";
 import { CartPanel } from "@/components/pos/CartPanel";
 import { CheckoutModal } from "@/components/pos/CheckoutModal";
 import { HeldCartsModal } from "@/components/pos/HeldCartsModal";
+import { CustomerModal } from "@/components/pos/CustomerModal";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { offlineDb } from "@/client/db";
 
@@ -16,6 +17,7 @@ export default function PosPage() {
   const [categories, setCategories] = useState<PosCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isHeldModalOpen, setIsHeldModalOpen] = useState(false);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
   const { openPaymentModal, closePaymentModal, isPaymentModalOpen, cart } = usePosStore();
 
@@ -127,7 +129,7 @@ export default function PosPage() {
 
         {/* Right Side (or Left in RTL): Cart & Checkout Panel */}
         <div className="w-full md:w-96 lg:w-[420px] shrink-0 h-full border-t md:border-t-0 md:border-s border-slate-800">
-          <CartPanel />
+          <CartPanel onOpenCustomerModal={() => setIsCustomerModalOpen(true)} />
         </div>
       </div>
 
@@ -138,6 +140,12 @@ export default function PosPage() {
       <HeldCartsModal
         isOpen={isHeldModalOpen}
         onClose={() => setIsHeldModalOpen(false)}
+      />
+
+      {/* Customer Quick-Selection & Creation Modal */}
+      <CustomerModal
+        isOpen={isCustomerModalOpen}
+        onClose={() => setIsCustomerModalOpen(false)}
       />
     </div>
   );

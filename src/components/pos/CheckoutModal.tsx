@@ -10,8 +10,10 @@ import {
   CheckCircle2,
   Printer,
   RotateCcw,
+  FileText,
 } from "lucide-react";
 import { usePosStore, type PaymentMethodType } from "@/client/store/usePosStore";
+import { ThermalReceipt, type ReceiptData } from "./ThermalReceipt";
 
 export const CheckoutModal: React.FC = () => {
   const t = useTranslations("Pos");
@@ -25,7 +27,10 @@ export const CheckoutModal: React.FC = () => {
     amountTendered,
     setAmountTendered,
     getGrandTotal,
+    getSubtotal,
+    getTaxTotal,
     getChangeDue,
+    cart,
     customer,
     completeSale,
     isProcessingPayment,
@@ -35,11 +40,16 @@ export const CheckoutModal: React.FC = () => {
     completed: boolean;
     clientSaleId: string;
     isOffline: boolean;
+    receiptData?: ReceiptData;
   } | null>(null);
+
+  const [showReceiptPreview, setShowReceiptPreview] = useState(false);
 
   if (!isPaymentModalOpen) return null;
 
   const grandTotal = getGrandTotal();
+  const subtotal = getSubtotal();
+  const taxTotal = getTaxTotal();
   const changeDue = getChangeDue();
 
   const handleQuickCash = (extra: number) => {
@@ -52,24 +62,58 @@ export const CheckoutModal: React.FC = () => {
   };
 
   const handleConfirmCheckout = async () => {
+    const receiptSnapshot: ReceiptData = {
+      shopName: "Kasbi Market (كسب ماركت)",
+      legalName: "Ste Kasbi Retail SARL",
+      ice: "002345678000045",
+      taxId: "45892134",
+      rcNumber: "98765 Casablanca",
+      address: "123 Bd d'Anfa",
+      city: "Casablanca",
+      receiptNumber: `REC-${Date.now().toString().slice(-6)}`,
+      date: new Date().toLocaleString("fr-MA"),
+      cashierName: "Caisse 1",
+      customerName: customer?.name || undefined,
+      customerIce: customer?.ice || undefined,
+      items: cart.map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        taxRate: i.taxRate,
+        lineTotal: i.lineTotal,
+      })),
+      subtotal,
+      taxTotal,
+      grandTotal,
+      paidTotal:
+        selectedPaymentMethod === "cash"
+          ? Math.max(grandTotal, parseFloat(amountTendered) || grandTotal)
+          : grandTotal,
+      changeDue,
+      paymentMethod: selectedPaymentMethod,
+      currency: "MAD",
+    };
+
     const res = await completeSale();
     if (res.success) {
       setSaleResult({
         completed: true,
         clientSaleId: res.clientSaleId,
         isOffline: res.isOffline,
+        receiptData: receiptSnapshot,
       });
     }
   };
 
   const handleClose = () => {
     setSaleResult(null);
+    setShowReceiptPreview(false);
     closePaymentModal();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm select-none">
-      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="p-4 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
           <h3 className="font-bold text-white text-base">
@@ -85,20 +129,40 @@ export const CheckoutModal: React.FC = () => {
 
         {/* Modal Body */}
         {saleResult?.completed ? (
-          /* Success Screen */
-          <div className="p-6 text-center space-y-5">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-10 h-10 stroke-[2.5]" />
+          /* Success Screen with Receipt Preview Toggle */
+          <div className="p-5 overflow-y-auto space-y-4">
+            <div className="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-8 h-8 stroke-[2.5]" />
             </div>
 
-            <div>
+            <div className="text-center">
               <h2 className="text-xl font-bold text-white">{t("saleSuccess")}</h2>
               <p className="text-xs text-slate-400 mt-1">
                 {saleResult.isOffline
                   ? "Vente stockée localement (Synchronisation automatique en arrière-plan)"
-                  : "Transaction enregistrée et synchronisée avec le serveur"}
+                  : "Transaction enregistrée avec succès"}
               </p>
             </div>
+
+            {/* Toggle Receipt Preview */}
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowReceiptPreview(!showReceiptPreview)}
+                className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>
+                  {showReceiptPreview ? "Masquer le ticket" : "Aperçu du ticket de caisse"}
+                </span>
+              </button>
+            </div>
+
+            {/* Thermal Receipt Preview */}
+            {showReceiptPreview && saleResult.receiptData && (
+              <div className="pt-2">
+                <ThermalReceipt data={saleResult.receiptData} width="80mm" />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
@@ -120,7 +184,7 @@ export const CheckoutModal: React.FC = () => {
           </div>
         ) : (
           /* Checkout Form */
-          <div className="p-5 space-y-5">
+          <div className="p-5 space-y-5 overflow-y-auto">
             {/* Payment Method Selector */}
             <div className="grid grid-cols-3 gap-2">
               <button

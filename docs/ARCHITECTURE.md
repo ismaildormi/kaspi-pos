@@ -46,6 +46,10 @@ flowchart TD
 | ADR-011 | **Payments**: `BillingProvider` interface; `MockBillingProvider` (labelled MOCK, dev only) until Paddle/Lemon Squeezy sandbox keys exist. | Constitution Art. 7. |
 | ADR-012 | **Multilingual Support (i18n)**: `next-intl` supporting **Arabic (`ar`, RTL default)**, **French (`fr`, LTR)**, and **English (`en`, LTR)**. URL routing via `[locale]` prefix, cookie detection, and Tailwind logical utilities (`ms-*`, `pe-*`). | Complete linguistic coverage for Moroccan retail, tourists, and international business. |
 | ADR-013 | **Cloud Deployment Strategy**: Multi-stage `Dockerfile` (Node.js standalone output) and production-ready `docker-compose.yml` supporting Oracle Cloud Always Free (ARM64 Ampere / x86_64), GitHub Codespaces, and Google Cloud Run. | Documented in `docs/DEPLOYMENT.md` for low-cost, scalable deployment. |
+| ADR-014 | **Competitor Smart Migration (Importer)**: Native import engine supporting presets for competitors (Caissa, POSNEX, Excel/CSV) to migrate products, stock, customer debt, and sales history with zero friction. | Removes the primary switching barrier for Moroccan merchants switching from legacy local POS software. |
+| ADR-015 | **Data Portability (One-Click Exporter)**: Complete export of products, historical sales, invoices, and customer ledgers in standardized CSV/JSON/SQLite packages. | Builds merchant trust and satisfies Moroccan CNDP data sovereignty requirements. |
+| ADR-016 | **Anonymized Market Business Intelligence (B2B)**: Privacy-preserving aggregation of anonymized retail market trends across Moroccan regions (e.g. top-selling FMCG in Casablanca vs Rabat) to generate B2B industry reports. | Secondary high-margin recurring revenue stream alongside $10/mo SaaS subscriptions. |
+| ADR-017 | **Zero-Leakage Infrastructure Cost Optimization**: Docker and Next.js standalone container deployment sized to run entirely within Oracle Cloud Always Free Tier (4 ARM cores, 24GB RAM, 200GB storage), guaranteeing $0/mo infrastructure floor. | Ensures 95%+ gross margins on $10/month subscription pricing. |
 
 ## 3. Directory Layout (target)
 

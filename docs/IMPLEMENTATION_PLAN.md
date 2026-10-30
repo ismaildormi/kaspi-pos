@@ -134,3 +134,7 @@
 | P5-13 | License report / SBOM, `catalog/sources.*` updated to `tested` where true | — |
 | P5-14 | Release checklist, rollback plan, staging deployment docs | — |
 | P5-15 | **External AI (NEVEA) API Bridge & Integration (DEFERRED to Phase 5)**: Scoped API bridge with HMAC validation, rate-limiting, and platform oversight telemetry | security | DEFERRED |
+| P5-16 | **Competitor Smart Migration (Importer)**: Import presets for Caissa, POSNEX, and Excel/CSV formats with validation preview and batch ingestion | tenant | planned |
+| P5-17 | **One-Click Data Portability (Exporter)**: One-click export of catalog, sales, invoices, and customer ledgers in standardized CSV/JSON/SQLite formats | tenant | planned |
+| P5-18 | **Anonymized Market Business Intelligence (B2B)**: Regional market insights aggregation across Moroccan commerce sectors for secondary monetization | data | planned |
+| P5-19 | **Oracle Cloud Always Free Deployment Optimization**: Multi-tenant Docker and PostgreSQL tuning for Oracle Always Free Tier (4 ARM cores / 24GB RAM) for $0/mo infrastructure floor | ops | planned |

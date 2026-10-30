@@ -1,0 +1,55 @@
+================================================================================
+KASBI POS (كسب POS) — SAAS STRATEGIC MASTER PLAN ($10/MONTH ALL-IN-ONE)
+================================================================================
+
+1. CORE VALUE PROPOSITION
+--------------------------------------------------------------------------------
+- Unbeatable Pricing: $10/month per shop (flat rate with zero hidden addon fees).
+  Competitors (Caissa, POSNEX, Loyverse) charge extra for inventory, reports, 
+  and multi-store. Kasbi includes EVERYTHING out-of-the-box.
+- Target Market: Small & Medium retail shops, grocery stores (Epiceries/Hanout), 
+  bakeries, cafes, and restaurants across Morocco.
+- Language & Regional Compliance: Native Arabic (RTL default), French, English; 
+  Moroccan tax compliance (ICE, IF, RC, TVA 20%, 14%, 10%, 7%, 0%).
+- Offline-First Durability: Dexie.js (IndexedDB) outbox with auto-sync; works 
+  flawlessly even with unstable internet or power outages.
+
+2. STRATEGIC PILLARS & COMPETITIVE MOATS
+--------------------------------------------------------------------------------
+[MOAT 1] Competitor Smart Migration (Importer):
+  - 1-click import from competitor formats (Caissa, POSNEX, and generic Excel/CSV).
+  - Eliminates switching fear by porting over all historical products, stock levels,
+    and customer debt balances.
+
+[MOAT 2] Complete Data Portability (Exporter):
+  - 1-click full export in CSV, JSON, and SQLite formats.
+  - Builds radical merchant trust and satisfies Moroccan CNDP data sovereignty.
+
+[MOAT 3] Secondary Revenue: Anonymized Market Business Intelligence (B2B):
+  - Opt-in anonymized aggregation of purchasing trends (e.g., top selling FMCG 
+    in Casablanca vs Marrakech, price elasticity, supply chain demand).
+  - High-margin B2B data subscriptions for distributors and brand manufacturers.
+
+[MOAT 4] Infrastructure Cost Optimization ($0/mo Floor):
+  - Production deployment optimized for Oracle Cloud Always Free Tier:
+    4 ARM Ampere Cores, 24GB RAM, 200GB NVMe Storage.
+  - Next.js Standalone container + Alpine Linux + PostgreSQL 16 connection pooling.
+  - Generates 95%+ gross profit margins on $10/month subscription pricing.
+
+3. ROADMAP PHASES
+--------------------------------------------------------------------------------
+Phase 0: Project Memory & Requirements Architecture [VERIFIED]
+Phase 1: Database, Tenancy, Auth & Deployment Strategy [VERIFIED]
+Phase 2: All-in-One Modules & POS Cashier UI [IN PROGRESS]
+  - Suppliers & Purchase Orders [VERIFIED]
+  - Invoices, Quotes (Devis) & Customer Credit Ledger [VERIFIED]
+  - Loyalty Points Engine (1 pt per 10 DH) [VERIFIED]
+  - Restaurant Mode & Kitchen Display System (KDS) [VERIFIED]
+  - Advanced Reporting (Sales, Products, Moroccan TVA) [VERIFIED]
+  - Super Admin Platform Owner Console (/admin) [VERIFIED]
+  - POS Split-Screen Layout, Grid, Cart & Checkout [VERIFIED]
+  - Customer Quick-Selection & Thermal Receipt Generator [STEP 3 IN PROGRESS]
+Phase 3: Automated Billing & Paddle MoR Subscriptions
+Phase 4: ESC/POS Thermal Printing & Tauri Desktop Windows App
+Phase 5: NEVEA AI Supervisor Bridge, Smart Migration, and Hardening
+================================================================================

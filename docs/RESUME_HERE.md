@@ -25,20 +25,27 @@
 ## Where we are
 - **Docker Compose Running:** `pos_saas_db` healthy on port 5432.
 - **Database Migrated:** 43 tables + `is_super_admin` on `User`.
-- **Platform Owner Super Admin Console Complete:** `/admin` dashboard live with MRR and tenant directory.
-- **POS Cashier Split-Screen Interface Complete (Step 2):**
+- **Strategic Moats Documented:** `plan.txt`, `docs/ARCHITECTURE.md`, and `docs/IMPLEMENTATION_PLAN.md` updated with Competitor Smart Migration (Caissa/POSNEX), 1-Click Data Portability Exporter, Anonymized Market Research Insights, and Oracle Always Free $0/mo infrastructure tuning.
+- **Complete POS Cashier Interface Verified (Steps 1, 2 & 3):**
   - High-performance, touch & keyboard-first POS layout at `/[locale]/pos` (`/ar/pos`, `/fr/pos`, `/en/pos`).
   - Interactive Product Grid with Category pill filters and real-time stock badges.
   - Auto-focused Barcode / Search input with `F2` global shortcut.
+  - Customer Quick-Selection & Inline Creation Modal (`CustomerModal.tsx`) supporting Loyalty points and Credit balance oversight.
   - Cart Panel with line-item steppers, TVA breakdown, Park / Hold cart feature, and `F10` checkout trigger.
-  - Checkout Modal supporting Cash (with quick-cash chips & change due calculation), Card, and Customer Credit.
+  - Checkout Modal supporting Cash (with quick-cash chips & dynamic change due calculation), Card, and Customer Credit.
+  - Thermal Receipt Generator (`ThermalReceipt.tsx`) supporting 58mm & 80mm paper widths, bilingual Arabic/French, and Moroccan fiscal notices.
+  - Full backend persistence via `POST /api/v1/sales` with atomic stock reduction, inventory movements, customer credit charge, and loyalty points earning.
   - Offline-first Dexie queue (`offlineDb.offlineSales`) with background sync.
+- **Verification:**
+  - `npx tsx src/server/__tests__/pos-e2e-checkout.ts` passed 100% against PostgreSQL.
+  - `npx tsc --noEmit` passed with 0 errors.
+  - `npm run build` compiled 29 pages and routes into standalone output.
 
 ## Next micro-task
-Proceed to **Phase 2 POS Step 3 & Supporting UI Modules**:
-1. Customer Selection & Quick Add modal inside POS (for Loyalty points & Credit sales).
-2. Receipt print preview generator (thermal 58mm/80mm style with Moroccan ICE and QR code).
-3. Connect sales submission to server `POST /api/v1/sales` transaction route and verify end-to-end sync.
+Proceed to **Phase 3: Automated Billing & Paddle MoR Integration**:
+1. Implement Paddle webhook listener (`POST /api/v1/webhooks/paddle`) verifying webhook signatures and updating `Subscription` records.
+2. Build Merchant Billing Portal UI (`/[locale]/settings/billing`) displaying current plan, trial status, and Paddle checkout modal.
+3. Add subscription feature guards (grace period handling, plan entitlements enforcement).
 1. Implement the POS keyboard-first cash register interface (F2 search, Enter, cart preview, keypad).
 2. Connect POS UI to `POST /api/v1/sales` with offline Dexie.js queue.
 3. Build the UI tabs for:
