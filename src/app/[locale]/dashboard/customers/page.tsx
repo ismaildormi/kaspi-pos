@@ -1,0 +1,333 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useLocale } from "next-intl";
+import {
+  Users,
+  Search,
+  Plus,
+  CreditCard,
+  Coins,
+  ArrowLeft,
+  ArrowRight,
+  Phone,
+  Building2,
+  X,
+  Loader2,
+  Check,
+} from "lucide-react";
+
+interface CustomerItem {
+  id: string;
+  name: string;
+  phone: string | null;
+  ice: string | null;
+  currentCreditBalance: number;
+  creditLimit: number | null;
+  loyaltyPoints: number;
+  createdAt: string;
+}
+
+export default function CustomersPage() {
+  const locale = useLocale();
+  const isRtl = locale === "ar";
+
+  const [customers, setCustomers] = useState<CustomerItem[]>([]);
+  const [search, setSearch] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // New Customer Form State
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [ice, setIce] = useState("");
+  const [creditLimit, setCreditLimit] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchCustomers();
+  }, [search]);
+
+  const fetchCustomers = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/v1/customers${search ? `?search=${encodeURIComponent(search)}` : ""}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCustomers(data.data?.customers || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    setIsSubmitting(true);
+    setErrorMsg(null);
+
+    try {
+      const res = await fetch("/api/v1/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phone.trim() || undefined,
+          ice: ice.trim() || undefined,
+          creditLimit: creditLimit ? parseFloat(creditLimit) : undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error?.message || "Échec de création du client");
+      }
+
+      setIsModalOpen(false);
+      setName("");
+      setPhone("");
+      setIce("");
+      setCreditLimit("");
+      fetchCustomers();
+    } catch (err: any) {
+      setErrorMsg(err.message || "Erreur de création");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const totalCredit = customers.reduce((sum, c) => sum + (c.currentCreditBalance || 0), 0);
+  const totalPoints = customers.reduce((sum, c) => sum + (c.loyaltyPoints || 0), 0);
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-white pb-20 select-none">
+      {/* Top Bar */}
+      <header className="bg-zinc-950 border-b border-zinc-800 sticky top-0 z-30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/${locale}/pos`}
+              className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors flex items-center gap-1.5 text-xs font-semibold"
+            >
+              {isRtl ? (
+                <>
+                  <ArrowRight className="w-4 h-4" />
+                  <span>العودة لنقطة البيع (POS)</span>
+                </>
+              ) : (
+                <>
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Retour au POS</span>
+                </>
+              )}
+            </Link>
+            <div className="h-5 w-px bg-zinc-800" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-white text-black flex items-center justify-center font-bold shadow-xs">
+                <Users className="w-4 h-4" />
+              </div>
+              <h1 className="text-sm font-bold text-white">
+                {isRtl ? "سجل الزبناء والديون (الكريدي)" : "Gestion des Clients & Crédits"}
+              </h1>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Nouveau Client</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Main Container */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 space-y-6">
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="p-5 rounded-3xl bg-zinc-900 border border-zinc-800">
+            <span className="text-xs text-zinc-500 block mb-1">Nombre total de clients</span>
+            <span className="text-2xl font-black text-white font-mono">{customers.length}</span>
+          </div>
+
+          <div className="p-5 rounded-3xl bg-zinc-900 border border-zinc-800">
+            <span className="text-xs text-zinc-500 block mb-1">Total Crédits en Cours (Krediat)</span>
+            <span className="text-2xl font-black text-white font-mono">
+              {totalCredit.toFixed(2)} MAD
+            </span>
+          </div>
+
+          <div className="p-5 rounded-3xl bg-zinc-900 border border-zinc-800">
+            <span className="text-xs text-zinc-500 block mb-1">Points de Fidélité Cumulés</span>
+            <span className="text-2xl font-black text-white font-mono">{totalPoints} pts</span>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="w-4 h-4 text-zinc-500 absolute inset-y-0 start-3.5 my-auto pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher par nom, téléphone ou ICE..."
+            className="w-full h-11 ps-10 pe-4 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-medium"
+          />
+        </div>
+
+        {/* Customer Data Table */}
+        <div className="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-start text-xs">
+              <thead className="bg-zinc-950 text-zinc-400 border-b border-zinc-800 font-mono">
+                <tr>
+                  <th className="p-3.5 text-start">Nom du Client</th>
+                  <th className="p-3.5 text-start">Téléphone</th>
+                  <th className="p-3.5 text-start">ICE</th>
+                  <th className="p-3.5 text-end">Crédit Actuel (MAD)</th>
+                  <th className="p-3.5 text-end">Plafond Crédit</th>
+                  <th className="p-3.5 text-end">Points Fidélité</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/60 font-medium">
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-zinc-500">
+                      Chargement des clients...
+                    </td>
+                  </tr>
+                ) : customers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-zinc-500">
+                      Aucun client enregistré pour l&apos;instant.
+                    </td>
+                  </tr>
+                ) : (
+                  customers.map((c) => (
+                    <tr key={c.id} className="hover:bg-zinc-950/40 transition">
+                      <td className="p-3.5 text-white font-bold">{c.name}</td>
+                      <td className="p-3.5 text-zinc-400 font-mono">{c.phone || "—"}</td>
+                      <td className="p-3.5 text-zinc-400 font-mono">{c.ice || "—"}</td>
+                      <td className="p-3.5 text-end font-mono font-bold text-white">
+                        {c.currentCreditBalance.toFixed(2)}
+                      </td>
+                      <td className="p-3.5 text-end font-mono text-zinc-400">
+                        {c.creditLimit ? `${c.creditLimit.toFixed(2)} MAD` : "Illimité"}
+                      </td>
+                      <td className="p-3.5 text-end font-mono text-zinc-300">
+                        {c.loyaltyPoints ?? 0} pts
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+
+      {/* Add Customer Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4">
+              <h3 className="font-bold text-white text-base">Ajouter un Client</h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {errorMsg && (
+              <div className="mb-4 p-3 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs">
+                {errorMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateCustomer} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                  Nom complet / Raison Sociale *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Mohammed Benjelloun"
+                  className="w-full h-11 px-3.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                  Téléphone (GSM)
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="0661234567"
+                  className="w-full h-11 px-3.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                  Numéro ICE (Si société)
+                </label>
+                <input
+                  type="text"
+                  value={ice}
+                  onChange={(e) => setIce(e.target.value)}
+                  placeholder="001234567000045"
+                  className="w-full h-11 px-3.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                  Plafond Crédit Autorisé (DH)
+                </label>
+                <input
+                  type="number"
+                  step="100"
+                  value={creditLimit}
+                  onChange={(e) => setCreditLimit(e.target.value)}
+                  placeholder="2000"
+                  className="w-full h-11 px-3.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-mono"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 text-zinc-400 hover:text-white text-xs font-semibold cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !name.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition disabled:opacity-40 cursor-pointer"
+                >
+                  {isSubmitting ? "Enregistrement..." : "Ajouter le client"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

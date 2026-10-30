@@ -139,3 +139,6 @@ export function formatDailyReportForWhatsApp(report: DailyReportParams): string 
 
   return msg;
 }
+
+export * from "./whatsapp/index";
+

@@ -287,6 +287,7 @@ model Tenant {
   invoiceScanJobs    InvoiceScanJob[]
   zReports           ZReport[]
   stockPredictions   StockPrediction[]
+  settings           TenantSettings?
 
   @@map("tenants")
 }
@@ -1426,4 +1427,26 @@ model SystemSetting {
 
   @@unique([providerName])
   @@map("system_settings")
+}
+
+model TenantSettings {
+  id                      String   @id @default(uuid()) @db.Uuid
+  tenantId                String   @unique @map("tenant_id") @db.Uuid
+  shopName                String?  @map("shop_name")
+  address                 String?
+  ice                     String?
+  taxId                   String?  @map("tax_id")
+  rcNumber                String?  @map("rc_number")
+  phone                   String?
+  logoUrl                 String?  @map("logo_url")
+  receiptHeader           String?  @map("receipt_header")
+  receiptFooter           String?  @map("receipt_footer")
+  whatsappReportNumber    String?  @map("whatsapp_report_number")
+  isWhatsappReportsActive Boolean  @default(true) @map("is_whatsapp_reports_active")
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_settings")
 }
