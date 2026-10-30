@@ -90,9 +90,9 @@ All sensitive environment files (`.env`) are excluded in `.gitignore`. Follow th
 
 ```bash
 # 1. Inside C:\Users\hicha\.gemini\antigravity\scratch\pos-saas-morocco
-git remote add origin https://github.com/<YOUR-USERNAME>/<YOUR-REPO-NAME>.git
-git branch -M master
-git push -u origin master
+git remote add origin https://github.com/ismaildormi/kaspi-pos.git
+git branch -M main
+git push -u origin main
 ```
 
 ---
