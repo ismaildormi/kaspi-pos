@@ -49,4 +49,8 @@
 | 2026-10-30 | P2 POS End-to-End Checkout Test Suite | `npx tsx src/server/__tests__/pos-e2e-checkout.ts` | PASSED: Cart checkout -> Customer debt & loyalty -> Stock decrement -> Receipt generation verified against PostgreSQL |
 
 ## Verified Capabilities
-_None yet._ (Nothing is claimed to work until a test proves it.)
+- **Auth & Session Management:** Verified Argon2id password hashing + secure session creation/validation (`src/server/auth/__tests__/auth-flow.ts`).
+- **Super Admin Platform Owner:** Verified `User.isSuperAdmin` guard, MRR calculation, and Tenant directory (`src/server/__tests__/super-admin-integration.ts`).
+- **All-in-One Modules:** Verified Purchase Orders & inventory receiving, Customer Credit ledger, PDF Invoice generation, Loyalty Points redemption, Restaurant Tables & KDS tickets, and Sales/TVA reports (`src/server/__tests__/all-in-one-integration.ts`).
+- **POS Cashier Flow (E2E):** Verified atomic cart checkout, stock decrements, customer debt ledger, loyalty accrual, and receipt sequence (`src/server/__tests__/pos-e2e-checkout.ts`).
+- **Multilingual UI (Next.js 15 App Router):** Arabic (RTL default), French (LTR), English (LTR) compiling cleanly in production build (`npm run build`).
