@@ -1,26 +1,9 @@
 import { NextRequest } from "next/server";
-import { streamText, tool } from "ai";
-import { google } from "@ai-sdk/google";
-import { groq } from "@ai-sdk/groq";
+import { tool } from "ai";
 import { z } from "zod";
-import { createAI } from "ai-failover";
+import { streamTextWithRouter } from "@/lib/ai-router";
 import { prisma } from "@/server/db/prisma";
 import { getRequestContext } from "@/server/auth/context";
-
-// Initialize ai-failover router with the two free tier models for zero-downtime
-const aiFailoverClient = createAI({
-  providers: {
-    gemini: {
-      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || "",
-      models: ["gemini-2.5-flash"],
-    },
-    groq: {
-      apiKey: process.env.GROQ_API_KEY || "",
-      models: ["llama-3.3-70b-versatile"],
-    },
-  },
-  strategy: "priority",
-});
 
 // Reusable Database Stats Fetchers (Strict Tenant Isolation)
 async function fetchTodaySales(tenantId: string) {
@@ -283,71 +266,49 @@ Rules:
       },
     };
 
-    // 7. Automatic Zero-Downtime Failover Execution:
-    // Primary: Google Gemini 2.5 Flash (15 RPM / 1500 RPD)
-    // Fallback: Groq Llama 3.3 70B (30 RPM / 14.4K RPD)
+    // 7. Multi-Gateway Key Rotation & Failover Execution (OpenRouter -> Gemini 1/2 -> Groq 1/2)
     try {
-      const primaryModel = google("gemini-2.5-flash");
-      const result = streamText({
-        model: primaryModel,
-        ...commonConfig,
-      });
+      const { streamResult, candidate } = streamTextWithRouter(commonConfig as any);
 
-      return result.toUIMessageStreamResponse({
+      return streamResult.toUIMessageStreamResponse({
         headers: {
           "x-kaspi-ai-session-id": chatSession.id,
-          "x-kaspi-ai-model": "google/gemini-2.5-flash",
+          "x-kaspi-ai-provider": candidate.providerName,
+          "x-kaspi-ai-key-index": String(candidate.keyIndex),
+          "x-kaspi-ai-model": candidate.modelId,
         },
       });
-    } catch (primaryErr: any) {
-      console.warn("[KASPI AI] Primary model (Gemini) failed, initiating automatic failover to Groq Llama 3.3:", primaryErr?.message);
+    } catch (routerErr: any) {
+      console.error("[KASPI AI] All Multi-Gateway router candidates exhausted:", routerErr);
 
-      try {
-        const fallbackModel = groq("llama-3.3-70b-versatile");
-        const result = streamText({
-          model: fallbackModel,
-          ...commonConfig,
-        });
+      // Resilient Mock/Fallback Generator (prevents UI crash in offline/dev without live API keys)
+      const sales = await fetchTodaySales(tenantId);
+      const lowStock = await fetchLowStockProducts(tenantId, 5);
 
-        return result.toUIMessageStreamResponse({
-          headers: {
-            "x-kaspi-ai-session-id": chatSession.id,
-            "x-kaspi-ai-model": "groq/llama-3.3-70b-versatile",
-            "x-kaspi-ai-failover": "true",
-          },
-        });
-      } catch (fallbackErr: any) {
-        console.error("[KASPI AI] Both primary and fallback models failed:", fallbackErr);
-
-        // Resilient Mock/Fallback Generator (prevents UI crash in offline/dev without live API keys)
-        const sales = await fetchTodaySales(tenantId);
-        const lowStock = await fetchLowStockProducts(tenantId, 5);
-
-        const fallbackReply = `مرحباً بك! أنا مساعد كسب الذكي (KASPI AI). 
+      const fallbackReply = `مرحباً بك! أنا مساعد كسب الذكي (KASPI AI). 
 📊 **مبيعات اليوم**: ${sales.completedSalesCount} مبيعات بمجموع ${sales.totalRevenueMAD} درهم.
 ⚠️ **المنتجات المنخفضة في المخزون**: ${lowStock.length > 0 ? lowStock.map((p) => p.name + ` (${p.currentQuantity} متبقية)`).join("، ") : "المخزون ممتاز، لا توجد نواقص."}
 💡 **نصيحة اليوم**: احرص على مراجعة النواقص قبل بداية فترة الذروة لضمان استمرارية المبيعات.`;
 
-        await prisma.aIChatMessage.create({
-          data: {
-            sessionId: chatSession.id,
-            role: "assistant",
-            content: fallbackReply,
-          },
-        });
+      await prisma.aIChatMessage.create({
+        data: {
+          sessionId: chatSession.id,
+          role: "assistant",
+          content: fallbackReply,
+        },
+      });
 
-        return new Response(
-          `data: {"type":"text-delta","textDelta":${JSON.stringify(fallbackReply)}}\n\ndata: [DONE]\n\n`,
-          {
-            headers: {
-              "Content-Type": "text/event-stream",
-              "Cache-Control": "no-cache",
-              "x-kaspi-ai-session-id": chatSession.id,
-              "x-kaspi-ai-model": "local-fallback",
-            },
-          }
-        );
-      }
+      return new Response(
+        `data: {"type":"text-delta","textDelta":${JSON.stringify(fallbackReply)}}\n\ndata: [DONE]\n\n`,
+        {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "x-kaspi-ai-session-id": chatSession.id,
+            "x-kaspi-ai-model": "local-fallback",
+          },
+        }
+      );
     }
   } catch (err: any) {
     console.error("[KASPI AI] Unexpected chat route error:", err);
