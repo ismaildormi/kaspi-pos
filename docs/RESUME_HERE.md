@@ -22,16 +22,23 @@
   - `npx tsc --noEmit` passed with 0 errors.
   - `npm run build` compiled 22 pages and API routes with standalone output.
 
+## Where we are
+- **Docker Compose Running:** `pos_saas_db` healthy on port 5432.
+- **Database Migrated:** 43 tables + `is_super_admin` on `User`.
+- **Platform Owner Super Admin Console Complete:** `/admin` dashboard live with MRR and tenant directory.
+- **POS Cashier Split-Screen Interface Complete (Step 2):**
+  - High-performance, touch & keyboard-first POS layout at `/[locale]/pos` (`/ar/pos`, `/fr/pos`, `/en/pos`).
+  - Interactive Product Grid with Category pill filters and real-time stock badges.
+  - Auto-focused Barcode / Search input with `F2` global shortcut.
+  - Cart Panel with line-item steppers, TVA breakdown, Park / Hold cart feature, and `F10` checkout trigger.
+  - Checkout Modal supporting Cash (with quick-cash chips & change due calculation), Card, and Customer Credit.
+  - Offline-first Dexie queue (`offlineDb.offlineSales`) with background sync.
+
 ## Next micro-task
-Proceed to **Phase 2 POS Frontend UI & Cash Register**:
-1. Build the POS cash register screen with fast keyboard shortcuts (F2 barcode search, Enter, ± quantity, cart preview, payment modal).
-2. Connect POS UI to `POST /api/v1/sales` with offline Dexie.js queue.
-3. Build the UI tabs for:
-   - "Fournisseurs & Commandes" (Purchase Orders)
-   - "Factures & Devis" (PDF generation & printing)
-   - "Crédits Clients" (Carnet de Crédit)
-   - "Écran Cuisine (KDS)" & "Tables" (Restaurant mode)
-   - "Rapports & TVA" (Dashboard & Tax declaration)
+Proceed to **Phase 2 POS Step 3 & Supporting UI Modules**:
+1. Customer Selection & Quick Add modal inside POS (for Loyalty points & Credit sales).
+2. Receipt print preview generator (thermal 58mm/80mm style with Moroccan ICE and QR code).
+3. Connect sales submission to server `POST /api/v1/sales` transaction route and verify end-to-end sync.
 1. Implement the POS keyboard-first cash register interface (F2 search, Enter, cart preview, keypad).
 2. Connect POS UI to `POST /api/v1/sales` with offline Dexie.js queue.
 3. Build the UI tabs for:
