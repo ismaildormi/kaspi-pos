@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ShieldCheck, MessageCircle, Heart } from "lucide-react";
+import { ShieldCheck, MessageCircle } from "lucide-react";
 
 export function Footer() {
   return (
@@ -10,23 +10,21 @@ export function Footer() {
           {/* Brand Info */}
           <div className="md:col-span-1 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="relative h-9 w-9 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 p-1">
-                <Image
-                  src="/logo.png"
-                  alt="Kasbi POS Logo"
-                  width={36}
-                  height={36}
-                  className="h-full w-full object-contain"
-                />
-              </div>
-              <span className="font-extrabold text-base tracking-tight text-white">Kasbi POS</span>
+              <img
+                src="/logo.png"
+                alt="Kasbi POS Logo"
+                width={32}
+                height={32}
+                className="h-8 w-auto object-contain rounded-lg"
+              />
+              <span className="font-extrabold text-base tracking-tight text-white">KASPI POS</span>
             </div>
             <p className="text-xs text-zinc-400 leading-relaxed">
               Le premier ERP et système de caisse intelligent pensé pour le commerce de détail marocain.
-              Conforme DGI, fonctionnel 100% hors-ligne et propulsé par l'IA.
+              Conforme DGI, fonctionnel 100% hors-ligne et propulsé par l&apos;IA.
             </p>
             <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="inline-block h-2 w-2 rounded-full bg-white animate-pulse"></span>
               Serveurs cloud & réplication locale actifs
             </div>
           </div>
@@ -35,10 +33,10 @@ export function Footer() {
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-white">Modules</h4>
             <ul className="space-y-2 text-xs">
+              <li><Link href="/download" className="hover:text-white transition">Télécharger Application Windows</Link></li>
               <li><Link href="/pos" className="hover:text-white transition">Caisse Tactile Rapide (POS)</Link></li>
               <li><Link href="/dashboard/inventory" className="hover:text-white transition">Gestion des Stocks & Alertes</Link></li>
               <li><Link href="/dashboard/customers" className="hover:text-white transition">Crédits Clients (Krediat / Carnet)</Link></li>
-              <li><Link href="/dashboard/suppliers" className="hover:text-white transition">Fournisseurs & Factures d'Achat</Link></li>
               <li><Link href="/dashboard/reports" className="hover:text-white transition">Z-Report & Clôtures Quotidiennes</Link></li>
             </ul>
           </div>
@@ -77,11 +75,12 @@ export function Footer() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-between border-t border-zinc-900 pt-8 text-xs text-zinc-500">
-          <p>© {new Date().getFullYear()} Kasbi POS. Tous droits réservés. Conçu avec excellence pour les commerçants du Maroc.</p>
+          <p>© {new Date().getFullYear()} KASPI POS. Tous droits réservés. Conçu avec excellence pour les commerçants du Maroc.</p>
           <div className="flex items-center gap-6 mt-4 sm:mt-0 font-medium">
-            <Link href="/privacy" className="hover:text-zinc-300 transition">Confidentialité</Link>
-            <Link href="/terms" className="hover:text-zinc-300 transition">Conditions d'Utilisation</Link>
-            <Link href="/admin" className="hover:text-zinc-300 transition">Portail Super Admin</Link>
+            <Link href="/privacy" className="hover:text-zinc-300 transition">Privacy</Link>
+            <Link href="/terms" className="hover:text-zinc-300 transition">Terms</Link>
+            <Link href="/download" className="hover:text-zinc-300 transition">Download</Link>
+            <Link href="/admin" className="hover:text-zinc-300 transition">Super Admin</Link>
           </div>
         </div>
       </div>

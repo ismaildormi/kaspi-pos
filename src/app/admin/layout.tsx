@@ -22,13 +22,14 @@ export default function AdminLayout({
       <NextIntlClientProvider locale="fr" messages={enMessages}>
         <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-md px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="relative h-9 w-9 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 p-1">
+            <div className="h-9 w-9 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 p-1 flex items-center justify-center shrink-0">
               <Image
                 src="/logo.png"
                 alt="Kasbi POS Logo"
-                width={36}
-                height={36}
-                className="h-full w-full object-contain"
+                width={28}
+                height={28}
+                style={{ width: 28, height: 28, objectFit: "contain" }}
+                className="h-7 w-7 object-contain"
                 priority
               />
             </div>

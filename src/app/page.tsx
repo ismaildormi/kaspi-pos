@@ -35,13 +35,14 @@ export default function LandingPage() {
 
           {/* Hero Branding with Logo */}
           <div className="flex justify-center mb-6">
-            <div className="relative h-24 w-24 sm:h-28 sm:w-28 overflow-hidden rounded-3xl border border-zinc-700 bg-zinc-900/80 p-2.5 shadow-2xl shadow-black/80">
+            <div className="h-20 w-20 overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-900/80 p-2 shadow-2xl shadow-black/80 flex items-center justify-center">
               <Image
                 src="/logo.png"
                 alt="Kasbi POS Official Logo"
-                width={120}
-                height={120}
-                className="h-full w-full object-contain"
+                width={64}
+                height={64}
+                style={{ width: 64, height: 64, objectFit: "contain" }}
+                className="h-16 w-16 object-contain"
                 priority
               />
             </div>
@@ -58,17 +59,17 @@ export default function LandingPage() {
 
           {/* Action CTAs */}
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a
-              href="https://github.com/kaspi-pos/releases/releases/latest"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 shadow-xl"
+            <Link
+              href="/download"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 shadow-xl"
             >
               <Download className="h-4 w-4" />
               Télécharger pour Windows (.exe)
-            </a>
+            </Link>
 
             <Link
               href="/pos"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-zinc-800 hover:border-zinc-700"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-7 py-4 text-sm font-semibold text-white transition hover:bg-zinc-800 hover:border-zinc-700"
             >
               <ShoppingBag className="h-4 w-4" />
               Ouvrir la Caisse Web (POS)
@@ -76,7 +77,7 @@ export default function LandingPage() {
 
             <Link
               href="/dashboard"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950 px-7 py-3.5 text-sm font-medium text-zinc-400 transition hover:text-white hover:border-zinc-700"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-zinc-800 bg-zinc-950 px-7 py-4 text-sm font-medium text-zinc-400 transition hover:text-white hover:border-zinc-700"
             >
               Tableau de Bord
               <ArrowRight className="h-4 w-4" />

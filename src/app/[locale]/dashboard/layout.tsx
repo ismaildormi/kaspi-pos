@@ -47,8 +47,15 @@ export default function DashboardLayout({
       {/* Mobile Top Header */}
       <div className="md:hidden flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="relative h-8 w-8 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 p-0.5">
-            <Image src="/logo.png" alt="Kasbi POS" width={32} height={32} className="h-full w-full object-contain" />
+          <div className="h-8 w-8 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 p-0.5 flex items-center justify-center shrink-0">
+            <Image
+              src="/logo.png"
+              alt="Kasbi POS"
+              width={26}
+              height={26}
+              style={{ width: 26, height: 26, objectFit: "contain" }}
+              className="h-6 w-6 object-contain"
+            />
           </div>
           <span className="font-extrabold text-base tracking-tight text-white">Kasbi POS</span>
         </Link>

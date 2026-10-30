@@ -20,10 +20,12 @@ const PUBLIC_API_PATHS = [
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Bypass static assets and next internals
+  // 1. Bypass static assets, public download routes, and next internals
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon.ico") ||
+    pathname.startsWith("/download") ||
+    pathname.includes("/download") ||
     pathname.includes(".")
   ) {
     return NextResponse.next();
@@ -117,5 +119,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!api/auth|download|downloads|en/download|fr/download|ar/download|_next/static|_next/image|images|favicon.ico).*)",
+  ],
 };

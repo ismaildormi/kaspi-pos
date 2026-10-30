@@ -32,7 +32,6 @@ export default function LoginPage() {
       if (res?.error) {
         setError("Email ou mot de passe incorrect.");
       } else {
-        // Check session to see if Super Admin, redirect to /admin or /dashboard
         try {
           const authCheck = await fetch("/api/auth/session");
           const sessionData = await authCheck.json();
@@ -66,20 +65,32 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 select-none">
       {/* Top Header with Language Switcher */}
-      <div className="absolute top-4 inset-x-0 px-4 sm:px-8 flex justify-between items-center">
-        <div className="flex items-center gap-2.5">
-          <div className="relative h-8 w-8 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 p-0.5">
-            <img src="/logo.png" alt="Kasbi POS" className="h-full w-full object-contain" />
-          </div>
+      <div className="absolute top-4 inset-x-0 px-4 sm:px-8 flex justify-between items-center z-10">
+        <Link href="/" className="flex items-center gap-2.5">
+          <img
+            src="/logo.png"
+            alt="Kasbi POS"
+            width={32}
+            height={32}
+            className="h-8 w-auto object-contain rounded-lg"
+          />
           <span className="font-bold text-base text-white tracking-tight">
             Kasbi POS
           </span>
-        </div>
+        </Link>
         <LanguageSwitcher />
       </div>
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <h2 className="mt-6 text-3xl font-extrabold text-white tracking-tight">
+      {/* Centered Logo & Title */}
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mt-8">
+        <img
+          src="/logo.png"
+          alt="Kasbi POS Logo"
+          width={64}
+          height={64}
+          className="h-16 w-16 object-contain mb-6 mx-auto rounded-2xl border border-zinc-800 bg-zinc-900 p-1.5 shadow-xl"
+        />
+        <h2 className="text-3xl font-extrabold text-white tracking-tight">
           {t("login")}
         </h2>
         <p className="mt-2 text-sm text-zinc-400">
@@ -91,7 +102,7 @@ export default function LoginPage() {
         <div className="bg-zinc-900/90 py-8 px-6 shadow-2xl rounded-2xl border border-zinc-800 sm:px-10">
           {error && (
             <div className="mb-5 p-3 rounded-xl bg-zinc-950 border border-zinc-700 text-zinc-300 text-sm flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-white" />
+              <span className="w-2 h-2 rounded-full bg-white shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -122,7 +133,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1"
+                className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1 text-start"
               >
                 {t("email")}
               </label>
@@ -142,7 +153,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1"
+                className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1 text-start"
               >
                 {t("password")}
               </label>
