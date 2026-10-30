@@ -19,6 +19,7 @@ import {
   X,
   ArrowUpRight,
   ShieldCheck,
+  HelpCircle,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
   { name: "Équipe & Caissiers", href: "/dashboard/staff", icon: Users },
   { name: "Abonnement & Facturation", href: "/dashboard/billing", icon: CreditCard },
   { name: "Paramètres du Magasin", href: "/dashboard/settings", icon: Settings },
+  { name: "Aide & Support Direct", href: "/dashboard/support", icon: HelpCircle },
 ];
 
 export default function DashboardLayout({

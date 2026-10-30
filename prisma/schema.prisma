@@ -288,6 +288,7 @@ model Tenant {
   zReports           ZReport[]
   stockPredictions   StockPrediction[]
   settings           TenantSettings?
+  supportMessages    SupportMessage[]
 
   @@map("tenants")
 }
@@ -1449,4 +1450,23 @@ model TenantSettings {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("tenant_settings")
+}
+
+model SupportMessage {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  senderName  String   @map("sender_name")
+  senderPhone String?  @map("sender_phone")
+  subject     String?  @map("subject")
+  message     String   @map("message")
+  status      String   @default("unread") @map("status") // unread, read, replied, resolved
+  adminReply  String?  @map("admin_reply")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([status, createdAt])
+  @@map("support_messages")
 }

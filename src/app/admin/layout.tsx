@@ -44,7 +44,19 @@ export default function AdminLayout({
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-3 text-xs">
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-1.5 font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition"
+            >
+              Dashboard Admin
+            </Link>
+            <Link
+              href="/admin/messages"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 font-bold text-black hover:bg-zinc-200 transition"
+            >
+              Support Inbox
+            </Link>
             <Link
               href="/dashboard"
               className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-1.5 font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition"
