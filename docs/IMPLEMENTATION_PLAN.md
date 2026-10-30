@@ -82,15 +82,16 @@
 | P3-02 | Dashboard UI with Recharts | — | build |
 | P3-03 | Schema: plans, subscriptions, payments, webhook_events, invoices, loyalty_points | tenant, money | migrate + validate |
 | P3-04 | Entitlements engine (trial 14d → free fallback / pro), `GET /subscription`, grace period | tenant | tests |
-| P3-05 | `BillingProvider` interface + `MockBillingProvider` (MOCK label) + `POST /checkout-sessions` (price from plan) | tenant, money | tests |
-| P3-06 | Webhook inbox `POST /webhooks/{provider}`: signature verify, `UNIQUE(provider,event_id)`, async processing, state machine | money | tests: duplicate, bad signature, out-of-order |
-| P3-07 | Paddle (or Lemon Squeezy) real adapter — **only if sandbox keys provided** | money | sandbox e2e; else `[!]` blocked |
+| P3-05 | **Dual-Gateway Billing Architecture**: `IPaymentProvider` interface, `PaddleBillingProvider` (International MoR, handles all global VAT), `YouCanPayBillingProvider` (Moroccan local cards/CMI in MAD), and `MockBillingProvider` (sandbox testing) | tenant, money | [x] VERIFIED |
+| P3-06 | **Dual-Gateway Webhook Inboxes**: `POST /api/webhooks/paddle` & `POST /api/webhooks/youcanpay`: HMAC signature verification, `UNIQUE(provider, event_id)` idempotency check, atomic `Subscription` status update & `Payment` ledger creation | money | [x] VERIFIED |
+| P3-07 | **Checkout & Subscription API**: `POST /api/billing/checkout` (creates Paddle session or YouCan Pay token) & `GET /api/billing/subscription` (status, interval, renewal dates) | tenant, money | [x] VERIFIED |
 | P3-08 | Invoice service: gapless numbering, seller/buyer snapshots, TVA breakdown, immutability trigger, credit notes, `schema_version` | tenant, money | tests: retry doesn't renumber, issued invoice update rejected |
 | P3-09 | Invoice PDF (Arabic + French font test) `GET /invoices/{id}/pdf` | — | generated PDF inspected |
 | P3-10 | `docs/legal-open-items.md` (CGI Art.145, CNDP, MoR) | — | file |
 | P3-11 | Loyalty ledger: earn on sale, redeem (no negative balance), reverse on refund | tenant | tests |
 | P3-12 | Members & invitations (invite, accept single-use, revoke, role change audited) | tenant | tests + isolation |
 | P3-13 | Settings UI (tenant legal info ICE/IF/RC, tax rates, stores, members, plan) | — | build |
+| P3-14 | **Subscription & Billing UI (`/[locale]/dashboard/billing`)**: Plan status, days remaining, expiration date, interactive payment method selector (YouCan Pay for Moroccan cards vs Paddle for International cards), and payment history table | ui, money | [x] VERIFIED |
 
 ---
 

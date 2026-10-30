@@ -43,7 +43,7 @@ flowchart TD
 | ADR-008 | **Stock** = `inventory_movements` ledger + `stock_levels` cache updated in the same transaction; nightly/CI reconciliation asserts `SUM(ledger) == cache`. Negative stock allowed by default (offline sales are facts) but flagged; setting `allow_negative_stock`. | Plan §3, §6.3. |
 | ADR-009 | **Sync cursor** = monotonically increasing `server_seq BIGINT` (global sequence, set by trigger on insert/update) on syncable tables; pull = `WHERE tenant_id=? AND server_seq > cursor ORDER BY server_seq LIMIT n`. Soft deletes (`deleted_at`) so deletions sync. | Plan: "updated_at alone is not enough". |
 | ADR-010 | **Charts: Recharts** (only). **CSV: Papa Parse**. **Barcode camera: @zxing/browser**. **PDF: @react-pdf/renderer** or pdf-lib (decide in Phase 3 after Arabic font test). | Plan: one lib per concern. |
-| ADR-011 | **Payments**: `BillingProvider` interface; `MockBillingProvider` (labelled MOCK, dev only) until Paddle/Lemon Squeezy sandbox keys exist. | Constitution Art. 7. |
+| ADR-011 | **Dual-Gateway Billing (Paddle MoR + YouCan Pay Local)**: `IPaymentProvider` interface. **Paddle** acts as Merchant of Record (MoR) for international cards, managing global tax/VAT liability. **YouCan Pay** processes local Moroccan cards (CMI, Attijariwafa, CIH, BCP, BMCE) in Moroccan Dirhams (100 MAD/month). Mock adapter provided for zero-friction sandbox testing. | Unlocks global payments without tax liability while offering domestic Moroccan payment ease. |
 | ADR-012 | **Multilingual Support (i18n)**: `next-intl` supporting **Arabic (`ar`, RTL default)**, **French (`fr`, LTR)**, and **English (`en`, LTR)**. URL routing via `[locale]` prefix, cookie detection, and Tailwind logical utilities (`ms-*`, `pe-*`). | Complete linguistic coverage for Moroccan retail, tourists, and international business. |
 | ADR-013 | **Cloud Deployment Strategy**: Multi-stage `Dockerfile` (Node.js standalone output) and production-ready `docker-compose.yml` supporting Oracle Cloud Always Free (ARM64 Ampere / x86_64), GitHub Codespaces, and Google Cloud Run. | Documented in `docs/DEPLOYMENT.md` for low-cost, scalable deployment. |
 | ADR-014 | **Competitor Smart Migration (Importer)**: Native import engine supporting presets for competitors (Caissa, POSNEX, Excel/CSV) to migrate products, stock, customer debt, and sales history with zero friction. | Removes the primary switching barrier for Moroccan merchants switching from legacy local POS software. |
@@ -242,3 +242,21 @@ Sale: `subtotal = Σnet`, `tax_total = Σtax`, `grand_total = Σgross` (cart-lev
   2. Image payload is sent to Gemini Vision via `generateTextWithRouter`.
   3. AI extracts commercial name, scans EAN barcode, assigns Moroccan retail category, and suggests Moroccan MAD retail price (`salePrice`) and cost price (`costPrice`).
   4. Response is presented in an interactive review form where cashier adjusts details and clicks "Save Product" to commit atomically to `Product` and `Category` tables via `POST /api/v1/products`.
+
+## 11. Dual-Gateway Billing Architecture (Paddle MoR + YouCan Pay)
+
+### 11.1 Architecture & Separation of Concerns
+- **Interface**: `src/lib/billing/types.ts` defines `IPaymentProvider`:
+  - `createCheckoutSession(options: CheckoutSessionOptions): Promise<CheckoutSessionResponse>`
+  - `handleWebhook(rawBody: string, headers: Record<string, string | string[] | undefined>): Promise<WebhookEventPayload>`
+  - `verifySignature(rawBody: string, signature: string): boolean`
+- **Adapters**:
+  - `PaddleBillingProvider` (`src/lib/billing/paddle.ts`): Merchant of Record for USD/EUR payments ($10/month). Manages all international VAT/GST compliance. Verifies HMAC-SHA256 `paddle-signature`.
+  - `YouCanPayBillingProvider` (`src/lib/billing/youcanpay.ts`): Moroccan Card gateway for local Dirham payments (100 MAD/month). Supports CMI national cards with instant authorization.
+  - `MockBillingProvider` (`src/lib/billing/mock.ts`): Deterministic sandbox simulation for local offline testing.
+
+### 11.2 Webhook Idempotency & Lifecycle
+- Inboxes at `/api/webhooks/paddle` and `/api/webhooks/youcanpay`.
+- Every incoming webhook is recorded in `webhook_events` under `UNIQUE(provider, event_id)`.
+- Replayed or duplicate webhooks are detected and short-circuited with HTTP 200 `{ duplicate: true }`.
+- Valid webhooks atomically update `Subscription` (`status`, `provider`, `current_period_end`) and record a ledger entry in `payments` within a single database transaction.

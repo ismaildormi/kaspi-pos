@@ -51,9 +51,10 @@ enum BillingInterval {
 
 enum BillingProvider {
   paddle
-  lemonsqueezy
+  youcanpay
   manual
   mock
+  lemonsqueezy
 }
 
 enum PaymentStatus {
