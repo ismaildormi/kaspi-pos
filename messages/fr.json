@@ -70,5 +70,18 @@
     "price": "Prix de vente",
     "cost": "Prix de revient",
     "stock": "Stock disponible"
+  },
+  "Ai": {
+    "title": "Assistant KASPI AI",
+    "subtitle": "Votre conseiller d'affaires & analyste POS",
+    "placeholder": "Posez une question sur vos ventes, stock ou gestion...",
+    "send": "Envoyer",
+    "suggestedSales": "Quel est le total des ventes d'aujourd'hui ?",
+    "suggestedStock": "Quels produits sont en rupture de stock (< 5) ?",
+    "suggestedTop": "Quels sont les produits les plus vendus cette semaine ?",
+    "thinking": "Analyse des données en cours...",
+    "error": "Impossible de contacter l'assistant pour le moment.",
+    "fallbackNotice": "Bascule automatique de secours activée avec succès.",
+    "newChat": "Nouvelle session"
   }
 }

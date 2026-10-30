@@ -24,8 +24,8 @@
 
 ## Where we are
 - **Docker Compose Running:** `pos_saas_db` healthy on port 5432.
-- **Database Migrated:** 43 tables + `is_super_admin` on `User`.
-- **Strategic Moats Documented:** `plan.txt`, `docs/ARCHITECTURE.md`, and `docs/IMPLEMENTATION_PLAN.md` updated with Competitor Smart Migration (Caissa/POSNEX), 1-Click Data Portability Exporter, Anonymized Market Research Insights, and Oracle Always Free $0/mo infrastructure tuning.
+- **Database Migrated:** 45 tables (including `ai_chat_sessions`, `ai_chat_messages`).
+- **Strategic Moats Documented:** `plan.txt`, `docs/ARCHITECTURE.md`, and `docs/IMPLEMENTATION_PLAN.md` updated with AI Assistant architecture, Competitor Smart Migration (Caissa/POSNEX), 1-Click Data Portability Exporter, Anonymized Market Research Insights, and Oracle Always Free $0/mo infrastructure tuning.
 - **Complete POS Cashier Interface Verified (Steps 1, 2 & 3):**
   - High-performance, touch & keyboard-first POS layout at `/[locale]/pos` (`/ar/pos`, `/fr/pos`, `/en/pos`).
   - Interactive Product Grid with Category pill filters and real-time stock badges.
@@ -36,10 +36,19 @@
   - Thermal Receipt Generator (`ThermalReceipt.tsx`) supporting 58mm & 80mm paper widths, bilingual Arabic/French, and Moroccan fiscal notices.
   - Full backend persistence via `POST /api/v1/sales` with atomic stock reduction, inventory movements, customer credit charge, and loyalty points earning.
   - Offline-first Dexie queue (`offlineDb.offlineSales`) with background sync.
+- **KASPI AI Assistant Complete & Verified:**
+  - Zero-downtime failover router (`ai-failover` + Vercel AI SDK): Primary `google/gemini-2.5-flash` with automatic failover to `groq/llama-3.3-70b-versatile` and local fallback.
+  - Persistent Chat Memory in PostgreSQL (`AIChatSession`, `AIChatMessage`) via Prisma migration `20261030035000_add_ai_chat_memory`.
+  - Real-Time Function Calling Tools with tenant isolation:
+    - `getTodaySales`: returns today's sales and revenue in MAD.
+    - `getLowStockProducts`: alerts to products with stock < 5.
+    - `getTopSellingProducts`: top 3 velocity products over the past 7 days.
+  - Floating `AIChatWidget` with streaming responses, auto-scroll, quick suggestion chips, and RTL Arabic / LTR French/English typography.
 - **Verification:**
+  - `npx tsx src/server/__tests__/ai-assistant-integration.ts` passed 100% against PostgreSQL.
   - `npx tsx src/server/__tests__/pos-e2e-checkout.ts` passed 100% against PostgreSQL.
   - `npx tsc --noEmit` passed with 0 errors.
-  - `npm run build` compiled 29 pages and routes into standalone output.
+  - `npm run build` compiled 30 pages and routes into standalone output.
 
 ## Next micro-task
 Proceed to **Phase 3: Automated Billing & Paddle MoR Integration**:

@@ -70,5 +70,18 @@
     "price": "Sale Price",
     "cost": "Cost Price",
     "stock": "Current Stock"
+  },
+  "Ai": {
+    "title": "KASPI AI Assistant",
+    "subtitle": "Your Business Advisor & POS Analyst",
+    "placeholder": "Ask about today's sales, stock levels, or business tips...",
+    "send": "Send",
+    "suggestedSales": "What are today's total sales?",
+    "suggestedStock": "Which products are low on stock (< 5)?",
+    "suggestedTop": "What are the top 3 selling products this week?",
+    "thinking": "Analyzing live database stats...",
+    "error": "Unable to reach the AI assistant at the moment.",
+    "fallbackNotice": "Zero-downtime failover model active.",
+    "newChat": "New Chat"
   }
 }

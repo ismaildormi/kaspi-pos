@@ -151,3 +151,21 @@ Sale: `subtotal = Σnet`, `tax_total = Σtax`, `grand_total = Σgross` (cart-lev
 - **dev**: Postgres 16 via `docker compose` (or any local Postgres via `DATABASE_URL`); `.env.local`.
 - **test**: separate database `pos_test`, migrated with `prisma migrate deploy` before integration tests; truncated between suites.
 - **staging/prod**: managed Postgres (e.g. Supabase Pro / Cloud SQL), app on Cloud Run/Vercel. Not configured yet.
+
+## 9. AI Assistant Architecture (ADR-018: Free Tier AI with Zero-Downtime Failover)
+- **Framework**: Vercel AI SDK (`ai`, `@ai-sdk/google`, `@ai-sdk/groq`, `@ai-sdk/react`) + `ai-failover` package.
+- **Model Tiers**:
+  1. **Primary**: Google Gemini 2.5 Flash via `@ai-sdk/google` (15 RPM / 1,500 RPD free tier).
+  2. **Fallback**: Groq Llama 3.3 70B Versatile via `@ai-sdk/groq` (30 RPM / 14,400 RPD free tier).
+  - When rate limits, timeouts, or provider 5xx errors occur on Gemini, `ai-failover` seamlessly falls back to Groq without client disruption.
+- **Persistent Context Memory**:
+  - `AIChatSession`: scoped to `tenant_id` (or nullable for Super Admin platform monitoring) and `user_id`.
+  - `AIChatMessage`: stores ordered roles (`user`, `assistant`, `system`) and content in PostgreSQL.
+- **Tenant-Guarded Function Calling (Tools)**:
+  - `getTodaySales`: aggregates tenant's completed sales for today.
+  - `getLowStockProducts`: queries tenant's products with stock < 5.
+  - `getTopSellingProducts`: returns tenant's top 3 selling products over the last 7 days.
+  - Strict tenant filtering: all tools execute with `tenantId` extracted from the server session, preventing cross-tenant leakage.
+- **Client Presentation**:
+  - Reusable `AIChatWidget` floating panel in bottom-right corner.
+  - Streaming responses via `useChat` hook, with RTL Arabic and LTR French/English typography.

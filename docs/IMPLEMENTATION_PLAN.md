@@ -138,3 +138,4 @@
 | P5-17 | **One-Click Data Portability (Exporter)**: One-click export of catalog, sales, invoices, and customer ledgers in standardized CSV/JSON/SQLite formats | tenant | planned |
 | P5-18 | **Anonymized Market Business Intelligence (B2B)**: Regional market insights aggregation across Moroccan commerce sectors for secondary monetization | data | planned |
 | P5-19 | **Oracle Cloud Always Free Deployment Optimization**: Multi-tenant Docker and PostgreSQL tuning for Oracle Always Free Tier (4 ARM cores / 24GB RAM) for $0/mo infrastructure floor | ops | planned |
+| P5-20 | **KASPI AI Assistant (Vercel AI SDK + ai-failover)**: Zero-downtime Gemini 2.5 Flash + Groq Llama 3.3 70B failover, persistent chat memory in PostgreSQL (AIChatSession, AIChatMessage), tenant function calling tools (sales, stock alerts, top products), and floating AIChatWidget | ai, ui, data | IN PROGRESS |

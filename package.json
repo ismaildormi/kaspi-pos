@@ -20,9 +20,14 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.108",
+    "@ai-sdk/groq": "^4.0.73",
+    "@ai-sdk/react": "^4.0.161",
     "@auth/prisma-adapter": "^2.11.3",
     "@node-rs/argon2": "^2.2.2",
     "@prisma/client": "^6.19.3",
+    "ai": "^7.0.157",
+    "ai-failover": "^0.3.0",
     "decimal.js": "^10.6.0",
     "dexie": "^4.4.7",
     "lucide-react": "^1.64.0",

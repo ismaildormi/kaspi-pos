@@ -3,6 +3,7 @@ import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import "@/app/globals.css";
+import { AIChatWidget } from "@/components/ai/AIChatWidget";
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -40,6 +41,7 @@ export default async function LocaleLayout({
       <body className={locale === "ar" ? "font-['Cairo',sans-serif]" : "font-['Inter',sans-serif]"}>
         <NextIntlClientProvider messages={messages}>
           {children}
+          <AIChatWidget />
         </NextIntlClientProvider>
       </body>
     </html>
