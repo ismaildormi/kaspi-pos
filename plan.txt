@@ -59,7 +59,10 @@ Phase 5: Ultimate KASPI AI Assistant & Ecosystem Moats [VERIFIED]
   - Real-time Function Calling: getTodaySales, getLowStockProducts, getTopSellingProducts
   - Client UI: Floating AIChatWidget with streaming & RTL Arabic / LTR French support
   - NEVEA AI Supervisor Bridge, Smart Migration (Caissa/POSNEX), and Hardening
-Phase 6: Enterprise & Automation (Marjane-Grade ERP) [ARCHITECTED]
+Phase 6: Enterprise AI Superpowers & Automation (Marjane-Grade ERP) [ARCHITECTED & IN PROGRESS]
+  - BYOK (Bring Your Own Key): Super Admin custom OpenAI/compatible endpoint injection via SystemSetting [VERIFIED]
+  - Multimodal AI Chat Widget: Image & PDF attachments with vision inference & context memory [VERIFIED]
+  - AI Product Onboarding: Packaging photo analyzer with MAD price estimation & 1-click catalog save [VERIFIED]
   - HQ Centralized Multi-Store Dashboard & Global Price Control
   - Inter-Store Stock Transfers (Atomic draft -> in_transit -> completed/canceled)
   - Smart OCR for Supplier Invoices (Gemini 3.5 Flash Vision -> auto PO draft)

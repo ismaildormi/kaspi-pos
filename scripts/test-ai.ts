@@ -8,9 +8,9 @@ async function main() {
   console.log("KASPI AI: MULTI-KEY POOL & MULTI-GATEWAY ROUTER TEST");
   console.log("================================================================");
 
-  const candidates = getRouterCandidates();
+  const candidates = await getRouterCandidates();
   console.log(`Discovered ${candidates.length} active key targets in pool:`);
-  candidates.forEach((c, idx) => {
+  candidates.forEach((c: any, idx: number) => {
     console.log(
       `  [Priority ${idx + 1}] Provider: ${c.providerName.padEnd(14)} | Key: ${c.keyMasked} | Model: ${c.modelId}`
     );

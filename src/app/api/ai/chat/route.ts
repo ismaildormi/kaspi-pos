@@ -168,8 +168,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 3. Extract and Persist the Latest User Message
+    // 3. Extract and Persist the Latest User Message & Multimodal Attachments
     const incomingUserMsg = messages[messages.length - 1];
+    const incomingAttachments: Array<{ name?: string; contentType?: string; url: string }> =
+      incomingUserMsg?.experimental_attachments ||
+      (incomingUserMsg as any)?.attachments ||
+      [];
+
     const userPrompt =
       typeof incomingUserMsg?.content === "string"
         ? incomingUserMsg.content
@@ -182,12 +187,25 @@ export async function POST(req: NextRequest) {
         ? JSON.stringify(incomingUserMsg.content)
         : "";
 
-    if (userPrompt) {
+    // Determine primary image or document attachment URL if present
+    const firstImageAtt = incomingAttachments.find(
+      (a) => a.contentType?.startsWith("image/") || a.url?.startsWith("data:image/")
+    );
+    const firstDocAtt = incomingAttachments.find(
+      (a) =>
+        a.contentType === "application/pdf" ||
+        a.url?.startsWith("data:application/pdf") ||
+        a.url?.endsWith(".pdf")
+    );
+
+    if (userPrompt || incomingAttachments.length > 0) {
       await prisma.aIChatMessage.create({
         data: {
           sessionId: chatSession.id,
           role: "user",
-          content: userPrompt,
+          content: userPrompt || "(Uploaded attachment)",
+          imageUrl: firstImageAtt?.url || null,
+          documentUrl: firstDocAtt?.url || null,
         },
       });
     }
@@ -199,10 +217,24 @@ export async function POST(req: NextRequest) {
       take: 20,
     });
 
-    const formattedHistory = historicalMessages.map((m) => ({
-      role: (m.role === "user" ? "user" : "assistant") as "user" | "assistant",
-      content: m.content,
-    }));
+    const formattedHistory = historicalMessages.map((m) => {
+      const parts: any[] = [{ type: "text", text: m.content }];
+      if (m.imageUrl) {
+        parts.push({ type: "image", image: m.imageUrl });
+      }
+      if (m.documentUrl) {
+        parts.push({
+          type: "file",
+          data: m.documentUrl,
+          mimeType: "application/pdf",
+        });
+      }
+
+      return {
+        role: (m.role === "user" ? "user" : "assistant") as "user" | "assistant",
+        content: parts.length > 1 ? parts : m.content,
+      };
+    });
 
     // 5. Define Real-Time Database Tools (Function Calling with Strict Tenant Isolation)
     const tools = {
@@ -266,9 +298,9 @@ Rules:
       },
     };
 
-    // 7. Multi-Gateway Key Rotation & Failover Execution (OpenRouter -> Gemini 1/2 -> Groq 1/2)
+    // 7. Multi-Gateway Key Rotation & Failover Execution (BYOK -> Gemini 1/2 -> OpenRouter -> Groq 1/2)
     try {
-      const { streamResult, candidate } = streamTextWithRouter(commonConfig as any);
+      const { streamResult, candidate } = await streamTextWithRouter(commonConfig as any);
 
       return streamResult.toUIMessageStreamResponse({
         headers: {

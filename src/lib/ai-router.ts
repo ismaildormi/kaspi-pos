@@ -1,6 +1,8 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createGroq } from "@ai-sdk/groq";
+import { createOpenAI } from "@ai-sdk/openai";
+import { prisma } from "@/server/db/prisma";
 import {
   generateText,
   streamText,
@@ -19,25 +21,81 @@ export function parseKeyPool(envVarValue?: string): string[] {
 }
 
 export interface RouterCandidate {
-  provider: "openrouter" | "google" | "groq";
+  provider: "custom" | "openrouter" | "google" | "groq";
   providerName: string;
   keyIndex: number;
   keyMasked: string;
   apiKey: string;
   modelId: string;
   model: LanguageModel;
+  supportsVision: boolean;
 }
 
 /**
  * Builds the prioritized Multi-Gateway Candidate Pool:
- * 1. OpenRouter (openrouter/auto)
- * 2. Google Gemini Key 1 -> Key 2 (gemini-3.5-flash-lite / gemini-2.5-flash)
- * 3. Groq Key 1 -> Key 2 (openai/gpt-oss-20b / llama-3.3-70b-versatile)
+ * 1. Custom BYOK (Super Admin configured in SystemSetting)
+ * 2. Google Gemini Key Pool (gemini-3.5-flash-lite / gemini-2.5-flash) - Native Vision & Free Tier
+ * 3. OpenRouter (openrouter/auto)
+ * 4. Groq Key Pool (openai/gpt-oss-20b / llama-3.3-70b-versatile)
  */
-export function getRouterCandidates(): RouterCandidate[] {
+export async function getRouterCandidates(): Promise<RouterCandidate[]> {
   const candidates: RouterCandidate[] = [];
 
-  // Priority 1: OpenRouter (Single Key)
+  // Priority 1: Custom BYOK Providers (Configured by Super Admin in SystemSetting)
+  try {
+    const customSettings = await prisma.systemSetting.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    for (let idx = 0; idx < customSettings.length; idx++) {
+      const setting = customSettings[idx];
+      if (setting.apiKey && !setting.apiKey.includes("mock")) {
+        const customOpenAI = createOpenAI({
+          apiKey: setting.apiKey,
+          baseURL: setting.baseUrl?.trim() || undefined,
+        });
+
+        const modelId = setting.providerName.toLowerCase().includes("gpt")
+          ? setting.providerName
+          : "gpt-4o-mini";
+
+        candidates.push({
+          provider: "custom",
+          providerName: `BYOK (${setting.providerName})`,
+          keyIndex: idx,
+          keyMasked: `...${setting.apiKey.slice(-6)}`,
+          apiKey: setting.apiKey,
+          modelId,
+          model: customOpenAI(modelId) as unknown as LanguageModel,
+          supportsVision: true,
+        });
+      }
+    }
+  } catch (dbErr) {
+    console.warn("[AI Router] Notice: Could not read SystemSetting from DB, skipping BYOK:", dbErr);
+  }
+
+  // Priority 2: Google Gemini (Native Multimodal & High Free Tier Limits)
+  const geminiKeys = parseKeyPool(process.env.GOOGLE_API_KEYS);
+  geminiKeys.forEach((key, idx) => {
+    if (!key.includes("mock")) {
+      const googleProvider = createGoogleGenerativeAI({ apiKey: key });
+      const modelId = "gemini-3.5-flash-lite";
+      candidates.push({
+        provider: "google",
+        providerName: "Google Gemini",
+        keyIndex: idx,
+        keyMasked: `...${key.slice(-6)}`,
+        apiKey: key,
+        modelId,
+        model: googleProvider(modelId) as unknown as LanguageModel,
+        supportsVision: true,
+      });
+    }
+  });
+
+  // Priority 3: OpenRouter (Single Key fallback)
   const openRouterKey = process.env.OPENROUTER_API_KEY?.trim();
   if (openRouterKey && !openRouterKey.includes("mock")) {
     const orProvider = createOpenRouter({ apiKey: openRouterKey });
@@ -49,34 +107,15 @@ export function getRouterCandidates(): RouterCandidate[] {
       apiKey: openRouterKey,
       modelId: "openrouter/auto",
       model: orProvider("openrouter/auto") as unknown as LanguageModel,
+      supportsVision: true,
     });
   }
 
-  // Priority 2: Google Gemini (Key Pool)
-  const geminiKeys = parseKeyPool(process.env.GOOGLE_API_KEYS);
-  geminiKeys.forEach((key, idx) => {
-    if (!key.includes("mock")) {
-      const googleProvider = createGoogleGenerativeAI({ apiKey: key });
-      // Uses gemini-3.5-flash-lite (high speed, 100% free tier capacity)
-      const modelId = "gemini-3.5-flash-lite";
-      candidates.push({
-        provider: "google",
-        providerName: "Google Gemini",
-        keyIndex: idx,
-        keyMasked: `...${key.slice(-6)}`,
-        apiKey: key,
-        modelId,
-        model: googleProvider(modelId) as unknown as LanguageModel,
-      });
-    }
-  });
-
-  // Priority 3: Groq (Key Pool)
+  // Priority 4: Groq (Ultra-Fast Text Inference Pool)
   const groqKeys = parseKeyPool(process.env.GROQ_API_KEYS);
   groqKeys.forEach((key, idx) => {
     if (!key.includes("mock")) {
       const groqProvider = createGroq({ apiKey: key });
-      // Uses openai/gpt-oss-20b (active free tier model with sub-second latency)
       const modelId = "openai/gpt-oss-20b";
       candidates.push({
         provider: "groq",
@@ -86,6 +125,7 @@ export function getRouterCandidates(): RouterCandidate[] {
         apiKey: key,
         modelId,
         model: groqProvider(modelId) as unknown as LanguageModel,
+        supportsVision: false,
       });
     }
   });
@@ -93,18 +133,53 @@ export function getRouterCandidates(): RouterCandidate[] {
   return candidates;
 }
 
+/**
+ * Checks whether any message or prompt contains multimodal content (images / files).
+ */
+function hasMultimodalContent(options: any): boolean {
+  if (options.messages && Array.isArray(options.messages)) {
+    for (const msg of options.messages) {
+      if (Array.isArray(msg.content)) {
+        for (const part of msg.content) {
+          if (part.type === "image" || part.type === "file") return true;
+        }
+      }
+      if (Array.isArray(msg.parts)) {
+        for (const part of msg.parts) {
+          if (part.type === "image" || part.type === "file") return true;
+        }
+      }
+      if (msg.imageUrl || msg.documentUrl || msg.experimental_attachments?.length) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 export type GenerateTextOptions = Omit<Parameters<typeof generateText>[0], "model">;
 export type StreamTextOptions = Omit<Parameters<typeof streamText>[0], "model">;
 
 /**
- * Execute text generation with Multi-Gateway Key Rotation & Failover
+ * Execute text/multimodal generation with Multi-Gateway Key Rotation & Failover
  */
 export async function generateTextWithRouter(options: GenerateTextOptions) {
-  const candidates = getRouterCandidates();
+  const allCandidates = await getRouterCandidates();
+
+  if (allCandidates.length === 0) {
+    throw new Error(
+      "[AI Router] No valid API keys found in SystemSetting, GOOGLE_API_KEYS, OPENROUTER_API_KEY, or GROQ_API_KEYS."
+    );
+  }
+
+  const isMultimodal = hasMultimodalContent(options);
+  const candidates = isMultimodal
+    ? allCandidates.filter((c) => c.supportsVision)
+    : allCandidates;
 
   if (candidates.length === 0) {
     throw new Error(
-      "[AI Router] No valid API keys found in OPENROUTER_API_KEY, GOOGLE_API_KEYS, or GROQ_API_KEYS."
+      "[AI Router] Multimodal request received but no vision-capable providers are available."
     );
   }
 
@@ -156,7 +231,7 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
   }
 
   throw new Error(
-    `[AI Router] All ${candidates.length} keys across all providers exhausted.\nErrors:\n` +
+    `[AI Router] All ${candidates.length} candidates exhausted.\nErrors:\n` +
       errors
         .map((e) => `• ${e.provider} (Key #${e.keyIndex + 1}): ${e.error}`)
         .join("\n")
@@ -164,14 +239,25 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
 }
 
 /**
- * Execute streaming text with Multi-Gateway Key Rotation & Failover
+ * Execute streaming text/multimodal with Multi-Gateway Key Rotation & Failover
  */
-export function streamTextWithRouter(options: StreamTextOptions) {
-  const candidates = getRouterCandidates();
+export async function streamTextWithRouter(options: StreamTextOptions) {
+  const allCandidates = await getRouterCandidates();
+
+  if (allCandidates.length === 0) {
+    throw new Error(
+      "[AI Router] No valid API keys configured in Key Pool or SystemSetting."
+    );
+  }
+
+  const isMultimodal = hasMultimodalContent(options);
+  const candidates = isMultimodal
+    ? allCandidates.filter((c) => c.supportsVision)
+    : allCandidates;
 
   if (candidates.length === 0) {
     throw new Error(
-      "[AI Router] No valid API keys configured in Key Pool."
+      "[AI Router] Multimodal request received but no vision-capable providers are available."
     );
   }
 

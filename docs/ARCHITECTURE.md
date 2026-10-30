@@ -216,3 +216,29 @@ Sale: `subtotal = Σnet`, `tax_total = Σtax`, `grand_total = Σgross` (cart-lev
   - Alerts triggered when \(\text{DaysRemaining} \le \text{SupplierLeadTime} + 2\).
   - Automated reorder recommendation: \(\text{SuggestedQty} = (V \times 14) - \text{CurrentStock}\).
   - Persisted in `stock_predictions` table for dashboard badge alerts and automated PO drafting.
+
+### 10.6 Super Admin BYOK (Bring Your Own Key) Engine
+- **Custom AI Provider Injection**:
+  - Super Admin can configure third-party LLM endpoints stored securely in `SystemSetting` (`providerName`, `apiKey`, `baseUrl`, `isActive`).
+  - Supports standard OpenAI API, Anthropic (via OpenAI compatibility layer), self-hosted vLLM, or Ollama.
+  - Dynamically resolved and prioritized at runtime in `src/lib/ai-router.ts`:
+    - Priority 1: Active BYOK endpoints from `SystemSetting`
+    - Priority 2: Google Gemini Multi-Key Pool (`gemini-3.5-flash-lite`, native vision)
+    - Priority 3: OpenRouter (`openrouter/auto`)
+    - Priority 4: Groq Pool (`openai/gpt-oss-20b`)
+
+### 10.7 Multimodal Chat & Document Inspection Architecture
+- **Attachments Pipeline**:
+  - `AIChatWidget` provides a paperclip attachment input supporting images (JPEG, PNG, WEBP) and PDF documents.
+  - Files are converted to Base64 Data URIs on the client and dispatched via AI SDK files payload.
+  - Persisted in PostgreSQL `ai_chat_messages` (`image_url`, `document_url`) for historical context recall.
+  - In `src/app/api/ai/chat/route.ts`, historical and incoming messages with attachments are constructed into multi-part content arrays: `[{ type: 'text' }, { type: 'image', image: url }, { type: 'file', data: url, mimeType: 'application/pdf' }]`.
+  - Vision filtering in `ai-router.ts`: requests containing images/documents are automatically routed only to vision-capable candidates (Gemini, BYOK Vision), bypassing text-only models.
+
+### 10.8 AI Product Onboarding Vision Pipeline
+- **Page & Endpoint**: `/[locale]/dashboard/products/ai-onboard` & `POST /api/ai/product-onboarding`.
+- **Workflow**:
+  1. Cashier snaps or uploads a photo of a product package or packaging barcode.
+  2. Image payload is sent to Gemini Vision via `generateTextWithRouter`.
+  3. AI extracts commercial name, scans EAN barcode, assigns Moroccan retail category, and suggests Moroccan MAD retail price (`salePrice`) and cost price (`costPrice`).
+  4. Response is presented in an interactive review form where cashier adjusts details and clicks "Save Product" to commit atomically to `Product` and `Category` tables via `POST /api/v1/products`.

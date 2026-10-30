@@ -15,11 +15,20 @@ import {
   ShoppingBag,
   RotateCcw,
   Zap,
+  Paperclip,
+  FileText,
+  Image as ImageIcon,
 } from "lucide-react";
 
 export function AIChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
+  const [attachment, setAttachment] = useState<{
+    name: string;
+    type: string;
+    url: string;
+  } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const locale = useLocale();
   const isRtl = locale === "ar";
   const t = useTranslations("Ai");
@@ -51,13 +60,47 @@ export function AIChatWidget() {
     }
   }, [messages, isLoading, isOpen]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const dataUrl = loadEvent.target?.result as string;
+      setAttachment({
+        name: file.name,
+        type: file.type || "application/octet-stream",
+        url: dataUrl,
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const trimmed = input.trim();
-    if (!trimmed || isLoading) return;
+    if ((!trimmed && !attachment) || isLoading) return;
 
+    const currentAttachment = attachment;
     setInput("");
-    await sendMessage({ text: trimmed });
+    setAttachment(null);
+
+    if (currentAttachment) {
+      await sendMessage({
+        text: trimmed || "(Document / Image joint)",
+        files: [
+          {
+            type: "file",
+            mediaType: currentAttachment.type,
+            url: currentAttachment.url,
+            name: currentAttachment.name,
+          },
+        ],
+      } as any);
+    } else {
+      await sendMessage({ text: trimmed });
+    }
   };
 
   const handleQuickPrompt = async (promptText: string) => {
@@ -194,6 +237,12 @@ export function AIChatWidget() {
               messages.map((m) => {
                 const isUser = m.role === "user";
                 const textContent = getMessageText(m);
+                const fileParts = Array.isArray((m as any).parts)
+                  ? (m as any).parts.filter(
+                      (p: any) => p.type === "file" || p.type === "image"
+                    )
+                  : [];
+
                 return (
                   <div
                     key={m.id}
@@ -213,6 +262,35 @@ export function AIChatWidget() {
                           : "bg-white border border-slate-200 text-slate-800 rounded-tl-none shadow-xs whitespace-pre-wrap"
                       }`}
                     >
+                      {fileParts.map((f: any, fIdx: number) => {
+                        const isImg =
+                          f.type === "image" ||
+                          f.mediaType?.startsWith("image/") ||
+                          f.url?.startsWith("data:image/");
+                        if (isImg) {
+                          return (
+                            <img
+                              key={fIdx}
+                              src={f.url || f.image}
+                              alt={f.name || "Upload"}
+                              className="max-h-36 rounded-lg mb-2 object-cover border border-white/20 shadow-xs"
+                            />
+                          );
+                        }
+                        return (
+                          <div
+                            key={fIdx}
+                            className={`flex items-center gap-2 p-1.5 rounded-lg text-xs mb-2 ${
+                              isUser
+                                ? "bg-emerald-700/50 text-white"
+                                : "bg-slate-100 text-slate-700"
+                            }`}
+                          >
+                            <FileText className="w-4 h-4 text-red-400 shrink-0" />
+                            <span className="truncate">{f.name || "Document PDF"}</span>
+                          </div>
+                        );
+                      })}
                       {textContent}
                     </div>
                   </div>
@@ -249,11 +327,56 @@ export function AIChatWidget() {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Attachment Preview Badge */}
+          {attachment && (
+            <div className="px-3 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 overflow-hidden text-xs text-slate-700">
+                {attachment.type.startsWith("image/") ? (
+                  <img
+                    src={attachment.url}
+                    alt="preview"
+                    className="w-7 h-7 rounded-md object-cover border border-slate-300 shrink-0"
+                  />
+                ) : (
+                  <FileText className="w-5 h-5 text-red-500 shrink-0" />
+                )}
+                <span className="truncate max-w-[220px] font-medium text-xs">
+                  {attachment.name}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAttachment(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer hover:bg-slate-200"
+                aria-label="Remove attachment"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* Input Bar */}
           <form
             onSubmit={handleSend}
             className="p-3 bg-white border-t border-slate-200 flex items-center gap-2"
           >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              title="Upload image or PDF document"
+              aria-label="Upload image or PDF"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
             <input
               type="text"
               value={input}
@@ -264,8 +387,8 @@ export function AIChatWidget() {
             />
             <button
               type="submit"
-              disabled={isLoading || !input.trim()}
-              className="p-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-xs cursor-pointer flex items-center justify-center"
+              disabled={isLoading || (!input.trim() && !attachment)}
+              className="p-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-xs cursor-pointer flex items-center justify-center shrink-0"
               aria-label="Send Message"
             >
               {isLoading ? (
