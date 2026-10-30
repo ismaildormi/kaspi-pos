@@ -4,31 +4,28 @@
 
 ## Where we are
 - **Docker Compose Running:** `pos_saas_db` healthy on port 5432.
-- **Database Migrated:** Migration `20261030012905_init` applied to PostgreSQL. All 34 tables created and verified.
-- **Argon2id Authentication & Sessions Implemented:**
-  - Password hashing with argon2id (`@node-rs/argon2`)
-  - DB-backed Sessions with SHA-256 hashed tokens and `httpOnly; SameSite=Lax` cookies
-  - `getRequestContext()` resolves active tenant membership from DB
-  - Routes created: `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `POST /api/v1/auth/logout`, `GET /api/v1/me`, `POST /api/v1/tenants/[tenantId]/switch`
-  - Protection middleware created in `src/middleware.ts`
-  - End-to-end integration test executed and passed (`src/server/auth/__tests__/auth-flow.ts`)
-  - Full TypeScript typecheck passed (`tsc --noEmit`)
+- **Database Migrated:** 43 tables in PostgreSQL. Migration `20261030030900_all_in_one_features` applied.
+- **All-in-One Modules Implemented & Tested:**
+  1. **Advanced Inventory:** `Supplier` CRUD, `PurchaseOrder` creation, atomic PO receiving updating `StockLevel` and `InventoryMovement` with batch number and expiry tracking.
+  2. **Invoicing & Credit:** Invoices and Quotes (Devis) with Moroccan ICE/IF/RC snapshots, printable HTML/PDF generator, Customer Credit ledger (Carnet de Crédit) with strict limit enforcement.
+  3. **Loyalty Program:** Points calculation (1 point per 10 MAD), balance ledger, and redemption API.
+  4. **Restaurant Mode & KDS:** Table management, Kitchen Display System tickets and real-time status transitions.
+  5. **Advanced Reporting:** Sales summary, Top products, and Moroccan TVA breakdown report.
+- **Verification:**
+  - `npx tsx src/server/__tests__/all-in-one-integration.ts` passed 100% against PostgreSQL.
+  - `npx tsc --noEmit` passed with 0 errors.
+  - `npm run build` completed successfully (21 routes generated).
 
-## Immediate Tasks (New Official Architectural Directives)
-1. **NextAuth.js v5 (Auth.js) & Prisma Schema:**
-   - Add standard NextAuth models: `Account`, adapt `Session`, add `VerificationToken`, plus `emailVerified`, `image` on `User`.
-   - Run `npx prisma migrate dev --name add_nextauth`.
-2. **NextAuth Implementation:**
-   - Install `next-auth@beta` and `@auth/prisma-adapter`.
-   - Setup `src/auth.ts` with `GoogleProvider` and `CredentialsProvider` (argon2id).
-   - Setup Route Handlers `src/app/api/auth/[...nextauth]/route.ts`.
-3. **Multilingual Support (i18n):**
-   - Install `next-intl`.
-   - Setup message catalogs: `messages/ar.json`, `messages/fr.json`, `messages/en.json`.
-   - Integrate `next-intl` with NextAuth middleware.
-4. **Cloud Deployment Strategy:**
-   - Create `docs/DEPLOYMENT.md` covering Oracle Cloud Always Free (ARM Ampere A1), GitHub Codespaces, and Google Cloud Run.
-   - Optimize `Dockerfile` and `docker-compose.yml`.
+## Next micro-task
+Proceed to **Phase 2 POS Frontend UI & Register Screen**:
+1. Implement the POS keyboard-first cash register interface (F2 search, Enter, cart preview, keypad).
+2. Connect POS UI to `POST /api/v1/sales` with offline Dexie.js queue.
+3. Build the UI tabs for:
+   - "Fournisseurs & Commandes" (Purchase Orders)
+   - "Factures & Devis" (PDF generation & printing)
+   - "Crédits Clients" (Carnet de Crédit)
+   - "Écran Cuisine (KDS)" & "Tables" (Restaurant mode)
+   - "Rapports & TVA" (Dashboard & Tax declaration)
 
 ## Must-remember rules (full text: PROJECT_CONSTITUTION.md)
 - `tenant_id` from server session/membership only; composite FKs; isolation tests are release-blocking.

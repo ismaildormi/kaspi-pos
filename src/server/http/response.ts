@@ -42,3 +42,11 @@ export function jsonError(
   };
   return NextResponse.json(payload, { status });
 }
+
+export function handleApiError(err: unknown) {
+  if (err instanceof AppError) {
+    return jsonError(err.code, err.message, err.status, err.details);
+  }
+  const message = err instanceof Error ? err.message : "Internal server error";
+  return jsonError("INTERNAL_ERROR", message, 500);
+}

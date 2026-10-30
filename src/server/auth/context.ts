@@ -21,6 +21,7 @@ export interface RequestContext {
     locale: string;
     pricesIncludeTax: boolean;
     allowNegativeStock: boolean;
+    restaurantMode: boolean;
   };
 }
 
@@ -93,6 +94,7 @@ export async function getRequestContext(
       locale: activeMembership.tenant.locale,
       pricesIncludeTax: activeMembership.tenant.pricesIncludeTax,
       allowNegativeStock: activeMembership.tenant.allowNegativeStock,
+      restaurantMode: activeMembership.tenant.restaurantMode,
     },
   };
 }

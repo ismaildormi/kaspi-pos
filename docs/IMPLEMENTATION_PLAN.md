@@ -63,6 +63,12 @@
 | P2-16 | UI: POS screen keyboard-first (F2/Enter/±/Esc), USB scanner input, cart preview using domain module, payment modal, receipt preview | money (preview only) | build + manual test notes |
 | P2-17 | UI: sales history, sale detail, refund dialog; stock page | — | build |
 | P2-18 | Extend isolation suite to every Phase-2 endpoint | **tenant** | green |
+| P2-19 | **Advanced Inventory (All-in-One)**: Suppliers CRUD (`/api/v1/suppliers`), Purchase Orders (`/api/v1/purchase-orders`), PO Receive (`/api/v1/purchase-orders/[id]/receive`), Expiry & Batch tracking | tenant, money | integration tests: PO receipt creates `inventory_movements` and updates `stock_levels` |
+| P2-20 | **Customer Credit & Ledger (All-in-One)**: Balance tracking (`/api/v1/customers/[id]/credits`), charge/payment/adjustment ledger, credit limit validation | tenant, money | integration tests: credit transactions adjust balance atomically; rejects over credit limit |
+| P2-21 | **Invoices & Quotes / Devis (All-in-One)**: Invoices and Quotes CRUD (`/api/v1/invoices`), Moroccan ICE snapshots, printable HTML/PDF generator (`/api/v1/invoices/[id]/pdf`) | tenant, money | integration tests: sequential numbering, tax breakdown, quote-to-invoice |
+| P2-22 | **Loyalty Program (All-in-One)**: 1 pt per 10 MAD spent rule, balance query, points redemption (`/api/v1/customers/[id]/loyalty/redeem`) | tenant, money | integration tests: sale triggers point earning; redemption discounts correctly |
+| P2-23 | **Restaurant Mode & KDS (All-in-One)**: Dining Tables management (`/api/v1/restaurant/tables`), Kitchen Display System tickets (`/api/v1/restaurant/kds/tickets`), workflow status transitions | tenant | integration tests: table assignment, KDS ticket lifecycles |
+| P2-24 | **Advanced Reporting (All-in-One)**: Sales summary (`/api/v1/reports/sales-summary`), Top products (`/api/v1/reports/top-products`), Tax breakdown report (`/api/v1/reports/tax-summary`) | tenant, money | integration tests: revenue, VAT breakdown per rate |
 
 ---
 
