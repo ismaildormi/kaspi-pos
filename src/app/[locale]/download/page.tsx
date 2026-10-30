@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { DownloadPwaButton } from "@/components/DownloadPwaButton";
 import {
   Download,
   Cpu,
@@ -22,6 +23,7 @@ import {
   CheckCircle2,
   ArrowRight,
   Sparkles,
+  ExternalLink,
 } from "lucide-react";
 
 const FEATURE_GRID = [
@@ -175,22 +177,42 @@ export default function DownloadPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <DownloadPwaButton
+              label="Install Desktop App (PWA)"
+              size="lg"
+              githubReleasesUrl="https://github.com/kaspi-pos/kaspi-pos/releases"
+            />
+
             <a
-              href="/downloads/kaspi-pos-setup.exe"
-              download="kaspi-pos-setup.exe"
-              className="inline-flex items-center gap-3 rounded-full bg-white text-black px-8 py-4 font-bold text-lg hover:bg-zinc-200 transition-all shadow-[0_0_40px_rgba(255,255,255,0.25)]"
+              href="https://github.com/kaspi-pos/kaspi-pos/releases"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-7 py-4 font-semibold text-base text-white hover:bg-zinc-800 transition-all"
             >
-              <Download className="w-5 h-5" />
-              Download for Windows (.exe)
+              GitHub Releases (.exe / .msi)
+              <ExternalLink className="w-4 h-4" />
             </a>
 
             <Link
               href="/pos"
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-7 py-4 font-semibold text-base text-white hover:bg-zinc-800 transition-all"
+              className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950 px-6 py-4 font-semibold text-sm text-zinc-300 hover:bg-zinc-900 hover:text-white transition-all"
             >
               Launch Web POS
               <ArrowRight className="w-4 h-4" />
             </Link>
+          </div>
+
+          <div className="mt-5 max-w-xl mx-auto rounded-2xl border border-zinc-800 bg-zinc-900/60 px-5 py-3 text-xs text-zinc-300">
+            The Windows Installer (.exe) is being built. In the meantime, click here to install the Web App (PWA) directly to your desktop, or download native release binaries from{" "}
+            <a
+              href="https://github.com/kaspi-pos/kaspi-pos/releases"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-white underline hover:text-zinc-200"
+            >
+              GitHub Releases
+            </a>
+            .
           </div>
 
           <p className="text-xs font-mono text-zinc-500 mt-4">
@@ -476,13 +498,19 @@ export default function DownloadPage() {
             Ready to modernize your store?
           </h3>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <DownloadPwaButton
+              label="Install Desktop App (PWA)"
+              size="md"
+              githubReleasesUrl="https://github.com/kaspi-pos/kaspi-pos/releases"
+            />
             <a
-              href="/downloads/kaspi-pos-setup.exe"
-              download="kaspi-pos-setup.exe"
-              className="inline-flex items-center gap-2 rounded-full bg-white text-black px-8 py-4 font-bold text-base hover:bg-zinc-200 transition"
+              href="https://github.com/kaspi-pos/kaspi-pos/releases"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-6 py-4 text-sm font-semibold text-white hover:bg-zinc-800 transition"
             >
-              <Download className="w-4 h-4" />
-              Download for Windows (.exe)
+              <ExternalLink className="h-4 w-4" />
+              Download .exe on GitHub Releases
             </a>
             <Link
               href="/dashboard/support"

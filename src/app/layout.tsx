@@ -8,8 +8,10 @@ import { UpdateBanner } from "@/components/UpdateBanner";
 export const metadata = {
   title: "Kasbi POS — Système de Caisse & ERP Intelligent Maroc",
   description: "Solution de caisse tactile, gestion des stocks, conformité DGI, offline-first et intégration WhatsApp.",
+  manifest: "/manifest.json",
   icons: {
     icon: "/logo.png",
+    apple: "/logo.png",
   },
 };
 

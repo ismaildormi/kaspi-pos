@@ -6,7 +6,8 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "tauri": "npx @tauri-apps/cli"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
