@@ -39,19 +39,17 @@ jobs:
       - name: Install frontend dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Generate Prisma Client
-        run: npx prisma generate
-
-      - name: Prepare Tauri Icons & Frontend Shell
-        run: |
-          if (!(Test-Path "out")) { New-Item -ItemType Directory -Path "out" -Force }
-          Set-Content -Path "out/index.html" -Value "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Kasbi POS</title></head><body style='background:#09090b;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0'><h1>KASPI POS Desktop v2.0</h1></body></html>"
-          npx @tauri-apps/cli@2 icon public/logo.png
-
       - name: Build Tauri Desktop App (.exe and .msi)
-        run: npx @tauri-apps/cli@2 build
+        run: npm run tauri build
         env:
           CI: true
+
+      - name: Prepare kaspi-pos-setup.exe Binary
+        run: |
+          $exe = Get-ChildItem -Path "src-tauri/target/release/bundle/nsis/*.exe" | Select-Object -First 1
+          if ($exe) {
+            Copy-Item -Path $exe.FullName -Destination "src-tauri/target/release/bundle/nsis/kaspi-pos-setup.exe" -Force
+          }
 
       - name: Upload Windows .exe and .msi to GitHub Release
         uses: softprops/action-gh-release@v2
@@ -59,7 +57,7 @@ jobs:
           tag_name: v2.0.0
           name: KASPI POS v2.0.0 (Windows Desktop Edition)
           files: |
-            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/nsis/kaspi-pos-setup.exe
             src-tauri/target/release/bundle/msi/*.msi
           generate_release_notes: true
         env:
@@ -68,7 +66,7 @@ jobs:
       - name: Upload Windows Installer Artifacts (Workflow Dispatch)
         uses: actions/upload-artifact@v4
         with:
-          name: kaspi-pos-windows-installers
+          name: kaspi-pos-setup.exe
           path: |
-            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/nsis/kaspi-pos-setup.exe
             src-tauri/target/release/bundle/msi/*.msi

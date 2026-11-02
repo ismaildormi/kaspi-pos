@@ -166,3 +166,14 @@
 | P6-11 | **Super Admin Master Control (`/admin` & `/[locale]/admin`)**: Global tenant KPIs, MRR in USD/MAD, platform GMV, tenant table with impersonation links, system health (DB, AI Pool, WhatsApp Gateway), and WhatsApp broadcast alert trigger | security, ui | [x] VERIFIED |
 | P6-12 | **Tauri Desktop Auto-Updater**: Configured `tauri-plugin-updater` and `tauri.conf.json`, created `/api/updates/latest.json`, `useAppUpdater.ts` React hook, and `UpdateBanner.tsx` monochrome popup | desktop | [x] VERIFIED |
 | P6-13 | **Comprehensive Dashboard UI Suite**: Built and verified all pages in strict Monochrome B&W: Overview (`/dashboard`), Products (`/dashboard/products`), Inventory (`/dashboard/inventory`), Reports & Z-Report (`/dashboard/reports`), Customers & Krediat (`/dashboard/customers`), Staff (`/dashboard/staff`), Suppliers (`/dashboard/suppliers`), Settings (`/dashboard/settings`), and Billing (`/dashboard/billing`) | ui | [x] VERIFIED |
+
+---
+
+## Production Deployment ✅ COMPLETED
+**Exit criteria:** Application live on global cloud edge with serverless PostgreSQL database synced to the full Prisma schema.
+
+| ID | Task | Architecture | Status |
+|---|---|---|---|
+| PROD-01 | **Cloud Frontend & API Deployment** | Next.js 15 App Router deployed on **Vercel** | [x] COMPLETED |
+| PROD-02 | **Cloud Database Provisioning & Schema Sync** | Serverless PostgreSQL 16 hosted on **Neon.tech** (`eu-central-1`), synced via `prisma db push` | [x] COMPLETED |
+| PROD-03 | **Multi-Platform Download Center & Free-Tier Env** | Download Center (`/[locale]/download` for Windows `.exe`, PWA, and iOS/Android QR) + centralized `.env.example` | [x] COMPLETED |
