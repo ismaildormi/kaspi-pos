@@ -46,7 +46,7 @@ export default async function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={`min-h-screen bg-zinc-950 text-white antialiased selection:bg-white selection:text-black ${locale === "ar" ? "font-['Cairo',sans-serif]" : "font-['Inter',sans-serif]"}`}>
+      <body className="bg-zinc-950 text-white min-h-screen antialiased selection:bg-white selection:text-black">
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
           <AIChatWidget />

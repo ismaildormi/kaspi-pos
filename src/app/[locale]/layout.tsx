@@ -25,7 +25,13 @@ export default async function LocaleLayout({
   const dir = locale === "ar" ? "rtl" : "ltr";
 
   return (
-    <div lang={locale} dir={dir} className={locale === "ar" ? "font-['Cairo',sans-serif]" : "font-['Inter',sans-serif]"}>
+    <div
+      lang={locale}
+      dir={dir}
+      className={`bg-zinc-950 text-white min-h-screen antialiased ${
+        locale === "ar" ? "font-['Cairo',sans-serif]" : "font-['Inter',sans-serif]"
+      }`}
+    >
       <NextIntlClientProvider messages={messages}>
         {children}
       </NextIntlClientProvider>

@@ -1,26 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
-import { Link, useRouter } from "@/i18n/routing";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Loader2 } from "lucide-react";
 
 export default function RegisterPage() {
-  const t = useTranslations("Auth");
-  const tCommon = useTranslations("Common");
   const router = useRouter();
-
   const [fullName, setFullName] = useState("");
   const [shopName, setShopName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setIsLoading(true);
+    setLoading(true);
+    setError("");
 
     try {
       const res = await fetch("/api/v1/auth/register", {
@@ -37,162 +34,135 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data?.error?.message || "Échec de l'inscription.");
+        setError(data?.error?.message || "فشل إنشاء الحساب");
       } else {
         if (data?.data?.user?.isSuperAdmin) {
-          router.push("/admin");
+          router.push("/ar/admin");
         } else {
-          router.push("/dashboard");
+          router.push("/ar/pos");
         }
+        router.refresh();
       }
     } catch {
-      setError("Une erreur réseau inattendue est survenue.");
+      setError("حدث خطأ غير متوقع في الشبكة");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 select-none">
-      {/* Top Header with Language Switcher */}
-      <div className="absolute top-4 inset-x-0 px-4 sm:px-8 flex justify-between items-center z-10">
-        <Link href="/" className="flex items-center gap-2.5">
+    <div
+      className="min-h-screen flex items-center justify-center bg-zinc-950 p-4 font-sans"
+      dir="rtl"
+    >
+      <div className="w-full max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl">
+        {/* Logo Section */}
+        <div className="text-center mb-8">
           <img
             src="/logo.png"
-            alt="Kasbi POS"
-            width={32}
-            height={32}
-            className="h-8 w-auto object-contain rounded-lg"
+            alt="KASPI POS"
+            style={{ width: 64, height: 64, objectFit: "contain" }}
+            className="w-16 h-16 object-contain mb-4 mx-auto rounded-xl bg-black border border-zinc-800 p-2"
+            onError={(e) => (e.currentTarget.style.display = "none")}
           />
-          <span className="font-bold text-base text-white tracking-tight">
-            Kasbi POS
-          </span>
-        </Link>
-        <LanguageSwitcher />
-      </div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">
+            إنشاء حساب جديد
+          </h1>
+          <p className="text-zinc-400 text-sm mt-2">
+            ابدأ إدارة متجرك مع KASPI POS
+          </p>
+        </div>
 
-      {/* Centered Logo & Title */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mt-8">
-        <img
-          src="/logo.png"
-          alt="Kasbi POS Logo"
-          width={64}
-          height={64}
-          className="h-16 w-16 object-contain mb-6 mx-auto rounded-2xl border border-zinc-800 bg-zinc-900 p-1.5 shadow-xl"
-        />
-        <h2 className="text-3xl font-extrabold text-white tracking-tight">
-          {t("register")}
-        </h2>
-        <p className="mt-2 text-sm text-zinc-400">
-          {tCommon("tagline")}
-        </p>
-      </div>
-
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-zinc-900/90 py-8 px-6 shadow-2xl rounded-2xl border border-zinc-800 sm:px-10">
-          {error && (
-            <div className="mb-5 p-3 rounded-xl bg-zinc-950 border border-zinc-700 text-zinc-300 text-sm flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-white shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <label
-                htmlFor="fullName"
-                className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1 text-start"
-              >
-                {t("fullName")}
-              </label>
-              <input
-                id="fullName"
-                type="text"
-                required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Youssef El Amrani"
-                className="appearance-none block w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl placeholder-zinc-500 focus:outline-none focus:border-white text-sm text-white transition-all font-medium"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="shopName"
-                className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1 text-start"
-              >
-                {t("shopName")}
-              </label>
-              <input
-                id="shopName"
-                type="text"
-                required
-                value={shopName}
-                onChange={(e) => setShopName(e.target.value)}
-                placeholder="Épicerie Atlas"
-                className="appearance-none block w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl placeholder-zinc-500 focus:outline-none focus:border-white text-sm text-white transition-all font-medium"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1 text-start"
-              >
-                {t("email")}
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="contact@epicerieatlas.ma"
-                className="appearance-none block w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl placeholder-zinc-500 focus:outline-none focus:border-white text-sm text-white transition-all font-medium"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1 text-start"
-              >
-                {t("password")}
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="appearance-none block w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl placeholder-zinc-500 focus:outline-none focus:border-white text-sm text-white transition-all font-mono"
-              />
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center py-2.5 px-4 rounded-xl text-sm font-bold text-black bg-white hover:bg-zinc-200 transition-all cursor-pointer disabled:opacity-40"
-              >
-                {isLoading ? tCommon("loading") : t("register")}
-              </button>
-            </div>
-          </form>
-
-          <div className="mt-6 text-center text-sm text-zinc-400">
-            <span>{t("alreadyHaveAccount")} </span>
-            <Link
-              href="/login"
-              className="font-semibold text-white hover:underline underline-offset-4"
-            >
-              {t("login")}
-            </Link>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-3 bg-zinc-950 border border-zinc-700 text-zinc-200 text-sm rounded-lg text-center">
+            {error}
           </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+              الاسم الكامل
+            </label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="أمين العلوي"
+              required
+              className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+              اسم المحل التجاري
+            </label>
+            <input
+              type="text"
+              value={shopName}
+              onChange={(e) => setShopName(e.target.value)}
+              placeholder="ميني ماركت أنفا"
+              required
+              className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+              البريد الإلكتروني
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="contact@commerce.ma"
+              required
+              className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+              كلمة المرور
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              minLength={8}
+              required
+              className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition-all"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-zinc-200 transition-all flex justify-center items-center gap-2 cursor-pointer mt-2"
+          >
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              "إنشاء الحساب"
+            )}
+          </button>
+        </form>
+
+        {/* Links */}
+        <div className="mt-8 text-center text-sm text-zinc-400">
+          <p>
+            لديك حساب بالفعل؟{" "}
+            <Link
+              href="/ar/login"
+              className="text-white hover:underline font-medium"
+            >
+              تسجيل الدخول
+            </Link>
+          </p>
         </div>
       </div>
     </div>

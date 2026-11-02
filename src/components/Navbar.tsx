@@ -15,7 +15,8 @@ export function Navbar() {
             alt="KASPI POS Logo"
             width={32}
             height={32}
-            className="h-8 w-auto object-contain rounded-lg"
+            style={{ width: 32, height: 32, objectFit: "contain" }}
+            className="h-8 w-8 object-contain rounded-lg"
           />
           <div className="flex flex-col">
             <div className="flex items-center gap-2">

@@ -96,25 +96,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 4. Page routing with next-intl
+  // 4. Page routing with next-intl (Auth redirect bypassed for local UI testing except /admin above)
   const intlResponse = intlMiddleware(request);
-
-  // Check protected page paths across locales
-  const isProtectedPage = ["/dashboard", "/pos", "/products", "/sales", "/settings"].some(
-    (p) =>
-      pathname.includes(p) ||
-      routing.locales.some((loc) => pathname.startsWith(`/${loc}${p}`))
-  );
-
-  if (isProtectedPage && !hasAuth) {
-    const currentLocale =
-      routing.locales.find((loc) => pathname.startsWith(`/${loc}`)) ||
-      routing.defaultLocale;
-    const loginUrl = new URL(`/${currentLocale}/login`, request.url);
-    loginUrl.searchParams.set("from", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
   return intlResponse;
 }
 

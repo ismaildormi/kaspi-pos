@@ -15,7 +15,8 @@ export function Footer() {
                 alt="Kasbi POS Logo"
                 width={32}
                 height={32}
-                className="h-8 w-auto object-contain rounded-lg"
+                style={{ width: 32, height: 32, objectFit: "contain" }}
+                className="h-8 w-8 object-contain rounded-lg"
               />
               <span className="font-extrabold text-base tracking-tight text-white">KASPI POS</span>
             </div>

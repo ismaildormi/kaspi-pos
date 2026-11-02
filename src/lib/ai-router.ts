@@ -77,7 +77,9 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
   }
 
   // Priority 2: Google Gemini (Native Multimodal & High Free Tier Limits)
-  const geminiKeys = parseKeyPool(process.env.GOOGLE_API_KEYS);
+  const geminiKeys = parseKeyPool(
+    process.env.GOOGLE_API_KEYS || process.env.GOOGLE_GENERATIVE_AI_API_KEY
+  );
   geminiKeys.forEach((key, idx) => {
     if (!key.includes("mock")) {
       const googleProvider = createGoogleGenerativeAI({ apiKey: key });
@@ -112,7 +114,9 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
   }
 
   // Priority 4: Groq (Ultra-Fast Text Inference Pool)
-  const groqKeys = parseKeyPool(process.env.GROQ_API_KEYS);
+  const groqKeys = parseKeyPool(
+    process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY
+  );
   groqKeys.forEach((key, idx) => {
     if (!key.includes("mock")) {
       const groqProvider = createGroq({ apiKey: key });

@@ -78,8 +78,16 @@ export default function DashboardLayout({
         <div className="space-y-6">
           {/* Logo brand */}
           <Link href="/" className="hidden md:flex items-center gap-3 px-2 py-1 group">
-            <div className="relative h-9 w-9 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 p-1 transition group-hover:border-zinc-700">
-              <Image src="/logo.png" alt="Kasbi POS" width={36} height={36} className="h-full w-full object-contain" priority />
+            <div className="relative h-9 w-9 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 p-1 flex items-center justify-center shrink-0 transition group-hover:border-zinc-700">
+              <Image
+                src="/logo.png"
+                alt="Kasbi POS"
+                width={28}
+                height={28}
+                style={{ width: 28, height: 28, objectFit: "contain" }}
+                className="h-7 w-7 object-contain"
+                priority
+              />
             </div>
             <div className="flex flex-col">
               <span className="font-extrabold text-base tracking-tight text-white">Kasbi POS</span>
@@ -130,7 +138,7 @@ export default function DashboardLayout({
 
           <div className="px-2 text-[10px] text-zinc-500 font-mono flex items-center justify-between">
             <span>Offline-First Sync</span>
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+            <span className="h-1.5 w-1.5 rounded-full bg-white"></span>
           </div>
         </div>
       </aside>
