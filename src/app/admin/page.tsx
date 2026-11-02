@@ -36,17 +36,24 @@ export default async function AdminDashboardPage() {
     <div className="space-y-8 pb-12 select-none">
       {/* Top Banner with Super Admin Identity */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900 border border-zinc-800 p-6 rounded-3xl">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
-            <h1 className="text-xl font-bold text-white tracking-tight">
-              Master Control Room • Super Admin
-            </h1>
+        <div className="flex items-center gap-4">
+          <img
+            src="/logo.png"
+            alt="KASPI POS"
+            className="w-16 h-16 object-contain rounded-xl shrink-0"
+          />
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
+              <h1 className="text-xl font-bold text-white tracking-tight">
+                Master Control Room • Super Admin
+              </h1>
+            </div>
+            <p className="text-xs text-zinc-400">
+              Administrateur Principal : <strong className="text-white">{user.email}</strong> • Téléphone Alerte WhatsApp :{" "}
+              <strong className="text-white font-mono">+212 687-597267</strong>
+            </p>
           </div>
-          <p className="text-xs text-zinc-400">
-            Administrateur Principal : <strong className="text-white">{user.email}</strong> • Téléphone Alerte WhatsApp :{" "}
-            <strong className="text-white font-mono">+212 687-597267</strong>
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

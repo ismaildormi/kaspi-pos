@@ -61,8 +61,7 @@ export default function RegisterPage() {
           <img
             src="/logo.png"
             alt="KASPI POS"
-            style={{ width: 64, height: 64, objectFit: "contain" }}
-            className="w-16 h-16 object-contain mb-4 mx-auto rounded-xl bg-black border border-zinc-800 p-2"
+            className="w-16 h-16 object-contain rounded-xl mx-auto mb-4"
             onError={(e) => (e.currentTarget.style.display = "none")}
           />
           <h1 className="text-2xl font-bold text-white tracking-tight">

@@ -45,12 +45,14 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
     <header className="h-16 border-b border-zinc-800 bg-zinc-950 px-4 sm:px-6 flex items-center justify-between gap-4 select-none">
       {/* Brand & Store Info */}
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-white text-black flex items-center justify-center font-black text-lg shadow-sm">
-          ك
-        </div>
+        <img
+          src="/logo.png"
+          alt="KASPI POS"
+          className="w-8 h-8 object-contain rounded-lg"
+        />
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-bold text-white text-base tracking-tight">Kasbi POS</span>
+            <span className="font-bold text-white text-base tracking-tight">KASPI POS</span>
             <span className="text-xs bg-zinc-900 text-zinc-300 px-2 py-0.5 rounded font-mono border border-zinc-800">
               {storeName}
             </span>

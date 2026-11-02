@@ -12,11 +12,8 @@ export function Footer() {
             <div className="flex items-center gap-3">
               <img
                 src="/logo.png"
-                alt="Kasbi POS Logo"
-                width={32}
-                height={32}
-                style={{ width: 32, height: 32, objectFit: "contain" }}
-                className="h-8 w-8 object-contain rounded-lg"
+                alt="KASPI POS Logo"
+                className="w-8 h-8 object-contain rounded-lg"
               />
               <span className="font-extrabold text-base tracking-tight text-white">KASPI POS</span>
             </div>
