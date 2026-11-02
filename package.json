@@ -32,6 +32,7 @@
     "@node-rs/argon2": "^2.2.2",
     "@openrouter/ai-sdk-provider": "^3.1.0",
     "@prisma/client": "^6.19.3",
+    "@upstash/qstash": "^2.12.1",
     "ai": "^7.0.157",
     "ai-failover": "^0.3.0",
     "decimal.js": "^10.6.0",

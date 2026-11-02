@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
+import { Toaster, toast } from "sonner";
 import {
   FileSpreadsheet,
   UploadCloud,
@@ -50,7 +51,51 @@ export default function ProductImportPage() {
 
   const [activeTab, setActiveTab] = useState<"valid" | "invalid">("valid");
   const [importSuccess, setImportSuccess] = useState<{ count: number } | null>(null);
+  const [backgroundJob, setBackgroundJob] = useState<{
+    jobId: string;
+    status: "previewing" | "ready" | "committed" | "failed";
+    message: string;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Poll ProductImportJob status every 3 seconds when a background QStash job is active
+  useEffect(() => {
+    if (
+      !backgroundJob ||
+      backgroundJob.status === "committed" ||
+      backgroundJob.status === "failed"
+    ) {
+      return;
+    }
+
+    const intervalId = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `/api/products/import?jobId=${encodeURIComponent(backgroundJob.jobId)}`
+        );
+        if (!res.ok) return;
+
+        const jobData = await res.json();
+        if (jobData.status === "committed") {
+          clearInterval(intervalId);
+          setBackgroundJob(null);
+          setImportSuccess({ count: jobData.validRows || 0 });
+          toast.success(
+            `CSV Import complete! ${jobData.validRows || 0} products committed.`
+          );
+        } else if (jobData.status === "failed") {
+          clearInterval(intervalId);
+          setBackgroundJob(null);
+          setErrorMsg("Background CSV import failed. Please review your file.");
+          toast.error("Background CSV import failed");
+        }
+      } catch {
+        // Ignore transient polling errors
+      }
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [backgroundJob]);
 
   const handleFile = async (selectedFile: File) => {
     if (!selectedFile.name.endsWith(".csv")) {
@@ -109,19 +154,35 @@ export default function ProductImportPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "commit",
+          fileName: file?.name || "catalog-import.csv",
           rows: previewData.validRows,
         }),
       });
 
       const data = await res.json();
 
-      if (!res.ok) {
+      if (!res.ok && res.status !== 202) {
         throw new Error(data.error || "Erreur lors de l'enregistrement en base.");
       }
 
-      setImportSuccess({ count: data.importedCount });
-      setPreviewData(null);
-      setFile(null);
+      if (res.status === 202 || data.jobId) {
+        setBackgroundJob({
+          jobId: data.jobId,
+          status: "previewing",
+          message:
+            data.message ||
+            "Your file is being processed in the background. You can continue working.",
+        });
+        toast.info(
+          "Your file is being processed in the background. You can continue working."
+        );
+        setPreviewData(null);
+        setFile(null);
+      } else {
+        setImportSuccess({ count: data.importedCount });
+        setPreviewData(null);
+        setFile(null);
+      }
     } catch (err: any) {
       setErrorMsg(err?.message || "Échec de l'importation.");
     } finally {
@@ -152,10 +213,22 @@ export default function ProductImportPage() {
     setPreviewData(null);
     setErrorMsg(null);
     setImportSuccess(null);
+    setBackgroundJob(null);
   };
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white pb-20 select-none">
+      <Toaster
+        theme="dark"
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: "#09090b",
+            color: "#ffffff",
+            border: "1px solid #27272a",
+          },
+        }}
+      />
       {/* Top Navbar */}
       <header className="bg-zinc-950 border-b border-zinc-800 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -200,6 +273,31 @@ export default function ProductImportPage() {
 
       {/* Main Container */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 space-y-6">
+        {/* Asynchronous QStash Background Processing Banner */}
+        {backgroundJob && (
+          <div className="p-6 rounded-3xl bg-zinc-900 border border-zinc-700 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0">
+                <Loader2 className="w-6 h-6 animate-spin text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">
+                  Your file is being processed in the background. You can continue working.
+                </h3>
+                <p className="text-xs text-zinc-400 mt-1 font-mono">
+                  QStash Job ID: {backgroundJob.jobId} • Polling status every 3s...
+                </p>
+              </div>
+            </div>
+            <Link
+              href={`/${locale}/dashboard/products`}
+              className="px-4 py-2 rounded-xl bg-white text-black hover:bg-zinc-200 text-xs font-bold shrink-0"
+            >
+              Retour au Catalogue
+            </Link>
+          </div>
+        )}
+
         {/* Success Banner */}
         {importSuccess && (
           <div className="p-5 rounded-3xl bg-zinc-900 border border-zinc-700 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
