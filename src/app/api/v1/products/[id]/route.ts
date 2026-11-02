@@ -97,14 +97,22 @@ export async function PATCH(
       updateData.taxRate = Number(body.taxRate);
     }
 
-    const updated = await prisma.product.update({
+    const updated: {
+      id: string;
+      name: string;
+      sku: string;
+      barcode: string | null;
+      imageUrl?: string | null;
+      salePrice: unknown;
+      taxRate: unknown;
+    } = await prisma.product.update({
       where: {
         tenantId_id: {
           tenantId,
           id: existing.id,
         },
       },
-      data: updateData,
+      data: updateData as any,
     });
 
     return jsonOk({
@@ -113,7 +121,7 @@ export async function PATCH(
         name: updated.name,
         sku: updated.sku,
         barcode: updated.barcode,
-        imageUrl: updated.imageUrl,
+        imageUrl: updated.imageUrl ?? null,
         salePrice: Number(updated.salePrice),
         taxRate: Number(updated.taxRate),
       },

@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
         name: p.name,
         sku: p.sku,
         barcode: p.barcode,
-        imageUrl: p.imageUrl,
+        imageUrl: (p as { imageUrl?: string | null }).imageUrl ?? null,
         salePrice: Number(p.salePrice),
         taxRate: Number(p.taxRate),
         trackStock: p.trackStock,
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
         taxRate: Number(body.taxRate ?? 20),
         unit: body.unit || "piece",
         trackStock: body.trackStock ?? true,
-      },
+      } as any,
     });
 
     return jsonOk({ product }, 201);

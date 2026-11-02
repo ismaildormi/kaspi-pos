@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3001",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start -H 0.0.0.0 -p 3001",
     "typecheck": "tsc --noEmit",
     "tauri": "npx --yes @tauri-apps/cli@2"
