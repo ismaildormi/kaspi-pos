@@ -21,7 +21,7 @@ interface DownloadPwaButtonProps {
 export function DownloadPwaButton({
   label = "Install Desktop App (PWA / .exe)",
   size = "lg",
-  githubReleasesUrl = "https://github.com/ismaildormi/kaspi-pos/releases/latest",
+  githubReleasesUrl = "https://github.com/ismaildormi/kaspi-pos-morocco/releases/latest",
 }: DownloadPwaButtonProps) {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);

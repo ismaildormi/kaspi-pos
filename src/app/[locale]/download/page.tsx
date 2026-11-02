@@ -180,11 +180,11 @@ export default function DownloadPage() {
             <DownloadPwaButton
               label="Install Desktop App (PWA)"
               size="lg"
-              githubReleasesUrl="https://github.com/ismaildormi/kaspi-pos/releases"
+              githubReleasesUrl="https://github.com/ismaildormi/kaspi-pos-morocco/releases"
             />
 
             <a
-              href="https://github.com/ismaildormi/kaspi-pos/releases"
+              href="https://github.com/ismaildormi/kaspi-pos-morocco/releases"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-7 py-4 font-semibold text-base text-white hover:bg-zinc-800 transition-all"
@@ -205,7 +205,7 @@ export default function DownloadPage() {
           <div className="mt-5 max-w-xl mx-auto rounded-2xl border border-zinc-800 bg-zinc-900/60 px-5 py-3 text-xs text-zinc-300">
             The Windows Installer (.exe) is being built. In the meantime, click here to install the Web App (PWA) directly to your desktop, or download native release binaries from{" "}
             <a
-              href="https://github.com/ismaildormi/kaspi-pos/releases"
+              href="https://github.com/ismaildormi/kaspi-pos-morocco/releases"
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold text-white underline hover:text-zinc-200"
@@ -501,10 +501,10 @@ export default function DownloadPage() {
             <DownloadPwaButton
               label="Install Desktop App (PWA)"
               size="md"
-              githubReleasesUrl="https://github.com/ismaildormi/kaspi-pos/releases"
+              githubReleasesUrl="https://github.com/ismaildormi/kaspi-pos-morocco/releases"
             />
             <a
-              href="https://github.com/ismaildormi/kaspi-pos/releases"
+              href="https://github.com/ismaildormi/kaspi-pos-morocco/releases"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-6 py-4 text-sm font-semibold text-white hover:bg-zinc-800 transition"
