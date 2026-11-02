@@ -141,6 +141,11 @@ export const CheckoutModal: React.FC = () => {
         isOffline: res.isOffline,
         receiptData: receiptSnapshot,
       });
+
+      // If offline, automatically print the receipt locally
+      if (res.isOffline) {
+        printReceipt(receiptSnapshot).catch(() => {});
+      }
     }
   };
 
@@ -179,7 +184,7 @@ export const CheckoutModal: React.FC = () => {
               <h2 className="text-xl font-bold text-white">{t("saleSuccess")}</h2>
               <p className="text-xs text-zinc-400 mt-1">
                 {saleResult.isOffline
-                  ? "Vente stockée localement (Synchronisation automatique dès reconnexion)"
+                  ? "Sale saved locally. Will sync when online."
                   : "Transaction enregistrée avec succès"}
               </p>
             </div>

@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getLocale } from "next-intl/server";
 import { AIChatWidget } from "@/components/ai/AIChatWidget";
 import { UpdateBanner } from "@/components/UpdateBanner";
+import { OfflineSyncBootstrap } from "@/client/sync-engine";
 
 export const metadata = {
   title: "Kasbi POS — Système de Caisse & ERP Intelligent Maroc",
@@ -51,6 +52,7 @@ export default async function RootLayout({
       </head>
       <body className="bg-zinc-950 text-white min-h-screen antialiased selection:bg-white selection:text-black">
         <NextIntlClientProvider locale={locale} messages={messages}>
+          <OfflineSyncBootstrap />
           {children}
           <AIChatWidget />
           <UpdateBanner />

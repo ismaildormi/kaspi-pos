@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import { useTranslations } from "next-intl";
-import { Wifi, WifiOff, Clock, User as UserIcon } from "lucide-react";
+import { Clock, User as UserIcon } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { SyncStatusBadge } from "./SyncStatusBadge";
 
 interface PosHeaderProps {
   storeName?: string;
@@ -18,28 +19,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
   onOpenHeldCarts,
 }) => {
   const t = useTranslations("Pos");
-  const { isOnline, pendingOfflineCount, setIsOnline, refreshOfflineQueueCount, heldCarts } =
-    usePosStore();
-
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      refreshOfflineQueueCount();
-    };
-    const handleOffline = () => {
-      setIsOnline(false);
-      refreshOfflineQueueCount();
-    };
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    refreshOfflineQueueCount();
-
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, [setIsOnline, refreshOfflineQueueCount]);
+  const { heldCarts } = usePosStore();
 
   return (
     <header className="h-16 border-b border-zinc-800 bg-zinc-950 px-4 sm:px-6 flex items-center justify-between gap-4 select-none">
@@ -52,7 +32,9 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         />
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-bold text-white text-base tracking-tight">KASPI POS</span>
+            <span className="font-bold text-white text-base tracking-tight">
+              KASPI POS
+            </span>
             <span className="text-xs bg-zinc-900 text-zinc-300 px-2 py-0.5 rounded font-mono border border-zinc-800">
               {storeName}
             </span>
@@ -64,32 +46,10 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         </div>
       </div>
 
-      {/* Center / Right Actions: Offline Status, Parked Carts, Lang Switcher */}
+      {/* Center / Right Actions: Sync Status Indicator, Parked Carts, Lang Switcher */}
       <div className="flex items-center gap-3">
-        {/* Offline / Online Status Badge */}
-        {isOnline ? (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs font-medium">
-            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-            <Wifi className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{t("onlineMode")}</span>
-            {pendingOfflineCount > 0 && (
-              <span className="bg-white text-black px-1.5 py-0.2 rounded-full text-[10px] font-bold">
-                {pendingOfflineCount} {t("syncPending")}
-              </span>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-700 text-white text-xs font-semibold">
-            <span className="w-2 h-2 rounded-full bg-zinc-500" />
-            <WifiOff className="w-3.5 h-3.5" />
-            <span>{t("offlineMode")}</span>
-            {pendingOfflineCount > 0 && (
-              <span className="bg-zinc-700 text-white px-1.5 py-0.2 rounded-full text-[10px] font-bold">
-                {pendingOfflineCount}
-              </span>
-            )}
-          </div>
-        )}
+        {/* Live Offline/Online & Outbox Queue Status Badge */}
+        <SyncStatusBadge />
 
         {/* Parked / Held Carts Button */}
         {heldCarts.length > 0 && (

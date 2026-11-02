@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { toast } from "sonner";
 import { offlineDb, type OfflineSale, type OfflineSaleItem } from "../db";
+import { enqueueSyncItem, processSyncQueue, getSyncQueueCounts } from "../sync-engine";
 import { toDecimal, roundMoney } from "@/domain/money";
 
 export interface PosProduct {
@@ -443,10 +444,56 @@ export const usePosStore = create<PosState>()(
           ],
         };
 
-        // 1. Immediately store to Dexie Offline Database (Guaranteed Durability)
+        const saleApiPayload = {
+          clientSaleId,
+          idempotencyKey,
+          storeId,
+          customerId: customer?.id,
+          subtotal,
+          taxTotal,
+          discountTotal,
+          grandTotal,
+          paidTotal,
+          changeDue,
+          paymentMethod: selectedPaymentMethod,
+          items: cart.map((i, idx) => ({
+            productId: i.productId,
+            lineNo: idx + 1,
+            quantity: i.quantity,
+            unitPrice: i.unitPrice,
+            taxRate: i.taxRate,
+            discountAmount: i.discountAmount,
+          })),
+        };
+
+        // 1. Save to local Dexie database (sales, products stock, customers credit) + Outbox `sync_queue`
         try {
           if (offlineDb) {
             await offlineDb.offlineSales.add(offlineSaleRecord);
+
+            // Decrement local Dexie product stock for true offline stock tracking
+            for (const item of cart) {
+              const localProd = await offlineDb.offlineProducts.get(item.productId);
+              if (localProd && localProd.trackStock) {
+                const updatedStock = Math.max(0, (localProd.stockQuantity ?? 0) - item.quantity);
+                await offlineDb.offlineProducts.update(item.productId, {
+                  stockQuantity: updatedStock,
+                });
+              }
+            }
+
+            // Update local customer credit balance if credit sale
+            if (selectedPaymentMethod === "credit" && customer?.id) {
+              const localCust = await offlineDb.offlineCustomers.get(customer.id);
+              if (localCust) {
+                await offlineDb.offlineCustomers.update(customer.id, {
+                  currentCreditBalance: (localCust.currentCreditBalance || 0) + grandTotal,
+                });
+              }
+            }
+
+            // 2. Add entry to Dexie `sync_queue` with status 'pending'
+            await enqueueSyncItem("SALE", saleApiPayload, clientSaleId);
           }
         } catch (dbErr) {
           console.warn("Could not save to local Dexie:", dbErr);
@@ -454,49 +501,23 @@ export const usePosStore = create<PosState>()(
 
         await refreshOfflineQueueCount();
 
-        // 2. Try online sync if network is available
-        let isOffline = true;
-        try {
-          if (navigator.onLine) {
-            const res = await fetch("/api/v1/sales", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                clientSaleId,
-                idempotencyKey,
-                storeId,
-                customerId: customer?.id,
-                subtotal,
-                taxTotal,
-                discountTotal,
-                grandTotal,
-                paidTotal,
-                changeDue,
-                paymentMethod: selectedPaymentMethod,
-                items: cart.map((i, idx) => ({
-                  productId: i.productId,
-                  lineNo: idx + 1,
-                  quantity: i.quantity,
-                  unitPrice: i.unitPrice,
-                  taxRate: i.taxRate,
-                  discountAmount: i.discountAmount,
-                })),
-              }),
-            });
-
-            if (res.ok) {
-              isOffline = false;
-              if (offlineDb) {
-                await offlineDb.offlineSales
-                  .where("clientSaleId")
-                  .equals(clientSaleId)
-                  .modify({ status: "SYNCED", syncedAt: Date.now() });
-              }
-            }
+        // 3. Check network connectivity & process outbox queue
+        let isOffline = !navigator.onLine;
+        if (!navigator.onLine) {
+          toast.success("Sale saved locally. Will sync when online.", {
+            style: {
+              background: "#09090b",
+              color: "#ffffff",
+              border: "1px solid #27272a",
+            },
+          });
+        } else {
+          try {
+            const syncRes = await processSyncQueue();
+            isOffline = syncRes.remainingPending > 0;
+          } catch {
+            isOffline = true;
           }
-        } catch (netErr) {
-          // Stays PENDING in Dexie for offline worker to synchronize
-          isOffline = true;
         }
 
         await refreshOfflineQueueCount();
@@ -572,11 +593,8 @@ export const usePosStore = create<PosState>()(
       refreshOfflineQueueCount: async () => {
         if (!offlineDb) return;
         try {
-          const count = await offlineDb.offlineSales
-            .where("status")
-            .equals("PENDING")
-            .count();
-          set({ pendingOfflineCount: count });
+          const counts = await getSyncQueueCounts();
+          set({ pendingOfflineCount: counts.pending });
         } catch {
           // ignore in SSR
         }

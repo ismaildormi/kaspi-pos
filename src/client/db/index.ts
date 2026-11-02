@@ -49,6 +49,7 @@ export interface OfflineProduct {
   name: string;
   sku: string;
   barcode?: string | null;
+  imageUrl?: string | null;
   salePrice: number;
   costPrice?: number | null;
   taxRate: number;
@@ -77,20 +78,44 @@ export interface OfflineHeldCart {
   customerName?: string | null;
 }
 
+export type SyncQueueEntityType = "SALE" | "CUSTOMER" | "PRODUCT";
+export type SyncQueueStatus = "pending" | "syncing" | "failed";
+
+export interface SyncQueueItem {
+  id: string; // uuid
+  type: SyncQueueEntityType;
+  payload: Record<string, any>;
+  status: SyncQueueStatus;
+  createdAt: number;
+  retryCount: number;
+  lastError?: string;
+}
+
 export class KasbiOfflineDatabase extends Dexie {
   offlineSales!: Table<OfflineSale, number>;
   offlineProducts!: Table<OfflineProduct, string>;
   offlineCustomers!: Table<OfflineCustomer, string>;
   offlineHeldCarts!: Table<OfflineHeldCart, string>;
+  sync_queue!: Table<SyncQueueItem, string>;
 
   constructor() {
     super("kasbi_pos_offline_db");
 
     this.version(1).stores({
-      offlineSales: "++id, clientSaleId, tenantId, storeId, receiptNumber, status, createdAt",
+      offlineSales:
+        "++id, clientSaleId, tenantId, storeId, receiptNumber, status, createdAt",
       offlineProducts: "id, tenantId, barcode, sku, name, categoryId",
       offlineCustomers: "id, tenantId, name, phone, ice",
       offlineHeldCarts: "id, createdAt",
+    });
+
+    this.version(2).stores({
+      offlineSales:
+        "++id, clientSaleId, tenantId, storeId, receiptNumber, status, createdAt",
+      offlineProducts: "id, tenantId, barcode, sku, name, categoryId",
+      offlineCustomers: "id, tenantId, name, phone, ice",
+      offlineHeldCarts: "id, createdAt",
+      sync_queue: "id, type, status, createdAt, retryCount",
     });
   }
 }
