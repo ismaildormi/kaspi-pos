@@ -23,6 +23,33 @@ export interface PrintReceiptPayload {
   customerName?: string;
   customerIce?: string;
   qrCodeUrl?: string;
+  /** Thermal printer target for the desktop app: `tcp://192.168.1.50:9100`, `COM3`,
+   *  a Windows printer name, or omitted for the Windows default printer. */
+  printer?: string;
+  paperWidthMm?: 58 | 80;
+  openDrawer?: boolean;
+}
+
+const PRINTER_SETTINGS_KEY = "kaspi.printer.settings";
+
+export interface PrinterSettings {
+  printer?: string;
+  paperWidthMm?: 58 | 80;
+  openDrawer?: boolean;
+}
+
+export function getPrinterSettings(): PrinterSettings {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(localStorage.getItem(PRINTER_SETTINGS_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+export function savePrinterSettings(settings: PrinterSettings): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(PRINTER_SETTINGS_KEY, JSON.stringify(settings));
 }
 
 export async function printReceipt(
@@ -33,7 +60,9 @@ export async function printReceipt(
     ("__TAURI__" in window || "__TAURI_INTERNALS__" in window);
 
   const payloadString =
-    typeof payload === "string" ? payload : JSON.stringify(payload);
+    typeof payload === "string"
+      ? payload
+      : JSON.stringify({ ...getPrinterSettings(), ...payload });
 
   if (isTauri) {
     try {

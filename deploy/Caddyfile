@@ -1,0 +1,13 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$TRIGGER_DOMAIN} {
+	encode gzip
+	reverse_proxy trigger-webapp:3000
+}
+
+{$HYPERSWITCH_DOMAIN} {
+	encode gzip
+	reverse_proxy hyperswitch-router:8080
+}

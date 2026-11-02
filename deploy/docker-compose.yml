@@ -1,0 +1,230 @@
+# ==============================================================================
+# KASPI POS — Oracle Cloud VPS stack (Always-Free Ampere A1, arm64)
+#   - Supavisor   : PostgreSQL connection pooler in front of Neon      (:6543 / :4000)
+#   - Trigger.dev : self-hosted webapp + supervisor for background jobs (:8030)
+#   - Hyperswitch : payment orchestrator (router)                      (:8080)
+#   - Caddy       : automatic HTTPS reverse proxy for all public hostnames
+#
+# Usage:  cp .env.vps.example .env && docker compose up -d
+# Docs:   deploy/README.md
+# ==============================================================================
+
+name: kaspi-vps
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  # ----------------------------------------------------------------------------
+  # Reverse proxy (TLS via Let's Encrypt)
+  # ----------------------------------------------------------------------------
+  caddy:
+    <<: *restart
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      TRIGGER_DOMAIN: ${TRIGGER_DOMAIN}
+      HYPERSWITCH_DOMAIN: ${HYPERSWITCH_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - trigger-webapp
+      - hyperswitch-router
+
+  # ----------------------------------------------------------------------------
+  # Shared Redis (Trigger.dev + Hyperswitch use separate logical DBs)
+  # ----------------------------------------------------------------------------
+  redis:
+    <<: *restart
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  # ----------------------------------------------------------------------------
+  # Local Postgres for VPS service metadata ONLY (Supavisor tenants, Trigger.dev
+  # runs, Hyperswitch payments). KASPI business data stays in Neon.
+  # ----------------------------------------------------------------------------
+  vps-postgres:
+    <<: *restart
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${VPS_PG_USER}
+      POSTGRES_PASSWORD: ${VPS_PG_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - vps_pg_data:/var/lib/postgresql/data
+      - ./init/create-databases.sql:/docker-entrypoint-initdb.d/01-create-databases.sql:ro
+    command: ["postgres", "-c", "wal_level=logical", "-c", "max_connections=300"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${VPS_PG_USER}"]
+      interval: 5s
+      retries: 10
+
+  # ----------------------------------------------------------------------------
+  # Supavisor — connection pooler (transaction mode on 6543) routing to Neon
+  # Tenant "kaspi" is registered via deploy/scripts/register-supavisor-tenant.sh
+  # ----------------------------------------------------------------------------
+  supavisor:
+    <<: *restart
+    image: supabase/supavisor:2.5.1
+    depends_on:
+      vps-postgres:
+        condition: service_healthy
+    ports:
+      - "6543:6543"            # transaction pooler (public — used by Vercel DATABASE_URL)
+      - "127.0.0.1:4000:4000"  # management API (localhost only)
+    environment:
+      PORT: 4000
+      PROXY_PORT_SESSION: 5452
+      PROXY_PORT_TRANSACTION: 6543
+      DATABASE_URL: ecto://${VPS_PG_USER}:${VPS_PG_PASSWORD}@vps-postgres:5432/supavisor
+      CLUSTER_POSTGRES: "true"
+      SECRET_KEY_BASE: ${SUPAVISOR_SECRET_KEY_BASE}
+      VAULT_ENC_KEY: ${SUPAVISOR_VAULT_ENC_KEY}
+      API_JWT_SECRET: ${SUPAVISOR_API_JWT_SECRET}
+      METRICS_JWT_SECRET: ${SUPAVISOR_API_JWT_SECRET}
+      REGION: local
+      ERL_AFLAGS: -proto_dist inet_tcp
+      RELEASE_COOKIE: ${SUPAVISOR_RELEASE_COOKIE}
+    command: ["/bin/sh", "-c", "/app/bin/migrate && /app/bin/server"]
+
+  # ----------------------------------------------------------------------------
+  # Trigger.dev (self-hosted). Mirrors the official hosting/docker layout.
+  # NOTE: self-hosted images track Trigger.dev v4 — see README "Trigger.dev version".
+  # ----------------------------------------------------------------------------
+  trigger-webapp:
+    <<: *restart
+    image: ghcr.io/triggerdotdev/trigger.dev:${TRIGGER_IMAGE_TAG:-v4.0.0}
+    depends_on:
+      vps-postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "3000"
+    environment:
+      APP_ORIGIN: https://${TRIGGER_DOMAIN}
+      LOGIN_ORIGIN: https://${TRIGGER_DOMAIN}
+      API_ORIGIN: https://${TRIGGER_DOMAIN}
+      DATABASE_URL: postgresql://${VPS_PG_USER}:${VPS_PG_PASSWORD}@vps-postgres:5432/trigger?schema=public&sslmode=disable
+      DIRECT_URL: postgresql://${VPS_PG_USER}:${VPS_PG_PASSWORD}@vps-postgres:5432/trigger?schema=public&sslmode=disable
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_TLS_DISABLED: "true"
+      SESSION_SECRET: ${TRIGGER_SESSION_SECRET}
+      MAGIC_LINK_SECRET: ${TRIGGER_MAGIC_LINK_SECRET}
+      ENCRYPTION_KEY: ${TRIGGER_ENCRYPTION_KEY}
+      MANAGED_WORKER_SECRET: ${TRIGGER_MANAGED_WORKER_SECRET}
+      TRIGGER_BOOTSTRAP_ENABLED: "1"
+      TRIGGER_BOOTSTRAP_WORKER_GROUP_NAME: bootstrap
+      TRIGGER_BOOTSTRAP_WORKER_TOKEN_PATH: /home/node/shared/worker_token
+      # Restrict dashboard sign-in to the platform owner's e-mail
+      WHITELISTED_EMAILS: ${TRIGGER_ADMIN_EMAIL}
+      # Magic-link e-mails (optional; without SMTP the link is printed in `docker compose logs trigger-webapp`)
+      EMAIL_TRANSPORT: ${TRIGGER_EMAIL_TRANSPORT:-}
+      FROM_EMAIL: ${TRIGGER_FROM_EMAIL:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      NODE_MAX_OLD_SPACE_SIZE: 4096
+    volumes:
+      - trigger_shared:/home/node/shared
+
+  docker-socket-proxy:
+    <<: *restart
+    image: tecnativa/docker-socket-proxy:0.3
+    environment:
+      CONTAINERS: 1
+      IMAGES: 1
+      NETWORKS: 1
+      POST: 1
+      INFO: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  trigger-supervisor:
+    <<: *restart
+    image: ghcr.io/triggerdotdev/supervisor:${TRIGGER_IMAGE_TAG:-v4.0.0}
+    depends_on:
+      - trigger-webapp
+      - docker-socket-proxy
+    environment:
+      TRIGGER_API_URL: http://trigger-webapp:3000
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://trigger-webapp:3000/otel
+      TRIGGER_WORKER_TOKEN: file:///home/node/shared/worker_token
+      MANAGED_WORKER_SECRET: ${TRIGGER_MANAGED_WORKER_SECRET}
+      TRIGGER_WORKLOAD_API_DOMAIN: trigger-supervisor
+      TRIGGER_WORKLOAD_API_PORT_EXTERNAL: 8020
+      DOCKER_HOST: tcp://docker-socket-proxy:2375
+      DOCKER_RUNNER_NETWORKS: kaspi-vps_default
+      DOCKER_ENFORCE_MACHINE_PRESETS: "true"
+      ENFORCE_MACHINE_PRESETS: "true"
+    volumes:
+      - trigger_shared:/home/node/shared:ro
+
+  # ----------------------------------------------------------------------------
+  # Hyperswitch payment router
+  # ----------------------------------------------------------------------------
+  hyperswitch-migrations:
+    image: juspaydotin/hyperswitch-router:${HYPERSWITCH_IMAGE_TAG:-standalone}
+    depends_on:
+      vps-postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${VPS_PG_USER}:${VPS_PG_PASSWORD}@vps-postgres:5432/hyperswitch
+    entrypoint: ["/bin/sh", "-c", "diesel migration run --migration-dir /local/migrations || echo 'run migrations manually — see README'"]
+    restart: "no"
+
+  hyperswitch-router:
+    <<: *restart
+    image: juspaydotin/hyperswitch-router:${HYPERSWITCH_IMAGE_TAG:-standalone}
+    depends_on:
+      vps-postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "8080"
+    command: ["/local/bin/router", "-f", "/local/config/docker_compose.toml"]
+    environment:
+      ROUTER__SERVER__HOST: 0.0.0.0
+      ROUTER__SERVER__PORT: 8080
+      ROUTER__MASTER_DATABASE__HOST: vps-postgres
+      ROUTER__MASTER_DATABASE__PORT: 5432
+      ROUTER__MASTER_DATABASE__DBNAME: hyperswitch
+      ROUTER__MASTER_DATABASE__USERNAME: ${VPS_PG_USER}
+      ROUTER__MASTER_DATABASE__PASSWORD: ${VPS_PG_PASSWORD}
+      ROUTER__REPLICA_DATABASE__HOST: vps-postgres
+      ROUTER__REPLICA_DATABASE__PORT: 5432
+      ROUTER__REPLICA_DATABASE__DBNAME: hyperswitch
+      ROUTER__REPLICA_DATABASE__USERNAME: ${VPS_PG_USER}
+      ROUTER__REPLICA_DATABASE__PASSWORD: ${VPS_PG_PASSWORD}
+      ROUTER__REDIS__HOST: redis
+      ROUTER__REDIS__PORT: 6379
+      ROUTER__SECRETS__ADMIN_API_KEY: ${HYPERSWITCH_ADMIN_API_KEY}
+      ROUTER__SECRETS__MASTER_ENC_KEY: ${HYPERSWITCH_MASTER_ENC_KEY}
+      ROUTER__SECRETS__JWT_SECRET: ${HYPERSWITCH_JWT_SECRET}
+      ROUTER__SERVER__BASE_URL: https://${HYPERSWITCH_DOMAIN}
+      RUN_ENV: ${HYPERSWITCH_RUN_ENV:-sandbox}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 10s
+      retries: 12
+
+volumes:
+  caddy_data:
+  caddy_config:
+  redis_data:
+  vps_pg_data:
+  trigger_shared:

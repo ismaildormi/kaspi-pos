@@ -7,7 +7,7 @@
 ```mermaid
 flowchart TD
     subgraph ClientTier["1. Client & Edge Tier (Local-First POS)"]
-        Tauri["Tauri v2 Native Desktop (.exe)\nLocal SQLite + Rust USB ESC/POS (harfbuzzrs + fribidi + image)"]
+        Tauri["Tauri v2 Native Desktop (.exe)\nLocal SQLite + Rust ESC/POS (rustybuzz + unicode-bidi + ab_glyph)"]
         PWA["Next.js 15 PWA\nDexie.js (IndexedDB) + CRDT/Watermark Outbox Sync"]
         R2["Cloudflare R2 Free Tier (10 GB)\nStatic Asset & Desktop Updater Distribution"]
     end
@@ -83,13 +83,15 @@ flowchart TD
   - **Dedicated `InvoiceSequence` Table (`invoice_sequences`)**: Tracks `(tenantId, year, prefix, lastNumber)` per merchant and fiscal year.
   - **Pessimistic Row-Level Locking (`SELECT ... FOR UPDATE`)**: Inside an atomic database transaction (`generateNextInvoiceNumber`), PostgreSQL locks the tenant's sequence row for the current year (`SELECT "id", "last_number" FROM "invoice_sequences" WHERE "tenant_id" = $1 AND "year" = $2 AND "prefix" = $3 FOR UPDATE`), increments `last_number` by `1`, and commits the `Invoice` record in the exact same transaction—guaranteeing **zero gaps** even if a transaction rolls back.
 
-### Risk 5: Disconnected & Reversed Arabic Script on Thermal Printers → **Rust (`harfbuzzrs`, `fribidi`, `image`) Raster ESC/POS**
+### Risk 5: Disconnected & Reversed Arabic Script on Thermal Printers → **Rust (`rustybuzz` = HarfBuzz port, `unicode-bidi` = FriBidi's UAX #9, `ab_glyph`, `image`) Raster ESC/POS**
 - **Problem**: Generic 58mm/80mm USB thermal printers lack Arabic codepages, causing raw text commands to print Arabic letters disconnected (`م ر ح ب ا`) and Left-to-Right.
 - **Solution**:
   - **Native Rust Shaping & Rasterization Pipeline (`src-tauri/src/main.rs`)**:
-    1. **BiDi Reordering (`fribidi`)**: Applies the Unicode Bidirectional Algorithm (UAX #9) so mixed Arabic RTL product names and LTR prices (`120.00 MAD`) align in visual order.
-    2. **Contextual Glyph Shaping (`harfbuzzrs`)**: Shapes Arabic Unicode codepoints into their connected contextual glyph forms (Isolated, Initial, Medial, Final, and `Lam-Alef` ligatures).
-    3. **1-Bit Monochrome Bitmap (`image`) & `GS v 0`**: Renders the shaped receipt onto a 384px/576px `GrayImage`, packs 8 pixels per byte, and transmits the standard ESC/POS **`GS v 0` (`0x1D 0x76 0x30`)** raster bit-image command directly to the USB printer.
+    1. **BiDi Reordering (`unicode-bidi`, same UAX #9 algorithm as FriBidi)**: Applies the Unicode Bidirectional Algorithm (UAX #9) so mixed Arabic RTL product names and LTR prices (`120.00 MAD`) align in visual order.
+    2. **Contextual Glyph Shaping (`rustybuzz`, a pure-Rust port of HarfBuzz)**: Shapes Arabic Unicode codepoints into their connected contextual glyph forms (Isolated, Initial, Medial, Final, and `Lam-Alef` ligatures).
+    3. **Rasterization (`ab_glyph` + `image`) & `GS v 0`**: Draws real glyph outlines from embedded Noto Sans Arabic / Noto Sans fonts (SIL OFL) onto a 384px (58mm) / 576px (80mm) 1-bit canvas, then emits ESC/POS **`GS v 0` (`0x1D 0x76 0x30`)** in 128-row bands.
+    4. **Transport**: Windows print spooler (RAW datatype, USB printers installed in Windows), `tcp://ip:9100` (LAN printers), or a device path (`COM3`, `\\localhost\POS80`).
+  - **Why not the C libraries `harfbuzz_rs` / `fribidi`?** They need native HarfBuzz/FriBidi builds (vcpkg) on the Windows MSVC GitHub Actions runner, and `fribidi` has no maintained Windows build path. The pure-Rust ports implement the same algorithms and keep the `.exe` CI build dependency-free.
 
 ### Risk 6: Multi-Gateway Payment Fragmentation → **Hyperswitch (VPS) Orchestrating Paddle & YouCanPay**
 - **Problem**: Moroccan merchants require local **CMI / CashPlus / MAD** checkout (**YouCanPay**), while international franchises and foreign cards require a global Merchant of Record (**Paddle**). Maintaining separate checkout state machines and retry logic in frontend code creates brittle billing flows.

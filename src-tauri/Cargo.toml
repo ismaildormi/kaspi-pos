@@ -12,13 +12,20 @@ tauri-build = { version = "2.0.0", features = [] }
 tauri = { version = "2.0.0", features = [] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-# Arabic / Darija Thermal Receipt Rasterization Pipeline:
-# - rustybuzz (Pure-Rust HarfBuzz text shaping engine: harfbuzzrs equivalent for Windows MSVC)
-# - unicode-bidi (Pure-Rust UAX #9 BiDi RTL ordering engine: fribidi equivalent)
-# - image (Monochrome bitmap rasterization for ESC/POS GS v 0)
+# Arabic / Darija Thermal Receipt Rasterization Pipeline (pure Rust — builds on
+# Windows MSVC CI without vcpkg/system C libraries):
+# - rustybuzz    : Rust port of HarfBuzz (contextual Arabic joining, Lam-Alef ligatures)
+# - unicode-bidi : UAX #9 BiDi algorithm (same algorithm FriBidi implements)
+# - ab_glyph     : TrueType glyph outline rasterizer (embedded Noto fonts, SIL OFL)
+# - image        : 1-bit canvas for ESC/POS GS v 0 raster output
 rustybuzz = "0.14"
 unicode-bidi = "0.3"
-image = { version = "0.25", default-features = false, features = ["png", "bmp"] }
+ab_glyph = "0.2"
+image = { version = "0.25", default-features = false, features = ["png"] }
+
+[target.'cfg(windows)'.dependencies]
+# Windows print spooler (RAW datatype) for USB thermal printers installed as Windows printers
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Graphics_Printing", "Win32_Graphics_Gdi", "Win32_Security"] }
 
 [features]
 default = ["custom-protocol"]

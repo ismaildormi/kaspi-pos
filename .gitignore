@@ -30,3 +30,6 @@ Thumbs.db
 
 # Docker data volumes
 pos_pgdata/
+
+# VPS secrets
+deploy/.env
