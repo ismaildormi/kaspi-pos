@@ -5,6 +5,7 @@ import { prisma } from "@/server/db/prisma";
 import { getRequestContext } from "@/server/auth/context";
 import { jsonOk, handleApiError, AppError } from "@/server/http/response";
 import { toDecimal, toPrismaDecimal, roundMoney } from "@/domain/money";
+import { generateNextInvoiceNumber } from "@/server/services/dgi-sequence";
 
 const InvoiceLineSchema = z.object({
   name: z.string().min(1, "Product name required"),
@@ -120,11 +121,18 @@ export async function POST(req: NextRequest) {
 
     const grandTotal = roundMoney(subtotal.plus(taxTotal));
 
-    // Generate unique sequential reference
+    // DGI-compliant gap-less sequential numbering (SELECT ... FOR UPDATE).
+    // Sequence increment and invoice insert share ONE transaction, so a failed
+    // insert rolls back the counter too — no gaps in the official series.
     const prefix = kind === "quote" ? "DEV" : kind === "credit_note" ? "AVR" : "FAC";
-    const invoiceNumber = `${prefix}-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
 
-    const invoice = await prisma.invoice.create({
+    const invoice = await prisma.$transaction(async (tx) => {
+      const { invoiceNumber } = await generateNextInvoiceNumber(ctx.tenantId, {
+        prefix,
+        tx,
+      });
+
+      return tx.invoice.create({
       data: {
         tenantId: ctx.tenantId,
         storeId,
@@ -166,6 +174,7 @@ export async function POST(req: NextRequest) {
         customer: true,
         store: true,
       },
+      });
     });
 
     return jsonOk({ invoice }, 201);

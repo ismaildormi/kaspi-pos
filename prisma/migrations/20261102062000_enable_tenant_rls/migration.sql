@@ -22,6 +22,7 @@ DECLARE
     'inventory_movements',
     'stock_levels',
     'document_sequences',
+    'invoice_sequences',
     'product_import_jobs',
     'subscriptions',
     'payments',

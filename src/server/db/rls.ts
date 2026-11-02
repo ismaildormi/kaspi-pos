@@ -40,6 +40,7 @@ const TENANT_SCOPED_MODELS = new Set([
   "InventoryMovement",
   "StockLevel",
   "DocumentSequence",
+  "InvoiceSequence",
   "ProductImportJob",
   "Subscription",
   "Payment",
