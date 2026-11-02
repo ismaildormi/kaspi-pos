@@ -12,6 +12,13 @@ tauri-build = { version = "2.0.0", features = [] }
 tauri = { version = "2.0.0", features = [] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+# Arabic / Darija Thermal Receipt Rasterization Pipeline:
+# - rustybuzz (Pure-Rust HarfBuzz text shaping engine: harfbuzzrs equivalent for Windows MSVC)
+# - unicode-bidi (Pure-Rust UAX #9 BiDi RTL ordering engine: fribidi equivalent)
+# - image (Monochrome bitmap rasterization for ESC/POS GS v 0)
+rustybuzz = "0.14"
+unicode-bidi = "0.3"
+image = { version = "0.25", default-features = false, features = ["png", "bmp"] }
 
 [features]
 default = ["custom-protocol"]

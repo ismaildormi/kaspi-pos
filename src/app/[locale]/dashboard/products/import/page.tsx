@@ -273,7 +273,7 @@ export default function ProductImportPage() {
 
       {/* Main Container */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 space-y-6">
-        {/* Asynchronous QStash Background Processing Banner */}
+        {/* Asynchronous Trigger.dev Background Processing Banner */}
         {backgroundJob && (
           <div className="p-6 rounded-3xl bg-zinc-900 border border-zinc-700 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
             <div className="flex items-center gap-4">
@@ -285,7 +285,7 @@ export default function ProductImportPage() {
                   Your file is being processed in the background. You can continue working.
                 </h3>
                 <p className="text-xs text-zinc-400 mt-1 font-mono">
-                  QStash Job ID: {backgroundJob.jobId} • Polling status every 3s...
+                  Trigger.dev Job ID: {backgroundJob.jobId} • Polling status every 3s...
                 </p>
               </div>
             </div>

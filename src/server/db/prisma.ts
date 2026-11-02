@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { extendPrismaWithRls } from "./rls";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -21,16 +22,20 @@ function buildPooledDatabaseUrl(): string | undefined {
   return rawUrl;
 }
 
-const datasourceUrl = buildPooledDatabaseUrl();
-
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+function createRlsPrismaClient(): PrismaClient {
+  const datasourceUrl = buildPooledDatabaseUrl();
+  const baseClient = new PrismaClient({
     ...(datasourceUrl ? { datasources: { db: { url: datasourceUrl } } } : {}),
     log:
       process.env.NODE_ENV === "development"
         ? ["error", "warn"]
         : ["error"],
   });
+
+  return extendPrismaWithRls(baseClient);
+}
+
+export const prisma: PrismaClient =
+  globalForPrisma.prisma ?? createRlsPrismaClient();
 
 globalForPrisma.prisma = prisma;

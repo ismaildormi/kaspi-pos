@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import { getSessionByToken, SESSION_COOKIE_NAME } from "./session";
 import { AppError } from "../http/response";
 import { UserRole } from "@prisma/client";
+import { setActiveTenantContext } from "../db/rls";
 
 export interface RequestContext {
   userId: string;
@@ -75,6 +76,13 @@ export async function getRequestContext(
       403
     );
   }
+
+  // Bind tenantId into AsyncLocalStorage for PostgreSQL Row-Level Security (RLS)
+  setActiveTenantContext({
+    tenantId: activeMembership.tenantId,
+    userId: user.id,
+    isSuperAdmin: Boolean((user as any).isSuperAdmin),
+  });
 
   return {
     userId: user.id,

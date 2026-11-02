@@ -1,10 +1,27 @@
-import { NextRequest, NextResponse } from "next/server";
+import { task, logger } from "@trigger.dev/sdk/v3";
 import Papa from "papaparse";
 import { prisma } from "@/server/db/prisma";
-import {
-  verifyQStashOrInternalSignature,
-  type CsvImportWorkerPayload,
-} from "@/lib/qstash";
+
+export const MAX_CSV_ROWS = 10_000;
+export const CHUNK_SIZE = 500;
+
+export interface ImportCsvTaskPayload {
+  jobId?: string;
+  tenantId: string;
+  fileUrl?: string;
+  csvContent?: string;
+  rows?: Array<{
+    rowNumber: number;
+    name: string;
+    sku: string;
+    barcode: string | null;
+    category: string;
+    salePrice: number;
+    costPrice: number | null;
+    stockQuantity: number;
+    taxRate: number;
+  }>;
+}
 
 interface RawCSVRow {
   name?: string;
@@ -36,6 +53,7 @@ interface RawCSVRow {
 
 function normalizeCsvRow(raw: RawCSVRow, rowNumber: number) {
   const errors: string[] = [];
+
   const name = (
     raw.name ||
     raw.nom ||
@@ -46,7 +64,9 @@ function normalizeCsvRow(raw: RawCSVRow, rowNumber: number) {
   )
     .toString()
     .trim();
-  if (!name) errors.push("Missing product name");
+  if (!name) {
+    errors.push("Missing product name");
+  }
 
   const rawPrice =
     raw.price ??
@@ -56,7 +76,7 @@ function normalizeCsvRow(raw: RawCSVRow, rowNumber: number) {
     raw["السعر"];
   const parsedPrice = parseFloat(String(rawPrice || "0").replace(",", "."));
   if (Number.isNaN(parsedPrice) || parsedPrice <= 0) {
-    errors.push("Invalid sale price");
+    errors.push("Invalid sale price (must be > 0 MAD)");
   }
 
   const rawCost = raw.cost_price ?? raw.prix_achat ?? raw.cout;
@@ -109,54 +129,37 @@ function normalizeCsvRow(raw: RawCSVRow, rowNumber: number) {
   };
 }
 
-const CHUNK_SIZE = 500;
-
-export async function POST(req: NextRequest) {
-  let jobId: string | undefined;
+export async function executeCsvImportChunked(payload: ImportCsvTaskPayload) {
+  const { jobId, tenantId, fileUrl, csvContent } = payload;
 
   try {
-    const rawBody = await req.text();
-    const qstashSignature =
-      req.headers.get("upstash-signature") ||
-      req.headers.get("Upstash-Signature");
-    const internalSignature = req.headers.get("x-kaspi-worker-signature");
+    let rawCsvText = csvContent || "";
 
-    // 1. Verify QStash Signature (or internal HMAC fallback)
-    const isAuthorized = await verifyQStashOrInternalSignature(
-      qstashSignature,
-      internalSignature,
-      rawBody,
-      req.url
-    );
-
-    if (!isAuthorized) {
-      return NextResponse.json(
-        { error: "Unauthorized: Invalid QStash signature" },
-        { status: 401 }
-      );
+    // If fileUrl was provided (e.g. data: URL or remote R2/HTTP URL), fetch its text
+    if (!rawCsvText && fileUrl) {
+      if (fileUrl.startsWith("data:")) {
+        const base64Part = fileUrl.split(",")[1] || "";
+        rawCsvText = Buffer.from(base64Part, "base64").toString("utf-8");
+      } else if (fileUrl.startsWith("http")) {
+        const response = await fetch(fileUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to download CSV from ${fileUrl}`);
+        }
+        rawCsvText = await response.text();
+      }
     }
 
-    const payload: CsvImportWorkerPayload = JSON.parse(rawBody);
-    jobId = payload.jobId;
-    const { tenantId } = payload;
-
-    if (!jobId || !tenantId) {
-      return NextResponse.json(
-        { error: "Missing jobId or tenantId in worker payload" },
-        { status: 400 }
-      );
-    }
-
-    // 2. Resolve rows to process (either pre-validated rows or raw CSV content)
-    let validRows = payload.rows || [];
+    let validRows = (payload.rows || []).slice(0, MAX_CSV_ROWS);
     const errorDetails: Array<{ rowNumber: number; errors: string[] }> = [];
 
-    if (validRows.length === 0 && payload.csvContent) {
-      const parsed = Papa.parse<RawCSVRow>(payload.csvContent, {
+    if (validRows.length === 0 && rawCsvText) {
+      const parsed = Papa.parse<RawCSVRow>(rawCsvText, {
         header: true,
         skipEmptyLines: true,
         transformHeader: (h) => h.trim().toLowerCase().replace(/\s+/g, "_"),
       });
+
+      const cappedData = parsed.data.slice(0, MAX_CSV_ROWS);
 
       const existingProducts = await prisma.product.findMany({
         where: { tenantId },
@@ -172,7 +175,7 @@ export async function POST(req: NextRequest) {
       );
       const seenFileSkus = new Set<string>();
 
-      parsed.data.forEach((raw, idx) => {
+      cappedData.forEach((raw, idx) => {
         const rowNum = idx + 2;
         const { row, errors } = normalizeCsvRow(raw, rowNum);
 
@@ -197,7 +200,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 3. Resolve Categories & Default Store once before chunking
+    // Resolve Categories & Default Store once before chunking
     const categoryNames = Array.from(
       new Set(validRows.map((r) => r.category || "Épicerie Générale"))
     );
@@ -222,7 +225,7 @@ export async function POST(req: NextRequest) {
       orderBy: { createdAt: "asc" },
     });
 
-    // 4. Process CSV rows in chunks of 500 rows at a time using Prisma transactions
+    // Process up to 10,000 rows in chunks of 500 rows using Prisma transactions
     let committedCount = 0;
 
     for (let i = 0; i < validRows.length; i += CHUNK_SIZE) {
@@ -274,41 +277,55 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 5. Update ProductImportJob status to 'committed'
-    await prisma.productImportJob.update({
-      where: { id: jobId },
-      data: {
-        status: "committed",
-        totalRows: validRows.length + errorDetails.length,
-        validRows: committedCount,
-        errorRows: errorDetails.length > 0 ? errorDetails : undefined,
-      },
-    });
+    if (jobId) {
+      await prisma.productImportJob.update({
+        where: { id: jobId },
+        data: {
+          status: "committed",
+          totalRows: validRows.length + errorDetails.length,
+          validRows: committedCount,
+          errorRows: errorDetails.length > 0 ? errorDetails : undefined,
+        },
+      });
+    }
 
-    return NextResponse.json({
+    return {
       success: true,
       jobId,
-      status: "committed",
+      tenantId,
       committedCount,
-    });
+      skippedCount: errorDetails.length,
+    };
   } catch (err: any) {
-    console.error("[QStash CSV Import Worker] Error:", err);
-
     if (jobId) {
       await prisma.productImportJob
         .update({
           where: { id: jobId },
           data: {
             status: "failed",
-            errorRows: [{ error: err?.message || "Worker execution failed" }],
+            errorRows: [{ error: err?.message || "Trigger.dev task failed" }],
           },
         })
         .catch(() => {});
     }
-
-    return NextResponse.json(
-      { error: err?.message || "CSV Import Worker failed" },
-      { status: 500 }
-    );
+    throw err;
   }
 }
+
+export const importCsvTask = task({
+  id: "import-csv",
+  maxDuration: 300,
+  run: async (payload: ImportCsvTaskPayload) => {
+    logger.info("Starting Trigger.dev CSV import job", {
+      jobId: payload.jobId,
+      tenantId: payload.tenantId,
+      maxRows: MAX_CSV_ROWS,
+      chunkSize: CHUNK_SIZE,
+    });
+
+    const result = await executeCsvImportChunked(payload);
+
+    logger.info("Completed Trigger.dev CSV import job", result);
+    return result;
+  },
+});

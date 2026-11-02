@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { tasks } from "@trigger.dev/sdk/v3";
 import Papa from "papaparse";
 import { prisma } from "@/server/db/prisma";
 import { getRequestContext } from "@/server/auth/context";
 import { auth } from "@/auth";
-import { publishCsvImportJob } from "@/lib/qstash";
+import {
+  executeCsvImportChunked,
+  MAX_CSV_ROWS,
+  type ImportCsvTaskPayload,
+} from "@/trigger/import-csv";
 
 export interface RawCSVRow {
   name?: string;
@@ -160,7 +165,7 @@ async function resolveTenantAndUser(): Promise<{
 
 /**
  * GET /api/products/import?jobId={id}
- * Polls the status of an asynchronous ProductImportJob.
+ * Polls the status of a ProductImportJob.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -208,18 +213,16 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/products/import
- * - Validates header/first rows for preview or immediate background queue.
- * - Creates a `ProductImportJob` in Prisma (`previewing`).
- * - Publishes the job to `/api/workers/csv-import` via Upstash QStash.
- * - Immediately returns `202 Accepted` with `{ jobId }` to prevent Vercel 10s timeouts.
+ * Dispatches background CSV imports via Trigger.dev (`tasks.trigger("import-csv", { fileUrl, tenantId })`)
+ * and returns `202 Accepted` immediately.
  */
 export async function POST(req: NextRequest) {
   try {
     const { tenantId, userId } = await resolveTenantAndUser();
     const contentType = req.headers.get("content-type") || "";
-    const requestOrigin = new URL(req.url).origin;
 
     let csvText = "";
+    let fileUrl = "";
     let fileName = "catalog-import.csv";
     let action: "preview" | "commit" = "commit";
     let rowsToCommit: ParsedProductRow[] = [];
@@ -238,22 +241,37 @@ export async function POST(req: NextRequest) {
       }
       fileName = file.name || fileName;
       csvText = await file.text();
+      fileUrl = `data:text/csv;base64,${Buffer.from(csvText, "utf-8").toString(
+        "base64"
+      )}`;
     } else if (contentType.includes("application/json")) {
       const json = await req.json();
       action = json.action || "commit";
       csvText = json.csvContent || "";
+      fileUrl =
+        json.fileUrl ||
+        (csvText
+          ? `data:text/csv;base64,${Buffer.from(csvText, "utf-8").toString(
+              "base64"
+            )}`
+          : "");
       fileName = json.fileName || fileName;
       if (json.rows && Array.isArray(json.rows)) {
-        rowsToCommit = json.rows;
+        rowsToCommit = json.rows.slice(0, MAX_CSV_ROWS);
       }
     }
 
-    // 1. Asynchronous Background Commit (202 Accepted via Upstash QStash)
-    if (action === "commit" && (rowsToCommit.length > 0 || csvText.trim())) {
-      const estimatedTotal =
+    // 1. Trigger.dev Background Job Dispatch (202 Accepted)
+    if (
+      action === "commit" &&
+      (rowsToCommit.length > 0 || csvText.trim() || fileUrl)
+    ) {
+      const estimatedTotal = Math.min(
+        MAX_CSV_ROWS,
         rowsToCommit.length > 0
           ? rowsToCommit.length
-          : Math.max(0, csvText.trim().split(/\r?\n/).length - 1);
+          : Math.max(0, csvText.trim().split(/\r?\n/).length - 1)
+      );
 
       const importJob = await prisma.productImportJob.create({
         data: {
@@ -266,15 +284,31 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      const qstashDispatch = await publishCsvImportJob(
-        {
-          jobId: importJob.id,
-          tenantId,
-          csvContent: csvText || undefined,
-          rows: rowsToCommit.length > 0 ? rowsToCommit : undefined,
-        },
-        requestOrigin
-      );
+      const taskPayload: ImportCsvTaskPayload = {
+        jobId: importJob.id,
+        tenantId,
+        fileUrl,
+        csvContent: csvText || undefined,
+        rows: rowsToCommit.length > 0 ? rowsToCommit : undefined,
+      };
+
+      let triggerRunId = `local_${importJob.id}`;
+      const isTriggerConfigured =
+        Boolean(process.env.TRIGGER_SECRET_KEY) &&
+        process.env.TRIGGER_SECRET_KEY !== "tr_dev_your_secret_key";
+
+      if (isTriggerConfigured) {
+        const handle = await tasks.trigger<typeof import("@/trigger/import-csv").importCsvTask>(
+          "import-csv",
+          taskPayload
+        );
+        triggerRunId = handle.id;
+      } else {
+        // Non-blocking background execution when running locally without Trigger.dev Cloud key
+        executeCsvImportChunked(taskPayload).catch((err) => {
+          console.error("[Trigger.dev Local Fallback] Error:", err);
+        });
+      }
 
       return NextResponse.json(
         {
@@ -282,8 +316,7 @@ export async function POST(req: NextRequest) {
           status: "accepted",
           action: "commit",
           jobId: importJob.id,
-          messageId: qstashDispatch.messageId,
-          mode: qstashDispatch.mode,
+          triggerRunId,
           message:
             "Your file is being processed in the background. You can continue working.",
         },
@@ -298,7 +331,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Fast Header & Preview Validation
+    // 2. Fast Preview Validation (Capped at MAX_CSV_ROWS = 10,000)
     const parseResult = Papa.parse<RawCSVRow>(csvText, {
       header: true,
       skipEmptyLines: true,
@@ -311,6 +344,8 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const cappedRows = parseResult.data.slice(0, MAX_CSV_ROWS);
 
     const existingProducts = await prisma.product.findMany({
       where: { tenantId },
@@ -329,7 +364,7 @@ export async function POST(req: NextRequest) {
     const invalidRows: ParsedProductRow[] = [];
     const seenFileSkus = new Set<string>();
 
-    parseResult.data.forEach((raw, idx) => {
+    cappedRows.forEach((raw, idx) => {
       const rowNum = idx + 2;
       const { row, errors } = normalizeCsvRow(raw, rowNum);
 
@@ -373,7 +408,7 @@ export async function POST(req: NextRequest) {
       success: true,
       action: "preview",
       summary: {
-        totalRows: parseResult.data.length,
+        totalRows: cappedRows.length,
         validCount: validRows.length,
         invalidCount: invalidRows.length,
       },
