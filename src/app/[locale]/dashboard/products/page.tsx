@@ -1,34 +1,253 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { prisma } from "@/server/db/prisma";
-import { getRequestContext } from "@/server/auth/context";
+import { Toaster, toast } from "sonner";
 import {
   Package,
-  Plus,
   FileSpreadsheet,
   Sparkles,
   Search,
-  AlertCircle,
+  MoreVertical,
+  Image as ImageIcon,
+  DollarSign,
+  Loader2,
+  X,
+  Check,
+  LayoutGrid,
+  List,
+  Barcode,
 } from "lucide-react";
+import { generateProductImageUrl } from "@/lib/pollinations";
 
-export const dynamic = "force-dynamic";
+export interface CatalogProduct {
+  id: string;
+  name: string;
+  sku: string;
+  barcode?: string | null;
+  imageUrl?: string | null;
+  salePrice: number;
+  taxRate: number;
+  trackStock: boolean;
+  stockQuantity?: number;
+  categoryId?: string | null;
+  categoryName?: string | null;
+}
 
-export default async function ProductsListPage() {
-  const ctx = await getRequestContext();
-  const tenantId = ctx.tenantId;
+export default function ProductsListPage() {
+  const [products, setProducts] = useState<CatalogProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
-  const products = await prisma.product.findMany({
-    where: { tenantId },
-    include: {
-      category: true,
-      stockLevels: true,
-    },
-    orderBy: { createdAt: "desc" },
+  // 3-Dot Dropdown State
+  const [openMenuProductId, setOpenMenuProductId] = useState<string | null>(
+    null
+  );
+  const menuContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Per-Product Loading State (for AI Image Gen or inline updates)
+  const [updatingProductId, setUpdatingProductId] = useState<string | null>(
+    null
+  );
+
+  // Modal State: Change Image URL
+  const [imageModalProduct, setImageModalProduct] =
+    useState<CatalogProduct | null>(null);
+  const [newImageUrl, setNewImageUrl] = useState("");
+  const [isSavingImage, setIsSavingImage] = useState(false);
+
+  // Modal State: Edit Price
+  const [priceModalProduct, setPriceModalProduct] =
+    useState<CatalogProduct | null>(null);
+  const [newSalePrice, setNewSalePrice] = useState("");
+  const [isSavingPrice, setIsSavingPrice] = useState(false);
+
+  // Fetch Products on Mount
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/v1/products");
+      if (res.ok) {
+        const json = await res.json();
+        const list: CatalogProduct[] = json.data?.products || json.products || [];
+        setProducts(list);
+      } else {
+        toast.error("Failed to load products catalog");
+      }
+    } catch {
+      toast.error("Network error while loading products");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // Close 3-dot dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        menuContainerRef.current &&
+        !menuContainerRef.current.contains(e.target as Node)
+      ) {
+        setOpenMenuProductId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // 1. Action: Generate AI Image via Pollinations.ai (100% Free, No API Key)
+  const handleGenerateAiImage = async (product: CatalogProduct) => {
+    setOpenMenuProductId(null);
+    setUpdatingProductId(product.id);
+
+    try {
+      const aiImageUrl = generateProductImageUrl(product.name);
+
+      const res = await fetch(`/api/v1/products/${product.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: aiImageUrl }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to save AI image");
+      }
+
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === product.id ? { ...p, imageUrl: aiImageUrl } : p
+        )
+      );
+
+      toast.success("Image updated successfully", {
+        description: `AI photo generated for ${product.name}`,
+      });
+    } catch {
+      toast.error("Failed to generate AI image");
+    } finally {
+      setUpdatingProductId(null);
+    }
+  };
+
+  // 2. Action: Open & Save Custom Image URL Modal
+  const openImageModal = (product: CatalogProduct) => {
+    setOpenMenuProductId(null);
+    setImageModalProduct(product);
+    setNewImageUrl(product.imageUrl || "");
+  };
+
+  const handleSaveCustomImageUrl = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!imageModalProduct) return;
+
+    setIsSavingImage(true);
+    setUpdatingProductId(imageModalProduct.id);
+
+    try {
+      const trimmedUrl = newImageUrl.trim() || null;
+      const res = await fetch(`/api/v1/products/${imageModalProduct.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: trimmedUrl }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update image URL");
+      }
+
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === imageModalProduct.id ? { ...p, imageUrl: trimmedUrl } : p
+        )
+      );
+
+      toast.success("Image updated successfully");
+      setImageModalProduct(null);
+    } catch {
+      toast.error("Could not update product image");
+    } finally {
+      setIsSavingImage(false);
+      setUpdatingProductId(null);
+    }
+  };
+
+  // 3. Action: Open & Save Edit Price Modal
+  const openPriceModal = (product: CatalogProduct) => {
+    setOpenMenuProductId(null);
+    setPriceModalProduct(product);
+    setNewSalePrice(Number(product.salePrice).toFixed(2));
+  };
+
+  const handleSavePrice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!priceModalProduct) return;
+
+    const parsedPrice = parseFloat(newSalePrice);
+    if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+      toast.error("Please enter a valid price in MAD");
+      return;
+    }
+
+    setIsSavingPrice(true);
+    setUpdatingProductId(priceModalProduct.id);
+
+    try {
+      const res = await fetch(`/api/v1/products/${priceModalProduct.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ salePrice: parsedPrice }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update price");
+      }
+
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === priceModalProduct.id ? { ...p, salePrice: parsedPrice } : p
+        )
+      );
+
+      toast.success("Price updated");
+      setPriceModalProduct(null);
+    } catch {
+      toast.error("Failed to update product price");
+    } finally {
+      setIsSavingPrice(false);
+      setUpdatingProductId(null);
+    }
+  };
+
+  const filteredProducts = products.filter((p) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      p.name.toLowerCase().includes(q) ||
+      p.sku.toLowerCase().includes(q) ||
+      Boolean(p.barcode && p.barcode.toLowerCase().includes(q))
+    );
   });
 
   return (
     <div className="space-y-8 select-none">
-      {/* Header */}
+      <Toaster
+        theme="dark"
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: "#09090b",
+            color: "#ffffff",
+            border: "1px solid #27272a",
+          },
+        }}
+      />
+
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-900 pb-6">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
@@ -36,11 +255,11 @@ export default async function ProductsListPage() {
             Catalogue des Produits
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Gérez vos références d&apos;articles, codes-barres, prix de vente et taux de TVA
+            Gérez vos produits, générez des photos par IA gratuitement et modifiez les prix en un clic
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Link
             href="/dashboard/products/ai-onboard"
             className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-zinc-800 transition"
@@ -50,7 +269,7 @@ export default async function ProductsListPage() {
           </Link>
           <Link
             href="/dashboard/products/import"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-zinc-950 transition hover:bg-zinc-200"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black transition hover:bg-zinc-200"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" />
             Importer Excel/CSV
@@ -58,51 +277,495 @@ export default async function ProductsListPage() {
         </div>
       </div>
 
-      {/* Products Table */}
-      <div className="rounded-3xl border border-zinc-800 bg-zinc-900/60 overflow-hidden">
-        <div className="p-5 border-b border-zinc-800 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white">Articles Enregistrés</h2>
-          <span className="text-xs text-zinc-400 font-mono bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-800">
-            {products.length} Produits
-          </span>
+      {/* Filter & View Controls Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="w-4 h-4 text-zinc-500 absolute start-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Rechercher par nom, SKU ou code-barres..."
+            className="w-full h-10 ps-10 pe-9 bg-zinc-900 border border-zinc-800 focus:border-white rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none transition"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute end-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-start text-xs text-zinc-300">
-            <thead className="bg-zinc-950 text-zinc-400 font-mono border-b border-zinc-800">
-              <tr>
-                <th className="py-3 px-4 text-start font-semibold">Nom de l&apos;Article</th>
-                <th className="py-3 px-4 text-start font-semibold">Code SKU / Barres</th>
-                <th className="py-3 px-4 text-start font-semibold">Catégorie</th>
-                <th className="py-3 px-4 text-start font-semibold">Taux TVA</th>
-                <th className="py-3 px-4 text-end font-semibold">Prix Vente (TTC)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/60 font-medium">
-              {products.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-12 text-center text-zinc-500">
-                    <Package className="h-8 w-8 mx-auto mb-2 text-zinc-600" />
-                    Aucun article dans le catalogue. Importez un fichier CSV ou utilisez l&apos;on-boarding IA.
-                  </td>
-                </tr>
-              ) : (
-                products.map((p) => (
-                  <tr key={p.id} className="hover:bg-zinc-950/40 transition">
-                    <td className="py-3 px-4 font-bold text-white">{p.name}</td>
-                    <td className="py-3 px-4 font-mono text-zinc-400">{p.sku || p.barcode || "—"}</td>
-                    <td className="py-3 px-4 text-zinc-400">{p.category?.name || "Général"}</td>
-                    <td className="py-3 px-4 font-mono text-zinc-400">{Number(p.taxRate)}%</td>
-                    <td className="py-3 px-4 text-end font-mono font-bold text-white">
-                      {Number(p.salePrice).toFixed(2)} MAD
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="flex items-center gap-3 self-end sm:self-auto">
+          <span className="text-xs text-zinc-400 font-mono bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800">
+            {filteredProducts.length} Produits
+          </span>
+
+          <div className="inline-flex rounded-xl border border-zinc-800 bg-zinc-900 p-1">
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`p-1.5 rounded-lg transition cursor-pointer ${
+                viewMode === "grid"
+                  ? "bg-white text-black"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+              title="Grid View"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("table")}
+              className={`p-1.5 rounded-lg transition cursor-pointer ${
+                viewMode === "table"
+                  ? "bg-white text-black"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+              title="Table View"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Loading / Empty States */}
+      {isLoading ? (
+        <div className="h-64 rounded-2xl border border-zinc-800 bg-zinc-900/50 flex flex-col items-center justify-center gap-3 text-zinc-400">
+          <Loader2 className="w-6 h-6 animate-spin text-white" />
+          <span className="text-xs font-medium">
+            Chargement du catalogue produits...
+          </span>
+        </div>
+      ) : filteredProducts.length === 0 ? (
+        <div className="py-16 rounded-2xl border border-zinc-800 bg-zinc-900/40 text-center text-zinc-500">
+          <Package className="h-10 w-10 mx-auto mb-3 text-zinc-600" />
+          <p className="text-sm font-bold text-zinc-300">
+            Aucun produit trouvé
+          </p>
+          <p className="text-xs text-zinc-500 mt-1">
+            Importez un fichier CSV ou utilisez l&apos;on-boarding IA pour ajouter vos produits.
+          </p>
+        </div>
+      ) : viewMode === "grid" ? (
+        /* ====================================================================
+           PREMIUM MONOCHROME PRODUCT GRID WITH 3-DOT MENU
+           ==================================================================== */
+        <div
+          ref={menuContainerRef}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+        >
+          {filteredProducts.map((product) => {
+            const isUpdating = updatingProductId === product.id;
+            const initial = (product.name || "P").charAt(0).toUpperCase();
+            const isMenuOpen = openMenuProductId === product.id;
+
+            return (
+              <div
+                key={product.id}
+                className="group relative rounded-2xl border border-zinc-800 bg-zinc-900/80 hover:border-zinc-700 transition-all flex flex-col overflow- visible"
+              >
+                {/* Product Image Container */}
+                <div className="relative h-44 w-full bg-zinc-950 rounded-t-2xl overflow-hidden border-b border-zinc-800 flex items-center justify-center">
+                  {product.imageUrl ? (
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-2 text-zinc-600">
+                      <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xl font-black text-white">
+                        {initial}
+                      </div>
+                      <span className="text-[11px] font-mono text-zinc-500">
+                        Aucune photo
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Loading Overlay when AI Image or Price is updating */}
+                  {isUpdating && (
+                    <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10">
+                      <Loader2 className="w-6 h-6 animate-spin text-white" />
+                      <span className="text-[11px] font-bold text-white">
+                        Mise à jour...
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Category Badge */}
+                  {product.categoryName && (
+                    <span className="absolute top-3 start-3 px-2.5 py-1 rounded-lg bg-zinc-950/90 border border-zinc-800 text-[10px] font-bold text-zinc-300">
+                      {product.categoryName}
+                    </span>
+                  )}
+
+                  {/* 3-Dot Action Button */}
+                  <div className="absolute top-2.5 end-2.5 z-20">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuProductId(isMenuOpen ? null : product.id);
+                      }}
+                      disabled={isUpdating}
+                      className="h-8 w-8 rounded-xl bg-zinc-950/90 hover:bg-white text-zinc-200 hover:text-black border border-zinc-800 flex items-center justify-center transition cursor-pointer"
+                      aria-label="Product options"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+
+                    {/* 3-Dot Dropdown Menu */}
+                    {isMenuOpen && (
+                      <div className="absolute end-0 mt-2 w-60 rounded-xl bg-zinc-950 border border-zinc-800 shadow-2xl py-1.5 z-50 divide-y divide-zinc-900">
+                        <button
+                          type="button"
+                          onClick={() => handleGenerateAiImage(product)}
+                          className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-white hover:bg-zinc-900 flex items-center justify-between gap-2 transition cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Sparkles className="w-3.5 h-3.5 text-white shrink-0" />
+                            <span>توليد صورة بالذكاء الاصطناعي</span>
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => openImageModal(product)}
+                          className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-zinc-200 hover:bg-zinc-900 hover:text-white flex items-center justify-between gap-2 transition cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <ImageIcon className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                            <span>تغيير الصورة</span>
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => openPriceModal(product)}
+                          className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-zinc-200 hover:bg-zinc-900 hover:text-white flex items-center justify-between gap-2 transition cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <DollarSign className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                            <span>تعديل الثمن</span>
+                          </span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Product Details Footer */}
+                <div className="p-4 flex-1 flex flex-col justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-white line-clamp-1">
+                      {product.name}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1 text-[11px] font-mono text-zinc-400">
+                      <span>SKU: {product.sku}</span>
+                      {product.barcode && (
+                        <span className="inline-flex items-center gap-1 text-zinc-500">
+                          • <Barcode className="w-3 h-3" /> {product.barcode}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-zinc-800/80 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider text-zinc-500 block">
+                        Prix TTC
+                      </span>
+                      <span className="text-base font-black font-mono text-white">
+                        {Number(product.salePrice).toFixed(2)}{" "}
+                        <span className="text-xs font-normal text-zinc-400">
+                          MAD
+                        </span>
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => openPriceModal(product)}
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-white text-zinc-300 hover:text-black border border-zinc-800 text-[11px] font-bold transition cursor-pointer"
+                    >
+                      تعديل الثمن
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* ====================================================================
+           MONOCHROME TABLE VIEW WITH 3-DOT MENU
+           ==================================================================== */
+        <div
+          ref={menuContainerRef}
+          className="rounded-2xl border border-zinc-800 bg-zinc-900/60 overflow-visible"
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-start text-xs text-zinc-300">
+              <thead className="bg-zinc-950 text-zinc-400 font-mono border-b border-zinc-800">
+                <tr>
+                  <th className="py-3.5 px-4 text-start font-semibold">
+                    Produit
+                  </th>
+                  <th className="py-3.5 px-4 text-start font-semibold">
+                    Code SKU / Barres
+                  </th>
+                  <th className="py-3.5 px-4 text-start font-semibold">
+                    Catégorie
+                  </th>
+                  <th className="py-3.5 px-4 text-end font-semibold">
+                    Prix Vente (MAD)
+                  </th>
+                  <th className="py-3.5 px-4 text-end font-semibold w-16">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/60 font-medium">
+                {filteredProducts.map((p) => {
+                  const isUpdating = updatingProductId === p.id;
+                  const isMenuOpen = openMenuProductId === p.id;
+                  const initial = (p.name || "P").charAt(0).toUpperCase();
+
+                  return (
+                    <tr
+                      key={p.id}
+                      className="hover:bg-zinc-950/40 transition relative"
+                    >
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-xl bg-zinc-950 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                            {isUpdating ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-white" />
+                            ) : p.imageUrl ? (
+                              <img
+                                src={p.imageUrl}
+                                alt={p.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-xs font-black text-white">
+                                {initial}
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-bold text-white">{p.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 font-mono text-zinc-400">
+                        {p.sku}
+                        {p.barcode ? ` • ${p.barcode}` : ""}
+                      </td>
+                      <td className="py-3 px-4 text-zinc-400">
+                        {p.categoryName || "Général"}
+                      </td>
+                      <td className="py-3 px-4 text-end font-mono font-bold text-white">
+                        {Number(p.salePrice).toFixed(2)} MAD
+                      </td>
+                      <td className="py-3 px-4 text-end relative">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenMenuProductId(isMenuOpen ? null : p.id)
+                          }
+                          disabled={isUpdating}
+                          className="p-1.5 rounded-lg bg-zinc-950 hover:bg-white text-zinc-300 hover:text-black border border-zinc-800 inline-flex items-center justify-center transition cursor-pointer"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+
+                        {isMenuOpen && (
+                          <div className="absolute end-4 mt-2 w-60 rounded-xl bg-zinc-950 border border-zinc-800 shadow-2xl py-1.5 z-50 divide-y divide-zinc-900 text-start">
+                            <button
+                              type="button"
+                              onClick={() => handleGenerateAiImage(p)}
+                              className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-white hover:bg-zinc-900 flex items-center gap-2 transition cursor-pointer"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-white shrink-0" />
+                              <span>توليد صورة بالذكاء الاصطناعي</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openImageModal(p)}
+                              className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-zinc-200 hover:bg-zinc-900 flex items-center gap-2 transition cursor-pointer"
+                            >
+                              <ImageIcon className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                              <span>تغيير الصورة</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openPriceModal(p)}
+                              className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-zinc-200 hover:bg-zinc-900 flex items-center gap-2 transition cursor-pointer"
+                            >
+                              <DollarSign className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                              <span>تعديل الثمن</span>
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+         MODAL 1: CHANGE IMAGE URL ("تغيير الصورة")
+         ==================================================================== */}
+      {imageModalProduct && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4" />
+                  تغيير الصورة • Change Image URL
+                </h3>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  {imageModalProduct.name}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setImageModalProduct(null)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCustomImageUrl} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 mb-2">
+                  رابط الصورة (Image URL)
+                </label>
+                <input
+                  type="url"
+                  value={newImageUrl}
+                  onChange={(e) => setNewImageUrl(e.target.value)}
+                  placeholder="https://example.com/product.jpg"
+                  autoFocus
+                  className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 focus:border-white rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none"
+                />
+              </div>
+
+              {newImageUrl.trim() && (
+                <div className="h-36 w-full rounded-xl bg-zinc-950 border border-zinc-800 overflow-hidden flex items-center justify-center">
+                  <img
+                    src={newImageUrl.trim()}
+                    alt="Preview"
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setImageModalProduct(null)}
+                  className="px-4 py-2.5 rounded-lg border border-zinc-800 bg-zinc-950 text-xs font-bold text-zinc-300 hover:text-white transition cursor-pointer"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingImage}
+                  className="px-5 py-2.5 rounded-lg bg-white text-black text-xs font-bold hover:bg-zinc-200 transition inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingImage ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                  <span>حفظ الصورة</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+         MODAL 2: EDIT PRICE ("تعديل الثمن")
+         ==================================================================== */}
+      {priceModalProduct && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <DollarSign className="w-4 h-4" />
+                  تعديل الثمن • Edit Sale Price
+                </h3>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  {priceModalProduct.name} ({priceModalProduct.sku})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPriceModalProduct(null)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePrice} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 mb-2">
+                  ثمن البيع الجديد (MAD)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newSalePrice}
+                  onChange={(e) => setNewSalePrice(e.target.value)}
+                  placeholder="0.00"
+                  autoFocus
+                  className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 focus:border-white rounded-lg text-base font-mono font-bold text-white placeholder-zinc-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPriceModalProduct(null)}
+                  className="px-4 py-2.5 rounded-lg border border-zinc-800 bg-zinc-950 text-xs font-bold text-zinc-300 hover:text-white transition cursor-pointer"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingPrice}
+                  className="px-5 py-2.5 rounded-lg bg-white text-black text-xs font-bold hover:bg-zinc-200 transition inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingPrice ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                  <span>حفظ الثمن</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
