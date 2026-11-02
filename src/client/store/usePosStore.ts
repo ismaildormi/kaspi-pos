@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { toast } from "sonner";
 import { offlineDb, type OfflineSale, type OfflineSaleItem } from "../db";
 import { toDecimal, roundMoney } from "@/domain/money";
 
@@ -8,6 +9,7 @@ export interface PosProduct {
   name: string;
   sku: string;
   barcode?: string | null;
+  price?: number;
   salePrice: number;
   taxRate: number;
   trackStock: boolean;
@@ -88,6 +90,7 @@ interface PosState {
   // Actions
   setSessionContext: (tenantId: string, storeId: string, cashierUserId: string) => void;
   addToCart: (product: PosProduct, quantity?: number) => void;
+  addProductByBarcode: (product: PosProduct) => void;
   updateItemQuantity: (productId: string, delta: number) => void;
   setItemQuantity: (productId: string, quantity: number) => void;
   removeItem: (productId: string) => void;
@@ -182,8 +185,21 @@ export const usePosStore = create<PosState>()(
       },
 
       addToCart: (product, quantity = 1) => {
+        // Stock Availability Check
+        if (product.trackStock && (product.stockQuantity ?? 0) <= 0) {
+          toast.warning(`Warning: ${product.name} is out of stock!`, {
+            style: {
+              background: "#09090b",
+              color: "#facc15",
+              border: "1px solid #854d0e",
+            },
+          });
+        }
+
         set((state) => {
           const existingIndex = state.cart.findIndex((i) => i.productId === product.id);
+          const resolvedUnitPrice = Number(product.salePrice ?? product.price ?? 0);
+          const resolvedTaxRate = Number(product.taxRate ?? 20);
 
           if (existingIndex > -1) {
             const updated = [...state.cart];
@@ -201,9 +217,9 @@ export const usePosStore = create<PosState>()(
             return { cart: updated };
           }
 
-          const unitPrice = product.salePrice;
+          const unitPrice = resolvedUnitPrice;
           const net = unitPrice * quantity;
-          const tax = (net * product.taxRate) / 100;
+          const tax = (net * resolvedTaxRate) / 100;
           const lineTotal = roundMoney(toDecimal(net).plus(tax)).toNumber();
 
           const newItem: CartItem = {
@@ -213,7 +229,69 @@ export const usePosStore = create<PosState>()(
             barcode: product.barcode,
             unitPrice,
             quantity,
-            taxRate: product.taxRate,
+            taxRate: resolvedTaxRate,
+            discountAmount: 0,
+            lineTotal,
+          };
+
+          return { cart: [...state.cart, newItem] };
+        });
+      },
+
+      addProductByBarcode: (product) => {
+        // 1. Stock Availability Check
+        if (product.trackStock && (product.stockQuantity ?? 0) <= 0) {
+          toast.warning(`Warning: ${product.name} is out of stock!`, {
+            style: {
+              background: "#09090b",
+              color: "#fb923c",
+              border: "1px solid #9a3412",
+            },
+          });
+        } else {
+          toast.success(`${product.name} added to cart`, {
+            style: {
+              background: "#09090b",
+              color: "#ffffff",
+              border: "1px solid #27272a",
+            },
+          });
+        }
+
+        // 2. Add or increment item in cart & recalculate line and cart totals (including tax)
+        set((state) => {
+          const existingIndex = state.cart.findIndex((i) => i.productId === product.id);
+          const resolvedUnitPrice = Number(product.salePrice ?? product.price ?? 0);
+          const resolvedTaxRate = Number(product.taxRate ?? 20);
+
+          if (existingIndex > -1) {
+            const updated = [...state.cart];
+            const current = updated[existingIndex];
+            const newQty = current.quantity + 1;
+            const netAmount = (current.unitPrice * newQty) - current.discountAmount;
+            const taxAmount = (netAmount * current.taxRate) / 100;
+            const lineTotal = roundMoney(toDecimal(netAmount).plus(taxAmount)).toNumber();
+
+            updated[existingIndex] = {
+              ...current,
+              quantity: newQty,
+              lineTotal,
+            };
+            return { cart: updated };
+          }
+
+          const net = resolvedUnitPrice * 1;
+          const tax = (net * resolvedTaxRate) / 100;
+          const lineTotal = roundMoney(toDecimal(net).plus(tax)).toNumber();
+
+          const newItem: CartItem = {
+            productId: product.id,
+            name: product.name || "Unknown Product",
+            sku: product.sku || product.barcode || "SKU",
+            barcode: product.barcode,
+            unitPrice: resolvedUnitPrice,
+            quantity: 1,
+            taxRate: resolvedTaxRate,
             discountAmount: 0,
             lineTotal,
           };

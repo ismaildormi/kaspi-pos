@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Toaster } from "sonner";
 import { PosHeader } from "@/components/pos/PosHeader";
 import { ProductSearch } from "@/components/pos/ProductSearch";
 import { CategoryFilter, type PosCategory } from "@/components/pos/CategoryFilter";
@@ -110,6 +111,17 @@ export default function PosPage() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-zinc-950 text-white font-sans">
+      <Toaster
+        theme="dark"
+        position="top-center"
+        toastOptions={{
+          style: {
+            background: "#09090b",
+            color: "#ffffff",
+            border: "1px solid #27272a",
+          },
+        }}
+      />
       {/* Top Header */}
       <PosHeader onOpenHeldCarts={() => setIsHeldModalOpen(true)} />
 
