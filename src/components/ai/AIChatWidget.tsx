@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useLocale, useTranslations } from "next-intl";
+import { usePathname } from "next/navigation";
 import {
   Bot,
   Sparkles,
@@ -29,9 +30,25 @@ export function AIChatWidget() {
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const locale = useLocale();
+  const pathname = usePathname();
+  const isAdminView = pathname?.includes("/admin");
   const isRtl = locale === "ar";
   const t = useTranslations("Ai");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Listen for custom "open-master-ai" events triggered from the Super Admin dashboard
+  useEffect(() => {
+    const handleOpenMasterAi = (ev: Event) => {
+      setIsOpen(true);
+      const customEv = ev as CustomEvent<{ prompt?: string }>;
+      if (customEv.detail?.prompt) {
+        setInput(customEv.detail.prompt);
+      }
+    };
+    window.addEventListener("open-master-ai", handleOpenMasterAi);
+    return () =>
+      window.removeEventListener("open-master-ai", handleOpenMasterAi);
+  }, []);
 
   // Memoize transport with standard API endpoint
   const transport = useMemo(
@@ -138,7 +155,7 @@ export function AIChatWidget() {
               </span>
             </div>
             <span className="text-sm font-semibold tracking-wide text-white">
-              {t("title")}
+              {isAdminView ? "Master AI • Chief Data Officer" : t("title")}
             </span>
             <Sparkles className="w-4 h-4 text-zinc-400" />
           </button>
@@ -160,11 +177,11 @@ export function AIChatWidget() {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-sm tracking-wide text-white">
-                    {t("title")}
+                    {isAdminView ? "Master AI • Chief Data Officer" : t("title")}
                   </h3>
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white text-black">
                     <Zap className="w-2.5 h-2.5" />
-                    Failover Active
+                    {isAdminView ? "Full DB Access" : "Failover Active"}
                   </span>
                 </div>
                 <p className="text-xs text-zinc-400 font-normal">
@@ -201,35 +218,65 @@ export function AIChatWidget() {
                 <div className="w-full space-y-2 text-start">
                   <button
                     type="button"
-                    onClick={() => handleQuickPrompt(t("suggestedSales"))}
+                    onClick={() =>
+                      handleQuickPrompt(
+                        isAdminView
+                          ? "What is our total platform MRR, GMV, and active subscriptions?"
+                          : t("suggestedSales")
+                      )
+                    }
                     className="w-full p-2.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-850 hover:border-zinc-700 transition-all text-xs font-medium text-zinc-300 flex items-center gap-2.5 shadow-xs cursor-pointer group"
                   >
                     <div className="p-1 rounded-md bg-zinc-800 text-white group-hover:scale-110 transition-transform">
                       <TrendingUp className="w-3.5 h-3.5" />
                     </div>
-                    <span className="truncate">{t("suggestedSales")}</span>
+                    <span className="truncate">
+                      {isAdminView
+                        ? "Platform Revenue (MRR & GMV Breakdown)"
+                        : t("suggestedSales")}
+                    </span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => handleQuickPrompt(t("suggestedStock"))}
+                    onClick={() =>
+                      handleQuickPrompt(
+                        isAdminView
+                          ? "List all registered tenants, their subscription status, and sales count."
+                          : t("suggestedStock")
+                      )
+                    }
                     className="w-full p-2.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-850 hover:border-zinc-700 transition-all text-xs font-medium text-zinc-300 flex items-center gap-2.5 shadow-xs cursor-pointer group"
                   >
                     <div className="p-1 rounded-md bg-zinc-800 text-white group-hover:scale-110 transition-transform">
                       <AlertTriangle className="w-3.5 h-3.5" />
                     </div>
-                    <span className="truncate">{t("suggestedStock")}</span>
+                    <span className="truncate">
+                      {isAdminView
+                        ? "All Registered Tenants & Subscriptions"
+                        : t("suggestedStock")}
+                    </span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => handleQuickPrompt(t("suggestedTop"))}
+                    onClick={() =>
+                      handleQuickPrompt(
+                        isAdminView
+                          ? "Show platform-wide AI usage stats and most active shops."
+                          : t("suggestedTop")
+                      )
+                    }
                     className="w-full p-2.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-850 hover:border-zinc-700 transition-all text-xs font-medium text-zinc-300 flex items-center gap-2.5 shadow-xs cursor-pointer group"
                   >
                     <div className="p-1 rounded-md bg-zinc-800 text-white group-hover:scale-110 transition-transform">
                       <ShoppingBag className="w-3.5 h-3.5" />
                     </div>
-                    <span className="truncate">{t("suggestedTop")}</span>
+                    <span className="truncate">
+                      {isAdminView
+                        ? "Platform-Wide AI Usage & Telemetry"
+                        : t("suggestedTop")}
+                    </span>
                   </button>
                 </div>
               </div>

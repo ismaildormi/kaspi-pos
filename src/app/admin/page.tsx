@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getSuperAdminUser } from "@/server/admin/guard";
 import { getAdminDashboardStats } from "@/server/admin/stats";
 import { AdminAlertButton } from "./AdminAlertButton";
+import { MasterAiBanner } from "./MasterAiBanner";
 import {
   Users,
   CreditCard,
@@ -65,6 +66,9 @@ export default async function AdminDashboardPage() {
           <AdminAlertButton />
         </div>
       </div>
+
+      {/* Master AI • Chief Data Officer Console Banner */}
+      <MasterAiBanner />
 
       {/* Global Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
