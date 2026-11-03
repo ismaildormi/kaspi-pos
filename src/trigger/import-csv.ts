@@ -133,9 +133,19 @@ export async function executeCsvImportChunked(payload: ImportCsvTaskPayload) {
   const { jobId, tenantId, fileUrl, csvContent } = payload;
 
   try {
+    // 1. Update job status to ready/processing if tracking record exists
+    if (jobId) {
+      await prisma.productImportJob
+        .update({
+          where: { id: jobId },
+          data: { status: "ready" },
+        })
+        .catch(() => {});
+    }
+
     let rawCsvText = csvContent || "";
 
-    // If fileUrl was provided (e.g. data: URL or remote R2/HTTP URL), fetch its text
+    // 2. Fetch CSV content from fileUrl if provided (data URI, R2 URL, or HTTP)
     if (!rawCsvText && fileUrl) {
       if (fileUrl.startsWith("data:")) {
         const base64Part = fileUrl.split(",")[1] || "";
@@ -200,7 +210,7 @@ export async function executeCsvImportChunked(payload: ImportCsvTaskPayload) {
       });
     }
 
-    // Resolve Categories & Default Store once before chunking
+    // 3. Resolve Categories & Default Store once before chunking
     const categoryNames = Array.from(
       new Set(validRows.map((r) => r.category || "Épicerie Générale"))
     );
@@ -225,7 +235,7 @@ export async function executeCsvImportChunked(payload: ImportCsvTaskPayload) {
       orderBy: { createdAt: "asc" },
     });
 
-    // Process up to 10,000 rows in chunks of 500 rows using Prisma transactions
+    // 4. Process up to 10,000 rows in chunks of 500 rows using Prisma transactions
     let committedCount = 0;
 
     for (let i = 0; i < validRows.length; i += CHUNK_SIZE) {
@@ -277,6 +287,7 @@ export async function executeCsvImportChunked(payload: ImportCsvTaskPayload) {
       });
     }
 
+    // 5. Update ProductImportJob to committed
     if (jobId) {
       await prisma.productImportJob.update({
         where: { id: jobId },
