@@ -1,578 +1,376 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { InteractivePosSimulator } from "@/components/landing/InteractivePosSimulator";
+import { ReceiptSimulator } from "@/components/landing/ReceiptSimulator";
+import { OfflineSyncSimulator } from "@/components/landing/OfflineSyncSimulator";
+import { AiScannerSimulator } from "@/components/landing/AiScannerSimulator";
+import { EnterpriseChainShowcase } from "@/components/landing/EnterpriseChainShowcase";
+import { LocalGpuShowcase } from "@/components/landing/LocalGpuShowcase";
+import { DevicePricingCalculator } from "@/components/landing/DevicePricingCalculator";
 import {
   Download,
   LogIn,
   Zap,
-  WifiOff,
-  Cpu,
-  Receipt,
-  MessageSquare,
-  Building2,
-  CheckCircle2,
-  ArrowRight,
   ShieldCheck,
+  Cpu,
+  WifiOff,
+  Receipt,
+  Store,
+  ArrowRight,
   Sparkles,
-  Smartphone,
-  Printer,
-  Barcode,
   Layers,
+  CheckCircle2,
+  Lock,
+  ChevronRight,
+  Database,
+  BarChart3,
   HelpCircle,
 } from "lucide-react";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-white selection:bg-white selection:text-black font-sans">
+    <div className="min-h-screen bg-black text-white selection:bg-white selection:text-black font-sans antialiased overflow-x-hidden">
+      {/* Floating Glassmorphism Navbar */}
       <Navbar />
 
-      {/* HERO SECTION */}
-      <section className="relative overflow-hidden pt-16 pb-24 md:pt-24 md:pb-32 border-b border-zinc-900">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))] pointer-events-none" />
+      {/* =========================================================================
+          HERO SECTION: 2027 AESTHETIC (Deep Black, Glowing Gradient, Massive Typography)
+         ========================================================================= */}
+      <section className="relative overflow-hidden pt-32 pb-24 md:pt-40 md:pb-36 border-b border-zinc-900/60">
+        {/* Futuristic Subtle Radial Glows */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(56,189,248,0.12),rgba(0,0,0,0)_70%)] pointer-events-none blur-2xl" />
+        <div className="absolute top-1/3 right-10 w-[500px] h-[400px] bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.08),rgba(0,0,0,0)_70%)] pointer-events-none blur-3xl" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/80 px-4 py-1.5 text-xs font-medium text-zinc-300 mb-8 backdrop-blur">
-            <span className="flex h-2 w-2 rounded-full bg-white animate-pulse" />
-            <span>KASPI POS 2.0 • Première Solution Caisse &amp; ERP Dédiée au Maroc</span>
+          {/* Subtle Announcement Pill */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-medium text-zinc-300 mb-8 backdrop-blur-md shadow-inner transition hover:border-white/20">
+            <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-mono text-zinc-400">KASPI POS 2.0</span>
+            <span className="text-zinc-600">•</span>
+            <span className="text-zinc-200">Système de Caisse &amp; ERP de Nouvelle Génération au Maroc</span>
           </div>
 
-          {/* Hero Branding with Transparent Logo (No black background box) */}
+          {/* Transparent Logo */}
           <div className="flex justify-center mb-6">
-            <img
-              src="/logo.png"
-              alt="KASPI POS Official Logo"
-              className="h-24 w-24 object-contain bg-transparent transition-transform hover:scale-105 duration-300"
-            />
+            <div className="relative group">
+              <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-emerald-500 to-sky-500 opacity-20 blur group-hover:opacity-40 transition duration-500" />
+              <img
+                src="/logo.png"
+                alt="KASPI POS Logo"
+                className="relative h-20 w-20 sm:h-24 sm:w-24 object-contain bg-transparent transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
           </div>
 
-          <h1 className="mx-auto max-w-4xl text-4xl font-extrabold tracking-tight sm:text-6xl lg:text-7xl">
-            La caisse intelligente pour les commerces exigeants.
+          {/* Hero Headline */}
+          <h1 className="mx-auto max-w-5xl text-4xl font-black tracking-tight sm:text-6xl lg:text-7xl leading-[1.08] text-balance">
+            La caisse tactile ultrarapide.{" "}
+            <span className="bg-gradient-to-r from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent">
+              Zéro coupure. Zéro latence.
+            </span>
           </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-base sm:text-lg text-zinc-400 leading-relaxed">
-            Ultra-rapide, 100% fonctionnelle hors-ligne, conforme à la réglementation fiscale marocaine (DGI &amp; ICE),
-            propulsée par l’IA et connectée à WhatsApp pour vos clôtures quotidiennes.
+          {/* Hero Subtitle */}
+          <p className="mx-auto mt-6 max-w-2xl text-base sm:text-lg text-zinc-400 leading-relaxed text-pretty">
+            Conçue pour les épiceries, commerces de détail et grandes chaînes marocaines.
+            Fonctionne à 100% hors-ligne, certifiée DGI &amp; ICE, avec impression thermique arabe native et IA locale sur GPU.
           </p>
 
-          {/* Action CTAs (Showcase Only: Direct Download & Login) */}
+          {/* 2027 Tech CTA Buttons */}
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/download"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-full bg-white px-8 py-4 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 shadow-xl"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-full bg-white px-8 py-4 text-sm font-bold text-black transition-all hover:bg-zinc-200 hover:scale-[1.02] shadow-[0_0_30px_rgba(255,255,255,0.25)] active:scale-95"
             >
               <Download className="h-4 w-4" />
               Télécharger pour Windows (.exe)
             </Link>
 
+            <a
+              href="#simulator"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-7 py-4 text-sm font-semibold text-zinc-200 backdrop-blur-md transition-all hover:bg-white/[0.1] hover:border-white/25 active:scale-95"
+            >
+              <Zap className="h-4 w-4 text-amber-400" />
+              Tester la Simulation Interactive
+            </a>
+
             <Link
               href="/login"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-7 py-4 text-sm font-semibold text-white transition hover:bg-zinc-800 hover:border-zinc-700"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-zinc-800 bg-zinc-950 px-6 py-4 text-sm font-medium text-zinc-400 transition hover:text-white hover:border-zinc-700"
             >
               <LogIn className="h-4 w-4" />
-              Espace Client / Connexion
+              Espace Client
             </Link>
           </div>
 
-          {/* Subtext info */}
-          <div className="mt-8 flex flex-wrap justify-center items-center gap-6 text-xs text-zinc-500 font-mono">
-            <span>✓ Aucun abonnement forcé</span>
-            <span>✓ Synchronisation Dexie.js locale</span>
-            <span>✓ 100% Conforme DGI &amp; ICE</span>
-            <span>✓ Impression thermique Arabe ESC/POS</span>
-          </div>
-
-          {/* 3D Hero Mockup Showcase */}
-          <div className="mt-14 relative max-w-5xl mx-auto rounded-3xl border border-zinc-800/80 bg-zinc-900/40 p-2 sm:p-4 shadow-2xl backdrop-blur-sm group">
-            <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
-              <img
-                src="/hero-mockup.png"
-                alt="KASPI POS 3D Interface Showcase"
-                className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-[1.01]"
-              />
-            </div>
-            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-zinc-800 bg-zinc-900/90 px-4 py-1.5 text-[11px] font-mono text-zinc-400 backdrop-blur shadow-lg">
-              Interface Caisse Tactile Plein Écran • Réactivité &lt;20ms
-            </div>
+          {/* Trust badges */}
+          <div className="mt-10 flex flex-wrap justify-center items-center gap-6 text-xs text-zinc-500 font-mono">
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Sans engagement
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Base de données SQLite locale
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Conformité DGI Art. 145
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Support WhatsApp 7j/7
+            </span>
           </div>
         </div>
       </section>
 
-      {/* HOW KASPI POS WORKS */}
-      <section id="how-it-works" className="py-24 border-b border-zinc-900 bg-zinc-950">
+      {/* =========================================================================
+          SECTION 1: THE INTERACTIVE POS & RECEIPT SHOWCASE ("Show, Don't Tell")
+         ========================================================================= */}
+      <section id="simulator" className="py-24 border-b border-zinc-900 relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3">
-              Prise en main express
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-3.5 py-1 text-xs font-semibold text-sky-400 mb-4">
+              <Sparkles className="h-3.5 w-3.5" />
+              Expérience Interactive Live
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
+              Essayez l&apos;interface de caisse en temps réel
             </h2>
-            <h3 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-              Comment fonctionne KASPI POS ?
-            </h3>
-            <p className="mt-4 text-sm text-zinc-400">
-              Une technologie hybride pensée pour éliminer tout point de rupture dans votre point de vente.
+            <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
+              Scannez des produits, ajoutez des articles au panier, encaissez en dirhams marocains (MAD) et calculez le rendu monnaie (الصرف) en moins d&apos;une seconde.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Step 1 */}
-            <div className="relative rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 flex flex-col justify-between hover:border-zinc-700 transition">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-white text-zinc-950 font-extrabold flex items-center justify-center text-lg mb-6 shadow-md">
-                  01
-                </div>
-                <h4 className="text-xl font-bold text-white mb-3">Installation instantanée</h4>
-                <p className="text-sm text-zinc-400 leading-relaxed">
-                  Téléchargez l'application Windows (.exe) ou lancez la Web App. Vos catalogues de produits, prix et taxes se chargent en local dans SQLite et Dexie.js en quelques secondes.
-                </p>
+          {/* Side-by-side: Interactive POS Simulator + Thermal Receipt Simulator */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-7">
+              <div className="space-y-3 mb-4">
+                <span className="text-xs font-mono uppercase tracking-wider text-zinc-400">
+                  Écran 1 • Terminal Tactile Vendeur
+                </span>
               </div>
-              <div className="mt-6 pt-4 border-t border-zinc-800/80 text-xs text-zinc-500 font-mono">
-                Pas de configuration complexe de base de données.
-              </div>
+              <InteractivePosSimulator />
             </div>
 
-            {/* Step 2 */}
-            <div className="relative rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 flex flex-col justify-between hover:border-zinc-700 transition">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-white text-zinc-950 font-extrabold flex items-center justify-center text-lg mb-6 shadow-md">
-                  02
-                </div>
-                <h4 className="text-xl font-bold text-white mb-3">Encaissez même sans Internet</h4>
-                <p className="text-sm text-zinc-400 leading-relaxed">
-                  Coupure de réseau ? Aucun problème. Scannez vos codes-barres, appliquez vos remises, ouvrez le tiroir-caisse et imprimez vos tickets thermiques avec mise en forme arabe native.
-                </p>
+            <div className="lg:col-span-5">
+              <div className="space-y-3 mb-4">
+                <span className="text-xs font-mono uppercase tracking-wider text-zinc-400">
+                  Écran 2 • Ticket Thermique Conforme DGI &amp; Arabe
+                </span>
               </div>
-              <div className="mt-6 pt-4 border-t border-zinc-800/80 text-xs text-zinc-500 font-mono">
-                Zéro blocage caisse pendant les heures de pointe.
-              </div>
-            </div>
-
-            {/* Step 3 */}
-            <div className="relative rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 flex flex-col justify-between hover:border-zinc-700 transition">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-white text-zinc-950 font-extrabold flex items-center justify-center text-lg mb-6 shadow-md">
-                  03
-                </div>
-                <h4 className="text-xl font-bold text-white mb-3">Synchronisation &amp; WhatsApp</h4>
-                <p className="text-sm text-zinc-400 leading-relaxed">
-                  Dès la reconnexion, vos ventes sont réconciliées en arrière-plan sans doublon grâce aux clés d'idempotence. Le soir, recevez votre bilan Z-Report complet sur WhatsApp.
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-zinc-800/80 text-xs text-zinc-500 font-mono">
-                Tranquillité d'esprit pour le propriétaire du commerce.
-              </div>
+              <ReceiptSimulator />
             </div>
           </div>
         </div>
       </section>
 
-      {/* 3D VISUAL DEEP-DIVES */}
-      <section id="offline" className="py-24 border-b border-zinc-900 bg-zinc-950">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-24">
-          
-          {/* Deep Dive 1: Offline Engine */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-3.5 py-1 text-xs font-mono text-zinc-300 mb-6">
-                <WifiOff className="h-3.5 w-3.5 text-white" />
-                <span>Architecture 100% Offline-First</span>
-              </div>
-              <h3 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">
-                Votre caisse ne s'arrête jamais, même en coupure totale d'Internet.
-              </h3>
-              <p className="text-sm sm:text-base text-zinc-400 leading-relaxed mb-6">
-                KASPI POS utilise un moteur de données décentralisé combinant SQLite local et Dexie.js (IndexedDB). Chaque transaction est signée, horodatée et stockée localement avant d'être transmise au cloud Neon PostgreSQL dès que la connexion est rétablie.
-              </p>
-              <ul className="space-y-3 text-xs sm:text-sm text-zinc-300">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                  <span>Enregistrement des ventes instantané (&lt;10 millisecondes)</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                  <span>Protection absolue contre les pertes de données ou doublons</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                  <span>Synchronisation bidirectionnelle automatique des stocks et prix</span>
-                </li>
-              </ul>
-            </div>
-            <div className="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-4 shadow-2xl">
-              <img
-                src="/offline-feature.png"
-                alt="KASPI POS Offline-First Architecture"
-                className="w-full h-auto rounded-2xl object-cover"
-              />
-            </div>
-          </div>
-
-          {/* Deep Dive 2: AI Advisor */}
-          <div id="ai" className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="order-2 lg:order-1 rounded-3xl border border-zinc-800 bg-zinc-900/40 p-4 shadow-2xl">
-              <img
-                src="/ai-feature.png"
-                alt="KASPI AI Retail Advisor &amp; OCR"
-                className="w-full h-auto rounded-2xl object-cover"
-              />
-            </div>
-            <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-3.5 py-1 text-xs font-mono text-zinc-300 mb-6">
-                <Sparkles className="h-3.5 w-3.5 text-white" />
-                <span>Conseiller Commercial IA &amp; Vision OCR</span>
-              </div>
-              <h3 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">
-                Un expert retail dans votre poche, connecté à vos chiffres réels.
-              </h3>
-              <p className="text-sm sm:text-base text-zinc-400 leading-relaxed mb-6">
-                KASPI AI est strictement conditionné pour analyser vos données de vente réelles sans aucune hallucination. Posez vos questions en Darija ou en Français : prévisions de réapprovisionnement, marges par rayon, et scannez vos factures fournisseurs par photo grâce à l'OCR intelligent.
-              </p>
-              <ul className="space-y-3 text-xs sm:text-sm text-zinc-300">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                  <span>Compréhension naturelle de la Darija marocaine et du Français</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                  <span>Extraction automatique des articles et prix d'achat depuis les factures papier</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                  <span>Calcul automatique de rentabilité et identification des articles dormants</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Deep Dive 3: Hardware & Arabic Printing */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-3.5 py-1 text-xs font-mono text-zinc-300 mb-6">
-                <Printer className="h-3.5 w-3.5 text-white" />
-                <span>Matériel &amp; Impression Arabe ESC/POS</span>
-              </div>
-              <h3 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">
-                Impression thermique bilingue arabe parfaite, sans pilotes complexes.
-              </h3>
-              <p className="text-sm sm:text-base text-zinc-400 leading-relaxed mb-6">
-                Fini les lettres arabes isolées ou imprimées de gauche à droite. Le moteur natif en Rust intègre HarfBuzz et FriBidi pour façonner le texte arabe et convertir les reçus en bitmaps 1-bit transmis directement aux imprimantes thermiques 58mm et 80mm via USB, Réseau ou Bluetooth.
-              </p>
-              <ul className="space-y-3 text-xs sm:text-sm text-zinc-300">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                  <span>Support natif des imprimantes Xprinter, Epson, Bixolon et génériques</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                  <span>Ouverture automatique du tiroir-caisse (impulsion RJ11)</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                  <span>Lecture ultra-rapide des douchettes et scanners code-barres 1D/2D</span>
-                </li>
-              </ul>
-            </div>
-            <div className="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-4 shadow-2xl">
-              <img
-                src="/hardware.png"
-                alt="KASPI POS Hardware Compatibility"
-                className="w-full h-auto rounded-2xl object-cover"
-              />
-            </div>
-          </div>
-
-          {/* Deep Dive 4: WhatsApp Daily Clôture */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="order-2 lg:order-1 rounded-3xl border border-zinc-800 bg-zinc-900/40 p-4 shadow-2xl">
-              <img
-                src="/whatsapp-feature.png"
-                alt="KASPI POS WhatsApp Daily Z-Report"
-                className="w-full h-auto rounded-2xl object-cover"
-              />
-            </div>
-            <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-3.5 py-1 text-xs font-mono text-zinc-300 mb-6">
-                <MessageSquare className="h-3.5 w-3.5 text-white" />
-                <span>Z-Report WhatsApp Automatique</span>
-              </div>
-              <h3 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">
-                La clôture de caisse envoyée chaque soir sur votre WhatsApp.
-              </h3>
-              <p className="text-sm sm:text-base text-zinc-400 leading-relaxed mb-6">
-                Plus besoin d'attendre au magasin ou d'appeler le caissier. À la fermeture, un rapport complet et structuré est envoyé sur votre numéro WhatsApp personnel : chiffre d'affaires, répartition espèces/carte/crédit, total des remises et alertes d'anomalies.
-              </p>
-              <ul className="space-y-3 text-xs sm:text-sm text-zinc-300">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                  <span>Passerelle d'entreprise dédiée (UltraMsg &amp; Meta Cloud API)</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                  <span>Alerte instantanée en cas de remise suspecte ou d'écart de caisse</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                  <span>Historique des clôtures accessible en 1 clic pour votre comptable</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* CORE FEATURES GRID */}
-      <section id="features" className="py-24 border-b border-zinc-900 bg-zinc-950">
+      {/* =========================================================================
+          SECTION 2: OFFLINE-FIRST RESILIENCE (Dexie.js + SQLite Sync)
+         ========================================================================= */}
+      <section id="features" className="py-24 border-b border-zinc-900 bg-zinc-950/40 relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3">
-              Super-pouvoirs métier
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3.5 py-1 text-xs font-semibold text-amber-400 mb-4">
+              <WifiOff className="h-3.5 w-3.5" />
+              Résilience Réseau Totale
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
+              Votre caisse ne s&apos;arrête JAMAIS. Même sans Internet.
             </h2>
-            <h3 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-              Pensé pour le terrain. Conçu pour durer.
-            </h3>
+            <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
+              Coupure de fibre IAM, panne 4G ou coupure de courant sur le routeur ? KASPI POS enregistre chaque vente dans sa base locale chiffrée et synchronise automatiquement dès le retour du signal.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Feature 1: DGI & ICE */}
-            <div className="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition hover:border-zinc-700 hover:bg-zinc-900">
-              <div className="h-10 w-10 rounded-xl border border-zinc-800 bg-zinc-950 flex items-center justify-center mb-4 text-white">
-                <Receipt className="h-5 w-5" />
-              </div>
-              <h4 className="text-lg font-bold text-white mb-2">Conformité DGI &amp; ICE</h4>
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                Numérotation séquentielle stricte sans saut garantie par verrouillage PostgreSQL. Mentions légales obligatoires (ICE, IF, RC, Patente) imprimées automatiquement sur les factures et tickets.
-              </p>
-            </div>
-
-            {/* Feature 2: Carnet Krediat */}
-            <div className="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition hover:border-zinc-700 hover:bg-zinc-900">
-              <div className="h-10 w-10 rounded-xl border border-zinc-800 bg-zinc-950 flex items-center justify-center mb-4 text-white">
-                <Layers className="h-5 w-5" />
-              </div>
-              <h4 className="text-lg font-bold text-white mb-2">Carnet Krediat (Crédits Clients)</h4>
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                Remplacez le carnet papier par un suivi digital rigoureux. Plafonds de crédit par client, historique des remboursements partiels et rappels WhatsApp personnalisés.
-              </p>
-            </div>
-
-            {/* Feature 3: Scan ultra-rapide */}
-            <div className="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition hover:border-zinc-700 hover:bg-zinc-900">
-              <div className="h-10 w-10 rounded-xl border border-zinc-800 bg-zinc-950 flex items-center justify-center mb-4 text-white">
-                <Barcode className="h-5 w-5" />
-              </div>
-              <h4 className="text-lg font-bold text-white mb-2">Scan Code-Barres &lt;20ms</h4>
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                Recherche instantanée en mémoire locale (IndexedDB). Scannez des dizaines d'articles à la minute sans latence réseau ni chargement de page.
-              </p>
-            </div>
-
-            {/* Feature 4: Multi-Boutiques */}
-            <div className="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition hover:border-zinc-700 hover:bg-zinc-900">
-              <div className="h-10 w-10 rounded-xl border border-zinc-800 bg-zinc-950 flex items-center justify-center mb-4 text-white">
-                <Building2 className="h-5 w-5" />
-              </div>
-              <h4 className="text-lg font-bold text-white mb-2">Multi-Boutiques &amp; Dépôts</h4>
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                Gérez plusieurs points de vente depuis un tableau de bord unique. Suivi des transferts de stock entre boutiques et isolation stricte des données par magasin (RLS).
-              </p>
-            </div>
-
-            {/* Feature 5: Droits Caissiers */}
-            <div className="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition hover:border-zinc-700 hover:bg-zinc-900">
-              <div className="h-10 w-10 rounded-xl border border-zinc-800 bg-zinc-950 flex items-center justify-center mb-4 text-white">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <h4 className="text-lg font-bold text-white mb-2">Sessions &amp; Sécurité Caissiers</h4>
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                Gestion des quarts de travail, vérification du fond de caisse au démarrage et à la clôture, avec journal d'audit complet de chaque modification ou annulation.
-              </p>
-            </div>
-
-            {/* Feature 6: Auto-Updater */}
-            <div className="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition hover:border-zinc-700 hover:bg-zinc-900">
-              <div className="h-10 w-10 rounded-xl border border-zinc-800 bg-zinc-950 flex items-center justify-center mb-4 text-white">
-                <Zap className="h-5 w-5" />
-              </div>
-              <h4 className="text-lg font-bold text-white mb-2">Mises à Jour Transparentes</h4>
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                Tauri Auto-Updater intégré. L'application télécharge les améliorations en arrière-plan sans interrompre vos encaissements et s'actualise en un clic.
-              </p>
-            </div>
-          </div>
+          <OfflineSyncSimulator />
         </div>
       </section>
 
-      {/* WHY CHOOSE US (COMPARISON TABLE) */}
-      <section id="why-us" className="py-24 border-b border-zinc-900 bg-zinc-950">
+      {/* =========================================================================
+          SECTION 3: GEMINI VISION AI PRODUCT SCANNER
+         ========================================================================= */}
+      <section id="ai" className="py-24 border-b border-zinc-900 relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3">
-              Comparatif
+            <div className="inline-flex items-center gap-2 rounded-full border border-purple-500/20 bg-purple-500/10 px-3.5 py-1 text-xs font-semibold text-purple-400 mb-4">
+              <Sparkles className="h-3.5 w-3.5" />
+              Numérisation Intelligente de Stock
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
+              Ajoutez 500 produits en 10 minutes grâce à l&apos;IA
             </h2>
-            <h3 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-              Pourquoi choisir KASPI POS plutôt qu'un système traditionnel ?
-            </h3>
+            <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
+              Pointez simplement l&apos;appareil photo sur l&apos;emballage d&apos;un article. Notre modèle Gemini Vision extrait instantanément le nom en arabe/français, le code-barres EAN-13, et suggère la marge optimale.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Old Systems */}
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-left">
-              <h4 className="text-xl font-bold text-zinc-400 mb-4 flex items-center gap-2">
-                <span className="text-red-400 font-mono">✕</span> Caisses traditionnelles obsolètes
+          <AiScannerSimulator />
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 4: LOCAL GPU & WEBGPU ENGINE (Zero Server Cost, 100% Privacy)
+         ========================================================================= */}
+      <section className="py-24 border-b border-zinc-900 bg-zinc-950/40 relative">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold text-emerald-400 mb-4">
+              <Cpu className="h-3.5 w-3.5" />
+              Performance Matérielle Embarquée
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
+              Zéro coût de serveur. Confidentialité absolue.
+            </h2>
+            <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
+              KASPI POS utilise la puissance brute de votre processeur graphique (WebGPU &amp; Rust HAL). Vos chiffres d&apos;affaires restent chez vous.
+            </p>
+          </div>
+
+          <LocalGpuShowcase />
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 5: ENTERPRISE MULTI-STORE CHAIN PROOF
+         ========================================================================= */}
+      <section id="enterprise" className="py-24 border-b border-zinc-900 relative">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3.5 py-1 text-xs font-semibold text-blue-400 mb-4">
+              <Store className="h-3.5 w-3.5" />
+              Échelle Réseau Multi-Points de Vente
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
+              De l&apos;épicerie de quartier aux chaînes de 50+ magasins
+            </h2>
+            <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
+              Supervisez Casablanca, Rabat, Marrakech et Tanger depuis un seul tableau de bord unifié. Gestion centralisée des stocks, transferts inter-boutiques et conformité DGI infaillible.
+            </p>
+          </div>
+
+          <EnterpriseChainShowcase />
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 6: DEVICE-BASED PRICING MODEL
+         ========================================================================= */}
+      <section id="pricing" className="py-24 border-b border-zinc-900 bg-zinc-950/60 relative">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1 text-xs font-semibold text-zinc-300 mb-4">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              Tarification Transparente par Caisse
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
+              Payez uniquement pour le matériel que vous utilisez
+            </h2>
+            <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
+              100 MAD / mois pour votre première caisse, puis 50 MAD / caisse supplémentaire. Pas de frais cachés, pas de pourcentage prélevé sur votre chiffre d&apos;affaires.
+            </p>
+          </div>
+
+          <DevicePricingCalculator />
+        </div>
+      </section>
+
+      {/* =========================================================================
+          FAQ SECTION
+         ========================================================================= */}
+      <section className="py-24 border-b border-zinc-900 relative">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-3.5 py-1 text-xs font-medium text-zinc-400 mb-4">
+              <HelpCircle className="h-3.5 w-3.5" />
+              Questions Fréquentes
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+              Tout ce que vous devez savoir avant de commencer
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6">
+              <h4 className="text-base font-bold text-white mb-2">
+                Le logiciel fonctionne-t-il si Internet est coupé toute la journée ?
               </h4>
-              <ul className="space-y-4 text-xs sm:text-sm text-zinc-500">
-                <li className="flex items-start gap-2">
-                  <span className="text-red-400 shrink-0 font-bold">✕</span>
-                  <span>Coût initial exorbitant (10 000 à 25 000 DH de licence par poste).</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-400 shrink-0 font-bold">✕</span>
-                  <span>Matériel propriétaire verrouillé, impossible à remplacer facilement.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-400 shrink-0 font-bold">✕</span>
-                  <span>Plantage dès que la connexion Internet ou le réseau local vacille.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-400 shrink-0 font-bold">✕</span>
-                  <span>Aucun accès à distance pour le gérant depuis son smartphone.</span>
-                </li>
-              </ul>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                Oui, à 100%. L&apos;application Windows utilise un moteur SQLite local ultra-performant. Toutes vos ventes, ouvertures de tiroir-caisse, impressions de tickets et calculs de monnaie se font instantanément sans connexion Internet. Dès la reconnexion, la synchronisation s&apos;effectue silencieusement en arrière-plan.
+              </p>
             </div>
 
-            {/* KASPI POS */}
-            <div className="rounded-2xl border-2 border-white bg-zinc-900 p-8 text-left shadow-2xl relative">
-              <div className="absolute -top-3 right-6 rounded-full bg-white px-3 py-1 text-[10px] font-bold text-black uppercase tracking-wider">
-                Solution d'Avenir
-              </div>
-              <h4 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-white" /> KASPI POS 2.0 Enterprise
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6">
+              <h4 className="text-base font-bold text-white mb-2">
+                Est-ce conforme aux exigences de la Direction Générale des Impôts (DGI Maroc) ?
               </h4>
-              <ul className="space-y-4 text-xs sm:text-sm text-zinc-200">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0 mt-0.5" />
-                  <span>Démarrage immédiat sans frais cachés (Formule transparente à 100 MAD/mois).</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0 mt-0.5" />
-                  <span>Fonctionne sur n'importe quel PC Windows, tablette ou smartphone.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0 mt-0.5" />
-                  <span>Résilience totale : continue d'encaisser à 100% même sans WiFi ni 4G.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-white shrink-0 mt-0.5" />
-                  <span>Clôture Z-Report quotidienne envoyée directement sur votre WhatsApp.</span>
-                </li>
-              </ul>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                Absolument. KASPI POS applique une numérotation continue sans trou (gap-less sequential numbering) protégée au niveau de la base de données. Chaque facture ou ticket mentionne l&apos;ICE, l&apos;IF, le RC, la patente et inclut un QR code de vérification conforme aux directives fiscales en vigueur.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6">
+              <h4 className="text-base font-bold text-white mb-2">
+                Quelles imprimantes thermiques sont compatibles ?
+              </h4>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                Toutes les imprimantes ESC/POS du marché (Epson, Xprinter, Rongta, Bixolon, etc.) en format 80mm et 58mm, connectées en USB, Réseau Ethernet (LAN) ou Bluetooth. Grâce à notre moteur Rust natif HarfBuzz, les textes en langue arabe sont mis en forme correctement de droite à gauche avec liaison parfaite des lettres.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6">
+              <h4 className="text-base font-bold text-white mb-2">
+                Puis-je importer mon catalogue existant depuis un fichier Excel ?
+              </h4>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                Oui. Notre module d&apos;importation asynchrone permet de charger jusqu&apos;à 10 000 articles en un clic via un fichier CSV ou Excel. Vous pouvez également utiliser notre scanner d&apos;intelligence artificielle pour ajouter de nouveaux articles par simple photo de l&apos;emballage.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* PRICING SECTION */}
-      <section id="pricing" className="py-24 border-b border-zinc-900 bg-zinc-950">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3">
-            Tarification Transparente
-          </h2>
-          <h3 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">
-            Un plan tout-en-un, sans frais cachés
-          </h3>
-          <p className="text-sm text-zinc-400 max-w-xl mx-auto mb-16">
-            Paiement simplifié par carte bancaire marocaine (YouCan Pay) ou internationale (Paddle).
-          </p>
+      {/* =========================================================================
+          FINAL HIGH-CONVERSION CTA BANNER
+         ========================================================================= */}
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/20 via-black to-black pointer-events-none" />
 
-          <div className="max-w-md mx-auto rounded-3xl border border-zinc-700 bg-zinc-900/80 p-8 text-left shadow-2xl relative">
-            <div className="absolute -top-3 right-6 rounded-full bg-white px-3 py-1 text-[10px] font-bold text-black uppercase tracking-wider">
-              Populaire
-            </div>
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          <div className="rounded-3xl border border-white/10 bg-gradient-to-b from-zinc-900/90 to-zinc-950 p-10 sm:p-16 backdrop-blur-2xl shadow-2xl relative">
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="flex items-baseline justify-between mb-4">
-              <div>
-                <h4 className="text-xl font-bold text-white">Formule Pro Commerçant</h4>
-                <p className="text-xs text-zinc-400 mt-1">Tout inclus, mises à jour illimitées</p>
-              </div>
-              <div className="text-right">
-                <span className="text-3xl font-extrabold text-white">100 MAD</span>
-                <span className="text-xs text-zinc-400"> / mois</span>
-              </div>
-            </div>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
+              Équipez votre commerce avec la caisse du futur dès aujourd&apos;hui.
+            </h2>
+            <p className="mt-4 max-w-2xl mx-auto text-sm sm:text-base text-zinc-400 leading-relaxed">
+              Téléchargez l&apos;application Windows gratuitement, configurez votre première boutique en 2 minutes et commencez à encaisser immédiatement.
+            </p>
 
-            <div className="border-t border-zinc-800 my-6" />
-
-            <ul className="space-y-3 text-xs text-zinc-300 mb-8">
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-white" /> Caisse POS illimitée &amp; impressions tickets
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-white" /> Mode hors-ligne complet (Sync Dexie.js)
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-white" /> Conseiller IA &amp; Vision OCR factures
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-white" /> Clôtures journalières Z-Report par WhatsApp
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-white" /> Gestion de crédits clients (Carnet Krediat)
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-white" /> Application Bureau Windows &amp; Mac (Tauri)
-              </li>
-            </ul>
-
-            <div className="space-y-3">
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/download"
-                className="block w-full text-center rounded-xl bg-white py-3 text-xs font-bold text-zinc-950 transition hover:bg-zinc-200"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-full bg-white px-8 py-4 text-sm font-bold text-black transition-all hover:bg-zinc-200 hover:scale-[1.02] shadow-[0_0_30px_rgba(255,255,255,0.25)]"
               >
-                Télécharger l'Application (.exe)
+                <Download className="h-4 w-4" />
+                Télécharger KASPI POS (.exe)
               </Link>
+
               <Link
                 href="/login"
-                className="block w-full text-center rounded-xl border border-zinc-700 bg-zinc-950 py-3 text-xs font-semibold text-zinc-300 transition hover:text-white hover:border-zinc-500"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-7 py-4 text-sm font-semibold text-white transition hover:bg-white/[0.1] hover:border-white/20"
               >
-                Accéder à mon Espace Client
+                <LogIn className="h-4 w-4" />
+                Créer un compte marchand
               </Link>
             </div>
-            <p className="text-center text-[10px] text-zinc-500 mt-3">
-              Annulable à tout moment. Support technique marocain 7j/7.
+
+            <p className="mt-6 text-xs text-zinc-500 font-mono">
+              Windows 10 / 11 compatible • Mises à jour automatiques incluses
             </p>
           </div>
         </div>
       </section>
 
-      {/* CALL TO ACTION BANNER */}
-      <section className="py-20 bg-zinc-900 border-b border-zinc-800 text-center">
-        <div className="max-w-4xl mx-auto px-4">
-          <h3 className="text-2xl sm:text-4xl font-extrabold text-white mb-4">
-            Prêt à transformer l'encaissement de votre commerce ?
-          </h3>
-          <p className="text-sm text-zinc-400 mb-8 max-w-xl mx-auto">
-            Rejoignez des centaines de commerçants marocains qui ont choisi la rapidité, la sérénité hors-ligne et la puissance de l'IA.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/download"
-              className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-3.5 text-xs font-bold text-zinc-950 hover:bg-zinc-200 transition shadow-lg"
-            >
-              <Download className="h-4 w-4" />
-              Télécharger KASPI POS (.exe)
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-950 px-8 py-3.5 text-xs font-semibold text-white hover:border-zinc-500 transition"
-            >
-              <LogIn className="h-4 w-4" />
-              Se Connecter
-            </Link>
-          </div>
-        </div>
-      </section>
-
+      {/* Footer */}
       <Footer />
     </div>
   );
