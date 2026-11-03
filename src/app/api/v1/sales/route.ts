@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/server/db/prisma";
-import { getRequestContext } from "@/server/auth/context";
+import { getRequestContext, runWithTenantContext } from "@/server/auth/context";
 import { jsonOk, handleApiError, AppError } from "@/server/http/response";
 import { toDecimal, toPrismaDecimal, toPrismaQtyDecimal, roundMoney } from "@/domain/money";
 import { calculatePointsEarned } from "@/server/loyalty/engine";
+import { generateNextInvoiceNumber } from "@/server/db/invoice-sequence";
 
 const SaleItemInputSchema = z.object({
   productId: z.string().uuid("Invalid product ID"),
@@ -79,25 +80,32 @@ export async function POST(req: NextRequest) {
 
     const productMap = new Map(dbProducts.map((p) => [p.id, p]));
 
-    // 3. Execute atomic transaction in PostgreSQL
-    const result = await prisma.$transaction(async (tx) => {
-      const receiptNumber = `REC-${Date.now().toString().slice(-6)}`;
+    // 3. Execute atomic transaction in PostgreSQL with RLS context & DGI gap-less sequence
+    const result = await runWithTenantContext(
+      { tenantId: ctx.tenantId, userId: ctx.userId },
+      async () => {
+        return prisma.$transaction(async (tx) => {
+          // Generate gap-less sequential receipt/invoice number (Article 145 CGI)
+          const { invoiceNumber: receiptNumber } = await generateNextInvoiceNumber(
+            ctx.tenantId,
+            { prefix: "REC", tx }
+          );
 
-      // Create Sale
-      const sale = await tx.sale.create({
-        data: {
-          tenantId: ctx.tenantId,
-          storeId,
-          cashierUserId: ctx.userId,
-          customerId: customerId || null,
-          clientSaleId,
-          idempotencyKey,
-          receiptNumber,
-          status: "completed",
-          subtotal: toPrismaDecimal(subtotal),
-          taxTotal: toPrismaDecimal(taxTotal),
-          discountTotal: toPrismaDecimal(discountTotal),
-          grandTotal: toPrismaDecimal(grandTotal),
+          // Create Sale
+          const sale = await tx.sale.create({
+            data: {
+              tenantId: ctx.tenantId,
+              storeId,
+              cashierUserId: ctx.userId,
+              customerId: customerId || null,
+              clientSaleId,
+              idempotencyKey,
+              receiptNumber,
+              status: "completed",
+              subtotal: toPrismaDecimal(subtotal),
+              taxTotal: toPrismaDecimal(taxTotal),
+              discountTotal: toPrismaDecimal(discountTotal),
+              grandTotal: toPrismaDecimal(grandTotal),
           paidTotal: toPrismaDecimal(paidTotal),
           changeDue: toPrismaDecimal(changeDue),
           paymentMethod,
@@ -240,6 +248,8 @@ export async function POST(req: NextRequest) {
 
       return sale;
     });
+  }
+);
 
     return jsonOk({ sale: result }, 201);
   } catch (err) {

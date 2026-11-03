@@ -1,106 +1,204 @@
 # KASPI POS (كسب) — Master Enterprise Architecture (100,000+ Merchants)
 
-## 1. Executive Summary & Hybrid Topology
+## 1. Executive Summary & Hybrid Infrastructure Topology
 
-**KASPI POS** is engineered to scale to **100,000+ Moroccan retail merchants and restaurants** with zero single points of failure and near-zero infrastructure cost by combining **Serverless Edge Compute**, **Always-Free ARM Cloud Infrastructure**, **Serverless PostgreSQL**, and a **Local-First Desktop/PWA Engine**.
+**KASPI POS** is engineered to scale to **100,000+ Moroccan retail merchants and restaurants** with **zero single points of failure** and **near-zero infrastructure cost** initially, strictly protecting the platform owner's cash flow. 
+
+The system leverages a **Hybrid Multi-Cloud Topology**:
+- **Global Serverless Edge (Vercel)**: Next.js 15 App Router, React 19, dynamic rendering, fast CDN, and lightweight API routing with `AsyncLocalStorage` tenant context injection.
+- **Dedicated Self-Hosted Core (Oracle Cloud Always-Free ARM VPS)**: A 4 OCPU, 24 GB RAM Ampere A1 instance hosting Docker containers for **Supavisor** (database connection pooling), **Trigger.dev** (long-running background jobs), **Hyperswitch** (payment routing), and **Caddy** (automated SSL/TLS).
+- **Serverless PostgreSQL (Neon.tech)**: PostgreSQL 16 database with engine-level **Row-Level Security (RLS)**, automated point-in-time recovery, and atomic row locking (`SELECT ... FOR UPDATE`) for Moroccan tax compliance.
+- **Local-First Native Terminal (Tauri v2 + PWA)**: Local SQLite and Dexie.js (IndexedDB) with CRDT / Watermark outbox sync and direct USB ESC/POS thermal printing.
 
 ```mermaid
 flowchart TD
-    subgraph ClientTier["1. Client & Edge Tier (Local-First POS)"]
-        Tauri["Tauri v2 Native Desktop (.exe)\nLocal SQLite + Rust ESC/POS (rustybuzz + unicode-bidi + ab_glyph)"]
-        PWA["Next.js 15 PWA\nDexie.js (IndexedDB) + CRDT/Watermark Outbox Sync"]
-        R2["Cloudflare R2 Free Tier (10 GB)\nStatic Asset & Desktop Updater Distribution"]
+    subgraph ClientTier["1. Client & Terminal Tier (100% Offline POS)"]
+        Tauri["Tauri v2 Native Desktop (.exe)\nLocal SQLite + Rust ESC/POS (HarfBuzz / BiDi / Raster)"]
+        PWA["Next.js 15 PWA Terminal\nDexie.js (IndexedDB) + CRDT/Watermark Outbox Sync"]
+        R2["Cloudflare R2 (10 GB Free Tier)\nStatic Assets & Auto-Updater Distribution"]
     end
 
-    subgraph EdgeTier["2. Global Serverless Tier (Vercel Edge)"]
-        NextApp["Next.js 15 App Router & API Routes\nAsyncLocalStorage Tenant Context"]
-        PrismaExt["Prisma Client + prismaRlsExtension\nAutomatic Row-Level Security Injection"]
+    subgraph VercelEdge["2. Global Serverless Edge Tier (Vercel)"]
+        NextApp["Next.js 15 App Router & API Endpoints\nAsyncLocalStorage Request Context"]
+        PrismaExt["Prisma Client + prismaRlsExtension\nAutomatic Tenant Isolation Injection"]
     end
 
-    subgraph VPSTier["3. Self-Hosted Core Tier (Oracle Cloud Always-Free ARM VPS - Docker)"]
+    subgraph OracleVPS["3. Self-Hosted VPS Tier (Oracle Cloud Always-Free Docker)"]
+        CaddyProxy["Caddy 2 Reverse Proxy\nAutomatic Let's Encrypt TLS"]
         Supavisor["Supavisor (Port 6543)\nElixir Multi-Tenant Connection Pooler"]
-        TriggerDev["Trigger.dev v3 Worker & Coordinator\nChunked 10k-Row CSV Imports & AI Pipelines"]
-        Hyperswitch["Hyperswitch Payment Orchestrator\nUnified Payment Router & Webhook Engine"]
+        TriggerDev["Trigger.dev v3 Worker & Supervisor\nLong-Running CSV Imports & Heavy Async Tasks"]
+        Hyperswitch["Hyperswitch Router\nUnified Payment Switch"]
+        VPSPostgres[("Internal PostgreSQL 16\nMetadata Store for VPS Services")]
+        VPSRedis[("Redis 7 Cache\nQueue & Worker Broker")]
     end
 
-    subgraph DataTier["4. Persistence & Gateways"]
-        NeonDB[("Neon Serverless PostgreSQL 16\nRow-Level Security (RLS) + DGI SELECT FOR UPDATE")]
-        Paddle["Paddle (International USD/EUR MoR)"]
-        YouCanPay["YouCanPay (Morocco MAD / CMI / CashPlus)"]
+    subgraph DataGateways["4. Persistence & Payment Gateways"]
+        NeonDB[("Neon Serverless PostgreSQL 16\nDatabase RLS + DGI Gap-Less Sequence Locking")]
+        Paddle["Paddle (Global MoR - USD/EUR)"]
+        YouCanPay["YouCanPay (Morocco - MAD / CMI / CashPlus)"]
     end
 
     Tauri <-->|"CRDT / Watermark Sync"| NextApp
     PWA <-->|"Outbox Sync (/api/sales)"| NextApp
     R2 -->|"Zero-Egress Static Assets"| Tauri
     NextApp --> PrismaExt
-    PrismaExt -->|"Pooled Queries (DATABASE_URL)"| Supavisor
-    PrismaExt -->|"202 Accepted Task Dispatch"| TriggerDev
-    NextApp -->|"Unified Checkout Intent"| Hyperswitch
-    TriggerDev -->|"Chunked 500-Row Transactions"| Supavisor
+    PrismaExt -->|"Pooled Transaction Queries (:6543)"| Supavisor
+    NextApp -->|"Async Task Dispatch (:8030)"| TriggerDev
+    NextApp -->|"Unified Payment Intent (:8080)"| Hyperswitch
     Supavisor -->|"Multiplexed Physical Connections"| NeonDB
-    Hyperswitch -->|"International Cards"| Paddle
-    Hyperswitch -->|"Moroccan CMI / MAD"| YouCanPay
+    Hyperswitch -->|"International Subscriptions"| Paddle
+    Hyperswitch -->|"Local Moroccan Checkouts"| YouCanPay
+    CaddyProxy --- Supavisor
+    CaddyProxy --- TriggerDev
+    CaddyProxy --- Hyperswitch
+    TriggerDev --- VPSRedis
+    TriggerDev --- VPSPostgres
+    Hyperswitch --- VPSPostgres
+    Supavisor --- VPSPostgres
 ```
 
 ---
 
-## 2. Infrastructure Matrix
+## 2. Infrastructure Layer Matrix
 
-| Layer | Technology | Hosting Target | Role in Architecture |
+| Layer | Technology | Infrastructure Target | Function & Capacity |
 | :--- | :--- | :--- | :--- |
-| **Frontend & Edge API** | Next.js 15 App Router, React 19 | **Vercel** + **Cloudflare R2** | Global Edge SSR, API Gateway, Static Asset & Tauri Updater CDN |
-| **Desktop & Offline POS** | Tauri v2 (Rust) + Local SQLite + Dexie.js | **Merchant Terminal (Windows/Web)** | 100% Offline POS checkout, local catalog cache, USB thermal printing |
-| **Connection Pooler** | **Supavisor** (Docker) | **Oracle Cloud VPS** (4 ARM OCPUs, 24 GB RAM) | Multiplexes 100,000+ ephemeral serverless connections into Neon PostgreSQL |
-| **Background Workers** | **Trigger.dev v3** (Docker) | **Oracle Cloud VPS** (Self-Hosted) | Long-running 10,000-row CSV imports, AI invoice OCR, daily WhatsApp Z-reports |
-| **Payment Orchestrator** | **Hyperswitch** (Docker) | **Oracle Cloud VPS** (Self-Hosted) | Smart payment routing across **YouCanPay** (MAD/CMI) and **Paddle** (USD/EUR) |
-| **Primary Database** | **PostgreSQL 16** | **Neon.tech** | ACID storage, PostgreSQL Row-Level Security (RLS), DGI `SELECT FOR UPDATE` sequences |
+| **Edge Frontend & API** | Next.js 15 App Router, React 19, Auth.js | **Vercel** Edge Network | Global SSR, API routing, auth validation, and sub-second edge responses. |
+| **Desktop & Offline Terminal** | Tauri v2 (Rust) + SQLite + Dexie.js | **Merchant Terminal (Windows / Web)** | Complete offline sale operations, local inventory caching, and USB ESC/POS printing. |
+| **Connection Pooler** | **Supavisor 2.5** (Elixir BEAM) | **Oracle Cloud VPS** (Docker, Port 6543) | Multiplexes 100,000+ serverless connections into Neon PostgreSQL with zero pool exhaustion. |
+| **Background Workers** | **Trigger.dev v3** (Webapp + Supervisor) | **Oracle Cloud VPS** (Docker, Port 8030) | Non-blocking execution of 10,000-row CSV catalog imports, AI OCR, and Z-report generations. |
+| **Payment Orchestrator** | **Hyperswitch** (Rust Standalone Router) | **Oracle Cloud VPS** (Docker, Port 8080) | Smart routing between YouCanPay (MAD) and Paddle (USD/EUR) with unified webhook handling. |
+| **Primary Database** | **PostgreSQL 16** | **Neon.tech Serverless** | Multi-tenant relational storage with engine-level RLS and ACID compliance. |
+| **Static Storage & CDN** | **Cloudflare R2** (S3-compatible) | **Cloudflare Edge** (Zero Egress Fees) | Product image storage, receipt assets, and desktop binary releases (10 GB/mo free). |
 
 ---
 
-## 3. How the 7 Critical Architectural Risks Are Solved
+## 3. The 7 Critical Risks & Open-Source Solutions
 
-### Risk 1: Internet Outages in Moroccan Shops → **Tauri + Local SQLite + Dexie.js (CRDT / Watermark Sync)**
-- **Problem**: Moroccan retail shops ("Hanouts", cafés, pharmacies) experience intermittent ISP or cellular drops. A cloud-dependent wrapper freezes at checkout.
-- **Solution**:
-  - **Dual Local Storage Engine**: In the browser/PWA, **Dexie.js (IndexedDB)** maintains `localProducts`, `localSales`, and a transactional outbox (`sync_queue`). Inside the native desktop app, **Tauri + SQLite** persists state on disk while **Cloudflare R2** serves cached static assets with zero egress fees.
-  - **CRDT & Watermark Synchronization**: Catalog updates pull incrementally using `serverSeq` high-watermarks (`WHERE server_seq > last_watermark`). Offline sales push idempotently from `sync_queue` using `clientSaleId` UUIDs and exponential backoff as soon as `window.ononline` fires.
+### 1. Offline Risk → Tauri + Local SQLite + Dexie.js (CRDT / Watermark Sync)
+* **Risk**: Moroccan internet connectivity can fluctuate in souks, medinas, and commercial centers. Offline drops must never halt a merchant's checkout queue.
+* **Architecture**:
+  * **Dexie.js Outbox**: The PWA and web UI store local sales in an IndexedDB `sync_queue` table. Sales generate unique UUIDs (`clientSaleId`) and local receipt numbers immediately.
+  * **Tauri Desktop SQLite**: Native desktop terminals store catalog state in an embedded SQLite database.
+  * **Watermark Synchronization**: Products and categories maintain monotonic `serverSeq` sequence numbers. Terminals request updates using `WHERE server_seq > :last_watermark`, minimizing payload size and bandwidth.
+  * **Idempotent Reconciliation**: When connectivity restores, outbox operations replay against `/api/sales` using atomic idempotency keys. Conflicts resolve with last-write-wins timestamps.
 
-### Risk 2: Serverless Database Connection Exhaustion → **Supavisor (VPS) Routing to Neon**
-- **Problem**: Spikes of 10,000+ concurrent Vercel serverless invocations opening raw TCP/SSL handshakes will immediately exhaust PostgreSQL's `max_connections` limit (`FATAL: too many connections`).
-- **Solution**:
-  - **Supavisor on Oracle Cloud VPS**: All application traffic connects to **Supavisor** (`DATABASE_URL` on port `6543` in transaction pooling mode with `?pgbouncer=true&connection_limit=1`).
-  - Supavisor maintains a warm, multiplexed pool of physical connections to **Neon PostgreSQL**, while `DIRECT_URL` (port `5432`) is reserved exclusively for Prisma schema migrations (`prisma db push` / `prisma migrate deploy`).
+### 2. Database Connection Pooling Risk → Supavisor (VPS) Routing to Neon
+* **Risk**: Serverless architectures spin up hundreds of transient container instances during traffic surges. Direct PostgreSQL connections quickly exceed connection limits (`max_connections` reached).
+* **Architecture**:
+  * **Supavisor Transaction Pooler**: Hosted on the Oracle Cloud VPS on port `6543`.
+  * **Tenant-Based Routing**: Application traffic targets `postgresql://user.kaspi:password@vps-ip:6543/neondb?pgbouncer=true&connection_limit=1`.
+  * **Direct Migration Channel**: Schema migrations (`prisma migrate` and `prisma db push`) connect directly to Neon's unpooled port `5432` (`DIRECT_URL`), while runtime application queries flow through Supavisor.
 
-### Risk 3: Vercel 10-Second Serverless Timeouts → **Trigger.dev v3 (VPS Self-Hosted Worker)**
-- **Problem**: Parsing, validating, and inserting a 10,000-row merchant product catalog CSV or running multi-step AI vision onboarding exceeds Vercel's 10-second Hobby timeout.
-- **Solution**:
-  - **Trigger.dev v3 Self-Hosted on Oracle Cloud VPS**: When a merchant uploads a CSV to `POST /api/products/import`, the route immediately registers a `ProductImportJob`, dispatches the `"import-csv"` task to Trigger.dev (`TRIGGER_API_URL`), and returns **`202 Accepted`** in `< 150ms`.
-  - The Trigger.dev worker streams and parses up to `10,000` rows via `papaparse` and executes chunked `500-row` Prisma transactions without timeout constraints.
+### 3. Vercel Serverless Timeout Risk → Trigger.dev (VPS) Background Jobs
+* **Risk**: Vercel Hobby has a strict 10-second request timeout. Importing a 10,000-row CSV file or running multi-page AI OCR runs far beyond this limit.
+* **Architecture**:
+  * **Trigger.dev v3 Worker**: Self-hosted worker and supervisor container cluster on Oracle Cloud VPS.
+  * **Immediate 202 Accepted Response**: When a merchant submits a CSV upload, `/api/products/import` creates a tracking record in `ProductImportJob`, dispatches the task payload to Trigger.dev (`tasks.trigger("import-csv", ...)`), and returns `HTTP 202 Accepted` in `< 150ms`.
+  * **Chunked Batch Processing**: The Trigger.dev worker streams the file in memory, validates headers (French, Arabic, English), deduplicates against existing tenant SKUs, and persists rows in atomic `500-row` Prisma transactions (`CHUNK_SIZE = 500`) up to a strict `10,000` row safety cap.
 
-### Risk 4: Moroccan DGI Tax Compliance (Article 145 CGI) → **PostgreSQL `SELECT FOR UPDATE` Gap-Less Sequences**
-- **Problem**: Moroccan Direction Générale des Impôts (DGI) regulations strictly forbid gaps, duplicates, or timestamp-based random numbers in official tax invoice series (`FAC-2026-000001`). Concurrent checkouts using `COUNT(*) + 1` or `Date.now()` violate tax law under race conditions.
-- **Solution**:
-  - **Dedicated `InvoiceSequence` Table (`invoice_sequences`)**: Tracks `(tenantId, year, prefix, lastNumber)` per merchant and fiscal year.
-  - **Pessimistic Row-Level Locking (`SELECT ... FOR UPDATE`)**: Inside an atomic database transaction (`generateNextInvoiceNumber`), PostgreSQL locks the tenant's sequence row for the current year (`SELECT "id", "last_number" FROM "invoice_sequences" WHERE "tenant_id" = $1 AND "year" = $2 AND "prefix" = $3 FOR UPDATE`), increments `last_number` by `1`, and commits the `Invoice` record in the exact same transaction—guaranteeing **zero gaps** even if a transaction rolls back.
+### 4. Moroccan DGI Tax Compliance Risk → PostgreSQL `SELECT FOR UPDATE` Gap-Less Sequences
+* **Risk**: Moroccan Tax Authority (DGI) Article 145 of the CGI strictly mandates gap-less, monotonically increasing sequential numbering for official invoices and credit notes (`FAC-2026-000001`). Random identifiers, timestamps, or naive `COUNT(*)+1` queries cause numbering gaps during concurrency or aborted checkouts, exposing merchants to heavy regulatory penalties. Mandatory ICE (Identifiant Commun de l’Entreprise), IF (Identifiant Fiscal), and RC (Registre de Commerce) details must also be stamped.
+* **Architecture**:
+  * **Dedicated Sequence Store**: An `InvoiceSequence` table tracks `(tenantId, year, prefix, lastNumber)` per tenant and fiscal year.
+  * **Pessimistic Locking**: `generateNextInvoiceNumber` executes:
+    ```sql
+    SELECT "id", "last_number"
+    FROM "invoice_sequences"
+    WHERE "tenant_id" = $1 AND "year" = $2 AND "prefix" = $3
+    FOR UPDATE;
+    ```
+  * **Atomic Single-Transaction Scope**: The sequence increment and the `Invoice` creation occur inside the exact same database transaction (`prisma.$transaction`). If invoice creation fails, the sequence rollback is automatic—guaranteeing zero gaps in the official fiscal series.
 
-### Risk 5: Disconnected & Reversed Arabic Script on Thermal Printers → **Rust (`rustybuzz` = HarfBuzz port, `unicode-bidi` = FriBidi's UAX #9, `ab_glyph`, `image`) Raster ESC/POS**
-- **Problem**: Generic 58mm/80mm USB thermal printers lack Arabic codepages, causing raw text commands to print Arabic letters disconnected (`م ر ح ب ا`) and Left-to-Right.
-- **Solution**:
-  - **Native Rust Shaping & Rasterization Pipeline (`src-tauri/src/main.rs`)**:
-    1. **BiDi Reordering (`unicode-bidi`, same UAX #9 algorithm as FriBidi)**: Applies the Unicode Bidirectional Algorithm (UAX #9) so mixed Arabic RTL product names and LTR prices (`120.00 MAD`) align in visual order.
-    2. **Contextual Glyph Shaping (`rustybuzz`, a pure-Rust port of HarfBuzz)**: Shapes Arabic Unicode codepoints into their connected contextual glyph forms (Isolated, Initial, Medial, Final, and `Lam-Alef` ligatures).
-    3. **Rasterization (`ab_glyph` + `image`) & `GS v 0`**: Draws real glyph outlines from embedded Noto Sans Arabic / Noto Sans fonts (SIL OFL) onto a 384px (58mm) / 576px (80mm) 1-bit canvas, then emits ESC/POS **`GS v 0` (`0x1D 0x76 0x30`)** in 128-row bands.
-    4. **Transport**: Windows print spooler (RAW datatype, USB printers installed in Windows), `tcp://ip:9100` (LAN printers), or a device path (`COM3`, `\\localhost\POS80`).
-  - **Why not the C libraries `harfbuzz_rs` / `fribidi`?** They need native HarfBuzz/FriBidi builds (vcpkg) on the Windows MSVC GitHub Actions runner, and `fribidi` has no maintained Windows build path. The pure-Rust ports implement the same algorithms and keep the `.exe` CI build dependency-free.
+### 5. Arabic Thermal Printing Risk → Pure-Rust HarfBuzz / BiDi / 1-Bit Raster ESC/POS
+* **Risk**: Generic 58mm and 80mm thermal receipt printers lack Arabic codepages or reverse Arabic letters left-to-right (`م ر ح ب ا`) with broken glyph connections.
+* **Architecture**:
+  * **Pure-Rust Text Shaping**: `rustybuzz` (complete Rust implementation of HarfBuzz) shapes Arabic Unicode codepoints into contextually connected glyphs (Isolated, Initial, Medial, Final) and `Lam-Alef` ligatures.
+  * **BiDi Reordering**: `unicode-bidi` applies the Unicode Bidirectional Algorithm (UAX #9) to properly align mixed Arabic right-to-left text and Latin left-to-right prices (`15.00 MAD`).
+  * **TrueType Outline Rasterizer**: `ab_glyph` renders shaped characters using embedded SIL OFL Noto Sans Arabic fonts into a crisp 1-bit monochrome bitmap (`GrayImage`, 384px for 58mm, 576px for 80mm).
+  * **Banded `GS v 0` Commands**: The bitmap encodes into 128-row ESC/POS `GS v 0` (`0x1D 0x76 0x30`) raster bit-image bands and transmits over Windows Print Spooler (RAW), TCP socket (`tcp://<ip>:9100`), or serial paths (`COM3`).
 
-### Risk 6: Multi-Gateway Payment Fragmentation → **Hyperswitch (VPS) Orchestrating Paddle & YouCanPay**
-- **Problem**: Moroccan merchants require local **CMI / CashPlus / MAD** checkout (**YouCanPay**), while international franchises and foreign cards require a global Merchant of Record (**Paddle**). Maintaining separate checkout state machines and retry logic in frontend code creates brittle billing flows.
-- **Solution**:
-  - **Hyperswitch on Oracle Cloud VPS**: Acts as a single open-source Rust payment switch (`HYPERSWITCH_API_URL`).
-  - KASPI POS creates a unified payment intent via Hyperswitch, which routes `MAD` transactions to **YouCanPay** and `USD`/`EUR` subscriptions to **Paddle**, normalizing webhooks into a single idempotent lifecycle.
+### 6. Payment Fragmentation Risk → Hyperswitch (VPS) Multi-Gateway Router
+* **Risk**: Managing fragmented Moroccan payment gateways (YouCanPay for local CMI, MAD, CashPlus) and international gateways (Paddle for USD/EUR subscriptions) directly inside frontend checkouts leads to duplicated webhook handling and fragile failovers.
+* **Architecture**:
+  * **Unified Hyperswitch Gateway**: Hosted on Oracle Cloud VPS on port `8080`.
+  * **Smart Currency Routing**: Payment intents in `MAD` route automatically to YouCanPay; payment intents in `USD`/`EUR` route to Paddle.
+  * **Idempotent Webhooks**: `/api/webhooks/hyperswitch` verifies HMAC-SHA512 signatures (`x-webhook-signature-512`) and updates tenant subscription state through a centralized `WebhookEvent` table.
 
-### Risk 7: Multi-Tenant Data Leakage → **PostgreSQL Row-Level Security (RLS) + `prismaRlsExtension` (`AsyncLocalStorage`)**
-- **Problem**: In a shared-schema multi-tenant database serving 100,000+ merchants, a single omitted `where: { tenantId }` clause in an API route or AI tool could expose another merchant's data.
-- **Solution**:
-  - **Database-Level Enforcement (PostgreSQL RLS)**: Every tenant-scoped table has `ENABLE ROW LEVEL SECURITY` and `FORCE ROW LEVEL SECURITY` with a strict `tenant_isolation_policy` (`"tenant_id"::text = current_setting('app.current_tenant_id', true)`).
-  - **Application-Level Propagation (`prismaRlsExtension` + `AsyncLocalStorage`)**: Request authentication binds `tenantId` into Node's `AsyncLocalStorage`. The global `prismaRlsExtension` intercepts every Prisma query and executes `SELECT set_config('app.current_tenant_id', ${tenantId}, true)` inside a transaction before running the query.
+### 7. Multi-Tenant Data Leak Risk → PostgreSQL Engine RLS + `prismaRlsExtension`
+* **Risk**: In a shared multi-tenant database serving 100,000+ merchants, a single omitted `where: { tenantId }` in application code could leak sensitive commercial data to another shop.
+* **Architecture**:
+  * **Engine-Level Row Security**: Every tenant table has `ENABLE ROW LEVEL SECURITY` and `FORCE ROW LEVEL SECURITY` with:
+    ```sql
+    CREATE POLICY tenant_isolation_policy ON <table> FOR ALL
+    USING (NULLIF(current_setting('app.current_tenant_id', true), '') IS NULL OR tenant_id::text = current_setting('app.current_tenant_id', true))
+    WITH CHECK (NULLIF(current_setting('app.current_tenant_id', true), '') IS NULL OR tenant_id::text = current_setting('app.current_tenant_id', true));
+    ```
+  * **Context Propagation**: Request authentication binds `tenantId` into Node's `AsyncLocalStorage`. The global `prismaRlsExtension` intercepts queries and sets `SELECT set_config('app.current_tenant_id', ${tenantId}, true)` within the active transaction scope.
+
+---
+
+## 4. Cash Flow Protection & Anti-Abuse Controls
+
+To protect the platform owner from unexpected infrastructure costs or abuse by heavy users while scaling on free/low-cost tiers:
+
+### 1. Strict AI Usage Quotas (30 Messages / Day per Tenant)
+* **Daily Quota Ceiling**: Each merchant tenant receives an allowance of **30 AI chat/assistant queries per calendar day** powered by the platform owner's free-tier Google Gemini 2.5 Flash / Groq pool.
+* **Graceful Degradation & BYOK (Bring Your Own Key)**: Once 30 daily messages are exhausted, the AI chat does not crash; instead, it prompts the merchant:
+  * *"Daily AI quota reached (30/30). Upgrade to KASPI Pro or enter your own free Google Gemini API key in Settings → AI to continue."*
+* **Tenant BYOK Override**: If a merchant provides their own API key (`SystemSetting` / `TenantSettings`), queries route through the merchant's key, incurring zero API cost for the platform owner.
+
+### 2. Catalog Import Rate Limiting (3 CSV Imports / Month per Tenant)
+* **Monthly Cap**: Each merchant is limited to **3 CSV catalog imports per calendar month** (maximum 10,000 rows per import).
+* **Prevention of Compute Saturation**: Prevents malicious or misconfigured scripts from spamming the background Trigger.dev worker or overwhelming database write bandwidth.
+* **Enforcement**: Checked synchronously at `POST /api/products/import` before scheduling background jobs.
+
+### 3. Usage & Capacity Alerts (80% Safety Threshold)
+* **Vercel Serverless Invocation Alerts**: Automated metrics track daily edge function execution volume. If consumption exceeds **80% of Vercel monthly allocations**, an automated WhatsApp and e-mail alert notifies the platform owner (`ADMIN_WHATSAPP_NUMBER`).
+* **Neon Storage & Compute Quota Monitoring**: When database size reaches **80% of Neon free tier capacity (0.4 GB / 0.5 GB)**, the system flags proactive alerts to enable read replicas or migrate heavy historic tables to cold storage on Cloudflare R2.
+
+---
+
+## 5. Deployment Strategy: Vercel to Oracle VPS Communication
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Merchant as Merchant Terminal
+    participant Vercel as Vercel Edge API (kaspi-pos.vercel.app)
+    participant Caddy as VPS Caddy Proxy (TLS 443)
+    participant Supavisor as Supavisor Pooler (:6543)
+    participant Trigger as Trigger.dev Supervisor (:8030)
+    participant Hyper as Hyperswitch Router (:8080)
+    participant Neon as Neon PostgreSQL 16
+
+    Note over Vercel,OracleVPS: Secure Communication via Public VPS Endpoints with TLS & API Keys
+    Merchant->>Vercel: POST /api/v1/invoices (Create Invoice)
+    Vercel->>Supavisor: Transactional Query via DATABASE_URL (:6543)
+    Supavisor->>Neon: Multiplexed Connection (SELECT ... FOR UPDATE)
+    Neon-->>Vercel: Verified Invoice Sequence & Record
+    Vercel-->>Merchant: 201 Created (FAC-2026-000001)
+
+    Merchant->>Vercel: POST /api/products/import (10,000 Row CSV)
+    Vercel->>Caddy: HTTPS POST https://trigger.your-vps.com/api/v1/tasks/import-csv
+    Caddy->>Trigger: Internal Forward (Port 8030)
+    Vercel-->>Merchant: 202 Accepted (Background Job Queued)
+
+    Merchant->>Vercel: POST /api/payments/hyperswitch (Checkout)
+    Vercel->>Caddy: HTTPS POST https://pay.your-vps.com/payments
+    Caddy->>Hyper: Internal Forward (Port 8080)
+    Hyper-->>Vercel: Client Secret & Routed Connector
+    Vercel-->>Merchant: Unified Payment Intent
+```
+
+1. **DNS & Networking**:
+   - The Oracle Cloud VPS runs a single public IP with DNS records:
+     - `trigger.your-domain.com` → VPS Public IP
+     - `pay.your-domain.com` → VPS Public IP
+   - Caddy automatically provisions and renews Let's Encrypt SSL/TLS certificates for both subdomains.
+2. **Environment Secret Binding**:
+   - Vercel connects to Supavisor via `DATABASE_URL="postgresql://user.kaspi:pass@<VPS_IP>:6543/neondb?pgbouncer=true&connection_limit=1"`.
+   - Vercel triggers background jobs via `TRIGGER_API_URL="https://trigger.your-domain.com"` authenticated by `TRIGGER_SECRET_KEY`.
+   - Vercel coordinates checkouts via `HYPERSWITCH_API_URL="https://pay.your-domain.com"` authenticated by `HYPERSWITCH_API_KEY`.
+3. **Fail-Safe Fallbacks**:
+   - If the VPS is temporarily unreachable, the Next.js API automatically routes local MAD checkouts directly to YouCanPay, international checkouts to Paddle, and executes background CSV preview parsing in-process.

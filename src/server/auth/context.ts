@@ -2,7 +2,19 @@ import { cookies, headers } from "next/headers";
 import { getSessionByToken, SESSION_COOKIE_NAME } from "./session";
 import { AppError } from "../http/response";
 import { UserRole } from "@prisma/client";
-import { setActiveTenantContext } from "../db/rls";
+import {
+  setActiveTenantContext,
+  runWithTenantContext,
+  tenantStorage,
+  getActiveTenantContext,
+} from "../db/rls";
+
+export {
+  setActiveTenantContext,
+  runWithTenantContext,
+  tenantStorage,
+  getActiveTenantContext,
+};
 
 export interface RequestContext {
   userId: string;
