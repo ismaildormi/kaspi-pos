@@ -47,12 +47,12 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
       } md:block w-full md:w-64 border-r border-zinc-800 bg-zinc-950 p-4 shrink-0 flex flex-col justify-between`}
     >
       <div className="space-y-6">
-        {/* Brand with Official 3D Infinity Logo */}
+        {/* Brand with Transparent Logo */}
         <Link href="/" className="hidden md:flex items-center gap-3 px-2 py-1 group">
           <img
             src="/logo.png"
             alt="KASPI POS"
-            className="w-8 h-8 object-contain rounded-lg"
+            className="w-8 h-8 object-contain bg-transparent"
           />
           <div className="flex flex-col">
             <span className="font-extrabold text-base tracking-tight text-white">

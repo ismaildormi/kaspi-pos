@@ -61,7 +61,7 @@ export default function RegisterPage() {
           <img
             src="/logo.png"
             alt="KASPI POS"
-            className="w-16 h-16 object-contain rounded-xl mx-auto mb-4"
+            className="w-16 h-16 object-contain bg-transparent mx-auto mb-4"
             onError={(e) => (e.currentTarget.style.display = "none")}
           />
           <h1 className="text-2xl font-bold text-white tracking-tight">

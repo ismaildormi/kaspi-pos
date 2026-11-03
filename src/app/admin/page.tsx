@@ -40,7 +40,7 @@ export default async function AdminDashboardPage() {
           <img
             src="/logo.png"
             alt="KASPI POS"
-            className="w-16 h-16 object-contain rounded-xl shrink-0"
+            className="w-16 h-16 object-contain bg-transparent shrink-0"
           />
           <div className="space-y-1">
             <div className="flex items-center gap-2">

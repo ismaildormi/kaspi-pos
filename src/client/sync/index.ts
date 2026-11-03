@@ -1,4 +1,7 @@
 import { offlineDb, OfflineSale } from "@/client/db";
+import { pullLatestServerData } from "@/client/sync-engine";
+
+export { pullLatestServerData };
 
 export interface SyncResult {
   synced: number;
@@ -133,6 +136,7 @@ export function initBackgroundSync(
   const handleOnline = async () => {
     console.info("[Offline Sync] Network restored! Initiating auto-sync...");
     const result = await syncOfflineSales();
+    await pullLatestServerData().catch(() => {});
     if (result.synced > 0 || result.failed > 0) {
       onSyncComplete?.(result);
     }

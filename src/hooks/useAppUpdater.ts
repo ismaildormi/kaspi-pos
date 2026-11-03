@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 export interface UpdateInfo {
   version: string;
@@ -18,9 +18,33 @@ export function useAppUpdater() {
 
   const currentVersion = "0.1.0";
 
-  const checkForUpdates = async () => {
+  const checkForUpdates = useCallback(async () => {
     try {
       setIsChecking(true);
+
+      // 1. Check if running inside desktop Tauri runtime via direct IPC
+      if (typeof window !== "undefined" && ("__TAURI__" in window || "__TAURI_INTERNALS__" in window)) {
+        try {
+          const tauriWindow = window as any;
+          const invoke = tauriWindow.__TAURI_INTERNALS__?.invoke || tauriWindow.__TAURI__?.invoke;
+          if (typeof invoke === "function") {
+            const update = await invoke("plugin:updater|check").catch(() => null);
+            if (update && update.available) {
+              setHasUpdate(true);
+              setUpdateInfo({
+                version: update.version || "2.0.0",
+                notes: update.body || "New version available. Restart to update.",
+                pub_date: update.date,
+              });
+              return;
+            }
+          }
+        } catch {
+          // Fall back to HTTP endpoint
+        }
+      }
+
+      // 2. Fall back to /api/updates/latest.json endpoint
       const res = await fetch("/api/updates/latest.json");
       if (!res.ok) return;
 
@@ -29,7 +53,7 @@ export function useAppUpdater() {
         setHasUpdate(true);
         setUpdateInfo({
           version: data.version,
-          notes: data.notes,
+          notes: data.notes || "New version available. Restart to update.",
           pub_date: data.pub_date,
           url: data.platforms?.["windows-x86_64"]?.url,
         });
@@ -39,21 +63,38 @@ export function useAppUpdater() {
     } finally {
       setIsChecking(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // Check update on mount
     checkForUpdates();
-  }, []);
+  }, [checkForUpdates]);
 
   const installUpdate = async () => {
     setIsInstalling(true);
     try {
       // If inside Tauri environment
       if (typeof window !== "undefined" && ("__TAURI__" in window || "__TAURI_INTERNALS__" in window)) {
-        console.log("[AppUpdater] Triggering Tauri Updater restart...");
-      } else if (updateInfo?.url) {
+        try {
+          const tauriWindow = window as any;
+          const invoke = tauriWindow.__TAURI_INTERNALS__?.invoke || tauriWindow.__TAURI__?.invoke;
+          if (typeof invoke === "function") {
+            await invoke("plugin:updater|download_and_install").catch(() => null);
+            await invoke("plugin:process|restart").catch(() => {
+              window.location.reload();
+            });
+            return;
+          }
+        } catch (tauriErr) {
+          console.warn("[AppUpdater] Tauri updater error:", tauriErr);
+        }
+      }
+
+      // Fallback: If URL is provided or web app
+      if (updateInfo?.url) {
         window.open(updateInfo.url, "_blank");
+      } else {
+        window.location.reload();
       }
     } finally {
       setIsInstalling(false);

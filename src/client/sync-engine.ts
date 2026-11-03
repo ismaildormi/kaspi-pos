@@ -5,6 +5,8 @@ import {
   offlineDb,
   type SyncQueueItem,
   type SyncQueueEntityType,
+  type OfflineProduct,
+  type OfflineCustomer,
 } from "@/client/db";
 
 export interface SyncQueueProcessResult {
@@ -208,10 +210,92 @@ export async function processSyncQueue(): Promise<SyncQueueProcessResult> {
 }
 
 /**
+ * Pulls latest catalog, products, customers, and settings from server
+ * and updates local Dexie storage so offline devices immediately reflect
+ * dashboard edits upon reconnecting.
+ */
+export async function pullLatestServerData(): Promise<{
+  productsCount: number;
+  customersCount: number;
+}> {
+  if (typeof window === "undefined" || !offlineDb || !navigator.onLine) {
+    return { productsCount: 0, customersCount: 0 };
+  }
+
+  let productsCount = 0;
+  let customersCount = 0;
+
+  try {
+    // 1. Pull latest products catalog
+    const prodRes = await fetch(getApiUrl("/api/v1/products"), {
+      headers: { "Cache-Control": "no-cache" },
+    }).catch(() => null);
+
+    if (prodRes && prodRes.ok) {
+      const data = await prodRes.json();
+      const products = Array.isArray(data) ? data : data.products || [];
+      if (products.length > 0) {
+        const offlineProducts: OfflineProduct[] = products.map((p: any) => ({
+          id: p.id,
+          tenantId: p.tenantId || "",
+          name: p.name,
+          sku: p.sku || "",
+          barcode: p.barcode || null,
+          imageUrl: p.imageUrl || null,
+          salePrice: Number(p.salePrice || p.price || 0),
+          costPrice: p.costPrice != null ? Number(p.costPrice) : null,
+          taxRate: Number(p.taxRate || 0.2),
+          trackStock: Boolean(p.trackStock ?? true),
+          stockQuantity: p.stockQuantity != null ? Number(p.stockQuantity) : undefined,
+          categoryId: p.categoryId || null,
+          categoryName: p.category?.name || p.categoryName || null,
+        }));
+        await offlineDb.offlineProducts.bulkPut(offlineProducts);
+        productsCount = offlineProducts.length;
+      }
+    }
+
+    // 2. Pull latest customers and credit balances
+    const custRes = await fetch(getApiUrl("/api/v1/customers"), {
+      headers: { "Cache-Control": "no-cache" },
+    }).catch(() => null);
+
+    if (custRes && custRes.ok) {
+      const data = await custRes.json();
+      const customers = Array.isArray(data) ? data : data.customers || [];
+      if (customers.length > 0) {
+        const offlineCustomers: OfflineCustomer[] = customers.map((c: any) => ({
+          id: c.id,
+          tenantId: c.tenantId || "",
+          name: c.name,
+          phone: c.phone || null,
+          ice: c.ice || null,
+          currentCreditBalance: Number(c.currentCreditBalance || c.creditBalance || 0),
+          creditLimit: c.creditLimit != null ? Number(c.creditLimit) : null,
+        }));
+        await offlineDb.offlineCustomers.bulkPut(offlineCustomers);
+        customersCount = offlineCustomers.length;
+      }
+    }
+
+    // 3. Dispatch data refresh event for active UI components
+    window.dispatchEvent(
+      new CustomEvent("kaspi-server-data-refreshed", {
+        detail: { productsCount, customersCount, timestamp: Date.now() },
+      })
+    );
+  } catch (err) {
+    console.warn("[KASPI Sync Engine] Error pulling server data:", err);
+  }
+
+  return { productsCount, customersCount };
+}
+
+/**
  * Global Bootstrap Component mounted in RootLayout:
  * - Registers the Offline App Shell Service Worker (`/sw.js`).
- * - Listens to `online` events and triggers `processSyncQueue()`.
- * - Runs `processSyncQueue()` every 60 seconds when online.
+ * - Listens to `online` events and triggers both `processSyncQueue()` AND `pullLatestServerData()`.
+ * - Runs synchronization heartbeat every 60 seconds when online.
  */
 export function OfflineSyncBootstrap() {
   useEffect(() => {
@@ -226,23 +310,29 @@ export function OfflineSyncBootstrap() {
         });
     }
 
-    // 2. Run initial sync if online
-    if (navigator.onLine) {
-      processSyncQueue().catch(() => {});
-    }
+    const runFullSync = async () => {
+      if (!navigator.onLine) return;
+      try {
+        await processSyncQueue();
+        await pullLatestServerData();
+      } catch (err) {
+        console.warn("[KASPI Sync Engine] Full sync notice:", err);
+      }
+    };
 
-    // 3. Listen to browser 'online' event
+    // 2. Run initial sync if online
+    runFullSync();
+
+    // 3. Listen to browser 'online' event (Reconnection Sync & Pull)
     const handleOnline = () => {
-      processSyncQueue().catch(() => {});
+      runFullSync();
     };
 
     window.addEventListener("online", handleOnline);
 
-    // 4. Periodic sync every 60 seconds when online
+    // 4. Periodic sync heartbeat every 60 seconds when online
     const intervalId = setInterval(() => {
-      if (navigator.onLine) {
-        processSyncQueue().catch(() => {});
-      }
+      runFullSync();
     }, 60_000);
 
     return () => {

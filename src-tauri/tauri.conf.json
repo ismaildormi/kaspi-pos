@@ -34,5 +34,13 @@
       "icons/128x128@2x.png",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/ismaildormi/kaspi-pos/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHNpZ25hdHVyZQpSV1RFTVBfU0lHTkFUVVJFX1dJTkRPV1NfQklOQVJZX01PQ0tfUEVORElORw=="
+    }
   }
 }

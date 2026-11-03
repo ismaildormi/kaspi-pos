@@ -22,6 +22,7 @@ rustybuzz = "0.14"
 unicode-bidi = "0.3"
 ab_glyph = "0.2"
 image = { version = "0.25", default-features = false, features = ["png"] }
+tauri-plugin-updater = "2"
 
 [target.'cfg(windows)'.dependencies]
 # Windows print spooler (RAW datatype) for USB thermal printers installed as Windows printers

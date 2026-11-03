@@ -13,7 +13,7 @@ export function Footer() {
               <img
                 src="/logo.png"
                 alt="KASPI POS Logo"
-                className="w-8 h-8 object-contain rounded-lg"
+                className="w-8 h-8 object-contain bg-transparent"
               />
               <span className="font-extrabold text-base tracking-tight text-white">KASPI POS</span>
             </div>

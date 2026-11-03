@@ -25,7 +25,7 @@ export default function AdminLayout({
             <img
               src="/logo.png"
               alt="KASPI POS Logo"
-              className="w-8 h-8 object-contain rounded-lg"
+              className="w-8 h-8 object-contain bg-transparent"
             />
             <div>
               <div className="flex items-center gap-2">

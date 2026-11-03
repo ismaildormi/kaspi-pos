@@ -33,7 +33,7 @@ export default function DownloadCenterPage() {
             <img
               src="/logo.png"
               alt="KASPI POS"
-              className="w-16 h-16 object-contain rounded-xl mx-auto mb-6"
+              className="w-16 h-16 object-contain bg-transparent mx-auto mb-6"
               onError={(e) => (e.currentTarget.style.display = "none")}
             />
 

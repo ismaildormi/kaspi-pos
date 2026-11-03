@@ -151,6 +151,7 @@ fn print_receipt(payload: String) -> Result<String, String> {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             print_receipt,
             get_local_ai_capabilities,
