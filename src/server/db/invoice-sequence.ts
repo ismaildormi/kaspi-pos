@@ -83,5 +83,8 @@ export async function generateNextInvoiceNumber(
     return executeLockAndIncrement(options.tx);
   }
 
-  return prisma.$transaction(async (tx) => executeLockAndIncrement(tx));
+  return prisma.$transaction((tx) => executeLockAndIncrement(tx), {
+    maxWait: 15000,
+    timeout: 30000,
+  });
 }

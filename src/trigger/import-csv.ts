@@ -133,6 +133,43 @@ export async function executeCsvImportChunked(payload: ImportCsvTaskPayload) {
   const { jobId, tenantId, fileUrl, csvContent } = payload;
 
   try {
+    // 0. Verify Monthly CSV Import Quota (Pillar 4: max 3 imports/month per tenant)
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: {
+        displayName: true,
+        csvImportsUsedThisMonth: true,
+        lastCsvImportMonth: true,
+      },
+    });
+
+    let importsUsed = tenant?.csvImportsUsedThisMonth ?? 0;
+    if (tenant?.lastCsvImportMonth !== currentMonth) {
+      importsUsed = 0;
+      await prisma.tenant.update({
+        where: { id: tenantId },
+        data: { csvImportsUsedThisMonth: 0, lastCsvImportMonth: currentMonth },
+      }).catch(() => {});
+    }
+
+    const MAX_MONTHLY_CSV_IMPORTS = 3;
+    if (importsUsed >= MAX_MONTHLY_CSV_IMPORTS) {
+      const quotaErr = `Monthly CSV import quota exceeded (${MAX_MONTHLY_CSV_IMPORTS}/3 imports used). To protect server resources, please wait until next month.`;
+      if (jobId) {
+        await prisma.productImportJob
+          .update({
+            where: { id: jobId },
+            data: {
+              status: "failed",
+              errorRows: [{ row: 0, reason: quotaErr }],
+            },
+          })
+          .catch(() => {});
+      }
+      throw new Error(quotaErr);
+    }
+
     // 1. Update job status to ready/processing if tracking record exists
     if (jobId) {
       await prisma.productImportJob
@@ -298,6 +335,17 @@ export async function executeCsvImportChunked(payload: ImportCsvTaskPayload) {
           errorRows: errorDetails.length > 0 ? errorDetails : undefined,
         },
       });
+
+      // Increment monthly CSV import count
+      await prisma.tenant
+        .update({
+          where: { id: tenantId },
+          data: {
+            csvImportsUsedThisMonth: { increment: 1 },
+            lastCsvImportMonth: currentMonth,
+          },
+        })
+        .catch(() => {});
     }
 
     return {

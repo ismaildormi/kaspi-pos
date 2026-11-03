@@ -33,3 +33,6 @@ pos_pgdata/
 
 # VPS secrets
 deploy/.env
+
+# Rust target
+src-tauri/target/

@@ -101,6 +101,44 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // CASH FLOW PROTECTION & ANTI-ABUSE: Enforce 3 CSV imports/month per tenant (Pillar 4)
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const tenantRecord = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: {
+        displayName: true,
+        csvImportsUsedThisMonth: true,
+        lastCsvImportMonth: true,
+      },
+    });
+
+    let currentImports = tenantRecord?.csvImportsUsedThisMonth ?? 0;
+    if (tenantRecord?.lastCsvImportMonth !== currentMonth) {
+      currentImports = 0;
+      await prisma.tenant
+        .update({
+          where: { id: tenantId },
+          data: {
+            csvImportsUsedThisMonth: 0,
+            lastCsvImportMonth: currentMonth,
+          },
+        })
+        .catch(() => {});
+    }
+
+    const MAX_MONTHLY_CSV_IMPORTS = 3;
+    if (currentImports >= MAX_MONTHLY_CSV_IMPORTS) {
+      return NextResponse.json(
+        {
+          error: `تم تجاوز الحد الأقصى لاستيراد ملفات CSV لهذا الشهر (${MAX_MONTHLY_CSV_IMPORTS}/3 استيرادات). لحماية سعة الخادم، يُرجى الانتظار للشهر القادم أو الترقية.`,
+          code: "CSV_IMPORT_QUOTA_EXCEEDED",
+          limit: MAX_MONTHLY_CSV_IMPORTS,
+          used: currentImports,
+        },
+        { status: 429 }
+      );
+    }
+
     // 1. Create ProductImportJob in database
     const importJob = await prisma.productImportJob.create({
       data: {

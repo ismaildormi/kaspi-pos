@@ -246,6 +246,13 @@ model Tenant {
   allowNegativeStock Boolean      @default(true) @map("allow_negative_stock")
   restaurantMode     Boolean      @default(false) @map("restaurant_mode")
   status             TenantStatus @default(trialing)
+
+  // Anti-Abuse & Cash Flow Protection Quotas (Pillar 4)
+  aiMessagesUsedToday     Int       @default(0) @map("ai_messages_used_today")
+  lastAiMessageDate       DateTime? @map("last_ai_message_date") @db.Date
+  csvImportsUsedThisMonth Int       @default(0) @map("csv_imports_used_this_month")
+  lastCsvImportMonth      String?   @map("last_csv_import_month") // format "YYYY-MM"
+
   createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
 

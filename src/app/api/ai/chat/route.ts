@@ -405,6 +405,61 @@ export async function POST(req: NextRequest) {
         defaultTenant.id;
     }
 
+    // 1.1 CASH FLOW PROTECTION & ANTI-ABUSE: Enforce 30 AI messages/day per merchant (Pillar 4)
+    if (!isSuperAdmin && tenantId) {
+      const todayStr = new Date().toISOString().split("T")[0];
+      const todayDate = new Date(todayStr);
+
+      const tenantRecord = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: {
+          displayName: true,
+          aiMessagesUsedToday: true,
+          lastAiMessageDate: true,
+        },
+      });
+
+      let currentUsage = tenantRecord?.aiMessagesUsedToday ?? 0;
+      const lastRecordedDate = tenantRecord?.lastAiMessageDate
+        ? new Date(tenantRecord.lastAiMessageDate).toISOString().split("T")[0]
+        : null;
+
+      // Automatically reset quota if new day
+      if (lastRecordedDate !== todayStr) {
+        currentUsage = 0;
+        await prisma.tenant.update({
+          where: { id: tenantId },
+          data: {
+            aiMessagesUsedToday: 0,
+            lastAiMessageDate: todayDate,
+          },
+        });
+      }
+
+      const MAX_DAILY_AI_MESSAGES = 30;
+      if (currentUsage >= MAX_DAILY_AI_MESSAGES) {
+        return new Response(
+          JSON.stringify({
+            error: `تم استهلاك الحد اليومي لرسائل المساعد الذكي (${MAX_DAILY_AI_MESSAGES}/30 رسالة). لحماية التدفق المالي، يرجى المحاولة غداً أو تفعيل مفتاحك الخاص (BYOK).`,
+            code: "AI_QUOTA_EXCEEDED",
+            limit: MAX_DAILY_AI_MESSAGES,
+            used: currentUsage,
+          }),
+          {
+            status: 429,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // Check 80% capacity alert (24 messages out of 30)
+      if (currentUsage + 1 === 24) {
+        console.warn(
+          `[KASPI AI ALERT] Tenant ${tenantRecord?.displayName} (${tenantId}) reached 80% of daily AI quota (24/30).`
+        );
+      }
+    }
+
     // 2. Resolve or Create Persistent AI Chat Session
     const existingSession = requestedSessionId
       ? await prisma.aIChatSession.findUnique({
@@ -589,18 +644,21 @@ Available Super Admin Tools:
 
 Always respond in the language used by the owner (Arabic, Moroccan Darija, French, or English) with executive precision.`;
 
-    const merchantSystemPrompt = `You are KASPI AI (كسب AI), the intelligent bilingual business advisor and system analyst for KASPI POS in Morocco.
+    const merchantSystemPrompt = `You are KASPI AI (كسب AI), a specialized POS assistant and retail data advisor for KASPI POS in Morocco.
+You are strictly forbidden from answering questions unrelated to the user's shop, sales, inventory, or the KASPI POS platform. If the user attempts to ask general knowledge, coding, or casual chat questions, you MUST refuse politely and say: 'I am KASPI AI. I can only assist you with your store's sales, inventory, and statistics.'
+
 You assist retail shop owners, grocery stores (Epiceries / Hanout), cafes, and restaurants.
 You have direct access to live database tools for the merchant:
 - getTodaySales: checks today's transactions and revenue in Moroccan Dirhams (MAD).
 - getLowStockProducts: alerts to inventory items running out (< 5 units).
 - getTopSellingProducts: highlights the top 3 best-selling items this week.
 
-Rules:
-1. Always give concise, actionable business recommendations.
-2. Prices and revenue MUST always be in Moroccan Dirhams (MAD / درهم).
-3. Seamlessly reply in the user's language: Moroccan Darija / Arabic, French, or English.
-4. When asked about sales, revenue, stock, or products, invoke the corresponding tool first.`;
+STRICT OPERATIONAL RULES:
+1. STRICT DATA HONESTY: Rely ONLY on Function Calling (Tools) to fetch real statistics directly from the database. NEVER guess, invent, simulate, or generate fake numbers. If a tool returns no data or zero, state that accurately.
+2. If asked about sales, revenue, stock, products, or store performance, ALWAYS call the appropriate tool first.
+3. Prices and revenue MUST always be stated in Moroccan Dirhams (MAD / درهم).
+4. Seamlessly reply in the user's language: Moroccan Darija / Arabic, French, or English.
+5. Keep answers professional, concise, and focused strictly on store operations.`;
 
     const commonConfig = {
       system: isSuperAdmin ? superAdminSystemPrompt : merchantSystemPrompt,
@@ -622,6 +680,16 @@ Rules:
             where: { id: chatSession.id },
             data: { updatedAt: new Date() },
           });
+
+          // Increment merchant daily AI quota count
+          if (!isSuperAdmin && tenantId) {
+            await prisma.tenant.update({
+              where: { id: tenantId },
+              data: {
+                aiMessagesUsedToday: { increment: 1 },
+              },
+            });
+          }
         }
       },
     };
@@ -682,6 +750,15 @@ Rules:
           content: fallbackReply,
         },
       });
+
+      if (!isSuperAdmin && tenantId) {
+        await prisma.tenant.update({
+          where: { id: tenantId },
+          data: {
+            aiMessagesUsedToday: { increment: 1 },
+          },
+        });
+      }
 
       return new Response(
         `data: {"type":"text-delta","textDelta":${JSON.stringify(
