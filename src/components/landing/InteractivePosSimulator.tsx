@@ -11,15 +11,22 @@ import {
   Sparkles,
   Zap,
   Plus,
-  Trash2,
   Utensils,
   Shirt,
   ShoppingCart,
   Store,
-  Tag,
+  Layers,
+  MapPin,
 } from "lucide-react";
 
 export type VerticalType = "supermarket" | "restaurant" | "clothing" | "grocery";
+
+interface TableInfo {
+  id: string;
+  name: string;
+  status: "occupied" | "free";
+  zone: string;
+}
 
 interface Product {
   id: string;
@@ -27,33 +34,109 @@ interface Product {
   barcode: string;
   price: number;
   category: string;
+  image: string;
   badge?: string;
-  options?: string[];
 }
+
+const RESTAURANT_TABLES: TableInfo[] = [
+  { id: "t1", name: "Table 1", status: "occupied", zone: "Salle Principale" },
+  { id: "t2", name: "Table 2", status: "free", zone: "Salle Principale" },
+  { id: "t3", name: "Table 3", status: "occupied", zone: "Fenêtre" },
+  { id: "t4", name: "Terrasse 4", status: "free", zone: "Extérieur" },
+  { id: "t5", name: "À Emporter", status: "free", zone: "Comptoir Express" },
+];
 
 const VERTICAL_CATALOGS: Record<
   VerticalType,
-  { label: string; icon: any; tables?: string[]; sizes?: string[]; products: Product[] }
+  {
+    label: string;
+    icon: any;
+    sizes?: string[];
+    products: Product[];
+  }
 > = {
   supermarket: {
     label: "Supermarché",
     icon: ShoppingCart,
     products: [
-      { id: "sm-1", name: "Pack Lait 6x1L Centrale", barcode: "6111002000888", price: 42.0, category: "Frais", badge: "Pack Éco" },
-      { id: "sm-2", name: "Huile Lesieur 5 Litres", barcode: "6111003450912", price: 85.0, category: "Épicerie" },
-      { id: "sm-3", name: "Lessive Poudre Ariel 3kg", barcode: "5410076402319", price: 72.0, category: "Ménage", badge: "Promo" },
-      { id: "sm-4", name: "Coca Cola Bouteille 2L", barcode: "5449000000996", price: 12.0, category: "Boissons" },
+      {
+        id: "sm-1",
+        name: "Pack Lait Centrale 6x1L",
+        barcode: "6111002000888",
+        price: 42.0,
+        category: "Produits Frais",
+        badge: "Pack Éco",
+        image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        id: "sm-2",
+        name: "Huile de Table Lesieur 5L",
+        barcode: "6111003450912",
+        price: 85.0,
+        category: "Épicerie Salée",
+        badge: "Essentiel",
+        image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        id: "sm-3",
+        name: "Lessive Poudre Ariel 3kg",
+        barcode: "5410076402319",
+        price: 72.0,
+        category: "Entretien Maison",
+        badge: "Promo",
+        image: "https://images.unsplash.com/photo-1583947215259-38e31be8751f?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        id: "sm-4",
+        name: "Coca Cola Bouteille 2L",
+        barcode: "5449000000996",
+        price: 12.0,
+        category: "Boissons Fraîches",
+        badge: "Best-seller",
+        image: "https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=600&q=80",
+      },
     ],
   },
   restaurant: {
     label: "Restaurant & Fast-Food",
     icon: Utensils,
-    tables: ["Table 1 (Salle)", "Table 2 (Salle)", "Terrasse 4", "À Emporter"],
     products: [
-      { id: "res-1", name: "Tacos Mixte Gratiné Sauce Algérienne", barcode: "RES-TAC-01", price: 38.0, category: "Tacos", badge: "Best-Seller" },
-      { id: "res-2", name: "Pizza 4 Saisons Cuite au Feu", barcode: "RES-PIZ-02", price: 45.0, category: "Pizzas" },
-      { id: "res-3", name: "Burger Gourmet Steak Frites", barcode: "RES-BUR-03", price: 40.0, category: "Burgers" },
-      { id: "res-4", name: "Soda Canette Fraîche 33cl", barcode: "RES-SOD-04", price: 10.0, category: "Boissons" },
+      {
+        id: "res-1",
+        name: "Tacos Mixte Gratiné Sauce Fromagère",
+        barcode: "RES-TAC-01",
+        price: 38.0,
+        category: "Tacos & Wraps",
+        badge: "Populaire",
+        image: "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        id: "res-2",
+        name: "Pizza 4 Saisons Cuite au Feu",
+        barcode: "RES-PIZ-02",
+        price: 45.0,
+        category: "Pizzas Artisanales",
+        badge: "Chef",
+        image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        id: "res-3",
+        name: "Burger Gourmet Steak Frites",
+        barcode: "RES-BUR-03",
+        price: 40.0,
+        category: "Burgers Maison",
+        badge: "Double Steak",
+        image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        id: "res-4",
+        name: "Soda Canette Givrée 33cl",
+        barcode: "RES-SOD-04",
+        price: 10.0,
+        category: "Boissons",
+        badge: "Glacé",
+        image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80",
+      },
     ],
   },
   clothing: {
@@ -61,27 +144,91 @@ const VERTICAL_CATALOGS: Record<
     icon: Shirt,
     sizes: ["Taille S", "Taille M", "Taille L", "Taille XL"],
     products: [
-      { id: "cl-1", name: "Sneakers Urban Street Edition", barcode: "CL-SNK-01", price: 280.0, category: "Chaussures", badge: "Nouvelle Collec" },
-      { id: "cl-2", name: "T-Shirt Coton Bio Coupe Regular", barcode: "CL-TSH-02", price: 95.0, category: "T-Shirts" },
-      { id: "cl-3", name: "Jean Denim Slim Stretch", barcode: "CL-JEA-03", price: 190.0, category: "Pantalons" },
-      { id: "cl-4", name: "Casquette Vintage KASPI Edition", barcode: "CL-CAP-04", price: 65.0, category: "Accessoires" },
+      {
+        id: "cl-1",
+        name: "Sneakers Urban Street Edition",
+        barcode: "CL-SNK-01",
+        price: 280.0,
+        category: "Sneakers Homme",
+        badge: "Nouvelle Collec",
+        image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        id: "cl-2",
+        name: "T-Shirt Coton Bio Coupe Regular",
+        barcode: "CL-TSH-02",
+        price: 95.0,
+        category: "T-Shirts & Polos",
+        badge: "100% Coton",
+        image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        id: "cl-3",
+        name: "Jean Denim Slim Stretch",
+        barcode: "CL-JEA-03",
+        price: 190.0,
+        category: "Denim & Pantalons",
+        badge: "Confort Fit",
+        image: "https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        id: "cl-4",
+        name: "Casquette Vintage KASPI Edition",
+        barcode: "CL-CAP-04",
+        price: 65.0,
+        category: "Accessoires Mode",
+        badge: "Édition Limitée",
+        image: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80",
+      },
     ],
   },
   grocery: {
     label: "Épicerie de Quartier (Hanout)",
     icon: Store,
     products: [
-      { id: "gr-1", name: "Huile de Table Lesieur 1L", barcode: "6111003450110", price: 18.0, category: "Essentiel", badge: "Indispensable" },
-      { id: "gr-2", name: "Eau Minérale Sidi Ali 1.5L", barcode: "6111035000121", price: 6.0, category: "Eaux" },
-      { id: "gr-3", name: "Biscuits Bimo Tagger x1", barcode: "6111245000456", price: 3.0, category: "Goûter" },
-      { id: "gr-4", name: "Pain Rond Frais Traditionnel", barcode: "6111880000100", price: 1.5, category: "Boulangerie" },
+      {
+        id: "gr-1",
+        name: "Huile de Table Lesieur 1L",
+        barcode: "6111003450110",
+        price: 18.0,
+        category: "Essentiel Cuisine",
+        badge: "Incontournable",
+        image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        id: "gr-2",
+        name: "Eau Minérale Sidi Ali 1.5L",
+        barcode: "6111035000121",
+        price: 6.0,
+        category: "Eaux & Boissons",
+        badge: "Pack Frais",
+        image: "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        id: "gr-3",
+        name: "Biscuits Bimo Tagger Chocolat",
+        barcode: "6111245000456",
+        price: 3.0,
+        category: "Goûter & Confiserie",
+        badge: "Favori Enfants",
+        image: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        id: "gr-4",
+        name: "Pain Rond Frais Traditionnel",
+        barcode: "6111880000100",
+        price: 1.5,
+        category: "Boulangerie Quotidienne",
+        badge: "Frais du Matin",
+        image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80",
+      },
     ],
   },
 };
 
 export function InteractivePosSimulator() {
   const [activeVertical, setActiveVertical] = useState<VerticalType>("supermarket");
-  const [selectedTable, setSelectedTable] = useState<string>("Table 1 (Salle)");
+  const [selectedTable, setSelectedTable] = useState<TableInfo>(RESTAURANT_TABLES[0]);
   const [selectedSize, setSelectedSize] = useState<string>("Taille M");
 
   const currentConfig = VERTICAL_CATALOGS[activeVertical];
@@ -97,7 +244,7 @@ export function InteractivePosSimulator() {
   const [paidSuccess, setPaidSuccess] = useState<boolean>(false);
 
   const subtotal = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
-  const tax = subtotal * 0.2; // 20% TVA
+  const tax = subtotal * 0.2; // 20% TVA DGI
   const total = subtotal;
   const changeDue = Math.max(0, tenderAmount - total);
 
@@ -108,7 +255,7 @@ export function InteractivePosSimulator() {
       { product: newProducts[0], quantity: 1 },
       { product: newProducts[1], quantity: 1 },
     ]);
-    setTenderAmount(vertical === "clothing" ? 400 : vertical === "restaurant" ? 100 : 100);
+    setTenderAmount(vertical === "clothing" ? 400 : 100);
     setPaidSuccess(false);
   };
 
@@ -126,7 +273,7 @@ export function InteractivePosSimulator() {
         }
         const meta =
           activeVertical === "restaurant"
-            ? selectedTable
+            ? selectedTable.name
             : activeVertical === "clothing"
             ? selectedSize
             : undefined;
@@ -134,7 +281,7 @@ export function InteractivePosSimulator() {
       });
       setIsScanning(false);
       setPaidSuccess(false);
-    }, 300);
+    }, 280);
   };
 
   const handleClear = () => {
@@ -160,7 +307,7 @@ export function InteractivePosSimulator() {
       <div className="mb-5 pb-4 border-b border-zinc-800/80">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-xs font-bold uppercase tracking-wider text-zinc-300 font-mono">
               Adapté à Votre Métier (Sélectionnez votre type de commerce) :
             </span>
@@ -174,7 +321,7 @@ export function InteractivePosSimulator() {
           {(
             [
               { key: "supermarket", icon: ShoppingCart, label: "🛒 Supermarché" },
-              { key: "restaurant", icon: Utensils, label: "🍔 Restaurant / Café" },
+              { key: "restaurant", icon: Utensils, label: "🍔 Restaurant / Fast-Food" },
               { key: "clothing", icon: Shirt, label: "👕 Prêt-à-Porter" },
               { key: "grocery", icon: Store, label: "🏪 Épicerie (Hanout)" },
             ] as const
@@ -196,26 +343,59 @@ export function InteractivePosSimulator() {
           })}
         </div>
 
-        {/* Dynamic Context Header (e.g., Table picker for restaurant, Size picker for clothing) */}
-        {activeVertical === "restaurant" && currentConfig.tables && (
-          <div className="mt-3 flex items-center gap-2 flex-wrap bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-800/60 text-xs">
-            <span className="text-zinc-400 font-mono text-[11px]">Affectation Salle/Table :</span>
-            {currentConfig.tables.map((table) => (
-              <button
-                key={table}
-                onClick={() => setSelectedTable(table)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${
-                  selectedTable === table
-                    ? "bg-amber-500 text-black shadow-xs font-bold"
-                    : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                }`}
-              >
-                {table}
-              </button>
-            ))}
+        {/* RESTAURANT FLOOR PLAN WITH TABLES & STATUSES (Occupied vs Free) */}
+        {activeVertical === "restaurant" && (
+          <div className="mt-4 p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-mono text-zinc-300 font-bold flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-amber-400" />
+                Plan de Salle Interactif &amp; Tables :
+              </span>
+              <div className="flex items-center gap-3 text-[10px] font-mono">
+                <span className="flex items-center gap-1 text-emerald-400">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" /> Libre
+                </span>
+                <span className="flex items-center gap-1 text-rose-400">
+                  <span className="h-2 w-2 rounded-full bg-rose-500" /> Occupée
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {RESTAURANT_TABLES.map((t) => {
+                const isSelected = selectedTable.id === t.id;
+                const isOccupied = t.status === "occupied";
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedTable(t)}
+                    className={`p-2 rounded-xl text-left border transition relative flex flex-col justify-between ${
+                      isSelected
+                        ? "bg-amber-500/10 border-amber-500 text-white shadow-sm ring-1 ring-amber-500/50"
+                        : "bg-zinc-950/80 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-white">{t.name}</span>
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 rounded-full font-mono font-semibold ${
+                          isOccupied
+                            ? "bg-rose-500/20 text-rose-300"
+                            : "bg-emerald-500/20 text-emerald-300"
+                        }`}
+                      >
+                        {isOccupied ? "Occupée" : "Libre"}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-zinc-500 mt-1 font-mono">{t.zone}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
+        {/* CLOTHING SIZE SELECTOR */}
         {activeVertical === "clothing" && currentConfig.sizes && (
           <div className="mt-3 flex items-center gap-2 flex-wrap bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-800/60 text-xs">
             <span className="text-zinc-400 font-mono text-[11px]">Déclinaison Taille Active :</span>
@@ -223,7 +403,7 @@ export function InteractivePosSimulator() {
               <button
                 key={size}
                 onClick={() => setSelectedSize(size)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
                   selectedSize === size
                     ? "bg-sky-500 text-black shadow-xs font-bold"
                     : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
@@ -247,7 +427,9 @@ export function InteractivePosSimulator() {
                 Mode {currentConfig.label}
               </span>
             </div>
-            <p className="text-[10px] text-zinc-500 font-mono">Caissier: Karim • Session active #2026-04</p>
+            <p className="text-[10px] text-zinc-500 font-mono">
+              Caissier: Karim • {activeVertical === "restaurant" ? `Sélection: ${selectedTable.name}` : "Session active #2026-04"}
+            </p>
           </div>
         </div>
 
@@ -270,13 +452,13 @@ export function InteractivePosSimulator() {
         </div>
       </div>
 
-      {/* Grid: Shelf on Left, Cart on Right */}
+      {/* Grid: Shelf on Left (With Real Photos), Cart on Right */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Quick Access Catalog (7 cols) */}
+        {/* Left: Quick Access Catalog with Real Imagery (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-mono">
-              Articles Dédiés {currentConfig.label} (Cliquez pour ajouter)
+              Articles Réels {currentConfig.label} (Cliquez pour ajouter)
             </span>
             {lastScannedBarcode && (
               <span className="text-[11px] font-mono text-zinc-500">
@@ -285,35 +467,46 @@ export function InteractivePosSimulator() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {currentConfig.products.map((p) => (
               <button
                 key={p.id}
                 onClick={() => handleScanProduct(p)}
-                className="group relative flex flex-col justify-between rounded-2xl border border-zinc-800/80 bg-zinc-900/50 p-3.5 text-left transition hover:border-zinc-700 hover:bg-zinc-900 shadow-sm"
+                className="group relative flex flex-col justify-end min-h-[140px] rounded-2xl border border-zinc-800/90 overflow-hidden text-left transition hover:border-zinc-500 hover:scale-[1.01] shadow-lg p-3.5"
               >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[9px] font-mono uppercase text-zinc-500 tracking-wider">
-                      {p.category}
+                {/* Real High-Resolution Unsplash Image Background with overlay */}
+                <img
+                  src={p.image}
+                  alt={p.name}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-zinc-950/30" />
+
+                {/* Top Badge */}
+                <div className="relative z-10 flex items-center justify-between w-full mb-auto pb-4">
+                  <span className="rounded-full bg-black/60 backdrop-blur-md px-2 py-0.5 text-[9px] font-mono uppercase text-zinc-300 tracking-wider border border-white/10">
+                    {p.category}
+                  </span>
+                  {p.badge && (
+                    <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] font-bold text-black shadow-xs">
+                      {p.badge}
                     </span>
-                    {p.badge && (
-                      <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-bold text-white">
-                        {p.badge}
-                      </span>
-                    )}
-                  </div>
-                  <h4 className="text-xs font-bold text-white group-hover:text-zinc-200 transition line-clamp-2">
-                    {p.name}
-                  </h4>
+                  )}
                 </div>
 
-                <div className="mt-3 flex items-center justify-between pt-2 border-t border-zinc-800/60">
-                  <span className="text-sm font-extrabold text-white">
-                    {p.price.toFixed(2)} <span className="text-xs font-normal text-zinc-400">DH</span>
-                  </span>
-                  <div className="h-6 w-6 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-white group-hover:text-black transition">
-                    <Plus className="h-3.5 w-3.5" />
+                {/* Bottom Content: Name & Price */}
+                <div className="relative z-10 w-full">
+                  <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-zinc-100 transition line-clamp-1 drop-shadow-md">
+                    {p.name}
+                  </h4>
+
+                  <div className="mt-2 flex items-center justify-between pt-2 border-t border-white/15">
+                    <span className="text-sm sm:text-base font-black text-white font-mono drop-shadow">
+                      {p.price.toFixed(2)} <span className="text-xs font-normal text-zinc-300">DH</span>
+                    </span>
+                    <div className="h-6 w-6 rounded-lg bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition">
+                      <Plus className="h-3.5 w-3.5" />
+                    </div>
                   </div>
                 </div>
               </button>
