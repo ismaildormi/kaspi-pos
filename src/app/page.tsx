@@ -3,6 +3,9 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { InteractivePosSimulator } from "@/components/landing/InteractivePosSimulator";
 import { ReceiptSimulator } from "@/components/landing/ReceiptSimulator";
+import { DataMigrationSimulator } from "@/components/landing/DataMigrationSimulator";
+import { WhatsAppReportSimulator } from "@/components/landing/WhatsAppReportSimulator";
+import { AiAnalyticsSimulator } from "@/components/landing/AiAnalyticsSimulator";
 import { OfflineSyncSimulator } from "@/components/landing/OfflineSyncSimulator";
 import { AiScannerSimulator } from "@/components/landing/AiScannerSimulator";
 import { EnterpriseChainShowcase } from "@/components/landing/EnterpriseChainShowcase";
@@ -26,6 +29,8 @@ import {
   Database,
   BarChart3,
   HelpCircle,
+  MessageSquare,
+  FileSpreadsheet,
 } from "lucide-react";
 
 export default function LandingPage() {
@@ -116,36 +121,36 @@ export default function LandingPage() {
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Conformité DGI Art. 145
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Support WhatsApp 7j/7
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Clôture quotidienne WhatsApp
             </span>
           </div>
         </div>
       </section>
 
       {/* =========================================================================
-          SECTION 1: THE INTERACTIVE POS & RECEIPT SHOWCASE ("Show, Don't Tell")
+          SECTION 1: MULTI-STORE POS TERMINAL (Supermarket, Restaurant, Clothing, Grocery)
          ========================================================================= */}
       <section id="simulator" className="py-24 border-b border-zinc-900 relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-3.5 py-1 text-xs font-semibold text-sky-400 mb-4">
               <Sparkles className="h-3.5 w-3.5" />
-              Expérience Interactive Live
+              Simulateur Métier Multi-Commerces
             </div>
             <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
-              Essayez l&apos;interface de caisse en temps réel
+              Une caisse taillée sur mesure pour chaque activité au Maroc
             </h2>
             <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
-              Scannez des produits, ajoutez des articles au panier, encaissez en dirhams marocains (MAD) et calculez le rendu monnaie (الصرف) en moins d&apos;une seconde.
+              Supermarché, restaurant avec gestion des tables, boutique de prêt-à-porter avec tailles ou épicerie de quartier : essayez en direct la vitesse d&apos;encaissement.
             </p>
           </div>
 
-          {/* Side-by-side: Interactive POS Simulator + Thermal Receipt Simulator */}
+          {/* Side-by-side: Multi-Store POS Simulator + Thermal Receipt Simulator */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             <div className="lg:col-span-7">
               <div className="space-y-3 mb-4">
                 <span className="text-xs font-mono uppercase tracking-wider text-zinc-400">
-                  Écran 1 • Terminal Tactile Vendeur
+                  Écran 1 • Terminal Tactile Vendeur (Changez de métier en 1 clic)
                 </span>
               </div>
               <InteractivePosSimulator />
@@ -164,9 +169,75 @@ export default function LandingPage() {
       </section>
 
       {/* =========================================================================
-          SECTION 2: OFFLINE-FIRST RESILIENCE (Dexie.js + SQLite Sync)
+          SECTION 2: WHATSAPP Z-REPORT & MONTHLY REPORTS
          ========================================================================= */}
-      <section id="features" className="py-24 border-b border-zinc-900 bg-zinc-950/40 relative">
+      <section id="whatsapp" className="py-24 border-b border-zinc-900 bg-zinc-950/40 relative">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold text-emerald-400 mb-4">
+              <MessageSquare className="h-3.5 w-3.5" />
+              Clôtures Quotidiennes Automatisées
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
+              La tranquillité d&apos;esprit à chaque fin de journée
+            </h2>
+            <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
+              Recevez les totaux de vente, le détail espèces/cartes et les alertes d&apos;anomalies directement sur votre smartphone via WhatsApp sans jamais ouvrir de logiciel.
+            </p>
+          </div>
+
+          <WhatsAppReportSimulator />
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 3: DEEP AI BUSINESS ANALYTICS
+         ========================================================================= */}
+      <section id="ai-advisor" className="py-24 border-b border-zinc-900 relative">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 rounded-full border border-purple-500/20 bg-purple-500/10 px-3.5 py-1 text-xs font-semibold text-purple-300 mb-4">
+              <Sparkles className="h-3.5 w-3.5" />
+              Conseiller Financier &amp; Prédictif IA
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
+              Votre directeur financier personnel disponible 24h/24
+            </h2>
+            <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
+              Analysez la rentabilité réelle de votre commerce, surveillez le carnet de crédit et recevez des recommandations d&apos;achat précises basées sur vos ventes réelles.
+            </p>
+          </div>
+
+          <AiAnalyticsSimulator />
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 4: DATA MIGRATION SIMULATOR (Caissa, POSNEX, Excel)
+         ========================================================================= */}
+      <section id="migration" className="py-24 border-b border-zinc-900 bg-zinc-950/40 relative">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-3.5 py-1 text-xs font-semibold text-sky-400 mb-4">
+              <Database className="h-3.5 w-3.5" />
+              Migration 100% Sécurisée
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
+              Passez à KASPI POS en 2 minutes chrono
+            </h2>
+            <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
+              Aucune saisie manuelle. Importez votre fichier Excel ou l&apos;export de votre ancien logiciel de caisse : nos robots se chargent de mapper les familles, les prix et les codes-barres.
+            </p>
+          </div>
+
+          <DataMigrationSimulator />
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 5: OFFLINE-FIRST RESILIENCE (Dexie.js + SQLite Sync)
+         ========================================================================= */}
+      <section id="features" className="py-24 border-b border-zinc-900 relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3.5 py-1 text-xs font-semibold text-amber-400 mb-4">
@@ -186,9 +257,9 @@ export default function LandingPage() {
       </section>
 
       {/* =========================================================================
-          SECTION 3: GEMINI VISION AI PRODUCT SCANNER
+          SECTION 6: GEMINI VISION AI PRODUCT SCANNER
          ========================================================================= */}
-      <section id="ai" className="py-24 border-b border-zinc-900 relative">
+      <section id="ai" className="py-24 border-b border-zinc-900 bg-zinc-950/40 relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 rounded-full border border-purple-500/20 bg-purple-500/10 px-3.5 py-1 text-xs font-semibold text-purple-400 mb-4">
@@ -208,9 +279,9 @@ export default function LandingPage() {
       </section>
 
       {/* =========================================================================
-          SECTION 4: LOCAL GPU & WEBGPU ENGINE (Zero Server Cost, 100% Privacy)
+          SECTION 7: LOCAL GPU & WEBGPU ENGINE (Zero Server Cost, 100% Privacy)
          ========================================================================= */}
-      <section className="py-24 border-b border-zinc-900 bg-zinc-950/40 relative">
+      <section className="py-24 border-b border-zinc-900 relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold text-emerald-400 mb-4">
@@ -230,9 +301,9 @@ export default function LandingPage() {
       </section>
 
       {/* =========================================================================
-          SECTION 5: ENTERPRISE MULTI-STORE CHAIN PROOF
+          SECTION 8: ENTERPRISE MULTI-STORE CHAIN PROOF
          ========================================================================= */}
-      <section id="enterprise" className="py-24 border-b border-zinc-900 relative">
+      <section id="enterprise" className="py-24 border-b border-zinc-900 bg-zinc-950/40 relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3.5 py-1 text-xs font-semibold text-blue-400 mb-4">
@@ -252,9 +323,9 @@ export default function LandingPage() {
       </section>
 
       {/* =========================================================================
-          SECTION 6: DEVICE-BASED PRICING MODEL
+          SECTION 9: DEVICE-BASED PRICING MODEL
          ========================================================================= */}
-      <section id="pricing" className="py-24 border-b border-zinc-900 bg-zinc-950/60 relative">
+      <section id="pricing" className="py-24 border-b border-zinc-900 relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1 text-xs font-semibold text-zinc-300 mb-4">
@@ -276,7 +347,7 @@ export default function LandingPage() {
       {/* =========================================================================
           FAQ SECTION
          ========================================================================= */}
-      <section className="py-24 border-b border-zinc-900 relative">
+      <section className="py-24 border-b border-zinc-900 bg-zinc-950/40 relative">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-3.5 py-1 text-xs font-medium text-zinc-400 mb-4">
