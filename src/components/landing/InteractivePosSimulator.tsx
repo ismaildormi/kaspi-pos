@@ -15,7 +15,6 @@ import {
   Shirt,
   ShoppingCart,
   Store,
-  Layers,
   MapPin,
 } from "lucide-react";
 
@@ -35,7 +34,6 @@ interface Product {
   price: number;
   category: string;
   image: string;
-  badge?: string;
 }
 
 const RESTAURANT_TABLES: TableInfo[] = [
@@ -65,8 +63,7 @@ const VERTICAL_CATALOGS: Record<
         barcode: "6111002000888",
         price: 42.0,
         category: "Produits Frais",
-        badge: "Pack Éco",
-        image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=600&q=80",
+        image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&q=80&w=400",
       },
       {
         id: "sm-2",
@@ -74,8 +71,7 @@ const VERTICAL_CATALOGS: Record<
         barcode: "6111003450912",
         price: 85.0,
         category: "Épicerie Salée",
-        badge: "Essentiel",
-        image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80",
+        image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&q=80&w=400",
       },
       {
         id: "sm-3",
@@ -83,8 +79,7 @@ const VERTICAL_CATALOGS: Record<
         barcode: "5410076402319",
         price: 72.0,
         category: "Entretien Maison",
-        badge: "Promo",
-        image: "https://images.unsplash.com/photo-1583947215259-38e31be8751f?auto=format&fit=crop&w=600&q=80",
+        image: "https://images.unsplash.com/photo-1583947215259-38e31be8751f?auto=format&fit=crop&q=80&w=400",
       },
       {
         id: "sm-4",
@@ -92,8 +87,7 @@ const VERTICAL_CATALOGS: Record<
         barcode: "5449000000996",
         price: 12.0,
         category: "Boissons Fraîches",
-        badge: "Best-seller",
-        image: "https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=600&q=80",
+        image: "https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&q=80&w=400",
       },
     ],
   },
@@ -107,8 +101,7 @@ const VERTICAL_CATALOGS: Record<
         barcode: "RES-TAC-01",
         price: 38.0,
         category: "Tacos & Wraps",
-        badge: "Populaire",
-        image: "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?auto=format&fit=crop&w=600&q=80",
+        image: "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?auto=format&fit=crop&q=80&w=400",
       },
       {
         id: "res-2",
@@ -116,8 +109,7 @@ const VERTICAL_CATALOGS: Record<
         barcode: "RES-PIZ-02",
         price: 45.0,
         category: "Pizzas Artisanales",
-        badge: "Chef",
-        image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80",
+        image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=400",
       },
       {
         id: "res-3",
@@ -125,8 +117,7 @@ const VERTICAL_CATALOGS: Record<
         barcode: "RES-BUR-03",
         price: 40.0,
         category: "Burgers Maison",
-        badge: "Double Steak",
-        image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
+        image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400",
       },
       {
         id: "res-4",
@@ -134,8 +125,7 @@ const VERTICAL_CATALOGS: Record<
         barcode: "RES-SOD-04",
         price: 10.0,
         category: "Boissons",
-        badge: "Glacé",
-        image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80",
+        image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&q=80&w=400",
       },
     ],
   },
@@ -149,36 +139,32 @@ const VERTICAL_CATALOGS: Record<
         name: "Sneakers Urban Street Edition",
         barcode: "CL-SNK-01",
         price: 280.0,
-        category: "Sneakers Homme",
-        badge: "Nouvelle Collec",
-        image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80",
+        category: "Sneakers",
+        image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=400",
       },
       {
         id: "cl-2",
         name: "T-Shirt Coton Bio Coupe Regular",
         barcode: "CL-TSH-02",
         price: 95.0,
-        category: "T-Shirts & Polos",
-        badge: "100% Coton",
-        image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80",
+        category: "T-Shirts",
+        image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=400",
       },
       {
         id: "cl-3",
         name: "Jean Denim Slim Stretch",
         barcode: "CL-JEA-03",
         price: 190.0,
-        category: "Denim & Pantalons",
-        badge: "Confort Fit",
-        image: "https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=600&q=80",
+        category: "Denim",
+        image: "https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&q=80&w=400",
       },
       {
         id: "cl-4",
         name: "Casquette Vintage KASPI Edition",
         barcode: "CL-CAP-04",
         price: 65.0,
-        category: "Accessoires Mode",
-        badge: "Édition Limitée",
-        image: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80",
+        category: "Accessoires",
+        image: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&q=80&w=400",
       },
     ],
   },
@@ -191,9 +177,8 @@ const VERTICAL_CATALOGS: Record<
         name: "Huile de Table Lesieur 1L",
         barcode: "6111003450110",
         price: 18.0,
-        category: "Essentiel Cuisine",
-        badge: "Incontournable",
-        image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80",
+        category: "Épicerie",
+        image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&q=80&w=400",
       },
       {
         id: "gr-2",
@@ -201,26 +186,23 @@ const VERTICAL_CATALOGS: Record<
         barcode: "6111035000121",
         price: 6.0,
         category: "Eaux & Boissons",
-        badge: "Pack Frais",
-        image: "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80",
+        image: "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?auto=format&fit=crop&q=80&w=400",
       },
       {
         id: "gr-3",
         name: "Biscuits Bimo Tagger Chocolat",
         barcode: "6111245000456",
         price: 3.0,
-        category: "Goûter & Confiserie",
-        badge: "Favori Enfants",
-        image: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=600&q=80",
+        category: "Goûter",
+        image: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&q=80&w=400",
       },
       {
         id: "gr-4",
         name: "Pain Rond Frais Traditionnel",
         barcode: "6111880000100",
         price: 1.5,
-        category: "Boulangerie Quotidienne",
-        badge: "Frais du Matin",
-        image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80",
+        category: "Boulangerie",
+        image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=400",
       },
     ],
   },
@@ -452,7 +434,7 @@ export function InteractivePosSimulator() {
         </div>
       </div>
 
-      {/* Grid: Shelf on Left (With Real Photos), Cart on Right */}
+      {/* Grid: Shelf on Left (With Real Photos & Structured Clean Layout), Cart on Right */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Quick Access Catalog with Real Imagery (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
@@ -472,41 +454,35 @@ export function InteractivePosSimulator() {
               <button
                 key={p.id}
                 onClick={() => handleScanProduct(p)}
-                className="group relative flex flex-col justify-end min-h-[140px] rounded-2xl border border-zinc-800/90 overflow-hidden text-left transition hover:border-zinc-500 hover:scale-[1.01] shadow-lg p-3.5"
+                className="group flex flex-col rounded-2xl border border-zinc-800/90 bg-zinc-900/60 overflow-hidden text-left transition hover:border-zinc-600 hover:bg-zinc-900 shadow-md p-3"
               >
-                {/* Real High-Resolution Unsplash Image Background with overlay */}
-                <img
-                  src={p.image}
-                  alt={p.name}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-zinc-950/30" />
-
-                {/* Top Badge */}
-                <div className="relative z-10 flex items-center justify-between w-full mb-auto pb-4">
-                  <span className="rounded-full bg-black/60 backdrop-blur-md px-2 py-0.5 text-[9px] font-mono uppercase text-zinc-300 tracking-wider border border-white/10">
+                {/* 1. Image on top (fixed height, clean crop, subtle gradient overlay) */}
+                <div className="relative w-full h-28 sm:h-32 rounded-xl overflow-hidden bg-zinc-950 mb-3">
+                  <img
+                    src={p.image}
+                    alt={p.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  
+                  {/* Subtle category badge at bottom right of image (never overlaps text) */}
+                  <span className="absolute bottom-2 right-2 rounded-full bg-black/60 backdrop-blur-md border border-white/10 px-2 py-0.5 text-[9px] font-mono text-zinc-300">
                     {p.category}
                   </span>
-                  {p.badge && (
-                    <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] font-bold text-black shadow-xs">
-                      {p.badge}
-                    </span>
-                  )}
                 </div>
 
-                {/* Bottom Content: Name & Price */}
-                <div className="relative z-10 w-full">
-                  <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-zinc-100 transition line-clamp-1 drop-shadow-md">
-                    {p.name}
-                  </h4>
+                {/* 2. Product Title (line-clamp-1, no overlap) */}
+                <h4 className="font-bold text-xs sm:text-sm text-white group-hover:text-zinc-200 transition line-clamp-1 mb-2">
+                  {p.name}
+                </h4>
 
-                  <div className="mt-2 flex items-center justify-between pt-2 border-t border-white/15">
-                    <span className="text-sm sm:text-base font-black text-white font-mono drop-shadow">
-                      {p.price.toFixed(2)} <span className="text-xs font-normal text-zinc-300">DH</span>
-                    </span>
-                    <div className="h-6 w-6 rounded-lg bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition">
-                      <Plus className="h-3.5 w-3.5" />
-                    </div>
+                {/* 3. Price and Add button at the bottom, perfectly aligned */}
+                <div className="mt-auto flex items-center justify-between pt-2 border-t border-zinc-800/80">
+                  <span className="font-mono font-black text-sm sm:text-base text-white">
+                    {p.price.toFixed(2)} <span className="text-xs font-normal text-zinc-400">DH</span>
+                  </span>
+                  <div className="h-6 w-6 rounded-lg bg-zinc-800 border border-zinc-700/80 flex items-center justify-center text-zinc-300 group-hover:bg-white group-hover:text-black group-hover:border-white transition">
+                    <Plus className="h-3.5 w-3.5" />
                   </div>
                 </div>
               </button>

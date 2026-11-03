@@ -31,6 +31,7 @@ import {
   HelpCircle,
   MessageSquare,
   FileSpreadsheet,
+  Globe,
 } from "lucide-react";
 
 export default function LandingPage() {
@@ -40,7 +41,7 @@ export default function LandingPage() {
       <Navbar />
 
       {/* =========================================================================
-          HERO SECTION: 2027 AESTHETIC (Deep Black, Glowing Gradient, Massive Typography)
+          HERO SECTION: 2027 AESTHETIC (Global Scale - Born in Morocco, Built for the World)
          ========================================================================= */}
       <section className="relative overflow-hidden pt-32 pb-24 md:pt-40 md:pb-36 border-b border-zinc-900/60">
         {/* Futuristic Subtle Radial Glows */}
@@ -48,12 +49,12 @@ export default function LandingPage() {
         <div className="absolute top-1/3 right-10 w-[500px] h-[400px] bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.08),rgba(0,0,0,0)_70%)] pointer-events-none blur-3xl" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          {/* Subtle Announcement Pill */}
+          {/* Global Announcement Pill */}
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-medium text-zinc-300 mb-8 backdrop-blur-md shadow-inner transition hover:border-white/20">
             <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="font-mono text-zinc-400">KASPI POS 2.0</span>
             <span className="text-zinc-600">•</span>
-            <span className="text-zinc-200">Système de Caisse &amp; ERP de Nouvelle Génération au Maroc</span>
+            <span className="text-zinc-200">Née au Maroc, Conçue pour le Monde • Born in Morocco, Built for the World</span>
           </div>
 
           {/* Transparent Logo */}
@@ -76,10 +77,10 @@ export default function LandingPage() {
             </span>
           </h1>
 
-          {/* Hero Subtitle */}
-          <p className="mx-auto mt-6 max-w-2xl text-base sm:text-lg text-zinc-400 leading-relaxed text-pretty">
-            Conçue pour les épiceries, commerces de détail et grandes chaînes marocaines.
-            Fonctionne à 100% hors-ligne, certifiée DGI &amp; ICE, avec impression thermique arabe native et IA locale sur GPU.
+          {/* Hero Subtitle with Global Ambition */}
+          <p className="mx-auto mt-6 max-w-3xl text-base sm:text-lg text-zinc-400 leading-relaxed text-pretty">
+            Le système POS ultra-rapide qui fonctionne 100% hors-ligne, partout dans le monde.
+            Conforme à la réglementation marocaine (DGI Art. 145 &amp; ICE), à la norme française NF525, et prêt pour l&apos;expansion internationale avec support natif multi-devises (MAD, EUR, USD, SAR, AED) et multi-langues.
           </p>
 
           {/* 2027 Tech CTA Buttons */}
@@ -112,13 +113,13 @@ export default function LandingPage() {
           {/* Trust badges */}
           <div className="mt-10 flex flex-wrap justify-center items-center gap-6 text-xs text-zinc-500 font-mono">
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Sans engagement
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> 100% Offline (SQLite Local)
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Base de données SQLite locale
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Conforme DGI Maroc &amp; NF525
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Conformité DGI Art. 145
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Multi-Devises &amp; Multi-Langues
             </span>
             <span className="flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Clôture quotidienne WhatsApp
@@ -135,13 +136,13 @@ export default function LandingPage() {
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-3.5 py-1 text-xs font-semibold text-sky-400 mb-4">
               <Sparkles className="h-3.5 w-3.5" />
-              Simulateur Métier Multi-Commerces
+              Simulateur Métier Multi-Commerces &amp; International
             </div>
             <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
-              Une caisse taillée sur mesure pour chaque activité au Maroc
+              Une caisse modulaire adaptée à chaque métier et à chaque pays
             </h2>
             <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
-              Supermarché, restaurant avec gestion des tables, boutique de prêt-à-porter avec tailles ou épicerie de quartier : essayez en direct la vitesse d&apos;encaissement.
+              Supermarché, restaurant avec gestion de plan de salle et tables, boutique de prêt-à-porter avec tailles ou commerce de proximité : testez en direct la vitesse d&apos;encaissement instantanée sous 12ms.
             </p>
           </div>
 
@@ -159,7 +160,7 @@ export default function LandingPage() {
             <div className="lg:col-span-5">
               <div className="space-y-3 mb-4">
                 <span className="text-xs font-mono uppercase tracking-wider text-zinc-400">
-                  Écran 2 • Ticket Thermique Conforme DGI &amp; Arabe
+                  Écran 2 • Ticket Thermique Conforme DGI, NF525 &amp; Arabe
                 </span>
               </div>
               <ReceiptSimulator />
@@ -213,7 +214,7 @@ export default function LandingPage() {
       </section>
 
       {/* =========================================================================
-          SECTION 4: DATA MIGRATION SIMULATOR (Caissa, POSNEX, Excel)
+          SECTION 4: DATA MIGRATION SIMULATOR (Caissa, POSNEX, Excel, Sage)
          ========================================================================= */}
       <section id="migration" className="py-24 border-b border-zinc-900 bg-zinc-950/40 relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -226,7 +227,7 @@ export default function LandingPage() {
               Passez à KASPI POS en 2 minutes chrono
             </h2>
             <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
-              Aucune saisie manuelle. Importez votre fichier Excel ou l&apos;export de votre ancien logiciel de caisse : nos robots se chargent de mapper les familles, les prix et les codes-barres.
+              Aucune saisie manuelle. Importez votre fichier Excel ou l&apos;export de votre ancien logiciel de caisse : nos algorithmes se chargent de mapper les familles, les prix et les codes-barres sans perte de crédit client.
             </p>
           </div>
 
@@ -248,7 +249,7 @@ export default function LandingPage() {
               Votre caisse ne s&apos;arrête JAMAIS. Même sans Internet.
             </h2>
             <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
-              Coupure de fibre IAM, panne 4G ou coupure de courant sur le routeur ? KASPI POS enregistre chaque vente dans sa base locale chiffrée et synchronise automatiquement dès le retour du signal.
+              Coupure de réseau, panne 4G/5G ou problème de routeur ? KASPI POS enregistre chaque vente dans sa base locale chiffrée et synchronise automatiquement dès le retour du signal.
             </p>
           </div>
 
@@ -301,20 +302,20 @@ export default function LandingPage() {
       </section>
 
       {/* =========================================================================
-          SECTION 8: ENTERPRISE MULTI-STORE CHAIN PROOF
+          SECTION 8: ENTERPRISE MULTI-STORE CHAIN PROOF (Global Franchises)
          ========================================================================= */}
       <section id="enterprise" className="py-24 border-b border-zinc-900 bg-zinc-950/40 relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3.5 py-1 text-xs font-semibold text-blue-400 mb-4">
               <Store className="h-3.5 w-3.5" />
-              Échelle Réseau Multi-Points de Vente
+              Échelle Réseau Multi-Points de Vente &amp; Franchises
             </div>
             <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
-              De l&apos;épicerie de quartier aux chaînes de 50+ magasins
+              De l&apos;épicerie de quartier aux chaînes internationales de 50+ magasins
             </h2>
             <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
-              Supervisez Casablanca, Rabat, Marrakech et Tanger depuis un seul tableau de bord unifié. Gestion centralisée des stocks, transferts inter-boutiques et conformité DGI infaillible.
+              Supervisez Casablanca, Paris, Dubaï et Madrid depuis un seul tableau de bord unifié. Gestion centralisée des stocks, transferts inter-boutiques, consolidation multi-devises et conformité fiscale internationale.
             </p>
           </div>
 
@@ -323,20 +324,20 @@ export default function LandingPage() {
       </section>
 
       {/* =========================================================================
-          SECTION 9: DEVICE-BASED PRICING MODEL
+          SECTION 9: DEVICE-BASED PRICING MODEL (Multi-Currency Ready)
          ========================================================================= */}
       <section id="pricing" className="py-24 border-b border-zinc-900 relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1 text-xs font-semibold text-zinc-300 mb-4">
               <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              Tarification Transparente par Caisse
+              Tarification Transparente par Caisse • Multi-Devises
             </div>
             <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
               Payez uniquement pour le matériel que vous utilisez
             </h2>
             <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
-              100 MAD / mois pour votre première caisse, puis 50 MAD / caisse supplémentaire. Pas de frais cachés, pas de pourcentage prélevé sur votre chiffre d&apos;affaires.
+              100 MAD / mois (~10 $ / 10 €) pour votre première caisse, puis 50 MAD (~5 $ / 5 €) par caisse supplémentaire. Pas de frais cachés, aucune commission prélevée sur votre chiffre d&apos;affaires.
             </p>
           </div>
 
@@ -371,10 +372,10 @@ export default function LandingPage() {
 
             <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6">
               <h4 className="text-base font-bold text-white mb-2">
-                Est-ce conforme aux exigences de la Direction Générale des Impôts (DGI Maroc) ?
+                Est-ce conforme aux réglementations fiscales (DGI Maroc, NF525 France) ?
               </h4>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                Absolument. KASPI POS applique une numérotation continue sans trou (gap-less sequential numbering) protégée au niveau de la base de données. Chaque facture ou ticket mentionne l&apos;ICE, l&apos;IF, le RC, la patente et inclut un QR code de vérification conforme aux directives fiscales en vigueur.
+                Absolument. KASPI POS applique une numérotation continue sans trou (gap-less sequential numbering) protégée au niveau de la base de données. Chaque facture ou ticket mentionne les identifiants légaux (ICE, IF, RC, TVA) et inclut un QR code de vérification conforme aux directives fiscales en vigueur au Maroc et à l&apos;international.
               </p>
             </div>
 
@@ -383,16 +384,16 @@ export default function LandingPage() {
                 Quelles imprimantes thermiques sont compatibles ?
               </h4>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                Toutes les imprimantes ESC/POS du marché (Epson, Xprinter, Rongta, Bixolon, etc.) en format 80mm et 58mm, connectées en USB, Réseau Ethernet (LAN) ou Bluetooth. Grâce à notre moteur Rust natif HarfBuzz, les textes en langue arabe sont mis en forme correctement de droite à gauche avec liaison parfaite des lettres.
+                Toutes les imprimantes ESC/POS du marché (Epson, Xprinter, Rongta, Bixolon, etc.) en format 80mm et 58mm, connectées en USB, Réseau Ethernet (LAN) ou Bluetooth. Grâce à notre moteur Rust natif HarfBuzz, les textes en langue arabe et en caractères latins sont mis en forme correctement avec découpe automatique et ouverture tiroir.
               </p>
             </div>
 
             <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6">
               <h4 className="text-base font-bold text-white mb-2">
-                Puis-je importer mon catalogue existant depuis un fichier Excel ?
+                Le système gère-t-il plusieurs devises et langues ?
               </h4>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                Oui. Notre module d&apos;importation asynchrone permet de charger jusqu&apos;à 10 000 articles en un clic via un fichier CSV ou Excel. Vous pouvez également utiliser notre scanner d&apos;intelligence artificielle pour ajouter de nouveaux articles par simple photo de l&apos;emballage.
+                Oui. KASPI POS prend en charge le dirham marocain (MAD), l&apos;euro (EUR), le dollar (USD), le riyal saoudien (SAR) et le dirham émirati (AED). L&apos;interface bascule instantanément entre Français, Arabe et Anglais selon les préférences du caissier.
               </p>
             </div>
           </div>
