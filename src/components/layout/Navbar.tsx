@@ -30,9 +30,6 @@ export function Navbar() {
           <a href="#features" className="transition hover:text-white">
             Features
           </a>
-          <a href="#simulator" className="transition hover:text-white">
-            Simulateur POS
-          </a>
           <a href="#whatsapp" className="transition hover:text-white">
             Rapports WhatsApp
           </a>

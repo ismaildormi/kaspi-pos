@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { InteractivePosSimulator } from "@/components/landing/InteractivePosSimulator";
-import { ReceiptSimulator } from "@/components/landing/ReceiptSimulator";
 import { DataMigrationSimulator } from "@/components/landing/DataMigrationSimulator";
 import { WhatsAppReportSimulator } from "@/components/landing/WhatsAppReportSimulator";
 import { AiAnalyticsSimulator } from "@/components/landing/AiAnalyticsSimulator";
@@ -94,11 +92,11 @@ export default function LandingPage() {
             </Link>
 
             <a
-              href="#simulator"
+              href="#features"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-7 py-4 text-sm font-semibold text-zinc-200 backdrop-blur-md transition-all hover:bg-white/[0.1] hover:border-white/25 active:scale-95"
             >
-              <Zap className="h-4 w-4 text-amber-400" />
-              Tester la Simulation Interactive
+              <Sparkles className="h-4 w-4 text-amber-400" />
+              Découvrir les Fonctionnalités
             </a>
 
             <Link
@@ -129,51 +127,10 @@ export default function LandingPage() {
       </section>
 
       {/* =========================================================================
-          SECTION 1: MULTI-STORE POS TERMINAL (Supermarket, Restaurant, Clothing, Grocery)
+          SECTION 1: WHATSAPP Z-REPORT & MONTHLY REPORTS
          ========================================================================= */}
-      <section id="simulator" className="py-24 border-b border-zinc-900 relative">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-3.5 py-1 text-xs font-semibold text-sky-400 mb-4">
-              <Sparkles className="h-3.5 w-3.5" />
-              Simulateur Métier Multi-Commerces &amp; International
-            </div>
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
-              Une caisse modulaire adaptée à chaque métier et à chaque pays
-            </h2>
-            <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
-              Supermarché, restaurant avec gestion de plan de salle et tables, boutique de prêt-à-porter avec tailles ou commerce de proximité : testez en direct la vitesse d&apos;encaissement instantanée sous 12ms.
-            </p>
-          </div>
-
-          {/* Side-by-side: Multi-Store POS Simulator + Thermal Receipt Simulator */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            <div className="lg:col-span-7">
-              <div className="space-y-3 mb-4">
-                <span className="text-xs font-mono uppercase tracking-wider text-zinc-400">
-                  Écran 1 • Terminal Tactile Vendeur (Changez de métier en 1 clic)
-                </span>
-              </div>
-              <InteractivePosSimulator />
-            </div>
-
-            <div className="lg:col-span-5">
-              <div className="space-y-3 mb-4">
-                <span className="text-xs font-mono uppercase tracking-wider text-zinc-400">
-                  Écran 2 • Ticket Thermique Conforme DGI, NF525 &amp; Arabe
-                </span>
-              </div>
-              <ReceiptSimulator />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          SECTION 2: WHATSAPP Z-REPORT & MONTHLY REPORTS
-         ========================================================================= */}
-      <section id="whatsapp" className="py-24 border-b border-zinc-900 bg-zinc-950/40 relative">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section id="features" className="py-24 border-b border-zinc-900 bg-zinc-950/40 relative">
+        <div id="whatsapp" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold text-emerald-400 mb-4">
               <MessageSquare className="h-3.5 w-3.5" />
@@ -236,9 +193,9 @@ export default function LandingPage() {
       </section>
 
       {/* =========================================================================
-          SECTION 5: OFFLINE-FIRST RESILIENCE (Dexie.js + SQLite Sync)
+          SECTION 4: OFFLINE-FIRST RESILIENCE (Dexie.js + SQLite Sync)
          ========================================================================= */}
-      <section id="features" className="py-24 border-b border-zinc-900 relative">
+      <section id="offline" className="py-24 border-b border-zinc-900 relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3.5 py-1 text-xs font-semibold text-amber-400 mb-4">
