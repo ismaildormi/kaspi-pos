@@ -14,7 +14,7 @@ export function ReceiptSimulator() {
   };
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center relative z-10 w-full overflow-hidden">
       {/* Width Switcher */}
       <div className="flex items-center gap-2 mb-4 bg-zinc-900 border border-zinc-800 p-1 rounded-full text-xs font-mono">
         <button
@@ -48,7 +48,7 @@ export function ReceiptSimulator() {
       </div>
 
       {/* Printer Slot Mouth (Black slit) */}
-      <div className="w-full max-w-sm h-2 bg-black border-x border-zinc-800 relative z-20 shadow-inner" />
+      <div className="w-full max-w-sm h-2 bg-black border-x border-zinc-800 relative z-10 shadow-inner" />
 
       {/* Thermal Receipt Paper (Realistic white roll paper with slight grain) */}
       <div

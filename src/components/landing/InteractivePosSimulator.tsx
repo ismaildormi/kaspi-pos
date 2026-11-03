@@ -117,7 +117,7 @@ const VERTICAL_CATALOGS: Record<
         barcode: "RES-BUR-03",
         price: 40.0,
         category: "Burgers Maison",
-        image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400",
+        image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=400",
       },
       {
         id: "res-4",
@@ -155,16 +155,16 @@ const VERTICAL_CATALOGS: Record<
         name: "Jean Denim Slim Stretch",
         barcode: "CL-JEA-03",
         price: 190.0,
-        category: "Denim",
-        image: "https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&q=80&w=400",
+        category: "Denim Jeans",
+        image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&q=80&w=400",
       },
       {
         id: "cl-4",
         name: "Casquette Vintage KASPI Edition",
         barcode: "CL-CAP-04",
         price: 65.0,
-        category: "Accessoires",
-        image: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&q=80&w=400",
+        category: "Casquettes",
+        image: "https://images.unsplash.com/photo-1575428652377-a2d80e2277fc?auto=format&fit=crop&q=80&w=400",
       },
     ],
   },
@@ -230,6 +230,11 @@ export function InteractivePosSimulator() {
   const total = subtotal;
   const changeDue = Math.max(0, tenderAmount - total);
 
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src = "/logo.png";
+    e.currentTarget.className = "w-16 h-16 object-contain m-auto opacity-70 p-2";
+  };
+
   const handleVerticalSwitch = (vertical: VerticalType) => {
     setActiveVertical(vertical);
     const newProducts = VERTICAL_CATALOGS[vertical].products;
@@ -279,14 +284,14 @@ export function InteractivePosSimulator() {
   };
 
   return (
-    <div className="relative w-full rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 shadow-2xl backdrop-blur-xl overflow-hidden">
+    <div className="relative z-10 w-full rounded-3xl border border-zinc-800 bg-zinc-950/90 p-5 sm:p-7 shadow-2xl backdrop-blur-xl overflow-hidden">
       {/* Laser Scanning Line Animation */}
       {isScanning && (
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.9)] z-30 pointer-events-none" />
       )}
 
       {/* TOP MULTI-STORE VERTICAL SELECTOR TABS */}
-      <div className="mb-5 pb-4 border-b border-zinc-800/80">
+      <div className="mb-6 pb-4 border-b border-zinc-800/80">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -299,7 +304,7 @@ export function InteractivePosSimulator() {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {(
             [
               { key: "supermarket", icon: ShoppingCart, label: "🛒 Supermarché" },
@@ -399,7 +404,7 @@ export function InteractivePosSimulator() {
       </div>
 
       {/* POS Terminal Bar */}
-      <div className="flex flex-wrap items-center justify-between border-b border-zinc-800/80 pb-3 mb-4 gap-3">
+      <div className="flex flex-wrap items-center justify-between border-b border-zinc-800/80 pb-3 mb-5 gap-3">
         <div className="flex items-center gap-3">
           <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping" />
           <div>
@@ -438,12 +443,12 @@ export function InteractivePosSimulator() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Quick Access Catalog with Real Imagery (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-mono">
-              Articles Réels {currentConfig.label} (Cliquez pour ajouter)
+          <div className="flex items-center justify-between px-1 mb-2 gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-mono truncate">
+              Catalogue • {currentConfig.label}
             </span>
             {lastScannedBarcode && (
-              <span className="text-[11px] font-mono text-zinc-500">
+              <span className="text-[11px] font-mono text-zinc-500 shrink-0">
                 Code: <span className="text-zinc-300">{lastScannedBarcode}</span>
               </span>
             )}
@@ -456,33 +461,34 @@ export function InteractivePosSimulator() {
                 onClick={() => handleScanProduct(p)}
                 className="group flex flex-col rounded-2xl border border-zinc-800/90 bg-zinc-900/60 overflow-hidden text-left transition hover:border-zinc-600 hover:bg-zinc-900 shadow-md p-3"
               >
-                {/* 1. Image on top (fixed height, clean crop, subtle gradient overlay) */}
-                <div className="relative w-full h-28 sm:h-32 rounded-xl overflow-hidden bg-zinc-950 mb-3">
+                {/* 1. Image on top (fixed height, dark zinc container, clean crop, subtle gradient overlay, fallback on error) */}
+                <div className="relative w-full h-32 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/80 mb-3 flex items-center justify-center">
                   <img
                     src={p.image}
                     alt={p.name}
+                    onError={handleImageError}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
                   
                   {/* Subtle category badge at bottom right of image (never overlaps text) */}
-                  <span className="absolute bottom-2 right-2 rounded-full bg-black/60 backdrop-blur-md border border-white/10 px-2 py-0.5 text-[9px] font-mono text-zinc-300">
+                  <span className="absolute bottom-2 right-2 rounded-full bg-black/70 backdrop-blur-md border border-white/10 px-2 py-0.5 text-[9px] font-mono text-zinc-300 pointer-events-none">
                     {p.category}
                   </span>
                 </div>
 
-                {/* 2. Product Title (line-clamp-1, no overlap) */}
+                {/* 2. Product Title (line-clamp-1, dedicated row) */}
                 <h4 className="font-bold text-xs sm:text-sm text-white group-hover:text-zinc-200 transition line-clamp-1 mb-2">
                   {p.name}
                 </h4>
 
                 {/* 3. Price and Add button at the bottom, perfectly aligned */}
-                <div className="mt-auto flex items-center justify-between pt-2 border-t border-zinc-800/80">
-                  <span className="font-mono font-black text-sm sm:text-base text-white">
+                <div className="mt-auto flex items-center justify-between pt-2.5 border-t border-zinc-800/80 gap-2">
+                  <span className="font-mono font-black text-sm sm:text-base text-white shrink-0">
                     {p.price.toFixed(2)} <span className="text-xs font-normal text-zinc-400">DH</span>
                   </span>
-                  <div className="h-6 w-6 rounded-lg bg-zinc-800 border border-zinc-700/80 flex items-center justify-center text-zinc-300 group-hover:bg-white group-hover:text-black group-hover:border-white transition">
-                    <Plus className="h-3.5 w-3.5" />
+                  <div className="h-7 w-7 rounded-lg bg-zinc-800 border border-zinc-700/80 flex items-center justify-center text-zinc-300 group-hover:bg-white group-hover:text-black group-hover:border-white transition shrink-0">
+                    <Plus className="h-4 w-4" />
                   </div>
                 </div>
               </button>

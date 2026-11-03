@@ -28,7 +28,7 @@ export default async function LocaleLayout({
     <div
       lang={locale}
       dir={dir}
-      className={`bg-zinc-950 text-white min-h-screen antialiased ${
+      className={`bg-zinc-950 text-white min-h-screen antialiased pt-16 ${
         locale === "ar" ? "font-['Cairo',sans-serif]" : "font-['Inter',sans-serif]"
       }`}
     >
