@@ -4,6 +4,7 @@ import { prisma } from "@/server/db/prisma";
 import { getRequestContext } from "@/server/auth/context";
 import { jsonOk, handleApiError, AppError } from "@/server/http/response";
 import { toPrismaQtyDecimal } from "@/domain/money";
+import { broadcastKitchenTicket } from "@/lib/kds-realtime";
 
 const KDSTicketItemSchema = z.object({
   productId: z.string().uuid().optional(),
@@ -94,6 +95,11 @@ export async function POST(req: NextRequest) {
         items: true,
         table: true,
       },
+    });
+
+    // Broadcast instant Realtime event to all connected KDS displays via Supabase
+    broadcastKitchenTicket(ctx.tenantId, "ticket:created", ticket).catch((err) => {
+      console.warn("[KDS Route] Broadcast error:", err);
     });
 
     return jsonOk({ ticket }, 201);

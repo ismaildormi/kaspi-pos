@@ -29,6 +29,9 @@ This checklist documents every single environment variable required to run KASPI
 | `TRIGGER_API_URL` | Background Jobs | Trigger.dev v3 background task scheduler endpoint | [https://cloud.trigger.dev](https://cloud.trigger.dev) (or self-hosted) | **100% Free** (10k runs/month free) | Optional (Async jobs) |
 | `TRIGGER_SECRET_KEY` | Background Jobs | API Secret key from your Trigger.dev project | [https://cloud.trigger.dev](https://cloud.trigger.dev) | **100% Free** | Optional |
 | `TRIGGER_PROJECT_ID` | Background Jobs | Project identifier from Trigger.dev dashboard | [https://cloud.trigger.dev](https://cloud.trigger.dev) | **100% Free** | Optional |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Cloud | Supabase Project URL (`https://tqoqsgaymygmgqrzddvtu.supabase.co`) | [https://supabase.com/dashboard](https://supabase.com/dashboard) | **100% Free Tier** (1GB storage, 50k Realtime msgs) | **ACTIVE** |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Cloud | Supabase Public Publishable Anon Key for client storage & Realtime subscriptions | [https://supabase.com/dashboard](https://supabase.com/dashboard) | **100% Free Tier** | **ACTIVE** |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Cloud | Supabase Secret Service Role Key for server-side admin operations | [https://supabase.com/dashboard](https://supabase.com/dashboard) | **100% Free Tier** | **ACTIVE** |
 | `R2_ACCESS_KEY_ID` | Object Storage | Cloudflare R2 S3-compatible Access Key ID | [https://dash.cloudflare.com/?to=/:account/r2](https://dash.cloudflare.com/?to=/:account/r2) | **100% Free** (10 GB storage, 10M reads/mo) | Recommended |
 | `R2_SECRET_ACCESS_KEY` | Object Storage | Cloudflare R2 Secret Access Key | [https://dash.cloudflare.com/?to=/:account/r2](https://dash.cloudflare.com/?to=/:account/r2) | **100% Free** | Recommended |
 | `R2_BUCKET_NAME` | Object Storage | R2 Bucket Name (e.g., `kaspi-pos-uploads`) | Cloudflare R2 Dashboard | **100% Free** | Recommended |

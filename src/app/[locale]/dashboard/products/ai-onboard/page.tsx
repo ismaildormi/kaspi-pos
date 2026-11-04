@@ -18,6 +18,7 @@ import {
   Layers,
   Image as ImageIcon,
 } from "lucide-react";
+import { uploadProductImage } from "@/lib/supabase-storage";
 
 interface AIProductData {
   name: string;
@@ -43,6 +44,7 @@ export default function AIProductOnboardPage() {
 
   const [formData, setFormData] = useState<AIProductData | null>(null);
   const [providerInfo, setProviderInfo] = useState<string | null>(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageFile = async (file: File) => {
@@ -54,6 +56,11 @@ export default function AIProductOnboardPage() {
       );
       return;
     }
+
+    // Upload to Supabase Storage in background
+    uploadProductImage(file, "tenant-default")
+      .then((url) => setUploadedImageUrl(url))
+      .catch((err) => console.warn("[Supabase AI Onboard Upload Warning]:", err));
 
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -115,6 +122,7 @@ export default function AIProductOnboardPage() {
             unit: formData.unit,
             taxRate: formData.taxRate,
             description: formData.description,
+            imageUrl: uploadedImageUrl || undefined,
           }),
         });
 
@@ -136,6 +144,7 @@ export default function AIProductOnboardPage() {
 
   const resetForm = () => {
     setImagePreview(null);
+    setUploadedImageUrl(null);
     setFormData(null);
     setErrorMsg(null);
     setSuccessMsg(null);

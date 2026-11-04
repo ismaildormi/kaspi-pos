@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/server/db/prisma";
 import { getRequestContext } from "@/server/auth/context";
 import { jsonOk, handleApiError, AppError } from "@/server/http/response";
+import { broadcastKitchenTicket } from "@/lib/kds-realtime";
 
 const UpdateTicketSchema = z.object({
   status: z.enum(["new", "in_progress", "ready", "served", "canceled"]),
@@ -47,6 +48,11 @@ export async function PATCH(
       include: {
         items: true,
       },
+    });
+
+    // Broadcast update via Supabase Realtime
+    broadcastKitchenTicket(ctx.tenantId, "ticket:updated", updated).catch((err) => {
+      console.warn("[KDS Route] Broadcast update error:", err);
     });
 
     return jsonOk({ ticket: updated });

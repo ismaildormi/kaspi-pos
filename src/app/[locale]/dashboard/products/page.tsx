@@ -17,8 +17,10 @@ import {
   LayoutGrid,
   List,
   Barcode,
+  Upload,
 } from "lucide-react";
 import { generateProductImageUrl } from "@/lib/pollinations";
+import { uploadProductImage } from "@/lib/supabase-storage";
 
 export interface CatalogProduct {
   id: string;
@@ -56,6 +58,8 @@ export default function ProductsListPage() {
     useState<CatalogProduct | null>(null);
   const [newImageUrl, setNewImageUrl] = useState("");
   const [isSavingImage, setIsSavingImage] = useState(false);
+  const [isUploadingToSupabase, setIsUploadingToSupabase] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Modal State: Edit Price
   const [priceModalProduct, setPriceModalProduct] =
@@ -173,6 +177,25 @@ export default function ProductsListPage() {
     } finally {
       setIsSavingImage(false);
       setUpdatingProductId(null);
+    }
+  };
+
+  const handleFileUploadToSupabase = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !imageModalProduct) return;
+
+    setIsUploadingToSupabase(true);
+    const toastId = toast.loading("Téléversement vers Supabase Storage...");
+    try {
+      const publicUrl = await uploadProductImage(file, "tenant-default");
+      setNewImageUrl(publicUrl);
+      toast.success("Image uploadée sur Supabase Storage avec succès !", { id: toastId });
+    } catch (err: any) {
+      console.error("[Supabase Storage Error]:", err);
+      toast.error(err.message || "Échec de l'upload vers Supabase", { id: toastId });
+    } finally {
+      setIsUploadingToSupabase(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -649,6 +672,48 @@ export default function ProductsListPage() {
             </div>
 
             <form onSubmit={handleSaveCustomImageUrl} className="space-y-4">
+              {/* Direct Supabase File Upload Option */}
+              <div className="rounded-xl border border-dashed border-zinc-700 bg-zinc-950/60 p-4 text-center">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUploadToSupabase}
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="hidden"
+                  id="supabase-product-file"
+                />
+                <label
+                  htmlFor="supabase-product-file"
+                  className="flex flex-col items-center justify-center gap-2 cursor-pointer group"
+                >
+                  <div className="h-10 w-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-white group-hover:border-zinc-600 transition">
+                    {isUploadingToSupabase ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+                    ) : (
+                      <Upload className="w-5 h-5" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-white group-hover:underline">
+                      {isUploadingToSupabase
+                        ? "جاري الرفع إلى Supabase..."
+                        : "رفع صورة من جهازك (Supabase Storage)"}
+                    </span>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">
+                      PNG, JPG, WEBP jusqu&apos;à 5MB • Bucket: product-images
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-zinc-800"></div>
+                <span className="flex-shrink mx-3 text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">
+                  أو رابط مباشر
+                </span>
+                <div className="flex-grow border-t border-zinc-800"></div>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 mb-2">
                   رابط الصورة (Image URL)
@@ -657,8 +722,7 @@ export default function ProductsListPage() {
                   type="url"
                   value={newImageUrl}
                   onChange={(e) => setNewImageUrl(e.target.value)}
-                  placeholder="https://example.com/product.jpg"
-                  autoFocus
+                  placeholder="https://tqoqsgaymygmgqrzddvtu.supabase.co/storage/..."
                   className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 focus:border-white rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none"
                 />
               </div>
