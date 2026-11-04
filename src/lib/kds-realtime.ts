@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin } from "./supabase";
+import { getSupabaseAdmin } from "./supabase-server";
 
 export interface KitchenTicketEventPayload {
   event: "ticket:created" | "ticket:updated" | "ticket:deleted";
@@ -19,9 +19,14 @@ export async function broadcastKitchenTicket(
   ticket: any
 ): Promise<void> {
   try {
+    const admin = getSupabaseAdmin();
+    if (!admin) {
+      console.warn("[Supabase Realtime] Supabase admin client unavailable; skipping broadcast.");
+      return;
+    }
+
     const channelName = `kds-tenant-${tenantId}`;
-    const client = supabaseAdmin || supabase;
-    const channel = client.channel(channelName);
+    const channel = admin.channel(channelName);
 
     await channel.send({
       type: "broadcast",

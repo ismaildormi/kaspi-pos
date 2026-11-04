@@ -97,17 +97,19 @@ export async function uploadAsset(options: UploadOptions): Promise<UploadResult>
   }
 
   // 3. Priority 3: Supabase Storage Free Tier (1 GB)
-  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (supabaseUrl && supabaseKey) {
     try {
-      const bucket = process.env.SUPABASE_STORAGE_BUCKET || "products";
+      const bucket = process.env.SUPABASE_STORAGE_BUCKET || "product-images";
       const path = `${tenantId}/${Date.now()}-${fileName}`;
 
       const res = await fetch(
-        `${process.env.SUPABASE_URL}/storage/v1/object/${bucket}/${path}`,
+        `${supabaseUrl}/storage/v1/object/${bucket}/${path}`,
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+            Authorization: `Bearer ${supabaseKey}`,
             "Content-Type": contentType,
           },
           body: buffer as any,
@@ -115,7 +117,7 @@ export async function uploadAsset(options: UploadOptions): Promise<UploadResult>
       );
 
       if (res.ok) {
-        const publicUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+        const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
         return {
           url: publicUrl,
           provider: "supabase",
