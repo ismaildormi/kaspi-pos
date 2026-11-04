@@ -7,6 +7,10 @@ import {
   AlertTriangle,
   ArrowDownUp,
   Package,
+  Sparkles,
+  TrendingDown,
+  Clock,
+  ShoppingCart,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +37,57 @@ export default async function InventoryPage() {
     take: 10,
   });
 
+  // 3. AI Predictive Stockout Velocity (Last 14 days sales velocity) - Hidden Gem 1
+  const fourteenDaysAgo = new Date();
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+  const salesVelocity = await prisma.saleItem.groupBy({
+    by: ["productId"],
+    where: {
+      tenantId,
+      createdAt: { gte: fourteenDaysAgo },
+    },
+    _sum: {
+      quantity: true,
+    },
+  });
+
+  const velocityMap = new Map<string, number>();
+  salesVelocity.forEach((sv) => {
+    if (sv.productId) {
+      velocityMap.set(sv.productId, Number(sv._sum.quantity || 0));
+    }
+  });
+
+  const predictedStockouts = products
+    .map((p) => {
+      const currentQty = Number(p.stockLevels[0]?.quantity || 0);
+      const unitsSold = velocityMap.get(p.id) || 0;
+      const dailyVelocity = unitsSold / 14;
+      const daysRemaining =
+        dailyVelocity > 0
+          ? Math.floor(currentQty / dailyVelocity)
+          : currentQty <= 5
+          ? 3
+          : 999;
+      const suggestedReorder = Math.max(
+        12,
+        Math.ceil((dailyVelocity > 0 ? dailyVelocity : 1) * 14)
+      );
+
+      return {
+        product: p,
+        currentQty,
+        unitsSold,
+        dailyVelocity,
+        daysRemaining,
+        suggestedReorder,
+      };
+    })
+    .filter((item) => item.daysRemaining <= 10 || item.currentQty <= 5)
+    .sort((a, b) => a.daysRemaining - b.daysRemaining)
+    .slice(0, 4);
+
   return (
     <div className="space-y-8 select-none">
       {/* Header */}
@@ -40,10 +95,10 @@ export default async function InventoryPage() {
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
             <Layers className="h-6 w-6 text-white" />
-            Gestion des Stocks & Mouvements
+            Gestion des Stocks &amp; Mouvements
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Suivi des quantités réelles, alertes de stock bas et historique des entrées/sorties
+            Suivi des quantités réelles, alertes de stock bas et prédiction IA des ruptures
           </p>
         </div>
 
@@ -56,6 +111,65 @@ export default async function InventoryPage() {
             Tous les Produits
           </Link>
         </div>
+      </div>
+
+      {/* HIDDEN GEM 1: AI PREDICTIVE STOCKOUT ANTICIPATION MODULE */}
+      <div className="rounded-3xl border border-purple-500/30 bg-gradient-to-b from-purple-950/20 to-zinc-900/60 p-6 space-y-4 relative overflow-hidden">
+        <div className="flex items-center justify-between pb-3 border-b border-purple-500/20">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-300 flex items-center justify-center">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <span>Anticipation Prédictive IA des Ruptures de Stock</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                  Modèle Vélocité 14j
+                </span>
+              </h2>
+              <p className="text-[11px] text-zinc-400">
+                Prévisions calculées en continu d&apos;après le rythme d&apos;écoulement réel en caisse
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {predictedStockouts.length === 0 ? (
+          <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 text-center text-xs text-zinc-400 font-mono">
+            ✨ Tous vos stocks sont à des niveaux optimaux. Aucune rupture imminente détectée sous 10 jours.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {predictedStockouts.map((item) => (
+              <div
+                key={item.product.id}
+                className="p-4 rounded-2xl bg-zinc-950/90 border border-purple-900/40 flex flex-col justify-between space-y-2.5 hover:border-purple-500/50 transition"
+              >
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 mb-1">
+                    <span className="truncate">{item.product.category?.name || "Rayon"}</span>
+                    <span className="text-rose-400 font-bold flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {item.daysRemaining <= 1 ? "Aujourd'hui" : `Dans ${item.daysRemaining}j`}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-xs text-white line-clamp-1">{item.product.name}</h4>
+                  <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
+                    Reste : <span className="text-white font-bold">{item.currentQty} unités</span>
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
+                  <span className="text-zinc-400 font-mono">Conseil Réappro :</span>
+                  <span className="font-mono font-bold text-emerald-400 flex items-center gap-1">
+                    <ShoppingCart className="w-3 h-3" />
+                    +{item.suggestedReorder} u.
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Stock Summary Table */}

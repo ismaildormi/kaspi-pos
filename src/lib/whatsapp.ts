@@ -140,5 +140,22 @@ export function formatDailyReportForWhatsApp(report: DailyReportParams): string 
   return msg;
 }
 
+/**
+ * Formats a polite, culturally resonant credit reminder for Moroccan Karné/Krediat
+ */
+export function formatCreditReminderForWhatsApp(params: {
+  storeName: string;
+  customerName: string;
+  balanceDue: number;
+}): string {
+  let msg = `Salam Si/Lalla *${params.customerName}* 👋,\n\n`;
+  msg += `Rappel amical de la part de votre commerce *${params.storeName}*.\n`;
+  msg += `Votre solde en cours sur le carnet de crédit (Karné / Krediat) est de : *${params.balanceDue.toFixed(2)} MAD*.\n\n`;
+  msg += `Merci de bien vouloir passer au magasin à votre convenance pour le règlement.\n`;
+  msg += `بارك الله فيكم • شكراً لثقتكم ووفائكم الدائم 🙏\n`;
+  msg += `_KASPI POS — Carnet de Crédit Certifié_`;
+  return msg;
+}
+
 export * from "./whatsapp/index";
 

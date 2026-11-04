@@ -16,6 +16,7 @@ import {
   X,
   Loader2,
   Check,
+  MessageSquare,
 } from "lucide-react";
 
 interface CustomerItem {
@@ -194,18 +195,19 @@ export default function CustomersPage() {
                   <th className="p-3.5 text-end">Crédit Actuel (MAD)</th>
                   <th className="p-3.5 text-end">Plafond Crédit</th>
                   <th className="p-3.5 text-end">Points Fidélité</th>
+                  <th className="p-3.5 text-center">Actions Karné</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60 font-medium">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-zinc-500">
+                    <td colSpan={7} className="p-8 text-center text-zinc-500">
                       Chargement des clients...
                     </td>
                   </tr>
                 ) : customers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-zinc-500">
+                    <td colSpan={7} className="p-8 text-center text-zinc-500">
                       Aucun client enregistré pour l&apos;instant.
                     </td>
                   </tr>
@@ -216,13 +218,35 @@ export default function CustomersPage() {
                       <td className="p-3.5 text-zinc-400 font-mono">{c.phone || "—"}</td>
                       <td className="p-3.5 text-zinc-400 font-mono">{c.ice || "—"}</td>
                       <td className="p-3.5 text-end font-mono font-bold text-white">
-                        {c.currentCreditBalance.toFixed(2)}
+                        {c.currentCreditBalance > 0 ? (
+                          <span className="text-amber-400 font-extrabold">{c.currentCreditBalance.toFixed(2)} MAD</span>
+                        ) : (
+                          <span className="text-zinc-500">0.00</span>
+                        )}
                       </td>
                       <td className="p-3.5 text-end font-mono text-zinc-400">
                         {c.creditLimit ? `${c.creditLimit.toFixed(2)} MAD` : "Illimité"}
                       </td>
                       <td className="p-3.5 text-end font-mono text-zinc-300">
                         {c.loyaltyPoints ?? 0} pts
+                      </td>
+                      <td className="p-3.5 text-center">
+                        {c.currentCreditBalance > 0 && c.phone ? (
+                          <a
+                            href={`https://wa.me/${c.phone.replace(/[^\d]/g, "")}?text=${encodeURIComponent(
+                              `Salam Si/Lalla ${c.name} 👋,\n\nRappel amical de votre commerce KASPI POS.\nVotre solde en cours sur le carnet de crédit (Karné / Krediat) est de : *${c.currentCreditBalance.toFixed(2)} MAD*.\nMerci de passer au magasin à votre convenance pour régulariser votre compte.\nبارك الله فيكم 🙏`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 text-[11px] font-mono transition"
+                            title="Envoyer rappel WhatsApp"
+                          >
+                            <MessageSquare className="w-3 h-3" />
+                            <span>Rappel WhatsApp</span>
+                          </a>
+                        ) : (
+                          <span className="text-[10px] text-zinc-600 font-mono">—</span>
+                        )}
                       </td>
                     </tr>
                   ))

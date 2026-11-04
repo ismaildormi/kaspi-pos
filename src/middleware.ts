@@ -2,6 +2,7 @@ import createIntlMiddleware from "next-intl/middleware";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limit";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -17,7 +18,7 @@ const PUBLIC_API_PATHS = [
   "/readyz",
 ];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1. Bypass static assets, public download routes, and next internals
@@ -34,6 +35,26 @@ export function middleware(request: NextRequest) {
   // 2. NextAuth handlers
   if (pathname.startsWith("/api/auth")) {
     return NextResponse.next();
+  }
+
+  // Rate Limiting for all API endpoints
+  if (pathname.startsWith("/api/")) {
+    const forwarded = request.headers.get("x-forwarded-for");
+    const ip = forwarded ? forwarded.split(",")[0].trim() : "127.0.0.1";
+    const isSensitive =
+      pathname.startsWith("/api/v1/auth") || pathname.startsWith("/api/ai");
+    const limit = isSensitive ? 20 : 120;
+    const windowSec = 60;
+
+    const rateResult = await checkRateLimit(
+      `${ip}:${isSensitive ? "auth_ai" : "api"}`,
+      limit,
+      windowSec
+    );
+
+    if (!rateResult.success) {
+      return createRateLimitResponse(rateResult);
+    }
   }
 
   // Check auth tokens
