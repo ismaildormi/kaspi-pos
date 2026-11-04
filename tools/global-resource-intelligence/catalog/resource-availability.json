@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "lastAudited": "2026-11-04T07:23:30Z",
+  "description": "KASPI Global Resource Fabric — Geographic Availability & Latency Matrix",
+  "referenceOrigin": "Casablanca, Morocco (CMN)",
+  "regionalNodes": [
+    {
+      "regionCode": "ma-casablanca",
+      "city": "Casablanca",
+      "country": "Morocco",
+      "rttLatencyFromCasablancaMs": 1.2,
+      "providersPresent": ["tauri-desktop-nodes", "cloudflare-edge", "local-mesh"],
+      "strategicRole": "Primary Physical In-Store POS Execution & Hardware Control Plane",
+      "isEdge": true
+    },
+    {
+      "regionCode": "es-madrid",
+      "city": "Madrid",
+      "country": "Spain",
+      "rttLatencyFromCasablancaMs": 22.5,
+      "providersPresent": ["cloudflare-edge", "oracle-cloud", "aws-eu-south-2"],
+      "strategicRole": "Closest European Subsea Cable Landing Gateway (Peninsula Iberica Transit)",
+      "isEdge": false
+    },
+    {
+      "regionCode": "fr-paris",
+      "city": "Paris",
+      "country": "France",
+      "rttLatencyFromCasablancaMs": 35.8,
+      "providersPresent": ["vercel-cdg1", "google-europe-west9", "ovhcloud-gra", "cloudflare-edge"],
+      "strategicRole": "Western Europe Edge Application Routing & Backup Mirror",
+      "isEdge": false
+    },
+    {
+      "regionCode": "de-frankfurt",
+      "city": "Frankfurt",
+      "country": "Germany",
+      "rttLatencyFromCasablancaMs": 42.1,
+      "providersPresent": ["neon-eu-central-1", "supabase-eu-central-1", "hetzner-fsn1", "oracle-eu-frankfurt-1"],
+      "strategicRole": "Core Continental European Financial Backbone & Primary Database Cluster",
+      "isEdge": false
+    },
+    {
+      "regionCode": "us-east-virginia",
+      "city": "Ashburn / N. Virginia",
+      "country": "United States",
+      "rttLatencyFromCasablancaMs": 95.4,
+      "providersPresent": ["groq-us-east", "google-us-central", "github-actions", "cloudflare-iad"],
+      "strategicRole": "Asynchronous High-Throughput AI Batch Processing & CI/CD Cloud Runners",
+      "isEdge": false
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "lastAudited": "2026-11-04T07:23:00Z",
+  "description": "KASPI Global Resource Fabric — Provider Pricing & Paid Expansion Unit Economics",
+  "exchangeRates": {
+    "base": "USD",
+    "MAD": 10.0,
+    "EUR": 0.92
+  },
+  "pricingModels": [
+    {
+      "providerId": "vercel",
+      "planName": "Pro Tier",
+      "baseMonthlyUSD": 20.0,
+      "baseMonthlyMAD": 200.0,
+      "includedBandwidthGB": 1000,
+      "overagePerGBUSD": 0.15,
+      "includedComputeHours": 1000,
+      "overagePerComputeHourUSD": 0.40,
+      "recommendedTrigger": "Scale beyond 5,000 daily active merchant stores"
+    },
+    {
+      "providerId": "neon",
+      "planName": "Launch / Scale Tier",
+      "baseMonthlyUSD": 19.0,
+      "baseMonthlyMAD": 190.0,
+      "includedStorageGB": 10,
+      "overagePerGBStorageUSD": 1.50,
+      "includedComputeHours": 300,
+      "overagePerComputeHourUSD": 0.16,
+      "recommendedTrigger": "Storage exceeding 500 MB (approximately 500,000 stored sales transactions)"
+    },
+    {
+      "providerId": "supabase",
+      "planName": "Pro Plan",
+      "baseMonthlyUSD": 25.0,
+      "baseMonthlyMAD": 250.0,
+      "includedStorageGB": 100,
+      "overagePerGBStorageUSD": 0.021,
+      "includedEgressGB": 250,
+      "includedRealtimeConnections": 500,
+      "recommendedTrigger": "Active KDS screens exceeding 200 concurrent kitchens"
+    },
+    {
+      "providerId": "cloudflare",
+      "planName": "R2 Object Storage (Pay-as-you-go)",
+      "baseMonthlyUSD": 0.0,
+      "baseMonthlyMAD": 0.0,
+      "storagePerGBUSD": 0.015,
+      "storagePerGBMAD": 0.15,
+      "egressPerGBUSD": 0.0,
+      "classAOperationsPerMillionUSD": 4.50,
+      "classBOperationsPerMillionUSD": 0.36,
+      "recommendedTrigger": "Secondary backup replication storage exceeding 10 GB"
+    },
+    {
+      "providerId": "hetzner",
+      "planName": "CX22 Cloud VPS",
+      "baseMonthlyEUR": 3.79,
+      "baseMonthlyUSD": 4.12,
+      "baseMonthlyMAD": 41.20,
+      "vCPU": 2,
+      "ramGB": 4,
+      "storageGB": 40,
+      "bandwidthTB": 20,
+      "recommendedTrigger": "Self-hosted Docker / K3s worker expansion in Frankfurt / Nuremberg"
+    },
+    {
+      "providerId": "ovhcloud",
+      "planName": "Starter Cloud VPS",
+      "baseMonthlyEUR": 4.20,
+      "baseMonthlyUSD": 4.56,
+      "baseMonthlyMAD": 45.60,
+      "vCPU": 1,
+      "ramGB": 2,
+      "storageGB": 20,
+      "bandwidthTB": 1,
+      "recommendedTrigger": "Regional European/North-African backup replication target"
+    }
+  ]
+}

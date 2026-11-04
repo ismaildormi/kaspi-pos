@@ -1,0 +1,15 @@
+Resource,Provider,Region,Capacity,Workload,Cost,Status
+Web Application & PWA,Vercel,fr-paris,100 GB/mo bandwidth,Cashier Web Register & App Router,$0.00/mo,ACTIVE_PRODUCTION
+Primary Relational Database,Neon Serverless,de-frankfurt,0.5 GiB NVMe / 1.0 vCPU,RLS Multi-Tenancy & DGI Sequences,$0.00/mo,ACTIVE_PRODUCTION
+Product Image Object Storage,Supabase,de-frankfurt,1.0 GB Storage / 2.0 GB Egress,Product Photography Bucket,$0.00/mo,ACTIVE_PRODUCTION
+Realtime KDS WebSockets,Supabase,de-frankfurt,200 Concurrent Sockets,Kitchen Display & Order Push,$0.00/mo,ACTIVE_PRODUCTION
+Anycast CDN & DDoS Shield,Cloudflare,ma-casablanca,Unlimited Anycast Bandwidth,Static Edge Asset Caching & DNS,$0.00/mo,ACTIVE_PRODUCTION
+Disaster Recovery Cold Storage,Cloudflare R2,global-anycast,10 GB Storage / 0.00 Egress,AES-256-GCM Encrypted Backups,$0.00/mo,STANDBY_REPLICATED
+Primary Multimodal AI Inference,Google Cloud,us-east-virginia,15 RPM / 1M TPM,KASPI AI Assistant & Visual OCR,$0.00/mo,ACTIVE_PRODUCTION
+High-Speed LPU AI Failover,Groq,us-west,30 RPM / 14.4k RPD,Retail Function Calling Failover,$0.00/mo,ACTIVE_PRODUCTION
+CI/CD & Windows Build Matrix,GitHub Actions,global-cloud,2000 mins/mo (Unlimited Public),Tauri .exe Releases Compilation,$0.00/mo,ACTIVE_PRODUCTION
+Physical Desktop Edge Runtime,Tauri Desktop Nodes,ma-casablanca,Local Hardware (4 Core / 4GB RAM),ESC/POS Thermal Printing & TPE Bridge,$0.00/mo,ACTIVE_PRODUCTION
+Secondary Cloud Worker VPS,Oracle Cloud,eu-marseille-1,4 OCPU ARM / 24GB RAM / 200GB NVMe,Discovered Expansion Worker,$0.00/mo,DISCOVERED_STANDBY
+European Bare-Metal Host,Hetzner Online,de-frankfurt,2 vCPU / 4GB RAM / 40GB SSD,Discovered Low-Cost Expansion,$4.12/mo,DISCOVERED_EVALUATED
+European Sovereign Cloud,OVHcloud,fr-gravelines,1 vCPU / 2GB RAM / 20GB SSD,Discovered Regional Partner,$4.56/mo,DISCOVERED_EVALUATED
+Volunteer Contributor Workers,Community Mesh,ma-casablanca,Bounded 20% CPU / 512MB RAM,Anonymized Batch Analytics,$0.00/mo,OPT_IN_SPECIFIED

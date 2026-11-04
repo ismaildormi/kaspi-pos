@@ -1,0 +1,13 @@
+ProviderID,ProviderName,Category,Regions,FreeTierQuota,PricingPostFree,Protocols,CommercialUseStatus,IntegrationStatus
+vercel,Vercel Inc.,Edge & Serverless Web Platform,fr-paris / de-frankfurt / global-edge,100 GB Bandwidth / 50h Compute,$20/mo Pro (1TB Bandwidth),HTTPS / HTTP3 / WS,PERMITTED,ACTIVE_CONNECTED
+neon,Neon Serverless,Serverless PostgreSQL 16,de-frankfurt / us-east,0.5 GiB SSD / 300h Compute,$19/mo (10GB SSD),Postgres Wire / Supavisor,PERMITTED,ACTIVE_CONNECTED
+supabase,Supabase Inc.,Object Storage & Realtime,de-frankfurt / us-east,1 GB Storage / 200 Sockets,$25/mo Pro (100GB Storage),S3 API / REST / WS,PERMITTED,ACTIVE_CONNECTED
+cloudflare,Cloudflare Inc.,Anycast CDN / DNS / R2 Storage,ma-casablanca / global-anycast,10 GB Storage / Zero Egress,$0.015/GB/mo on R2,Anycast DNS / HTTPS / S3,PERMITTED,ACTIVE_CONNECTED
+oracle-cloud,Oracle Cloud (OCI),ARM Bare-Metal & Cloud VPS,eu-marseille / eu-frankfurt,4 OCPU / 24GB RAM / 200GB NVMe,Pay-as-you-go,SSH / WireGuard / OCI,PERMITTED,STANDBY_EVALUATED
+hetzner,Hetzner Online,Bare-Metal & Cloud VPS,de-frankfurt / fi-helsinki,None (Paid only),€3.79/mo (2 vCPU / 4GB RAM),SSH / Docker / K3s,PERMITTED,EXPANSION_EVALUATED
+ovhcloud,OVHcloud SAS,European Sovereign Hyperscaler,fr-gravelines / fr-paris,None (Paid only),€4.20/mo (1 vCPU / 2GB RAM),OpenStack / S3 / K3s,PERMITTED,EXPANSION_EVALUATED
+digitalocean,DigitalOcean,Developer Cloud & Managed DB,de-frankfurt / us-nyc,None (Trial credit only),$4.00/mo Droplet,SSH / Docker / S3,PERMITTED,STANDBY_EVALUATED
+google-cloud,Google Cloud (GCP),AI Studio & Inference Pods,us-east / us-central,15 RPM / 1M TPM Flash,Pay-per-token ($0.075/1M),REST / gRPC / SSE,PERMITTED,ACTIVE_CONNECTED
+groq,Groq Inc.,LPU High-Throughput Inference,us-west / us-east,30 RPM / 14.4k RPD,Pay-per-token ($0.59/1M),OpenAI REST / SSE,PERMITTED,ACTIVE_CONNECTED
+github,GitHub (Microsoft),CI/CD & Release Distribution,global-cloud,2000 mins/mo (Public Unlimited),Free for public repo,Git / Releases API / GHCR,PERMITTED,ACTIVE_CONNECTED
+tauri-desktop-nodes,KASPI Local Edge,Merchant Hardware POS Terminal,ma-casablanca / local-store,Local Physical Hardware,Zero software cost,Local IPC / USB / Serial,PERMITTED,ACTIVE_CONNECTED

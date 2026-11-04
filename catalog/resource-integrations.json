@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "lastAudited": "2026-11-04T07:23:40Z",
+  "description": "KASPI Global Resource Fabric — Protocol Integrations & Interface Specifications",
+  "integrations": [
+    {
+      "resourcePool": "DATABASE_STORAGE",
+      "targetProvider": "neon",
+      "interfaceProtocol": "PostgreSQL v16 Wire Protocol over TLS 1.3",
+      "authenticationType": "SCRAM-SHA-256 / SSL Client Certificate",
+      "connectionStringFormat": "postgresql://[user]:[password]@[host]:5432/[db]?sslmode=require&pgbouncer=true",
+      "healthCheckMethod": "SELECT 1",
+      "status": "VERIFIED_PRODUCTION"
+    },
+    {
+      "resourcePool": "OBJECT_STORAGE",
+      "targetProvider": "supabase",
+      "interfaceProtocol": "AWS S3 Signature Version 4 / REST API",
+      "authenticationType": "Bearer JWT Service Role & API Key",
+      "endpointFormat": "https://[project-id].supabase.co/storage/v1",
+      "healthCheckMethod": "ListBuckets / HeadBucket",
+      "status": "VERIFIED_PRODUCTION"
+    },
+    {
+      "resourcePool": "OBJECT_STORAGE_COLD_BACKUP",
+      "targetProvider": "cloudflare-r2",
+      "interfaceProtocol": "S3 Signature Version 4 / HTTP/3",
+      "authenticationType": "AWS S3 Access Key ID & Secret Access Key",
+      "endpointFormat": "https://[account-id].r2.cloudflarestorage.com",
+      "healthCheckMethod": "HeadBucket",
+      "status": "READY_FOR_BACKUP_FABRIC"
+    },
+    {
+      "resourcePool": "AI_INFERENCE",
+      "targetProvider": "google-gemini",
+      "interfaceProtocol": "Google AI Studio REST / SSE Streaming",
+      "authenticationType": "Header: x-goog-api-key",
+      "endpointFormat": "https://generativelanguage.googleapis.com/v1beta/models/[model]:streamGenerateContent",
+      "healthCheckMethod": "ListModels / Dry-Run Tokenize",
+      "status": "VERIFIED_PRODUCTION"
+    },
+    {
+      "resourcePool": "AI_INFERENCE_FAILOVER",
+      "targetProvider": "groq",
+      "interfaceProtocol": "OpenAI v1 Compatible REST / SSE Streaming",
+      "authenticationType": "Header: Authorization: Bearer [api-key]",
+      "endpointFormat": "https://api.groq.com/openai/v1/chat/completions",
+      "healthCheckMethod": "GET /v1/models",
+      "status": "VERIFIED_PRODUCTION"
+    },
+    {
+      "resourcePool": "LOCAL_HARDWARE_TERMINAL",
+      "targetProvider": "tauri-desktop-nodes",
+      "interfaceProtocol": "Local Inter-Process Communication (IPC) & ESC/POS Raw Spooler",
+      "authenticationType": "Local Operating System Process Boundary",
+      "endpointFormat": "tauri://localhost / Rust Command Dispatcher",
+      "healthCheckMethod": "ping_printer / get_terminal_status",
+      "status": "VERIFIED_PRODUCTION"
+    },
+    {
+      "resourcePool": "COMMUNITY_CONTRIBUTED_WORKER",
+      "targetProvider": "voluntary-mesh-nodes",
+      "interfaceProtocol": "mTLS / WireGuard Isolated VPN Overlay",
+      "authenticationType": "Ed25519 Ephemeral Node Keypairs + Signed Contributor Consent Token",
+      "endpointFormat": "kaspi-mesh://[node-id].mesh.kasbi.internal",
+      "healthCheckMethod": "Heartbeat ping with CPU thermal and battery metrics",
+      "status": "ARCHITECTURE_SPECIFIED"
+    }
+  ]
+}

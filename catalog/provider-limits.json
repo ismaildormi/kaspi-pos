@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "lastAudited": "2026-11-04T07:22:50Z",
+  "description": "KASPI Global Resource Fabric — Explicit Provider Technical Ceilings & Mitigations",
+  "limits": [
+    {
+      "providerId": "vercel",
+      "metric": "Max Concurrent Function Invocations",
+      "limitValue": 1000,
+      "enforcementType": "HTTP 429 / HTTP 504 Gateway Timeout",
+      "mitigationStrategy": "Edge caching for static queries, Dexie client-side caching, background task offloading"
+    },
+    {
+      "providerId": "vercel",
+      "metric": "Serverless Function Execution Timeout",
+      "limitValue": 10,
+      "unit": "seconds",
+      "enforcementType": "Execution Termination",
+      "mitigationStrategy": "All slow database operations (e.g., Z-report rollups) run through streaming chunks or background workers"
+    },
+    {
+      "providerId": "neon",
+      "metric": "Max Database Connections",
+      "limitValue": 20,
+      "unit": "connections (Direct)",
+      "enforcementType": "P2024 Connection Pool Exhaustion",
+      "mitigationStrategy": "Mandatory usage of Supavisor connection pooler (?pgbouncer=true&connection_limit=15) supporting 10,000+ multiplexed virtual clients"
+    },
+    {
+      "providerId": "neon",
+      "metric": "Inactive Auto-Suspend Threshold",
+      "limitValue": 300,
+      "unit": "seconds",
+      "enforcementType": "Compute Hibernation",
+      "mitigationStrategy": "Next.js connection retry logic + keep-alive health endpoint ping every 4.5 minutes during business hours"
+    },
+    {
+      "providerId": "supabase",
+      "metric": "Max File Upload Size",
+      "limitValue": 50,
+      "unit": "MB per file",
+      "enforcementType": "HTTP 413 Payload Too Large",
+      "mitigationStrategy": "Client-side image compression via canvas to WebP < 500 KB before upload"
+    },
+    {
+      "providerId": "supabase",
+      "metric": "Realtime WebSocket Concurrent Clients",
+      "limitValue": 200,
+      "unit": "active sockets",
+      "enforcementType": "Connection Refusal",
+      "mitigationStrategy": "Scoped channels per storeId/tenantId; inactive screens disconnect after 15 minutes of idle time"
+    },
+    {
+      "providerId": "google-cloud",
+      "metric": "Gemini Flash Free Tier Rate Limit",
+      "limitValue": 15,
+      "unit": "requests per minute",
+      "enforcementType": "HTTP 429 Quota Exceeded",
+      "mitigationStrategy": "Multi-Gateway AI Router automatic failover to Groq LPU, Mistral, and local GPU pool"
+    },
+    {
+      "providerId": "groq",
+      "metric": "Groq LPU Rate Limit",
+      "limitValue": 30,
+      "unit": "requests per minute",
+      "enforcementType": "HTTP 429 Rate Limit",
+      "mitigationStrategy": "In-memory sliding-window token bucket in ai-router.ts + failover rotation to secondary key pool"
+    },
+    {
+      "providerId": "oracle-cloud",
+      "metric": "Free Tier Idle Reclamation Policy",
+      "limitValue": 20,
+      "unit": "percent CPU utilization over 7 days",
+      "enforcementType": "VM Reclamation Notice",
+      "mitigationStrategy": "Deploy active background workers (audit log verification, backup integrity checks, metrics collection) to maintain legitimate > 20% baseline activity"
+    }
+  ]
+}

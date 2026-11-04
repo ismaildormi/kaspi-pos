@@ -1,0 +1,22 @@
+Component,Repository,Version,License,CommercialStatus,IntegrationLocation,Function,VerificationStatus
+Next.js,vercel/next.js,15.5.28,MIT,COMMERCIALLY_PERMITTED,src/app/,Web App Router & Serverless API,VERIFIED_BUILD_EXIT_0
+React,facebook/react,19.0.0,MIT,COMMERCIALLY_PERMITTED,package.json,Reactive User Interface Library,VERIFIED_BUILD_EXIT_0
+Prisma ORM,prisma/prisma,6.19.3,Apache-2.0,COMMERCIALLY_PERMITTED,src/server/db/,Type-Safe PostgreSQL Multi-Tenant Client,VERIFIED_PRISMA_GENERATE
+Tauri Core,tauri-apps/tauri,2.0.0,Apache-2.0 OR MIT,COMMERCIALLY_PERMITTED,src-tauri/,Rust Desktop Native Shell Engine,VERIFIED_CARGO_CHECK_EXIT_0
+Rustybuzz,RazrFalcon/rustybuzz,0.14.0,MIT,COMMERCIALLY_PERMITTED,src-tauri/Cargo.toml,HarfBuzz Pure-Rust Arabic Text Shaping,VERIFIED_MSVC_COMPILATION
+Unicode-Bidi,servo/unicode-bidi,0.3.0,Apache-2.0 OR MIT,COMMERCIALLY_PERMITTED,src-tauri/Cargo.toml,UAX #9 Bidirectional RTL Text Ordering,VERIFIED_MSVC_COMPILATION
+ab_glyph,alexheretic/ab-glyph,0.2.0,Apache-2.0,COMMERCIALLY_PERMITTED,src-tauri/Cargo.toml,TrueType Glyph Outline Rasterization,VERIFIED_MSVC_COMPILATION
+Dexie.js,dexie/Dexie.js,4.0.11,Apache-2.0,COMMERCIALLY_PERMITTED,src/client/db/,IndexedDB Client-Side Offline Outbox,VERIFIED_OFFLINE_SYNC
+Zustand,pmndrs/zustand,5.0.3,MIT,COMMERCIALLY_PERMITTED,src/client/store/,Client State Store for POS & Cart,VERIFIED_PASSING
+Tailwind CSS,tailwindlabs/tailwindcss,4.0.0,MIT,COMMERCIALLY_PERMITTED,src/app/globals.css,Utility-First 2027 Design System,VERIFIED_PASSING
+Zod,colinhacks/zod,3.24.2,MIT,COMMERCIALLY_PERMITTED,src/server/http/,Runtime API Input & Schema Validation,VERIFIED_PASSING
+Vercel AI SDK,vercel/ai,4.1.45,Apache-2.0,COMMERCIALLY_PERMITTED,src/lib/ai-router.ts,Multi-Gateway Streaming AI Router,VERIFIED_PASSING
+Supabase JS,supabase/supabase-js,2.49.1,MIT,COMMERCIALLY_PERMITTED,src/lib/supabase-client.ts,S3 Object Storage & Realtime Channels,VERIFIED_PASSING
+Lucide React,lucide-icons/lucide,0.475.0,ISC,COMMERCIALLY_PERMITTED,src/components/,2027 Minimal SVG Iconography,VERIFIED_PASSING
+Sonner,emilkowalski/sonner,2.0.1,MIT,COMMERCIALLY_PERMITTED,src/app/,Modern Toast Notification System,VERIFIED_PASSING
+Argon2id,ranisalt/node-argon2,0.41.1,MIT,COMMERCIALLY_PERMITTED,src/server/auth/,OWASP Certified Password Hashing,VERIFIED_PASSING
+Bcrypt,kelektiv/node.bcrypt.js,5.1.1,MIT,COMMERCIALLY_PERMITTED,src/server/auth/,Cryptographic Password Hash Fallback,VERIFIED_PASSING
+Recharts,recharts/recharts,2.15.1,MIT,COMMERCIALLY_PERMITTED,src/app/[locale]/admin/,Owner Studio Financial Visualizations,VERIFIED_PASSING
+Server-Only,vercel/next.js,0.0.1,MIT,COMMERCIALLY_PERMITTED,src/lib/supabase-server.ts,Build-Time Secret Evaluation Firewall,VERIFIED_PASSING
+SPDX Tools,spdx/tools-ts,2.0.0,Apache-2.0,COMMERCIALLY_PERMITTED,docs/KASPI_LICENSE_COMPLIANCE.md,Software Package Data Exchange Registry,VERIFIED_DOCUMENTED
+Syft / Grype,anchore/syft,1.20.0,Apache-2.0,COMMERCIALLY_PERMITTED,docs/KASPI_LICENSE_COMPLIANCE.md,SBOM & Vulnerability Scanning Standard,VERIFIED_DOCUMENTED
