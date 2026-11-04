@@ -11,25 +11,36 @@ export async function POST(
     const ctx = await getRequestContext({ requireTenant: false });
     const { tenantId } = await params;
 
-    // Verify user is an active member of target tenant
-    const membership = await prisma.tenantMembership.findUnique({
-      where: {
-        tenantId_userId: {
-          tenantId,
-          userId: ctx.userId,
-        },
-      },
-      include: {
-        tenant: true,
-      },
+    // Verify tenant exists
+    const targetTenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
     });
 
-    if (!membership || membership.status !== "active") {
-      return jsonError(
-        "FORBIDDEN",
-        "You do not have access to this tenant",
-        403
-      );
+    if (!targetTenant) {
+      return jsonError("NOT_FOUND", "Tenant does not exist", 404);
+    }
+
+    let role = "owner";
+
+    // If not super admin, verify active membership
+    if (!ctx.isSuperAdmin) {
+      const membership = await prisma.tenantMembership.findUnique({
+        where: {
+          tenantId_userId: {
+            tenantId,
+            userId: ctx.userId,
+          },
+        },
+      });
+
+      if (!membership || membership.status !== "active") {
+        return jsonError(
+          "FORBIDDEN",
+          "You do not have access to this tenant",
+          403
+        );
+      }
+      role = membership.role;
     }
 
     // Update activeTenantId on session
@@ -40,9 +51,9 @@ export async function POST(
 
     return jsonOk({
       success: true,
-      message: `Switched to ${membership.tenant.displayName}`,
+      message: `Switched to ${targetTenant.displayName}`,
       activeTenantId: tenantId,
-      role: membership.role,
+      role,
     });
   } catch (err: unknown) {
     if (err instanceof AppError) {

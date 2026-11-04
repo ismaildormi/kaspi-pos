@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const params = useParams();
+  const locale = (params?.locale as string) || "ar";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,7 +49,14 @@ export default function LoginPage() {
       if (!apiRes.ok && res?.error) {
         setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
       } else {
-        router.push("/admin");
+        const isSuperAdmin = Boolean(
+          apiData?.data?.user?.isSuperAdmin ?? apiData?.user?.isSuperAdmin
+        );
+        if (isSuperAdmin) {
+          router.push(`/${locale}/admin`);
+        } else {
+          router.push(`/${locale}/pos`);
+        }
         router.refresh();
       }
     } catch {

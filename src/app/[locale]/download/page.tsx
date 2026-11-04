@@ -95,6 +95,13 @@ export default function DownloadCenterPage() {
               <div className="space-y-3 pt-4 border-t border-zinc-800">
                 <a
                   href={WINDOWS_EXE_URL}
+                  onClick={() => {
+                    fetch("/api/download/track", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ platform: "windows" }),
+                    }).catch(() => {});
+                  }}
                   className="w-full py-3.5 px-6 bg-white text-black font-bold rounded-xl hover:bg-zinc-200 transition flex items-center justify-center gap-2.5 text-sm shadow-lg"
                 >
                   <Download className="w-4 h-4" />

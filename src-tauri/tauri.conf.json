@@ -12,7 +12,8 @@
   "app": {
     "windows": [
       {
-        "title": "Kasbi POS — نظام كسب لنقاط البيع للمغرب",
+        "title": "KASPI POS - Caisse & ERP",
+        "url": "/login",
         "width": 1280,
         "height": 800,
         "minWidth": 1024,

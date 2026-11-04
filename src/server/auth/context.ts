@@ -20,6 +20,7 @@ export interface RequestContext {
   userId: string;
   userEmail: string;
   userFullName: string;
+  isSuperAdmin?: boolean;
   sessionId: string;
   tenantId: string;
   role: UserRole;
@@ -101,6 +102,7 @@ export async function getRequestContext(
     userId: user.id,
     userEmail: user.email ?? "",
     userFullName: user.fullName ?? user.name ?? "",
+    isSuperAdmin: Boolean((user as any).isSuperAdmin),
     sessionId: session.id,
     tenantId: activeMembership.tenantId,
     role: activeMembership.role,
