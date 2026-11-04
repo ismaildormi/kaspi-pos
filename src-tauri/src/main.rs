@@ -3,9 +3,11 @@
 
 mod printer;
 mod local_ai;
+mod tpe_bridge;
 
 use printer::{encode_escpos, render_rows, send_to_printer, Align, Fonts, Row};
 use local_ai::{get_local_ai_capabilities, run_local_ai_inference};
+use tpe_bridge::initiate_tpe_payment;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -155,7 +157,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             print_receipt,
             get_local_ai_capabilities,
-            run_local_ai_inference
+            run_local_ai_inference,
+            initiate_tpe_payment
         ])
         .run(tauri::generate_context!())
         .expect("error while running Kasbi POS Tauri application");

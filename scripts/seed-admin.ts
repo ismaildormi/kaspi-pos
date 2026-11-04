@@ -3,9 +3,21 @@ import { hashPassword } from "../src/server/auth/password";
 
 async function seedAdmin() {
   const email = (process.env.ADMIN_EMAIL || "dormiismail02@gmail.com").toLowerCase().trim();
-  const password = process.env.ADMIN_PASSWORD || "Admin@123456";
+  const password = process.env.ADMIN_PASSWORD || "Admin123!";
 
-  console.log(`[Seed Admin] Preparing Super Admin account for: ${email}`);
+  console.log(`[Seed Admin] Preparing clean Super Admin account for: ${email}`);
+
+  // Delete any existing user with dormiismail02@gmail.com as instructed
+  try {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      await prisma.tenantMembership.deleteMany({ where: { userId: existing.id } });
+      await prisma.user.delete({ where: { id: existing.id } });
+      console.log(`[Seed Admin] Deleted previous user record for ${email}`);
+    }
+  } catch (deleteErr) {
+    console.warn(`[Seed Admin] User delete warning:`, deleteErr);
+  }
 
   const passwordHash = await hashPassword(password);
 

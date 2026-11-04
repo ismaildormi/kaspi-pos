@@ -18,6 +18,7 @@ import { usePosStore, type PaymentMethodType } from "@/client/store/usePosStore"
 import { ThermalReceipt, type ReceiptData } from "./ThermalReceipt";
 import { printReceipt } from "@/client/printing";
 import { formatReceiptForWhatsApp, generateWhatsAppLink } from "@/lib/whatsapp";
+import { calculatePaymentFees } from "@/lib/fees";
 
 export const CheckoutModal: React.FC = () => {
   const t = useTranslations("Pos");
@@ -91,6 +92,13 @@ export const CheckoutModal: React.FC = () => {
   const taxTotal = getTaxTotal();
   const changeDue = getChangeDue();
 
+  const feeInfo = calculatePaymentFees(
+    grandTotal,
+    selectedPaymentMethod === "card" ? "cmi_tpe" : "cash",
+    1,
+    "MAD"
+  );
+
   const handleQuickCash = (extra: number) => {
     const current = parseFloat(amountTendered) || 0;
     setAmountTendered((current + extra).toFixed(2));
@@ -127,10 +135,15 @@ export const CheckoutModal: React.FC = () => {
       paidTotal:
         selectedPaymentMethod === "cash"
           ? Math.max(grandTotal, parseFloat(amountTendered) || grandTotal)
+          : selectedPaymentMethod === "card"
+          ? feeInfo.customerTotal
           : grandTotal,
       changeDue,
       paymentMethod: selectedPaymentMethod,
       currency: "MAD",
+      tpeFeeCustomer: selectedPaymentMethod === "card" ? feeInfo.customerFee : undefined,
+      tpeFeeMerchant: selectedPaymentMethod === "card" ? feeInfo.merchantFee : undefined,
+      tpeBreakdown: selectedPaymentMethod === "card" ? feeInfo.breakdownText : undefined,
     };
 
     const res = await completeSale();
@@ -308,9 +321,22 @@ export const CheckoutModal: React.FC = () => {
             <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 flex items-baseline justify-between">
               <span className="text-sm font-semibold text-zinc-400">{t("total")}</span>
               <span className="text-3xl font-black text-white font-mono">
-                {grandTotal.toFixed(2)} {tCommon("currency")}
+                {(selectedPaymentMethod === "card" ? feeInfo.customerTotal : grandTotal).toFixed(2)} {tCommon("currency")}
               </span>
             </div>
+
+            {/* TPE Fee Breakdown Notification */}
+            {selectedPaymentMethod === "card" && (
+              <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-800/80 text-amber-200 text-xs space-y-1.5 shadow-inner">
+                <div className="flex items-center justify-between font-bold text-amber-300">
+                  <span>Paiement Carte / TPE CMI (Partage Dynamique)</span>
+                  <span className="font-mono text-sm">{feeInfo.customerTotal.toFixed(2)} DH</span>
+                </div>
+                <p className="text-[11px] font-mono leading-relaxed text-amber-200/90 bg-amber-950/60 p-2.5 rounded-lg border border-amber-900/60 select-all">
+                  {feeInfo.breakdownText}
+                </p>
+              </div>
+            )}
 
             {/* Cash Tendered & Change Section */}
             {selectedPaymentMethod === "cash" && (

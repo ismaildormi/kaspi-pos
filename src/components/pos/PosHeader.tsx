@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Clock, User as UserIcon, LayoutDashboard, ArrowLeft } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -20,6 +20,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
   onOpenHeldCarts,
 }) => {
   const t = useTranslations("Pos");
+  const locale = useLocale();
   const { heldCarts } = usePosStore();
 
   return (
@@ -28,11 +29,11 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
       <div className="flex items-center gap-3">
         {/* Persistent Back to Dashboard Button */}
         <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-300 hover:text-white hover:bg-zinc-800 hover:border-zinc-700 transition shadow-sm"
+          href={`/${locale}/dashboard`}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-700 bg-zinc-900 text-xs font-bold text-white hover:bg-zinc-800 hover:border-zinc-500 transition shadow-sm group"
           title="Retour au Tableau de Bord"
         >
-          <LayoutDashboard className="w-4 h-4 text-white" />
+          <ArrowLeft className="w-4 h-4 rtl:rotate-180 text-amber-400 group-hover:-translate-x-0.5 transition-transform" />
           <span className="hidden sm:inline">Dashboard</span>
         </Link>
 

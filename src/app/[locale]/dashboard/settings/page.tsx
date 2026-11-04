@@ -21,6 +21,7 @@ import {
   Sparkles,
   Check,
   Building2,
+  CreditCard,
 } from "lucide-react";
 
 interface StoreItem {
@@ -68,6 +69,12 @@ export default function SettingsPage() {
   const [useLocalGpuAi, setUseLocalGpuAi] = useState(true);
   const [receiptPaperDark, setReceiptPaperDark] = useState(false);
 
+  // Payment Gateway Configuration (Phase 2)
+  const [selectedGateway, setSelectedGateway] = useState<"cmi_tpe" | "youcanpay" | "stripe" | "cash_only">("cmi_tpe");
+  const [tpeTerminalIp, setTpeTerminalIp] = useState("192.168.1.150");
+  const [youcanpayKey, setYoucanpayKey] = useState("");
+  const [stripeKey, setStripeKey] = useState("");
+
   useEffect(() => {
     fetchSettings();
     fetchStores();
@@ -75,6 +82,8 @@ export default function SettingsPage() {
     if (storedGpu !== null) {
       setUseLocalGpuAi(storedGpu === "true");
     }
+    const storedGw = localStorage.getItem("kaspi_payment_gateway") as any;
+    if (storedGw) setSelectedGateway(storedGw);
   }, []);
 
   const fetchSettings = async () => {
@@ -614,6 +623,106 @@ export default function SettingsPage() {
           <p className="text-xs text-zinc-400 leading-relaxed">
             Lorsque le moteur GPU local est activé, KASPI POS utilise les capacités de calcul WebGPU de votre matériel de caisse. Vos données restent 100% confidentielles en local et réduisent les coûts d&apos;infrastructure à zéro.
           </p>
+        </div>
+
+        {/* CARD 6: PASSERELLES DE PAIEMENT & TERMINAL TPE */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-5">
+          <div className="flex items-center gap-2 pb-3 border-b border-zinc-800">
+            <CreditCard className="w-5 h-5 text-amber-400" />
+            <div>
+              <h2 className="text-base font-bold text-white">Passerelles de Paiement &amp; Terminal TPE (4 Niveaux)</h2>
+              <p className="text-[11px] text-zinc-400">Configurez votre terminal bancaire CMI, Stripe, ou YouCanPay Maroc</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              {
+                id: "cmi_tpe",
+                name: "CMI / TPE Physique",
+                desc: "Partage dynamique (Client 70% / Marchand 30%) - 2.0%",
+                badge: "Physique",
+              },
+              {
+                id: "youcanpay",
+                name: "YouCanPay Maroc",
+                desc: "Cartes nationales 3.9% + 2.00 MAD (Intl 4.9%)",
+                badge: "En Ligne (MAD)",
+              },
+              {
+                id: "stripe",
+                name: "Stripe Global",
+                desc: "Cartes internationales (2.9% + 0.30 $ USD)",
+                badge: "International",
+              },
+              {
+                id: "cash_only",
+                name: "Espèces & Krediat",
+                desc: "Sans frais bancaires (0% commission)",
+                badge: "Standard",
+              },
+            ].map((gw) => (
+              <button
+                key={gw.id}
+                type="button"
+                onClick={() => {
+                  setSelectedGateway(gw.id as any);
+                  localStorage.setItem("kaspi_payment_gateway", gw.id);
+                }}
+                className={`p-4 rounded-2xl border text-left flex flex-col justify-between transition cursor-pointer ${
+                  selectedGateway === gw.id
+                    ? "bg-zinc-950 border-amber-500 ring-1 ring-amber-500/50"
+                    : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-white">{gw.name}</span>
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300">
+                      {gw.badge}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">{gw.desc}</p>
+                </div>
+                {selectedGateway === gw.id && (
+                  <div className="mt-3 flex items-center gap-1.5 text-xs text-amber-400 font-bold">
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Sélectionné</span>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {selectedGateway === "cmi_tpe" && (
+            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
+              <h4 className="text-xs font-bold text-white">Paramètres Terminal TPE CMI (Réseau local)</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+                    Adresse IP du TPE (Ingenico / Pax / Verifone)
+                  </label>
+                  <input
+                    type="text"
+                    value={tpeTerminalIp}
+                    onChange={(e) => setTpeTerminalIp(e.target.value)}
+                    placeholder="192.168.1.150"
+                    className="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+                    Port de communication CMI
+                  </label>
+                  <input
+                    type="text"
+                    defaultValue="8888"
+                    className="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Action Row */}

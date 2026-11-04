@@ -32,6 +32,9 @@ export interface ReceiptData {
   changeDue: number;
   paymentMethod: string;
   currency?: string;
+  tpeFeeCustomer?: number;
+  tpeFeeMerchant?: number;
+  tpeBreakdown?: string;
 }
 
 interface ThermalReceiptProps {
@@ -155,6 +158,24 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
             <span>TOTAL TTC:</span>
             <span>{data.grandTotal.toFixed(2)} {currency}</span>
           </div>
+          {data.tpeFeeCustomer !== undefined && data.tpeFeeCustomer > 0 && (
+            <div className="pt-1 mt-1 border-t border-dotted border-gray-400 text-[9px] space-y-0.5">
+              <div className="flex justify-between text-gray-800">
+                <span>Frais TPE (Client):</span>
+                <span>+{data.tpeFeeCustomer.toFixed(2)} {currency}</span>
+              </div>
+              {data.tpeFeeMerchant !== undefined && (
+                <div className="flex justify-between text-gray-500 text-[8px]">
+                  <span>Part Commerçant:</span>
+                  <span>{data.tpeFeeMerchant.toFixed(2)} {currency}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-black text-[11px] pt-0.5 border-t border-black">
+                <span>TOTAL PAYÉ TPE:</span>
+                <span>{(data.grandTotal + data.tpeFeeCustomer).toFixed(2)} {currency}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Payment & Change Section */}
