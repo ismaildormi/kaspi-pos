@@ -5,15 +5,15 @@
   "identifier": "ma.kasbi.pos",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:3001",
+    "devUrl": "http://localhost:3001/ar/login",
     "beforeBuildCommand": "",
-    "frontendDist": "https://kaspi-pos.vercel.app"
+    "frontendDist": "https://kaspi-pos.vercel.app/ar/login"
   },
   "app": {
     "windows": [
       {
         "title": "KASPI POS - Caisse & ERP",
-        "url": "/login",
+        "url": "https://kaspi-pos.vercel.app/ar/login",
         "width": 1280,
         "height": 800,
         "minWidth": 1024,
