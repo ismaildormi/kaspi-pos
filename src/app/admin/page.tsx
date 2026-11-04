@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSuperAdminUser } from "@/server/admin/guard";
+import { checkSuperAdminUser } from "@/server/admin/guard";
 import { getAdminDashboardStats } from "@/server/admin/stats";
 import { AdminAlertButton } from "./AdminAlertButton";
 import { MasterAiBanner } from "./MasterAiBanner";
@@ -26,14 +26,29 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  let user;
-  try {
-    user = await getSuperAdminUser();
-  } catch {
+  const user = await checkSuperAdminUser();
+  if (!user) {
     redirect("/ar/login?from=/admin");
   }
 
-  const stats = await getAdminDashboardStats();
+  let stats;
+  try {
+    stats = await getAdminDashboardStats();
+  } catch (err) {
+    console.error("[Admin Page Error loading stats]:", err);
+    stats = {
+      totalTenants: 0,
+      totalDownloads: 0,
+      activeSubscriptions: 0,
+      mrrUsd: "0.00",
+      mrrMad: "0.00",
+      totalGmvMad: "0.00",
+      newTenantsThisMonth: 0,
+      totalAiMessages: 0,
+      revenueHistory: [],
+      tenants: [],
+    };
+  }
 
   return (
     <div className="space-y-8 pb-16 select-none font-sans">

@@ -35,9 +35,15 @@ export default function LoginPage() {
             apiData.error ||
               "تم الوصول للحد الأقصى لعدد الأجهزة المصرح بها. يرجى إضافة نقطة بيع جديدة من لوحة الفوترة."
           );
-          setLoading(false);
-          return;
+        } else {
+          const errMsg =
+            apiData?.error?.message ||
+            (typeof apiData?.error === "string" ? apiData.error : null) ||
+            "البريد الإلكتروني أو كلمة المرور غير صحيحة";
+          setError(errMsg);
         }
+        setLoading(false);
+        return;
       }
 
       const res = await signIn("credentials", {
@@ -46,17 +52,21 @@ export default function LoginPage() {
         password,
       });
 
-      if (!apiRes.ok && res?.error) {
-        setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+      if (res?.error) {
+        console.error("[NextAuth signIn error]:", res.error);
+        setError("فشل إنشاء جلسة الدخول. يرجى التحقق من البيانات والمحاولة مجدداً.");
+        setLoading(false);
+        return;
+      }
+
+      const isSuperAdmin = Boolean(
+        apiData?.data?.user?.isSuperAdmin || apiData?.user?.isSuperAdmin
+      );
+
+      if (isSuperAdmin) {
+        window.location.href = `/${locale}/admin`;
       } else {
-        const isSuperAdmin = Boolean(
-          apiData?.data?.user?.isSuperAdmin || apiData?.user?.isSuperAdmin
-        );
-        if (isSuperAdmin) {
-          window.location.href = `/${locale}/admin`;
-        } else {
-          window.location.href = `/${locale}/dashboard`;
-        }
+        window.location.href = `/${locale}/dashboard`;
       }
     } catch {
       setError("حدث خطأ غير متوقع");
@@ -87,7 +97,7 @@ export default function LoginPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 p-3 bg-zinc-950 border border-zinc-700 text-zinc-200 text-sm rounded-lg text-center">
+          <div className="mb-4 p-3 bg-red-950/80 border border-red-800 text-red-200 text-sm rounded-lg text-center font-medium shadow-sm">
             {error}
           </div>
         )}

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/server/db/prisma";
-import { verifyPassword } from "@/server/auth/password";
+import { verifyPassword, hashPassword } from "@/server/auth/password";
 import { createSession, SESSION_COOKIE_NAME, SESSION_EXPIRY_DAYS } from "@/server/auth/session";
 import { jsonError, jsonOk } from "@/server/http/response";
 
@@ -33,17 +33,27 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (!user || !user.passwordHash) {
-      return jsonError("INVALID_CREDENTIALS", "Invalid email or password", 401);
+    if (!user) {
+      return jsonError("INVALID_CREDENTIALS", "البريد الإلكتروني أو كلمة المرور غير صحيحة", 401);
     }
 
     if (!user.isActive) {
-      return jsonError("USER_DISABLED", "Your account has been deactivated", 403);
+      return jsonError("USER_DISABLED", "الحساب معطل حالياً", 403);
     }
 
-    const isValid = await verifyPassword(user.passwordHash, password);
-    if (!isValid) {
-      return jsonError("INVALID_CREDENTIALS", "Invalid email or password", 401);
+    if (!user.passwordHash) {
+      // If user registered via OAuth without a password, set initial password
+      const newHash = await hashPassword(password);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash: newHash },
+      });
+      user.passwordHash = newHash;
+    } else {
+      const isValid = await verifyPassword(user.passwordHash, password);
+      if (!isValid) {
+        return jsonError("INVALID_CREDENTIALS", "البريد الإلكتروني أو كلمة المرور غير صحيحة", 401);
+      }
     }
 
     if (user.memberships.length === 0) {
