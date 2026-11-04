@@ -6,10 +6,14 @@ import { createSession, SESSION_COOKIE_NAME, SESSION_EXPIRY_DAYS } from "@/serve
 import { jsonError, jsonOk } from "@/server/http/response";
 
 const RegisterSchema = z.object({
-  email: z.string().email().transform((v) => v.toLowerCase().trim()),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  fullName: z.string().min(2, "Full name is required").trim(),
-  shopName: z.string().min(2, "Shop name is required").trim(),
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Invalid email address")
+    .transform((v) => v.toLowerCase().trim()),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  fullName: z.string().min(2, "Full name must be at least 2 characters").trim(),
+  shopName: z.string().min(2, "Shop name must be at least 2 characters").trim(),
   phone: z.string().optional(),
   city: z.string().optional(),
 });
@@ -31,11 +35,16 @@ export async function POST(req: NextRequest) {
     const parsed = RegisterSchema.safeParse(body);
 
     if (!parsed.success) {
-      return jsonError(
-        "VALIDATION_ERROR",
-        "Invalid registration data",
-        400,
-        parsed.error.flatten()
+      const firstIssue = parsed.error.issues?.[0];
+      const errorMessage = firstIssue?.message || "Invalid registration data";
+      return NextResponse.json(
+        {
+          error: errorMessage,
+          message: errorMessage,
+          code: "VALIDATION_ERROR",
+          issues: parsed.error.issues,
+        },
+        { status: 400 }
       );
     }
 
@@ -44,7 +53,14 @@ export async function POST(req: NextRequest) {
     // Check if user already exists
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      return jsonError("EMAIL_EXISTS", "A user with this email already exists", 409);
+      return NextResponse.json(
+        {
+          error: "Email already registered. Please log in.",
+          message: "Email already registered. Please log in.",
+          code: "EMAIL_EXISTS",
+        },
+        { status: 409 }
+      );
     }
 
     const passwordHash = await hashPassword(password);
@@ -166,8 +182,26 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("Register Error:", err);
-    return jsonError("INTERNAL_ERROR", "An unexpected error occurred", 500);
+    if (err?.code === "P2002" || err?.message?.includes("Unique constraint")) {
+      return NextResponse.json(
+        {
+          error: "Email already registered. Please log in.",
+          message: "Email already registered. Please log in.",
+          code: "EMAIL_EXISTS",
+        },
+        { status: 409 }
+      );
+    }
+    const message = err?.message || "An unexpected error occurred";
+    return NextResponse.json(
+      {
+        error: message,
+        message,
+        code: "INTERNAL_ERROR",
+      },
+      { status: 500 }
+    );
   }
 }

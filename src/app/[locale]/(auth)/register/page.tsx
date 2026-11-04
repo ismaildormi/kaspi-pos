@@ -34,7 +34,11 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data?.error?.message || "فشل إنشاء الحساب");
+        const errorMsg =
+          typeof data?.error === "string"
+            ? data.error
+            : data?.error?.message || data?.message || "فشل إنشاء الحساب";
+        setError(errorMsg);
       } else {
         if (data?.data?.user?.isSuperAdmin) {
           router.push("/ar/admin");
@@ -74,7 +78,7 @@ export default function RegisterPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 p-3 bg-zinc-950 border border-zinc-700 text-zinc-200 text-sm rounded-lg text-center">
+          <div className="mb-4 p-3 bg-red-950/80 border border-red-850 text-red-200 text-sm rounded-lg text-center font-medium shadow-sm">
             {error}
           </div>
         )}
@@ -104,9 +108,11 @@ export default function RegisterPage() {
               value={shopName}
               onChange={(e) => setShopName(e.target.value)}
               placeholder="ميني ماركت أنفا"
+              minLength={2}
               required
               className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition-all"
             />
+            <p className="text-[11px] text-zinc-500 mt-1">Minimum 2 characters</p>
           </div>
 
           <div>
@@ -132,7 +138,7 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              minLength={8}
+              minLength={6}
               required
               className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition-all"
             />
