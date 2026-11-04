@@ -39,6 +39,7 @@ export const CheckoutModal: React.FC = () => {
     customer,
     completeSale,
     isProcessingPayment,
+    deviceCount,
   } = usePosStore();
 
   const [saleResult, setSaleResult] = useState<{
@@ -95,7 +96,7 @@ export const CheckoutModal: React.FC = () => {
   const feeInfo = calculatePaymentFees(
     grandTotal,
     selectedPaymentMethod === "card" ? "cmi_tpe" : "cash",
-    1,
+    deviceCount || 1,
     "MAD"
   );
 
@@ -327,14 +328,23 @@ export const CheckoutModal: React.FC = () => {
 
             {/* TPE Fee Breakdown Notification */}
             {selectedPaymentMethod === "card" && (
-              <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-800/80 text-amber-200 text-xs space-y-1.5 shadow-inner">
+              <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-800/80 text-amber-200 text-xs space-y-2 shadow-inner">
                 <div className="flex items-center justify-between font-bold text-amber-300">
-                  <span>Paiement Carte / TPE CMI (Partage Dynamique)</span>
+                  <div className="flex items-center gap-2">
+                    <span>Paiement Carte / TPE CMI</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300">
+                      {deviceCount || 1} {((deviceCount || 1) > 1) ? "Appareils" : "Appareil"} ({feeInfo.customerPercentage}% / {feeInfo.merchantPercentage}%)
+                    </span>
+                  </div>
                   <span className="font-mono text-sm">{feeInfo.customerTotal.toFixed(2)} DH</span>
                 </div>
                 <p className="text-[11px] font-mono leading-relaxed text-amber-200/90 bg-amber-950/60 p-2.5 rounded-lg border border-amber-900/60 select-all">
                   {feeInfo.breakdownText}
                 </p>
+                <div className="flex items-center justify-between text-[10px] text-amber-300/80 pt-0.5">
+                  <span>Part Commerçant ({feeInfo.merchantPercentage}%) : -{feeInfo.merchantFee.toFixed(2)} DH</span>
+                  <span className="font-semibold text-emerald-400">Total Client ({feeInfo.customerPercentage}%) : {feeInfo.customerTotal.toFixed(2)} DH</span>
+                </div>
               </div>
             )}
 

@@ -21,7 +21,7 @@ export default function PosPage() {
   const [isHeldModalOpen, setIsHeldModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
-  const { openPaymentModal, closePaymentModal, isPaymentModalOpen, cart } = usePosStore();
+  const { openPaymentModal, closePaymentModal, isPaymentModalOpen, cart, setDeviceCount } = usePosStore();
 
   // Trigger Dexie outbox synchronization on POS mount & online events
   useEffect(() => {
@@ -30,15 +30,24 @@ export default function PosPage() {
     }
   }, []);
 
-  // Load products and categories (with Dexie caching)
+  // Load products, categories, and tenant profile (with Dexie caching)
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [prodRes, catRes] = await Promise.all([
+        const [prodRes, catRes, meRes] = await Promise.all([
           fetch(getApiUrl("/api/v1/products")),
           fetch(getApiUrl("/api/v1/categories")),
+          fetch(getApiUrl("/api/v1/me")).catch(() => null),
         ]);
+
+        if (meRes && meRes.ok) {
+          const meData = await meRes.json();
+          const maxDevices = meData.data?.currentTenant?.maxDevices;
+          if (maxDevices) {
+            setDeviceCount(maxDevices);
+          }
+        }
 
         if (prodRes.ok) {
           const prodData = await prodRes.json();

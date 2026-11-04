@@ -57,6 +57,7 @@ interface PosState {
   tenantId: string;
   storeId: string;
   cashierUserId: string;
+  deviceCount: number;
 
   // Active Cart State
   cart: CartItem[];
@@ -89,7 +90,8 @@ interface PosState {
   getChangeDue: () => number;
 
   // Actions
-  setSessionContext: (tenantId: string, storeId: string, cashierUserId: string) => void;
+  setSessionContext: (tenantId: string, storeId: string, cashierUserId: string, deviceCount?: number) => void;
+  setDeviceCount: (count: number) => void;
   addToCart: (product: PosProduct, quantity?: number) => void;
   addProductByBarcode: (product: PosProduct) => void;
   updateItemQuantity: (productId: string, delta: number) => void;
@@ -124,6 +126,7 @@ export const usePosStore = create<PosState>()(
       tenantId: "",
       storeId: "",
       cashierUserId: "",
+      deviceCount: 1,
 
       cart: [],
       customer: null,
@@ -181,8 +184,17 @@ export const usePosStore = create<PosState>()(
         return Math.max(0, roundMoney(toDecimal(tendered).minus(grandTotal)).toNumber());
       },
 
-      setSessionContext: (tenantId, storeId, cashierUserId) => {
-        set({ tenantId, storeId, cashierUserId });
+      setSessionContext: (tenantId, storeId, cashierUserId, deviceCount) => {
+        set({
+          tenantId,
+          storeId,
+          cashierUserId,
+          ...(deviceCount !== undefined ? { deviceCount: Math.max(1, deviceCount) } : {}),
+        });
+      },
+
+      setDeviceCount: (deviceCount) => {
+        set({ deviceCount: Math.max(1, deviceCount) });
       },
 
       addToCart: (product, quantity = 1) => {
