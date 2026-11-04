@@ -6,17 +6,30 @@ export async function GET(req: NextRequest) {
   try {
     const ctx = await getRequestContext();
 
-    const sub = await prisma.subscription.findFirst({
-      where: { tenantId: ctx.tenantId },
-      orderBy: { createdAt: "desc" },
-      include: {
-        plan: true,
-        payments: {
-          orderBy: { createdAt: "desc" },
-          take: 5,
+    const [sub, tenant, activeDevicesCount] = await Promise.all([
+      prisma.subscription.findFirst({
+        where: { tenantId: ctx.tenantId },
+        orderBy: { createdAt: "desc" },
+        include: {
+          plan: true,
+          payments: {
+            orderBy: { createdAt: "desc" },
+            take: 5,
+          },
         },
-      },
-    });
+      }),
+      prisma.tenant.findUnique({
+        where: { id: ctx.tenantId },
+        select: { maxDevices: true },
+      }),
+      prisma.device.count({
+        where: { tenantId: ctx.tenantId, revokedAt: null },
+      }),
+    ]);
+
+    const maxDevices = tenant?.maxDevices ?? 1;
+    const priceMAD = 200 + Math.max(0, maxDevices - 1) * 150;
+    const priceUSD = 20 + Math.max(0, maxDevices - 1) * 15;
 
     const now = new Date();
     let daysRemaining = 14;
@@ -40,8 +53,10 @@ export async function GET(req: NextRequest) {
         currentPeriodEnd: sub?.currentPeriodEnd?.toISOString() || null,
         trialEndAt: sub?.trialEndAt?.toISOString() || null,
         daysRemaining,
-        priceUSD: 10.0,
-        priceMAD: 100.0,
+        priceUSD,
+        priceMAD,
+        maxDevices,
+        activeDevicesCount,
       },
       recentPayments:
         sub?.payments.map((p) => ({

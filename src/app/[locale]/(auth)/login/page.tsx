@@ -25,6 +25,19 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
+      const apiData = await apiRes.json().catch(() => null);
+
+      if (!apiRes.ok) {
+        if (apiData?.code === "DEVICE_LIMIT_EXCEEDED") {
+          setError(
+            apiData.error ||
+              "تم الوصول للحد الأقصى لعدد الأجهزة المصرح بها. يرجى إضافة نقطة بيع جديدة من لوحة الفوترة."
+          );
+          setLoading(false);
+          return;
+        }
+      }
+
       const res = await signIn("credentials", {
         redirect: false,
         email,

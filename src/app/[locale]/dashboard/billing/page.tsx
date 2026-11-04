@@ -17,7 +17,10 @@ import {
   X,
   Receipt,
   AlertTriangle,
+  Monitor,
+  Plus,
 } from "lucide-react";
+import { AddDeviceModal } from "@/components/billing/AddDeviceModal";
 
 interface SubscriptionData {
   id: string | null;
@@ -31,6 +34,8 @@ interface SubscriptionData {
   daysRemaining: number;
   priceUSD: number;
   priceMAD: number;
+  maxDevices?: number;
+  activeDevicesCount?: number;
 }
 
 interface PaymentHistoryItem {
@@ -50,6 +55,7 @@ export default function BillingDashboardPage() {
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [payments, setPayments] = useState<PaymentHistoryItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddDeviceModalOpen, setIsAddDeviceModalOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<"paddle" | "youcanpay">("youcanpay");
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -179,7 +185,7 @@ export default function BillingDashboardPage() {
           <div className="relative z-10 max-w-2xl">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-800 text-zinc-300 text-xs font-bold border border-zinc-700 mb-4">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>{isRtl ? "خطة كسب الشاملة — $10 شهرياً" : "Formule KASPI Tout-en-Un — 10$/mois"}</span>
+              <span>{isRtl ? "خطة كسب المتدرجة — 200 درهم شهرياً" : "Formule KASPI Évolutive — 200 MAD (1er poste)"}</span>
             </span>
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
               {isRtl
@@ -188,8 +194,8 @@ export default function BillingDashboardPage() {
             </h2>
             <p className="text-sm text-zinc-400 leading-relaxed">
               {isRtl
-                ? "تفعيل فوري لجميع ميزات نقاط البيع، المخزون، الفواتير، برامج الولاء، وتطبيق الذكاء الاصطناعي بسعر موحد 100 درهم فقط شهرياً."
-                : "Toutes les fonctionnalités avancées (POS, Stock, Factures ICE, Fidélité, IA) pour 100 MAD/mois sans surprise."}
+                ? "200 درهم للخادم/الجهاز الأول، و 150 درهم فقط لكل نقطة بيع إضافية. نظام مرن يواكب نمو متجرك."
+                : "200 MAD/mois pour votre première caisse, puis +150 MAD/mois par poste supplémentaire. Évolutif, sans engagement."}
             </p>
           </div>
         </div>
@@ -213,13 +219,21 @@ export default function BillingDashboardPage() {
 
             <div className="text-right rtl:text-left">
               <div className="text-2xl font-black text-white font-mono">
-                100 <span className="text-sm font-bold text-zinc-400">MAD / {isRtl ? "شهر" : "mois"}</span>
+                {subscription?.priceMAD ?? 200} <span className="text-sm font-bold text-zinc-400">MAD / {isRtl ? "شهر" : "mois"}</span>
               </div>
-              <span className="text-xs text-zinc-500 font-mono">($10 USD / {isRtl ? "شهر" : "mois"})</span>
+              <span className="text-xs text-zinc-500 font-mono">(${subscription?.priceUSD ?? 20} USD / {isRtl ? "شهر" : "mois"})</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80">
+              <span className="text-xs text-zinc-500 block mb-1">Capacité Caisses</span>
+              <span className="text-sm font-bold text-white font-mono flex items-center gap-1.5">
+                <Monitor className="w-3.5 h-3.5 text-zinc-400" />
+                {subscription?.maxDevices ?? 1} {(subscription?.maxDevices ?? 1) === 1 ? "poste autorisé" : "postes autorisés"}
+              </span>
+            </div>
+
             <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80">
               <span className="text-xs text-zinc-500 block mb-1">Période en cours</span>
               <span className="text-sm font-bold text-white font-mono">
@@ -237,19 +251,76 @@ export default function BillingDashboardPage() {
             </div>
 
             <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80">
-              <span className="text-xs text-zinc-500 block mb-1">Statut de facturation</span>
+              <span className="text-xs text-zinc-500 block mb-1">Statut facturation</span>
               <span className="text-sm font-bold text-white">
                 {subscription?.status === "active" ? "Automatique" : "Action requise"}
               </span>
             </div>
           </div>
 
-          <div className="flex justify-end">
+          {/* Tiered Device Pricing Grid */}
+          <div className="mb-6 p-4 rounded-2xl bg-zinc-950/70 border border-zinc-800">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
+                <Monitor className="w-3.5 h-3.5 text-emerald-400" />
+                Grille Tarifaire par Nombre de Caisses :
+              </span>
+              <span className="text-[10px] text-zinc-400 font-mono">+150 DH par caisse additionnelle</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+              <div className={`p-3 rounded-xl border text-center ${
+                (subscription?.maxDevices ?? 1) === 1
+                  ? "bg-zinc-800 border-white text-white font-bold ring-1 ring-white/20"
+                  : "bg-zinc-900/60 border-zinc-800/80 text-zinc-400"
+              }`}>
+                <span className="block text-[11px] mb-0.5">1 Caisse</span>
+                <span className="font-mono text-sm font-black text-white">200 DH</span>
+                <span className="block text-[9px] text-zinc-500">Boutique Solo</span>
+              </div>
+              <div className={`p-3 rounded-xl border text-center ${
+                (subscription?.maxDevices ?? 1) === 2
+                  ? "bg-zinc-800 border-white text-white font-bold ring-1 ring-white/20"
+                  : "bg-zinc-900/60 border-zinc-800/80 text-zinc-400"
+              }`}>
+                <span className="block text-[11px] mb-0.5">2 Caisses</span>
+                <span className="font-mono text-sm font-black text-white">350 DH</span>
+                <span className="block text-[9px] text-zinc-500">Supérette / Restaurant</span>
+              </div>
+              <div className={`p-3 rounded-xl border text-center ${
+                (subscription?.maxDevices ?? 1) === 3
+                  ? "bg-zinc-800 border-white text-white font-bold ring-1 ring-white/20"
+                  : "bg-zinc-900/60 border-zinc-800/80 text-zinc-400"
+              }`}>
+                <span className="block text-[11px] mb-0.5">3 Caisses</span>
+                <span className="font-mono text-sm font-black text-white">500 DH</span>
+                <span className="block text-[9px] text-zinc-500">Multi-Postes</span>
+              </div>
+              <div className={`p-3 rounded-xl border text-center ${
+                (subscription?.maxDevices ?? 1) >= 4
+                  ? "bg-zinc-800 border-white text-white font-bold ring-1 ring-white/20"
+                  : "bg-zinc-900/60 border-zinc-800/80 text-zinc-400"
+              }`}>
+                <span className="block text-[11px] mb-0.5">4 Caisses</span>
+                <span className="font-mono text-sm font-black text-white">650 DH</span>
+                <span className="block text-[9px] text-zinc-500">Supermarché</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-zinc-800">
+            <button
+              onClick={() => setIsAddDeviceModalOpen(true)}
+              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-500/20 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{isRtl ? "إضافة نقطة بيع جديدة (+150 درهم)" : "Ajouter un nouveau poste de caisse (+150 DH)"}</span>
+            </button>
+
             <button
               onClick={() => setIsModalOpen(true)}
-              className="px-6 py-3 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-sm transition shadow-sm cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs sm:text-sm transition shadow-sm cursor-pointer"
             >
-              {isRtl ? "تجديد أو ترقية الاشتراك" : "Passer à l'offre Pro"}
+              {isRtl ? "تجديد أو ترقية الاشتراك" : "Modifier le moyen de paiement"}
             </button>
           </div>
         </div>
@@ -417,6 +488,27 @@ export default function BillingDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Add Device Modal */}
+      <AddDeviceModal
+        isOpen={isAddDeviceModalOpen}
+        onClose={() => setIsAddDeviceModalOpen(false)}
+        currentDevices={subscription?.maxDevices ?? 1}
+        onDeviceAdded={(newMax) => {
+          setSubscription((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  maxDevices: newMax,
+                  priceMAD: 200 + (newMax - 1) * 150,
+                  priceUSD: 20 + (newMax - 1) * 15,
+                }
+              : null
+          );
+          fetchSubscription();
+        }}
+        isRtl={isRtl}
+      />
     </div>
   );
 }

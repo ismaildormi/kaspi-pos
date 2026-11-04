@@ -246,6 +246,7 @@ model Tenant {
   allowNegativeStock Boolean      @default(true) @map("allow_negative_stock")
   restaurantMode     Boolean      @default(false) @map("restaurant_mode")
   status             TenantStatus @default(trialing)
+  maxDevices         Int          @default(1) @map("max_devices")
 
   // Anti-Abuse & Cash Flow Protection Quotas (Pillar 4)
   aiMessagesUsedToday     Int       @default(0) @map("ai_messages_used_today")

@@ -56,6 +56,41 @@ export async function POST(req: NextRequest) {
         ? user.defaultTenantId
         : user.memberships[0].tenantId;
 
+    // Check Tenant Device Limit (Phase 3)
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: activeTenantId },
+      select: { maxDevices: true, displayName: true },
+    });
+    const maxDevices = tenant?.maxDevices ?? 1;
+
+    const ip = req.headers.get("x-forwarded-for") || undefined;
+    const userAgent = req.headers.get("user-agent") || undefined;
+
+    const activeSessions = await prisma.session.findMany({
+      where: {
+        activeTenantId,
+        revokedAt: null,
+        expires: { gt: new Date() },
+      },
+      select: {
+        id: true,
+        ip: true,
+        userAgent: true,
+      },
+    });
+
+    const isExistingDeviceSession = activeSessions.some(
+      (s) => s.ip === ip && s.userAgent === userAgent
+    );
+
+    if (!isExistingDeviceSession && activeSessions.length >= maxDevices) {
+      return jsonError(
+        "DEVICE_LIMIT_EXCEEDED",
+        `Limite d'appareils atteinte (${maxDevices} poste${maxDevices > 1 ? "s" : ""} max). Votre abonnement actuel ne permet pas de connecter un poste supplémentaire. Veuillez ajouter un nouveau poste de caisse (+150 DH/mois) depuis l'onglet Facturation.`,
+        403
+      );
+    }
+
     // Update last login
     await prisma.user.update({
       where: { id: user.id },
@@ -63,8 +98,6 @@ export async function POST(req: NextRequest) {
     });
 
     // Create session
-    const ip = req.headers.get("x-forwarded-for") || undefined;
-    const userAgent = req.headers.get("user-agent") || undefined;
     const { rawToken } = await createSession({
       userId: user.id,
       activeTenantId,

@@ -9,10 +9,10 @@ export function DevicePricingCalculator() {
   const [isAnnual, setIsAnnual] = useState<boolean>(false);
   const [currency, setCurrency] = useState<"MAD" | "USD">("MAD");
 
-  // Base: 100 MAD / $10 for 1st device
-  // Extra: +50 MAD / +$5 per additional device
-  const basePriceMAD = 100;
-  const extraPriceMAD = 50;
+  // Base: 200 MAD / $20 for 1st device
+  // Extra: +150 MAD / +$15 per additional device
+  const basePriceMAD = 200;
+  const extraPriceMAD = 150;
 
   const totalMonthlyMAD = basePriceMAD + Math.max(0, deviceCount - 1) * extraPriceMAD;
   const effectiveMonthlyMAD = isAnnual ? Math.round(totalMonthlyMAD * 0.8) : totalMonthlyMAD;
@@ -127,10 +127,11 @@ export function DevicePricingCalculator() {
             className="w-full h-2.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-white"
           />
           <div className="flex justify-between text-[11px] font-mono text-zinc-500">
-            <span>1 Caisse (100 MAD)</span>
-            <span>3 Caisses (200 MAD)</span>
-            <span>5 Caisses (300 MAD)</span>
-            <span>10 Caisses (550 MAD)</span>
+            <span>1 Caisse (200 MAD)</span>
+            <span>2 Caisses (350 MAD)</span>
+            <span>3 Caisses (500 MAD)</span>
+            <span>5 Caisses (800 MAD)</span>
+            <span>10 Caisses (1,550 MAD)</span>
           </div>
         </div>
 
@@ -138,15 +139,16 @@ export function DevicePricingCalculator() {
         <div className="p-4 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-zinc-300 gap-3">
           <div className="space-y-1">
             <span className="font-bold text-white">
-              {deviceCount === 1 && "Formule Idéale Épicerie de Quartier (Hanout)"}
-              {deviceCount === 2 && "Formule Supérette (2 Caisses Simultanées)"}
-              {deviceCount >= 3 && deviceCount < 6 && "Formule Supermarché (Multi-Postes & Stocks)"}
-              {deviceCount >= 6 && "Formule Grande Distribution & Chaîne Multi-Magasins"}
+              {deviceCount === 1 && "Formule Idéale Épicerie de Quartier (1 Poste - 200 DH)"}
+              {deviceCount === 2 && "Formule Supérette (2 Postes Simultanés - 350 DH)"}
+              {deviceCount === 3 && "Formule Commerce Établi (3 Postes - 500 DH)"}
+              {deviceCount > 3 && deviceCount < 6 && `Formule Supermarché (${deviceCount} Postes - ${200 + (deviceCount - 1) * 150} DH)`}
+              {deviceCount >= 6 && `Formule Grande Distribution & Chaîne (${deviceCount} Postes)`}
             </span>
             <p className="text-zinc-400 text-[11px]">
-              Comprend 1 caisse principale ({currency === "MAD" ? "100 MAD" : "$10"}) + {deviceCount - 1} caisse
+              Comprend 1 caisse principale ({currency === "MAD" ? "200 MAD" : "$20"}) + {deviceCount - 1} caisse
               {deviceCount - 1 > 1 ? "s" : ""} additionnelle{deviceCount - 1 > 1 ? "s" : ""} (+
-              {currency === "MAD" ? "50 MAD" : "$5"}/caisse).
+              {currency === "MAD" ? "150 MAD" : "$15"}/caisse).
             </p>
           </div>
           <span className="shrink-0 text-emerald-400 font-mono font-bold bg-emerald-950/60 border border-emerald-800/80 px-2.5 py-1 rounded-full">

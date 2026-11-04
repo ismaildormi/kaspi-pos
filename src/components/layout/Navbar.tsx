@@ -25,10 +25,13 @@ export function Navbar() {
           </div>
         </Link>
 
-        {/* Minimal Navigation links: Features, AI, Pricing */}
+        {/* Minimal Navigation links: Features, Simulator, AI, Pricing */}
         <nav className="hidden md:flex items-center gap-7 text-xs font-medium text-zinc-400">
           <a href="#features" className="transition hover:text-white">
             Features
+          </a>
+          <a href="#simulator" className="transition hover:text-white">
+            Simulateur POS
           </a>
           <a href="#whatsapp" className="transition hover:text-white">
             Rapports WhatsApp

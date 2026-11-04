@@ -527,6 +527,44 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // 3.5 Strictly Gate Merchant AI Queries to Retail & Store Operations (Phase 4 Hardening)
+    if (!isSuperAdmin && userPrompt && !firstImageAtt && !firstDocAtt) {
+      const lowerPrompt = userPrompt.toLowerCase().trim();
+      const isGeneralQuery =
+        /^(who is|tell me a (joke|story|poem)|write (a poem|code|python|javascript|react)|what is the (capital|meaning|weather)|how to make (a cake|pasta)|translate|solve this math)/i.test(
+          lowerPrompt
+        ) &&
+        !/(sale|stock|inventory|product|vente|magasin|caisse|facture|mad|dirham|darb|chiffre d'affaires|client|fournisseur|credit|kred|hanout|épicerie|produit|repas|ticket)/i.test(
+          lowerPrompt
+        );
+
+      if (isGeneralQuery) {
+        const rejectionMsg =
+          "I am KASPI AI. I can only assist you with your store's sales, inventory, and statistics.";
+        await prisma.aIChatMessage.create({
+          data: {
+            sessionId: chatSession.id,
+            role: "assistant",
+            content: rejectionMsg,
+          },
+        });
+
+        return new Response(
+          `data: {"type":"text-delta","textDelta":${JSON.stringify(
+            rejectionMsg
+          )}}\n\ndata: [DONE]\n\n`,
+          {
+            headers: {
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache",
+              "x-kaspi-ai-session-id": chatSession.id,
+              "x-kaspi-ai-model": "policy-guard",
+            },
+          }
+        );
+      }
+    }
+
     // 4. Load Complete Chat History for Deep Context
     const historicalMessages = await prisma.aIChatMessage.findMany({
       where: { sessionId: chatSession.id },

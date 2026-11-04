@@ -35,6 +35,7 @@ export interface RequestContext {
     pricesIncludeTax: boolean;
     allowNegativeStock: boolean;
     restaurantMode: boolean;
+    maxDevices: number;
   };
 }
 
@@ -115,6 +116,7 @@ export async function getRequestContext(
       pricesIncludeTax: activeMembership.tenant.pricesIncludeTax,
       allowNegativeStock: activeMembership.tenant.allowNegativeStock,
       restaurantMode: activeMembership.tenant.restaurantMode,
+      maxDevices: (activeMembership.tenant as any).maxDevices ?? 1,
     },
   };
 }

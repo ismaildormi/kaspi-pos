@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { InteractivePosSimulator } from "@/components/landing/InteractivePosSimulator";
 import { DataMigrationSimulator } from "@/components/landing/DataMigrationSimulator";
 import { WhatsAppReportSimulator } from "@/components/landing/WhatsAppReportSimulator";
 import { AiAnalyticsSimulator } from "@/components/landing/AiAnalyticsSimulator";
@@ -92,11 +93,11 @@ export default function LandingPage() {
             </Link>
 
             <a
-              href="#features"
+              href="#simulator"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-7 py-4 text-sm font-semibold text-zinc-200 backdrop-blur-md transition-all hover:bg-white/[0.1] hover:border-white/25 active:scale-95"
             >
-              <Sparkles className="h-4 w-4 text-amber-400" />
-              Découvrir les Fonctionnalités
+              <Zap className="h-4 w-4 text-amber-400" />
+              Tester la Simulation Interactive
             </a>
 
             <Link
@@ -127,7 +128,29 @@ export default function LandingPage() {
       </section>
 
       {/* =========================================================================
-          SECTION 1: WHATSAPP Z-REPORT & MONTHLY REPORTS
+          SECTION 1: MULTI-STORE POS TERMINAL (Supermarket, Restaurant, Clothing, Grocery)
+         ========================================================================= */}
+      <section id="simulator" className="py-24 border-b border-zinc-900 relative">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-3.5 py-1 text-xs font-semibold text-sky-400 mb-4">
+              <Sparkles className="h-3.5 w-3.5" />
+              Simulateur Métier Multi-Commerces &amp; International
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
+              Une caisse modulaire adaptée à chaque métier et à chaque pays
+            </h2>
+            <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
+              Supermarché, restaurant avec gestion de plan de salle et tables, boutique de prêt-à-porter avec tailles ou commerce de proximité : testez en direct la vitesse d&apos;encaissement instantanée sous 12ms.
+            </p>
+          </div>
+
+          <InteractivePosSimulator />
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 2: WHATSAPP Z-REPORT & MONTHLY REPORTS
          ========================================================================= */}
       <section id="features" className="py-24 border-b border-zinc-900 bg-zinc-950/40 relative">
         <div id="whatsapp" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -294,7 +317,7 @@ export default function LandingPage() {
               Payez uniquement pour le matériel que vous utilisez
             </h2>
             <p className="mt-4 text-zinc-400 text-sm sm:text-base leading-relaxed">
-              100 MAD / mois (~10 $ / 10 €) pour votre première caisse, puis 50 MAD (~5 $ / 5 €) par caisse supplémentaire. Pas de frais cachés, aucune commission prélevée sur votre chiffre d&apos;affaires.
+              200 MAD / mois (~20 $ / 20 €) pour votre première caisse, puis 150 MAD (~15 $ / 15 €) par caisse supplémentaire (ex: 2 Caisses = 350 DH, 3 Caisses = 500 DH). Pas de frais cachés, aucune commission prélevée sur votre chiffre d&apos;affaires.
             </p>
           </div>
 
