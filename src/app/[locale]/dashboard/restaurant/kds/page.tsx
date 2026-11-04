@@ -20,7 +20,7 @@ import {
   XCircle,
   ChevronRight,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-client";
 
 export interface KDSTicketItem {
   id: string;

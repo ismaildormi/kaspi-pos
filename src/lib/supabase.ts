@@ -1,28 +1,40 @@
-import { createClient } from "@supabase/supabase-js";
+import "server-only";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-export const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  "https://tqoqsgaymygmgqrzddvtu.supabase.co";
-
-export const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "sb_publishable_jxn-4TT28_G7LtZG4FJXTQ_75JiaSBi";
+let cachedAdmin: SupabaseClient | null = null;
 
 /**
- * Standard Supabase client for client-side and public requests.
- * Uses anon key with safe fallbacks and supports Realtime subscriptions.
- * Completely safe for browser/client components.
+ * Server-only Supabase client with Service Role privileges.
+ * Lazily initialized to avoid throwing errors during Next.js build-time evaluation
+ * when production environment variables may not yet be injected.
  */
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10,
-    },
-  },
-});
+export function getSupabaseAdmin(): SupabaseClient {
+  if (cachedAdmin) return cachedAdmin;
 
-export default supabase;
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    "https://placeholder.supabase.co";
+
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    "placeholder";
+
+  try {
+    cachedAdmin = createClient(url, key, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+    return cachedAdmin;
+  } catch (err) {
+    console.warn("[Supabase Admin] Client initialization warning:", err);
+    return createClient("https://placeholder.supabase.co", "placeholder");
+  }
+}
+
+export const supabaseAdmin = typeof window === "undefined"
+  ? getSupabaseAdmin()
+  : (null as any);
