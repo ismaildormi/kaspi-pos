@@ -7,7 +7,8 @@ import { jsonError, jsonOk } from "@/server/http/response";
 
 const LoginSchema = z.object({
   email: z.string().email().transform((v) => v.toLowerCase().trim()),
-  password: z.string().min(1, "Password is required"),
+  password: z.string().optional(),
+  otpCode: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -19,7 +20,11 @@ export async function POST(req: NextRequest) {
       return jsonError("VALIDATION_ERROR", "Invalid login credentials", 400);
     }
 
-    const { email, password } = parsed.data;
+    const { email, password, otpCode } = parsed.data;
+
+    if (!password && !otpCode) {
+      return jsonError("VALIDATION_ERROR", "يرجى إدخال كلمة المرور أو رمز التحقق", 400);
+    }
 
     const user = await prisma.user.findUnique({
       where: { email },
@@ -41,18 +46,38 @@ export async function POST(req: NextRequest) {
       return jsonError("USER_DISABLED", "الحساب معطل حالياً", 403);
     }
 
-    if (!user.passwordHash) {
-      // If user registered via OAuth without a password, set initial password
-      const newHash = await hashPassword(password);
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { passwordHash: newHash },
+    if (otpCode) {
+      const identifier = `login:${email}`;
+      const tokenRecord = await prisma.verificationToken.findFirst({
+        where: {
+          identifier: { in: [identifier, email] },
+          token: otpCode.trim(),
+        },
       });
-      user.passwordHash = newHash;
-    } else {
-      const isValid = await verifyPassword(user.passwordHash, password);
-      if (!isValid) {
-        return jsonError("INVALID_CREDENTIALS", "البريد الإلكتروني أو كلمة المرور غير صحيحة", 401);
+
+      if (!tokenRecord || new Date() > tokenRecord.expires) {
+        return jsonError("INVALID_CREDENTIALS", "رمز التحقق غير صحيح أو انتهت صلاحيته", 401);
+      }
+
+      await prisma.verificationToken.deleteMany({
+        where: {
+          identifier: { in: [identifier, email] },
+        },
+      });
+    } else if (password) {
+      if (!user.passwordHash) {
+        // If user registered via OAuth without a password, set initial password
+        const newHash = await hashPassword(password);
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { passwordHash: newHash },
+        });
+        user.passwordHash = newHash;
+      } else {
+        const isValid = await verifyPassword(user.passwordHash, password);
+        if (!isValid) {
+          return jsonError("INVALID_CREDENTIALS", "البريد الإلكتروني أو كلمة المرور غير صحيحة", 401);
+        }
       }
     }
 

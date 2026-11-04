@@ -8,7 +8,8 @@ import { verifyPassword, hashPassword } from "@/server/auth/password";
 
 const CredentialsSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(1),
+  password: z.string().optional(),
+  otpCode: z.string().optional(),
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -30,6 +31,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        otpCode: { label: "OTP Code", type: "text" },
       },
       async authorize(credentials) {
         const parsed = CredentialsSchema.safeParse(credentials);
@@ -38,11 +40,38 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        const { email, password } = parsed.data;
+        const { email, password, otpCode } = parsed.data;
         const normalizedEmail = email.toLowerCase().trim();
-        console.log(`[NextAuth Authorize] Validating credentials for: "${normalizedEmail}"`);
+        console.log(`[NextAuth Authorize] Validating credentials for: "${normalizedEmail}" (hasPassword: ${Boolean(password)}, hasOtp: ${Boolean(otpCode)})`);
+
+        if (!password && !otpCode) {
+          console.error("[NextAuth Authorize] FAILED: Neither password nor otpCode provided.");
+          return null;
+        }
 
         try {
+          // If authenticating via Email OTP Code
+          if (otpCode) {
+            const tokenRecord = await prisma.verificationToken.findFirst({
+              where: {
+                identifier: { in: [`login:${normalizedEmail}`, normalizedEmail] },
+                token: otpCode.trim(),
+              },
+            });
+
+            if (!tokenRecord || new Date() > tokenRecord.expires) {
+              console.error(`[NextAuth Authorize] FAILED: Invalid or expired OTP code for "${normalizedEmail}".`);
+              return null;
+            }
+
+            // Valid code consumed
+            await prisma.verificationToken.deleteMany({
+              where: {
+                identifier: { in: [`login:${normalizedEmail}`, normalizedEmail] },
+              },
+            });
+          }
+
           const user = await prisma.user.findUnique({
             where: { email: normalizedEmail },
             include: {
@@ -62,21 +91,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null;
           }
 
-          if (!user.passwordHash) {
-            console.log(
-              `[NextAuth Authorize] User "${normalizedEmail}" has no passwordHash. Setting initial password.`
-            );
-            const newHash = await hashPassword(password);
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { passwordHash: newHash },
-            });
-            user.passwordHash = newHash;
-          } else {
-            const isValid = await verifyPassword(user.passwordHash, password);
-            if (!isValid) {
-              console.error(`[NextAuth Authorize] FAILED: Password mismatch for user "${normalizedEmail}".`);
-              return null;
+          // If authenticating with password (and not OTP)
+          if (!otpCode && password) {
+            if (!user.passwordHash) {
+              console.log(
+                `[NextAuth Authorize] User "${normalizedEmail}" has no passwordHash. Setting initial password.`
+              );
+              const newHash = await hashPassword(password);
+              await prisma.user.update({
+                where: { id: user.id },
+                data: { passwordHash: newHash },
+              });
+              user.passwordHash = newHash;
+            } else {
+              const isValid = await verifyPassword(user.passwordHash, password);
+              if (!isValid) {
+                console.error(`[NextAuth Authorize] FAILED: Password mismatch for user "${normalizedEmail}".`);
+                return null;
+              }
             }
           }
 
