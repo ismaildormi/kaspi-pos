@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
         email: user.email,
         fullName: user.fullName,
         phone: user.phone,
+        isSuperAdmin: user.isSuperAdmin,
       },
       currentTenant: ctx.activeTenant,
       role: ctx.role,

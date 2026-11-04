@@ -50,14 +50,13 @@ export default function LoginPage() {
         setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
       } else {
         const isSuperAdmin = Boolean(
-          apiData?.data?.user?.isSuperAdmin ?? apiData?.user?.isSuperAdmin
+          apiData?.data?.user?.isSuperAdmin || apiData?.user?.isSuperAdmin
         );
         if (isSuperAdmin) {
-          router.push(`/${locale}/admin`);
+          window.location.href = `/${locale}/admin`;
         } else {
-          router.push(`/${locale}/pos`);
+          window.location.href = `/${locale}/dashboard`;
         }
-        router.refresh();
       }
     } catch {
       setError("حدث خطأ غير متوقع");
