@@ -14,6 +14,8 @@ import {
   RefreshCw,
   Sparkles,
 } from "lucide-react";
+import { getApiUrl } from "@/client/sync-engine";
+import { OtpVerification } from "@/components/auth/OtpVerification";
 
 type AuthMode = "password" | "gmail_otp" | "forgot_password";
 
@@ -92,7 +94,7 @@ function LoginForm() {
     setSuccess("");
 
     try {
-      const apiRes = await fetch("/api/v1/auth/login", {
+      const apiRes = await fetch(getApiUrl("/api/v1/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -169,7 +171,7 @@ function LoginForm() {
     setSuccess("");
 
     try {
-      const res = await fetch("/api/v1/auth/email-otp/send", {
+      const res = await fetch(getApiUrl("/api/v1/auth/email-otp/send"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, purpose: "login" }),
@@ -199,7 +201,7 @@ function LoginForm() {
     setSuccess("");
 
     try {
-      const res = await fetch("/api/v1/auth/email-otp/verify", {
+      const res = await fetch(getApiUrl("/api/v1/auth/email-otp/verify"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: targetEmail, code: codeToVerify, purpose: "login" }),
@@ -254,7 +256,7 @@ function LoginForm() {
     setSuccess("");
 
     try {
-      const res = await fetch("/api/v1/auth/email-otp/send", {
+      const res = await fetch(getApiUrl("/api/v1/auth/email-otp/send"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, purpose: "reset" }),
@@ -297,7 +299,7 @@ function LoginForm() {
     setSuccess("");
 
     try {
-      const res = await fetch("/api/v1/auth/reset-password", {
+      const res = await fetch(getApiUrl("/api/v1/auth/reset-password"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -548,7 +550,7 @@ function LoginForm() {
             ) : (
               <form onSubmit={handleVerifyOtpSubmit} className="space-y-4">
                 <div>
-                  <div className="flex justify-between items-center mb-1.5">
+                  <div className="flex justify-between items-center mb-2.5">
                     <label className="block text-sm font-medium text-zinc-300">
                       رمز التحقق المستلم (6 أرقام)
                     </label>
@@ -560,18 +562,18 @@ function LoginForm() {
                       تغيير البريد ({email})
                     </button>
                   </div>
-                  <input
-                    type="text"
-                    maxLength={6}
+                  <OtpVerification
                     value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
-                    placeholder="••••••"
+                    onChange={setOtpCode}
+                    onComplete={(fullCode) => {
+                      setOtpCode(fullCode);
+                      executeOtpLogin(email, fullCode);
+                    }}
+                    disabled={loading}
                     autoFocus
-                    required
-                    className="w-full px-4 py-3.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-center text-2xl font-mono tracking-widest placeholder-zinc-700 focus:outline-none focus:ring-2 focus:ring-white transition-all"
                   />
-                  <p className="text-xs text-zinc-500 mt-2 text-center">
-                    تحقق من صندوق الوارد أو مجلد الرسائل غير المرغوب فيها (Spam) في الجيميل.
+                  <p className="text-xs text-zinc-500 mt-2.5 text-center">
+                    يمكنك لصق الرمز مباشرة (<kbd className="px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-300 font-mono">Ctrl+V</kbd>) أو كتابته. تحقق من صندوق الوارد أو (Spam) في الجيميل.
                   </p>
                 </div>
 
@@ -655,18 +657,14 @@ function LoginForm() {
             ) : (
               <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                    رمز التحقق من Gmail (6 أرقام)
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">
+                    رمز التحقق من Gmail (6 أرقام — يدعم اللصق المباشر Ctrl+V)
                   </label>
-                  <input
-                    type="text"
-                    maxLength={6}
+                  <OtpVerification
                     value={resetCode}
-                    onChange={(e) => setResetCode(e.target.value.replace(/\D/g, ""))}
-                    placeholder="••••••"
+                    onChange={setResetCode}
+                    disabled={loading}
                     autoFocus
-                    required
-                    className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white text-center text-xl font-mono tracking-widest placeholder-zinc-700 focus:outline-none focus:ring-2 focus:ring-white transition-all"
                   />
                 </div>
 

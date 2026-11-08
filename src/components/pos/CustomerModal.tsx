@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { usePosStore, type PosCustomer } from "@/client/store/usePosStore";
 import { offlineDb } from "@/client/db";
+import { getApiUrl } from "@/client/sync-engine";
 
 interface CustomerModalProps {
   isOpen: boolean;
@@ -50,7 +51,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
       setIsLoading(true);
       try {
         const query = search.trim();
-        const res = await fetch(`/api/v1/customers${query ? `?search=${encodeURIComponent(query)}` : ""}`);
+        const res = await fetch(getApiUrl(`/api/v1/customers${query ? `?search=${encodeURIComponent(query)}` : ""}`));
         if (res.ok) {
           const data = await res.json();
           const list: PosCustomer[] = data.data?.customers || [];
@@ -112,7 +113,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
     setErrorMessage("");
 
     try {
-      const res = await fetch("/api/v1/customers", {
+      const res = await fetch(getApiUrl("/api/v1/customers"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

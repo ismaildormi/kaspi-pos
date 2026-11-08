@@ -70,20 +70,27 @@ export async function middleware(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const hasAuth = Boolean(sessionToken || authHeader?.startsWith("Bearer "));
 
-  // 3. Platform Super Admin routes protection (/admin, /[locale]/admin and /api/admin)
-  const isAdminPath =
+  // 3. Platform Super Admin & Authenticated Workspace routes protection (/admin, /dashboard, /pos)
+  const isProtectedWorkspacePath =
     pathname.startsWith("/admin") ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/pos") ||
     pathname.startsWith("/api/admin") ||
-    routing.locales.some((loc) => pathname.startsWith(`/${loc}/admin`));
+    routing.locales.some(
+      (loc) =>
+        pathname.startsWith(`/${loc}/admin`) ||
+        pathname.startsWith(`/${loc}/dashboard`) ||
+        pathname.startsWith(`/${loc}/pos`)
+    );
 
-  if (isAdminPath) {
+  if (isProtectedWorkspacePath) {
     if (!hasAuth) {
       if (pathname.startsWith("/api/")) {
         return NextResponse.json(
           {
             error: {
               code: "UNAUTHORIZED",
-              message: "Platform Super Admin authentication required",
+              message: "Authentication required",
               request_id: crypto.randomUUID(),
             },
           },
@@ -97,7 +104,9 @@ export async function middleware(request: NextRequest) {
       loginUrl.searchParams.set("from", pathname);
       return NextResponse.redirect(loginUrl);
     }
-    return NextResponse.next();
+    if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+      return NextResponse.next();
+    }
   }
 
   // 3. API route protection under /api/v1

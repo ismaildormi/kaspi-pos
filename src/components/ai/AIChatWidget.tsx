@@ -5,6 +5,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
+import { getApiUrl } from "@/client/sync-engine";
 import {
   Bot,
   Sparkles,
@@ -22,6 +23,7 @@ import {
 
 export function AIChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [input, setInput] = useState("");
   const [attachment, setAttachment] = useState<{
     name: string;
@@ -50,7 +52,26 @@ export function AIChatWidget() {
     pathname.includes("/pos") ||
     pathname.includes("/admin");
 
-  const shouldRenderWidget = !isAuthPage && isAuthenticatedWorkspaceRoute;
+  useEffect(() => {
+    if (!isAuthenticatedWorkspaceRoute || isAuthPage) {
+      setIsAuthenticated(false);
+      return;
+    }
+    let active = true;
+    fetch(getApiUrl("/api/v1/me"))
+      .then((res) => {
+        if (active) setIsAuthenticated(res.ok);
+      })
+      .catch(() => {
+        // If offline inside workspace, allow if cached session exists
+        if (active) setIsAuthenticated(typeof navigator !== "undefined" && !navigator.onLine);
+      });
+    return () => {
+      active = false;
+    };
+  }, [pathname, isAuthenticatedWorkspaceRoute, isAuthPage]);
+
+  const shouldRenderWidget = !isAuthPage && isAuthenticatedWorkspaceRoute && isAuthenticated;
 
   // Listen for custom "open-master-ai" events triggered from the Super Admin dashboard
   useEffect(() => {

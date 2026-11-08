@@ -18,10 +18,43 @@ export interface SyncQueueProcessResult {
 
 let isCurrentlySyncing = false;
 
+export const PRODUCTION_CLOUD_ORIGIN = "https://kaspi-pos.vercel.app";
+export const PRODUCTION_API_V1_BASE = "https://kaspi-pos.vercel.app/api/v1";
+
+export function isTauriDesktopRuntime(): boolean {
+  if (typeof window === "undefined") return false;
+  const w = window as any;
+  return Boolean(
+    w.__TAURI_INTERNALS__ ||
+      w.__TAURI__ ||
+      window.location.protocol === "tauri:" ||
+      window.location.hostname === "tauri.localhost"
+  );
+}
+
 export function getApiUrl(path: string): string {
-  const baseUrl = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  return baseUrl ? `${baseUrl}${cleanPath}` : cleanPath;
+
+  // When running inside the Tauri Desktop Client (or when explicitly configured),
+  // statically bind all API requests to https://kaspi-pos.vercel.app/api/v1 (or production origin)
+  // and never use localhost / loopback.
+  if (isTauriDesktopRuntime()) {
+    if (cleanPath.startsWith("/api/v1")) {
+      const subPath = cleanPath.slice("/api/v1".length);
+      return `${PRODUCTION_API_V1_BASE}${subPath}`;
+    }
+    return `${PRODUCTION_CLOUD_ORIGIN}${cleanPath}`;
+  }
+
+  const envBase = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
+  if (envBase && !envBase.includes("localhost") && !envBase.includes("127.0.0.1")) {
+    if (envBase.endsWith("/api/v1") && cleanPath.startsWith("/api/v1")) {
+      return `${envBase}${cleanPath.slice("/api/v1".length)}`;
+    }
+    return `${envBase}${cleanPath}`;
+  }
+
+  return cleanPath;
 }
 
 export async function getSyncQueueCounts(): Promise<{

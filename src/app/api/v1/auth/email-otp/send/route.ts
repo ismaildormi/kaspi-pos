@@ -78,8 +78,8 @@ export async function POST(req: NextRequest) {
 
     return jsonOk({
       message: `تم إرسال رمز التحقق إلى ${email}`,
-      simulated: false,
       messageId: sendResult.messageId,
+      smtpResponse: sendResult.response,
       devCode: process.env.NODE_ENV !== "production" ? code : undefined,
     });
   } catch (err: unknown) {

@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import { printReceipt } from "@/client/printing";
 import { usePosStore } from "@/client/store/usePosStore";
+import { getApiUrl } from "@/client/sync-engine";
 import {
   formatReceiptAmount,
   formatReceiptDate,
@@ -74,7 +75,7 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
     e.preventDefault();
     setIsSubmittingOpen(true);
     try {
-      const res = await fetch("/api/v1/cash-sessions", {
+      const res = await fetch(getApiUrl("/api/v1/cash-sessions"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -107,7 +108,7 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
 
     setIsSubmittingMovement(true);
     try {
-      const res = await fetch(`/api/v1/cash-sessions/${activeShift.sessionId}/movements`, {
+      const res = await fetch(getApiUrl(`/api/v1/cash-sessions/${activeShift.sessionId}/movements`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -230,7 +231,7 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
 
     setIsSubmittingClose(true);
     try {
-      const res = await fetch(`/api/v1/cash-sessions/${activeShift.sessionId}/close`, {
+      const res = await fetch(getApiUrl(`/api/v1/cash-sessions/${activeShift.sessionId}/close`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

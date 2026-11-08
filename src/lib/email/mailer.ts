@@ -14,14 +14,19 @@ export interface SendEmailOptions {
   time?: string;
 }
 
+const OFFICIAL_GMAIL_USER = "kaspipos.official@gmail.com";
+const OFFICIAL_GMAIL_APP_PASSWORD = "lmft boxo ytls gtbk";
+const OFFICIAL_SMTP_HOST = "smtp.gmail.com";
+const OFFICIAL_SMTP_PORT = 465;
+
 let transporter: Transporter | null = null;
 
 function createSmtpTransporter(portOverride?: number): Transporter {
-  const gmailUser = (process.env.GMAIL_USER || process.env.SMTP_USER || "kaspipos.official@gmail.com").trim();
-  const rawPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || "lmft boxo ytls gtbk";
+  const gmailUser = (process.env.GMAIL_USER || OFFICIAL_GMAIL_USER).trim();
+  const rawPass = process.env.GMAIL_APP_PASSWORD || OFFICIAL_GMAIL_APP_PASSWORD;
   const gmailPass = rawPass.replace(/\s+/g, "");
-  const host = (process.env.SMTP_HOST || (gmailUser.endsWith("@gmail.com") ? "smtp.gmail.com" : "smtp.gmail.com")).trim();
-  const port = portOverride ?? Number(process.env.SMTP_PORT || "465");
+  const host = (process.env.SMTP_HOST || OFFICIAL_SMTP_HOST).trim();
+  const port = portOverride ?? Number(process.env.SMTP_PORT || OFFICIAL_SMTP_PORT);
   const isSecure = port === 465;
 
   return nodemailer.createTransport({
@@ -146,11 +151,11 @@ export function generateArabicEmailHtml(options: SendEmailOptions): string {
 
 export async function sendKaspiEmail(
   options: SendEmailOptions
-): Promise<{ success: boolean; simulated?: boolean; messageId?: string; response?: string; error?: string }> {
+): Promise<{ success: boolean; messageId?: string; response?: string; error?: string }> {
   const html = generateArabicEmailHtml(options);
 
   // Official sender address: "KASPI POS <kaspipos.official@gmail.com>"
-  const gmailSender = (process.env.GMAIL_USER || process.env.SMTP_USER || "kaspipos.official@gmail.com").trim();
+  const gmailSender = (process.env.GMAIL_USER || OFFICIAL_GMAIL_USER).trim();
   const from = process.env.SMTP_FROM || `KASPI POS <${gmailSender}>`;
 
   console.log("\n==================================================================");
@@ -177,7 +182,6 @@ export async function sendKaspiEmail(
     console.log(`[KASPI Mailer] Email sent via SSL/TLS (465) to ${options.to} | MessageID: ${info.messageId} | Response: ${info.response}`);
     return {
       success: true,
-      simulated: false,
       messageId: info.messageId,
       response: info.response,
     };
@@ -195,7 +199,6 @@ export async function sendKaspiEmail(
       console.log(`[KASPI Mailer] Email sent via STARTTLS (587) to ${options.to} | MessageID: ${info587.messageId} | Response: ${info587.response}`);
       return {
         success: true,
-        simulated: false,
         messageId: info587.messageId,
         response: info587.response,
       };
@@ -204,7 +207,6 @@ export async function sendKaspiEmail(
       console.error("[KASPI Mailer] Fatal SMTP delivery failure on both ports 465 and 587:", errMsg);
       return {
         success: false,
-        simulated: false,
         error: errMsg,
       };
     }
@@ -219,7 +221,7 @@ export async function sendLoginAlertEmail(params: {
   ip?: string;
   userAgent?: string;
   time?: string;
-}): Promise<{ success: boolean; simulated?: boolean }> {
+}): Promise<{ success: boolean; messageId?: string; response?: string; error?: string }> {
   return sendKaspiEmail({
     to: params.to,
     subject: "🔔 KASPI POS — تنبيه أمني: تسجيل دخول جديد إلى حسابك",
@@ -238,7 +240,7 @@ export async function sendBroadcastEmail(params: {
   title: string;
   message: string;
   version?: string;
-}): Promise<{ success: boolean; simulated?: boolean }> {
+}): Promise<{ success: boolean; messageId?: string; response?: string; error?: string }> {
   return sendKaspiEmail({
     to: params.to,
     subject: `📢 KASPI POS: ${params.title}`,

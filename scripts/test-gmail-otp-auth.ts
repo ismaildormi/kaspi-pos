@@ -32,8 +32,8 @@ async function testGmailOtpAuth() {
       type: "login_otp",
     });
 
-    if (!mailResult.success || mailResult.simulated) {
-      throw new Error(`Live SMTP delivery failed for ${recipient}: ${mailResult.error || "Simulated fallback"}`);
+    if (!mailResult.success) {
+      throw new Error(`Live SMTP delivery failed for ${recipient}: ${mailResult.error || "SMTP Error"}`);
     }
     console.log(`✓ LIVE SMTP EMAIL DELIVERED TO: ${recipient}`);
     console.log(`  -> OTP Code:   ${loginCode}`);
