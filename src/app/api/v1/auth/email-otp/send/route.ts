@@ -68,9 +68,18 @@ export async function POST(req: NextRequest) {
       type: purpose === "reset" ? "password_reset" : "login_otp",
     });
 
+    if (!sendResult.success) {
+      return jsonError(
+        "EMAIL_DELIVERY_FAILED",
+        `تعذر إرسال رمز التحقق إلى ${email} عبر خادم Gmail SMTP (${sendResult.error || "خطأ في الاتصال"}). يرجى التحقق من البريد والمحاولة مجدداً.`,
+        502
+      );
+    }
+
     return jsonOk({
       message: `تم إرسال رمز التحقق إلى ${email}`,
-      simulated: sendResult.simulated,
+      simulated: false,
+      messageId: sendResult.messageId,
       devCode: process.env.NODE_ENV !== "production" ? code : undefined,
     });
   } catch (err: unknown) {

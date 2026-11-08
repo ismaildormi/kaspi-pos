@@ -16,32 +16,37 @@ export interface SendEmailOptions {
 
 let transporter: Transporter | null = null;
 
-function getTransporter(): Transporter | null {
-  if (transporter) return transporter;
-
+function createSmtpTransporter(portOverride?: number): Transporter {
   const gmailUser = (process.env.GMAIL_USER || process.env.SMTP_USER || "kaspipos.official@gmail.com").trim();
   const rawPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || "lmft boxo ytls gtbk";
-  const gmailPass = rawPass?.replace(/\s+/g, "");
-  const host = process.env.SMTP_HOST || (gmailUser?.endsWith("@gmail.com") ? "smtp.gmail.com" : undefined);
-  const port = Number(process.env.SMTP_PORT || (host === "smtp.gmail.com" ? "465" : "587"));
+  const gmailPass = rawPass.replace(/\s+/g, "");
+  const host = (process.env.SMTP_HOST || (gmailUser.endsWith("@gmail.com") ? "smtp.gmail.com" : "smtp.gmail.com")).trim();
+  const port = portOverride ?? Number(process.env.SMTP_PORT || "465");
+  const isSecure = port === 465;
 
-  if (gmailUser && gmailPass && host) {
-    try {
-      transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure: port === 465,
-        auth: {
-          user: gmailUser,
-          pass: gmailPass,
-        },
-      });
-      console.log(`[KASPI Mailer] Initialized SMTP transporter for host: ${host}:${port} (${gmailUser})`);
-    } catch (err) {
-      console.error("[KASPI Mailer] Failed to initialize transporter:", err);
-    }
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: isSecure,
+    requireTLS: !isSecure,
+    auth: {
+      user: gmailUser,
+      pass: gmailPass,
+    },
+    tls: {
+      rejectUnauthorized: false,
+      minVersion: "TLSv1.2",
+    },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
+  });
+}
+
+function getTransporter(): Transporter {
+  if (!transporter) {
+    transporter = createSmtpTransporter();
   }
-
   return transporter;
 }
 
@@ -141,10 +146,9 @@ export function generateArabicEmailHtml(options: SendEmailOptions): string {
 
 export async function sendKaspiEmail(
   options: SendEmailOptions
-): Promise<{ success: boolean; simulated?: boolean; error?: string }> {
-  const mailer = getTransporter();
+): Promise<{ success: boolean; simulated?: boolean; messageId?: string; response?: string; error?: string }> {
   const html = generateArabicEmailHtml(options);
-  
+
   // Official sender address: "KASPI POS <kaspipos.official@gmail.com>"
   const gmailSender = (process.env.GMAIL_USER || process.env.SMTP_USER || "kaspipos.official@gmail.com").trim();
   const from = process.env.SMTP_FROM || `KASPI POS <${gmailSender}>`;
@@ -161,23 +165,50 @@ export async function sendKaspiEmail(
   }
   console.log("==================================================================\n");
 
-  if (mailer) {
+  const primaryMailer = getTransporter();
+
+  try {
+    const info = await primaryMailer.sendMail({
+      from,
+      to: options.to,
+      subject: options.subject,
+      html,
+    });
+    console.log(`[KASPI Mailer] Email sent via SSL/TLS (465) to ${options.to} | MessageID: ${info.messageId} | Response: ${info.response}`);
+    return {
+      success: true,
+      simulated: false,
+      messageId: info.messageId,
+      response: info.response,
+    };
+  } catch (primaryErr: any) {
+    console.warn(`[KASPI Mailer] Port 465 attempt failed (${primaryErr?.message}), retrying via STARTTLS Port 587...`);
     try {
-      await mailer.sendMail({
+      const fallbackMailer = createSmtpTransporter(587);
+      const info587 = await fallbackMailer.sendMail({
         from,
         to: options.to,
         subject: options.subject,
         html,
       });
-      console.log(`[KASPI Mailer] Email sent successfully to: ${options.to}`);
-      return { success: true };
-    } catch (err: any) {
-      console.error("[KASPI Mailer] Error dispatching email:", err);
-      return { success: true, simulated: true, error: err?.message };
+      transporter = fallbackMailer;
+      console.log(`[KASPI Mailer] Email sent via STARTTLS (587) to ${options.to} | MessageID: ${info587.messageId} | Response: ${info587.response}`);
+      return {
+        success: true,
+        simulated: false,
+        messageId: info587.messageId,
+        response: info587.response,
+      };
+    } catch (secondaryErr: any) {
+      const errMsg = secondaryErr?.message || primaryErr?.message || "SMTP Connection Error";
+      console.error("[KASPI Mailer] Fatal SMTP delivery failure on both ports 465 and 587:", errMsg);
+      return {
+        success: false,
+        simulated: false,
+        error: errMsg,
+      };
     }
   }
-
-  return { success: true, simulated: true };
 }
 
 /**

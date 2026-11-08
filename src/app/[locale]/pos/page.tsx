@@ -10,6 +10,8 @@ import { CartPanel } from "@/components/pos/CartPanel";
 import { CheckoutModal } from "@/components/pos/CheckoutModal";
 import { HeldCartsModal } from "@/components/pos/HeldCartsModal";
 import { CustomerModal } from "@/components/pos/CustomerModal";
+import { CashShiftModal } from "@/components/pos/CashShiftModal";
+import type { ShiftFinancialSummary } from "@/server/cash-shift/engine";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { offlineDb } from "@/client/db";
 import { processSyncQueue, getApiUrl } from "@/client/sync-engine";
@@ -20,15 +22,39 @@ export default function PosPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isHeldModalOpen, setIsHeldModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isCashShiftModalOpen, setIsCashShiftModalOpen] = useState(false);
+  const [activeShift, setActiveShift] = useState<ShiftFinancialSummary | null>(null);
+  const [recentShifts, setRecentShifts] = useState<ShiftFinancialSummary[]>([]);
 
   const { openPaymentModal, closePaymentModal, isPaymentModalOpen, cart, setDeviceCount, setTenantInfo, setPrinterSettings } = usePosStore();
 
-  // Trigger Dexie outbox synchronization on POS mount & online events
+  const fetchCashShift = React.useCallback(async () => {
+    try {
+      const res = await fetch(getApiUrl("/api/v1/cash-sessions"));
+      if (res.ok) {
+        const json = await res.json();
+        setActiveShift(json.data?.activeSession || null);
+        setRecentShifts(json.data?.recentSessions || []);
+      }
+    } catch {
+      // Ignore network errors while offline
+    }
+  }, []);
+
+  // Trigger Dexie outbox synchronization & shift fetch on POS mount & online events
   useEffect(() => {
     if (navigator.onLine) {
       processSyncQueue().catch(() => {});
+      fetchCashShift();
     }
-  }, []);
+  }, [fetchCashShift]);
+
+  // Refresh active cash shift summary when payment modal closes (e.g. after a completed sale)
+  useEffect(() => {
+    if (!isPaymentModalOpen && navigator.onLine) {
+      fetchCashShift();
+    }
+  }, [isPaymentModalOpen, fetchCashShift]);
 
   // Load products, categories, and tenant profile (with Dexie caching)
   useEffect(() => {
@@ -164,7 +190,15 @@ export default function PosPage() {
         }}
       />
       {/* Top Header */}
-      <PosHeader onOpenHeldCarts={() => setIsHeldModalOpen(true)} />
+      <PosHeader
+        onOpenHeldCarts={() => setIsHeldModalOpen(true)}
+        onOpenCashShift={() => {
+          fetchCashShift();
+          setIsCashShiftModalOpen(true);
+        }}
+        isShiftOpen={Boolean(activeShift)}
+        expectedCash={activeShift?.expectedCash || 0}
+      />
 
       {/* Main Split-Screen Workspace */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
@@ -207,6 +241,15 @@ export default function PosPage() {
       <CustomerModal
         isOpen={isCustomerModalOpen}
         onClose={() => setIsCustomerModalOpen(false)}
+      />
+
+      {/* Cash Drawer Shift Management Modal (Fond de Caisse / X-Report / Z-Report) */}
+      <CashShiftModal
+        isOpen={isCashShiftModalOpen}
+        onClose={() => setIsCashShiftModalOpen(false)}
+        activeShift={activeShift}
+        recentShifts={recentShifts}
+        onShiftUpdated={fetchCashShift}
       />
     </div>
   );

@@ -3,7 +3,6 @@ import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import "@/app/globals.css";
-import { AIChatWidget } from "@/components/ai/AIChatWidget";
 import { UpdateBanner } from "@/components/UpdateBanner";
 
 export const dynamic = "force-dynamic";

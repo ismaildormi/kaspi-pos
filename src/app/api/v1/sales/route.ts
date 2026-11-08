@@ -91,11 +91,23 @@ export async function POST(req: NextRequest) {
             { prefix: "REC", tx }
           );
 
+          // Link sale to active open CashSession if one is open for this store
+          const activeCashSession = await tx.cashSession.findFirst({
+            where: {
+              tenantId: ctx.tenantId,
+              storeId,
+              status: "open",
+            },
+            orderBy: { openedAt: "desc" },
+            select: { id: true },
+          });
+
           // Create Sale
           const sale = await tx.sale.create({
             data: {
               tenantId: ctx.tenantId,
               storeId,
+              cashSessionId: activeCashSession?.id || null,
               cashierUserId: ctx.userId,
               customerId: customerId || null,
               clientSaleId,

@@ -30,11 +30,27 @@ export function AIChatWidget() {
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const locale = useLocale();
-  const pathname = usePathname();
-  const isAdminView = pathname?.includes("/admin");
+  const pathname = usePathname() || "";
+  const isAdminView = pathname.includes("/admin");
   const isRtl = locale === "ar";
   const t = useTranslations("Ai");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Strictly hide AI Assistant Widget on authentication/public screens
+  // Only render inside authenticated workspace routes (/dashboard/*, /pos/*, /admin/*)
+  const isAuthPage =
+    pathname.includes("/login") ||
+    pathname.includes("/register") ||
+    pathname.includes("/forgot-password") ||
+    pathname.includes("/reset-password") ||
+    pathname.includes("/auth");
+
+  const isAuthenticatedWorkspaceRoute =
+    pathname.includes("/dashboard") ||
+    pathname.includes("/pos") ||
+    pathname.includes("/admin");
+
+  const shouldRenderWidget = !isAuthPage && isAuthenticatedWorkspaceRoute;
 
   // Listen for custom "open-master-ai" events triggered from the Super Admin dashboard
   useEffect(() => {
@@ -135,6 +151,10 @@ export function AIChatWidget() {
     }
     return "";
   };
+
+  if (!shouldRenderWidget) {
+    return null;
+  }
 
   return (
     <>

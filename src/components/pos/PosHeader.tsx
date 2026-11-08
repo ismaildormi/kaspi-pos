@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
-import { Clock, User as UserIcon, LayoutDashboard, ArrowLeft } from "lucide-react";
+import { Clock, User as UserIcon, LayoutDashboard, ArrowLeft, Wallet } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SyncStatusBadge } from "./SyncStatusBadge";
@@ -12,12 +12,18 @@ interface PosHeaderProps {
   storeName?: string;
   cashierName?: string;
   onOpenHeldCarts?: () => void;
+  onOpenCashShift?: () => void;
+  isShiftOpen?: boolean;
+  expectedCash?: number;
 }
 
 export const PosHeader: React.FC<PosHeaderProps> = ({
   storeName = "Magasin Principal",
   cashierName = "Caissier",
   onOpenHeldCarts,
+  onOpenCashShift,
+  isShiftOpen = false,
+  expectedCash = 0,
 }) => {
   const t = useTranslations("Pos");
   const locale = useLocale();
@@ -60,8 +66,33 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         </div>
       </div>
 
-      {/* Center / Right Actions: Sync Status Indicator, Parked Carts, Lang Switcher */}
+      {/* Center / Right Actions: Sync Status Indicator, Cash Shift (X/Z), Parked Carts, Lang Switcher */}
       <div className="flex items-center gap-3">
+        {/* Cash Drawer Shift Management Button (Fond de Caisse / X-Report / Z-Report) */}
+        {onOpenCashShift && (
+          <button
+            onClick={onOpenCashShift}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
+              isShiftOpen
+                ? "bg-emerald-950/50 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/50"
+                : "bg-amber-950/50 border-amber-500/40 text-amber-300 hover:bg-amber-900/50"
+            }`}
+            title="Gestion de Caisse (Fond de Caisse / Rapport X & Z)"
+          >
+            <Wallet className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">
+              {isShiftOpen
+                ? `Caisse • ${expectedCash.toFixed(2)} DH`
+                : "Ouvrir Caisse (Fond)"}
+            </span>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isShiftOpen ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
+              }`}
+            />
+          </button>
+        )}
+
         {/* Live Offline/Online & Outbox Queue Status Badge */}
         <SyncStatusBadge />
 
