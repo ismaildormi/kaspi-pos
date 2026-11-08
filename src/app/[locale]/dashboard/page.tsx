@@ -13,6 +13,8 @@ import {
   Plus,
   FileSpreadsheet,
 } from "lucide-react";
+import { DashboardOnboardingTrigger } from "@/components/dashboard/DashboardOnboardingTrigger";
+import type { StoreBusinessType } from "@/client/store/usePosStore";
 
 export const dynamic = "force-dynamic";
 
@@ -20,12 +22,29 @@ export default async function DashboardOverviewPage() {
   const ctx = await getRequestContext();
   const tenantId = ctx.tenantId;
 
-  // 1. Fetch counts & stats
-  const [productsCount, salesCount, customersCount] = await Promise.all([
+  // 1. Fetch counts & stats + workspace onboarding profile
+  const [productsCount, salesCount, customersCount, workspaceRecord] = await Promise.all([
     prisma.product.count({ where: { tenantId } }),
     prisma.sale.count({ where: { tenantId, status: "completed" } }),
     prisma.customer.count({ where: { tenantId } }),
+    prisma.idempotencyRecord
+      .findUnique({
+        where: {
+          tenantId_scope_key: {
+            tenantId,
+            scope: "workspace_config",
+            key: "store_profile",
+          },
+        },
+      })
+      .catch(() => null),
   ]);
+
+  const workspacePayload = (workspaceRecord?.responseBody as Record<string, any>) || {};
+  const currentStoreType = (workspacePayload.storeType as StoreBusinessType) || "grocery";
+  const shouldAutoOpenOnboarding =
+    workspacePayload.onboardingCompleted === false ||
+    (!workspaceRecord && productsCount === 0);
 
   // 2. Sum of sales
   const salesAgg = await prisma.sale.aggregate({
@@ -54,7 +73,12 @@ export default async function DashboardOverviewPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <DashboardOnboardingTrigger
+            initialShopName={ctx.activeTenant?.displayName || ""}
+            autoOpen={shouldAutoOpenOnboarding}
+            currentStoreType={currentStoreType}
+          />
           <Link
             href="/dashboard/products/import"
             className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition"

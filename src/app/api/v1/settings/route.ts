@@ -5,7 +5,7 @@ import { getRequestContext } from "@/server/auth/context";
 export async function GET(req: NextRequest) {
   try {
     const ctx = await getRequestContext();
-    const [settings, printerRecord] = await Promise.all([
+    const [settings, printerRecord, workspaceRecord] = await Promise.all([
       prisma.tenantSettings.findUnique({
         where: { tenantId: ctx.tenantId },
       }),
@@ -20,9 +20,21 @@ export async function GET(req: NextRequest) {
           },
         })
         .catch(() => null),
+      prisma.idempotencyRecord
+        .findUnique({
+          where: {
+            tenantId_scope_key: {
+              tenantId: ctx.tenantId,
+              scope: "workspace_config",
+              key: "store_profile",
+            },
+          },
+        })
+        .catch(() => null),
     ]);
 
     const printerConfig = (printerRecord?.responseBody as Record<string, any>) || {};
+    const workspaceConfig = (workspaceRecord?.responseBody as Record<string, any>) || {};
 
     return NextResponse.json({
       success: true,
@@ -47,6 +59,14 @@ export async function GET(req: NextRequest) {
         autoPrintReceipt: printerConfig.autoPrintReceipt ?? false,
         openDrawer: printerConfig.openDrawer ?? true,
         showStoreLogo: printerConfig.showStoreLogo ?? true,
+        storeType: workspaceConfig.storeType || "grocery",
+        onboardingCompleted: Boolean(workspaceConfig.onboardingCompleted),
+        currency: workspaceConfig.currency || ctx.activeTenant?.currency || "MAD",
+        enableKds: workspaceConfig.enableKds ?? (workspaceConfig.storeType === "restaurant"),
+        enableTableGrid: workspaceConfig.enableTableGrid ?? (workspaceConfig.storeType === "restaurant"),
+        enableVariantsMatrix: workspaceConfig.enableVariantsMatrix ?? (workspaceConfig.storeType === "fashion"),
+        enableSerialTracking: workspaceConfig.enableSerialTracking ?? (workspaceConfig.storeType === "electronics"),
+        enableWeightScale: workspaceConfig.enableWeightScale ?? (workspaceConfig.storeType === "grocery"),
       },
     });
   } catch (err: any) {
@@ -128,11 +148,71 @@ export async function POST(req: NextRequest) {
       })
       .catch((e) => console.warn("[Settings Thermal Config Persist Warning]:", e));
 
+    let workspaceConfig: Record<string, any> | undefined;
+    if (body.storeType !== undefined || body.onboardingCompleted !== undefined) {
+      const existingWs = await prisma.idempotencyRecord
+        .findUnique({
+          where: {
+            tenantId_scope_key: {
+              tenantId: ctx.tenantId,
+              scope: "workspace_config",
+              key: "store_profile",
+            },
+          },
+        })
+        .catch(() => null);
+
+      const prevWs = (existingWs?.responseBody as Record<string, any>) || {};
+      const nextStoreType = body.storeType || prevWs.storeType || "grocery";
+
+      workspaceConfig = {
+        ...prevWs,
+        storeType: nextStoreType,
+        onboardingCompleted:
+          body.onboardingCompleted !== undefined
+            ? Boolean(body.onboardingCompleted)
+            : Boolean(prevWs.onboardingCompleted ?? true),
+        currency: body.currency || prevWs.currency || "MAD",
+        enableKds: body.enableKds ?? (nextStoreType === "restaurant"),
+        enableTableGrid: body.enableTableGrid ?? (nextStoreType === "restaurant"),
+        enableVariantsMatrix: body.enableVariantsMatrix ?? (nextStoreType === "fashion"),
+        enableSerialTracking: body.enableSerialTracking ?? (nextStoreType === "electronics"),
+        enableWeightScale: body.enableWeightScale ?? (nextStoreType === "grocery"),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await prisma.idempotencyRecord
+        .upsert({
+          where: {
+            tenantId_scope_key: {
+              tenantId: ctx.tenantId,
+              scope: "workspace_config",
+              key: "store_profile",
+            },
+          },
+          create: {
+            tenantId: ctx.tenantId,
+            scope: "workspace_config",
+            key: "store_profile",
+            requestHash: "store_profile_v1",
+            responseStatus: 200,
+            responseBody: workspaceConfig,
+            expiresAt: farFuture,
+          },
+          update: {
+            responseBody: workspaceConfig,
+            expiresAt: farFuture,
+          },
+        })
+        .catch((e) => console.warn("[Settings Workspace Config Persist Warning]:", e));
+    }
+
     return NextResponse.json({
       success: true,
       settings: {
         ...updated,
         ...thermalConfig,
+        ...(workspaceConfig || {}),
       },
     });
   } catch (err: any) {

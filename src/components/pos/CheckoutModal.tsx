@@ -129,7 +129,7 @@ export const CheckoutModal: React.FC = () => {
       customerName: customer?.name || undefined,
       customerIce: customer?.ice ? toWesternNumerals(customer.ice) : undefined,
       items: cart.map((i) => ({
-        name: i.name,
+        name: i.notes ? `${i.name} (${i.notes})` : i.name,
         quantity: i.quantity,
         unitPrice: i.unitPrice,
         taxRate: i.taxRate,

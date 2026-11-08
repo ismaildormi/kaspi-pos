@@ -51,6 +51,8 @@ export interface HeldCart {
 }
 
 export type PaymentMethodType = "cash" | "card" | "credit" | "transfer";
+export type StoreIndustryType = "grocery" | "restaurant" | "fashion" | "electronics";
+export type StoreBusinessType = StoreIndustryType;
 
 interface PosState {
   // Session & Store Context
@@ -58,6 +60,11 @@ interface PosState {
   storeId: string;
   cashierUserId: string;
   deviceCount: number;
+  storeType: StoreIndustryType;
+  onboardingCompleted: boolean;
+  selectedTableId: string | null;
+  selectedTableName: string | null;
+  loyaltyPointsToRedeem: number;
   tenantInfo?: {
     shopName?: string;
     legalName?: string;
@@ -117,9 +124,13 @@ interface PosState {
   // Actions
   setSessionContext: (tenantId: string, storeId: string, cashierUserId: string, deviceCount?: number) => void;
   setDeviceCount: (count: number) => void;
+  setStoreProfile: (storeType: StoreIndustryType, onboardingCompleted?: boolean) => void;
+  setSelectedTable: (tableId: string | null, tableName?: string | null) => void;
+  setLoyaltyPointsToRedeem: (points: number) => void;
   setTenantInfo: (info: PosState["tenantInfo"]) => void;
   setPrinterSettings: (settings: Partial<PosState["printerSettings"]>) => void;
-  addToCart: (product: PosProduct, quantity?: number) => void;
+  addToCart: (product: PosProduct, quantity?: number, notes?: string) => void;
+  updateItemNotes: (productId: string, notes: string) => void;
   addProductByBarcode: (product: PosProduct) => void;
   updateItemQuantity: (productId: string, delta: number) => void;
   setItemQuantity: (productId: string, quantity: number) => void;
@@ -154,6 +165,11 @@ export const usePosStore = create<PosState>()(
       storeId: "",
       cashierUserId: "",
       deviceCount: 1,
+      storeType: "grocery",
+      onboardingCompleted: true,
+      selectedTableId: null,
+      selectedTableName: null,
+      loyaltyPointsToRedeem: 0,
       printerSettings: {
         receiptLanguage: "fr",
         paperWidthMm: 80,
@@ -203,16 +219,18 @@ export const usePosStore = create<PosState>()(
       },
 
       getDiscountTotal: () => {
-        const { cart, discountPercent, discountFixed } = get();
+        const { cart, discountPercent, discountFixed, loyaltyPointsToRedeem } = get();
         const baseSubtotal = cart.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0);
         const percentDiscount = (baseSubtotal * discountPercent) / 100;
-        return roundMoney(toDecimal(percentDiscount).plus(discountFixed)).toNumber();
+        const loyaltyDiscountMad = (loyaltyPointsToRedeem || 0) * 0.1; // 10 points = 1 MAD
+        return roundMoney(toDecimal(percentDiscount).plus(discountFixed).plus(loyaltyDiscountMad)).toNumber();
       },
 
       getGrandTotal: () => {
         const subtotal = get().getSubtotal();
         const tax = get().getTaxTotal();
-        const total = subtotal + tax;
+        const loyaltyDiscountMad = (get().loyaltyPointsToRedeem || 0) * 0.1;
+        const total = Math.max(0, subtotal + tax - loyaltyDiscountMad);
         return roundMoney(toDecimal(total)).toNumber();
       },
 
@@ -237,6 +255,18 @@ export const usePosStore = create<PosState>()(
         set({ deviceCount: Math.max(1, deviceCount) });
       },
 
+      setStoreProfile: (storeType, onboardingCompleted = true) => {
+        set({ storeType, onboardingCompleted });
+      },
+
+      setSelectedTable: (selectedTableId, selectedTableName = null) => {
+        set({ selectedTableId, selectedTableName });
+      },
+
+      setLoyaltyPointsToRedeem: (points) => {
+        set({ loyaltyPointsToRedeem: Math.max(0, Math.floor(points)) });
+      },
+
       setTenantInfo: (tenantInfo) => {
         set({ tenantInfo });
       },
@@ -255,7 +285,7 @@ export const usePosStore = create<PosState>()(
         });
       },
 
-      addToCart: (product, quantity = 1) => {
+      addToCart: (product, quantity = 1, notes) => {
         // Stock Availability Check
         if (product.trackStock && (product.stockQuantity ?? 0) <= 0) {
           toast.warning(`Warning: ${product.name} is out of stock!`, {
@@ -275,7 +305,7 @@ export const usePosStore = create<PosState>()(
           if (existingIndex > -1) {
             const updated = [...state.cart];
             const current = updated[existingIndex];
-            const newQty = current.quantity + quantity;
+            const newQty = roundMoney(toDecimal(current.quantity).plus(quantity)).toNumber();
             const netAmount = (current.unitPrice * newQty) - current.discountAmount;
             const taxAmount = (netAmount * current.taxRate) / 100;
             const lineTotal = roundMoney(toDecimal(netAmount).plus(taxAmount)).toNumber();
@@ -284,6 +314,7 @@ export const usePosStore = create<PosState>()(
               ...current,
               quantity: newQty,
               lineTotal,
+              notes: notes || current.notes,
             };
             return { cart: updated };
           }
@@ -303,10 +334,19 @@ export const usePosStore = create<PosState>()(
             taxRate: resolvedTaxRate,
             discountAmount: 0,
             lineTotal,
+            notes,
           };
 
           return { cart: [...state.cart, newItem] };
         });
+      },
+
+      updateItemNotes: (productId, notes) => {
+        set((state) => ({
+          cart: state.cart.map((item) =>
+            item.productId === productId ? { ...item, notes } : item
+          ),
+        }));
       },
 
       addProductByBarcode: (product) => {
@@ -420,12 +460,13 @@ export const usePosStore = create<PosState>()(
           customer: null,
           discountPercent: 0,
           discountFixed: 0,
+          loyaltyPointsToRedeem: 0,
           amountTendered: "",
           isPaymentModalOpen: false,
         });
       },
 
-      setCustomer: (customer) => set({ customer }),
+      setCustomer: (customer) => set({ customer, loyaltyPointsToRedeem: 0 }),
       setDiscount: (percent, fixed = 0) => set({ discountPercent: percent, discountFixed: fixed }),
       setSearchQuery: (searchQuery) => set({ searchQuery }),
       setActiveCategory: (activeCategoryId) => set({ activeCategoryId }),
@@ -451,6 +492,8 @@ export const usePosStore = create<PosState>()(
           storeId,
           cashierUserId,
           selectedPaymentMethod,
+          selectedTableId,
+          loyaltyPointsToRedeem,
           amountTendered,
           getSubtotal,
           getTaxTotal,
@@ -519,6 +562,8 @@ export const usePosStore = create<PosState>()(
           idempotencyKey,
           storeId,
           customerId: customer?.id,
+          tableId: selectedTableId || undefined,
+          redeemedPoints: loyaltyPointsToRedeem > 0 ? loyaltyPointsToRedeem : undefined,
           subtotal,
           taxTotal,
           discountTotal,
@@ -533,6 +578,7 @@ export const usePosStore = create<PosState>()(
             unitPrice: i.unitPrice,
             taxRate: i.taxRate,
             discountAmount: i.discountAmount,
+            notes: i.notes,
           })),
         };
 
@@ -679,6 +725,8 @@ export const usePosStore = create<PosState>()(
         discountPercent: state.discountPercent,
         tenantInfo: state.tenantInfo,
         printerSettings: state.printerSettings,
+        storeType: state.storeType,
+        onboardingCompleted: state.onboardingCompleted,
       }),
     }
   )

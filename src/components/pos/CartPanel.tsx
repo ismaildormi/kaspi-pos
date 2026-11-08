@@ -27,6 +27,10 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
     cart,
     customer,
     setCustomer,
+    selectedTableName,
+    setSelectedTable,
+    loyaltyPointsToRedeem,
+    setLoyaltyPointsToRedeem,
     updateItemQuantity,
     removeItem,
     clearCart,
@@ -43,31 +47,71 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
   const discountTotal = getDiscountTotal();
   const grandTotal = getGrandTotal();
   const itemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const availablePoints = customer?.loyaltyPoints || 0;
+  const maxRedeemablePoints = Math.min(
+    availablePoints,
+    Math.floor((subtotal + taxTotal) * 10)
+  );
 
   return (
     <div className="flex flex-col h-full bg-zinc-950 border-s border-zinc-800 select-none">
       {/* Top: Customer & Cart Header */}
-      <div className="p-3.5 border-b border-zinc-800 bg-zinc-900/60 flex items-center justify-between gap-2">
-        {customer ? (
-          <div className="flex items-center justify-between bg-zinc-900 border border-zinc-700 px-3 py-1.5 rounded-lg w-full">
-            <div className="flex items-center gap-2 truncate">
-              <UserCheck className="w-4 h-4 text-white shrink-0" />
-              <div className="truncate">
-                <span className="text-xs font-bold text-white block truncate">
-                  {customer.name}
-                </span>
-                <span className="text-[10px] text-zinc-400 block font-mono">
-                  {customer.phone || (customer.ice ? `ICE: ${customer.ice}` : "Client")}
-                </span>
-              </div>
-            </div>
+      <div className="p-3.5 border-b border-zinc-800 bg-zinc-900/60 space-y-2">
+        {selectedTableName && (
+          <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold">
+            <span>🍽️ Table: {selectedTableName}</span>
             <button
-              onClick={() => setCustomer(null)}
-              className="p-1 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded transition cursor-pointer"
-              title="Détacher client"
+              onClick={() => setSelectedTable(null, null)}
+              className="text-amber-300 hover:text-white"
+              title="Détacher la table"
             >
               <X className="w-3.5 h-3.5" />
             </button>
+          </div>
+        )}
+        <div className="flex items-center justify-between gap-2">
+        {customer ? (
+          <div className="flex flex-col gap-1.5 bg-zinc-900 border border-zinc-700 px-3 py-1.5 rounded-lg w-full">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 truncate">
+                <UserCheck className="w-4 h-4 text-white shrink-0" />
+                <div className="truncate">
+                  <span className="text-xs font-bold text-white block truncate">
+                    {customer.name}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 block font-mono">
+                    {customer.phone || (customer.ice ? `ICE: ${customer.ice}` : "Client")}
+                    {availablePoints > 0 ? ` • ⭐ ${availablePoints} pts` : ""}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setCustomer(null)}
+                className="p-1 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded transition cursor-pointer"
+                title="Détacher client"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            {maxRedeemablePoints >= 10 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setLoyaltyPointsToRedeem(
+                    loyaltyPointsToRedeem > 0 ? 0 : maxRedeemablePoints
+                  )
+                }
+                className={`w-full py-1 px-2 rounded text-[11px] font-bold border transition ${
+                  loyaltyPointsToRedeem > 0
+                    ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                    : "bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20"
+                }`}
+              >
+                {loyaltyPointsToRedeem > 0
+                  ? `✓ Fidélité appliquée: -${(loyaltyPointsToRedeem * 0.1).toFixed(2)} DH (${loyaltyPointsToRedeem} pts)`
+                  : `⭐ Utiliser ${maxRedeemablePoints} pts (-${(maxRedeemablePoints * 0.1).toFixed(2)} DH)`}
+              </button>
+            )}
           </div>
         ) : (
           <button
@@ -78,6 +122,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             <span>{t("addCustomer")}</span>
           </button>
         )}
+        </div>
       </div>
 
       {/* Cart Items List */}
@@ -106,6 +151,11 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                     </span>
                   )}
                 </div>
+                {item.notes && (
+                  <div className="mt-1 text-[10px] font-semibold text-amber-300 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded truncate">
+                    {item.notes}
+                  </div>
+                )}
               </div>
 
               {/* Quantity Stepper */}

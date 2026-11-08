@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
-import { Clock, User as UserIcon, LayoutDashboard, ArrowLeft, Wallet } from "lucide-react";
+import { Clock, User as UserIcon, LayoutDashboard, ArrowLeft, Wallet, Sparkles } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SyncStatusBadge } from "./SyncStatusBadge";
@@ -13,21 +13,30 @@ interface PosHeaderProps {
   cashierName?: string;
   onOpenHeldCarts?: () => void;
   onOpenCashShift?: () => void;
+  onOpenIndustryTools?: () => void;
   isShiftOpen?: boolean;
   expectedCash?: number;
 }
+
+const INDUSTRY_LABELS: Record<string, string> = {
+  grocery: "🛒 Épicerie & Balance",
+  restaurant: "🍽️ Restaurant & KDS",
+  fashion: "👕 Mode & Tailles",
+  electronics: "📱 Électronique & IMEI",
+};
 
 export const PosHeader: React.FC<PosHeaderProps> = ({
   storeName = "Magasin Principal",
   cashierName = "Caissier",
   onOpenHeldCarts,
   onOpenCashShift,
+  onOpenIndustryTools,
   isShiftOpen = false,
   expectedCash = 0,
 }) => {
   const t = useTranslations("Pos");
   const locale = useLocale();
-  const { heldCarts } = usePosStore();
+  const { heldCarts, storeType } = usePosStore();
 
   return (
     <header className="h-16 border-b border-zinc-800 bg-zinc-950 px-4 sm:px-6 flex items-center justify-between gap-4 select-none">
@@ -66,8 +75,22 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         </div>
       </div>
 
-      {/* Center / Right Actions: Sync Status Indicator, Cash Shift (X/Z), Parked Carts, Lang Switcher */}
-      <div className="flex items-center gap-3">
+      {/* Center / Right Actions: Industry Tools, Sync Status Indicator, Cash Shift (X/Z), Parked Carts, Lang Switcher */}
+      <div className="flex items-center gap-2.5">
+        {/* Industry Workspace & Specialized Tools Button */}
+        {onOpenIndustryTools && (
+          <button
+            onClick={onOpenIndustryTools}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-bold transition cursor-pointer"
+            title="Outils Métier (KDS / Tables / Tailles / Balance / IMEI / Étiquettes)"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden lg:inline">
+              {INDUSTRY_LABELS[storeType] || "Outils Métier"}
+            </span>
+          </button>
+        )}
+
         {/* Cash Drawer Shift Management Button (Fond de Caisse / X-Report / Z-Report) */}
         {onOpenCashShift && (
           <button

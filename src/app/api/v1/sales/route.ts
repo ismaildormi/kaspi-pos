@@ -21,6 +21,8 @@ const CreateSaleSchema = z.object({
   idempotencyKey: z.string().min(1),
   storeId: z.string().uuid("Invalid store ID"),
   customerId: z.string().uuid().optional(),
+  tableId: z.string().uuid().optional(),
+  redeemedPoints: z.number().int().nonnegative().optional().default(0),
   subtotal: z.union([z.string(), z.number()]),
   taxTotal: z.union([z.string(), z.number()]),
   discountTotal: z.union([z.string(), z.number()]).optional().default(0),
@@ -46,6 +48,8 @@ export async function POST(req: NextRequest) {
       idempotencyKey,
       storeId,
       customerId,
+      tableId,
+      redeemedPoints,
       subtotal,
       taxTotal,
       discountTotal,
@@ -110,6 +114,7 @@ export async function POST(req: NextRequest) {
               cashSessionId: activeCashSession?.id || null,
               cashierUserId: ctx.userId,
               customerId: customerId || null,
+              tableId: tableId || null,
               clientSaleId,
               idempotencyKey,
               receiptNumber,
@@ -209,6 +214,21 @@ export async function POST(req: NextRequest) {
 
       // Handle Customer Credit and Loyalty
       if (customerId) {
+        // Deduct redeemed loyalty points if customer used points on this checkout
+        if (redeemedPoints && redeemedPoints > 0) {
+          await tx.loyaltyPoint.create({
+            data: {
+              tenantId: ctx.tenantId,
+              customerId,
+              saleId: sale.id,
+              deltaPoints: -Math.abs(redeemedPoints),
+              reason: "redeem",
+              idempotencyKey: `loyal_redeem_sale_${sale.id}`,
+              actorUserId: ctx.userId,
+            },
+          });
+        }
+
         // Loyalty points earning (1 pt per 10 MAD)
         const earnedPoints = calculatePointsEarned(toDecimal(grandTotal).toNumber());
         if (earnedPoints > 0) {

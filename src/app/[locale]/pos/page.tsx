@@ -11,6 +11,8 @@ import { CheckoutModal } from "@/components/pos/CheckoutModal";
 import { HeldCartsModal } from "@/components/pos/HeldCartsModal";
 import { CustomerModal } from "@/components/pos/CustomerModal";
 import { CashShiftModal } from "@/components/pos/CashShiftModal";
+import { StoreOnboardingModal } from "@/components/pos/StoreOnboardingModal";
+import { IndustryWorkspaceModal } from "@/components/pos/IndustryWorkspaceModal";
 import type { ShiftFinancialSummary } from "@/server/cash-shift/engine";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { offlineDb } from "@/client/db";
@@ -23,10 +25,12 @@ export default function PosPage() {
   const [isHeldModalOpen, setIsHeldModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isCashShiftModalOpen, setIsCashShiftModalOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isIndustryToolsOpen, setIsIndustryToolsOpen] = useState(false);
   const [activeShift, setActiveShift] = useState<ShiftFinancialSummary | null>(null);
   const [recentShifts, setRecentShifts] = useState<ShiftFinancialSummary[]>([]);
 
-  const { openPaymentModal, closePaymentModal, isPaymentModalOpen, cart, setDeviceCount, setTenantInfo, setPrinterSettings } = usePosStore();
+  const { openPaymentModal, closePaymentModal, isPaymentModalOpen, cart, setDeviceCount, setTenantInfo, setPrinterSettings, setStoreProfile, tenantInfo, storeType } = usePosStore();
 
   const fetchCashShift = React.useCallback(async () => {
     try {
@@ -93,6 +97,12 @@ export default function PosPage() {
         }
 
         if (sData) {
+          if (sData.storeType) {
+            setStoreProfile(sData.storeType, Boolean(sData.onboardingCompleted));
+          }
+          if (sData.onboardingCompleted === false) {
+            setIsOnboardingOpen(true);
+          }
           setPrinterSettings({
             receiptLanguage: sData.receiptLanguage || "fr",
             paperWidthMm: sData.paperWidthMm === 58 ? 58 : 80,
@@ -191,7 +201,9 @@ export default function PosPage() {
       />
       {/* Top Header */}
       <PosHeader
+        storeName={tenantInfo?.shopName || "Magasin Principal"}
         onOpenHeldCarts={() => setIsHeldModalOpen(true)}
+        onOpenIndustryTools={() => setIsIndustryToolsOpen(true)}
         onOpenCashShift={() => {
           fetchCashShift();
           setIsCashShiftModalOpen(true);
@@ -250,6 +262,37 @@ export default function PosPage() {
         activeShift={activeShift}
         recentShifts={recentShifts}
         onShiftUpdated={fetchCashShift}
+      />
+
+      {/* Industry Workspace Tools Modal (KDS / Tables / Variants / Weight / Barcode Studio) */}
+      <IndustryWorkspaceModal
+        isOpen={isIndustryToolsOpen}
+        onClose={() => setIsIndustryToolsOpen(false)}
+        onOpenOnboardingSwitch={() => setIsOnboardingOpen(true)}
+      />
+
+      {/* Universal Store-Type Dynamic Onboarding Wizard */}
+      <StoreOnboardingModal
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+        initialShopName={tenantInfo?.shopName || ""}
+        initialStoreType={storeType}
+        onSuccess={async () => {
+          try {
+            const [pRes, cRes] = await Promise.all([
+              fetch(getApiUrl("/api/v1/products")),
+              fetch(getApiUrl("/api/v1/categories")),
+            ]);
+            if (pRes.ok) {
+              const pData = await pRes.json();
+              setProducts(pData.data?.products || []);
+            }
+            if (cRes.ok) {
+              const cData = await cRes.json();
+              setCategories(cData.data?.categories || []);
+            }
+          } catch {}
+        }}
       />
     </div>
   );
