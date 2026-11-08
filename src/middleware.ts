@@ -13,6 +13,10 @@ const NEXTAUTH_SECURE_COOKIE = "__Secure-authjs.session-token";
 const PUBLIC_API_PATHS = [
   "/api/v1/auth/login",
   "/api/v1/auth/register",
+  "/api/v1/auth/email-otp/send",
+  "/api/v1/auth/email-otp/verify",
+  "/api/v1/auth/reset-password",
+  "/api/updates/latest.json",
   "/api/v1/webhooks",
   "/healthz",
   "/readyz",

@@ -4,6 +4,7 @@ import { prisma } from "@/server/db/prisma";
 import { hashPassword } from "@/server/auth/password";
 import { createSession, SESSION_COOKIE_NAME, SESSION_EXPIRY_DAYS } from "@/server/auth/session";
 import { jsonError, jsonOk } from "@/server/http/response";
+import { syncUserToSupabaseDirectory } from "@/lib/supabase";
 
 const RegisterSchema = z.object({
   email: z
@@ -136,6 +137,17 @@ export async function POST(req: NextRequest) {
 
       return { user, tenant, store, membership };
     });
+
+    // Mirror newly registered user to Supabase User Directory for marketing / updates
+    syncUserToSupabaseDirectory({
+      email: result.user.email ?? email,
+      fullName: result.user.fullName,
+      tenantId: result.tenant.id,
+      role: result.membership.role,
+      shopName: result.tenant.displayName,
+      phone: phone || undefined,
+      source: "registration",
+    }).catch(() => {});
 
     // Create session
     const ip = req.headers.get("x-forwarded-for") || undefined;

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { checkSuperAdminUser } from "@/server/admin/guard";
 import { getAdminDashboardStats } from "@/server/admin/stats";
 import { AdminAlertButton } from "./AdminAlertButton";
+import { AdminBroadcastButton } from "./AdminBroadcastButton";
 import { MasterAiBanner } from "./MasterAiBanner";
 import { RevenueChart } from "./RevenueChart";
 import { TenantsTable } from "./TenantsTable";
@@ -90,6 +91,7 @@ export default async function AdminDashboardPage() {
             Accéder au POS
           </Link>
           <AdminAlertButton />
+          <AdminBroadcastButton />
         </div>
       </div>
 

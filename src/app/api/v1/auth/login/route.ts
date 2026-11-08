@@ -4,6 +4,8 @@ import { prisma } from "@/server/db/prisma";
 import { verifyPassword, hashPassword } from "@/server/auth/password";
 import { createSession, SESSION_COOKIE_NAME, SESSION_EXPIRY_DAYS } from "@/server/auth/session";
 import { jsonError, jsonOk } from "@/server/http/response";
+import { syncUserToSupabaseDirectory } from "@/lib/supabase";
+import { sendLoginAlertEmail } from "@/lib/email/mailer";
 
 const LoginSchema = z.object({
   email: z.string().email().transform((v) => v.toLowerCase().trim()),
@@ -139,6 +141,26 @@ export async function POST(req: NextRequest) {
       ip,
       userAgent,
     });
+
+    // Mirror user activity to Supabase User Directory
+    syncUserToSupabaseDirectory({
+      email: user.email ?? email,
+      fullName: user.fullName || user.name,
+      tenantId: activeTenantId,
+      role: user.memberships[0]?.role || "owner",
+      shopName: user.memberships[0]?.tenant?.displayName,
+      source: "login",
+      lastSeenAt: new Date().toISOString(),
+    }).catch(() => {});
+
+    // Dispatch security login alert email asynchronously
+    if (user.email) {
+      sendLoginAlertEmail({
+        to: user.email,
+        ip,
+        userAgent,
+      }).catch(() => {});
+    }
 
     const response = jsonOk({
       user: {

@@ -40,6 +40,20 @@ export default function RegisterPage() {
             : data?.error?.message || data?.message || "فشل إنشاء الحساب";
         setError(errorMsg);
       } else {
+        // Trigger native device password store (PasswordCredential API)
+        if (typeof window !== "undefined" && "PasswordCredential" in window && navigator.credentials) {
+          try {
+            const cred = new (window as any).PasswordCredential({
+              id: email,
+              password,
+              name: fullName || email,
+            });
+            await navigator.credentials.store(cred);
+          } catch {
+            // Ignore if unsupported or dismissed
+          }
+        }
+
         if (data?.data?.user?.isSuperAdmin) {
           router.push("/ar/admin");
         } else {
@@ -91,6 +105,8 @@ export default function RegisterPage() {
             </label>
             <input
               type="text"
+              name="name"
+              autoComplete="name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="أمين العلوي"
@@ -105,6 +121,8 @@ export default function RegisterPage() {
             </label>
             <input
               type="text"
+              name="organization"
+              autoComplete="organization"
               value={shopName}
               onChange={(e) => setShopName(e.target.value)}
               placeholder="ميني ماركت أنفا"
@@ -121,6 +139,8 @@ export default function RegisterPage() {
             </label>
             <input
               type="email"
+              name="email"
+              autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="contact@commerce.ma"
@@ -135,6 +155,8 @@ export default function RegisterPage() {
             </label>
             <input
               type="password"
+              name="password"
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"

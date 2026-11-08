@@ -21,7 +21,7 @@ export default function PosPage() {
   const [isHeldModalOpen, setIsHeldModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
-  const { openPaymentModal, closePaymentModal, isPaymentModalOpen, cart, setDeviceCount } = usePosStore();
+  const { openPaymentModal, closePaymentModal, isPaymentModalOpen, cart, setDeviceCount, setTenantInfo } = usePosStore();
 
   // Trigger Dexie outbox synchronization on POS mount & online events
   useEffect(() => {
@@ -43,9 +43,21 @@ export default function PosPage() {
 
         if (meRes && meRes.ok) {
           const meData = await meRes.json();
-          const maxDevices = meData.data?.currentTenant?.maxDevices;
-          if (maxDevices) {
-            setDeviceCount(maxDevices);
+          const currTenant = meData.data?.currentTenant;
+          if (currTenant?.maxDevices) {
+            setDeviceCount(currTenant.maxDevices);
+          }
+          if (currTenant) {
+            setTenantInfo({
+              shopName: currTenant.displayName || currTenant.legalName,
+              legalName: currTenant.legalName,
+              ice: currTenant.ice,
+              taxId: currTenant.taxId,
+              rcNumber: currTenant.rcNumber,
+              address: currTenant.address,
+              city: currTenant.city,
+              phone: currTenant.phone,
+            });
           }
         }
 

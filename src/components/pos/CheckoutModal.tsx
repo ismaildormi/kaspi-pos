@@ -40,6 +40,7 @@ export const CheckoutModal: React.FC = () => {
     completeSale,
     isProcessingPayment,
     deviceCount,
+    tenantInfo,
   } = usePosStore();
 
   const [saleResult, setSaleResult] = useState<{
@@ -111,13 +112,13 @@ export const CheckoutModal: React.FC = () => {
 
   const handleConfirmCheckout = async () => {
     const receiptSnapshot: ReceiptData = {
-      shopName: "Kasbi Retail (كسب)",
-      legalName: "Ste Kasbi SARL",
-      ice: "002345678000045",
-      taxId: "45892134",
-      rcNumber: "98765 Casablanca",
-      address: "123 Bd d'Anfa",
-      city: "Casablanca",
+      shopName: tenantInfo?.shopName || "Kasbi Retail (كسب)",
+      legalName: tenantInfo?.legalName || tenantInfo?.shopName || "Ste Kasbi SARL",
+      ice: tenantInfo?.ice || "002345678000045",
+      taxId: tenantInfo?.taxId || "45892134",
+      rcNumber: tenantInfo?.rcNumber || "98765 Casablanca",
+      address: tenantInfo?.address || "123 Bd d'Anfa",
+      city: tenantInfo?.city || "Casablanca",
       receiptNumber: `REC-${Date.now().toString().slice(-6)}`,
       date: new Date().toLocaleString("fr-MA"),
       cashierName: "Caisse 1",

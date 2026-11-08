@@ -53,6 +53,7 @@ export interface KDSTicket {
 
 export default function KitchenDisplayPage() {
   const [tickets, setTickets] = useState<KDSTicket[]>([]);
+  const [tenantId, setTenantId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<"all" | "new" | "in_progress" | "ready">("all");
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
@@ -91,6 +92,9 @@ export default function KitchenDisplayPage() {
         const json = await res.json();
         const list: KDSTicket[] = json.data?.tickets || json.tickets || [];
         setTickets(list);
+        if (list.length > 0 && list[0].tenantId && !tenantId) {
+          setTenantId(list[0].tenantId);
+        }
       }
     } catch (err) {
       console.error("[KDS] Error fetching tickets:", err);
@@ -98,6 +102,17 @@ export default function KitchenDisplayPage() {
     } finally {
       if (!isSilent) setIsLoading(false);
     }
+  }, [tenantId]);
+
+  // Fetch current user tenant info
+  useEffect(() => {
+    fetch("/api/v1/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const id = data?.data?.currentTenant?.id || data?.currentTenant?.id;
+        if (id) setTenantId(id);
+      })
+      .catch(() => {});
   }, []);
 
   // Update clock every 5 seconds for elapsed cooking timers
@@ -116,8 +131,8 @@ export default function KitchenDisplayPage() {
   // Listens on broadcast channel for instant ticket creation & updates
   // =========================================================================
   useEffect(() => {
-    // Channel name matches the tenant broadcast channel (or multi-tenant fallback)
-    const channelName = "kds-tenant-default";
+    // Dynamic tenant broadcast channel matching server broadcastKitchenTicket
+    const channelName = tenantId ? `kds-tenant-${tenantId}` : "kds-tenant-default";
 
     const channel = supabase
       .channel(channelName)
@@ -151,7 +166,7 @@ export default function KitchenDisplayPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchTickets, playAlertSound]);
+  }, [tenantId, fetchTickets, playAlertSound]);
 
   // Update ticket status
   const updateTicketStatus = async (ticketId: string, newStatus: "in_progress" | "ready" | "served" | "canceled") => {

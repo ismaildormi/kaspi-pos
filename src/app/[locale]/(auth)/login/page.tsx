@@ -134,6 +134,20 @@ function LoginForm() {
         apiData?.data?.user?.isSuperAdmin || apiData?.user?.isSuperAdmin
       );
 
+      // Device-local native password storage (PasswordCredential API)
+      if (typeof window !== "undefined" && "PasswordCredential" in window && navigator.credentials) {
+        try {
+          const cred = new (window as any).PasswordCredential({
+            id: email,
+            password: password,
+            name: email,
+          });
+          await navigator.credentials.store(cred);
+        } catch {
+          // Ignore if unsupported or dismissed
+        }
+      }
+
       handleRedirect(isSuperAdmin);
     } catch {
       setError("حدث خطأ غير متوقع");
@@ -307,6 +321,20 @@ function LoginForm() {
         password: newPassword,
       });
 
+      // Device-local native password storage after reset (PasswordCredential API)
+      if (typeof window !== "undefined" && "PasswordCredential" in window && navigator.credentials) {
+        try {
+          const cred = new (window as any).PasswordCredential({
+            id: email,
+            password: newPassword,
+            name: email,
+          });
+          await navigator.credentials.store(cred);
+        } catch {
+          // Ignore if unsupported
+        }
+      }
+
       setSuccess("تم تغيير كلمة المرور بنجاح! جاري تحويلك...");
       const isSuperAdmin = Boolean(data.data?.user?.isSuperAdmin);
       handleRedirect(isSuperAdmin);
@@ -412,6 +440,8 @@ function LoginForm() {
               </label>
               <input
                 type="email"
+                name="email"
+                autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="dormiismail02@gmail.com"
@@ -440,6 +470,8 @@ function LoginForm() {
               </div>
               <input
                 type="password"
+                name="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -644,6 +676,8 @@ function LoginForm() {
                   </label>
                   <input
                     type="password"
+                    name="new-password"
+                    autoComplete="new-password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="6 أحرف على الأقل"
@@ -658,6 +692,8 @@ function LoginForm() {
                   </label>
                   <input
                     type="password"
+                    name="confirm-password"
+                    autoComplete="new-password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"

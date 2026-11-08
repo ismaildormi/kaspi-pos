@@ -58,6 +58,16 @@ interface PosState {
   storeId: string;
   cashierUserId: string;
   deviceCount: number;
+  tenantInfo?: {
+    shopName?: string;
+    legalName?: string;
+    ice?: string;
+    taxId?: string;
+    rcNumber?: string;
+    address?: string;
+    city?: string;
+    phone?: string;
+  };
 
   // Active Cart State
   cart: CartItem[];
@@ -92,6 +102,7 @@ interface PosState {
   // Actions
   setSessionContext: (tenantId: string, storeId: string, cashierUserId: string, deviceCount?: number) => void;
   setDeviceCount: (count: number) => void;
+  setTenantInfo: (info: PosState["tenantInfo"]) => void;
   addToCart: (product: PosProduct, quantity?: number) => void;
   addProductByBarcode: (product: PosProduct) => void;
   updateItemQuantity: (productId: string, delta: number) => void;
@@ -195,6 +206,10 @@ export const usePosStore = create<PosState>()(
 
       setDeviceCount: (deviceCount) => {
         set({ deviceCount: Math.max(1, deviceCount) });
+      },
+
+      setTenantInfo: (tenantInfo) => {
+        set({ tenantInfo });
       },
 
       addToCart: (product, quantity = 1) => {

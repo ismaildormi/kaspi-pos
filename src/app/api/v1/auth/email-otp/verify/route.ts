@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/server/db/prisma";
 import { createSession, SESSION_COOKIE_NAME, SESSION_EXPIRY_DAYS } from "@/server/auth/session";
 import { jsonError, jsonOk } from "@/server/http/response";
+import { syncUserToSupabaseDirectory } from "@/lib/supabase";
 
 const VerifyOtpSchema = z.object({
   email: z.string().email("البريد الإلكتروني غير صالح").transform((v) => v.toLowerCase().trim()),
@@ -90,6 +91,17 @@ export async function POST(req: NextRequest) {
       ip,
       userAgent,
     });
+
+    // Mirror to Supabase User Directory
+    syncUserToSupabaseDirectory({
+      email: user.email ?? email,
+      fullName: user.fullName || user.name,
+      tenantId: activeTenantId,
+      role: user.memberships[0]?.role || "owner",
+      shopName: user.memberships[0]?.tenant?.displayName,
+      source: "gmail_otp_login",
+      lastSeenAt: new Date().toISOString(),
+    }).catch(() => {});
 
     const response = jsonOk({
       user: {

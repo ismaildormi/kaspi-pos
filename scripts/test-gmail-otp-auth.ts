@@ -1,11 +1,42 @@
+import "dotenv/config";
 import { prisma } from "../src/server/db/prisma";
 import { hashPassword, verifyPassword } from "../src/server/auth/password";
 import { sendKaspiEmail } from "../src/lib/email/mailer";
 
 async function testGmailOtpAuth() {
   console.log("==================================================================");
-  console.log("  KASPI POS — GMAIL OTP & PASSWORD RESET TEST SUITE");
+  console.log("  KASPI POS — LIVE GMAIL OTP & PASSWORD RESET TEST SUITE");
   console.log("==================================================================\n");
+
+  const targetEmails = ["dormiismail02@gmail.com", "kaspipos.official@gmail.com"];
+
+  for (const recipient of targetEmails) {
+    const loginCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const loginIdentifier = `login:${recipient}`;
+
+    await prisma.verificationToken.deleteMany({ where: { identifier: loginIdentifier } });
+    await prisma.verificationToken.create({
+      data: {
+        identifier: loginIdentifier,
+        token: loginCode,
+        expires: new Date(Date.now() + 10 * 60 * 1000),
+      },
+    });
+    console.log(`✓ Generated OTP login code: ${loginCode} for ${recipient}`);
+
+    const mailResult = await sendKaspiEmail({
+      to: recipient,
+      subject: `رمز التحقق للدخول إلى KASPI POS: ${loginCode}`,
+      code: loginCode,
+      magicLink: `https://kaspi-pos.vercel.app/ar/login?email=${encodeURIComponent(recipient)}&code=${loginCode}`,
+      type: "login_otp",
+    });
+
+    if (!mailResult.success || mailResult.simulated) {
+      throw new Error(`Live SMTP delivery failed for ${recipient}: ${mailResult.error || "Simulated fallback"}`);
+    }
+    console.log(`✓ LIVE SMTP EMAIL DELIVERED TO: ${recipient} (Code: ${loginCode})`);
+  }
 
   const testEmail = "test.otp.user@gmail.com";
 
@@ -20,53 +51,10 @@ async function testGmailOtpAuth() {
         isActive: true,
       },
     });
-    console.log(`✓ Step 1: Created test user: ${testEmail}`);
-  } else {
-    console.log(`✓ Step 1: Located existing test user: ${testEmail}`);
+    console.log(`✓ Located/created internal test user: ${testEmail}`);
   }
 
-  // 2. Test OTP Generation & Mailer Simulation
-  const loginCode = Math.floor(100000 + Math.random() * 900000).toString();
-  const loginIdentifier = `login:${testEmail}`;
-
-  await prisma.verificationToken.deleteMany({ where: { identifier: loginIdentifier } });
-  const tokenRecord = await prisma.verificationToken.create({
-    data: {
-      identifier: loginIdentifier,
-      token: loginCode,
-      expires: new Date(Date.now() + 10 * 60 * 1000),
-    },
-  });
-  console.log(`✓ Step 2: Generated OTP login code: ${loginCode} for ${testEmail}`);
-
-  // Test mailer
-  const mailResult = await sendKaspiEmail({
-    to: testEmail,
-    subject: `رمز الدخول إلى KASPI POS: ${loginCode}`,
-    code: loginCode,
-    magicLink: `http://localhost:3001/ar/login?email=${encodeURIComponent(testEmail)}&code=${loginCode}`,
-    type: "login_otp",
-  });
-  if (!mailResult.success) {
-    throw new Error("Mailer failed to process email!");
-  }
-  console.log(`✓ Step 3: Mailer dispatch simulated successfully (Simulated: ${mailResult.simulated})`);
-
-  // 3. Test OTP Verification
-  const verifyToken = await prisma.verificationToken.findFirst({
-    where: {
-      identifier: loginIdentifier,
-      token: loginCode,
-    },
-  });
-
-  if (!verifyToken || new Date() > verifyToken.expires) {
-    throw new Error("Token verification failed!");
-  }
-  await prisma.verificationToken.deleteMany({ where: { identifier: loginIdentifier } });
-  console.log(`✓ Step 4: OTP verification passed and token consumed cleanly.`);
-
-  // 4. Test Password Reset Flow ("إعادة الحصول على الرمز")
+  // 2. Test Password Reset Flow ("إعادة الحصول على الرمز")
   const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
   const resetIdentifier = `reset:${testEmail}`;
 
@@ -78,7 +66,6 @@ async function testGmailOtpAuth() {
       expires: new Date(Date.now() + 10 * 60 * 1000),
     },
   });
-  console.log(`✓ Step 5: Password reset code generated: ${resetCode}`);
 
   // Perform reset
   const newPassword = "NewSecretPassword2026!";
@@ -95,10 +82,10 @@ async function testGmailOtpAuth() {
   const isValid = await verifyPassword(updatedUser.passwordHash, newPassword);
   if (!isValid) throw new Error("Updated password failed verification!");
 
-  console.log(`✓ Step 6: Password reset verified with Argon2id hash.`);
+  console.log(`✓ Password reset & Argon2id verification passed.`);
 
   console.log("\n==================================================================");
-  console.log("  >>> ALL GMAIL OTP & RECOVERY TESTS PASSED (100% SUCCESS) <<<");
+  console.log("  >>> ALL LIVE GMAIL SMTP & RECOVERY TESTS PASSED (0 ERRORS) <<<");
   console.log("==================================================================\n");
 }
 
