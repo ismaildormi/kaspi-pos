@@ -56,11 +56,70 @@ JWT_SECRET="<64_CHAR_HEX_HMAC_SHA256_SECRET>"
 ADMIN_BROADCAST_SECRET="<ADMIN_BROADCAST_TOKEN>"
 
 # ============================================================================
-# 5. AI ASSISTANT ("مساعد كسب الذكي") — MULTI-PROVIDER LLM ROUTER
+# 5. AI ASSISTANT ("مساعد كسب الذكي") — 9-TIER MULTI-PROVIDER LLM ROUTER
+#    (src/lib/ai-router.ts & src/lib/webgpu-ai.ts — Comma-separated key pools)
 # ============================================================================
+GOOGLE_GENERATIVE_AI_API_KEY="<GEMINI_API_KEY>"
+GOOGLE_API_KEYS="<KEY_1>,<KEY_2>"
 GROQ_API_KEY="<GROQ_API_KEY>"
-GEMINI_API_KEY="<GEMINI_API_KEY>"
+GROQ_API_KEYS="<KEY_1>,<KEY_2>"
+MISTRAL_API_KEY=""
+MISTRAL_API_KEYS=""
+TOGETHER_API_KEY=""
+TOGETHER_API_KEYS=""
+DEEPSEEK_API_KEY=""
+DEEPSEEK_API_KEYS=""
+HUGGINGFACE_API_KEY=""
 OPENROUTER_API_KEY="<OPENROUTER_API_KEY>"
+LOCAL_AI_BASE_URL="http://localhost:11434/v1"
+LOCAL_AI_MODEL="llama3.2"
+
+# ============================================================================
+# 6. MULTI-CLOUD FREE-TIER STORAGE GATEWAY & AES-256-GCM BACKUP FABRIC
+#    (src/lib/storage.ts & src/lib/backup/fabric.ts)
+#    Failover Order: Cloudflare R2 -> Cloudinary -> Supabase Storage -> Data URI
+# ============================================================================
+R2_ACCOUNT_ID=""
+R2_ACCESS_KEY_ID=""
+R2_SECRET_ACCESS_KEY=""
+R2_BUCKET_NAME="kaspi-pos-uploads"
+R2_ENDPOINT="https://<account-id>.r2.cloudflarestorage.com"
+NEXT_PUBLIC_R2_PUBLIC_URL="https://pub-<account-id>.r2.dev"
+
+CLOUDINARY_CLOUD_NAME=""
+CLOUDINARY_API_KEY=""
+CLOUDINARY_API_SECRET=""
+CLOUDINARY_UPLOAD_PRESET="ml_default"
+
+SUPABASE_STORAGE_BUCKET="product-images"
+
+# ============================================================================
+# 7. REDIS RATE LIMITING, BACKGROUND JOBS & MULTI-PROVIDER PAYMENTS/WHATSAPP
+#    (src/lib/rate-limit.ts, src/lib/hyperswitch.ts, src/lib/billing, src/lib/whatsapp)
+# ============================================================================
+UPSTASH_REDIS_REST_URL=""
+UPSTASH_REDIS_REST_TOKEN=""
+
+TRIGGER_API_URL="https://api.trigger.dev"
+TRIGGER_SECRET_KEY="tr_dev_your_secret_key"
+TRIGGER_API_KEY="tr_dev_your_api_key"
+TRIGGER_PROJECT_ID="proj_kaspi_pos"
+
+HYPERSWITCH_API_URL="https://sandbox.hyperswitch.io"
+HYPERSWITCH_API_KEY=""
+HYPERSWITCH_PUBLISHABLE_KEY=""
+HYPERSWITCH_PROFILE_ID=""
+HYPERSWITCH_WEBHOOK_SECRET=""
+
+YOUCANPAY_PRIVATE_KEY=""
+YOUCANPAY_PUBLIC_KEY=""
+PADDLE_API_KEY=""
+PADDLE_WEBHOOK_SECRET=""
+
+WHATSAPP_API_PROVIDER="ultramsg" # ultramsg | meta | evolution-api | mock
+WHATSAPP_API_TOKEN=""
+WHATSAPP_INSTANCE_ID=""
+ADMIN_WHATSAPP_NUMBER="+212687597267"
 ```
 
 ---
