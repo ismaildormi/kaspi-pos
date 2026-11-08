@@ -6,6 +6,7 @@ import { Search, Barcode, X, Loader2, Terminal } from "lucide-react";
 import { toast } from "sonner";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { offlineDb, type OfflineProduct } from "@/client/db";
+import { playBarcodeScanSound, playErrorSound, playTapSound } from "@/lib/audio";
 
 interface ProductSearchProps {
   products: PosProduct[];
@@ -73,6 +74,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
 
     // Handle Linear/OpenAI-style Slash Commands (/clear, /hold, /pay, /grocery, /restaurant, /fashion, /electronics)
     if (code.startsWith("/")) {
+      playTapSound();
       const cmd = code.toLowerCase();
       setSearchQuery("");
       if (cmd === "/clear") {
@@ -85,6 +87,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
           holdCurrentCart();
           toast.success("Commande mise en attente (/hold)");
         } else {
+          playErrorSound();
           toast.error("Le panier est vide");
         }
         return;
@@ -93,6 +96,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
         if (cart.length > 0) {
           openPaymentModal();
         } else {
+          playErrorSound();
           toast.error("Ajoutez un article avant d'encaisser");
         }
         return;
@@ -188,10 +192,12 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
       }
 
       if (matchedProduct) {
+        playBarcodeScanSound();
         addProductByBarcode(matchedProduct);
         return;
       }
 
+      playErrorSound();
       toast.error("Article introuvable pour ce code-barres", {
         style: {
           background: "#09090b",
@@ -200,6 +206,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
         },
       });
     } catch {
+      playErrorSound();
       toast.error("Article introuvable pour ce code-barres", {
         style: {
           background: "#09090b",

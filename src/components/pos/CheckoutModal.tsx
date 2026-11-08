@@ -20,6 +20,7 @@ import { printReceipt } from "@/client/printing";
 import { formatReceiptDate, toWesternNumerals } from "@/lib/printing/receipt-translations";
 import { formatReceiptForWhatsApp, generateWhatsAppLink } from "@/lib/whatsapp";
 import { calculatePaymentFees } from "@/lib/fees";
+import { playTapSound, playSuccessSound, playErrorSound } from "@/lib/audio";
 
 export const CheckoutModal: React.FC = () => {
   const t = useTranslations("Pos");
@@ -104,11 +105,13 @@ export const CheckoutModal: React.FC = () => {
   );
 
   const handleQuickCash = (extra: number) => {
+    playTapSound();
     const current = parseFloat(amountTendered) || 0;
     setAmountTendered((current + extra).toFixed(2));
   };
 
   const handleExactCash = () => {
+    playTapSound();
     setAmountTendered(grandTotal.toFixed(2));
   };
 
@@ -158,6 +161,7 @@ export const CheckoutModal: React.FC = () => {
 
     const res = await completeSale();
     if (res.success) {
+      playSuccessSound();
       setSaleResult({
         completed: true,
         clientSaleId: res.clientSaleId,
@@ -175,6 +179,8 @@ export const CheckoutModal: React.FC = () => {
           receiptLanguage: receiptLang,
         }).catch(() => {});
       }
+    } else {
+      playErrorSound();
     }
   };
 

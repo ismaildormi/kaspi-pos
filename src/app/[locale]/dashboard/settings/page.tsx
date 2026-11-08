@@ -43,6 +43,12 @@ import {
   printTestReceipt,
 } from "@/client/printing";
 import { usePosStore, type StoreBusinessType } from "@/client/store/usePosStore";
+import {
+  isAudioEnabled,
+  setAudioEnabled as persistAudioEnabled,
+  playSuccessSound,
+  playTapSound,
+} from "@/lib/audio";
 
 interface StoreItem {
   id: string;
@@ -108,6 +114,7 @@ export default function SettingsPage() {
   const [isTestPrinting, setIsTestPrinting] = useState(false);
   const [testPrintStatus, setTestPrintStatus] = useState<string | null>(null);
   const [receiptPaperDark, setReceiptPaperDark] = useState(false);
+  const [audioFeedbackEnabled, setAudioFeedbackEnabled] = useState(true);
 
   // Multi-Store State
   const [stores, setStores] = useState<StoreItem[]>([]);
@@ -169,6 +176,7 @@ export default function SettingsPage() {
     fetchStores();
     fetchVaultStatus();
     fetchMeProfile();
+    setAudioFeedbackEnabled(isAudioEnabled());
 
     const storedGpu = localStorage.getItem("kaspi_use_local_gpu");
     if (storedGpu !== null) {
@@ -1138,6 +1146,22 @@ export default function SettingsPage() {
                   />
                   <span>Afficher le logo en haut du ticket thermique</span>
                 </label>
+                <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={audioFeedbackEnabled}
+                    onChange={(e) => {
+                      const next = e.target.checked;
+                      setAudioFeedbackEnabled(next);
+                      persistAudioEnabled(next);
+                      if (next) playSuccessSound();
+                    }}
+                    className="w-4 h-4 rounded accent-white"
+                  />
+                  <span>
+                    Sons &amp; Retour Acoustique POS (Bip Scanner Laser, Clics &amp; Validation — Web Audio API)
+                  </span>
+                </label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1427,7 +1451,7 @@ export default function SettingsPage() {
                   {currentUser?.fullName || "Propriétaire KASPI"}
                 </div>
                 <div className="text-xs text-zinc-400 font-mono mt-0.5" dir="ltr">
-                  {currentUser?.email || "dormiismail02@gmail.com"}
+                  {currentUser?.email || "admin@kaspipos.com"}
                 </div>
               </div>
 

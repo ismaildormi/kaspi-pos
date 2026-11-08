@@ -5,12 +5,16 @@ import { ensureUserHasActiveTenant } from "@/server/auth/context";
 import { jsonError, jsonOk } from "@/server/http/response";
 import { syncUserToSupabaseDirectory } from "@/lib/supabase";
 
-const FOUNDER_EMAIL = "dormiismail02@gmail.com";
+const DEFAULT_FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "admin@kaspipos.com";
 
 export async function POST(req: NextRequest) {
   try {
-    let user = await prisma.user.findUnique({
-      where: { email: FOUNDER_EMAIL },
+    // Locate existing superAdmin account or default founder account
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [{ isSuperAdmin: true }, { email: DEFAULT_FOUNDER_EMAIL }],
+      },
+      orderBy: { createdAt: "asc" },
       include: {
         memberships: {
           where: { status: "active" },
@@ -19,12 +23,14 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const targetEmail = user?.email || DEFAULT_FOUNDER_EMAIL;
+
     if (!user) {
       user = await prisma.user.create({
         data: {
-          email: FOUNDER_EMAIL,
-          name: "Ismail Dormi (@kaspipos)",
-          fullName: "Ismail Dormi (@kaspipos)",
+          email: targetEmail,
+          name: "KASPI Founder (@kaspipos)",
+          fullName: "KASPI Founder (@kaspipos)",
           emailVerified: new Date(),
           isActive: true,
           isSuperAdmin: true,
@@ -41,8 +47,8 @@ export async function POST(req: NextRequest) {
 
     const memberships = await ensureUserHasActiveTenant(
       user.id,
-      user.email ?? FOUNDER_EMAIL,
-      user.fullName || user.name || "Ismail Dormi"
+      targetEmail,
+      user.fullName || user.name || "KASPI Founder"
     );
 
     const activeTenantId =
@@ -55,14 +61,14 @@ export async function POST(req: NextRequest) {
     const otpToken = Math.floor(100000 + Math.random() * 900000).toString();
     await prisma.verificationToken
       .deleteMany({
-        where: { identifier: `login:${FOUNDER_EMAIL}` },
+        where: { identifier: `login:${targetEmail}` },
       })
       .catch(() => {});
 
     await prisma.verificationToken
       .create({
         data: {
-          identifier: `login:${FOUNDER_EMAIL}`,
+          identifier: `login:${targetEmail}`,
           token: otpToken,
           expires: new Date(Date.now() + 90 * 1000),
         },
@@ -90,8 +96,8 @@ export async function POST(req: NextRequest) {
     });
 
     syncUserToSupabaseDirectory({
-      email: FOUNDER_EMAIL,
-      fullName: user.fullName || user.name || "Ismail Dormi (@kaspipos)",
+      email: targetEmail,
+      fullName: user.fullName || user.name || "KASPI Founder (@kaspipos)",
       tenantId: activeTenantId,
       role: memberships[0]?.role || "owner",
       shopName: memberships[0]?.tenant?.displayName || "KASPI HQ",
@@ -100,13 +106,13 @@ export async function POST(req: NextRequest) {
     }).catch(() => {});
 
     const response = jsonOk({
-      email: FOUNDER_EMAIL,
+      email: targetEmail,
       otpCode: otpToken,
       activeTenantId,
       user: {
         id: user.id,
-        email: FOUNDER_EMAIL,
-        fullName: user.fullName || user.name || "Ismail Dormi (@kaspipos)",
+        email: targetEmail,
+        fullName: user.fullName || user.name || "KASPI Founder (@kaspipos)",
         isSuperAdmin: user.isSuperAdmin,
       },
     });

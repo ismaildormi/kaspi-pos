@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Package, Plus, ArrowRight, Scale, Utensils, Shirt, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
+import { playBarcodeScanSound } from "@/lib/audio";
 
 interface ProductGridProps {
   products: PosProduct[];
@@ -72,7 +73,10 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products }) => {
         return (
           <button
             key={product.id}
-            onClick={() => addToCart(product)}
+            onClick={() => {
+              playBarcodeScanSound();
+              addToCart(product);
+            }}
             className="group relative flex flex-col justify-between p-3.5 rounded-xl bg-zinc-900/80 hover:bg-zinc-900 border border-white/10 hover:border-white/30 active:scale-[0.98] transition-all text-start shadow-xs cursor-pointer"
           >
             {/* Top row: Avatar + Stock / Vertical Indicator */}
