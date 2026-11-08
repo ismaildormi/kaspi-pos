@@ -18,6 +18,8 @@ import {
   List,
   Barcode,
   Upload,
+  Plus,
+  Printer,
 } from "lucide-react";
 import { generateProductImageUrl } from "@/lib/pollinations";
 import { uploadProductImage } from "@/lib/supabase-storage";
@@ -66,6 +68,94 @@ export default function ProductsListPage() {
     useState<CatalogProduct | null>(null);
   const [newSalePrice, setNewSalePrice] = useState("");
   const [isSavingPrice, setIsSavingPrice] = useState(false);
+
+  // Modal State: Create New Product
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createSku, setCreateSku] = useState("");
+  const [createBarcode, setCreateBarcode] = useState("");
+  const [createCategory, setCreateCategory] = useState("");
+  const [createSalePrice, setCreateSalePrice] = useState("");
+  const [createCostPrice, setCreateCostPrice] = useState("");
+  const [createTaxRate, setCreateTaxRate] = useState("20");
+  const [createInitialStock, setCreateInitialStock] = useState("25");
+  const [isCreatingProduct, setIsCreatingProduct] = useState(false);
+
+  const handlePrintProductBarcode = (product: CatalogProduct) => {
+    setOpenMenuProductId(null);
+    const code = product.barcode || product.sku || "6111000010017";
+    const win = window.open("", "_blank", "width=420,height=320");
+    if (!win) return;
+    win.document.write(`
+      <html>
+        <head>
+          <title>Étiquette ${product.name}</title>
+          <style>
+            @page { size: 40mm 30mm; margin: 0; }
+            body { font-family: Arial, sans-serif; margin: 0; padding: 3mm; text-align: center; }
+            .shop { font-size: 8pt; font-weight: bold; text-transform: uppercase; }
+            .name { font-size: 9pt; font-weight: bold; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .price { font-size: 13pt; font-weight: 900; margin: 2px 0; }
+            .bars { font-family: monospace; letter-spacing: 2px; font-size: 9pt; margin-top: 2px; }
+          </style>
+        </head>
+        <body onload="window.print(); setTimeout(() => window.close(), 400);">
+          <div class="shop">KASPI POS</div>
+          <div class="name">${product.name}</div>
+          <div class="price">${Number(product.salePrice).toFixed(2)} DH</div>
+          <svg width="135" height="30" viewBox="0 0 135 30">
+            ${Array.from({ length: 28 })
+              .map((_, idx) => {
+                const w = (idx + code.charCodeAt(idx % code.length)) % 3 === 0 ? 3 : 1.5;
+                return `<rect x="${idx * 4.6 + 4}" y="2" width="${w}" height="26" fill="#000" />`;
+              })
+              .join("")}
+          </svg>
+          <div class="bars">${code}</div>
+        </body>
+      </html>
+    `);
+    win.document.close();
+  };
+
+  const handleCreateProductSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createName.trim()) return;
+    setIsCreatingProduct(true);
+    try {
+      const res = await fetch("/api/v1/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: createName.trim(),
+          sku: createSku.trim() || undefined,
+          barcode: createBarcode.trim() || undefined,
+          categoryName: createCategory.trim() || undefined,
+          salePrice: parseFloat(createSalePrice) || 0,
+          costPrice: createCostPrice ? parseFloat(createCostPrice) : undefined,
+          taxRate: parseFloat(createTaxRate) || 20,
+          initialStock: parseFloat(createInitialStock) || 0,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error("Impossible de créer le produit");
+      }
+      toast.success("Produit ajouté au catalogue avec succès !");
+      setIsCreateModalOpen(false);
+      setCreateName("");
+      setCreateSku("");
+      setCreateBarcode("");
+      setCreateCategory("");
+      setCreateSalePrice("");
+      setCreateCostPrice("");
+      setCreateInitialStock("25");
+      await fetchProducts();
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de la création");
+    } finally {
+      setIsCreatingProduct(false);
+    }
+  };
 
   // Fetch Products on Mount
   const fetchProducts = async () => {
@@ -283,6 +373,14 @@ export default function ProductsListPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setIsCreateModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 px-4 py-2 text-xs font-black text-black transition cursor-pointer shadow-sm"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Nouveau Produit
+          </button>
           <Link
             href="/dashboard/products/ai-onboard"
             className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-zinc-800 transition"
@@ -477,6 +575,17 @@ export default function ProductsListPage() {
                           <span className="flex items-center gap-2">
                             <DollarSign className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
                             <span>تعديل الثمن</span>
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handlePrintProductBarcode(product)}
+                          className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-amber-300 hover:bg-zinc-900 flex items-center justify-between gap-2 transition cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Printer className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span>طباعة لاصق الباركود (40x30mm)</span>
                           </span>
                         </button>
                       </div>
@@ -824,6 +933,168 @@ export default function ProductsListPage() {
                     <Check className="w-3.5 h-3.5" />
                   )}
                   <span>حفظ الثمن</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+         MODAL 3: CREATE NEW PRODUCT ("+ Nouveau Produit")
+         ==================================================================== */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-lg rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-5 shadow-2xl my-auto">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-amber-400" />
+                  Nouveau Produit • إضافة منتج جديد
+                </h3>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Création directe avec SKU, Code-barres EAN-13 et stock initial
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateModalOpen(false)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateProductSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                  Désignation du Produit *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={createName}
+                  onChange={(e) => setCreateName(e.target.value)}
+                  placeholder="Ex: Huile d'Olive Extra Vierge 1L"
+                  className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-white focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                    Catégorie / Rayon
+                  </label>
+                  <input
+                    type="text"
+                    value={createCategory}
+                    onChange={(e) => setCreateCategory(e.target.value)}
+                    placeholder="Ex: Épicerie / Boissons"
+                    className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-white focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                    Code SKU (Optionnel)
+                  </label>
+                  <input
+                    type="text"
+                    value={createSku}
+                    onChange={(e) => setCreateSku(e.target.value)}
+                    placeholder="Auto-généré si vide"
+                    className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:border-white focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-zinc-300">
+                    Code-barres EAN-13
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCreateBarcode(
+                        `6111${Math.floor(100000000 + Math.random() * 899999999)}`
+                      )
+                    }
+                    className="text-[11px] font-bold text-amber-400 hover:underline"
+                  >
+                    + Générer EAN-13 Maroc (611)
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={createBarcode}
+                  onChange={(e) => setCreateBarcode(e.target.value)}
+                  placeholder="Scannez ou générez un code EAN-13"
+                  className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:border-white focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                    Prix Vente (MAD) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={createSalePrice}
+                    onChange={(e) => setCreateSalePrice(e.target.value)}
+                    placeholder="85.00"
+                    className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono font-bold text-white focus:border-white focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                    Prix Achat (MAD)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={createCostPrice}
+                    onChange={(e) => setCreateCostPrice(e.target.value)}
+                    placeholder="65.00"
+                    className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-white focus:border-white focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                    Stock Initial
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    value={createInitialStock}
+                    onChange={(e) => setCreateInitialStock(e.target.value)}
+                    placeholder="25"
+                    className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono font-bold text-white focus:border-white focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-950 text-xs font-bold text-zinc-300 hover:text-white transition cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingProduct}
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black transition inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isCreatingProduct ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                  <span>Créer le Produit</span>
                 </button>
               </div>
             </form>

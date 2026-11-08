@@ -142,6 +142,39 @@ export async function POST(req: NextRequest) {
       } as any,
     });
 
+    const initialStock = Number(body.initialStock ?? body.stockQuantity ?? 0);
+    if (initialStock > 0) {
+      let store = await prisma.store.findFirst({
+        where: { tenantId: ctx.tenantId, isActive: true },
+      });
+      if (!store) {
+        store = await prisma.store.create({
+          data: {
+            tenantId: ctx.tenantId,
+            name: "Magasin Principal",
+            code: "MAIN-01",
+            isActive: true,
+          },
+        });
+      }
+      await prisma.stockLevel.upsert({
+        where: {
+          tenantId_storeId_productId: {
+            tenantId: ctx.tenantId,
+            storeId: store.id,
+            productId: product.id,
+          },
+        },
+        update: { quantity: initialStock },
+        create: {
+          tenantId: ctx.tenantId,
+          storeId: store.id,
+          productId: product.id,
+          quantity: initialStock,
+        },
+      });
+    }
+
     return jsonOk({ product }, 201);
   } catch (err) {
     return handleApiError(err);

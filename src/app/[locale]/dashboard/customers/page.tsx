@@ -47,6 +47,80 @@ export default function CustomersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Credit Ledger / Repayment Modal State
+  const [activeCustomerForCredit, setActiveCustomerForCredit] = useState<CustomerItem | null>(null);
+  const [creditHistory, setCreditHistory] = useState<any[]>([]);
+  const [loadingCredits, setLoadingCredits] = useState(false);
+  const [creditActionType, setCreditActionType] = useState<"payment" | "charge">("payment");
+  const [creditAmount, setCreditAmount] = useState("");
+  const [creditNotes, setCreditNotes] = useState("");
+  const [savingCredit, setSavingCredit] = useState(false);
+  const [creditError, setCreditError] = useState<string | null>(null);
+
+  const openCreditModal = async (cust: CustomerItem) => {
+    setActiveCustomerForCredit(cust);
+    setCreditActionType(cust.currentCreditBalance > 0 ? "payment" : "charge");
+    setCreditAmount(cust.currentCreditBalance > 0 ? cust.currentCreditBalance.toFixed(2) : "");
+    setCreditNotes("");
+    setCreditError(null);
+    setLoadingCredits(true);
+    try {
+      const res = await fetch(`/api/v1/customers/${cust.id}/credits`);
+      if (res.ok) {
+        const json = await res.json();
+        setCreditHistory(json.data?.credits || []);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingCredits(false);
+    }
+  };
+
+  const handleRecordCreditTx = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeCustomerForCredit) return;
+    const amt = parseFloat(creditAmount);
+    if (Number.isNaN(amt) || amt <= 0) {
+      setCreditError("Veuillez saisir un montant valide (> 0 MAD).");
+      return;
+    }
+
+    setSavingCredit(true);
+    setCreditError(null);
+    try {
+      const res = await fetch(`/api/v1/customers/${activeCustomerForCredit.id}/credits`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: creditActionType,
+          amount: amt,
+          notes:
+            creditNotes.trim() ||
+            (creditActionType === "payment"
+              ? "Règlement espèce au comptoir (Karné)"
+              : "Crédit manuel ajouté au carnet"),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error?.message || "Impossible d'enregistrer l'opération");
+      }
+
+      await fetchCustomers();
+      await openCreditModal({
+        ...activeCustomerForCredit,
+        currentCreditBalance: parseFloat(json.data.balanceAfter),
+      });
+      setCreditAmount("");
+      setCreditNotes("");
+    } catch (err: any) {
+      setCreditError(err.message || "Erreur");
+    } finally {
+      setSavingCredit(false);
+    }
+  };
+
   useEffect(() => {
     fetchCustomers();
   }, [search]);
@@ -231,22 +305,35 @@ export default function CustomersPage() {
                         {c.loyaltyPoints ?? 0} pts
                       </td>
                       <td className="p-3.5 text-center">
-                        {c.currentCreditBalance > 0 && c.phone ? (
-                          <a
-                            href={`https://wa.me/${c.phone.replace(/[^\d]/g, "")}?text=${encodeURIComponent(
-                              `Salam Si/Lalla ${c.name} 👋,\n\nRappel amical de votre commerce KASPI POS.\nVotre solde en cours sur le carnet de crédit (Karné / Krediat) est de : *${c.currentCreditBalance.toFixed(2)} MAD*.\nMerci de passer au magasin à votre convenance pour régulariser votre compte.\nبارك الله فيكم 🙏`
-                            )}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 text-[11px] font-mono transition"
-                            title="Envoyer rappel WhatsApp"
+                        <div className="inline-flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openCreditModal(c)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 text-[11px] font-bold transition cursor-pointer"
                           >
-                            <MessageSquare className="w-3 h-3" />
-                            <span>Rappel WhatsApp</span>
-                          </a>
-                        ) : (
-                          <span className="text-[10px] text-zinc-600 font-mono">—</span>
-                        )}
+                            <Coins className="w-3 h-3" />
+                            <span>
+                              {c.currentCreditBalance > 0
+                                ? "Encaisser / Karné"
+                                : "Carnet"}
+                            </span>
+                          </button>
+
+                          {c.currentCreditBalance > 0 && c.phone && (
+                            <a
+                              href={`https://wa.me/${c.phone.replace(/[^\d]/g, "")}?text=${encodeURIComponent(
+                                `Salam Si/Lalla ${c.name} 👋,\n\nRappel amical de votre commerce KASPI POS.\nVotre solde en cours sur le carnet de crédit (Karné / Krediat) est de : *${c.currentCreditBalance.toFixed(2)} MAD*.\nMerci de passer au magasin à votre convenance pour régulariser votre compte.\nبارك الله فيكم 🙏`
+                              )}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 text-[11px] font-mono transition"
+                              title="Envoyer rappel WhatsApp"
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                              <span>WhatsApp</span>
+                            </a>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -349,6 +436,168 @@ export default function CustomersPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Carnet de Crédit (Repayment & Ledger History) Modal */}
+      {activeCustomerForCredit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div>
+                <h3 className="font-bold text-white text-base">
+                  Carnet de Crédit (Karné) • {activeCustomerForCredit.name}
+                </h3>
+                <p className="text-xs text-zinc-400 font-mono mt-0.5">
+                  Solde Actuel:{" "}
+                  <span className="text-amber-400 font-extrabold">
+                    {activeCustomerForCredit.currentCreditBalance.toFixed(2)} MAD
+                  </span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveCustomerForCredit(null)}
+                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {creditError && (
+              <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs">
+                {creditError}
+              </div>
+            )}
+
+            <form onSubmit={handleRecordCreditTx} className="space-y-4">
+              <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setCreditActionType("payment")}
+                  className={`py-2 rounded-lg text-xs font-bold transition ${
+                    creditActionType === "payment"
+                      ? "bg-emerald-500 text-black"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  ✓ Encaisser Règlement (تسديد)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreditActionType("charge")}
+                  className={`py-2 rounded-lg text-xs font-bold transition ${
+                    creditActionType === "charge"
+                      ? "bg-amber-500 text-black"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  + Ajouter Dette (دين جديد)
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                    Montant (MAD) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={creditAmount}
+                    onChange={(e) => setCreditAmount(e.target.value)}
+                    placeholder="Ex: 150.00"
+                    className="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white font-mono font-bold focus:outline-none focus:border-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                    Note / Motif
+                  </label>
+                  <input
+                    type="text"
+                    value={creditNotes}
+                    onChange={(e) => setCreditNotes(e.target.value)}
+                    placeholder="Ex: Règlement espèce"
+                    className="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-white"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={savingCredit}
+                className="w-full py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-black text-xs transition disabled:opacity-40 cursor-pointer"
+              >
+                {savingCredit
+                  ? "Enregistrement..."
+                  : creditActionType === "payment"
+                  ? "Valider l'Encaissement du Règlement"
+                  : "Enregistrer le Crédit sur le Carnet"}
+              </button>
+            </form>
+
+            {/* Credit Ledger History */}
+            <div className="pt-3 border-t border-zinc-800 space-y-2">
+              <h4 className="text-xs font-bold text-zinc-400 uppercase font-mono">
+                Historique des Opérations Karné
+              </h4>
+              {loadingCredits ? (
+                <div className="text-xs text-zinc-500 py-4 text-center">
+                  Chargement de l&apos;historique...
+                </div>
+              ) : creditHistory.length === 0 ? (
+                <div className="text-xs text-zinc-500 py-4 text-center">
+                  Aucune opération enregistrée sur ce carnet.
+                </div>
+              ) : (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                  {creditHistory.map((entry: any) => (
+                    <div
+                      key={entry.id}
+                      className="p-2.5 rounded-xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-between text-xs"
+                    >
+                      <div>
+                        <span
+                          className={`font-bold ${
+                            entry.type === "payment"
+                              ? "text-emerald-400"
+                              : "text-amber-400"
+                          }`}
+                        >
+                          {entry.type === "payment"
+                            ? "Règlement Reçu"
+                            : "Crédit Ajouté"}
+                        </span>
+                        {entry.notes && (
+                          <p className="text-[11px] text-zinc-400">{entry.notes}</p>
+                        )}
+                        <span className="text-[10px] text-zinc-500 font-mono">
+                          {new Date(entry.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="text-right font-mono">
+                        <div
+                          className={`font-black ${
+                            entry.type === "payment"
+                              ? "text-emerald-400"
+                              : "text-amber-400"
+                          }`}
+                        >
+                          {entry.type === "payment" ? "-" : "+"}
+                          {Number(entry.amount).toFixed(2)} MAD
+                        </div>
+                        <div className="text-[10px] text-zinc-500">
+                          Solde: {Number(entry.balanceAfter).toFixed(2)} DH
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

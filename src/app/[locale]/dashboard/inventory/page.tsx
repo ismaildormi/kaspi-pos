@@ -12,6 +12,7 @@ import {
   Clock,
   ShoppingCart,
 } from "lucide-react";
+import { StockAuditClient } from "@/components/dashboard/StockAuditClient";
 
 export const dynamic = "force-dynamic";
 
@@ -102,7 +103,16 @@ export default async function InventoryPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <StockAuditClient
+            products={products.map((p) => ({
+              id: p.id,
+              name: p.name,
+              sku: p.sku || null,
+              barcode: p.barcode || null,
+              currentQty: Number(p.stockLevels[0]?.quantity || 0),
+            }))}
+          />
           <Link
             href="/dashboard/products"
             className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition"

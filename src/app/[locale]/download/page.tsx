@@ -19,7 +19,7 @@ import {
 const WINDOWS_EXE_URL =
   "https://github.com/ismaildormi/kaspi-pos/releases/latest/download/kaspi-pos-setup.exe";
 
-const MOBILE_APP_URL = "https://kaspi.ma/app";
+const MOBILE_APP_URL = "https://kaspi-pos.vercel.app/pos";
 
 export default function DownloadCenterPage() {
   return (
@@ -183,15 +183,15 @@ export default function DownloadCenterPage() {
                 <h2 className="text-2xl font-bold text-white mb-2">
                   iOS &amp; Android
                 </h2>
-                <p className="text-sm text-zinc-400 leading-relaxed mb-6">
-                  Scan the QR code with your iPhone, iPad, or Android tablet to
-                  open{" "}
-                  <span className="text-white font-mono">
-                    https://kaspi.ma/app
-                  </span>{" "}
-                  for mobile cashiering, AI product scanning, and live owner
-                  reports.
-                </p>
+                 <p className="text-sm text-zinc-400 leading-relaxed mb-6">
+                   Scan the QR code with your iPhone, iPad, or Android tablet to
+                   open{" "}
+                   <span className="text-white font-mono">
+                     https://kaspi-pos.vercel.app/pos
+                   </span>{" "}
+                   for mobile cashiering, AI product scanning, and live owner
+                   reports.
+                 </p>
 
                 {/* Monochrome SVG QR Code Placeholder */}
                 <div className="mx-auto w-44 h-44 rounded-2xl bg-white p-3 flex flex-col items-center justify-center shadow-inner mb-6">
@@ -245,7 +245,7 @@ export default function DownloadCenterPage() {
                   className="w-full py-3.5 px-6 bg-zinc-950 border border-zinc-700 text-white font-bold rounded-xl hover:bg-white hover:text-black transition flex items-center justify-center gap-2 text-sm"
                 >
                   <QrCode className="w-4 h-4" />
-                  <span>Open kaspi.ma/app</span>
+                  <span>Open kaspi-pos.vercel.app</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
                 <p className="text-[11px] text-zinc-500 font-mono text-center">
