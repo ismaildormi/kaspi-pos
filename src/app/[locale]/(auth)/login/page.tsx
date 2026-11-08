@@ -41,8 +41,37 @@ function LoginForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const handleInstantDemoLogin = async () => {
+    setDemoLoading(true);
+    setError("");
+    setSuccess("جاري تجهيز نسخة العرض التفاعلية (KASPI Showroom)...");
+    try {
+      const res = await fetch(getApiUrl("/api/v1/auth/demo"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error?.message || "تعذر تشغيل الوضع التجريبي");
+      }
+
+      await signIn("credentials", {
+        redirect: false,
+        email: data.data.email,
+        password: data.data.password,
+      }).catch(() => {});
+
+      window.location.href = `/${locale}/pos`;
+    } catch (err: any) {
+      setError(err.message || "حدث خطأ أثناء تشغيل النسخة التجريبية");
+      setSuccess("");
+      setDemoLoading(false);
+    }
+  };
 
   // Countdown timer for OTP resend
   useEffect(() => {
@@ -58,6 +87,12 @@ function LoginForm() {
     const queryEmail = searchParams.get("email");
     const queryCode = searchParams.get("code");
     const queryPurpose = searchParams.get("purpose");
+    const queryDemo = searchParams.get("demo");
+
+    if (queryDemo === "true") {
+      handleInstantDemoLogin();
+      return;
+    }
 
     if (queryEmail) {
       setEmail(queryEmail);
@@ -732,17 +767,38 @@ function LoginForm() {
           </div>
         )}
 
-        {/* Footer Registration Link */}
-        <div className="mt-8 text-center text-sm text-zinc-400 border-t border-zinc-800/80 pt-6">
-          <p>
-            ليس لديك حساب؟{" "}
-            <Link
-              href={`/${locale}/register`}
-              className="text-white hover:underline font-medium"
-            >
-              إنشاء حساب جديد
-            </Link>
-          </p>
+        {/* 1-Click Interactive Sales Demo Mode Button */}
+        <div className="mt-6 pt-5 border-t border-zinc-800/80 space-y-4">
+          <button
+            type="button"
+            disabled={demoLoading || loading}
+            onClick={handleInstantDemoLogin}
+            className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-emerald-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 border border-amber-500/40 text-amber-300 font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-amber-500/10 cursor-pointer disabled:opacity-50"
+          >
+            {demoLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+            ) : (
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            )}
+            <span>
+              {demoLoading
+                ? "جاري فتح نقطة البيع التجريبية..."
+                : "تجربة فورية للنظام (بدون حساب) • Essayer la Démo"}
+            </span>
+          </button>
+
+          {/* Footer Registration Link */}
+          <div className="text-center text-sm text-zinc-400">
+            <p>
+              ليس لديك حساب؟{" "}
+              <Link
+                href={`/${locale}/register`}
+                className="text-white hover:underline font-medium"
+              >
+                إنشاء حساب جديد
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

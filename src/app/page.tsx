@@ -83,13 +83,21 @@ export default function LandingPage() {
           </p>
 
           {/* 2027 Tech CTA Buttons */}
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mt-10 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4">
             <Link
               href="/download"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-full bg-white px-8 py-4 text-sm font-bold text-black transition-all hover:bg-zinc-200 hover:scale-[1.02] shadow-[0_0_30px_rgba(255,255,255,0.25)] active:scale-95"
             >
               <Download className="h-4 w-4" />
               Télécharger pour Windows (.exe)
+            </Link>
+
+            <Link
+              href="/login?demo=true"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/15 px-7 py-4 text-sm font-extrabold text-amber-300 backdrop-blur-md transition-all hover:bg-amber-500/25 hover:border-amber-400 active:scale-95 shadow-lg shadow-amber-500/10"
+            >
+              <Sparkles className="h-4 w-4 text-amber-400" />
+              Essayer la Démo Instantanée • تجربة فورية
             </Link>
 
             <a

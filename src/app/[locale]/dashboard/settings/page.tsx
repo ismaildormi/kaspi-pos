@@ -23,6 +23,8 @@ import {
   Building2,
   CreditCard,
   Globe,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import {
   SUPPORTED_RECEIPT_LANGUAGES,
@@ -98,6 +100,39 @@ export default function SettingsPage() {
   // Local GPU / WebGPU AI Preference (Phase 2)
   const [useLocalGpuAi, setUseLocalGpuAi] = useState(true);
   const [receiptPaperDark, setReceiptPaperDark] = useState(false);
+
+  // Demo Data Reset State
+  const [resetClearCatalog, setResetClearCatalog] = useState(false);
+  const [isResettingDemo, setIsResettingDemo] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [resetFeedback, setResetFeedback] = useState<string | null>(null);
+
+  const handleResetDemoData = async () => {
+    setIsResettingDemo(true);
+    setResetFeedback(null);
+    try {
+      const res = await fetch("/api/v1/settings/reset-demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clearCatalog: resetClearCatalog }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error?.message || "Erreur lors de la réinitialisation");
+      }
+      const s = json.data?.summary || {};
+      setResetFeedback(
+        `✓ Données réinitialisées avec succès (${s.deletedSales || 0} ventes, ${s.deletedShifts || 0} sessions caisse${
+          resetClearCatalog ? `, ${s.deletedProducts || 0} produits démo` : ""
+        } supprimés). Votre compte est prêt pour l'exploitation réelle !`
+      );
+      setResetConfirmOpen(false);
+    } catch (err: any) {
+      setResetFeedback(`Erreur: ${err.message || "Échec de l'opération"}`);
+    } finally {
+      setIsResettingDemo(false);
+    }
+  };
 
   // Payment Gateway Configuration (Phase 2)
   const [selectedGateway, setSelectedGateway] = useState<"cmi_tpe" | "youcanpay" | "stripe" | "cash_only">("cmi_tpe");
@@ -1085,6 +1120,83 @@ export default function SettingsPage() {
                     className="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
                   />
                 </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* CARD 7: RÉINITIALISER LES DONNÉES DE TEST / DÉMO (PASSAGE EN PRODUCTION) */}
+        <div className="bg-zinc-900 border border-red-500/30 rounded-3xl p-6 sm:p-8 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-800">
+            <div className="flex items-center gap-2.5">
+              <Trash2 className="w-5 h-5 text-red-400" />
+              <div>
+                <h2 className="text-base font-bold text-white">
+                  Réinitialiser les données de test (Passage en Production) • مسح بيانات التجربة
+                </h2>
+                <p className="text-[11px] text-zinc-400">
+                  Purgez les ventes de démonstration, tickets KDS et sessions de caisse avant de démarrer votre activité réelle
+                </p>
+              </div>
+            </div>
+
+            {!resetConfirmOpen && (
+              <button
+                type="button"
+                onClick={() => setResetConfirmOpen(true)}
+                className="px-4 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/40 text-red-300 font-bold text-xs flex items-center gap-2 transition cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Réinitialiser les données de test</span>
+              </button>
+            )}
+          </div>
+
+          {resetFeedback && (
+            <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
+              {resetFeedback}
+            </div>
+          )}
+
+          {resetConfirmOpen && (
+            <div className="p-4 rounded-2xl bg-zinc-950 border border-red-500/40 space-y-4">
+              <div className="flex items-start gap-2.5 text-xs text-amber-300">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+                <span>
+                  Confirmation requise : cette action supprimera toutes les ventes de test, les tickets KDS, les sessions X/Z et remettra les soldes crédits clients à 0.00 MAD.
+                </span>
+              </div>
+
+              <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={resetClearCatalog}
+                  onChange={(e) => setResetClearCatalog(e.target.checked)}
+                  className="w-4 h-4 rounded accent-red-500"
+                />
+                <span>
+                  Supprimer également les produits et catégories de démonstration (pour importer mon propre catalogue)
+                </span>
+              </label>
+
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  disabled={isResettingDemo}
+                  onClick={handleResetDemoData}
+                  className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-400 text-black font-black text-xs transition cursor-pointer disabled:opacity-50"
+                >
+                  {isResettingDemo
+                    ? "Purge en cours..."
+                    : "Confirmer la purge des données démo"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setResetConfirmOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-xs transition cursor-pointer"
+                >
+                  Annuler
+                </button>
               </div>
             </div>
           )}

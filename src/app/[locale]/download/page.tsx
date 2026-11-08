@@ -16,8 +16,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-const WINDOWS_EXE_URL =
-  "https://github.com/ismaildormi/kaspi-pos/releases/latest/download/kaspi-pos-setup.exe";
+const WINDOWS_EXE_URL = "/download/exe";
 
 const MOBILE_APP_URL = "https://kaspi-pos.vercel.app/pos";
 

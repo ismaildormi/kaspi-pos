@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
-import { Clock, User as UserIcon, LayoutDashboard, ArrowLeft, Wallet, Sparkles } from "lucide-react";
+import { Clock, User as UserIcon, LayoutDashboard, ArrowLeft, Wallet, Sparkles, Maximize2, Minimize2 } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SyncStatusBadge } from "./SyncStatusBadge";
@@ -37,6 +37,23 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
   const t = useTranslations("Pos");
   const locale = useLocale();
   const { heldCarts, storeType } = usePosStore();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
+  const toggleKioskFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
 
   return (
     <header className="h-16 border-b border-zinc-800 bg-zinc-950 px-4 sm:px-6 flex items-center justify-between gap-4 select-none">
@@ -133,6 +150,27 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
             </span>
           </button>
         )}
+
+        {/* 1-Click Fullscreen / Touch Kiosk Mode Toggle (F11) */}
+        <button
+          type="button"
+          onClick={toggleKioskFullscreen}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
+            isFullscreen
+              ? "bg-white text-black border-white"
+              : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-800"
+          }`}
+          title="Mode Kiosque Tactile Plein Écran (F11)"
+        >
+          {isFullscreen ? (
+            <Minimize2 className="w-3.5 h-3.5" />
+          ) : (
+            <Maximize2 className="w-3.5 h-3.5" />
+          )}
+          <span className="hidden xl:inline">
+            {isFullscreen ? "Quitter Kiosque" : "Plein Écran"}
+          </span>
+        </button>
 
         {/* Language Switcher */}
         <LanguageSwitcher />
