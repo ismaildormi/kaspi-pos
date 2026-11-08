@@ -148,13 +148,9 @@ function LoginForm() {
     }
   }, [searchParams]);
 
-  const handleRedirect = (isSuperAdmin: boolean) => {
+  const handleRedirect = (_isSuperAdmin?: boolean) => {
     playSuccessSound();
-    if (isSuperAdmin) {
-      window.location.href = `/${locale}/admin`;
-    } else {
-      window.location.href = `/${locale}/dashboard`;
-    }
+    window.location.href = `/${locale}/dashboard`;
   };
 
   // 1. Password Login

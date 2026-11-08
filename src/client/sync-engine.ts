@@ -35,23 +35,24 @@ export function isTauriDesktopRuntime(): boolean {
 export function getApiUrl(path: string): string {
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
 
-  // When running inside the Tauri Desktop Client (or when explicitly configured),
-  // statically bind all API requests to https://kaspi-pos.vercel.app/api/v1 (or production origin)
-  // and never use localhost / loopback.
-  if (isTauriDesktopRuntime()) {
+  // When running inside a local Tauri custom-protocol shell (tauri://localhost),
+  // route API calls to the production cloud origin. When already on an http/https
+  // web origin (including kaspi-pos.vercel.app or preview deployments), always use
+  // same-origin relative paths so HTTP-only session cookies (pos_session) are
+  // persisted and sent on the exact same domain.
+  if (
+    isTauriDesktopRuntime() &&
+    typeof window !== "undefined" &&
+    (window.location.protocol === "tauri:" ||
+      window.location.hostname === "tauri.localhost" ||
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1")
+  ) {
     if (cleanPath.startsWith("/api/v1")) {
       const subPath = cleanPath.slice("/api/v1".length);
       return `${PRODUCTION_API_V1_BASE}${subPath}`;
     }
     return `${PRODUCTION_CLOUD_ORIGIN}${cleanPath}`;
-  }
-
-  const envBase = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
-  if (envBase && !envBase.includes("localhost") && !envBase.includes("127.0.0.1")) {
-    if (envBase.endsWith("/api/v1") && cleanPath.startsWith("/api/v1")) {
-      return `${envBase}${cleanPath.slice("/api/v1".length)}`;
-    }
-    return `${envBase}${cleanPath}`;
   }
 
   return cleanPath;

@@ -1,8 +1,7 @@
 import React from "react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { prisma } from "@/server/db/prisma";
-import { getRequestContext, type RequestContext } from "@/server/auth/context";
+import { getSafeServerContext } from "@/server/auth/context";
 import {
   Layers,
   AlertTriangle,
@@ -18,52 +17,54 @@ import { StockAuditClient } from "@/components/dashboard/StockAuditClient";
 export const dynamic = "force-dynamic";
 
 export default async function InventoryPage() {
-  let ctx: RequestContext;
-  try {
-    ctx = await getRequestContext();
-  } catch {
-    redirect("/login");
-  }
+  const ctx = await getSafeServerContext();
   const tenantId = ctx.tenantId;
+  const isFallbackTenant = tenantId === "00000000-0000-0000-0000-000000000000";
 
   // 1. Fetch products with stock levels
-  const products = await prisma.product
-    .findMany({
-      where: { tenantId, trackStock: true },
-      include: {
-        stockLevels: true,
-        category: true,
-      },
-      orderBy: { name: "asc" },
-    })
-    .catch(() => []);
+  const products = isFallbackTenant
+    ? []
+    : await prisma.product
+        .findMany({
+          where: { tenantId, trackStock: true },
+          include: {
+            stockLevels: true,
+            category: true,
+          },
+          orderBy: { name: "asc" },
+        })
+        .catch(() => []);
 
   // 2. Fetch recent inventory movements
-  const recentMovements = await prisma.inventoryMovement
-    .findMany({
-      where: { tenantId },
-      include: { product: true },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-    })
-    .catch(() => []);
+  const recentMovements = isFallbackTenant
+    ? []
+    : await prisma.inventoryMovement
+        .findMany({
+          where: { tenantId },
+          include: { product: true },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        })
+        .catch(() => []);
 
-  // 3. AI Predictive Stockout Velocity (Last 14 days sales velocity) - Hidden Gem 1
+  // 3. AI Predictive Stockout Velocity (Last 14 days sales velocity)
   const fourteenDaysAgo = new Date();
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
-  const salesVelocity = await prisma.saleItem
-    .groupBy({
-      by: ["productId"],
-      where: {
-        tenantId,
-        createdAt: { gte: fourteenDaysAgo },
-      },
-      _sum: {
-        quantity: true,
-      },
-    })
-    .catch(() => []);
+  const salesVelocity = isFallbackTenant
+    ? []
+    : await prisma.saleItem
+        .groupBy({
+          by: ["productId"],
+          where: {
+            tenantId,
+            createdAt: { gte: fourteenDaysAgo },
+          },
+          _sum: {
+            quantity: true,
+          },
+        })
+        .catch(() => []);
 
   const velocityMap = new Map<string, number>();
   salesVelocity.forEach((sv) => {

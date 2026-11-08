@@ -20,14 +20,19 @@ export default async function LocaleLayout({
     notFound();
   }
 
-  const messages = await getMessages();
+  let messages = {};
+  try {
+    messages = await getMessages();
+  } catch {
+    // Fallback to empty messages map if next-intl server context is unavailable
+  }
   const dir = locale === "ar" ? "rtl" : "ltr";
 
   return (
     <div
       lang={locale}
       dir={dir}
-      className={`bg-zinc-950 text-white min-h-screen antialiased pt-16 ${
+      className={`bg-zinc-950 text-white min-h-screen antialiased ${
         locale === "ar" ? "font-['Cairo',sans-serif]" : "font-['Inter',sans-serif]"
       }`}
     >

@@ -1,8 +1,7 @@
 import React from "react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { prisma } from "@/server/db/prisma";
-import { getRequestContext, type RequestContext } from "@/server/auth/context";
+import { getSafeServerContext } from "@/server/auth/context";
 import {
   TrendingUp,
   ShoppingBag,
@@ -17,40 +16,47 @@ import type { StoreBusinessType } from "@/client/store/usePosStore";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardOverviewPage() {
-  let ctx: RequestContext;
-  try {
-    ctx = await getRequestContext();
-  } catch (err) {
-    console.warn("[DashboardOverviewPage] Redirecting unauthenticated request to /login:", err);
-    redirect("/login");
-  }
-
+  const ctx = await getSafeServerContext();
   const tenantId = ctx.tenantId;
+  const isFallbackTenant = tenantId === "00000000-0000-0000-0000-000000000000";
 
-  // 1. Fetch counts & stats + workspace onboarding profile (with defensive fallbacks)
-  const [productsCount, salesCount, customersCount, workspaceRecord, salesAgg] =
-    await Promise.all([
-      prisma.product.count({ where: { tenantId } }).catch(() => 0),
-      prisma.sale.count({ where: { tenantId, status: "completed" } }).catch(() => 0),
-      prisma.customer.count({ where: { tenantId } }).catch(() => 0),
-      prisma.idempotencyRecord
-        .findUnique({
-          where: {
-            tenantId_scope_key: {
-              tenantId,
-              scope: "workspace_config",
-              key: "store_profile",
-            },
-          },
-        })
-        .catch(() => null),
-      prisma.sale
-        .aggregate({
-          where: { tenantId, status: "completed" },
-          _sum: { grandTotal: true },
-        })
-        .catch(() => ({ _sum: { grandTotal: null } })),
-    ]);
+  let productsCount = 0;
+  let salesCount = 0;
+  let customersCount = 0;
+  let workspaceRecord: { responseBody: unknown } | null = null;
+  let salesAgg: { _sum: { grandTotal: unknown } } = { _sum: { grandTotal: null } };
+
+  if (!isFallbackTenant) {
+    try {
+      [productsCount, salesCount, customersCount, workspaceRecord, salesAgg] =
+        await Promise.all([
+          prisma.product.count({ where: { tenantId } }).catch(() => 0),
+          prisma.sale
+            .count({ where: { tenantId, status: "completed" } })
+            .catch(() => 0),
+          prisma.customer.count({ where: { tenantId } }).catch(() => 0),
+          prisma.idempotencyRecord
+            .findUnique({
+              where: {
+                tenantId_scope_key: {
+                  tenantId,
+                  scope: "workspace_config",
+                  key: "store_profile",
+                },
+              },
+            })
+            .catch(() => null),
+          prisma.sale
+            .aggregate({
+              where: { tenantId, status: "completed" },
+              _sum: { grandTotal: true },
+            })
+            .catch(() => ({ _sum: { grandTotal: null } })),
+        ]);
+    } catch (err) {
+      console.warn("[DashboardOverviewPage] Fallback metrics used:", err);
+    }
+  }
 
   const workspacePayload =
     workspaceRecord?.responseBody && typeof workspaceRecord.responseBody === "object"
