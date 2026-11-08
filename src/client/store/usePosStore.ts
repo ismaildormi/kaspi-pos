@@ -67,6 +67,21 @@ interface PosState {
     address?: string;
     city?: string;
     phone?: string;
+    receiptHeader?: string;
+    receiptFooter?: string;
+  };
+  printerSettings: {
+    receiptLanguage: "ar" | "fr" | "en" | "tr" | "es" | "de";
+    paperWidthMm: 58 | 80;
+    printerConnectionMode: "auto" | "usb_serial" | "network" | "browser";
+    printer: string;
+    printerIp: string;
+    printerPort: string;
+    autoPrintReceipt: boolean;
+    openDrawer: boolean;
+    showStoreLogo: boolean;
+    receiptHeader: string;
+    receiptFooter: string;
   };
 
   // Active Cart State
@@ -103,6 +118,7 @@ interface PosState {
   setSessionContext: (tenantId: string, storeId: string, cashierUserId: string, deviceCount?: number) => void;
   setDeviceCount: (count: number) => void;
   setTenantInfo: (info: PosState["tenantInfo"]) => void;
+  setPrinterSettings: (settings: Partial<PosState["printerSettings"]>) => void;
   addToCart: (product: PosProduct, quantity?: number) => void;
   addProductByBarcode: (product: PosProduct) => void;
   updateItemQuantity: (productId: string, delta: number) => void;
@@ -138,6 +154,19 @@ export const usePosStore = create<PosState>()(
       storeId: "",
       cashierUserId: "",
       deviceCount: 1,
+      printerSettings: {
+        receiptLanguage: "fr",
+        paperWidthMm: 80,
+        printerConnectionMode: "auto",
+        printer: "",
+        printerIp: "192.168.1.50",
+        printerPort: "9100",
+        autoPrintReceipt: false,
+        openDrawer: true,
+        showStoreLogo: true,
+        receiptHeader: "",
+        receiptFooter: "",
+      },
 
       cart: [],
       customer: null,
@@ -210,6 +239,20 @@ export const usePosStore = create<PosState>()(
 
       setTenantInfo: (tenantInfo) => {
         set({ tenantInfo });
+      },
+
+      setPrinterSettings: (newSettings) => {
+        set((state) => {
+          const updated = { ...state.printerSettings, ...newSettings };
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem("kaspi.printer.settings", JSON.stringify(updated));
+            } catch {
+              // ignore storage error
+            }
+          }
+          return { printerSettings: updated };
+        });
       },
 
       addToCart: (product, quantity = 1) => {
@@ -634,6 +677,8 @@ export const usePosStore = create<PosState>()(
         customer: state.customer,
         heldCarts: state.heldCarts,
         discountPercent: state.discountPercent,
+        tenantInfo: state.tenantInfo,
+        printerSettings: state.printerSettings,
       }),
     }
   )

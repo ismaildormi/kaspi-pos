@@ -4,6 +4,7 @@ import { prisma } from "@/server/db/prisma";
 import { hashPassword } from "@/server/auth/password";
 import { createSession, SESSION_COOKIE_NAME, SESSION_EXPIRY_DAYS } from "@/server/auth/session";
 import { jsonError, jsonOk } from "@/server/http/response";
+import { syncUserToSupabaseDirectory } from "@/lib/supabase";
 
 const ResetPasswordSchema = z.object({
   email: z.string().email("البريد الإلكتروني غير صالح").transform((v) => v.toLowerCase().trim()),
@@ -85,6 +86,16 @@ export async function POST(req: NextRequest) {
       ip,
       userAgent,
     });
+
+    syncUserToSupabaseDirectory({
+      email: user.email ?? email,
+      fullName: user.fullName || user.name,
+      tenantId: activeTenantId,
+      role: user.memberships[0]?.role || "owner",
+      shopName: user.memberships[0]?.tenant?.displayName,
+      source: "reset_password",
+      lastSeenAt: new Date().toISOString(),
+    }).catch(() => {});
 
     const response = jsonOk({
       message: "تم تحديث كلمة المرور بنجاح وتسجيل دخولك إلى حسابك.",

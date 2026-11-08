@@ -5,23 +5,48 @@ import { getRequestContext } from "@/server/auth/context";
 export async function GET(req: NextRequest) {
   try {
     const ctx = await getRequestContext();
-    const settings = await prisma.tenantSettings.findUnique({
-      where: { tenantId: ctx.tenantId },
-    });
+    const [settings, printerRecord] = await Promise.all([
+      prisma.tenantSettings.findUnique({
+        where: { tenantId: ctx.tenantId },
+      }),
+      prisma.idempotencyRecord
+        .findUnique({
+          where: {
+            tenantId_scope_key: {
+              tenantId: ctx.tenantId,
+              scope: "printer_studio",
+              key: "thermal_config",
+            },
+          },
+        })
+        .catch(() => null),
+    ]);
+
+    const printerConfig = (printerRecord?.responseBody as Record<string, any>) || {};
 
     return NextResponse.json({
       success: true,
-      settings: settings || {
-        shopName: ctx.activeTenant?.displayName || ctx.activeTenant?.legalName || "",
-        address: "",
-        ice: "",
-        taxId: "",
-        rcNumber: "",
-        phone: "",
-        receiptHeader: "Bienvenue dans notre magasin",
-        receiptFooter: "Merci de votre visite et à bientôt !",
-        whatsappReportNumber: "",
-        isWhatsappReportsActive: true,
+      settings: {
+        shopName: settings?.shopName || ctx.activeTenant?.displayName || ctx.activeTenant?.legalName || "",
+        address: settings?.address || "",
+        ice: settings?.ice || "",
+        taxId: settings?.taxId || "",
+        rcNumber: settings?.rcNumber || "",
+        phone: settings?.phone || "",
+        logoUrl: settings?.logoUrl || "",
+        receiptHeader: settings?.receiptHeader || "Bienvenue dans notre magasin",
+        receiptFooter: settings?.receiptFooter || "Merci de votre visite et à bientôt !",
+        whatsappReportNumber: settings?.whatsappReportNumber || "",
+        isWhatsappReportsActive: settings?.isWhatsappReportsActive ?? true,
+        receiptLanguage: printerConfig.receiptLanguage || ctx.activeTenant?.locale || "fr",
+        paperWidthMm: printerConfig.paperWidthMm || 80,
+        printerConnectionMode: printerConfig.printerConnectionMode || "auto",
+        printer: printerConfig.printer || "",
+        printerIp: printerConfig.printerIp || "192.168.1.50",
+        printerPort: printerConfig.printerPort || "9100",
+        autoPrintReceipt: printerConfig.autoPrintReceipt ?? false,
+        openDrawer: printerConfig.openDrawer ?? true,
+        showStoreLogo: printerConfig.showStoreLogo ?? true,
       },
     });
   } catch (err: any) {
@@ -65,7 +90,51 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, settings: updated });
+    const thermalConfig = {
+      receiptLanguage: body.receiptLanguage || "fr",
+      paperWidthMm: Number(body.paperWidthMm) === 58 ? 58 : 80,
+      printerConnectionMode: body.printerConnectionMode || "auto",
+      printer: body.printer || "",
+      printerIp: body.printerIp || "192.168.1.50",
+      printerPort: body.printerPort || "9100",
+      autoPrintReceipt: Boolean(body.autoPrintReceipt),
+      openDrawer: body.openDrawer !== undefined ? Boolean(body.openDrawer) : true,
+      showStoreLogo: body.showStoreLogo !== undefined ? Boolean(body.showStoreLogo) : true,
+    };
+
+    const farFuture = new Date("2099-12-31T23:59:59Z");
+    await prisma.idempotencyRecord
+      .upsert({
+        where: {
+          tenantId_scope_key: {
+            tenantId: ctx.tenantId,
+            scope: "printer_studio",
+            key: "thermal_config",
+          },
+        },
+        create: {
+          tenantId: ctx.tenantId,
+          scope: "printer_studio",
+          key: "thermal_config",
+          requestHash: "thermal_config_v1",
+          responseStatus: 200,
+          responseBody: thermalConfig,
+          expiresAt: farFuture,
+        },
+        update: {
+          responseBody: thermalConfig,
+          expiresAt: farFuture,
+        },
+      })
+      .catch((e) => console.warn("[Settings Thermal Config Persist Warning]:", e));
+
+    return NextResponse.json({
+      success: true,
+      settings: {
+        ...updated,
+        ...thermalConfig,
+      },
+    });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

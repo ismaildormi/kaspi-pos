@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkSuperAdminUser } from "@/server/admin/guard";
 import { prisma } from "@/server/db/prisma";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { getSupabaseDirectoryEmails } from "@/lib/supabase";
 import { sendBroadcastEmail } from "@/lib/email/mailer";
 
 export async function POST(req: NextRequest) {
@@ -40,22 +40,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Supplement from Supabase user_directory if accessible
+    // 2. Supplement from Supabase user_directory & auth.users
     try {
-      const supabase = getSupabaseAdmin();
-      if (supabase) {
-        const { data: supaUsers } = await supabase
-          .from("user_directory")
-          .select("email")
-          .limit(1000);
-
-        if (supaUsers && Array.isArray(supaUsers)) {
-          for (const s of supaUsers) {
-            if (s.email && typeof s.email === "string" && s.email.includes("@")) {
-              recipientSet.add(s.email.toLowerCase().trim());
-            }
-          }
-        }
+      const supaEmails = await getSupabaseDirectoryEmails();
+      for (const email of supaEmails) {
+        recipientSet.add(email);
       }
     } catch (supaErr) {
       console.warn("[Broadcast API] Supabase user_directory fetch warning:", supaErr);

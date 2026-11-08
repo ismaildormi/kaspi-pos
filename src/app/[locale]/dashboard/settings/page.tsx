@@ -22,7 +22,23 @@ import {
   Check,
   Building2,
   CreditCard,
+  Globe,
 } from "lucide-react";
+import {
+  SUPPORTED_RECEIPT_LANGUAGES,
+  getReceiptTranslation,
+  formatReceiptAmount,
+  formatReceiptDate,
+  toWesternNumerals,
+  type ReceiptLanguage,
+  type PrinterConnectionMode,
+} from "@/lib/printing/receipt-translations";
+import {
+  getPrinterSettings,
+  savePrinterSettings,
+  printTestReceipt,
+} from "@/client/printing";
+import { usePosStore } from "@/client/store/usePosStore";
 
 interface StoreItem {
   id: string;
@@ -56,6 +72,20 @@ export default function SettingsPage() {
   const [whatsappReportNumber, setWhatsappReportNumber] = useState("");
   const [isWhatsappReportsActive, setIsWhatsappReportsActive] = useState(true);
 
+  // Thermal Printing & Multi-Language Receipt Studio State (Phase 2)
+  const { setPrinterSettings, setTenantInfo } = usePosStore();
+  const [receiptLanguage, setReceiptLanguage] = useState<ReceiptLanguage>("fr");
+  const [paperWidthMm, setPaperWidthMm] = useState<58 | 80>(80);
+  const [printerConnectionMode, setPrinterConnectionMode] = useState<PrinterConnectionMode>("auto");
+  const [printerTarget, setPrinterTarget] = useState("");
+  const [printerIp, setPrinterIp] = useState("192.168.1.50");
+  const [printerPort, setPrinterPort] = useState("9100");
+  const [autoPrintReceipt, setAutoPrintReceipt] = useState(false);
+  const [openDrawer, setOpenDrawer] = useState(true);
+  const [showStoreLogo, setShowStoreLogo] = useState(true);
+  const [isTestPrinting, setIsTestPrinting] = useState(false);
+  const [testPrintStatus, setTestPrintStatus] = useState<string | null>(null);
+
   // Multi-Store Network State (Phase 1)
   const [stores, setStores] = useState<StoreItem[]>([]);
   const [isAddingStore, setIsAddingStore] = useState(false);
@@ -76,6 +106,17 @@ export default function SettingsPage() {
   const [stripeKey, setStripeKey] = useState("");
 
   useEffect(() => {
+    const localPrinter = getPrinterSettings();
+    if (localPrinter.receiptLanguage) setReceiptLanguage(localPrinter.receiptLanguage);
+    if (localPrinter.paperWidthMm) setPaperWidthMm(localPrinter.paperWidthMm);
+    if (localPrinter.printerConnectionMode) setPrinterConnectionMode(localPrinter.printerConnectionMode);
+    if (localPrinter.printer) setPrinterTarget(localPrinter.printer);
+    if (localPrinter.printerIp) setPrinterIp(localPrinter.printerIp);
+    if (localPrinter.printerPort) setPrinterPort(localPrinter.printerPort);
+    if (localPrinter.autoPrintReceipt !== undefined) setAutoPrintReceipt(localPrinter.autoPrintReceipt);
+    if (localPrinter.openDrawer !== undefined) setOpenDrawer(localPrinter.openDrawer);
+    if (localPrinter.showStoreLogo !== undefined) setShowStoreLogo(localPrinter.showStoreLogo);
+
     fetchSettings();
     fetchStores();
     const storedGpu = localStorage.getItem("kaspi_use_local_gpu");
@@ -104,6 +145,16 @@ export default function SettingsPage() {
           setReceiptFooter(s.receiptFooter || "");
           setWhatsappReportNumber(s.whatsappReportNumber || "");
           setIsWhatsappReportsActive(s.isWhatsappReportsActive ?? true);
+
+          if (s.receiptLanguage) setReceiptLanguage(s.receiptLanguage);
+          if (s.paperWidthMm) setPaperWidthMm(s.paperWidthMm === 58 ? 58 : 80);
+          if (s.printerConnectionMode) setPrinterConnectionMode(s.printerConnectionMode);
+          if (s.printer !== undefined) setPrinterTarget(s.printer);
+          if (s.printerIp) setPrinterIp(s.printerIp);
+          if (s.printerPort) setPrinterPort(s.printerPort);
+          if (s.autoPrintReceipt !== undefined) setAutoPrintReceipt(Boolean(s.autoPrintReceipt));
+          if (s.openDrawer !== undefined) setOpenDrawer(Boolean(s.openDrawer));
+          if (s.showStoreLogo !== undefined) setShowStoreLogo(Boolean(s.showStoreLogo));
         }
       }
     } catch (err) {
@@ -165,6 +216,34 @@ export default function SettingsPage() {
     setIsSaving(true);
     setSaveSuccess(false);
 
+    const newPrinterSettings = {
+      receiptLanguage,
+      paperWidthMm,
+      printerConnectionMode,
+      printer: printerTarget,
+      printerIp,
+      printerPort,
+      autoPrintReceipt,
+      openDrawer,
+      showStoreLogo,
+      receiptHeader,
+      receiptFooter,
+    };
+
+    // Persist locally immediately in localStorage + Zustand store
+    savePrinterSettings(newPrinterSettings);
+    setPrinterSettings(newPrinterSettings);
+    setTenantInfo({
+      shopName,
+      address,
+      ice,
+      taxId,
+      rcNumber,
+      phone,
+      receiptHeader,
+      receiptFooter,
+    });
+
     try {
       const res = await fetch("/api/v1/settings", {
         method: "POST",
@@ -176,10 +255,9 @@ export default function SettingsPage() {
           taxId,
           rcNumber,
           phone,
-          receiptHeader,
-          receiptFooter,
           whatsappReportNumber,
           isWhatsappReportsActive,
+          ...newPrinterSettings,
         }),
       });
 
@@ -191,6 +269,47 @@ export default function SettingsPage() {
       console.error(err);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleTestPrintReceipt = async () => {
+    setIsTestPrinting(true);
+    setTestPrintStatus(null);
+    try {
+      const currentSettings = {
+        receiptLanguage,
+        paperWidthMm,
+        printerConnectionMode,
+        printer: printerTarget,
+        printerIp,
+        printerPort,
+        autoPrintReceipt,
+        openDrawer,
+        showStoreLogo,
+        receiptHeader,
+        receiptFooter,
+        shopName: shopName || "KASPI POS GLOBAL",
+        address: address || "Casablanca • Paris • Istanbul",
+        ice: ice || "001234567000089",
+        taxId: taxId || "12345678",
+      };
+      savePrinterSettings(currentSettings);
+      setPrinterSettings(currentSettings);
+
+      const res = await printTestReceipt(currentSettings);
+      if (res.success) {
+        setTestPrintStatus(
+          res.transport === "tauri_escpos"
+            ? "✅ Ticket test envoyé à l'imprimante thermique ESC/POS !"
+            : "✅ Aperçu d'impression navigateur lancé !"
+        );
+      } else {
+        setTestPrintStatus("❌ Échec du test d'impression");
+      }
+    } catch (err: any) {
+      setTestPrintStatus(`❌ Erreur: ${err?.message || "Impossible d'imprimer"}`);
+    } finally {
+      setIsTestPrinting(false);
     }
   };
 
@@ -426,119 +545,365 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* CARD 3: INTERACTIVE RECEIPT DESIGNER WITH LIVE THERMAL PREVIEW (Hidden Gem 3) */}
+        {/* CARD 3: THERMAL PRINTING & GLOBAL MULTI-LANGUAGE RECEIPT STUDIO */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-6">
-          <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-800">
+            <div className="flex items-center gap-2.5">
               <Printer className="w-5 h-5 text-sky-400" />
               <div>
-                <h2 className="text-base font-bold text-white">Designer de Ticket de Caisse Thermique</h2>
-                <p className="text-[11px] text-zinc-400">Aperçu en direct conforme aux imprimantes ESC/POS 80mm &amp; 58mm</p>
+                <h2 className="text-base font-bold text-white">
+                  Thermal Printing &amp; Receipt Studio • إعدادات الطباعة الحرارية والفاتورة
+                </h2>
+                <p className="text-[11px] text-zinc-400">
+                  Moteur ESC/POS multi-langues (AR 0-9, FR, EN, TR, ES, DE) • 80mm &amp; 58mm • Tiroir-caisse RJ11
+                </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setReceiptPaperDark(!receiptPaperDark)}
-              className="px-3 py-1 rounded-lg bg-zinc-800 border border-zinc-700 text-[11px] text-zinc-300 hover:text-white"
-            >
-              Mode Papier: {receiptPaperDark ? "Sombre" : "Blanc Thermique"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleTestPrintReceipt}
+                disabled={isTestPrinting}
+                className="px-3.5 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+              >
+                {isTestPrinting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Printer className="w-3.5 h-3.5" />
+                )}
+                <span>Test Print Receipt • تجربة الطباعة</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setReceiptPaperDark(!receiptPaperDark)}
+                className="px-3 py-1.5 rounded-xl bg-zinc-800 border border-zinc-700 text-[11px] text-zinc-300 hover:text-white cursor-pointer"
+              >
+                Papier: {receiptPaperDark ? "Sombre" : "Blanc"}
+              </button>
+            </div>
           </div>
 
+          {testPrintStatus && (
+            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono text-sky-300">
+              {testPrintStatus}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Left: Input Customization */}
-            <div className="lg:col-span-7 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  En-tête du ticket (Message d&apos;accueil)
-                </label>
-                <input
-                  type="text"
-                  value={receiptHeader}
-                  onChange={(e) => setReceiptHeader(e.target.value)}
-                  placeholder="Bienvenue chez Kasbi Market !"
-                  className="w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-medium"
-                />
+            {/* Left: Thermal Hardware & Language Controls */}
+            <div className="lg:col-span-7 space-y-5">
+              {/* Row 1: Language & Paper Width */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Langue d&apos;impression du Ticket (Receipt Language)</span>
+                  </label>
+                  <select
+                    value={receiptLanguage}
+                    onChange={(e) => setReceiptLanguage(e.target.value as ReceiptLanguage)}
+                    className="w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-white font-semibold"
+                  >
+                    {SUPPORTED_RECEIPT_LANGUAGES.map((lang) => (
+                      <option key={lang.code} value={lang.code}>
+                        {lang.flag} {lang.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-zinc-500 mt-1">
+                    Indépendant de la langue du tableau de bord. Chiffres strictement 0-9.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+                    Largeur du Rouleau Thermique (Paper Width)
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { mm: 80 as const, label: "80mm Standard", sub: "576 dots (POS)" },
+                      { mm: 58 as const, label: "58mm Compact", sub: "384 dots (Mobile)" },
+                    ].map((w) => (
+                      <button
+                        key={w.mm}
+                        type="button"
+                        onClick={() => setPaperWidthMm(w.mm)}
+                        className={`h-11 px-3 rounded-xl border text-left flex flex-col justify-center transition cursor-pointer ${
+                          paperWidthMm === w.mm
+                            ? "bg-zinc-950 border-sky-400 text-white ring-1 ring-sky-400/40"
+                            : "bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:border-zinc-700"
+                        }`}
+                      >
+                        <span className="text-xs font-bold leading-none">{w.label}</span>
+                        <span className="text-[9px] font-mono text-zinc-500 mt-0.5">{w.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
+              {/* Row 2: Printer Connection Mode */}
               <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  Pied de page (Mentions légales &amp; retours)
+                <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+                  Mode de Connexion Imprimante (Printer Connection Mode)
                 </label>
-                <input
-                  type="text"
-                  value={receiptFooter}
-                  onChange={(e) => setReceiptFooter(e.target.value)}
-                  placeholder="Articles ni repris ni échangés après 48h. Merci !"
-                  className="w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-medium"
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {[
+                    {
+                      id: "auto" as const,
+                      title: "Auto (Tauri ESC/POS → Navigateur)",
+                      desc: "Détecte l'imprimante par défaut ou bascule sur le navigateur",
+                    },
+                    {
+                      id: "usb_serial" as const,
+                      title: "USB / Série Direct (Spooler / COM)",
+                      desc: "Imprimante USB Windows (ex: POS-80C) ou port COM3",
+                    },
+                    {
+                      id: "network" as const,
+                      title: "Réseau LAN / Wi-Fi (TCP/IP :9100)",
+                      desc: "Imprimante thermique cuisine/caisse sur IP locale",
+                    },
+                    {
+                      id: "browser" as const,
+                      title: "Impression Standard Navigateur",
+                      desc: "Boîte de dialogue système (PDF / AirPrint / Laser)",
+                    },
+                  ].map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setPrinterConnectionMode(m.id)}
+                      className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                        printerConnectionMode === m.id
+                          ? "bg-zinc-950 border-sky-400 ring-1 ring-sky-400/40"
+                          : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700"
+                      }`}
+                    >
+                      <div className="text-xs font-bold text-white">{m.title}</div>
+                      <div className="text-[10px] text-zinc-400 mt-0.5">{m.desc}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-400 space-y-1">
-                <span className="font-bold text-white block">Mentions DGI intégrées automatiquement :</span>
-                <p>• Numérotation séquentielle continue (FAC-2026-XXXXXX)</p>
-                <p>• QR Code de signature électronique certifiée</p>
-                <p>• Décomposition de la TVA marocaine (20%, 14%, 10%, 7%)</p>
+              {/* Conditional Connection Inputs */}
+              {printerConnectionMode === "usb_serial" && (
+                <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800">
+                  <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                    Nom de l&apos;imprimante Windows ou Port Série (laisser vide pour l&apos;imprimante par défaut)
+                  </label>
+                  <input
+                    type="text"
+                    value={printerTarget}
+                    onChange={(e) => setPrinterTarget(e.target.value)}
+                    placeholder="Ex: POS-80C, Epson TM-T20III, COM3, \\localhost\POS80"
+                    className="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
+                  />
+                </div>
+              )}
+
+              {printerConnectionMode === "network" && (
+                <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                      Adresse IP de l&apos;imprimante thermique (LAN)
+                    </label>
+                    <input
+                      type="text"
+                      value={printerIp}
+                      onChange={(e) => setPrinterIp(e.target.value)}
+                      placeholder="192.168.1.50"
+                      className="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                      Port RAW ESC/POS
+                    </label>
+                    <input
+                      type="text"
+                      value={printerPort}
+                      onChange={(e) => setPrinterPort(e.target.value)}
+                      placeholder="9100"
+                      className="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Row 3: Hardware Toggles */}
+              <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
+                <span className="text-xs font-bold text-white block">
+                  Options Matérielles &amp; Automatisation Caisse :
+                </span>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoPrintReceipt}
+                    onChange={(e) => setAutoPrintReceipt(e.target.checked)}
+                    className="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-sky-500"
+                  />
+                  <span className="text-xs text-zinc-300">
+                    Impression automatique du ticket dès la validation de l&apos;encaissement (Auto-Print)
+                  </span>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={openDrawer}
+                    onChange={(e) => setOpenDrawer(e.target.checked)}
+                    className="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-sky-500"
+                  />
+                  <span className="text-xs text-zinc-300">
+                    Impulsion d&apos;ouverture automatique du Tiroir-Caisse RJ11 (ESC/POS Pulse)
+                  </span>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showStoreLogo}
+                    onChange={(e) => setShowStoreLogo(e.target.checked)}
+                    className="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-sky-500"
+                  />
+                  <span className="text-xs text-zinc-300">
+                    Afficher l&apos;emblème / logo du commerce en haut du ticket thermique
+                  </span>
+                </label>
+              </div>
+
+              {/* Row 4: Header & Footer Custom Messages */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                    En-tête du ticket (Message d&apos;accueil)
+                  </label>
+                  <input
+                    type="text"
+                    value={receiptHeader}
+                    onChange={(e) => setReceiptHeader(e.target.value)}
+                    placeholder={getReceiptTranslation(receiptLanguage).welcomeHeader}
+                    className="w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-white font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                    Pied de page personnalisé (Footer Message)
+                  </label>
+                  <input
+                    type="text"
+                    value={receiptFooter}
+                    onChange={(e) => setReceiptFooter(e.target.value)}
+                    placeholder={getReceiptTranslation(receiptLanguage).thankYou}
+                    className="w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-white font-medium"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Right: Live Realistic Thermal Receipt Preview */}
-            <div className="lg:col-span-5 flex justify-center">
-              <div
-                className={`w-full max-w-xs font-mono text-xs p-5 shadow-2xl relative select-none rounded-sm transition-colors ${
-                  receiptPaperDark
-                    ? "bg-zinc-950 text-zinc-100 border border-zinc-800"
-                    : "bg-[#fbfbfa] text-zinc-950 border border-zinc-200"
-                }`}
-                style={{
-                  clipPath:
-                    "polygon(0% 4px, 5% 0px, 10% 4px, 15% 0px, 20% 4px, 25% 0px, 30% 4px, 35% 0px, 40% 4px, 45% 0px, 50% 4px, 55% 0px, 60% 4px, 65% 0px, 70% 4px, 75% 0px, 80% 4px, 85% 0px, 90% 4px, 95% 0px, 100% 4px, 100% calc(100% - 4px), 95% 100%, 90% calc(100% - 4px), 85% 100%, 80% calc(100% - 4px), 75% 100%, 70% calc(100% - 4px), 65% 100%, 60% calc(100% - 4px), 55% 100%, 50% calc(100% - 4px), 45% 100%, 40% calc(100% - 4px), 35% 100%, 30% calc(100% - 4px), 25% 100%, 20% calc(100% - 4px), 15% 100%, 10% calc(100% - 4px), 5% 100%, 0% calc(100% - 4px))",
-                }}
-              >
-                <div className="text-center space-y-1 pb-2 border-b border-dashed border-current/40">
-                  <h4 className="font-extrabold text-sm tracking-tight">
-                    {shopName || "KASPI POS STORE"}
-                  </h4>
-                  <p className="text-[10px] opacity-80">{address || "Casablanca, Maroc"}</p>
-                  <p className="text-[9px] opacity-60">
-                    ICE: {ice || "001234567000089"} • IF: {taxId || "12345678"}
-                  </p>
-                  {receiptHeader && (
-                    <p className="text-[10px] italic pt-1">{receiptHeader}</p>
-                  )}
-                </div>
+            {/* Right: Live Realistic Multi-Language Thermal Receipt Preview */}
+            <div className="lg:col-span-5 flex flex-col items-center">
+              {(() => {
+                const previewDict = getReceiptTranslation(receiptLanguage);
+                const previewCurrency =
+                  receiptLanguage === "tr"
+                    ? "TRY"
+                    : receiptLanguage === "en" || receiptLanguage === "es" || receiptLanguage === "de"
+                    ? "EUR"
+                    : "MAD";
+                return (
+                  <div
+                    dir={previewDict.dir}
+                    className={`w-full ${
+                      paperWidthMm === 58 ? "max-w-[230px]" : "max-w-xs"
+                    } font-mono text-xs p-5 shadow-2xl relative select-none rounded-sm transition-all ${
+                      receiptPaperDark
+                        ? "bg-zinc-950 text-zinc-100 border border-zinc-800"
+                        : "bg-[#fbfbfa] text-zinc-950 border border-zinc-200"
+                    }`}
+                    style={{
+                      clipPath:
+                        "polygon(0% 4px, 5% 0px, 10% 4px, 15% 0px, 20% 4px, 25% 0px, 30% 4px, 35% 0px, 40% 4px, 45% 0px, 50% 4px, 55% 0px, 60% 4px, 65% 0px, 70% 4px, 75% 0px, 80% 4px, 85% 0px, 90% 4px, 95% 0px, 100% 4px, 100% calc(100% - 4px), 95% 100%, 90% calc(100% - 4px), 85% 100%, 80% calc(100% - 4px), 75% 100%, 70% calc(100% - 4px), 65% 100%, 60% calc(100% - 4px), 55% 100%, 50% calc(100% - 4px), 45% 100%, 40% calc(100% - 4px), 35% 100%, 30% calc(100% - 4px), 25% 100%, 20% calc(100% - 4px), 15% 100%, 10% calc(100% - 4px), 5% 100%, 0% calc(100% - 4px))",
+                    }}
+                  >
+                    <div className="text-center space-y-1 pb-2 border-b border-dashed border-current/40">
+                      {showStoreLogo && (
+                        <img
+                          src="/logo.png"
+                          alt="KASPI"
+                          className="w-7 h-7 object-contain mx-auto mb-1"
+                          onError={(e) => (e.currentTarget.style.display = "none")}
+                        />
+                      )}
+                      <h4 className="font-extrabold text-sm tracking-tight">
+                        {shopName || "KASPI POS STORE"}
+                      </h4>
+                      <p className="text-[10px] opacity-80">{address || "Casablanca, Maroc"}</p>
+                      <p className="text-[9px] opacity-60" dir="ltr">
+                        ICE: {toWesternNumerals(ice || "001234567000089")} • IF:{" "}
+                        {toWesternNumerals(taxId || "12345678")}
+                      </p>
+                      <p className="text-[10px] italic pt-1">
+                        {receiptHeader || previewDict.welcomeHeader}
+                      </p>
+                    </div>
 
-                <div className="py-2 space-y-1 text-[10px] border-b border-dashed border-current/40">
-                  <div className="flex justify-between">
-                    <span>N° Ticket :</span>
-                    <span className="font-bold">FAC-2026-000412</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Date :</span>
-                    <span>Aujourd&apos;hui 15:42</span>
-                  </div>
-                </div>
+                    <div className="py-2 space-y-1 text-[10px] border-b border-dashed border-current/40">
+                      <div className="flex justify-between">
+                        <span>{previewDict.invoiceNo} :</span>
+                        <span className="font-bold" dir="ltr">
+                          FAC-2026-000412
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{previewDict.date} :</span>
+                        <span dir="ltr">{formatReceiptDate(new Date(), receiptLanguage)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>{previewDict.cashier} :</span>
+                        <span>Caisse 1</span>
+                      </div>
+                    </div>
 
-                <div className="py-2 space-y-1 text-[11px] border-b border-dashed border-current/40">
-                  <div className="flex justify-between">
-                    <span>1x Coca-Cola 33cl</span>
-                    <span>6.00 DH</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>1x Huile Lesieur 1L</span>
-                    <span>23.00 DH</span>
-                  </div>
-                  <div className="flex justify-between font-bold pt-1 border-t border-current/20">
-                    <span>TOTAL TTC :</span>
-                    <span>29.00 DH</span>
-                  </div>
-                </div>
+                    <div className="py-2 space-y-1 text-[11px] border-b border-dashed border-current/40">
+                      <div className="flex justify-between">
+                        <span>1x Coca-Cola 33cl</span>
+                        <span dir="ltr">
+                          {formatReceiptAmount(6.0)} {previewCurrency}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>1x Espresso Premium</span>
+                        <span dir="ltr">
+                          {formatReceiptAmount(23.0)} {previewCurrency}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-[10px] opacity-75 pt-1 border-t border-current/20">
+                        <span>{previewDict.tax} :</span>
+                        <span dir="ltr">
+                          {formatReceiptAmount(4.83)} {previewCurrency}
+                        </span>
+                      </div>
+                      <div className="flex justify-between font-bold pt-0.5">
+                        <span>{previewDict.grandTotal} :</span>
+                        <span dir="ltr">
+                          {formatReceiptAmount(29.0)} {previewCurrency}
+                        </span>
+                      </div>
+                    </div>
 
-                <div className="pt-2 text-center text-[9px] opacity-75 space-y-1">
-                  <p>{receiptFooter || "Merci de votre visite et à bientôt !"}</p>
-                  <p className="font-mono text-[8px] opacity-50">Signature DGI #8f23befc</p>
-                </div>
-              </div>
+                    <div className="pt-2 text-center text-[9px] opacity-75 space-y-1">
+                      <p className="font-bold">{receiptFooter || previewDict.thankYou}</p>
+                      <p className="font-mono text-[8px] opacity-50" dir="ltr">
+                        {paperWidthMm}mm • {receiptLanguage.toUpperCase()} • Western 0-9
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

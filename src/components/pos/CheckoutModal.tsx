@@ -17,6 +17,7 @@ import {
 import { usePosStore, type PaymentMethodType } from "@/client/store/usePosStore";
 import { ThermalReceipt, type ReceiptData } from "./ThermalReceipt";
 import { printReceipt } from "@/client/printing";
+import { formatReceiptDate, toWesternNumerals } from "@/lib/printing/receipt-translations";
 import { formatReceiptForWhatsApp, generateWhatsAppLink } from "@/lib/whatsapp";
 import { calculatePaymentFees } from "@/lib/fees";
 
@@ -41,6 +42,7 @@ export const CheckoutModal: React.FC = () => {
     isProcessingPayment,
     deviceCount,
     tenantInfo,
+    printerSettings,
   } = usePosStore();
 
   const [saleResult, setSaleResult] = useState<{
@@ -111,19 +113,21 @@ export const CheckoutModal: React.FC = () => {
   };
 
   const handleConfirmCheckout = async () => {
+    const receiptLang = printerSettings?.receiptLanguage || "fr";
     const receiptSnapshot: ReceiptData = {
       shopName: tenantInfo?.shopName || "Kasbi Retail (كسب)",
       legalName: tenantInfo?.legalName || tenantInfo?.shopName || "Ste Kasbi SARL",
-      ice: tenantInfo?.ice || "002345678000045",
-      taxId: tenantInfo?.taxId || "45892134",
-      rcNumber: tenantInfo?.rcNumber || "98765 Casablanca",
+      ice: toWesternNumerals(tenantInfo?.ice || "002345678000045"),
+      taxId: toWesternNumerals(tenantInfo?.taxId || "45892134"),
+      rcNumber: toWesternNumerals(tenantInfo?.rcNumber || "98765 Casablanca"),
       address: tenantInfo?.address || "123 Bd d'Anfa",
       city: tenantInfo?.city || "Casablanca",
-      receiptNumber: `REC-${Date.now().toString().slice(-6)}`,
-      date: new Date().toLocaleString("fr-MA"),
+      phone: toWesternNumerals(tenantInfo?.phone || ""),
+      receiptNumber: toWesternNumerals(`REC-${Date.now().toString().slice(-6)}`),
+      date: formatReceiptDate(new Date(), receiptLang),
       cashierName: "Caisse 1",
       customerName: customer?.name || undefined,
-      customerIce: customer?.ice || undefined,
+      customerIce: customer?.ice ? toWesternNumerals(customer.ice) : undefined,
       items: cart.map((i) => ({
         name: i.name,
         quantity: i.quantity,
@@ -146,6 +150,10 @@ export const CheckoutModal: React.FC = () => {
       tpeFeeCustomer: selectedPaymentMethod === "card" ? feeInfo.customerFee : undefined,
       tpeFeeMerchant: selectedPaymentMethod === "card" ? feeInfo.merchantFee : undefined,
       tpeBreakdown: selectedPaymentMethod === "card" ? feeInfo.breakdownText : undefined,
+      receiptLanguage: receiptLang,
+      receiptHeader: printerSettings?.receiptHeader || tenantInfo?.receiptHeader,
+      receiptFooter: printerSettings?.receiptFooter || tenantInfo?.receiptFooter,
+      showStoreLogo: printerSettings?.showStoreLogo ?? true,
     };
 
     const res = await completeSale();
@@ -157,9 +165,15 @@ export const CheckoutModal: React.FC = () => {
         receiptData: receiptSnapshot,
       });
 
-      // If offline, automatically print the receipt locally
-      if (res.isOffline) {
-        printReceipt(receiptSnapshot).catch(() => {});
+      // Automatically print receipt if offline or autoPrintReceipt is enabled
+      if (res.isOffline || printerSettings?.autoPrintReceipt) {
+        printReceipt({
+          ...receiptSnapshot,
+          createdAt: receiptSnapshot.date,
+          paperWidthMm: printerSettings?.paperWidthMm || 80,
+          openDrawer: printerSettings?.openDrawer ?? true,
+          receiptLanguage: receiptLang,
+        }).catch(() => {});
       }
     }
   };
@@ -220,7 +234,22 @@ export const CheckoutModal: React.FC = () => {
             {/* Thermal Receipt Preview */}
             {showReceiptPreview && saleResult.receiptData && (
               <div className="pt-2">
-                <ThermalReceipt data={saleResult.receiptData} width="80mm" />
+                <ThermalReceipt
+                  data={saleResult.receiptData}
+                  width={printerSettings?.paperWidthMm === 58 ? "58mm" : "80mm"}
+                  language={printerSettings?.receiptLanguage || "fr"}
+                  onPrint={() => {
+                    if (saleResult.receiptData) {
+                      printReceipt({
+                        ...saleResult.receiptData,
+                        createdAt: saleResult.receiptData.date,
+                        paperWidthMm: printerSettings?.paperWidthMm || 80,
+                        openDrawer: printerSettings?.openDrawer ?? true,
+                        receiptLanguage: printerSettings?.receiptLanguage || "fr",
+                      }).catch(() => {});
+                    }
+                  }}
+                />
               </div>
             )}
 

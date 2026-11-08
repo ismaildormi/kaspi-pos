@@ -21,7 +21,7 @@ export default function PosPage() {
   const [isHeldModalOpen, setIsHeldModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
-  const { openPaymentModal, closePaymentModal, isPaymentModalOpen, cart, setDeviceCount, setTenantInfo } = usePosStore();
+  const { openPaymentModal, closePaymentModal, isPaymentModalOpen, cart, setDeviceCount, setTenantInfo, setPrinterSettings } = usePosStore();
 
   // Trigger Dexie outbox synchronization on POS mount & online events
   useEffect(() => {
@@ -35,11 +35,14 @@ export default function PosPage() {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [prodRes, catRes, meRes] = await Promise.all([
+        const [prodRes, catRes, meRes, settingsRes] = await Promise.all([
           fetch(getApiUrl("/api/v1/products")),
           fetch(getApiUrl("/api/v1/categories")),
           fetch(getApiUrl("/api/v1/me")).catch(() => null),
+          fetch(getApiUrl("/api/v1/settings")).catch(() => null),
         ]);
+
+        const sData = settingsRes && settingsRes.ok ? (await settingsRes.json())?.settings : null;
 
         if (meRes && meRes.ok) {
           const meData = await meRes.json();
@@ -47,18 +50,36 @@ export default function PosPage() {
           if (currTenant?.maxDevices) {
             setDeviceCount(currTenant.maxDevices);
           }
-          if (currTenant) {
+          if (currTenant || sData) {
             setTenantInfo({
-              shopName: currTenant.displayName || currTenant.legalName,
-              legalName: currTenant.legalName,
-              ice: currTenant.ice,
-              taxId: currTenant.taxId,
-              rcNumber: currTenant.rcNumber,
-              address: currTenant.address,
-              city: currTenant.city,
-              phone: currTenant.phone,
+              shopName: sData?.shopName || currTenant?.displayName || currTenant?.legalName,
+              legalName: currTenant?.legalName || sData?.shopName,
+              ice: sData?.ice || currTenant?.ice,
+              taxId: sData?.taxId || currTenant?.taxId,
+              rcNumber: sData?.rcNumber || currTenant?.rcNumber,
+              address: sData?.address || currTenant?.address,
+              city: currTenant?.city,
+              phone: sData?.phone || currTenant?.phone,
+              receiptHeader: sData?.receiptHeader,
+              receiptFooter: sData?.receiptFooter,
             });
           }
+        }
+
+        if (sData) {
+          setPrinterSettings({
+            receiptLanguage: sData.receiptLanguage || "fr",
+            paperWidthMm: sData.paperWidthMm === 58 ? 58 : 80,
+            printerConnectionMode: sData.printerConnectionMode || "auto",
+            printer: sData.printer || "",
+            printerIp: sData.printerIp || "192.168.1.50",
+            printerPort: sData.printerPort || "9100",
+            autoPrintReceipt: Boolean(sData.autoPrintReceipt),
+            openDrawer: sData.openDrawer !== undefined ? Boolean(sData.openDrawer) : true,
+            showStoreLogo: sData.showStoreLogo !== undefined ? Boolean(sData.showStoreLogo) : true,
+            receiptHeader: sData.receiptHeader || "",
+            receiptFooter: sData.receiptFooter || "",
+          });
         }
 
         if (prodRes.ok) {

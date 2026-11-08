@@ -72,6 +72,20 @@ fn is_arabic(c: char) -> bool {
         0xFB50..=0xFDFF | 0xFE70..=0xFEFF)
 }
 
+/// Converts Eastern Arabic (٠-٩) and Extended Arabic/Persian (۰-۹) digits to Western (0-9).
+pub fn to_western_numerals(input: &str) -> String {
+    input
+        .chars()
+        .map(|c| match c as u32 {
+            0x0660..=0x0669 => char::from_u32('0' as u32 + (c as u32 - 0x0660)).unwrap_or(c),
+            0x06F0..=0x06F9 => char::from_u32('0' as u32 + (c as u32 - 0x06F0)).unwrap_or(c),
+            0x066B => '.',
+            0x066C => ',',
+            _ => c,
+        })
+        .collect()
+}
+
 #[derive(Clone, Copy)]
 struct PlacedGlyph {
     arabic_font: bool,
@@ -105,6 +119,8 @@ impl<'a> Fonts<'a> {
 
     fn layout(&self, text: &str, em_px: f32) -> LaidOutLine {
         let mut out = LaidOutLine { glyphs: Vec::new(), width: 0.0, starts_rtl: false };
+        let normalized = to_western_numerals(text);
+        let text = normalized.as_str();
         if text.is_empty() {
             return out;
         }
