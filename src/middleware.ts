@@ -14,6 +14,7 @@ const PUBLIC_API_PATHS = [
   "/api/v1/auth/login",
   "/api/v1/auth/register",
   "/api/v1/auth/demo",
+  "/api/v1/auth/founder",
   "/api/v1/auth/email-otp/send",
   "/api/v1/auth/email-otp/verify",
   "/api/v1/auth/reset-password",

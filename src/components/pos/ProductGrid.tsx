@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { Package, Plus, ArrowRight } from "lucide-react";
+import { Package, Plus, ArrowRight, Scale, Utensils, Shirt, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 
@@ -13,17 +13,18 @@ interface ProductGridProps {
 export const ProductGrid: React.FC<ProductGridProps> = ({ products }) => {
   const t = useTranslations("Pos");
   const tCommon = useTranslations("Common");
-  const { searchQuery, activeCategoryId, addToCart } = usePosStore();
+  const { searchQuery, activeCategoryId, addToCart, storeType } = usePosStore();
 
   const filteredProducts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    // Do not filter product grid when typing a slash command (/pay, /clear, etc.)
+    const isCommand = q.startsWith("/");
+
     return products.filter((p) => {
-      // Category filter
       if (activeCategoryId && p.categoryId !== activeCategoryId) {
         return false;
       }
-      // Search term filter
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
+      if (q && !isCommand) {
         const matchName = p.name.toLowerCase().includes(q);
         const matchSku = p.sku.toLowerCase().includes(q);
         const matchBarcode = p.barcode ? p.barcode.toLowerCase().includes(q) : false;
@@ -35,27 +36,27 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products }) => {
 
   if (filteredProducts.length === 0) {
     return (
-      <div className="h-72 flex flex-col items-center justify-center text-zinc-500 border border-dashed border-zinc-800 rounded-2xl p-8 text-center select-none bg-zinc-950/40">
-        <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 mb-3">
-          <Package className="w-6 h-6 stroke-[1.5]" />
+      <div className="h-72 flex flex-col items-center justify-center text-zinc-500 border border-dashed border-white/10 rounded-2xl p-8 text-center select-none bg-zinc-900/30">
+        <div className="w-11 h-11 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-400 mb-3">
+          <Package className="w-5 h-5 stroke-[1.5]" />
         </div>
-        <p className="text-sm font-semibold text-white">Aucun produit dans le catalogue</p>
+        <p className="text-sm font-semibold text-white">Aucun article trouvé</p>
         <p className="text-xs text-zinc-400 mt-1 max-w-sm">
-          Commencez par ajouter des produits ou importer votre stock depuis un fichier CSV/Excel.
+          Ajoutez vos articles depuis le catalogue ou importez un fichier Excel/CSV.
         </p>
         <div className="flex gap-2 mt-4">
           <Link
-            href="/dashboard/products/import"
+            href="/dashboard/products"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-black font-semibold text-xs hover:bg-zinc-200 transition"
           >
-            <span>Importer CSV</span>
+            <span>Gérer les Produits</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
           <Link
-            href="/dashboard/products/ai-onboard"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 text-white border border-zinc-700 font-semibold text-xs hover:bg-zinc-800 transition"
+            href="/dashboard/products/import"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 text-white border border-white/10 font-semibold text-xs hover:bg-zinc-800 transition"
           >
-            <span>Scan IA</span>
+            <span>Importer CSV</span>
           </Link>
         </div>
       </div>
@@ -72,51 +73,77 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products }) => {
           <button
             key={product.id}
             onClick={() => addToCart(product)}
-            className="group relative flex flex-col justify-between p-3.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-500 active:scale-[0.98] transition-all text-start shadow-xs hover:shadow-md cursor-pointer"
+            className="group relative flex flex-col justify-between p-3.5 rounded-xl bg-zinc-900/80 hover:bg-zinc-900 border border-white/10 hover:border-white/30 active:scale-[0.98] transition-all text-start shadow-xs cursor-pointer"
           >
-            {/* Top row: Image placeholder / initial + Stock Badge */}
-            <div className="flex items-start justify-between gap-2 w-full mb-3">
-              {/* Product Placeholder Square */}
-              <div className="w-10 h-10 rounded-lg bg-zinc-800 border border-zinc-700/60 flex items-center justify-center text-white font-mono font-bold text-base shrink-0 group-hover:border-zinc-500 transition-colors">
+            {/* Top row: Avatar + Stock / Vertical Indicator */}
+            <div className="flex items-start justify-between gap-2 w-full mb-2.5">
+              <div className="w-9 h-9 rounded-lg bg-zinc-800/90 border border-white/10 flex items-center justify-center text-white font-mono font-bold text-sm shrink-0 group-hover:border-white/30 transition-colors">
                 {initial}
               </div>
 
-              {product.trackStock && (
-                <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium border ${
-                    isOutOfStock
-                      ? "bg-zinc-950 text-zinc-500 border-zinc-800"
-                      : "bg-zinc-800 text-zinc-300 border-zinc-700"
-                  }`}
-                >
-                  {product.stockQuantity} {t("inStock")}
-                </span>
-              )}
+              <div className="flex flex-col items-end gap-1">
+                {product.trackStock && (
+                  <span
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-medium border ${
+                      isOutOfStock
+                        ? "bg-red-500/10 text-red-300 border-red-500/20"
+                        : "bg-white/[0.04] text-zinc-300 border-white/10"
+                    }`}
+                  >
+                    {product.stockQuantity} {t("inStock")}
+                  </span>
+                )}
+
+                {storeType === "grocery" && (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-mono text-emerald-400">
+                    <Scale className="w-2.5 h-2.5" />
+                    <span>Code / Poids</span>
+                  </span>
+                )}
+                {storeType === "restaurant" && (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-mono text-amber-400">
+                    <Utensils className="w-2.5 h-2.5" />
+                    <span>Direct KDS</span>
+                  </span>
+                )}
+                {storeType === "fashion" && (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-mono text-purple-400">
+                    <Shirt className="w-2.5 h-2.5" />
+                    <span>S • M • L • XL</span>
+                  </span>
+                )}
+                {storeType === "electronics" && (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-mono text-sky-400">
+                    <ShieldCheck className="w-2.5 h-2.5" />
+                    <span>Garantie 12M</span>
+                  </span>
+                )}
+              </div>
             </div>
 
-            {/* Middle: Product Name & SKU/Category */}
+            {/* Middle: Category & Title */}
             <div className="my-auto py-0.5">
-              <span className="text-[11px] text-zinc-400 font-mono block truncate">
+              <span className="text-[10px] text-zinc-500 font-mono block truncate">
                 {product.categoryName || product.sku}
               </span>
-              <h3 className="font-semibold text-white text-sm leading-snug line-clamp-2 mt-0.5 group-hover:text-zinc-100 transition-colors">
+              <h3 className="font-semibold text-white text-sm leading-snug line-clamp-2 mt-0.5">
                 {product.name}
               </h3>
             </div>
 
-            {/* Bottom Row: Price & Add icon */}
-            <div className="flex items-end justify-between gap-2 mt-3 pt-2.5 border-t border-zinc-800/80 w-full">
+            {/* Bottom: Price & Add */}
+            <div className="flex items-end justify-between gap-2 mt-3 pt-2.5 border-t border-white/10 w-full">
               <div>
-                <span className="text-lg font-bold text-white font-mono tracking-tight">
+                <span className="text-base font-bold text-white font-mono tracking-tight">
                   {product.salePrice.toFixed(2)}
                 </span>
-                <span className="text-xs font-medium text-zinc-400 ms-1">
+                <span className="text-[11px] font-medium text-zinc-400 ms-1">
                   {tCommon("currency")}
                 </span>
               </div>
 
-              <div className="w-7 h-7 rounded-lg bg-zinc-800 group-hover:bg-white text-zinc-300 group-hover:text-black flex items-center justify-center transition-all border border-zinc-700 group-hover:border-white">
-                <Plus className="w-4 h-4 stroke-[2.5]" />
+              <div className="w-7 h-7 rounded-lg bg-white/[0.06] group-hover:bg-white text-zinc-300 group-hover:text-black flex items-center justify-center transition-all border border-white/10 group-hover:border-white">
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
               </div>
             </div>
           </button>

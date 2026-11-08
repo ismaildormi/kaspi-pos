@@ -42,8 +42,37 @@ function LoginForm() {
 
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [founderLoading, setFounderLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const handleQuickFounderLogin = async () => {
+    setFounderLoading(true);
+    setError("");
+    setSuccess("جاري تسجيل دخول المؤسس (@kaspipos / dormiismail02@gmail.com)...");
+    try {
+      const res = await fetch(getApiUrl("/api/v1/auth/founder"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error?.message || "تعذر تشغيل الدخول السريع للمؤسس");
+      }
+
+      await signIn("credentials", {
+        redirect: false,
+        email: data.data.email,
+        otpCode: data.data.otpCode,
+      }).catch(() => {});
+
+      window.location.href = `/${locale}/dashboard`;
+    } catch (err: any) {
+      setError(err.message || "حدث خطأ أثناء تسجيل الدخول السريع");
+      setSuccess("");
+      setFounderLoading(false);
+    }
+  };
 
   const handleInstantDemoLogin = async () => {
     setDemoLoading(true);
@@ -767,13 +796,31 @@ function LoginForm() {
           </div>
         )}
 
-        {/* 1-Click Interactive Sales Demo Mode Button */}
-        <div className="mt-6 pt-5 border-t border-zinc-800/80 space-y-4">
+        {/* 1-Click Quick Founder Sign-In & Interactive Sales Demo Buttons */}
+        <div className="mt-6 pt-5 border-t border-white/10 space-y-2.5">
           <button
             type="button"
-            disabled={demoLoading || loading}
+            disabled={founderLoading || demoLoading || loading}
+            onClick={handleQuickFounderLogin}
+            className="w-full py-3 px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-white font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            {founderLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+            ) : (
+              <KeyRound className="w-4 h-4 text-emerald-400 shrink-0" />
+            )}
+            <span dir="ltr">
+              {founderLoading
+                ? "Signing in @kaspipos..."
+                : "Quick Founder Sign-In (@kaspipos • dormiismail02@gmail.com)"}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            disabled={demoLoading || founderLoading || loading}
             onClick={handleInstantDemoLogin}
-            className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-emerald-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 border border-amber-500/40 text-amber-300 font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-amber-500/10 cursor-pointer disabled:opacity-50"
+            className="w-full py-3 px-4 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {demoLoading ? (
               <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
@@ -788,12 +835,12 @@ function LoginForm() {
           </button>
 
           {/* Footer Registration Link */}
-          <div className="text-center text-sm text-zinc-400">
+          <div className="pt-1 text-center text-xs text-zinc-400">
             <p>
               ليس لديك حساب؟{" "}
               <Link
                 href={`/${locale}/register`}
-                className="text-white hover:underline font-medium"
+                className="text-white hover:underline font-semibold"
               >
                 إنشاء حساب جديد
               </Link>

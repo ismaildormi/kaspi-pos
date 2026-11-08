@@ -13,23 +13,21 @@ import {
   FileText,
   CreditCard,
   Settings,
-  ArrowUpRight,
-  ShieldCheck,
   HelpCircle,
   Crown,
 } from "lucide-react";
 
 export const BASE_NAV_ITEMS = [
-  { name: "Caisse / POS", href: "/pos", icon: ShoppingBag, badge: "Caisse" },
-  { name: "Vue d'ensemble", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Produits", href: "/dashboard/products", icon: Package },
-  { name: "Stocks & Mouvements", href: "/dashboard/inventory", icon: Layers },
-  { name: "Clients / Krediat", href: "/dashboard/customers", icon: Users },
-  { name: "Fournisseurs & Achats", href: "/dashboard/suppliers", icon: Building2 },
-  { name: "Rapports", href: "/dashboard/reports", icon: FileText },
-  { name: "Abonnement", href: "/dashboard/billing", icon: CreditCard },
-  { name: "Paramètres", href: "/dashboard/settings", icon: Settings },
-  { name: "Aide & Support", href: "/dashboard/support", icon: HelpCircle },
+  { name: "Caisse POS", href: "/pos", icon: ShoppingBag, badge: "Live" },
+  { name: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Catalogue Produits", href: "/dashboard/products", icon: Package },
+  { name: "Stocks & Audit", href: "/dashboard/inventory", icon: Layers },
+  { name: "Clients & Krediat", href: "/dashboard/customers", icon: Users },
+  { name: "Fournisseurs", href: "/dashboard/suppliers", icon: Building2 },
+  { name: "Rapports & Clôtures", href: "/dashboard/reports", icon: FileText },
+  { name: "Facturation", href: "/dashboard/billing", icon: CreditCard },
+  { name: "Paramètres & Clés API", href: "/dashboard/settings", icon: Settings },
+  { name: "Support", href: "/dashboard/support", icon: HelpCircle },
 ];
 
 interface SidebarProps {
@@ -40,9 +38,7 @@ interface SidebarProps {
 export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const [shopName, setShopName] = useState<string>("Magasin");
 
-  // Determine current locale from pathname (e.g., /ar, /fr, /en)
   const segments = pathname.split("/").filter(Boolean);
   const currentLocale =
     segments[0] === "ar" || segments[0] === "fr" || segments[0] === "en"
@@ -61,9 +57,6 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
         if (data?.data?.user?.isSuperAdmin) {
           setIsSuperAdmin(true);
         }
-        if (data?.data?.currentTenant?.displayName) {
-          setShopName(data.data.currentTenant.displayName);
-        }
       })
       .catch(() => {});
   }, []);
@@ -72,116 +65,75 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
     <aside
       className={`${
         mobileMenuOpen ? "block" : "hidden"
-      } md:block w-full md:w-64 border-r border-zinc-800 bg-zinc-950 p-4 shrink-0 flex flex-col justify-between`}
+      } md:flex w-full md:w-60 border-e border-white/10 bg-zinc-950/60 p-3 shrink-0 flex-col justify-between select-none`}
     >
-      <div className="space-y-6">
-        {/* Brand with Transparent Logo */}
-        <Link
-          href={localizeHref("/dashboard")}
-          className="hidden md:flex items-center gap-3 px-2 py-1 group"
-        >
-          <img
-            src="/logo.png"
-            alt="KASPI POS"
-            className="w-8 h-8 object-contain bg-transparent"
-            onError={(e) => (e.currentTarget.style.display = "none")}
-          />
-          <div className="flex flex-col">
-            <span className="font-extrabold text-base tracking-tight text-white flex items-center gap-1.5">
-              KASPI POS
-              <span className="text-[10px] bg-zinc-900 border border-zinc-800 text-zinc-300 font-mono px-1.5 py-0.2 rounded">
-                v2.0
-              </span>
-            </span>
-            <span className="text-[11px] text-zinc-400 font-mono truncate max-w-[140px]">
-              {shopName}
-            </span>
-          </div>
-        </Link>
-
-        {/* Nav Items */}
-        <nav className="space-y-1">
-          {/* Super Admin Exclusive Button */}
-          {isSuperAdmin && (
-            <Link
-              href={localizeHref("/admin")}
-              onClick={onNavigate}
-              className={`flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold transition mb-3 border ${
-                pathname.includes("/admin")
-                  ? "bg-white text-black border-white shadow-lg"
-                  : "bg-zinc-900/80 text-white border-zinc-700/80 hover:bg-zinc-800"
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Crown className="h-4 w-4 text-amber-400 shrink-0" />
-                <span>Owner Studio</span>
-              </div>
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider bg-black/40 text-zinc-300">
-                Super Admin
-              </span>
-            </Link>
-          )}
-
-          {BASE_NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const targetHref = localizeHref(item.href);
-            const isActive =
-              item.href === "/dashboard"
-                ? pathname.endsWith("/dashboard") ||
-                  pathname.endsWith(`/${currentLocale}/dashboard`)
-                : pathname.includes(item.href);
-
-            return (
-              <Link
-                key={item.href}
-                href={targetHref}
-                onClick={onNavigate}
-                className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition ${
-                  isActive
-                    ? "bg-white text-black shadow-sm"
-                    : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span>{item.name}</span>
-                </div>
-                {item.badge && item.href === "/pos" && (
-                  <span
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
-                      isActive
-                        ? "bg-black text-white"
-                        : "bg-zinc-900 text-zinc-400 border border-zinc-800"
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Sidebar Footer */}
-      <div className="mt-8 space-y-3 pt-4 border-t border-zinc-900">
-        {isSuperAdmin && !pathname.includes("/admin") && (
+      <nav className="space-y-1">
+        {isSuperAdmin && (
           <Link
             href={localizeHref("/admin")}
-            className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5 text-xs font-medium text-zinc-300 hover:text-white hover:border-zinc-700 transition"
+            onClick={onNavigate}
+            className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-bold transition mb-2 border ${
+              pathname.includes("/admin")
+                ? "bg-white text-black border-white"
+                : "bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20"
+            }`}
           >
-            <span className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-white" />
-              Console Super Admin
+            <div className="flex items-center gap-2.5">
+              <Crown className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+              <span>Owner Studio</span>
+            </div>
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono uppercase bg-black/40 text-amber-200">
+              Admin
             </span>
-            <ArrowUpRight className="h-3.5 w-3.5 text-zinc-400" />
           </Link>
         )}
 
-        <div className="px-2 text-[10px] text-zinc-500 font-mono flex items-center justify-between">
-          <span>KASPI Offline Sync</span>
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-        </div>
+        {BASE_NAV_ITEMS.map((item) => {
+          const Icon = item.icon;
+          const targetHref = localizeHref(item.href);
+          const isActive =
+            item.href === "/dashboard"
+              ? pathname.endsWith("/dashboard") ||
+                pathname.endsWith(`/${currentLocale}/dashboard`)
+              : pathname.includes(item.href);
+
+          return (
+            <Link
+              key={item.href}
+              href={targetHref}
+              onClick={onNavigate}
+              className={`flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition ${
+                isActive
+                  ? "bg-white text-zinc-950 font-semibold shadow-xs"
+                  : "text-zinc-400 hover:bg-white/[0.05] hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span>{item.name}</span>
+              </div>
+              {item.badge && (
+                <span
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                    isActive
+                      ? "bg-zinc-950 text-white"
+                      : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                  }`}
+                >
+                  {item.badge}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="mt-6 pt-3 border-t border-white/10 px-2 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+        <span>Dexie Offline Engine</span>
+        <span className="inline-flex items-center gap-1.5 text-emerald-400">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          Ready
+        </span>
       </div>
     </aside>
   );

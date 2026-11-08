@@ -6,7 +6,6 @@ import { useLocale } from "next-intl";
 import {
   Settings,
   Store,
-  Receipt,
   MessageSquare,
   CheckCircle2,
   ArrowLeft,
@@ -16,15 +15,18 @@ import {
   Send,
   Plus,
   Cpu,
-  Monitor,
   Printer,
-  Sparkles,
   Check,
   Building2,
   CreditCard,
   Globe,
   Trash2,
   AlertTriangle,
+  KeyRound,
+  Activity,
+  Users,
+  ShieldCheck,
+  RefreshCw,
 } from "lucide-react";
 import {
   SUPPORTED_RECEIPT_LANGUAGES,
@@ -40,7 +42,7 @@ import {
   savePrinterSettings,
   printTestReceipt,
 } from "@/client/printing";
-import { usePosStore } from "@/client/store/usePosStore";
+import { usePosStore, type StoreBusinessType } from "@/client/store/usePosStore";
 
 interface StoreItem {
   id: string;
@@ -53,16 +55,33 @@ interface StoreItem {
   salesCount: number;
 }
 
+interface VaultKeyStatus {
+  key: string;
+  configured: boolean;
+  maskedValue: string;
+  source: "vault_override" | "system_env" | "missing";
+}
+
+interface VaultTestResult {
+  service: string;
+  ok: boolean;
+  latencyMs: number;
+  detail: string;
+}
+
+type SettingsTab = "general" | "hardware" | "vault" | "users";
+
 export default function SettingsPage() {
   const locale = useLocale();
   const isRtl = locale === "ar";
 
+  const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
 
-  // Settings State
+  // General & Legal State
   const [shopName, setShopName] = useState("");
   const [address, setAddress] = useState("");
   const [ice, setIce] = useState("");
@@ -74,11 +93,12 @@ export default function SettingsPage() {
   const [whatsappReportNumber, setWhatsappReportNumber] = useState("");
   const [isWhatsappReportsActive, setIsWhatsappReportsActive] = useState(true);
 
-  // Thermal Printing & Multi-Language Receipt Studio State (Phase 2)
-  const { setPrinterSettings, setTenantInfo } = usePosStore();
+  // Thermal Printing State
+  const { setPrinterSettings, setTenantInfo, storeType, setStoreProfile } = usePosStore();
   const [receiptLanguage, setReceiptLanguage] = useState<ReceiptLanguage>("fr");
   const [paperWidthMm, setPaperWidthMm] = useState<58 | 80>(80);
-  const [printerConnectionMode, setPrinterConnectionMode] = useState<PrinterConnectionMode>("auto");
+  const [printerConnectionMode, setPrinterConnectionMode] =
+    useState<PrinterConnectionMode>("auto");
   const [printerTarget, setPrinterTarget] = useState("");
   const [printerIp, setPrinterIp] = useState("192.168.1.50");
   const [printerPort, setPrinterPort] = useState("9100");
@@ -87,8 +107,9 @@ export default function SettingsPage() {
   const [showStoreLogo, setShowStoreLogo] = useState(true);
   const [isTestPrinting, setIsTestPrinting] = useState(false);
   const [testPrintStatus, setTestPrintStatus] = useState<string | null>(null);
+  const [receiptPaperDark, setReceiptPaperDark] = useState(false);
 
-  // Multi-Store Network State (Phase 1)
+  // Multi-Store State
   const [stores, setStores] = useState<StoreItem[]>([]);
   const [isAddingStore, setIsAddingStore] = useState(false);
   const [newStoreName, setNewStoreName] = useState("");
@@ -97,9 +118,25 @@ export default function SettingsPage() {
   const [isCreatingStore, setIsCreatingStore] = useState(false);
   const [storeCreateError, setStoreCreateError] = useState<string | null>(null);
 
-  // Local GPU / WebGPU AI Preference (Phase 2)
+  // Cloud & API Vault State
+  const [vaultKeys, setVaultKeys] = useState<VaultKeyStatus[]>([]);
+  const [vaultInputs, setVaultInputs] = useState<Record<string, string>>({});
+  const [rawEnvBlock, setRawEnvBlock] = useState("");
+  const [isSavingVault, setIsSavingVault] = useState(false);
+  const [vaultFeedback, setVaultFeedback] = useState<string | null>(null);
+  const [isTestingVault, setIsTestingVault] = useState(false);
+  const [vaultTestResults, setVaultTestResults] = useState<VaultTestResult[]>([]);
   const [useLocalGpuAi, setUseLocalGpuAi] = useState(true);
-  const [receiptPaperDark, setReceiptPaperDark] = useState(false);
+
+  // User & Roles State
+  const [currentUser, setCurrentUser] = useState<{
+    id?: string;
+    email?: string;
+    fullName?: string;
+    role?: string;
+    isSuperAdmin?: boolean;
+    maxDevices?: number;
+  } | null>(null);
 
   // Demo Data Reset State
   const [resetClearCatalog, setResetClearCatalog] = useState(false);
@@ -107,53 +144,32 @@ export default function SettingsPage() {
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [resetFeedback, setResetFeedback] = useState<string | null>(null);
 
-  const handleResetDemoData = async () => {
-    setIsResettingDemo(true);
-    setResetFeedback(null);
-    try {
-      const res = await fetch("/api/v1/settings/reset-demo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clearCatalog: resetClearCatalog }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.ok) {
-        throw new Error(json.error?.message || "Erreur lors de la réinitialisation");
-      }
-      const s = json.data?.summary || {};
-      setResetFeedback(
-        `✓ Données réinitialisées avec succès (${s.deletedSales || 0} ventes, ${s.deletedShifts || 0} sessions caisse${
-          resetClearCatalog ? `, ${s.deletedProducts || 0} produits démo` : ""
-        } supprimés). Votre compte est prêt pour l'exploitation réelle !`
-      );
-      setResetConfirmOpen(false);
-    } catch (err: any) {
-      setResetFeedback(`Erreur: ${err.message || "Échec de l'opération"}`);
-    } finally {
-      setIsResettingDemo(false);
-    }
-  };
-
-  // Payment Gateway Configuration (Phase 2)
-  const [selectedGateway, setSelectedGateway] = useState<"cmi_tpe" | "youcanpay" | "stripe" | "cash_only">("cmi_tpe");
+  // Payment Gateway State
+  const [selectedGateway, setSelectedGateway] = useState<
+    "cmi_tpe" | "youcanpay" | "stripe" | "cash_only"
+  >("cmi_tpe");
   const [tpeTerminalIp, setTpeTerminalIp] = useState("192.168.1.150");
-  const [youcanpayKey, setYoucanpayKey] = useState("");
-  const [stripeKey, setStripeKey] = useState("");
 
   useEffect(() => {
     const localPrinter = getPrinterSettings();
     if (localPrinter.receiptLanguage) setReceiptLanguage(localPrinter.receiptLanguage);
     if (localPrinter.paperWidthMm) setPaperWidthMm(localPrinter.paperWidthMm);
-    if (localPrinter.printerConnectionMode) setPrinterConnectionMode(localPrinter.printerConnectionMode);
+    if (localPrinter.printerConnectionMode)
+      setPrinterConnectionMode(localPrinter.printerConnectionMode);
     if (localPrinter.printer) setPrinterTarget(localPrinter.printer);
     if (localPrinter.printerIp) setPrinterIp(localPrinter.printerIp);
     if (localPrinter.printerPort) setPrinterPort(localPrinter.printerPort);
-    if (localPrinter.autoPrintReceipt !== undefined) setAutoPrintReceipt(localPrinter.autoPrintReceipt);
+    if (localPrinter.autoPrintReceipt !== undefined)
+      setAutoPrintReceipt(localPrinter.autoPrintReceipt);
     if (localPrinter.openDrawer !== undefined) setOpenDrawer(localPrinter.openDrawer);
-    if (localPrinter.showStoreLogo !== undefined) setShowStoreLogo(localPrinter.showStoreLogo);
+    if (localPrinter.showStoreLogo !== undefined)
+      setShowStoreLogo(localPrinter.showStoreLogo);
 
     fetchSettings();
     fetchStores();
+    fetchVaultStatus();
+    fetchMeProfile();
+
     const storedGpu = localStorage.getItem("kaspi_use_local_gpu");
     if (storedGpu !== null) {
       setUseLocalGpuAi(storedGpu === "true");
@@ -161,6 +177,99 @@ export default function SettingsPage() {
     const storedGw = localStorage.getItem("kaspi_payment_gateway") as any;
     if (storedGw) setSelectedGateway(storedGw);
   }, []);
+
+  const fetchMeProfile = async () => {
+    try {
+      const res = await fetch("/api/v1/me");
+      if (res.ok) {
+        const json = await res.json();
+        const d = json.data;
+        if (d?.user) {
+          setCurrentUser({
+            id: d.user.id,
+            email: d.user.email,
+            fullName: d.user.fullName,
+            role: d.role || "owner",
+            isSuperAdmin: d.user.isSuperAdmin,
+            maxDevices: d.currentTenant?.maxDevices || 1,
+          });
+        }
+      }
+    } catch {}
+  };
+
+  const fetchVaultStatus = async () => {
+    try {
+      const res = await fetch("/api/v1/settings/vault");
+      if (res.ok) {
+        const json = await res.json();
+        setVaultKeys(json.data?.keys || []);
+      }
+    } catch {}
+  };
+
+  const handleParseRawEnv = (text: string) => {
+    setRawEnvBlock(text);
+    const parsed: Record<string, string> = { ...vaultInputs };
+    text.split(/\r?\n/).forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) return;
+      const eqIdx = trimmed.indexOf("=");
+      if (eqIdx > 0) {
+        const k = trimmed.slice(0, eqIdx).trim();
+        let v = trimmed.slice(eqIdx + 1).trim();
+        if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+          v = v.slice(1, -1);
+        }
+        parsed[k] = v;
+      }
+    });
+    setVaultInputs(parsed);
+  };
+
+  const handleSaveVault = async () => {
+    setIsSavingVault(true);
+    setVaultFeedback(null);
+    try {
+      const res = await fetch("/api/v1/settings/vault", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "save",
+          values: vaultInputs,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error?.message || "Erreur de sauvegarde du coffre API");
+      }
+      setVaultFeedback(`✓ ${json.data?.message || "Clés API enregistrées avec succès"}`);
+      setVaultInputs({});
+      setRawEnvBlock("");
+      await fetchVaultStatus();
+    } catch (err: any) {
+      setVaultFeedback(`❌ ${err.message}`);
+    } finally {
+      setIsSavingVault(false);
+    }
+  };
+
+  const handleTestVaultConnections = async () => {
+    setIsTestingVault(true);
+    try {
+      const res = await fetch("/api/v1/settings/vault", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "test" }),
+      });
+      const json = await res.json();
+      if (res.ok && json.ok) {
+        setVaultTestResults(json.data?.results || []);
+      }
+    } catch {} finally {
+      setIsTestingVault(false);
+    }
+  };
 
   const fetchSettings = async () => {
     setIsLoading(true);
@@ -187,7 +296,8 @@ export default function SettingsPage() {
           if (s.printer !== undefined) setPrinterTarget(s.printer);
           if (s.printerIp) setPrinterIp(s.printerIp);
           if (s.printerPort) setPrinterPort(s.printerPort);
-          if (s.autoPrintReceipt !== undefined) setAutoPrintReceipt(Boolean(s.autoPrintReceipt));
+          if (s.autoPrintReceipt !== undefined)
+            setAutoPrintReceipt(Boolean(s.autoPrintReceipt));
           if (s.openDrawer !== undefined) setOpenDrawer(Boolean(s.openDrawer));
           if (s.showStoreLogo !== undefined) setShowStoreLogo(Boolean(s.showStoreLogo));
         }
@@ -206,9 +316,7 @@ export default function SettingsPage() {
         const data = await res.json();
         setStores(data.stores || []);
       }
-    } catch (err) {
-      console.error(err);
-    }
+    } catch {}
   };
 
   const handleCreateStore = async (e: React.FormEvent) => {
@@ -246,6 +354,35 @@ export default function SettingsPage() {
     }
   };
 
+  const handleResetDemoData = async () => {
+    setIsResettingDemo(true);
+    setResetFeedback(null);
+    try {
+      const res = await fetch("/api/v1/settings/reset-demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clearCatalog: resetClearCatalog }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error?.message || "Erreur lors de la réinitialisation");
+      }
+      const s = json.data?.summary || {};
+      setResetFeedback(
+        `✓ Données purgées (${s.deletedSales || 0} ventes, ${
+          s.deletedShifts || 0
+        } sessions caisse${
+          resetClearCatalog ? `, ${s.deletedProducts || 0} produits démo` : ""
+        }). Prêt pour l'exploitation réelle.`
+      );
+      setResetConfirmOpen(false);
+    } catch (err: any) {
+      setResetFeedback(`Erreur: ${err.message || "Échec de l'opération"}`);
+    } finally {
+      setIsResettingDemo(false);
+    }
+  };
+
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -265,7 +402,6 @@ export default function SettingsPage() {
       receiptFooter,
     };
 
-    // Persist locally immediately in localStorage + Zustand store
     savePrinterSettings(newPrinterSettings);
     setPrinterSettings(newPrinterSettings);
     setTenantInfo({
@@ -324,7 +460,7 @@ export default function SettingsPage() {
         receiptHeader,
         receiptFooter,
         shopName: shopName || "KASPI POS GLOBAL",
-        address: address || "Casablanca • Paris • Istanbul",
+        address: address || "Casablanca, Maroc",
         ice: ice || "001234567000089",
         taxId: taxId || "12345678",
       };
@@ -335,8 +471,8 @@ export default function SettingsPage() {
       if (res.success) {
         setTestPrintStatus(
           res.transport === "tauri_escpos"
-            ? "✅ Ticket test envoyé à l'imprimante thermique ESC/POS !"
-            : "✅ Aperçu d'impression navigateur lancé !"
+            ? "✅ Ticket envoyé à l'imprimante thermique ESC/POS"
+            : "✅ Aperçu d'impression lancé"
         );
       } else {
         setTestPrintStatus("❌ Échec du test d'impression");
@@ -358,11 +494,11 @@ export default function SettingsPage() {
       );
       const data = await res.json();
       if (res.ok && data.success) {
-        setTestResult("Rapport WhatsApp envoyé avec succès !");
+        setTestResult("✓ Rapport WhatsApp envoyé !");
       } else {
         setTestResult(data.error || "Erreur d'envoi WhatsApp");
       }
-    } catch (err) {
+    } catch {
       setTestResult("Erreur de connexion avec l'API WhatsApp");
     }
   };
@@ -372,225 +508,461 @@ export default function SettingsPage() {
     localStorage.setItem("kaspi_use_local_gpu", String(enabled));
   };
 
+  const TABS: Array<{
+    id: SettingsTab;
+    labelFr: string;
+    labelAr: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }> = [
+    { id: "general", labelFr: "General & Currency", labelAr: "المتجر والعملة", icon: Store },
+    {
+      id: "hardware",
+      labelFr: "Thermal Receipt & Hardware",
+      labelAr: "الطباعة والأجهزة",
+      icon: Printer,
+    },
+    { id: "vault", labelFr: "Cloud & API Vault", labelAr: "مفاتيح السحابة API", icon: KeyRound },
+    { id: "users", labelFr: "User & Roles", labelAr: "المستخدمون والصلاحيات", icon: Users },
+  ];
+
   return (
-    <div className="space-y-8 select-none">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-900 pb-6">
+    <div className="space-y-6 select-none">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Link
               href={`/${locale}/dashboard`}
-              className="text-xs font-semibold text-zinc-400 hover:text-white transition flex items-center gap-1"
+              className="text-xs font-medium text-zinc-400 hover:text-white transition flex items-center gap-1"
             >
               {isRtl ? <ArrowRight className="w-3.5 h-3.5" /> : <ArrowLeft className="w-3.5 h-3.5" />}
               <span>{isRtl ? "لوحة التحكم" : "Tableau de Bord"}</span>
             </Link>
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
-            <Settings className="h-6 w-6 text-white" />
-            {isRtl ? "إعدادات المتجر ونظام الكاشير" : "Paramètres du Commerce & Multi-Magasins"}
+          <h1 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+            <Settings className="h-5 w-5 text-white" />
+            <span>
+              {isRtl ? "إعدادات النظام والربط السحابي" : "Paramètres & Configuration Système"}
+            </span>
           </h1>
-          <p className="text-xs text-zinc-400 mt-1">
-            Mentions légales DGI, succursales multi-boutiques, ticket thermique et automatisation WhatsApp
-          </p>
         </div>
 
-        {saveSuccess && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold animate-in fade-in">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Paramètres enregistrés avec succès !</span>
-          </div>
-        )}
-      </div>
-
-      <form onSubmit={handleSaveSettings} className="space-y-8">
-        {/* CARD 1: MULTI-STORE BRANCH NETWORK */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-            <div className="flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-emerald-400" />
-              <div>
-                <h2 className="text-base font-bold text-white">Réseau Multi-Boutiques (Stores &amp; Succursales)</h2>
-                <p className="text-[11px] text-zinc-400">Gérez plusieurs magasins physiques sous un même compte</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsAddingStore(!isAddingStore)}
-              className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold flex items-center gap-1.5 transition border border-zinc-700"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Ajouter une succursale</span>
-            </button>
-          </div>
-
-          {/* New Store Drawer */}
-          {isAddingStore && (
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3 animate-in fade-in">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                Créer une nouvelle succursale
-              </h3>
-              {storeCreateError && (
-                <p className="text-xs text-rose-400 font-mono">{storeCreateError}</p>
-              )}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <input
-                  type="text"
-                  placeholder="Nom (ex: Succursale Agdal)"
-                  value={newStoreName}
-                  onChange={(e) => setNewStoreName(e.target.value)}
-                  className="h-10 px-3 bg-zinc-900 border border-zinc-700 rounded-lg text-xs text-white"
-                />
-                <input
-                  type="text"
-                  placeholder="Code court (ex: AGDAL-01)"
-                  value={newStoreCode}
-                  onChange={(e) => setNewStoreCode(e.target.value)}
-                  className="h-10 px-3 bg-zinc-900 border border-zinc-700 rounded-lg text-xs text-white uppercase font-mono"
-                />
-                <input
-                  type="text"
-                  placeholder="Adresse (ex: Rabat)"
-                  value={newStoreAddress}
-                  onChange={(e) => setNewStoreAddress(e.target.value)}
-                  className="h-10 px-3 bg-zinc-900 border border-zinc-700 rounded-lg text-xs text-white"
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddingStore(false)}
-                  className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCreateStore}
-                  disabled={isCreatingStore}
-                  className="px-4 py-1.5 bg-white text-black font-bold text-xs rounded-lg hover:bg-zinc-200"
-                >
-                  {isCreatingStore ? "Création..." : "Confirmer"}
-                </button>
-              </div>
+        <div className="flex items-center gap-3">
+          {saveSuccess && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Enregistré</span>
             </div>
           )}
-
-          {/* Stores List */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {stores.length === 0 ? (
-              <div className="sm:col-span-3 p-4 rounded-xl bg-zinc-950 text-center text-xs text-zinc-500 font-mono">
-                Boutique Principale (Siège Social) active par défaut.
-              </div>
+          <button
+            type="button"
+            onClick={handleSaveSettings}
+            disabled={isSaving}
+            className="h-9 px-4 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
+          >
+            {isSaving ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              stores.map((s) => (
-                <div
-                  key={s.id}
-                  className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-1.5"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-white">{s.name}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-emerald-950 text-emerald-400 border border-emerald-800">
-                      {s.code}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-zinc-500 truncate">{s.address || "Casablanca"}</p>
-                  <div className="pt-2 border-t border-zinc-800/80 flex justify-between text-[10px] text-zinc-400 font-mono">
-                    <span>{s.devicesCount} caisse(s)</span>
-                    <span>{s.salesCount} ventes</span>
-                  </div>
+              <Save className="w-3.5 h-3.5" />
+            )}
+            <span>{isRtl ? "حفظ الإعدادات" : "Enregistrer"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Tabbed Navigation Bar */}
+      <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-2xl bg-zinc-900/80 border border-white/10">
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 min-w-[160px] h-9 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer ${
+                active
+                  ? "bg-white text-zinc-950 shadow-xs"
+                  : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{isRtl ? tab.labelAr : tab.labelFr}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* =================================================================== */}
+      {/* TAB 1: GENERAL & CURRENCY                                           */}
+      {/* =================================================================== */}
+      {activeTab === "general" && (
+        <form onSubmit={handleSaveSettings} className="space-y-6">
+          {/* Legal & Tax Identifiers */}
+          <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Store className="w-4 h-4 text-white" />
+                <h2 className="text-sm font-bold text-white">
+                  Identité Légale, Devise (MAD) &amp; Mentions DGI
+                </h2>
+              </div>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white/[0.05] text-zinc-300 border border-white/10">
+                Devise : MAD (Dirham)
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1">
+                  Enseigne Commerciale
+                </label>
+                <input
+                  type="text"
+                  value={shopName}
+                  onChange={(e) => setShopName(e.target.value)}
+                  placeholder="KASPI Flagship Store"
+                  className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-white/40"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1">
+                  ICE (15 chiffres)
+                </label>
+                <input
+                  type="text"
+                  value={ice}
+                  onChange={(e) => setIce(e.target.value)}
+                  placeholder="001234567000089"
+                  className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white/40"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1">
+                  Identifiant Fiscal (IF)
+                </label>
+                <input
+                  type="text"
+                  value={taxId}
+                  onChange={(e) => setTaxId(e.target.value)}
+                  placeholder="12345678"
+                  className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white/40"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1">
+                  Registre de Commerce (RC)
+                </label>
+                <input
+                  type="text"
+                  value={rcNumber}
+                  onChange={(e) => setRcNumber(e.target.value)}
+                  placeholder="98765 Casablanca"
+                  className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white/40"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-zinc-400 mb-1">
+                  Adresse du Point de Vente
+                </label>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Boulevard d'Anfa, Casablanca"
+                  className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-white/40"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Multi-Store Branch Network */}
+          <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-emerald-400" />
+                <h2 className="text-sm font-bold text-white">Succursales &amp; Points de Vente</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddingStore(!isAddingStore)}
+                className="h-8 px-3 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-white text-xs font-semibold flex items-center gap-1.5 border border-white/10 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Nouvelle Succursale</span>
+              </button>
+            </div>
+
+            {isAddingStore && (
+              <div className="p-4 rounded-xl bg-zinc-950 border border-white/10 space-y-3">
+                {storeCreateError && (
+                  <p className="text-xs text-red-400 font-mono">{storeCreateError}</p>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <input
+                    type="text"
+                    placeholder="Nom (ex: Succursale Maarif)"
+                    value={newStoreName}
+                    onChange={(e) => setNewStoreName(e.target.value)}
+                    className="h-9 px-3 bg-zinc-900 border border-white/10 rounded-lg text-xs text-white"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Code (ex: MAARIF-01)"
+                    value={newStoreCode}
+                    onChange={(e) => setNewStoreCode(e.target.value)}
+                    className="h-9 px-3 bg-zinc-900 border border-white/10 rounded-lg text-xs text-white uppercase font-mono"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Ville / Adresse"
+                    value={newStoreAddress}
+                    onChange={(e) => setNewStoreAddress(e.target.value)}
+                    className="h-9 px-3 bg-zinc-900 border border-white/10 rounded-lg text-xs text-white"
+                  />
                 </div>
-              ))
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingStore(false)}
+                    className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreateStore}
+                    disabled={isCreatingStore}
+                    className="px-4 py-1.5 bg-white text-black font-bold text-xs rounded-lg hover:bg-zinc-200 cursor-pointer"
+                  >
+                    {isCreatingStore ? "Création..." : "Créer"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {stores.length === 0 ? (
+                <div className="sm:col-span-3 p-4 rounded-xl bg-zinc-950/60 border border-white/5 text-center text-xs text-zinc-400 font-mono">
+                  Magasin Principal actif par défaut.
+                </div>
+              ) : (
+                stores.map((s) => (
+                  <div
+                    key={s.id}
+                    className="p-3.5 rounded-xl bg-zinc-950 border border-white/10 space-y-1"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-white">{s.name}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        {s.code}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 truncate">
+                      {s.address || "Casablanca"}
+                    </p>
+                    <div className="pt-2 border-t border-white/5 flex justify-between text-[10px] text-zinc-400 font-mono">
+                      <span>{s.devicesCount} terminal</span>
+                      <span>{s.salesCount} ventes</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Payment Gateways & WhatsApp Z-Report Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Payment Gateways */}
+            <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center gap-2 border-b border-white/10 pb-3">
+                <CreditCard className="w-4 h-4 text-amber-400" />
+                <h2 className="text-sm font-bold text-white">Passerelle de Paiement &amp; TPE</h2>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                {[
+                  { id: "cmi_tpe", name: "CMI / TPE Physique", sub: "Terminal Bancaire LAN" },
+                  { id: "youcanpay", name: "YouCanPay Maroc", sub: "Cartes MAD & CMI" },
+                  { id: "stripe", name: "Stripe Global", sub: "Cartes Internationales" },
+                  { id: "cash_only", name: "Espèces & Krediat", sub: "0% Commission" },
+                ].map((gw) => (
+                  <button
+                    key={gw.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedGateway(gw.id as any);
+                      localStorage.setItem("kaspi_payment_gateway", gw.id);
+                    }}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                      selectedGateway === gw.id
+                        ? "bg-zinc-950 border-white text-white"
+                        : "bg-zinc-950/50 border-white/10 text-zinc-400 hover:border-white/20"
+                    }`}
+                  >
+                    <div className="text-xs font-bold flex items-center justify-between">
+                      <span>{gw.name}</span>
+                      {selectedGateway === gw.id && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                    </div>
+                    <div className="text-[10px] text-zinc-500 mt-0.5">{gw.sub}</div>
+                  </button>
+                ))}
+              </div>
+
+              {selectedGateway === "cmi_tpe" && (
+                <div className="pt-1">
+                  <label className="block text-[11px] text-zinc-400 mb-1">
+                    IP Locale du Terminal TPE CMI
+                  </label>
+                  <input
+                    type="text"
+                    value={tpeTerminalIp}
+                    onChange={(e) => setTpeTerminalIp(e.target.value)}
+                    className="w-full h-9 px-3 bg-zinc-950 border border-white/10 rounded-lg text-xs text-white font-mono"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* WhatsApp Z-Report Automation */}
+            <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center gap-2 border-b border-white/10 pb-3">
+                <MessageSquare className="w-4 h-4 text-emerald-400" />
+                <h2 className="text-sm font-bold text-white">Z-Report Quotidien WhatsApp</h2>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1">
+                    Numéro WhatsApp du Gérant
+                  </label>
+                  <input
+                    type="tel"
+                    value={whatsappReportNumber}
+                    onChange={(e) => setWhatsappReportNumber(e.target.value)}
+                    placeholder="+2126XXXXXXXX"
+                    className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-mono"
+                  />
+                </div>
+
+                <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isWhatsappReportsActive}
+                    onChange={(e) => setIsWhatsappReportsActive(e.target.checked)}
+                    className="w-4 h-4 rounded accent-white"
+                  />
+                  <span>Envoyer automatiquement le rapport de clôture chaque soir</span>
+                </label>
+
+                <div className="flex items-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleTestWhatsAppReport}
+                    className="h-8 px-3 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-semibold text-white flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Send className="w-3 h-3" />
+                    <span>Tester l&apos;envoi</span>
+                  </button>
+                  {testResult && (
+                    <span className="text-xs text-emerald-400 font-mono">{testResult}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Demo Data Reset Card */}
+          <div className="bg-zinc-900/70 border border-red-500/20 rounded-2xl p-5 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Trash2 className="w-4 h-4 text-red-400" />
+                <div>
+                  <h2 className="text-sm font-bold text-white">
+                    Réinitialiser les données de test (Passage en Production)
+                  </h2>
+                  <p className="text-[11px] text-zinc-400">
+                    Purge les ventes démo, sessions de caisse et tickets KDS avant exploitation réelle
+                  </p>
+                </div>
+              </div>
+
+              {!resetConfirmOpen && (
+                <button
+                  type="button"
+                  onClick={() => setResetConfirmOpen(true)}
+                  className="h-8 px-3 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Purger les données démo</span>
+                </button>
+              )}
+            </div>
+
+            {resetFeedback && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
+                {resetFeedback}
+              </div>
+            )}
+
+            {resetConfirmOpen && (
+              <div className="p-4 rounded-xl bg-zinc-950 border border-red-500/30 space-y-3">
+                <div className="flex items-center gap-2 text-xs text-amber-300">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+                  <span>
+                    Toutes les ventes de test, tickets KDS et sessions X/Z seront supprimés.
+                  </span>
+                </div>
+                <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={resetClearCatalog}
+                    onChange={(e) => setResetClearCatalog(e.target.checked)}
+                    className="w-4 h-4 rounded accent-red-500"
+                  />
+                  <span>Supprimer aussi les produits de démonstration</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={isResettingDemo}
+                    onClick={handleResetDemoData}
+                    className="h-8 px-3 rounded-lg bg-red-500 hover:bg-red-400 text-black font-bold text-xs cursor-pointer"
+                  >
+                    {isResettingDemo ? "Purge..." : "Confirmer la purge"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setResetConfirmOpen(false)}
+                    className="h-8 px-3 rounded-lg bg-zinc-800 text-zinc-300 text-xs font-semibold cursor-pointer"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
             )}
           </div>
-        </div>
+        </form>
+      )}
 
-        {/* CARD 2: LEGAL & TAX IDENTIFIERS */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-5">
-          <div className="flex items-center gap-2 pb-3 border-b border-zinc-800">
-            <Store className="w-5 h-5 text-white" />
-            <h2 className="text-base font-bold text-white">Identifiants Commerciaux &amp; Fiscaux (DGI Maroc)</h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                Nom Commercial du Magasin (Enseigne)
-              </label>
-              <input
-                type="text"
-                value={shopName}
-                onChange={(e) => setShopName(e.target.value)}
-                placeholder="Épicerie de l'Océan SARL"
-                className="w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-medium"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                Identifiant Commun de l&apos;Entreprise (ICE)
-              </label>
-              <input
-                type="text"
-                value={ice}
-                onChange={(e) => setIce(e.target.value)}
-                placeholder="001234567000089"
-                className="w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                Identifiant Fiscal (IF)
-              </label>
-              <input
-                type="text"
-                value={taxId}
-                onChange={(e) => setTaxId(e.target.value)}
-                placeholder="12345678"
-                className="w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                Registre de Commerce (RC)
-              </label>
-              <input
-                type="text"
-                value={rcNumber}
-                onChange={(e) => setRcNumber(e.target.value)}
-                placeholder="98765 Casablanca"
-                className="w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-mono"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                Adresse physique du point de vente
-              </label>
-              <input
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="123 Boulevard d'Anfa, Casablanca"
-                className="w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-medium"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* CARD 3: THERMAL PRINTING & GLOBAL MULTI-LANGUAGE RECEIPT STUDIO */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-800">
-            <div className="flex items-center gap-2.5">
-              <Printer className="w-5 h-5 text-sky-400" />
+      {/* =================================================================== */}
+      {/* TAB 2: THERMAL RECEIPT & HARDWARE                                   */}
+      {/* =================================================================== */}
+      {activeTab === "hardware" && (
+        <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 sm:p-6 space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+            <div className="flex items-center gap-2">
+              <Printer className="w-4 h-4 text-sky-400" />
               <div>
-                <h2 className="text-base font-bold text-white">
-                  Thermal Printing &amp; Receipt Studio • إعدادات الطباعة الحرارية والفاتورة
+                <h2 className="text-sm font-bold text-white">
+                  Studio d&apos;Impression Thermique ESC/POS (80mm / 58mm)
                 </h2>
                 <p className="text-[11px] text-zinc-400">
-                  Moteur ESC/POS multi-langues (AR 0-9, FR, EN, TR, ES, DE) • 80mm &amp; 58mm • Tiroir-caisse RJ11
+                  Multi-langues (AR, FR, EN, TR, ES, DE) • Chiffres 0-9 • Tiroir-caisse RJ11
                 </p>
               </div>
             </div>
@@ -599,45 +971,43 @@ export default function SettingsPage() {
                 type="button"
                 onClick={handleTestPrintReceipt}
                 disabled={isTestPrinting}
-                className="px-3.5 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                className="h-8 px-3 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
               >
                 {isTestPrinting ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
                   <Printer className="w-3.5 h-3.5" />
                 )}
-                <span>Test Print Receipt • تجربة الطباعة</span>
+                <span>Imprimer Ticket Test</span>
               </button>
               <button
                 type="button"
                 onClick={() => setReceiptPaperDark(!receiptPaperDark)}
-                className="px-3 py-1.5 rounded-xl bg-zinc-800 border border-zinc-700 text-[11px] text-zinc-300 hover:text-white cursor-pointer"
+                className="h-8 px-3 rounded-lg bg-white/[0.05] border border-white/10 text-xs text-zinc-300 hover:text-white cursor-pointer"
               >
-                Papier: {receiptPaperDark ? "Sombre" : "Blanc"}
+                Papier : {receiptPaperDark ? "Sombre" : "Blanc"}
               </button>
             </div>
           </div>
 
           {testPrintStatus && (
-            <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono text-sky-300">
+            <div className="p-3 rounded-xl bg-zinc-950 border border-white/10 text-xs font-mono text-sky-300">
               {testPrintStatus}
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Left: Thermal Hardware & Language Controls */}
-            <div className="lg:col-span-7 space-y-5">
-              {/* Row 1: Language & Paper Width */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div className="lg:col-span-7 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                  <label className="block text-xs font-medium text-zinc-400 mb-1 flex items-center gap-1.5">
                     <Globe className="w-3.5 h-3.5 text-sky-400" />
-                    <span>Langue d&apos;impression du Ticket (Receipt Language)</span>
+                    <span>Langue du Ticket</span>
                   </label>
                   <select
                     value={receiptLanguage}
                     onChange={(e) => setReceiptLanguage(e.target.value as ReceiptLanguage)}
-                    className="w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-white font-semibold"
+                    className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-semibold"
                   >
                     {SUPPORTED_RECEIPT_LANGUAGES.map((lang) => (
                       <option key={lang.code} value={lang.code}>
@@ -645,244 +1015,184 @@ export default function SettingsPage() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-[10px] text-zinc-500 mt-1">
-                    Indépendant de la langue du tableau de bord. Chiffres strictement 0-9.
-                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-                    Largeur du Rouleau Thermique (Paper Width)
+                  <label className="block text-xs font-medium text-zinc-400 mb-1">
+                    Largeur du Rouleau
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { mm: 80 as const, label: "80mm Standard", sub: "576 dots (POS)" },
-                      { mm: 58 as const, label: "58mm Compact", sub: "384 dots (Mobile)" },
+                      { mm: 80 as const, label: "80mm Standard" },
+                      { mm: 58 as const, label: "58mm Compact" },
                     ].map((w) => (
                       <button
                         key={w.mm}
                         type="button"
                         onClick={() => setPaperWidthMm(w.mm)}
-                        className={`h-11 px-3 rounded-xl border text-left flex flex-col justify-center transition cursor-pointer ${
+                        className={`h-10 px-3 rounded-xl border text-xs font-bold transition cursor-pointer ${
                           paperWidthMm === w.mm
-                            ? "bg-zinc-950 border-sky-400 text-white ring-1 ring-sky-400/40"
-                            : "bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:border-zinc-700"
+                            ? "bg-white text-black border-white"
+                            : "bg-zinc-950 border-white/10 text-zinc-400"
                         }`}
                       >
-                        <span className="text-xs font-bold leading-none">{w.label}</span>
-                        <span className="text-[9px] font-mono text-zinc-500 mt-0.5">{w.sub}</span>
+                        {w.label}
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Row 2: Printer Connection Mode */}
               <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-                  Mode de Connexion Imprimante (Printer Connection Mode)
+                <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+                  Mode de Connexion Matérielle
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 gap-2.5">
                   {[
-                    {
-                      id: "auto" as const,
-                      title: "Auto (Tauri ESC/POS → Navigateur)",
-                      desc: "Détecte l'imprimante par défaut ou bascule sur le navigateur",
-                    },
-                    {
-                      id: "usb_serial" as const,
-                      title: "USB / Série Direct (Spooler / COM)",
-                      desc: "Imprimante USB Windows (ex: POS-80C) ou port COM3",
-                    },
-                    {
-                      id: "network" as const,
-                      title: "Réseau LAN / Wi-Fi (TCP/IP :9100)",
-                      desc: "Imprimante thermique cuisine/caisse sur IP locale",
-                    },
-                    {
-                      id: "browser" as const,
-                      title: "Impression Standard Navigateur",
-                      desc: "Boîte de dialogue système (PDF / AirPrint / Laser)",
-                    },
+                    { id: "auto" as const, title: "Auto (Tauri ESC/POS → Web)" },
+                    { id: "usb_serial" as const, title: "USB / Série Direct (Spooler)" },
+                    { id: "network" as const, title: "Réseau LAN TCP/IP (:9100)" },
+                    { id: "browser" as const, title: "Dialogue Navigateur / PDF" },
                   ].map((m) => (
                     <button
                       key={m.id}
                       type="button"
                       onClick={() => setPrinterConnectionMode(m.id)}
-                      className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                      className={`p-3 rounded-xl border text-left text-xs font-semibold transition cursor-pointer ${
                         printerConnectionMode === m.id
-                          ? "bg-zinc-950 border-sky-400 ring-1 ring-sky-400/40"
-                          : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700"
+                          ? "bg-zinc-950 border-sky-400 text-white"
+                          : "bg-zinc-950/50 border-white/10 text-zinc-400"
                       }`}
                     >
-                      <div className="text-xs font-bold text-white">{m.title}</div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5">{m.desc}</div>
+                      {m.title}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Conditional Connection Inputs */}
               {printerConnectionMode === "usb_serial" && (
-                <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800">
-                  <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                    Nom de l&apos;imprimante Windows ou Port Série (laisser vide pour l&apos;imprimante par défaut)
+                <div>
+                  <label className="block text-xs text-zinc-400 mb-1">
+                    Nom de l&apos;imprimante ou Port COM
                   </label>
                   <input
                     type="text"
                     value={printerTarget}
                     onChange={(e) => setPrinterTarget(e.target.value)}
-                    placeholder="Ex: POS-80C, Epson TM-T20III, COM3, \\localhost\POS80"
-                    className="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
+                    placeholder="POS-80C, Epson TM-T20III, COM3"
+                    className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-mono"
                   />
                 </div>
               )}
 
               {printerConnectionMode === "network" && (
-                <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="sm:col-span-2">
-                    <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                      Adresse IP de l&apos;imprimante thermique (LAN)
-                    </label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-xs text-zinc-400 mb-1">Adresse IP LAN</label>
                     <input
                       type="text"
                       value={printerIp}
                       onChange={(e) => setPrinterIp(e.target.value)}
                       placeholder="192.168.1.50"
-                      className="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
+                      className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                      Port RAW ESC/POS
-                    </label>
+                    <label className="block text-xs text-zinc-400 mb-1">Port</label>
                     <input
                       type="text"
                       value={printerPort}
                       onChange={(e) => setPrinterPort(e.target.value)}
                       placeholder="9100"
-                      className="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
+                      className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-mono"
                     />
                   </div>
                 </div>
               )}
 
-              {/* Row 3: Hardware Toggles */}
-              <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
-                <span className="text-xs font-bold text-white block">
-                  Options Matérielles &amp; Automatisation Caisse :
-                </span>
-                <label className="flex items-center gap-3 cursor-pointer">
+              <div className="p-4 rounded-xl bg-zinc-950 border border-white/10 space-y-2.5">
+                <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={autoPrintReceipt}
                     onChange={(e) => setAutoPrintReceipt(e.target.checked)}
-                    className="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-sky-500"
+                    className="w-4 h-4 rounded accent-white"
                   />
-                  <span className="text-xs text-zinc-300">
-                    Impression automatique du ticket dès la validation de l&apos;encaissement (Auto-Print)
-                  </span>
+                  <span>Impression automatique dès validation de l&apos;encaissement</span>
                 </label>
-
-                <label className="flex items-center gap-3 cursor-pointer">
+                <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={openDrawer}
                     onChange={(e) => setOpenDrawer(e.target.checked)}
-                    className="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-sky-500"
+                    className="w-4 h-4 rounded accent-white"
                   />
-                  <span className="text-xs text-zinc-300">
-                    Impulsion d&apos;ouverture automatique du Tiroir-Caisse RJ11 (ESC/POS Pulse)
-                  </span>
+                  <span>Impulsion automatique du Tiroir-Caisse RJ11</span>
                 </label>
-
-                <label className="flex items-center gap-3 cursor-pointer">
+                <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={showStoreLogo}
                     onChange={(e) => setShowStoreLogo(e.target.checked)}
-                    className="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-sky-500"
+                    className="w-4 h-4 rounded accent-white"
                   />
-                  <span className="text-xs text-zinc-300">
-                    Afficher l&apos;emblème / logo du commerce en haut du ticket thermique
-                  </span>
+                  <span>Afficher le logo en haut du ticket thermique</span>
                 </label>
               </div>
 
-              {/* Row 4: Header & Footer Custom Messages */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                    En-tête du ticket (Message d&apos;accueil)
-                  </label>
+                  <label className="block text-xs text-zinc-400 mb-1">En-tête du ticket</label>
                   <input
                     type="text"
                     value={receiptHeader}
                     onChange={(e) => setReceiptHeader(e.target.value)}
                     placeholder={getReceiptTranslation(receiptLanguage).welcomeHeader}
-                    className="w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-white font-medium"
+                    className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                    Pied de page personnalisé (Footer Message)
-                  </label>
+                  <label className="block text-xs text-zinc-400 mb-1">Pied de page</label>
                   <input
                     type="text"
                     value={receiptFooter}
                     onChange={(e) => setReceiptFooter(e.target.value)}
                     placeholder={getReceiptTranslation(receiptLanguage).thankYou}
-                    className="w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-white font-medium"
+                    className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Right: Live Realistic Multi-Language Thermal Receipt Preview */}
+            {/* Live Receipt Preview */}
             <div className="lg:col-span-5 flex flex-col items-center">
               {(() => {
                 const previewDict = getReceiptTranslation(receiptLanguage);
-                const previewCurrency =
-                  receiptLanguage === "tr"
-                    ? "TRY"
-                    : receiptLanguage === "en" || receiptLanguage === "es" || receiptLanguage === "de"
-                    ? "EUR"
-                    : "MAD";
                 return (
                   <div
                     dir={previewDict.dir}
                     className={`w-full ${
                       paperWidthMm === 58 ? "max-w-[230px]" : "max-w-xs"
-                    } font-mono text-xs p-5 shadow-2xl relative select-none rounded-sm transition-all ${
+                    } font-mono text-xs p-5 shadow-2xl rounded-sm ${
                       receiptPaperDark
-                        ? "bg-zinc-950 text-zinc-100 border border-zinc-800"
+                        ? "bg-zinc-950 text-zinc-100 border border-white/15"
                         : "bg-[#fbfbfa] text-zinc-950 border border-zinc-200"
                     }`}
-                    style={{
-                      clipPath:
-                        "polygon(0% 4px, 5% 0px, 10% 4px, 15% 0px, 20% 4px, 25% 0px, 30% 4px, 35% 0px, 40% 4px, 45% 0px, 50% 4px, 55% 0px, 60% 4px, 65% 0px, 70% 4px, 75% 0px, 80% 4px, 85% 0px, 90% 4px, 95% 0px, 100% 4px, 100% calc(100% - 4px), 95% 100%, 90% calc(100% - 4px), 85% 100%, 80% calc(100% - 4px), 75% 100%, 70% calc(100% - 4px), 65% 100%, 60% calc(100% - 4px), 55% 100%, 50% calc(100% - 4px), 45% 100%, 40% calc(100% - 4px), 35% 100%, 30% calc(100% - 4px), 25% 100%, 20% calc(100% - 4px), 15% 100%, 10% calc(100% - 4px), 5% 100%, 0% calc(100% - 4px))",
-                    }}
                   >
                     <div className="text-center space-y-1 pb-2 border-b border-dashed border-current/40">
                       {showStoreLogo && (
                         <img
                           src="/logo.png"
                           alt="KASPI"
-                          className="w-7 h-7 object-contain mx-auto mb-1"
-                          onError={(e) => (e.currentTarget.style.display = "none")}
+                          className="w-6 h-6 object-contain mx-auto mb-1"
                         />
                       )}
-                      <h4 className="font-extrabold text-sm tracking-tight">
+                      <h4 className="font-extrabold text-sm">
                         {shopName || "KASPI POS STORE"}
                       </h4>
                       <p className="text-[10px] opacity-80">{address || "Casablanca, Maroc"}</p>
                       <p className="text-[9px] opacity-60" dir="ltr">
-                        ICE: {toWesternNumerals(ice || "001234567000089")} • IF:{" "}
-                        {toWesternNumerals(taxId || "12345678")}
-                      </p>
-                      <p className="text-[10px] italic pt-1">
-                        {receiptHeader || previewDict.welcomeHeader}
+                        ICE: {toWesternNumerals(ice || "001234567000089")}
                       </p>
                     </div>
 
@@ -897,44 +1207,21 @@ export default function SettingsPage() {
                         <span>{previewDict.date} :</span>
                         <span dir="ltr">{formatReceiptDate(new Date(), receiptLanguage)}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>{previewDict.cashier} :</span>
-                        <span>Caisse 1</span>
-                      </div>
                     </div>
 
                     <div className="py-2 space-y-1 text-[11px] border-b border-dashed border-current/40">
                       <div className="flex justify-between">
-                        <span>1x Coca-Cola 33cl</span>
-                        <span dir="ltr">
-                          {formatReceiptAmount(6.0)} {previewCurrency}
-                        </span>
+                        <span>1x Café Arabica</span>
+                        <span dir="ltr">{formatReceiptAmount(18.0)} MAD</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>1x Espresso Premium</span>
-                        <span dir="ltr">
-                          {formatReceiptAmount(23.0)} {previewCurrency}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-[10px] opacity-75 pt-1 border-t border-current/20">
-                        <span>{previewDict.tax} :</span>
-                        <span dir="ltr">
-                          {formatReceiptAmount(4.83)} {previewCurrency}
-                        </span>
-                      </div>
-                      <div className="flex justify-between font-bold pt-0.5">
+                      <div className="flex justify-between font-bold pt-1 border-t border-current/20">
                         <span>{previewDict.grandTotal} :</span>
-                        <span dir="ltr">
-                          {formatReceiptAmount(29.0)} {previewCurrency}
-                        </span>
+                        <span dir="ltr">{formatReceiptAmount(18.0)} MAD</span>
                       </div>
                     </div>
 
-                    <div className="pt-2 text-center text-[9px] opacity-75 space-y-1">
+                    <div className="pt-2 text-center text-[9px] opacity-75">
                       <p className="font-bold">{receiptFooter || previewDict.thankYou}</p>
-                      <p className="font-mono text-[8px] opacity-50" dir="ltr">
-                        {paperWidthMm}mm • {receiptLanguage.toUpperCase()} • Western 0-9
-                      </p>
                     </div>
                   </div>
                 );
@@ -942,287 +1229,231 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+      )}
 
-        {/* CARD 4: WHATSAPP AUTOMATION */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-5">
-          <div className="flex items-center gap-2 pb-3 border-b border-zinc-800">
-            <MessageSquare className="w-5 h-5 text-emerald-400" />
-            <h2 className="text-base font-bold text-white">Rapports Journaliers WhatsApp (Z-Report)</h2>
-          </div>
+      {/* =================================================================== */}
+      {/* TAB 3: CLOUD & API VAULT                                            */}
+      {/* =================================================================== */}
+      {activeTab === "vault" && (
+        <div className="space-y-6">
+          <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 sm:p-6 space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+              <div className="flex items-center gap-2.5">
+                <KeyRound className="w-4 h-4 text-amber-400" />
+                <div>
+                  <h2 className="text-sm font-bold text-white">
+                    Coffre-Fort Cloud &amp; Clés API (.env Runtime Vault)
+                  </h2>
+                  <p className="text-[11px] text-zinc-400">
+                    Configurez vos clés SMTP, Supabase, Neon PostgreSQL et moteurs IA directement depuis le navigateur
+                  </p>
+                </div>
+              </div>
 
-          <p className="text-xs text-zinc-400 leading-relaxed">
-            Recevez chaque soir automatiquement sur votre WhatsApp un récapitulatif clair de votre chiffre d&apos;affaires, répartition des paiements (Cash/Carte/Crédit), top des ventes et alertes rupture de stock.
-          </p>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                Numéro WhatsApp du Propriétaire / Gérant (ex: +212661234567 ou 0661234567)
-              </label>
-              <input
-                type="tel"
-                value={whatsappReportNumber}
-                onChange={(e) => setWhatsappReportNumber(e.target.value)}
-                placeholder="+2126XXXXXXXX"
-                className="w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-mono"
-              />
-            </div>
-
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="activeWhatsapp"
-                checked={isWhatsappReportsActive}
-                onChange={(e) => setIsWhatsappReportsActive(e.target.checked)}
-                className="w-4 h-4 rounded bg-zinc-950 border-zinc-800 text-white focus:ring-0"
-              />
-              <label htmlFor="activeWhatsapp" className="text-xs text-zinc-300 font-medium cursor-pointer">
-                Activer l&apos;envoi automatique des rapports Z en fin de journée
-              </label>
-            </div>
-
-            {whatsappReportNumber && (
-              <div className="pt-2 flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleTestWhatsAppReport}
-                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-xs border border-zinc-700 flex items-center gap-1.5 transition cursor-pointer"
+                  onClick={handleTestVaultConnections}
+                  disabled={isTestingVault}
+                  className="h-8 px-3 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Tester l&apos;envoi WhatsApp maintenant</span>
+                  {isTestingVault ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Activity className="w-3.5 h-3.5" />
+                  )}
+                  <span>Tester les Connexions Live</span>
                 </button>
-                {testResult && <span className="text-xs text-zinc-300 font-mono">{testResult}</span>}
+                <button
+                  type="button"
+                  onClick={handleSaveVault}
+                  disabled={isSavingVault}
+                  className="h-8 px-3.5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isSavingVault ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Save className="w-3.5 h-3.5" />
+                  )}
+                  <span>Sauvegarder les Clés</span>
+                </button>
+              </div>
+            </div>
+
+            {vaultFeedback && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
+                {vaultFeedback}
               </div>
             )}
-          </div>
-        </div>
 
-        {/* CARD 5: LOCAL GPU & WEBGPU ACCELERATION TOGGLE (Phase 2) */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-            <div className="flex items-center gap-2">
-              <Cpu className="w-5 h-5 text-purple-400" />
+            {/* Live Connection Diagnostics Results */}
+            {vaultTestResults.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {vaultTestResults.map((r) => (
+                  <div
+                    key={r.service}
+                    className={`p-3.5 rounded-xl border ${
+                      r.ok
+                        ? "bg-emerald-950/20 border-emerald-500/30"
+                        : "bg-red-950/20 border-red-500/30"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-xs font-bold text-white">
+                      <span className="truncate">{r.service}</span>
+                      <span
+                        className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                          r.ok
+                            ? "bg-emerald-500/20 text-emerald-300"
+                            : "bg-red-500/20 text-red-300"
+                        }`}
+                      >
+                        {r.latencyMs}ms
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 mt-1 font-mono truncate">
+                      {r.detail}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Quick .env Paste Box */}
+            <div>
+              <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                Coller un bloc <code className="text-amber-300 font-mono">.env</code> complet (détection automatique des clés)
+              </label>
+              <textarea
+                rows={3}
+                dir="ltr"
+                value={rawEnvBlock}
+                onChange={(e) => handleParseRawEnv(e.target.value)}
+                placeholder={'GMAIL_USER="kaspipos.official@gmail.com"\nGMAIL_APP_PASSWORD="xxxx xxxx xxxx xxxx"\nGROQ_API_KEY="gsk_..."'}
+                className="w-full p-3 rounded-xl bg-zinc-950 border border-white/10 text-xs text-white font-mono focus:outline-none focus:border-white/30"
+              />
+            </div>
+
+            {/* Individual Key Inputs & Status */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {vaultKeys.map((item) => (
+                <div
+                  key={item.key}
+                  className="p-3 rounded-xl bg-zinc-950 border border-white/10 space-y-1.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-white" dir="ltr">
+                      {item.key}
+                    </span>
+                    <span
+                      className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                        item.configured
+                          ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                          : "bg-zinc-800 text-zinc-400"
+                      }`}
+                    >
+                      {item.configured ? `Actif (${item.maskedValue})` : "Non défini"}
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    dir="ltr"
+                    value={vaultInputs[item.key] || ""}
+                    onChange={(e) =>
+                      setVaultInputs((prev) => ({ ...prev, [item.key]: e.target.value }))
+                    }
+                    placeholder={`Nouvelle valeur pour ${item.key}...`}
+                    className="w-full h-8 px-2.5 rounded-lg bg-zinc-900 border border-white/10 text-xs text-white font-mono focus:outline-none focus:border-white/30"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* WebGPU Local Acceleration Toggle */}
+          <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Cpu className="w-5 h-5 text-purple-400 shrink-0" />
               <div>
-                <h2 className="text-base font-bold text-white">Moteur IA &amp; Inférence Locale (WebGPU / GPU)</h2>
-                <p className="text-[11px] text-zinc-400">Exécutez les analyses de stock et requêtes IA sur la puce graphique de votre terminal</p>
+                <h3 className="text-sm font-bold text-white">
+                  Accélération IA Locale (WebGPU / Terminal Hardware)
+                </h3>
+                <p className="text-xs text-zinc-400">
+                  Exécute les prédictions de stock en local à coût zéro lorsque aucune clé Cloud externe n&apos;est requise
+                </p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => toggleGpuAi(!useLocalGpuAi)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold font-mono transition border ${
+              className={`h-8 px-3 rounded-lg text-xs font-bold font-mono border transition cursor-pointer shrink-0 ${
                 useLocalGpuAi
                   ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
-                  : "bg-zinc-800 text-zinc-400 border-zinc-700"
+                  : "bg-zinc-800 text-zinc-400 border-white/10"
               }`}
             >
-              {useLocalGpuAi ? "Actif (GPU Local)" : "Cloud API Uniquement"}
+              {useLocalGpuAi ? "WebGPU Actif" : "Cloud Uniquement"}
             </button>
           </div>
-
-          <p className="text-xs text-zinc-400 leading-relaxed">
-            Lorsque le moteur GPU local est activé, KASPI POS utilise les capacités de calcul WebGPU de votre matériel de caisse. Vos données restent 100% confidentielles en local et réduisent les coûts d&apos;infrastructure à zéro.
-          </p>
         </div>
+      )}
 
-        {/* CARD 6: PASSERELLES DE PAIEMENT & TERMINAL TPE */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-5">
-          <div className="flex items-center gap-2 pb-3 border-b border-zinc-800">
-            <CreditCard className="w-5 h-5 text-amber-400" />
-            <div>
-              <h2 className="text-base font-bold text-white">Passerelles de Paiement &amp; Terminal TPE (4 Niveaux)</h2>
-              <p className="text-[11px] text-zinc-400">Configurez votre terminal bancaire CMI, Stripe, ou YouCanPay Maroc</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              {
-                id: "cmi_tpe",
-                name: "CMI / TPE Physique",
-                desc: "Partage dynamique (Client 70% / Marchand 30%) - 2.0%",
-                badge: "Physique",
-              },
-              {
-                id: "youcanpay",
-                name: "YouCanPay Maroc",
-                desc: "Cartes nationales 3.9% + 2.00 MAD (Intl 4.9%)",
-                badge: "En Ligne (MAD)",
-              },
-              {
-                id: "stripe",
-                name: "Stripe Global",
-                desc: "Cartes internationales (2.9% + 0.30 $ USD)",
-                badge: "International",
-              },
-              {
-                id: "cash_only",
-                name: "Espèces & Krediat",
-                desc: "Sans frais bancaires (0% commission)",
-                badge: "Standard",
-              },
-            ].map((gw) => (
-              <button
-                key={gw.id}
-                type="button"
-                onClick={() => {
-                  setSelectedGateway(gw.id as any);
-                  localStorage.setItem("kaspi_payment_gateway", gw.id);
-                }}
-                className={`p-4 rounded-2xl border text-left flex flex-col justify-between transition cursor-pointer ${
-                  selectedGateway === gw.id
-                    ? "bg-zinc-950 border-amber-500 ring-1 ring-amber-500/50"
-                    : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700"
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-white">{gw.name}</span>
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300">
-                      {gw.badge}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">{gw.desc}</p>
-                </div>
-                {selectedGateway === gw.id && (
-                  <div className="mt-3 flex items-center gap-1.5 text-xs text-amber-400 font-bold">
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Sélectionné</span>
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {selectedGateway === "cmi_tpe" && (
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
-              <h4 className="text-xs font-bold text-white">Paramètres Terminal TPE CMI (Réseau local)</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-medium text-zinc-400 mb-1">
-                    Adresse IP du TPE (Ingenico / Pax / Verifone)
-                  </label>
-                  <input
-                    type="text"
-                    value={tpeTerminalIp}
-                    onChange={(e) => setTpeTerminalIp(e.target.value)}
-                    placeholder="192.168.1.150"
-                    className="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-zinc-400 mb-1">
-                    Port de communication CMI
-                  </label>
-                  <input
-                    type="text"
-                    defaultValue="8888"
-                    className="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* CARD 7: RÉINITIALISER LES DONNÉES DE TEST / DÉMO (PASSAGE EN PRODUCTION) */}
-        <div className="bg-zinc-900 border border-red-500/30 rounded-3xl p-6 sm:p-8 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-800">
-            <div className="flex items-center gap-2.5">
-              <Trash2 className="w-5 h-5 text-red-400" />
-              <div>
-                <h2 className="text-base font-bold text-white">
-                  Réinitialiser les données de test (Passage en Production) • مسح بيانات التجربة
+      {/* =================================================================== */}
+      {/* TAB 4: USER & ROLES                                                 */}
+      {/* =================================================================== */}
+      {activeTab === "users" && (
+        <div className="space-y-6">
+          <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <h2 className="text-sm font-bold text-white">
+                  Session Authentifiée &amp; Contrôle d&apos;Accès (RBAC)
                 </h2>
-                <p className="text-[11px] text-zinc-400">
-                  Purgez les ventes de démonstration, tickets KDS et sessions de caisse avant de démarrer votre activité réelle
-                </p>
               </div>
-            </div>
-
-            {!resetConfirmOpen && (
               <button
                 type="button"
-                onClick={() => setResetConfirmOpen(true)}
-                className="px-4 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/40 text-red-300 font-bold text-xs flex items-center gap-2 transition cursor-pointer"
+                onClick={fetchMeProfile}
+                className="h-8 px-2.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-xs text-zinc-300 flex items-center gap-1.5 cursor-pointer"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Réinitialiser les données de test</span>
+                <RefreshCw className="w-3 h-3" />
+                <span>Actualiser</span>
               </button>
-            )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-4 rounded-xl bg-zinc-950 border border-white/10">
+                <span className="text-[11px] text-zinc-400">Utilisateur Connecté</span>
+                <div className="text-sm font-bold text-white mt-1">
+                  {currentUser?.fullName || "Propriétaire KASPI"}
+                </div>
+                <div className="text-xs text-zinc-400 font-mono mt-0.5" dir="ltr">
+                  {currentUser?.email || "dormiismail02@gmail.com"}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-zinc-950 border border-white/10">
+                <span className="text-[11px] text-zinc-400">Rôle &amp; Privilèges</span>
+                <div className="text-sm font-bold text-emerald-400 uppercase font-mono mt-1">
+                  {currentUser?.role || "OWNER"}
+                </div>
+                <div className="text-xs text-zinc-400 mt-0.5">
+                  Accès complet (Caisse, Stocks, Clôtures Z, Clés API)
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-zinc-950 border border-white/10">
+                <span className="text-[11px] text-zinc-400">Terminaux Autorisés</span>
+                <div className="text-sm font-bold text-white font-mono mt-1">
+                  {currentUser?.maxDevices || 3} Terminaux POS
+                </div>
+                <div className="text-xs text-zinc-400 mt-0.5">
+                  Synchronisation Cloud + Offline Dexie active
+                </div>
+              </div>
+            </div>
           </div>
-
-          {resetFeedback && (
-            <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
-              {resetFeedback}
-            </div>
-          )}
-
-          {resetConfirmOpen && (
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-red-500/40 space-y-4">
-              <div className="flex items-start gap-2.5 text-xs text-amber-300">
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
-                <span>
-                  Confirmation requise : cette action supprimera toutes les ventes de test, les tickets KDS, les sessions X/Z et remettra les soldes crédits clients à 0.00 MAD.
-                </span>
-              </div>
-
-              <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={resetClearCatalog}
-                  onChange={(e) => setResetClearCatalog(e.target.checked)}
-                  className="w-4 h-4 rounded accent-red-500"
-                />
-                <span>
-                  Supprimer également les produits et catégories de démonstration (pour importer mon propre catalogue)
-                </span>
-              </label>
-
-              <div className="flex items-center gap-3 pt-1">
-                <button
-                  type="button"
-                  disabled={isResettingDemo}
-                  onClick={handleResetDemoData}
-                  className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-400 text-black font-black text-xs transition cursor-pointer disabled:opacity-50"
-                >
-                  {isResettingDemo
-                    ? "Purge en cours..."
-                    : "Confirmer la purge des données démo"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setResetConfirmOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-xs transition cursor-pointer"
-                >
-                  Annuler
-                </button>
-              </div>
-            </div>
-          )}
         </div>
-
-        {/* Action Row */}
-        <div className="flex justify-end pt-2">
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="px-6 py-3 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-sm transition shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-40"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin text-black" />
-                <span>Enregistrement...</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                <span>Enregistrer les paramètres</span>
-              </>
-            )}
-          </button>
-        </div>
-      </form>
+      )}
     </div>
   );
 }
