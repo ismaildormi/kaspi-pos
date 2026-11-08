@@ -1,7 +1,8 @@
 import React from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/server/db/prisma";
-import { getRequestContext } from "@/server/auth/context";
+import { getRequestContext, type RequestContext } from "@/server/auth/context";
 import {
   Layers,
   AlertTriangle,
@@ -17,41 +18,52 @@ import { StockAuditClient } from "@/components/dashboard/StockAuditClient";
 export const dynamic = "force-dynamic";
 
 export default async function InventoryPage() {
-  const ctx = await getRequestContext();
+  let ctx: RequestContext;
+  try {
+    ctx = await getRequestContext();
+  } catch {
+    redirect("/login");
+  }
   const tenantId = ctx.tenantId;
 
   // 1. Fetch products with stock levels
-  const products = await prisma.product.findMany({
-    where: { tenantId, trackStock: true },
-    include: {
-      stockLevels: true,
-      category: true,
-    },
-    orderBy: { name: "asc" },
-  });
+  const products = await prisma.product
+    .findMany({
+      where: { tenantId, trackStock: true },
+      include: {
+        stockLevels: true,
+        category: true,
+      },
+      orderBy: { name: "asc" },
+    })
+    .catch(() => []);
 
   // 2. Fetch recent inventory movements
-  const recentMovements = await prisma.inventoryMovement.findMany({
-    where: { tenantId },
-    include: { product: true },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-  });
+  const recentMovements = await prisma.inventoryMovement
+    .findMany({
+      where: { tenantId },
+      include: { product: true },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    })
+    .catch(() => []);
 
   // 3. AI Predictive Stockout Velocity (Last 14 days sales velocity) - Hidden Gem 1
   const fourteenDaysAgo = new Date();
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
-  const salesVelocity = await prisma.saleItem.groupBy({
-    by: ["productId"],
-    where: {
-      tenantId,
-      createdAt: { gte: fourteenDaysAgo },
-    },
-    _sum: {
-      quantity: true,
-    },
-  });
+  const salesVelocity = await prisma.saleItem
+    .groupBy({
+      by: ["productId"],
+      where: {
+        tenantId,
+        createdAt: { gte: fourteenDaysAgo },
+      },
+      _sum: {
+        quantity: true,
+      },
+    })
+    .catch(() => []);
 
   const velocityMap = new Map<string, number>();
   salesVelocity.forEach((sv) => {

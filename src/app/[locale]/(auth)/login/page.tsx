@@ -221,7 +221,7 @@ function LoginForm() {
 
       setOtpStep("verify");
       setOtpTimer(60);
-      setSuccess(`تم إرسال رمز الدخول السري ورابط الدخول إلى ${email}. يرجى التحقق من بريدك.`);
+      setSuccess(`تم إرسال رمز التحقق السري المكون من 6 أرقام إلى ${email}. انسخ الرمز والصقه هنا (Ctrl+V).`);
     } catch {
       setError("حدث خطأ في الاتصال بالسيرفر لإرسال الرمز");
     } finally {

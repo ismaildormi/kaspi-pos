@@ -2,6 +2,8 @@ import { cookies, headers } from "next/headers";
 import { getSessionByToken, SESSION_COOKIE_NAME } from "./session";
 import { AppError } from "../http/response";
 import { UserRole } from "@prisma/client";
+import { prisma } from "../db/prisma";
+import { auth } from "@/auth";
 import {
   setActiveTenantContext,
   runWithTenantContext,
@@ -15,6 +17,91 @@ export {
   tenantStorage,
   getActiveTenantContext,
 };
+
+export async function ensureUserHasActiveTenant(
+  userId: string,
+  email?: string | null,
+  fullName?: string | null
+) {
+  const existing = await prisma.tenantMembership.findMany({
+    where: { userId, status: "active" },
+    include: { tenant: true },
+  });
+
+  if (existing.length > 0) {
+    return existing;
+  }
+
+  // Check if user has any membership in 'invited' or other status and activate it, or create a new tenant
+  const anyMembership = await prisma.tenantMembership.findFirst({
+    where: { userId },
+    include: { tenant: true },
+  });
+
+  if (anyMembership) {
+    const activated = await prisma.tenantMembership.update({
+      where: { id: anyMembership.id },
+      data: { status: "active" },
+      include: { tenant: true },
+    });
+    return [activated];
+  }
+
+  const cleanPrefix = (email || fullName || "boutique")
+    .split("@")[0]
+    .replace(/[^a-zA-Z0-9]/g, "-")
+    .toLowerCase()
+    .slice(0, 20) || "boutique";
+  const uniqueSlug = `${cleanPrefix}-${Date.now().toString(36)}-${Math.floor(100 + Math.random() * 900)}`;
+  const shopDisplayName = fullName
+    ? `متجر ${fullName}`
+    : email
+    ? `متجر ${email.split("@")[0]}`
+    : "متجر كسب الجديد";
+
+  const createdTenant = await prisma.tenant.create({
+    data: {
+      legalName: shopDisplayName,
+      displayName: shopDisplayName,
+      slug: uniqueSlug,
+      currency: "MAD",
+      timezone: "Africa/Casablanca",
+      locale: "ar",
+      status: "trialing",
+      maxDevices: 3,
+    },
+  });
+
+  const createdStore = await prisma.store.create({
+    data: {
+      tenantId: createdTenant.id,
+      code: "MAIN",
+      name: "الفرع الرئيسي • Magasin Principal",
+      timezone: "Africa/Casablanca",
+      isActive: true,
+    },
+  });
+
+  const membership = await prisma.tenantMembership.create({
+    data: {
+      tenantId: createdTenant.id,
+      userId,
+      role: "owner",
+      status: "active",
+      storeIds: [createdStore.id],
+    },
+    include: { tenant: true },
+  });
+
+  await prisma.user
+    .update({
+      where: { id: userId },
+      data: { defaultTenantId: createdTenant.id },
+    })
+    .catch(() => {});
+
+  return [membership];
+}
 
 export interface RequestContext {
   userId: string;
@@ -54,26 +141,48 @@ export async function getRequestContext(
 
   const token = tokenFromCookie || tokenFromHeader;
 
-  if (!token) {
+  let session = token ? await getSessionByToken(token) : null;
+  let user = session?.user ?? null;
+
+  // Fallback to NextAuth JWT session if pos_session cookie is missing or expired
+  if (!user) {
+    const nextAuthSession = await auth().catch(() => null);
+    const nextUserId = nextAuthSession?.user?.id;
+    const nextUserEmail = nextAuthSession?.user?.email;
+
+    if (nextUserId || nextUserEmail) {
+      user = await prisma.user.findFirst({
+        where: nextUserId
+          ? { id: nextUserId }
+          : { email: nextUserEmail!.toLowerCase().trim() },
+        include: {
+          memberships: {
+            where: { status: "active" },
+            include: { tenant: true },
+          },
+        },
+      });
+    }
+  }
+
+  if (!user) {
     throw new AppError("UNAUTHORIZED", "Authentication required", 401);
   }
 
-  const session = await getSessionByToken(token);
-  if (!session) {
-    throw new AppError("UNAUTHORIZED", "Session expired or invalid", 401);
-  }
-
-  const user = session.user;
-  const memberships = user.memberships;
+  let memberships = user.memberships;
 
   if (memberships.length === 0) {
-    throw new AppError("NO_MEMBERSHIP", "User has no active shop memberships", 403);
+    memberships = await ensureUserHasActiveTenant(
+      user.id,
+      user.email,
+      user.fullName || user.name
+    );
   }
 
   // Resolve active membership:
   // 1. If session has activeTenantId, find that membership
   // 2. Otherwise default to user's defaultTenantId or first active membership
-  let activeMembership = session.activeTenantId
+  let activeMembership = session?.activeTenantId
     ? memberships.find((m) => m.tenantId === session.activeTenantId)
     : undefined;
 
@@ -103,7 +212,7 @@ export async function getRequestContext(
     userEmail: user.email ?? "",
     userFullName: user.fullName ?? user.name ?? "",
     isSuperAdmin: Boolean((user as any).isSuperAdmin),
-    sessionId: session.id,
+    sessionId: session?.id ?? `nextauth-${user.id}`,
     tenantId: activeMembership.tenantId,
     role: activeMembership.role,
     storeIds: activeMembership.storeIds,

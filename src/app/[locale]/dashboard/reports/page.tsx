@@ -1,7 +1,8 @@
 import React from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/server/db/prisma";
-import { getRequestContext } from "@/server/auth/context";
+import { getRequestContext, type RequestContext } from "@/server/auth/context";
 import {
   FileText,
   DollarSign,
@@ -16,7 +17,12 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
-  const ctx = await getRequestContext();
+  let ctx: RequestContext;
+  try {
+    ctx = await getRequestContext();
+  } catch {
+    redirect("/login");
+  }
   const tenantId = ctx.tenantId;
 
   // 1. Get today's start
@@ -24,18 +30,20 @@ export default async function ReportsPage() {
   startOfDay.setHours(0, 0, 0, 0);
 
   // 2. Query today's sales
-  const todaySales = await prisma.sale.findMany({
-    where: {
-      tenantId,
-      status: "completed",
-      completedAt: { gte: startOfDay },
-    },
-    include: {
-      payments: true,
-      items: true,
-    },
-    orderBy: { completedAt: "desc" },
-  });
+  const todaySales = await prisma.sale
+    .findMany({
+      where: {
+        tenantId,
+        status: "completed",
+        completedAt: { gte: startOfDay },
+      },
+      include: {
+        payments: true,
+        items: true,
+      },
+      orderBy: { completedAt: "desc" },
+    })
+    .catch(() => []);
 
   // Calculate totals
   let totalMad = 0;

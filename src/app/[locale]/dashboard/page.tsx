@@ -1,16 +1,14 @@
 import React from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/server/db/prisma";
-import { getRequestContext } from "@/server/auth/context";
+import { getRequestContext, type RequestContext } from "@/server/auth/context";
 import {
   TrendingUp,
   ShoppingBag,
   Package,
   Users,
-  CreditCard,
-  AlertTriangle,
   ArrowRight,
-  Plus,
   FileSpreadsheet,
 } from "lucide-react";
 import { DashboardOnboardingTrigger } from "@/components/dashboard/DashboardOnboardingTrigger";
@@ -19,46 +17,65 @@ import type { StoreBusinessType } from "@/client/store/usePosStore";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardOverviewPage() {
-  const ctx = await getRequestContext();
+  let ctx: RequestContext;
+  try {
+    ctx = await getRequestContext();
+  } catch (err) {
+    console.warn("[DashboardOverviewPage] Redirecting unauthenticated request to /login:", err);
+    redirect("/login");
+  }
+
   const tenantId = ctx.tenantId;
 
-  // 1. Fetch counts & stats + workspace onboarding profile
-  const [productsCount, salesCount, customersCount, workspaceRecord] = await Promise.all([
-    prisma.product.count({ where: { tenantId } }),
-    prisma.sale.count({ where: { tenantId, status: "completed" } }),
-    prisma.customer.count({ where: { tenantId } }),
-    prisma.idempotencyRecord
-      .findUnique({
-        where: {
-          tenantId_scope_key: {
-            tenantId,
-            scope: "workspace_config",
-            key: "store_profile",
+  // 1. Fetch counts & stats + workspace onboarding profile (with defensive fallbacks)
+  const [productsCount, salesCount, customersCount, workspaceRecord, salesAgg] =
+    await Promise.all([
+      prisma.product.count({ where: { tenantId } }).catch(() => 0),
+      prisma.sale.count({ where: { tenantId, status: "completed" } }).catch(() => 0),
+      prisma.customer.count({ where: { tenantId } }).catch(() => 0),
+      prisma.idempotencyRecord
+        .findUnique({
+          where: {
+            tenantId_scope_key: {
+              tenantId,
+              scope: "workspace_config",
+              key: "store_profile",
+            },
           },
-        },
-      })
-      .catch(() => null),
-  ]);
+        })
+        .catch(() => null),
+      prisma.sale
+        .aggregate({
+          where: { tenantId, status: "completed" },
+          _sum: { grandTotal: true },
+        })
+        .catch(() => ({ _sum: { grandTotal: null } })),
+    ]);
 
-  const workspacePayload = (workspaceRecord?.responseBody as Record<string, any>) || {};
-  const currentStoreType = (workspacePayload.storeType as StoreBusinessType) || "grocery";
-  const shouldAutoOpenOnboarding =
+  const workspacePayload =
+    workspaceRecord?.responseBody && typeof workspaceRecord.responseBody === "object"
+      ? (workspaceRecord.responseBody as Record<string, unknown>)
+      : {};
+
+  const validStoreTypes: StoreBusinessType[] = [
+    "grocery",
+    "restaurant",
+    "fashion",
+    "electronics",
+  ];
+  const rawStoreType = String(workspacePayload.storeType || "grocery") as StoreBusinessType;
+  const currentStoreType: StoreBusinessType = validStoreTypes.includes(rawStoreType)
+    ? rawStoreType
+    : "grocery";
+
+  const shouldAutoOpenOnboarding = Boolean(
     workspacePayload.onboardingCompleted === false ||
-    (!workspaceRecord && productsCount === 0);
+      (!workspaceRecord && Number(productsCount) === 0)
+  );
 
-  // 2. Sum of sales
-  const salesAgg = await prisma.sale.aggregate({
-    where: { tenantId, status: "completed" },
-    _sum: { grandTotal: true },
-  });
-  const totalSalesMad = Number(salesAgg._sum.grandTotal || 0).toFixed(2);
-
-  // 3. Low stock alerts (< 5 items)
-  const lowStockProducts = await prisma.product.findMany({
-    where: { tenantId, trackStock: true },
-    include: { stockLevels: true },
-    take: 5,
-  });
+  const totalSalesMad = Number(salesAgg?._sum?.grandTotal || 0).toFixed(2);
+  const safeDisplayName = String(ctx.activeTenant?.displayName || "Tableau de Bord");
+  const safeLegalName = String(ctx.activeTenant?.legalName || "Commerce de détail");
 
   return (
     <div className="space-y-8 select-none">
@@ -66,16 +83,16 @@ export default async function DashboardOverviewPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-900 pb-6">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight">
-            {ctx.activeTenant?.displayName || "Tableau de Bord"}
+            {safeDisplayName}
           </h1>
           <p className="text-xs text-zinc-400 mt-1 font-mono">
-            {ctx.activeTenant?.legalName || "Commerce de détail"} • Devise : MAD (Dirham Marocain)
+            {safeLegalName} • Devise : MAD (Dirham Marocain)
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <DashboardOnboardingTrigger
-            initialShopName={ctx.activeTenant?.displayName || ""}
+            initialShopName={safeDisplayName}
             autoOpen={shouldAutoOpenOnboarding}
             currentStoreType={currentStoreType}
           />

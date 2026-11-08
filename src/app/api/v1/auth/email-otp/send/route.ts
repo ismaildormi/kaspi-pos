@@ -48,23 +48,16 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Construct Magic Login Link
-    const hostHeader = req.headers.get("host");
-    const proto = req.headers.get("x-forwarded-proto") || "http";
-    const origin = hostHeader ? `${proto}://${hostHeader}` : (process.env.NEXTAUTH_URL || "http://localhost:3001");
-    const magicLink = `${origin}/ar/login?email=${encodeURIComponent(email)}&code=${code}&purpose=${purpose}`;
-
-    // Dispatch email
+    // Dispatch email with native OTP subject format so Gmail renders "Copy code" chip
     const subject =
       purpose === "reset"
-        ? `رمز إعادة تعيين كلمة المرور - KASPI POS: ${code}`
-        : `رمز الدخول إلى KASPI POS: ${code}`;
+        ? `رمز إعادة تعيين كلمة المرور KASPI POS: ${code} • Reset code: ${code}`
+        : `رمز التحقق KASPI POS: ${code} • Your verification code is ${code}`;
 
     const sendResult = await sendKaspiEmail({
       to: email,
       subject,
       code,
-      magicLink,
       type: purpose === "reset" ? "password_reset" : "login_otp",
     });
 

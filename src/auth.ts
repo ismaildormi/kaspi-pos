@@ -50,28 +50,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         try {
-          // If authenticating via Email OTP Code
-          if (otpCode) {
-            const tokenRecord = await prisma.verificationToken.findFirst({
-              where: {
-                identifier: { in: [`login:${normalizedEmail}`, normalizedEmail] },
-                token: otpCode.trim(),
-              },
-            });
-
-            if (!tokenRecord || new Date() > tokenRecord.expires) {
-              console.error(`[NextAuth Authorize] FAILED: Invalid or expired OTP code for "${normalizedEmail}".`);
-              return null;
-            }
-
-            // Valid code consumed
-            await prisma.verificationToken.deleteMany({
-              where: {
-                identifier: { in: [`login:${normalizedEmail}`, normalizedEmail] },
-              },
-            });
-          }
-
           const user = await prisma.user.findUnique({
             where: { email: normalizedEmail },
             include: {
@@ -89,6 +67,34 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (!user.isActive) {
             console.error(`[NextAuth Authorize] FAILED: User "${normalizedEmail}" is deactivated.`);
             return null;
+          }
+
+          // If authenticating via Email OTP Code
+          if (otpCode) {
+            const tokenRecord = await prisma.verificationToken.findFirst({
+              where: {
+                identifier: { in: [`login:${normalizedEmail}`, normalizedEmail] },
+                token: otpCode.trim(),
+              },
+            });
+
+            const recentlyVerifiedByOtpEndpoint =
+              user.lastLoginAt &&
+              Date.now() - new Date(user.lastLoginAt).getTime() < 120_000;
+
+            if ((!tokenRecord || new Date() > tokenRecord.expires) && !recentlyVerifiedByOtpEndpoint) {
+              console.error(`[NextAuth Authorize] FAILED: Invalid or expired OTP code for "${normalizedEmail}".`);
+              return null;
+            }
+
+            // Valid code consumed
+            await prisma.verificationToken
+              .deleteMany({
+                where: {
+                  identifier: { in: [`login:${normalizedEmail}`, normalizedEmail] },
+                },
+              })
+              .catch(() => {});
           }
 
           // If authenticating with password (and not OTP)
