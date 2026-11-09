@@ -12,7 +12,7 @@ const SetupOnboardingSchema = z.object({
   shopName: z.string().min(2).optional(),
   currency: z.enum(["MAD", "EUR", "USD", "SAR", "AED", "TRY"]).default("MAD"),
   receiptLanguage: z.enum(["ar", "fr", "en", "tr", "es", "de"]).default("ar"),
-  seedStarterCatalog: z.boolean().default(true),
+  seedStarterCatalog: z.boolean().default(false),
 });
 
 interface StarterProductTemplate {
@@ -347,80 +347,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Seed industry-tailored starter products if requested and catalog is empty (or upsert by SKU)
-    let seededProductsCount = 0;
-    if (seedStarterCatalog) {
-      const templates = INDUSTRY_STARTER_CATALOGS[storeType] || [];
-      for (const tpl of templates) {
-        const cleanCategory = tpl.category.includes(" • ")
-          ? (receiptLanguage === "ar" ? tpl.category.split(" • ")[0].trim() : (tpl.category.split(" • ")[1] || tpl.category).trim())
-          : tpl.category;
-        const cleanName = tpl.name.includes(" • ")
-          ? (receiptLanguage === "ar" ? tpl.name.split(" • ")[0].trim() : (tpl.name.split(" • ")[1] || tpl.name).trim())
-          : tpl.name;
-
-        let category = await prisma.category.findFirst({
-          where: {
-            tenantId: ctx.tenantId,
-            name: { equals: cleanCategory, mode: "insensitive" },
-          },
-        });
-        if (!category) {
-          category = await prisma.category.create({
-            data: {
-              tenantId: ctx.tenantId,
-              name: cleanCategory,
-            },
-          });
-        }
-
-        const existingProd = await prisma.product.findFirst({
-          where: { tenantId: ctx.tenantId, sku: tpl.sku },
-        });
-
-        if (!existingProd) {
-          const createdProd = await prisma.product.create({
-            data: {
-              tenantId: ctx.tenantId,
-              categoryId: category.id,
-              name: cleanName,
-              sku: tpl.sku,
-              barcode: tpl.barcode,
-              description: tpl.description || null,
-              unit: tpl.unit,
-              salePrice: toPrismaDecimal(toDecimal(tpl.salePrice)),
-              costPrice: toPrismaDecimal(toDecimal(tpl.costPrice)),
-              taxRate: toPrismaDecimal(toDecimal("20.00")),
-              trackStock: true,
-              isActive: true,
-            },
-          });
-
-          await prisma.stockLevel
-            .upsert({
-              where: {
-                tenantId_storeId_productId: {
-                  tenantId: ctx.tenantId,
-                  storeId: store.id,
-                  productId: createdProd.id,
-                },
-              },
-              update: {
-                quantity: toPrismaQtyDecimal(toDecimal(tpl.stockQty)),
-              },
-              create: {
-                tenantId: ctx.tenantId,
-                storeId: store.id,
-                productId: createdProd.id,
-                quantity: toPrismaQtyDecimal(toDecimal(tpl.stockQty)),
-              },
-            })
-            .catch(() => {});
-
-          seededProductsCount++;
-        }
-      }
-    }
+    // 5. Strict Zero-State: Do not auto-seed fake starter products (guarantees 100% clean account)
+    const seededProductsCount = 0;
 
     return jsonOk({
       workspaceProfile,

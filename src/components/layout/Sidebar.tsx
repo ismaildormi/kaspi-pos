@@ -67,6 +67,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
         {isSuperAdmin && (
           <Link
             href={localizeHref("/admin")}
+            prefetch={true}
             onClick={onNavigate}
             className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-bold transition mb-2 border ${
               pathname.includes("/admin")
@@ -97,6 +98,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
             <Link
               key={item.href}
               href={targetHref}
+              prefetch={true}
               onClick={onNavigate}
               className={`flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition ${
                 isActive

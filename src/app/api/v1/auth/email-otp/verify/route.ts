@@ -141,8 +141,8 @@ export async function POST(req: NextRequest) {
       lastSeenAt: new Date().toISOString(),
     }).catch(() => {});
 
-    // Automatically send Welcome & Successful Sign-In Email asynchronously (non-blocking)
-    sendWelcomeEmail({
+    // Guaranteed Delivery: Await Welcome & Successful Sign-In Email before closing request
+    await sendWelcomeEmail({
       to: user.email ?? email,
       userName: user.fullName || user.name || (email.split("@")[0] ?? "Merchant"),
       storeName: memberships[0]?.tenant?.displayName || "متجري",

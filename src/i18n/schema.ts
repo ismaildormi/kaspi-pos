@@ -163,6 +163,7 @@ export interface TranslationSchema {
     aiStudio: string;
     searchPlaceholder: string;
     allCategories: string;
+    category: string;
     sku: string;
     barcode: string;
     price: string;
@@ -173,6 +174,22 @@ export interface TranslationSchema {
     noProducts: string;
     newProductTitle: string;
     editProductTitle: string;
+    productsCount: string;
+    loadingCatalog: string;
+    noProductsFound: string;
+    noProductsSub: string;
+    noPhoto: string;
+    updating: string;
+    generateAiImage: string;
+    changeImage: string;
+    editPrice: string;
+    printBarcodeLabel: string;
+    priceTtc: string;
+    costPrice: string;
+    salePrice: string;
+    initialStock: string;
+    createSuccess: string;
+    createModalTitle: string;
   };
   inventory: {
     title: string;
@@ -188,6 +205,16 @@ export interface TranslationSchema {
     currentQty: string;
     reorderLevel: string;
     status: string;
+    aiAnticipationTitle: string;
+    velocityModel: string;
+    velocitySubtitle: string;
+    optimalStockBanner: string;
+    realtimeLevels: string;
+    trackedItemsCount: string;
+    today: string;
+    inDays: string;
+    reorderAdvice: string;
+    units: string;
   };
   customers: {
     title: string;
@@ -201,6 +228,36 @@ export interface TranslationSchema {
     loyaltyPoints: string;
     settleCredit: string;
     noCustomers: string;
+    totalCustomers: string;
+    totalActiveCredits: string;
+    loyaltyPointsAccumulated: string;
+    customerName: string;
+    ice: string;
+    currentCredit: string;
+    karneActions: string;
+    unlimited: string;
+    loadingCustomers: string;
+    noCustomersRegistered: string;
+    karneCollect: string;
+    karneRecord: string;
+    modalTitle: string;
+    fullNameLabel: string;
+    phoneLabel: string;
+    iceLabel: string;
+    creditLimitLabel: string;
+    submitting: string;
+    submitCustomer: string;
+    ledgerTitle: string;
+    currentBalance: string;
+    operationType: string;
+    paymentCollect: string;
+    newCharge: string;
+    amountMad: string;
+    notes: string;
+    recordOperation: string;
+    historyTitle: string;
+    noHistory: string;
+    backPos: string;
   };
   suppliers: {
     title: string;
@@ -254,6 +311,12 @@ export interface TranslationSchema {
     scanner: string;
     security: string;
     saveSuccess: string;
+    bankRibLabel: string;
+    bankNameLabel: string;
+    bankRibNumberLabel: string;
+    saveBtn: string;
+    saving: string;
+    tpeSettings: string;
   };
   support: {
     title: string;
@@ -466,13 +529,14 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       loadingCatalog: "جاري تحميل الكتالوج...",
     },
     products: {
-      title: "إدارة المنتجات",
-      subtitle: "إدارة قائمة المنتجات والأسعار والمخزون",
+      title: "كتالوج المنتجات",
+      subtitle: "إدارة تشكيلة المنتجات، الباركود، والأسعار الشاملة للضريبة",
       addProduct: "إضافة منتج",
       importExport: "استيراد / تصدير",
       aiStudio: "استوديو الذكاء الاصطناعي",
       searchPlaceholder: "ابحث بالاسم، SKU أو الباركود...",
       allCategories: "جميع الأصناف",
+      category: "التصنيف",
       sku: "رمز المنتج (SKU)",
       barcode: "الباركود",
       price: "سعر البيع",
@@ -483,27 +547,53 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       noProducts: "لا توجد منتجات مسجلة حالياً",
       newProductTitle: "إضافة منتج جديد",
       editProductTitle: "تعديل المنتج",
+      productsCount: "منتجات",
+      loadingCatalog: "جاري تحميل كتالوج المنتجات...",
+      noProductsFound: "لم يتم العثور على أي منتج",
+      noProductsSub: "استورد ملف CSV أو أضف أول منتج إلى متجرك للبدء.",
+      noPhoto: "بدون صورة",
+      updating: "جاري التحديث...",
+      generateAiImage: "توليد صورة بالذكاء الاصطناعي",
+      changeImage: "تغيير الصورة",
+      editPrice: "تعديل الثمن",
+      printBarcodeLabel: "طباعة لاصق الباركود (40x30mm)",
+      priceTtc: "السعر شامل الضريبة",
+      costPrice: "سعر التكلفة",
+      salePrice: "سعر البيع",
+      initialStock: "المخزون الأولي",
+      createSuccess: "تمت إضافة المنتج بنجاح!",
+      createModalTitle: "إضافة منتج جديد إلى الكتالوج",
     },
     inventory: {
       title: "المخزون والجرد",
-      subtitle: "متابعة مستويات المخزون وحركات الإدخال والإخراج",
+      subtitle: "متابعة مستويات المخزون في الوقت الفعلي والتنبؤ بالخصاص",
       stockValue: "قيمة المخزون الإجمالية",
       criticalAlerts: "تنبيهات المخزون الحرج",
       lowStock: "مخزون منخفض",
       outOfStock: "نفاد المخزون",
       healthyStock: "مخزون متوفر",
-      adjustStock: "تعديل المخزون",
+      adjustStock: "تسوية وجرد المخزون",
       auditLog: "سجل العمليات",
       productName: "اسم المنتج",
       currentQty: "الكمية الحالية",
       reorderLevel: "حد إعادة الطلب",
       status: "حالة المخزون",
+      aiAnticipationTitle: "التنبؤ الذكي بالخصاص ونفاذ المخزون",
+      velocityModel: "نموذج استهلاك 14 يوماً",
+      velocitySubtitle: "توقعات محسوبة تلقائياً بناءً على وتيرة المبيعات الحقيقية بالصندوق",
+      optimalStockBanner: "✨ جميع مستويات المخزون مثالية. لا توجد أي مخاطر نفاذ خلال 10 أيام.",
+      realtimeLevels: "مستويات المخزون في الوقت الفعلي",
+      trackedItemsCount: "منتج قيد التتبع",
+      today: "اليوم",
+      inDays: "خلال {days} أيام",
+      reorderAdvice: "اقتراح إعادة الطلب :",
+      units: "وحدات",
     },
     customers: {
       title: "الزبائن والكريدي",
       subtitle: "إدارة حسابات الزبائن وسجل الديون والولاء",
       addCustomer: "إضافة زبون جديد",
-      searchPlaceholder: "ابحث باسم الزبون أو الهاتف أو ICE...",
+      searchPlaceholder: "البحث بالاسم، رقم الهاتف أو المعرف الضريبي (ICE)...",
       name: "اسم الزبون",
       phone: "رقم الهاتف",
       creditBalance: "رصيد الكريدي الحالي",
@@ -511,6 +601,36 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       loyaltyPoints: "نقاط الولاء",
       settleCredit: "تسديد دفعة",
       noCustomers: "لا يوجد زبائن مسجلون",
+      totalCustomers: "إجمالي عدد العملاء",
+      totalActiveCredits: "إجمالي ديون الكريديات الجارية",
+      loyaltyPointsAccumulated: "مجموع نقاط الوفاء المكتسبة",
+      customerName: "اسم العميل",
+      ice: "ICE",
+      currentCredit: "الرصيد المدين (MAD)",
+      karneActions: "إجراءات الكريديات",
+      unlimited: "غير محدود",
+      loadingCustomers: "جاري تحميل العملاء...",
+      noCustomersRegistered: "لا يوجد أي عميل مسجل حالياً.",
+      karneCollect: "تحصيل / الدفتر",
+      karneRecord: "دفتر الكريديات",
+      modalTitle: "إضافة عميل جديد",
+      fullNameLabel: "الاسم الكامل / الصفة القانونية *",
+      phoneLabel: "رقم الهاتف (GSM)",
+      iceLabel: "رقم المعرف الموحد للمقاولة (ICE)",
+      creditLimitLabel: "سقف الائتمان المسموح به (درهم)",
+      submitting: "جاري الحفظ...",
+      submitCustomer: "إضافة العميل",
+      ledgerTitle: "دفتر الكريديات (كارني)",
+      currentBalance: "الرصيد الحالي",
+      operationType: "نوع العملية",
+      paymentCollect: "تسديد دفعة (تقليص الدين)",
+      newCharge: "إضافة دين جديد (كريديات)",
+      amountMad: "المبلغ (MAD)",
+      notes: "ملاحظات أو رقم الوصل",
+      recordOperation: "تسجيل العملية في الدفتر",
+      historyTitle: "سجل المعاملات السابقة",
+      noHistory: "لا توجد معاملات مسجلة في الدفتر بعد.",
+      backPos: "رجوع (نقطة البيع)",
     },
     suppliers: {
       title: "الموردون",
@@ -564,6 +684,12 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       scanner: "ماسح الباركود",
       security: "الأمان والمفاتيح",
       saveSuccess: "تم حفظ الإعدادات بنجاح",
+      bankRibLabel: "الحساب البنكي للتسوية واستقبال الأموال (RIB المغرب)",
+      bankNameLabel: "اسم البنك",
+      bankRibNumberLabel: "رقم الحساب البنكي (24 رقماً)",
+      saveBtn: "حفظ التغييرات",
+      saving: "جاري الحفظ...",
+      tpeSettings: "إعدادات جهاز الدفع الإلكتروني (TPE CMI)",
     },
     support: {
       title: "الدعم والمساعدة",
@@ -774,13 +900,14 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       loadingCatalog: "Chargement du catalogue...",
     },
     products: {
-      title: "Gestion des Produits",
-      subtitle: "Gérez votre catalogue de vente, prix et niveaux de stock",
-      addProduct: "Ajouter un produit",
+      title: "Catalogue Produits",
+      subtitle: "Gérez votre assortiment, codes-barres et tarification TTC",
+      addProduct: "Nouveau Produit",
       importExport: "Importer / Exporter",
       aiStudio: "Studio IA",
       searchPlaceholder: "Rechercher par nom, SKU ou code-barres...",
       allCategories: "Toutes les catégories",
+      category: "Catégorie",
       sku: "Référence (SKU)",
       barcode: "Code-barres",
       price: "Prix de vente",
@@ -791,9 +918,25 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       noProducts: "Aucun produit dans le catalogue",
       newProductTitle: "Nouveau produit",
       editProductTitle: "Modifier le produit",
+      productsCount: "Produits",
+      loadingCatalog: "Chargement du catalogue produits...",
+      noProductsFound: "Aucun produit trouvé",
+      noProductsSub: "Importez un fichier CSV ou ajoutez votre premier produit pour démarrer.",
+      noPhoto: "Aucune photo",
+      updating: "Mise à jour...",
+      generateAiImage: "Générer image IA",
+      changeImage: "Changer la photo",
+      editPrice: "Modifier le prix",
+      printBarcodeLabel: "Imprimer étiquette code-barres (40x30mm)",
+      priceTtc: "Prix TTC",
+      costPrice: "Prix d'achat",
+      salePrice: "Prix de vente",
+      initialStock: "Stock initial",
+      createSuccess: "Produit ajouté au catalogue avec succès !",
+      createModalTitle: "Ajouter un produit au catalogue",
     },
     inventory: {
-      title: "Stocks & Audit",
+      title: "Gestion des Stocks & Audit",
       subtitle: "Suivez les niveaux de stock, mouvements et alertes de réapprovisionnement",
       stockValue: "Valeur Totale du Stock",
       criticalAlerts: "Alertes Stocks Critiques",
@@ -802,10 +945,20 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       healthyStock: "Stock Disponible",
       adjustStock: "Ajuster le Stock",
       auditLog: "Journal d'Audit",
-      productName: "Nom de l'article",
-      currentQty: "Quantité Actuelle",
-      reorderLevel: "Seuil d'Alerte",
+      productName: "Produit",
+      currentQty: "Quantité en Stock",
+      reorderLevel: "Seuil de Réappro",
       status: "Statut",
+      aiAnticipationTitle: "Anticipation Prédictive IA des Ruptures de Stock",
+      velocityModel: "Modèle Vélocité 14j",
+      velocitySubtitle: "Prévisions calculées en continu d'après le rythme réel en caisse",
+      optimalStockBanner: "✨ Tous vos stocks sont à des niveaux optimaux. Aucune rupture imminente sous 10 jours.",
+      realtimeLevels: "Niveaux de Stock en Temps Réel",
+      trackedItemsCount: "Articles Suivis",
+      today: "Aujourd'hui",
+      inDays: "Dans {days}j",
+      reorderAdvice: "Conseil Réappro :",
+      units: "unités",
     },
     customers: {
       title: "Clients & Krediat",
@@ -819,6 +972,36 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       loyaltyPoints: "Points de Fidélité",
       settleCredit: "Régler une Dette",
       noCustomers: "Aucun client enregistré",
+      totalCustomers: "Nombre total de clients",
+      totalActiveCredits: "Total Crédits en Cours (Krediat)",
+      loyaltyPointsAccumulated: "Points de Fidélité Cumulés",
+      customerName: "Nom du Client",
+      ice: "ICE",
+      currentCredit: "Crédit Actuel (MAD)",
+      karneActions: "Actions Karné",
+      unlimited: "Illimité",
+      loadingCustomers: "Chargement des clients...",
+      noCustomersRegistered: "Aucun client enregistré pour l'instant.",
+      karneCollect: "Encaisser / Karné",
+      karneRecord: "Carnet",
+      modalTitle: "Ajouter un Client",
+      fullNameLabel: "Nom complet / Raison Sociale *",
+      phoneLabel: "Téléphone (GSM)",
+      iceLabel: "Numéro ICE (Si société)",
+      creditLimitLabel: "Plafond Crédit Autorisé (DH)",
+      submitting: "Enregistrement...",
+      submitCustomer: "Ajouter le client",
+      ledgerTitle: "Carnet de Crédit (Karné)",
+      currentBalance: "Solde Actuel",
+      operationType: "Type d'opération",
+      paymentCollect: "Règlement / Remboursement",
+      newCharge: "Nouveau crédit (Charge)",
+      amountMad: "Montant (MAD)",
+      notes: "Notes ou Référence",
+      recordOperation: "Enregistrer l'opération",
+      historyTitle: "Historique des mouvements",
+      noHistory: "Aucun mouvement enregistré pour l'instant.",
+      backPos: "Retour (POS)",
     },
     suppliers: {
       title: "Fournisseurs",
@@ -872,6 +1055,12 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       scanner: "Lecteur Code-Barres",
       security: "Sécurité & Clés API",
       saveSuccess: "Paramètres enregistrés avec succès",
+      bankRibLabel: "Coordonnées Bancaires & RIB de Règlement (Maroc)",
+      bankNameLabel: "Banque du Propriétaire",
+      bankRibNumberLabel: "RIB Bancaire (24 Chiffres)",
+      saveBtn: "Enregistrer les modifications",
+      saving: "Enregistrement...",
+      tpeSettings: "Paramètres TPE CMI",
     },
     support: {
       title: "Support & Assistance",
@@ -1082,13 +1271,14 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       loadingCatalog: "Loading catalog...",
     },
     products: {
-      title: "Product Management",
+      title: "Product Catalog",
       subtitle: "Manage catalog, prices, categories, and inventory stock",
       addProduct: "Add Product",
       importExport: "Import / Export",
       aiStudio: "AI Studio",
       searchPlaceholder: "Search by product name, SKU or barcode...",
       allCategories: "All Categories",
+      category: "Category",
       sku: "SKU Reference",
       barcode: "Barcode",
       price: "Sale Price",
@@ -1099,6 +1289,22 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       noProducts: "No products in catalog",
       newProductTitle: "New Product",
       editProductTitle: "Edit Product",
+      productsCount: "Products",
+      loadingCatalog: "Loading product catalog...",
+      noProductsFound: "No products found",
+      noProductsSub: "Import a CSV file or add your first product to get started.",
+      noPhoto: "No photo",
+      updating: "Updating...",
+      generateAiImage: "Generate AI Image",
+      changeImage: "Change Photo",
+      editPrice: "Edit Price",
+      printBarcodeLabel: "Print Barcode Label (40x30mm)",
+      priceTtc: "Price (incl. VAT)",
+      costPrice: "Cost Price",
+      salePrice: "Sale Price",
+      initialStock: "Initial Stock",
+      createSuccess: "Product added to catalog successfully!",
+      createModalTitle: "Add Product to Catalog",
     },
     inventory: {
       title: "Stock & Audit",
@@ -1110,10 +1316,20 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       healthyStock: "In Stock",
       adjustStock: "Adjust Stock",
       auditLog: "Audit Log",
-      productName: "Item Name",
-      currentQty: "Current Quantity",
+      productName: "Product",
+      currentQty: "Current Stock",
       reorderLevel: "Reorder Alert Level",
       status: "Status",
+      aiAnticipationTitle: "AI Predictive Stockout Anticipation",
+      velocityModel: "14-Day Velocity Model",
+      velocitySubtitle: "Continuous forecasts based on real checkout sales velocity",
+      optimalStockBanner: "✨ All stock levels are optimal. No imminent stockouts detected within 10 days.",
+      realtimeLevels: "Real-Time Stock Levels",
+      trackedItemsCount: "Tracked Items",
+      today: "Today",
+      inDays: "In {days}d",
+      reorderAdvice: "Reorder Advice:",
+      units: "units",
     },
     customers: {
       title: "Customers & Credit",
@@ -1127,6 +1343,36 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       loyaltyPoints: "Loyalty Points",
       settleCredit: "Settle Debt",
       noCustomers: "No registered customers",
+      totalCustomers: "Total Customers",
+      totalActiveCredits: "Active Credit Total (Krediat)",
+      loyaltyPointsAccumulated: "Accumulated Loyalty Points",
+      customerName: "Customer Name",
+      ice: "ICE",
+      currentCredit: "Current Credit (MAD)",
+      karneActions: "Credit Ledger Actions",
+      unlimited: "Unlimited",
+      loadingCustomers: "Loading customers...",
+      noCustomersRegistered: "No registered customers yet.",
+      karneCollect: "Collect / Ledger",
+      karneRecord: "Ledger",
+      modalTitle: "Add Customer",
+      fullNameLabel: "Full Name / Legal Entity *",
+      phoneLabel: "Phone Number (GSM)",
+      iceLabel: "ICE Number (Company)",
+      creditLimitLabel: "Credit Limit (MAD)",
+      submitting: "Saving...",
+      submitCustomer: "Add Customer",
+      ledgerTitle: "Credit Ledger (Karné)",
+      currentBalance: "Current Balance",
+      operationType: "Operation Type",
+      paymentCollect: "Repayment (Reduce Debt)",
+      newCharge: "New Charge (Increase Debt)",
+      amountMad: "Amount (MAD)",
+      notes: "Notes or Reference",
+      recordOperation: "Record Transaction",
+      historyTitle: "Transaction History",
+      noHistory: "No transactions recorded yet.",
+      backPos: "Back to POS",
     },
     suppliers: {
       title: "Suppliers",
@@ -1180,6 +1426,12 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       scanner: "Barcode Scanner",
       security: "Security & API Keys",
       saveSuccess: "Settings saved successfully",
+      bankRibLabel: "Settlement Bank Account & RIB (Morocco)",
+      bankNameLabel: "Owner Bank Name",
+      bankRibNumberLabel: "Bank RIB (24 Digits)",
+      saveBtn: "Save Changes",
+      saving: "Saving...",
+      tpeSettings: "CMI POS Terminal Settings",
     },
     support: {
       title: "Support & Help",

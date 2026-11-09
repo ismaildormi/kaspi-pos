@@ -25,11 +25,14 @@ const MONO_STACK = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Cour
 const HIDDEN = "display:none;max-height:0;overflow:hidden;mso-hide:all;";
 
 export function getAppBaseUrl(): string {
-  return (
+  const url =
     process.env.APP_BASE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    "https://kaspi-pos.vercel.app"
-  ).replace(/\/+$/, "");
+    "https://kaspi-pos.vercel.app";
+  if (url.includes("127.0.0.1") || url.includes("localhost")) {
+    return "https://kaspi-pos.vercel.app";
+  }
+  return url.replace(/\/+$/, "");
 }
 
 export function escapeHtml(value: string): string {
@@ -217,12 +220,9 @@ function renderOnboardingStrip(lang: WelcomeLang): string {
 
 function renderLanguageBlock(
   lang: WelcomeLang,
-  activeLang: WelcomeLang,
   data: WelcomeEmailData
 ): string {
   const t = WELCOME_COPY[lang];
-  const isRtl = t.dir === "rtl";
-  const visibility = lang === activeLang ? "display:block;" : HIDDEN;
 
   const resolvedOwner =
     data.userName?.trim() ||
@@ -237,7 +237,7 @@ function renderLanguageBlock(
   )}&lang=${lang}&target=/${lang}/dashboard`;
 
   return `
-  <div class="wkp-b wkp-b-${lang}" dir="${t.dir}" lang="${lang}" style="${visibility}text-align:center;direction:${t.dir};">
+  <div class="wkp-b wkp-b-${lang}" dir="${t.dir}" lang="${lang}" style="text-align:center;direction:${t.dir};">
     <div style="font-family:${FONT_STACK};font-size:13px;font-weight:600;color:#52525b;margin-top:10px;">
       ${escapeHtml(t.subtitle)}
     </div>
@@ -297,7 +297,6 @@ function pillStyle(active: boolean): string {
     "font-weight:600",
     "text-decoration:none",
     "line-height:1.4",
-    "cursor:pointer",
   ].join(";");
 }
 
@@ -311,36 +310,10 @@ function renderLanguageSwitcher(
     return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="${pillStyle(active)}">${pillInner(lang, active)}</a>`;
   }).join("");
 
-  const labels = WELCOME_LANGS.map(
-    (lang) =>
-      `<label for="wkp-${lang}" class="wkp-l wkp-l-${lang}" style="${pillStyle(false)}">${pillInner(lang, false)}</label>`
-  ).join("");
-
   return `
   <div dir="ltr" style="margin-top:24px;padding-top:18px;border-top:1px solid #f4f4f5;text-align:center;">
     <div class="wkp-links">${links}</div>
-    <div class="wkp-tabs" style="${HIDDEN}">${labels}</div>
   </div>`;
-}
-
-function renderSwitcherCss(): string {
-  const perLang = WELCOME_LANGS.map(
-    (l) => `
-    #wkp-${l}:checked ~ .wkp-card .wkp-links { display:none !important; }
-    #wkp-${l}:checked ~ .wkp-card .wkp-tabs { display:block !important; max-height:none !important; overflow:visible !important; }
-    #wkp-${l}:checked ~ .wkp-card .wkp-b { display:none !important; }
-    #wkp-${l}:checked ~ .wkp-card .wkp-b-${l} { display:block !important; max-height:none !important; overflow:visible !important; }
-    #wkp-${l}:checked ~ .wkp-card .wkp-l-${l} { background-color:#09090b !important; border-color:#09090b !important; color:#ffffff !important; }
-    #wkp-${l}:checked ~ .wkp-card .wkp-l-${l} .wkp-badge { background-color:#ffffff !important; color:#09090b !important; }`
-  ).join("");
-
-  return `
-  <style>
-    .wkp-r { display:none !important; }
-    .wkp-tabs .wkp-l { background-color:#ffffff !important; border-color:#e5e7eb !important; color:#3f3f46 !important; }
-    .wkp-tabs .wkp-l .wkp-badge { background-color:#f4f4f5 !important; color:#52525b !important; }
-    ${perLang}
-  </style>`;
 }
 
 /* ------------------------------ Public Renderer ----------------------------- */
@@ -352,13 +325,6 @@ export function renderWelcomeEmailHtml(
   const lang = normalizeWelcomeLang(langOverride);
   const t = WELCOME_COPY[lang];
 
-  const radios = WELCOME_LANGS.map(
-    (l) =>
-      `<input type="radio" name="welcome_lang" id="wkp-${l}" class="wkp-r"${l === lang ? " checked" : ""} style="display:none;" />`
-  ).join("");
-
-  const blocks = WELCOME_LANGS.map((l) => renderLanguageBlock(l, lang, data)).join("");
-
   return `<!DOCTYPE html>
 <html lang="${lang}" dir="${t.dir}">
 <head>
@@ -368,17 +334,15 @@ export function renderWelcomeEmailHtml(
   <meta name="color-scheme" content="light only" />
   <meta name="supported-color-schemes" content="light" />
   <title>${escapeHtml(t.subject)}</title>
-  ${renderSwitcherCss()}
 </head>
 <body style="margin:0;padding:0;background-color:#f4f4f5;">
   <div style="${HIDDEN}font-size:1px;line-height:1px;color:#f4f4f5;opacity:0;">${escapeHtml(t.heroDescription)}</div>
   <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;">
     <tr>
       <td align="center" style="padding:32px 14px;">
-        ${radios}
         <div class="wkp-card" style="max-width:460px;margin:0 auto;background-color:#ffffff;border:1px solid #e5e7eb;border-radius:24px;padding:36px 26px 26px 26px;box-shadow:0 1px 2px rgba(16,24,40,0.04),0 12px 32px -8px rgba(16,24,40,0.12);">
           ${renderWordmark()}
-          ${blocks}
+          ${renderLanguageBlock(lang, data)}
           ${renderLanguageSwitcher(lang, data)}
         </div>
       </td>

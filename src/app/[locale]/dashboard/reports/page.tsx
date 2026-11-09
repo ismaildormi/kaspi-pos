@@ -142,9 +142,9 @@ export default async function ReportsPage({
       {/* Today's Transactions Table */}
       <div className="rounded-3xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
         <div className="p-5 border-b border-zinc-800 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white">Tickets & Ventes du Jour</h2>
+          <h2 className="text-sm font-bold text-white">{t.reports.dailySales}</h2>
           <span className="text-xs text-zinc-400 font-mono">
-            Mis à jour en direct
+            {t.nav.liveBadge}
           </span>
         </div>
 
@@ -152,18 +152,18 @@ export default async function ReportsPage({
           <table className="w-full text-start text-xs text-zinc-300">
             <thead className="bg-zinc-950 text-zinc-400 font-mono border-b border-zinc-800">
               <tr>
-                <th className="py-3 px-4 text-start font-semibold">N° Ticket</th>
-                <th className="py-3 px-4 text-start font-semibold">Heure</th>
-                <th className="py-3 px-4 text-start font-semibold">Articles</th>
-                <th className="py-3 px-4 text-start font-semibold">Mode de Règlement</th>
-                <th className="py-3 px-4 text-end font-semibold">Total Net</th>
+                <th className="py-3 px-4 text-start font-semibold">#</th>
+                <th className="py-3 px-4 text-start font-semibold">{t.common.date}</th>
+                <th className="py-3 px-4 text-start font-semibold">{t.pos.itemsCount}</th>
+                <th className="py-3 px-4 text-start font-semibold">{t.pos.paymentMethods}</th>
+                <th className="py-3 px-4 text-end font-semibold">{t.pos.total}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60 font-medium">
               {todaySales.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-8 text-center text-zinc-500">
-                    Aucune vente enregistrée aujourd&apos;hui.
+                    {t.dashboard.kpiTransactionsSub}
                   </td>
                 </tr>
               ) : (
@@ -176,11 +176,11 @@ export default async function ReportsPage({
                       {sale.completedAt ? new Date(sale.completedAt).toLocaleTimeString() : "—"}
                     </td>
                     <td className="py-3 px-4 text-zinc-300">
-                      {sale.items.length} articles
+                      {sale.items.length} {t.pos.itemsCount}
                     </td>
                     <td className="py-3 px-4">
                       <span className="font-mono text-[11px] uppercase text-zinc-400">
-                        {sale.payments.map((p) => p.method).join(", ") || "Espèces"}
+                        {sale.payments.map((p) => p.method).join(", ") || t.pos.cash}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-end font-mono font-bold text-white">

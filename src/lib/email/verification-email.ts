@@ -25,11 +25,14 @@ const MONO_STACK = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Cour
 const HIDDEN = "display:none;max-height:0;overflow:hidden;mso-hide:all;";
 
 export function getAppBaseUrl(): string {
-  return (
+  const url =
     process.env.APP_BASE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    "https://kaspi-pos.vercel.app"
-  ).replace(/\/+$/, "");
+    "https://kaspi-pos.vercel.app";
+  if (url.includes("127.0.0.1") || url.includes("localhost")) {
+    return "https://kaspi-pos.vercel.app";
+  }
+  return url.replace(/\/+$/, "");
 }
 
 export function escapeHtml(value: string): string {
@@ -110,16 +113,14 @@ function renderDigits(code: string): string {
 
 function renderLanguageBlock(
   lang: VerificationLang,
-  activeLang: VerificationLang,
   code: string,
   purpose: VerificationPurpose
 ): string {
   const t = VERIFICATION_COPY[lang];
   const copyUrl = buildVerifyCodeUrl({ code, lang, purpose, copy: true });
-  const visibility = lang === activeLang ? "display:block;" : HIDDEN;
 
   return `
-  <div class="kp-b kp-b-${lang}" dir="${t.dir}" lang="${lang}" style="${visibility}text-align:center;direction:${t.dir};">
+  <div class="kp-b kp-b-${lang}" dir="${t.dir}" lang="${lang}" style="text-align:center;direction:${t.dir};">
     <div style="font-family:${FONT_STACK};font-size:13px;font-weight:600;color:#52525b;margin-top:12px;">${escapeHtml(t.subtitle)}</div>
     ${renderBrandBadge()}
     <div style="font-family:${FONT_STACK};font-size:25px;font-weight:800;letter-spacing:-0.4px;color:#09090b;line-height:1.25;">${escapeHtml(t.heading[purpose])}</div>
@@ -156,7 +157,6 @@ function pillStyle(active: boolean): string {
     "font-weight:600",
     "text-decoration:none",
     "line-height:1.4",
-    "cursor:pointer",
   ].join(";");
 }
 
@@ -165,44 +165,17 @@ function renderLanguageSwitcher(
   code: string,
   purpose: VerificationPurpose
 ): string {
-  // Universal fallback: links (Gmail, Outlook, web clients)
+  // Clean static pills that link to the respective localized verify page
   const links = VERIFICATION_LANGS.map((lang) => {
     const active = lang === activeLang;
     const href = buildVerifyCodeUrl({ code, lang, purpose });
     return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="${pillStyle(active)}">${pillInner(lang, active)}</a>`;
   }).join("");
 
-  // Progressive enhancement: CSS radio tabs (shown only where :checked works)
-  const labels = VERIFICATION_LANGS.map(
-    (lang) =>
-      `<label for="kp-${lang}" class="kp-l kp-l-${lang}" style="${pillStyle(false)}">${pillInner(lang, false)}</label>`
-  ).join("");
-
   return `
   <div dir="ltr" style="margin-top:26px;padding-top:18px;border-top:1px solid #f4f4f5;text-align:center;">
     <div class="kp-links">${links}</div>
-    <div class="kp-tabs" style="${HIDDEN}">${labels}</div>
   </div>`;
-}
-
-function renderSwitcherCss(): string {
-  const perLang = VERIFICATION_LANGS.map(
-    (l) => `
-    #kp-${l}:checked ~ .kp-card .kp-links { display:none !important; }
-    #kp-${l}:checked ~ .kp-card .kp-tabs { display:block !important; max-height:none !important; overflow:visible !important; }
-    #kp-${l}:checked ~ .kp-card .kp-b { display:none !important; }
-    #kp-${l}:checked ~ .kp-card .kp-b-${l} { display:block !important; max-height:none !important; overflow:visible !important; }
-    #kp-${l}:checked ~ .kp-card .kp-l-${l} { background-color:#09090b !important; border-color:#09090b !important; color:#ffffff !important; }
-    #kp-${l}:checked ~ .kp-card .kp-l-${l} .kp-badge { background-color:#ffffff !important; color:#09090b !important; }`
-  ).join("");
-
-  return `
-  <style>
-    .kp-r { display:none !important; }
-    .kp-tabs .kp-l { background-color:#ffffff !important; border-color:#e5e7eb !important; color:#3f3f46 !important; }
-    .kp-tabs .kp-l .kp-badge { background-color:#f4f4f5 !important; color:#52525b !important; }
-    ${perLang}
-  </style>`;
 }
 
 /* ------------------------------ Public renderer ----------------------------- */
@@ -219,13 +192,6 @@ export function renderVerificationEmailHtml(options: VerificationEmailOptions): 
   const purpose = options.purpose ?? "login";
   const t = VERIFICATION_COPY[lang];
 
-  const radios = VERIFICATION_LANGS.map(
-    (l) =>
-      `<input type="radio" name="kp-lang" id="kp-${l}" class="kp-r"${l === lang ? " checked" : ""} style="display:none;" />`
-  ).join("");
-
-  const blocks = VERIFICATION_LANGS.map((l) => renderLanguageBlock(l, lang, code, purpose)).join("");
-
   return `<!DOCTYPE html>
 <html lang="${lang}" dir="${t.dir}">
 <head>
@@ -235,17 +201,15 @@ export function renderVerificationEmailHtml(options: VerificationEmailOptions): 
   <meta name="color-scheme" content="light only" />
   <meta name="supported-color-schemes" content="light" />
   <title>${escapeHtml(t.heading[purpose])}</title>
-  ${renderSwitcherCss()}
 </head>
 <body style="margin:0;padding:0;background-color:#f4f4f5;">
   <div style="${HIDDEN}font-size:1px;line-height:1px;color:#f4f4f5;opacity:0;">KASPI POS: ${code}</div>
   <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;">
     <tr>
       <td align="center" style="padding:32px 14px;">
-        ${radios}
         <div class="kp-card" style="max-width:440px;margin:0 auto;background-color:#ffffff;border:1px solid #e5e7eb;border-radius:28px;padding:36px 26px 26px 26px;box-shadow:0 1px 2px rgba(16,24,40,0.04),0 12px 32px -8px rgba(16,24,40,0.12);">
           ${renderWordmark()}
-          ${blocks}
+          ${renderLanguageBlock(lang, code, purpose)}
           ${renderLanguageSwitcher(lang, code, purpose)}
         </div>
       </td>

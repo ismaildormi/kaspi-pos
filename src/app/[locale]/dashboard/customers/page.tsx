@@ -190,7 +190,7 @@ export default function CustomersPage() {
               className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors flex items-center gap-1.5 text-xs font-semibold"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>{t.common.back} (POS)</span>
+              <span>{t.customers.backPos}</span>
             </Link>
             <div className="h-5 w-px bg-zinc-800" />
             <div className="flex items-center gap-2">
@@ -218,19 +218,19 @@ export default function CustomersPage() {
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="p-5 rounded-3xl bg-zinc-900 border border-zinc-800">
-            <span className="text-xs text-zinc-500 block mb-1">Nombre total de clients</span>
+            <span className="text-xs text-zinc-500 block mb-1">{t.customers.totalCustomers}</span>
             <span className="text-2xl font-black text-white font-mono">{customers.length}</span>
           </div>
 
           <div className="p-5 rounded-3xl bg-zinc-900 border border-zinc-800">
-            <span className="text-xs text-zinc-500 block mb-1">Total Crédits en Cours (Krediat)</span>
+            <span className="text-xs text-zinc-500 block mb-1">{t.customers.totalActiveCredits}</span>
             <span className="text-2xl font-black text-white font-mono">
               {totalCredit.toFixed(2)} MAD
             </span>
           </div>
 
           <div className="p-5 rounded-3xl bg-zinc-900 border border-zinc-800">
-            <span className="text-xs text-zinc-500 block mb-1">Points de Fidélité Cumulés</span>
+            <span className="text-xs text-zinc-500 block mb-1">{t.customers.loyaltyPointsAccumulated}</span>
             <span className="text-2xl font-black text-white font-mono">{totalPoints} pts</span>
           </div>
         </div>
@@ -242,7 +242,7 @@ export default function CustomersPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher par nom, téléphone ou ICE..."
+            placeholder={t.customers.searchPlaceholder}
             className="w-full h-11 ps-10 pe-4 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-medium"
           />
         </div>
@@ -253,26 +253,26 @@ export default function CustomersPage() {
             <table className="w-full text-start text-xs">
               <thead className="bg-zinc-950 text-zinc-400 border-b border-zinc-800 font-mono">
                 <tr>
-                  <th className="p-3.5 text-start">Nom du Client</th>
-                  <th className="p-3.5 text-start">Téléphone</th>
-                  <th className="p-3.5 text-start">ICE</th>
-                  <th className="p-3.5 text-end">Crédit Actuel (MAD)</th>
-                  <th className="p-3.5 text-end">Plafond Crédit</th>
-                  <th className="p-3.5 text-end">Points Fidélité</th>
-                  <th className="p-3.5 text-center">Actions Karné</th>
+                  <th className="p-3.5 text-start">{t.customers.customerName}</th>
+                  <th className="p-3.5 text-start">{t.customers.phone}</th>
+                  <th className="p-3.5 text-start">{t.customers.ice}</th>
+                  <th className="p-3.5 text-end">{t.customers.currentCredit}</th>
+                  <th className="p-3.5 text-end">{t.customers.creditLimit}</th>
+                  <th className="p-3.5 text-end">{t.customers.loyaltyPoints}</th>
+                  <th className="p-3.5 text-center">{t.customers.karneActions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60 font-medium">
                 {isLoading ? (
                   <tr>
                     <td colSpan={7} className="p-8 text-center text-zinc-500">
-                      Chargement des clients...
+                      {t.customers.loadingCustomers}
                     </td>
                   </tr>
                 ) : customers.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="p-8 text-center text-zinc-500">
-                      Aucun client enregistré pour l&apos;instant.
+                      {t.customers.noCustomersRegistered}
                     </td>
                   </tr>
                 ) : (
@@ -289,7 +289,7 @@ export default function CustomersPage() {
                         )}
                       </td>
                       <td className="p-3.5 text-end font-mono text-zinc-400">
-                        {c.creditLimit ? `${c.creditLimit.toFixed(2)} MAD` : "Illimité"}
+                        {c.creditLimit ? `${c.creditLimit.toFixed(2)} MAD` : t.customers.unlimited}
                       </td>
                       <td className="p-3.5 text-end font-mono text-zinc-300">
                         {c.loyaltyPoints ?? 0} pts
@@ -304,20 +304,20 @@ export default function CustomersPage() {
                             <Coins className="w-3 h-3" />
                             <span>
                               {c.currentCreditBalance > 0
-                                ? "Encaisser / Karné"
-                                : "Carnet"}
+                                ? t.customers.karneCollect
+                                : t.customers.karneRecord}
                             </span>
                           </button>
 
                           {c.currentCreditBalance > 0 && c.phone && (
                             <a
                               href={`https://wa.me/${c.phone.replace(/[^\d]/g, "")}?text=${encodeURIComponent(
-                                `Salam Si/Lalla ${c.name} 👋,\n\nRappel amical de votre commerce KASPI POS.\nVotre solde en cours sur le carnet de crédit (Karné / Krediat) est de : *${c.currentCreditBalance.toFixed(2)} MAD*.\nMerci de passer au magasin à votre convenance pour régulariser votre compte.\nبارك الله فيكم 🙏`
+                                `Salam Si/Lalla ${c.name},\nRappel: solde en cours Karné: *${c.currentCreditBalance.toFixed(2)} MAD*.\nKASPI POS`
                               )}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 text-[11px] font-mono transition"
-                              title="Envoyer rappel WhatsApp"
+                              title="WhatsApp"
                             >
                               <MessageSquare className="w-3 h-3" />
                               <span>WhatsApp</span>
@@ -339,7 +339,7 @@ export default function CustomersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4">
-              <h3 className="font-bold text-white text-base">Ajouter un Client</h3>
+              <h3 className="font-bold text-white text-base">{t.customers.modalTitle}</h3>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 cursor-pointer"
@@ -357,7 +357,7 @@ export default function CustomersPage() {
             <form onSubmit={handleCreateCustomer} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  Nom complet / Raison Sociale *
+                  {t.customers.fullNameLabel}
                 </label>
                 <input
                   type="text"
@@ -371,7 +371,7 @@ export default function CustomersPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  Téléphone (GSM)
+                  {t.customers.phoneLabel}
                 </label>
                 <input
                   type="tel"
@@ -384,7 +384,7 @@ export default function CustomersPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  Numéro ICE (Si société)
+                  {t.customers.iceLabel}
                 </label>
                 <input
                   type="text"
@@ -397,7 +397,7 @@ export default function CustomersPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  Plafond Crédit Autorisé (DH)
+                  {t.customers.creditLimitLabel}
                 </label>
                 <input
                   type="number"
@@ -415,14 +415,14 @@ export default function CustomersPage() {
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 text-zinc-400 hover:text-white text-xs font-semibold cursor-pointer"
                 >
-                  Annuler
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !name.trim()}
                   className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition disabled:opacity-40 cursor-pointer"
                 >
-                  {isSubmitting ? "Enregistrement..." : "Ajouter le client"}
+                  {isSubmitting ? t.customers.submitting : t.customers.submitCustomer}
                 </button>
               </div>
             </form>
@@ -437,10 +437,10 @@ export default function CustomersPage() {
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <div>
                 <h3 className="font-bold text-white text-base">
-                  Carnet de Crédit (Karné) • {activeCustomerForCredit.name}
+                  {t.customers.ledgerTitle} • {activeCustomerForCredit.name}
                 </h3>
                 <p className="text-xs text-zinc-400 font-mono mt-0.5">
-                  Solde Actuel:{" "}
+                  {t.customers.currentBalance}:{" "}
                   <span className="text-amber-400 font-extrabold">
                     {activeCustomerForCredit.currentCreditBalance.toFixed(2)} MAD
                   </span>
@@ -466,31 +466,31 @@ export default function CustomersPage() {
                 <button
                   type="button"
                   onClick={() => setCreditActionType("payment")}
-                  className={`py-2 rounded-lg text-xs font-bold transition ${
+                  className={`py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
                     creditActionType === "payment"
                       ? "bg-emerald-500 text-black"
                       : "text-zinc-400 hover:text-white"
                   }`}
                 >
-                  ✓ Encaisser Règlement (تسديد)
+                  ✓ {t.customers.paymentCollect}
                 </button>
                 <button
                   type="button"
                   onClick={() => setCreditActionType("charge")}
-                  className={`py-2 rounded-lg text-xs font-bold transition ${
+                  className={`py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
                     creditActionType === "charge"
                       ? "bg-amber-500 text-black"
                       : "text-zinc-400 hover:text-white"
                   }`}
                 >
-                  + Ajouter Dette (دين جديد)
+                  + {t.customers.newCharge}
                 </button>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                    Montant (MAD) *
+                    {t.customers.amountMad} *
                   </label>
                   <input
                     type="number"
@@ -498,19 +498,19 @@ export default function CustomersPage() {
                     required
                     value={creditAmount}
                     onChange={(e) => setCreditAmount(e.target.value)}
-                    placeholder="Ex: 150.00"
+                    placeholder="150.00"
                     className="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white font-mono font-bold focus:outline-none focus:border-white"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                    Note / Motif
+                    {t.customers.notes}
                   </label>
                   <input
                     type="text"
                     value={creditNotes}
                     onChange={(e) => setCreditNotes(e.target.value)}
-                    placeholder="Ex: Règlement espèce"
+                    placeholder="Règlement espèce"
                     className="w-full h-10 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-white"
                   />
                 </div>
@@ -522,25 +522,23 @@ export default function CustomersPage() {
                 className="w-full py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-black text-xs transition disabled:opacity-40 cursor-pointer"
               >
                 {savingCredit
-                  ? "Enregistrement..."
-                  : creditActionType === "payment"
-                  ? "Valider l'Encaissement du Règlement"
-                  : "Enregistrer le Crédit sur le Carnet"}
+                  ? t.customers.submitting
+                  : t.customers.recordOperation}
               </button>
             </form>
 
             {/* Credit Ledger History */}
             <div className="pt-3 border-t border-zinc-800 space-y-2">
               <h4 className="text-xs font-bold text-zinc-400 uppercase font-mono">
-                Historique des Opérations Karné
+                {t.customers.historyTitle}
               </h4>
               {loadingCredits ? (
                 <div className="text-xs text-zinc-500 py-4 text-center">
-                  Chargement de l&apos;historique...
+                  {t.customers.loadingCustomers}
                 </div>
               ) : creditHistory.length === 0 ? (
                 <div className="text-xs text-zinc-500 py-4 text-center">
-                  Aucune opération enregistrée sur ce carnet.
+                  {t.customers.noHistory}
                 </div>
               ) : (
                 <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">

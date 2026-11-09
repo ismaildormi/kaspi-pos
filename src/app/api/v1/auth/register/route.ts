@@ -176,8 +176,8 @@ export async function POST(req: NextRequest) {
       source: "registration",
     }).catch(() => {});
 
-    // Automatically send Welcome & Successful Sign-In Email asynchronously (non-blocking)
-    sendWelcomeEmail({
+    // Guaranteed Delivery: Await Welcome & Successful Sign-In Email before closing request
+    await sendWelcomeEmail({
       to: result.user.email ?? email,
       userName: result.user.fullName || fullName,
       storeName: result.tenant.displayName || shopName,

@@ -127,54 +127,54 @@ export default function TenantSupportPage() {
 
             <div>
               <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1">
-                Votre Nom / Magasin
+                {t.customers.fullNameLabel}
               </label>
               <input
                 type="text"
                 value={senderName}
                 onChange={(e) => setSenderName(e.target.value)}
-                placeholder="Ex: Youssef - Supermarché Atlas"
+                placeholder="Youssef"
                 className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-xs text-white focus:border-white focus:outline-none"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1">
-                Téléphone WhatsApp (pour réponse rapide)
+                {t.customers.phoneLabel}
               </label>
               <input
                 type="text"
                 value={senderPhone}
                 onChange={(e) => setSenderPhone(e.target.value)}
-                placeholder="Ex: +212 600-000000"
+                placeholder="+212 600-000000"
                 className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-xs text-white font-mono focus:border-white focus:outline-none"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1">
-                Sujet de la demande
+                {t.support.subject}
               </label>
               <input
                 type="text"
                 required
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="Ex: Configuration imprimante 80mm / Facturation"
+                placeholder={t.support.subject}
                 className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-xs text-white focus:border-white focus:outline-none"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1">
-                Message détaillé
+                {t.support.message}
               </label>
               <textarea
                 rows={4}
                 required
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Décrivez votre besoin ou problème technique..."
+                placeholder={t.support.message}
                 className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-xs text-white focus:border-white focus:outline-none"
               />
             </div>
@@ -185,7 +185,7 @@ export default function TenantSupportPage() {
               className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white py-3 text-xs font-bold text-black hover:bg-zinc-200 transition cursor-pointer disabled:opacity-50"
             >
               <Send className="h-3.5 w-3.5" />
-              {sending ? "Envoi en cours..." : "Envoyer au Super Admin"}
+              {sending ? t.common.loading : t.support.sendTicket}
             </button>
           </form>
         </div>
@@ -196,20 +196,20 @@ export default function TenantSupportPage() {
             <div className="p-5 border-b border-zinc-800 flex items-center justify-between">
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
-                Vos Messages & Réponses de l&apos;Admin
+                {t.support.myTickets}
               </h2>
               <span className="text-xs font-mono text-zinc-400">
-                {tickets.length} Tickets
+                {tickets.length}
               </span>
             </div>
 
             {loading ? (
               <div className="p-12 text-center text-xs text-zinc-500">
-                Chargement de vos tickets...
+                {t.common.loading}
               </div>
             ) : tickets.length === 0 ? (
               <div className="p-12 text-center text-xs text-zinc-500">
-                Aucun message envoyé pour le moment.
+                {t.support.noTickets}
               </div>
             ) : (
               <div className="divide-y divide-zinc-800/60">

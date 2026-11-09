@@ -170,7 +170,7 @@ export default function RegisterPage() {
           shopName,
           currency: "MAD",
           receiptLanguage: locale,
-          seedStarterCatalog: true,
+          seedStarterCatalog: false,
         }),
       }).catch(() => {});
 

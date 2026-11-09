@@ -40,7 +40,7 @@ export function StoreOnboardingModal({
   const [shopName, setShopName] = useState(initialShopName);
   const [currency, setCurrency] = useState("MAD");
   const [receiptLanguage, setReceiptLanguage] = useState("fr");
-  const [seedCatalog, setSeedCatalog] = useState(true);
+  const [seedCatalog, setSeedCatalog] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -267,22 +267,12 @@ export function StoreOnboardingModal({
               </div>
             </div>
 
-            {/* Starter Catalog Checkbox + Submit */}
+            {/* Clean Zero-State Notice + Submit */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
-              <label className="flex items-center gap-3 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={seedCatalog}
-                  onChange={(e) => setSeedCatalog(e.target.checked)}
-                  className="w-4 h-4 rounded accent-amber-500"
-                />
-                <div className="text-xs text-zinc-300 flex items-center gap-2">
-                  <PackagePlus className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>
-                    {t.common.confirm} (Starter Catalog)
-                  </span>
-                </div>
-              </label>
+              <div className="text-xs text-zinc-400 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Zero-State: 100% Clean Database</span>
+              </div>
 
               <button
                 type="submit"

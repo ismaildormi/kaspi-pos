@@ -50,6 +50,7 @@ export function Navbar() {
 
           <Link
             href="/download"
+            prefetch={true}
             className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-zinc-700 bg-zinc-900 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-800 hover:text-white hover:border-zinc-500"
           >
             <Download className="h-3.5 w-3.5 text-zinc-400" />
@@ -58,6 +59,7 @@ export function Navbar() {
 
           <Link
             href="/login"
+            prefetch={true}
             className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 sm:px-4 py-1.5 text-xs font-bold text-zinc-950 transition hover:bg-zinc-200 shadow-md"
           >
             <LogIn className="h-3.5 w-3.5" />

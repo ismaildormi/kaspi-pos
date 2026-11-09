@@ -31,6 +31,26 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
 
   const isSlashCommand = searchQuery.trim().startsWith("/");
 
+  // 0ms In-Memory Barcode & SKU Index
+  const barcodeIndex = React.useMemo(() => {
+    const map = new Map<string, PosProduct>();
+    for (const p of products) {
+      if (p.barcode) {
+        map.set(p.barcode.trim().toLowerCase(), p);
+      }
+      if (p.sku) {
+        map.set(p.sku.trim().toLowerCase(), p);
+      }
+    }
+    return map;
+  }, [products]);
+
+  // Global Hardware Scanner keystroke buffer
+  const scannerBufferRef = useRef<{ chars: string[]; lastKeyTime: number }>({
+    chars: [],
+    lastKeyTime: 0,
+  });
+
   useEffect(() => {
     inputRef.current?.focus();
 
@@ -40,6 +60,34 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
         inputRef.current?.focus();
         inputRef.current?.select();
         return;
+      }
+
+      const now = Date.now();
+      const timeDiff = now - scannerBufferRef.current.lastKeyTime;
+      scannerBufferRef.current.lastKeyTime = now;
+
+      // Hardware Barcode Scanner keystroke detector (intervals < 50ms)
+      if (e.key === "Enter") {
+        const rawBuffer = scannerBufferRef.current.chars.join("").trim();
+        scannerBufferRef.current.chars = [];
+        if (rawBuffer.length >= 3) {
+          const directMatch = barcodeIndex.get(rawBuffer.toLowerCase());
+          if (directMatch) {
+            e.preventDefault();
+            playBarcodeScanSound();
+            addProductByBarcode(directMatch);
+            toast.success(`Ajouté (Scan): ${directMatch.name}`);
+            setSearchQuery("");
+            return;
+          }
+        }
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (timeDiff > 80) {
+          // Reset buffer if human typing delay detected
+          scannerBufferRef.current.chars = [e.key];
+        } else {
+          scannerBufferRef.current.chars.push(e.key);
+        }
       }
 
       const activeTag = document.activeElement?.tagName.toLowerCase();
@@ -63,7 +111,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
 
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [isPaymentModalOpen]);
+  }, [isPaymentModalOpen, barcodeIndex, addProductByBarcode, setSearchQuery]);
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter") return;
@@ -116,9 +164,10 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
     setIsScanning(true);
 
     try {
-      let matchedProduct: PosProduct | undefined;
+      // 0ms In-Memory Fast Lookup
+      let matchedProduct: PosProduct | undefined = barcodeIndex.get(code.toLowerCase());
 
-      if (offlineDb) {
+      if (!matchedProduct && offlineDb) {
         try {
           const dexieExactMatch = await offlineDb.offlineProducts
             .where("barcode")

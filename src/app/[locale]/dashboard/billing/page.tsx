@@ -227,33 +227,43 @@ export default function BillingDashboardPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
             <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80">
-              <span className="text-xs text-zinc-500 block mb-1">Capacité Caisses</span>
+              <span className="text-xs text-zinc-500 block mb-1">
+                {locale === "ar" ? "سعة نقاط البيع" : locale === "en" ? "Register Capacity" : "Capacité Caisses"}
+              </span>
               <span className="text-sm font-bold text-white font-mono flex items-center gap-1.5">
                 <Monitor className="w-3.5 h-3.5 text-zinc-400" />
-                {subscription?.maxDevices ?? 1} {(subscription?.maxDevices ?? 1) === 1 ? "poste autorisé" : "postes autorisés"}
+                {subscription?.maxDevices ?? 1} {locale === "ar" ? "أجهزة مرخصة" : locale === "en" ? "licensed devices" : (subscription?.maxDevices ?? 1) === 1 ? "poste autorisé" : "postes autorisés"}
               </span>
             </div>
 
             <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80">
-              <span className="text-xs text-zinc-500 block mb-1">Période en cours</span>
+              <span className="text-xs text-zinc-500 block mb-1">
+                {locale === "ar" ? "الفترة الجارية" : locale === "en" ? "Current Period" : "Période en cours"}
+              </span>
               <span className="text-sm font-bold text-white font-mono">
                 {subscription?.currentPeriodEnd
                   ? new Date(subscription.currentPeriodEnd).toLocaleDateString()
-                  : "Sans expiration"}
+                  : locale === "ar" ? "بدون انتهاء" : locale === "en" ? "No expiration" : "Sans expiration"}
               </span>
             </div>
 
             <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80">
-              <span className="text-xs text-zinc-500 block mb-1">Jours restants</span>
+              <span className="text-xs text-zinc-500 block mb-1">
+                {locale === "ar" ? "الأيام المتبقية" : locale === "en" ? "Days Remaining" : "Jours restants"}
+              </span>
               <span className="text-sm font-bold text-white font-mono">
-                {subscription?.daysRemaining ?? 14} jours
+                {subscription?.daysRemaining ?? 14} {locale === "ar" ? "أيام" : locale === "en" ? "days" : "jours"}
               </span>
             </div>
 
             <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80">
-              <span className="text-xs text-zinc-500 block mb-1">Statut facturation</span>
+              <span className="text-xs text-zinc-500 block mb-1">
+                {locale === "ar" ? "حالة الاشتراك" : locale === "en" ? "Billing Status" : "Statut facturation"}
+              </span>
               <span className="text-sm font-bold text-white">
-                {subscription?.status === "active" ? "Automatique" : "Action requise"}
+                {subscription?.status === "active"
+                  ? locale === "ar" ? "مفعل تلقائياً" : locale === "en" ? "Automatic" : "Automatique"
+                  : locale === "ar" ? "إجراء مطلوب" : locale === "en" ? "Action Required" : "Action requise"}
               </span>
             </div>
           </div>
@@ -263,9 +273,11 @@ export default function BillingDashboardPage() {
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
                 <Monitor className="w-3.5 h-3.5 text-emerald-400" />
-                Grille Tarifaire par Nombre de Caisses :
+                {locale === "ar" ? "جدول تسعير نقاط البيع الإضافية :" : locale === "en" ? "Register Tier Pricing Grid:" : "Grille Tarifaire par Nombre de Caisses :"}
               </span>
-              <span className="text-[10px] text-zinc-400 font-mono">+150 DH par caisse additionnelle</span>
+              <span className="text-[10px] text-zinc-400 font-mono">
+                {locale === "ar" ? "+150 درهم لكل نقطة بيع إضافية" : locale === "en" ? "+150 MAD per extra register" : "+150 DH par caisse additionnelle"}
+              </span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
               <div className={`p-3 rounded-xl border text-center ${
@@ -273,27 +285,27 @@ export default function BillingDashboardPage() {
                   ? "bg-zinc-800 border-white text-white font-bold ring-1 ring-white/20"
                   : "bg-zinc-900/60 border-zinc-800/80 text-zinc-400"
               }`}>
-                <span className="block text-[11px] mb-0.5">1 Caisse</span>
+                <span className="block text-[11px] mb-0.5">{locale === "ar" ? "1 جهاز كاشير" : locale === "en" ? "1 Register" : "1 Caisse"}</span>
                 <span className="font-mono text-sm font-black text-white">200 DH</span>
-                <span className="block text-[9px] text-zinc-500">Boutique Solo</span>
+                <span className="block text-[9px] text-zinc-500">{locale === "ar" ? "محل فردي" : locale === "en" ? "Solo Store" : "Boutique Solo"}</span>
               </div>
               <div className={`p-3 rounded-xl border text-center ${
                 (subscription?.maxDevices ?? 1) === 2
                   ? "bg-zinc-800 border-white text-white font-bold ring-1 ring-white/20"
                   : "bg-zinc-900/60 border-zinc-800/80 text-zinc-400"
               }`}>
-                <span className="block text-[11px] mb-0.5">2 Caisses</span>
+                <span className="block text-[11px] mb-0.5">{locale === "ar" ? "2 أجهزة كاشير" : locale === "en" ? "2 Registers" : "2 Caisses"}</span>
                 <span className="font-mono text-sm font-black text-white">350 DH</span>
-                <span className="block text-[9px] text-zinc-500">Supérette / Restaurant</span>
+                <span className="block text-[9px] text-zinc-500">{locale === "ar" ? "سوبرماركت / مطعم" : locale === "en" ? "Supermarket / Cafe" : "Supérette / Restaurant"}</span>
               </div>
               <div className={`p-3 rounded-xl border text-center ${
                 (subscription?.maxDevices ?? 1) === 3
                   ? "bg-zinc-800 border-white text-white font-bold ring-1 ring-white/20"
                   : "bg-zinc-900/60 border-zinc-800/80 text-zinc-400"
               }`}>
-                <span className="block text-[11px] mb-0.5">3 Caisses</span>
+                <span className="block text-[11px] mb-0.5">{locale === "ar" ? "3 أجهزة كاشير" : locale === "en" ? "3 Registers" : "3 Caisses"}</span>
                 <span className="font-mono text-sm font-black text-white">500 DH</span>
-                <span className="block text-[9px] text-zinc-500">Multi-Postes</span>
+                <span className="block text-[9px] text-zinc-500">{locale === "ar" ? "متعدد الصناديق" : locale === "en" ? "Multi-Register" : "Multi-Postes"}</span>
               </div>
               <div className={`p-3 rounded-xl border text-center ${
                 (subscription?.maxDevices ?? 1) >= 4

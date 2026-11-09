@@ -99,6 +99,11 @@ export default function SettingsPage() {
   const [whatsappReportNumber, setWhatsappReportNumber] = useState("");
   const [isWhatsappReportsActive, setIsWhatsappReportsActive] = useState(true);
 
+  // Bank & Payout Configuration (Owner Settlement)
+  const [bankName, setBankName] = useState("");
+  const [bankRib, setBankRib] = useState("");
+  const [tpeTerminalId, setTpeTerminalId] = useState("");
+
   // Thermal Printing State
   const { setPrinterSettings, setTenantInfo, storeType, setStoreProfile } = usePosStore();
   const [receiptLanguage, setReceiptLanguage] = useState<ReceiptLanguage>("fr");
@@ -298,6 +303,11 @@ export default function SettingsPage() {
           setWhatsappReportNumber(s.whatsappReportNumber || "");
           setIsWhatsappReportsActive(s.isWhatsappReportsActive ?? true);
 
+          if (s.bankName) setBankName(s.bankName);
+          if (s.bankRib) setBankRib(s.bankRib);
+          if (s.tpeTerminalId) setTpeTerminalId(s.tpeTerminalId);
+          if (s.selectedGateway) setSelectedGateway(s.selectedGateway);
+
           if (s.receiptLanguage) setReceiptLanguage(s.receiptLanguage);
           if (s.paperWidthMm) setPaperWidthMm(s.paperWidthMm === 58 ? 58 : 80);
           if (s.printerConnectionMode) setPrinterConnectionMode(s.printerConnectionMode);
@@ -436,6 +446,10 @@ export default function SettingsPage() {
           phone,
           whatsappReportNumber,
           isWhatsappReportsActive,
+          bankName,
+          bankRib,
+          tpeTerminalId,
+          selectedGateway,
           ...newPrinterSettings,
         }),
       });
@@ -830,6 +844,41 @@ export default function SettingsPage() {
                   />
                 </div>
               )}
+
+              {/* Owner Payout Settlement Details */}
+              <div className="pt-3 border-t border-white/10 space-y-3">
+                <div className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{t.settings.bankRibLabel}</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] text-zinc-400 mb-1">
+                      {t.settings.bankNameLabel}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Attijariwafa / BCP / CIH / BMCE"
+                      value={bankName}
+                      onChange={(e) => setBankName(e.target.value)}
+                      className="w-full h-9 px-3 bg-zinc-950 border border-white/10 rounded-lg text-xs text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-zinc-400 mb-1">
+                      {t.settings.bankRibNumberLabel}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="24 chiffres (RIB Maroc)"
+                      maxLength={30}
+                      value={bankRib}
+                      onChange={(e) => setBankRib(e.target.value)}
+                      className="w-full h-9 px-3 bg-zinc-950 border border-white/10 rounded-lg text-xs text-white font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* WhatsApp Z-Report Automation */}

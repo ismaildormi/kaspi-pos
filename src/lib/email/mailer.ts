@@ -160,12 +160,25 @@ export async function sendKaspiEmail(
 
   // Official sender address: "KASPI POS <kaspipos.official@gmail.com>"
   const gmailSender = (process.env.GMAIL_USER || OFFICIAL_GMAIL_USER).trim();
-  const from = process.env.SMTP_FROM || `KASPI POS <${gmailSender}>`;
+  const from = `"KASPI POS" <${gmailSender}>`;
+
+  const entityRefId = `kaspi-tx-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+  const emailSubject = options.code
+    ? `${options.code} • ${options.subject}`
+    : options.subject;
+
+  const transactionalHeaders = {
+    "X-Entity-Ref-ID": entityRefId,
+    "X-Priority": "1",
+    "Importance": "high",
+    "Priority": "urgent",
+    "X-Mailer": "KASPI POS Dispatcher",
+  };
 
   console.log("\n==================================================================");
   console.log(`[KASPI MAIL] Sending ${options.type} email to: ${options.to}`);
   console.log(`[KASPI MAIL] From: ${from}`);
-  console.log(`[KASPI MAIL] Subject: ${options.subject}`);
+  console.log(`[KASPI MAIL] Subject: ${emailSubject}`);
   if (options.code) {
     console.log(`[KASPI MAIL] >>> VERIFICATION CODE: ${options.code} <<<`);
   }
@@ -177,9 +190,10 @@ export async function sendKaspiEmail(
     const info = await primaryMailer.sendMail({
       from,
       to: options.to,
-      subject: options.subject,
+      subject: emailSubject,
       text,
       html,
+      headers: transactionalHeaders,
     });
     console.log(`[KASPI Mailer] Email sent via SSL/TLS (465) to ${options.to} | MessageID: ${info.messageId} | Response: ${info.response}`);
     return {
@@ -194,9 +208,10 @@ export async function sendKaspiEmail(
       const info587 = await fallbackMailer.sendMail({
         from,
         to: options.to,
-        subject: options.subject,
+        subject: emailSubject,
         text,
         html,
+        headers: transactionalHeaders,
       });
       transporter = fallbackMailer;
       console.log(`[KASPI Mailer] Email sent via STARTTLS (587) to ${options.to} | MessageID: ${info587.messageId} | Response: ${info587.response}`);
@@ -319,7 +334,16 @@ export async function sendWelcomeEmail(params: {
   ].join("\n");
 
   const gmailSender = (process.env.GMAIL_USER || OFFICIAL_GMAIL_USER).trim();
-  const from = process.env.SMTP_FROM || `KASPI POS <${gmailSender}>`;
+  const from = `"KASPI POS" <${gmailSender}>`;
+
+  const entityRefId = `kaspi-welcome-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+  const transactionalHeaders = {
+    "X-Entity-Ref-ID": entityRefId,
+    "X-Priority": "1",
+    "Importance": "high",
+    "Priority": "urgent",
+    "X-Mailer": "KASPI POS Dispatcher",
+  };
 
   console.log(`[KASPI MAIL] Sending Welcome Email to: ${params.to} (${resolvedOwner} - ${welcomeData.storeName})`);
 
@@ -331,6 +355,7 @@ export async function sendWelcomeEmail(params: {
       subject: copy.subject,
       text,
       html,
+      headers: transactionalHeaders,
     });
     console.log(`[KASPI Mailer] Welcome email delivered via SSL/TLS (465) to ${params.to} | MessageID: ${info.messageId}`);
     return { success: true, messageId: info.messageId, response: info.response };
@@ -344,6 +369,7 @@ export async function sendWelcomeEmail(params: {
         subject: copy.subject,
         text,
         html,
+        headers: transactionalHeaders,
       });
       console.log(`[KASPI Mailer] Welcome email delivered via STARTTLS (587) to ${params.to} | MessageID: ${info587.messageId}`);
       return { success: true, messageId: info587.messageId, response: info587.response };

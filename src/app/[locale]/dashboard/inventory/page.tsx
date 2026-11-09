@@ -154,13 +154,13 @@ export default async function InventoryPage({
             </div>
             <div>
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <span>Anticipation Prédictive IA des Ruptures de Stock</span>
+                <span>{t.inventory.aiAnticipationTitle}</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                  Modèle Vélocité 14j
+                  {t.inventory.velocityModel}
                 </span>
               </h2>
               <p className="text-[11px] text-zinc-400">
-                Prévisions calculées en continu d&apos;après le rythme d&apos;écoulement réel en caisse
+                {t.inventory.velocitySubtitle}
               </p>
             </div>
           </div>
@@ -168,7 +168,7 @@ export default async function InventoryPage({
 
         {predictedStockouts.length === 0 ? (
           <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 text-center text-xs text-zinc-400 font-mono">
-            ✨ Tous vos stocks sont à des niveaux optimaux. Aucune rupture imminente détectée sous 10 jours.
+            {t.inventory.optimalStockBanner}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -182,17 +182,17 @@ export default async function InventoryPage({
                     <span className="truncate">{item.product.category?.name || "Rayon"}</span>
                     <span className="text-rose-400 font-bold flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {item.daysRemaining <= 1 ? "Aujourd'hui" : `Dans ${item.daysRemaining}j`}
+                      {item.daysRemaining <= 1 ? t.inventory.today : t.inventory.inDays.replace("{days}", String(item.daysRemaining))}
                     </span>
                   </div>
                   <h4 className="font-bold text-xs text-white line-clamp-1">{item.product.name}</h4>
                   <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
-                    Reste : <span className="text-white font-bold">{item.currentQty} unités</span>
+                    {t.inventory.currentQty} : <span className="text-white font-bold">{item.currentQty} {t.inventory.units}</span>
                   </p>
                 </div>
 
                 <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
-                  <span className="text-zinc-400 font-mono">Conseil Réappro :</span>
+                  <span className="text-zinc-400 font-mono">{t.inventory.reorderAdvice}</span>
                   <span className="font-mono font-bold text-emerald-400 flex items-center gap-1">
                     <ShoppingCart className="w-3 h-3" />
                     +{item.suggestedReorder} u.
@@ -207,9 +207,9 @@ export default async function InventoryPage({
       {/* Stock Summary Table */}
       <div className="rounded-3xl border border-zinc-800 bg-zinc-900/60 overflow-hidden">
         <div className="p-5 border-b border-zinc-800 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white">Niveaux de Stock en Temps Réel</h2>
+          <h2 className="text-sm font-bold text-white">{t.inventory.realtimeLevels}</h2>
           <span className="text-xs text-zinc-400 font-mono bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-800">
-            {products.length} Articles Suivis
+            {products.length} {t.inventory.trackedItemsCount}
           </span>
         </div>
 
@@ -217,18 +217,18 @@ export default async function InventoryPage({
           <table className="w-full text-start text-xs text-zinc-300">
             <thead className="bg-zinc-950 text-zinc-400 font-mono border-b border-zinc-800">
               <tr>
-                <th className="py-3 px-4 text-start font-semibold">Produit</th>
-                <th className="py-3 px-4 text-start font-semibold">SKU / Code-barres</th>
-                <th className="py-3 px-4 text-start font-semibold">Catégorie</th>
-                <th className="py-3 px-4 text-start font-semibold">Prix Vente</th>
-                <th className="py-3 px-4 text-end font-semibold">Quantité en Stock</th>
+                <th className="py-3 px-4 text-start font-semibold">{t.inventory.productName}</th>
+                <th className="py-3 px-4 text-start font-semibold">{t.products.sku} / {t.products.barcode}</th>
+                <th className="py-3 px-4 text-start font-semibold">{t.products.category}</th>
+                <th className="py-3 px-4 text-start font-semibold">{t.products.salePrice}</th>
+                <th className="py-3 px-4 text-end font-semibold">{t.inventory.currentQty}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60 font-medium">
               {products.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-8 text-center text-zinc-500">
-                    Aucun produit suivi en stock. Ajoutez vos articles depuis le catalogue.
+                    {t.products.noProducts}
                   </td>
                 </tr>
               ) : (
@@ -240,7 +240,7 @@ export default async function InventoryPage({
                     <tr key={p.id} className="hover:bg-zinc-950/40 transition">
                       <td className="py-3 px-4 font-bold text-white">{p.name}</td>
                       <td className="py-3 px-4 font-mono text-zinc-400">{p.sku || p.barcode || "—"}</td>
-                      <td className="py-3 px-4 text-zinc-400">{p.category?.name || "Général"}</td>
+                      <td className="py-3 px-4 text-zinc-400">{p.category?.name || "—"}</td>
                       <td className="py-3 px-4 font-mono text-white">{Number(p.salePrice).toFixed(2)} MAD</td>
                       <td className="py-3 px-4 text-end">
                         <span
@@ -251,7 +251,7 @@ export default async function InventoryPage({
                           }`}
                         >
                           {isLow && <AlertTriangle className="h-3 w-3" />}
-                          {qty} unités
+                          {qty} {t.inventory.units}
                         </span>
                       </td>
                     </tr>
@@ -267,11 +267,11 @@ export default async function InventoryPage({
       <div className="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-6">
         <h2 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
           <ArrowDownUp className="h-4 w-4 text-white" />
-          Derniers Mouvements de Stock
+          {t.inventory.auditLog}
         </h2>
 
         {recentMovements.length === 0 ? (
-          <p className="text-xs text-zinc-500 py-4 text-center">Aucun mouvement de stock récent enregistré.</p>
+          <p className="text-xs text-zinc-500 py-4 text-center">{t.inventory.auditLog}</p>
         ) : (
           <div className="divide-y divide-zinc-800/60">
             {recentMovements.map((m) => {

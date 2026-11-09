@@ -115,7 +115,7 @@ export default function SuppliersPage() {
               className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors flex items-center gap-1.5 text-xs font-semibold"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>{t.common.back} (POS)</span>
+              <span>{t.customers.backPos}</span>
             </Link>
             <div className="h-5 w-px bg-zinc-800" />
             <div className="flex items-center gap-2">
@@ -145,24 +145,24 @@ export default function SuppliersPage() {
             <table className="w-full text-start text-xs">
               <thead className="bg-zinc-950 text-zinc-400 border-b border-zinc-800 font-mono">
                 <tr>
-                  <th className="p-3.5 text-start">Fournisseur</th>
-                  <th className="p-3.5 text-start">Contact</th>
-                  <th className="p-3.5 text-start">Téléphone</th>
-                  <th className="p-3.5 text-start">Email</th>
-                  <th className="p-3.5 text-start">ICE</th>
+                  <th className="p-3.5 text-start">{t.suppliers.name}</th>
+                  <th className="p-3.5 text-start">{t.suppliers.contact}</th>
+                  <th className="p-3.5 text-start">{t.suppliers.phone}</th>
+                  <th className="p-3.5 text-start">{t.suppliers.email}</th>
+                  <th className="p-3.5 text-start">{t.suppliers.ice}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60 font-medium">
                 {isLoading ? (
                   <tr>
                     <td colSpan={5} className="p-8 text-center text-zinc-500">
-                      Chargement des fournisseurs...
+                      {t.common.loading}
                     </td>
                   </tr>
                 ) : suppliers.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="p-8 text-center text-zinc-500">
-                      Aucun fournisseur enregistré pour le moment.
+                      {t.suppliers.noSuppliers}
                     </td>
                   </tr>
                 ) : (
@@ -187,7 +187,7 @@ export default function SuppliersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4">
-              <h3 className="font-bold text-white text-base">Ajouter un Fournisseur</h3>
+              <h3 className="font-bold text-white text-base">{t.suppliers.addSupplier}</h3>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 cursor-pointer"
@@ -205,7 +205,7 @@ export default function SuppliersPage() {
             <form onSubmit={handleCreateSupplier} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  Raison Sociale / Nom du Fournisseur *
+                  {t.suppliers.name} *
                 </label>
                 <input
                   type="text"
@@ -219,7 +219,7 @@ export default function SuppliersPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  Nom du représentant / Contact
+                  {t.suppliers.contact}
                 </label>
                 <input
                   type="text"
@@ -233,7 +233,7 @@ export default function SuppliersPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                    Téléphone
+                    {t.suppliers.phone}
                   </label>
                   <input
                     type="tel"
@@ -246,7 +246,7 @@ export default function SuppliersPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                    Numéro ICE
+                    {t.suppliers.ice}
                   </label>
                   <input
                     type="text"
@@ -260,7 +260,7 @@ export default function SuppliersPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  Email
+                  {t.suppliers.email}
                 </label>
                 <input
                   type="email"
@@ -277,14 +277,14 @@ export default function SuppliersPage() {
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 text-zinc-400 hover:text-white text-xs font-semibold cursor-pointer"
                 >
-                  Annuler
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !name.trim()}
                   className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition disabled:opacity-40 cursor-pointer"
                 >
-                  {isSubmitting ? "Enregistrement..." : "Créer le fournisseur"}
+                  {isSubmitting ? t.customers.submitting : t.suppliers.addSupplier}
                 </button>
               </div>
             </form>

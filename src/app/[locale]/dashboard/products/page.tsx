@@ -424,7 +424,7 @@ export default function ProductsListPage() {
 
         <div className="flex items-center gap-3 self-end sm:self-auto">
           <span className="text-xs text-zinc-400 font-mono bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800">
-            {filteredProducts.length} Produits
+            {filteredProducts.length} {t.products.productsCount}
           </span>
 
           <div className="inline-flex rounded-xl border border-zinc-800 bg-zinc-900 p-1">
@@ -461,17 +461,17 @@ export default function ProductsListPage() {
         <div className="h-64 rounded-2xl border border-zinc-800 bg-zinc-900/50 flex flex-col items-center justify-center gap-3 text-zinc-400">
           <Loader2 className="w-6 h-6 animate-spin text-white" />
           <span className="text-xs font-medium">
-            Chargement du catalogue produits...
+            {t.products.loadingCatalog}
           </span>
         </div>
       ) : filteredProducts.length === 0 ? (
         <div className="py-16 rounded-2xl border border-zinc-800 bg-zinc-900/40 text-center text-zinc-500">
           <Package className="h-10 w-10 mx-auto mb-3 text-zinc-600" />
           <p className="text-sm font-bold text-zinc-300">
-            Aucun produit trouvé
+            {t.products.noProductsFound}
           </p>
           <p className="text-xs text-zinc-500 mt-1">
-            Importez un fichier CSV ou utilisez l&apos;on-boarding IA pour ajouter vos produits.
+            {t.products.noProductsSub}
           </p>
         </div>
       ) : viewMode === "grid" ? (
@@ -507,7 +507,7 @@ export default function ProductsListPage() {
                         {initial}
                       </div>
                       <span className="text-[11px] font-mono text-zinc-500">
-                        Aucune photo
+                        {t.products.noPhoto}
                       </span>
                     </div>
                   )}
@@ -517,7 +517,7 @@ export default function ProductsListPage() {
                     <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10">
                       <Loader2 className="w-6 h-6 animate-spin text-white" />
                       <span className="text-[11px] font-bold text-white">
-                        Mise à jour...
+                        {t.products.updating}
                       </span>
                     </div>
                   )}
@@ -554,7 +554,7 @@ export default function ProductsListPage() {
                         >
                           <span className="flex items-center gap-2">
                             <Sparkles className="w-3.5 h-3.5 text-white shrink-0" />
-                            <span>توليد صورة بالذكاء الاصطناعي</span>
+                            <span>{t.products.generateAiImage}</span>
                           </span>
                         </button>
 
@@ -565,7 +565,7 @@ export default function ProductsListPage() {
                         >
                           <span className="flex items-center gap-2">
                             <ImageIcon className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                            <span>تغيير الصورة</span>
+                            <span>{t.products.changeImage}</span>
                           </span>
                         </button>
 
@@ -576,7 +576,7 @@ export default function ProductsListPage() {
                         >
                           <span className="flex items-center gap-2">
                             <DollarSign className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                            <span>تعديل الثمن</span>
+                            <span>{t.products.editPrice}</span>
                           </span>
                         </button>
 
@@ -587,7 +587,7 @@ export default function ProductsListPage() {
                         >
                           <span className="flex items-center gap-2">
                             <Printer className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                            <span>طباعة لاصق الباركود (40x30mm)</span>
+                            <span>{t.products.printBarcodeLabel}</span>
                           </span>
                         </button>
                       </div>
@@ -614,7 +614,7 @@ export default function ProductsListPage() {
                   <div className="pt-3 border-t border-zinc-800/80 flex items-center justify-between">
                     <div>
                       <span className="text-[10px] uppercase tracking-wider text-zinc-500 block">
-                        Prix TTC
+                        {t.products.priceTtc}
                       </span>
                       <span className="text-base font-black font-mono text-white">
                         {Number(product.salePrice).toFixed(2)}{" "}
@@ -650,19 +650,19 @@ export default function ProductsListPage() {
               <thead className="bg-zinc-950 text-zinc-400 font-mono border-b border-zinc-800">
                 <tr>
                   <th className="py-3.5 px-4 text-start font-semibold">
-                    Produit
+                    {t.inventory.productName}
                   </th>
                   <th className="py-3.5 px-4 text-start font-semibold">
-                    Code SKU / Barres
+                    {t.products.sku} / {t.products.barcode}
                   </th>
                   <th className="py-3.5 px-4 text-start font-semibold">
-                    Catégorie
+                    {t.products.category}
                   </th>
                   <th className="py-3.5 px-4 text-end font-semibold">
-                    Prix Vente (MAD)
+                    {t.products.salePrice} (MAD)
                   </th>
                   <th className="py-3.5 px-4 text-end font-semibold w-16">
-                    Actions
+                    {t.common.actions}
                   </th>
                 </tr>
               </thead>

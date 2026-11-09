@@ -5,7 +5,7 @@ import { getRequestContext } from "@/server/auth/context";
 export async function GET(req: NextRequest) {
   try {
     const ctx = await getRequestContext();
-    const [settings, printerRecord, workspaceRecord] = await Promise.all([
+    const [settings, printerRecord, workspaceRecord, payoutRecord] = await Promise.all([
       prisma.tenantSettings.findUnique({
         where: { tenantId: ctx.tenantId },
       }),
@@ -31,10 +31,22 @@ export async function GET(req: NextRequest) {
           },
         })
         .catch(() => null),
+      prisma.idempotencyRecord
+        .findUnique({
+          where: {
+            tenantId_scope_key: {
+              tenantId: ctx.tenantId,
+              scope: "payout_studio",
+              key: "payout_config",
+            },
+          },
+        })
+        .catch(() => null),
     ]);
 
     const printerConfig = (printerRecord?.responseBody as Record<string, any>) || {};
     const workspaceConfig = (workspaceRecord?.responseBody as Record<string, any>) || {};
+    const payoutConfig = (payoutRecord?.responseBody as Record<string, any>) || {};
 
     return NextResponse.json({
       success: true,
@@ -67,6 +79,10 @@ export async function GET(req: NextRequest) {
         enableVariantsMatrix: workspaceConfig.enableVariantsMatrix ?? (workspaceConfig.storeType === "fashion"),
         enableSerialTracking: workspaceConfig.enableSerialTracking ?? (workspaceConfig.storeType === "electronics"),
         enableWeightScale: workspaceConfig.enableWeightScale ?? (workspaceConfig.storeType === "grocery"),
+        bankName: payoutConfig.bankName || "",
+        bankRib: payoutConfig.bankRib || "",
+        tpeTerminalId: payoutConfig.tpeTerminalId || "",
+        selectedGateway: payoutConfig.selectedGateway || "cash_only",
       },
     });
   } catch (err: any) {
@@ -207,12 +223,46 @@ export async function POST(req: NextRequest) {
         .catch((e) => console.warn("[Settings Workspace Config Persist Warning]:", e));
     }
 
+    const payoutConfig = {
+      bankName: body.bankName || "",
+      bankRib: body.bankRib || "",
+      tpeTerminalId: body.tpeTerminalId || "",
+      selectedGateway: body.selectedGateway || "cash_only",
+      updatedAt: new Date().toISOString(),
+    };
+
+    await prisma.idempotencyRecord
+      .upsert({
+        where: {
+          tenantId_scope_key: {
+            tenantId: ctx.tenantId,
+            scope: "payout_studio",
+            key: "payout_config",
+          },
+        },
+        create: {
+          tenantId: ctx.tenantId,
+          scope: "payout_studio",
+          key: "payout_config",
+          requestHash: "payout_config_v1",
+          responseStatus: 200,
+          responseBody: payoutConfig,
+          expiresAt: farFuture,
+        },
+        update: {
+          responseBody: payoutConfig,
+          expiresAt: farFuture,
+        },
+      })
+      .catch((e) => console.warn("[Settings Payout Config Persist Warning]:", e));
+
     return NextResponse.json({
       success: true,
       settings: {
         ...updated,
         ...thermalConfig,
         ...(workspaceConfig || {}),
+        ...payoutConfig,
       },
     });
   } catch (err: any) {
