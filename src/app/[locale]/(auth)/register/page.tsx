@@ -1,22 +1,130 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { getApiUrl } from "@/client/sync-engine";
+import { AuthGlassShell, AuthLocale } from "@/components/auth/MonochromePosBackground";
+import { playTapSound, playSuccessSound, playErrorSound } from "@/lib/audio";
+
+type StoreVertical = "grocery" | "restaurant" | "fashion" | "electronics";
+
+const REGISTER_I18N: Record<
+  AuthLocale,
+  {
+    title: string;
+    verticals: Record<StoreVertical, string>;
+    fullNamePlaceholder: string;
+    shopNamePlaceholder: string;
+    emailPlaceholder: string;
+    passwordPlaceholder: string;
+    submitBtn: string;
+    hasAccountText: string;
+    signInLink: string;
+    errFailed: string;
+    errNetwork: string;
+  }
+> = {
+  ar: {
+    title: "إنشاء حساب جديد",
+    verticals: {
+      grocery: "سوبرماركت وبقالة",
+      restaurant: "مطعم ومقهى",
+      fashion: "ملابس وأزياء",
+      electronics: "إلكترونيات وتجارة",
+    },
+    fullNamePlaceholder: "الاسم الكامل",
+    shopNamePlaceholder: "اسم المتجر",
+    emailPlaceholder: "البريد الإلكتروني",
+    passwordPlaceholder: "كلمة المرور",
+    submitBtn: "إطلاق المتجر الآن",
+    hasAccountText: "لديك حساب بالفعل؟",
+    signInLink: "تسجيل الدخول",
+    errFailed: "تعذر إنشاء الحساب، يرجى التحقق من البيانات",
+    errNetwork: "حدث خطأ غير متوقع في الاتصال بالخادم",
+  },
+  fr: {
+    title: "Créer un compte",
+    verticals: {
+      grocery: "Supermarché & Épicerie",
+      restaurant: "Restaurant & Café",
+      fashion: "Mode & Vêtements",
+      electronics: "Électronique & Commerce",
+    },
+    fullNamePlaceholder: "Nom complet",
+    shopNamePlaceholder: "Nom de la boutique",
+    emailPlaceholder: "Adresse e-mail",
+    passwordPlaceholder: "Mot de passe",
+    submitBtn: "Lancer la boutique maintenant",
+    hasAccountText: "Vous avez déjà un compte ?",
+    signInLink: "Se connecter",
+    errFailed: "Impossible de créer le compte",
+    errNetwork: "Erreur de connexion au serveur",
+  },
+  en: {
+    title: "Create New Account",
+    verticals: {
+      grocery: "Supermarket & Grocery",
+      restaurant: "Restaurant & Cafe",
+      fashion: "Fashion & Apparel",
+      electronics: "Electronics & Retail",
+    },
+    fullNamePlaceholder: "Full Name",
+    shopNamePlaceholder: "Store Name",
+    emailPlaceholder: "Email Address",
+    passwordPlaceholder: "Password",
+    submitBtn: "Launch Store Now",
+    hasAccountText: "Already have an account?",
+    signInLink: "Sign In",
+    errFailed: "Unable to create account, please check your details",
+    errNetwork: "Unexpected network error occurred",
+  },
+};
+
+function normalizeLocale(raw?: string): AuthLocale {
+  if (raw === "fr" || raw === "en" || raw === "ar") return raw;
+  return "ar";
+}
+
+const VERTICAL_ORDER: StoreVertical[] = [
+  "grocery",
+  "restaurant",
+  "fashion",
+  "electronics",
+];
 
 export default function RegisterPage() {
-  const router = useRouter();
+  const params = useParams();
+  const initialLocale = normalizeLocale(params?.locale as string);
+
+  const [locale, setLocale] = useState<AuthLocale>(initialLocale);
+  const t = REGISTER_I18N[locale];
+  const isRtl = locale === "ar";
+
+  const [storeType, setStoreType] = useState<StoreVertical>("grocery");
   const [fullName, setFullName] = useState("");
   const [shopName, setShopName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const handleLocaleChange = (nextLocale: AuthLocale) => {
+    setLocale(nextLocale);
+    setError("");
+    if (typeof window !== "undefined") {
+      const nextPath = window.location.pathname.replace(/^\/(ar|fr|en)(\/|$)/, `/${nextLocale}$2`);
+      window.history.replaceState(null, "", `${nextPath}${window.location.search}`);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    playTapSound();
     setLoading(true);
     setError("");
 
@@ -29,170 +137,201 @@ export default function RegisterPage() {
           shopName,
           email,
           password,
+          storeType,
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
 
       if (!res.ok) {
+        playErrorSound();
         const errorMsg =
           typeof data?.error === "string"
             ? data.error
-            : data?.error?.message || data?.message || "فشل إنشاء الحساب";
+            : data?.error?.message || data?.message || t.errFailed;
         setError(errorMsg);
-      } else {
-        // Trigger native device password store (PasswordCredential API)
-        if (typeof window !== "undefined" && "PasswordCredential" in window && navigator.credentials) {
-          try {
-            const cred = new (window as any).PasswordCredential({
-              id: email,
-              password,
-              name: fullName || email,
-            });
-            await navigator.credentials.store(cred);
-          } catch {
-            // Ignore if unsupported or dismissed
-          }
-        }
-
-        if (data?.data?.user?.isSuperAdmin) {
-          router.push("/ar/admin");
-        } else {
-          router.push("/ar/pos");
-        }
-        router.refresh();
+        setLoading(false);
+        return;
       }
+
+      // Sign in with NextAuth credentials so both cookies are synchronized
+      await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      }).catch(() => {});
+
+      // Seed starter catalog for selected vertical in background
+      await fetch(getApiUrl("/api/v1/onboarding/setup"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storeType,
+          shopName,
+          currency: "MAD",
+          receiptLanguage: locale,
+          seedStarterCatalog: true,
+        }),
+      }).catch(() => {});
+
+      // Native browser credential storage
+      if (
+        typeof window !== "undefined" &&
+        "PasswordCredential" in window &&
+        navigator.credentials
+      ) {
+        try {
+          const cred = new (window as any).PasswordCredential({
+            id: email,
+            password,
+            name: fullName || email,
+          });
+          await navigator.credentials.store(cred);
+        } catch {}
+      }
+
+      playSuccessSound();
+      window.location.href = `/${locale}/dashboard`;
     } catch {
-      setError("حدث خطأ غير متوقع في الشبكة");
-    } finally {
+      playErrorSound();
+      setError(t.errNetwork);
       setLoading(false);
     }
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center bg-zinc-950 p-4 font-sans"
-      dir="rtl"
+    <AuthGlassShell
+      locale={locale}
+      onLocaleChange={handleLocaleChange}
+      title={t.title}
     >
-      <div className="w-full max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl">
-        {/* Logo Section */}
-        <div className="text-center mb-8">
-          <img
-            src="/logo.png"
-            alt="KASPI POS"
-            className="w-16 h-16 object-contain bg-transparent mx-auto mb-4"
-            onError={(e) => (e.currentTarget.style.display = "none")}
-          />
-          <h1 className="text-2xl font-bold text-white tracking-tight">
-            إنشاء حساب جديد
-          </h1>
-          <p className="text-zinc-400 text-sm mt-2">
-            ابدأ إدارة متجرك مع KASPI POS
-          </p>
+      {/* 4 Clean, Emoji-Free Business Vertical Selector Tiles (2x2 Grid) */}
+      <div dir="ltr" className="grid grid-cols-2 gap-2.5 mb-4">
+        {VERTICAL_ORDER.map((vertical) => {
+          const selected = storeType === vertical;
+          return (
+            <button
+              key={vertical}
+              type="button"
+              onClick={() => {
+                playTapSound();
+                setStoreType(vertical);
+              }}
+              className={`h-11 px-3 rounded-2xl text-xs sm:text-[13px] font-bold transition-all cursor-pointer flex items-center justify-center text-center ${
+                selected
+                  ? "border border-white bg-zinc-900/95 text-white shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                  : "border border-white/12 bg-zinc-900/70 text-zinc-200 hover:border-white/30 hover:bg-zinc-900/90"
+              }`}
+            >
+              {t.verticals[vertical]}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Monochrome Error Feedback */}
+      {error && (
+        <div className="mb-3 px-3.5 py-2 bg-zinc-900/95 border border-white/25 text-zinc-200 text-xs rounded-2xl text-center font-medium">
+          {error}
         </div>
+      )}
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-950/80 border border-red-850 text-red-200 text-sm rounded-lg text-center font-medium shadow-sm">
-            {error}
-          </div>
-        )}
+      {/* Compact Registration Form (Zero Vertical Scrolling) */}
+      <form onSubmit={handleSubmit} className="space-y-2.5">
+        <input
+          type="text"
+          name="name"
+          autoComplete="name"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          placeholder={t.fullNamePlaceholder}
+          required
+          className={`w-full h-11 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all ${
+            isRtl ? "text-right" : "text-left"
+          }`}
+        />
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-              الاسم الكامل
-            </label>
-            <input
-              type="text"
-              name="name"
-              autoComplete="name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="أمين العلوي"
-              required
-              className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition-all"
-            />
-          </div>
+        <input
+          type="text"
+          name="organization"
+          autoComplete="organization"
+          value={shopName}
+          onChange={(e) => setShopName(e.target.value)}
+          placeholder={t.shopNamePlaceholder}
+          minLength={2}
+          required
+          className={`w-full h-11 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all ${
+            isRtl ? "text-right" : "text-left"
+          }`}
+        />
 
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-              اسم المحل التجاري
-            </label>
-            <input
-              type="text"
-              name="organization"
-              autoComplete="organization"
-              value={shopName}
-              onChange={(e) => setShopName(e.target.value)}
-              placeholder="ميني ماركت أنفا"
-              minLength={2}
-              required
-              className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition-all"
-            />
-            <p className="text-[11px] text-zinc-500 mt-1">Minimum 2 characters</p>
-          </div>
+        <input
+          type="email"
+          name="email"
+          autoComplete="username"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder={t.emailPlaceholder}
+          required
+          className={`w-full h-11 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all ${
+            isRtl ? "text-right" : "text-left"
+          }`}
+        />
 
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-              البريد الإلكتروني
-            </label>
-            <input
-              type="email"
-              name="email"
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="contact@commerce.ma"
-              required
-              className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition-all"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-              كلمة المرور
-            </label>
-            <input
-              type="password"
-              name="password"
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              minLength={6}
-              required
-              className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition-all"
-            />
-          </div>
-
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            name="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={t.passwordPlaceholder}
+            minLength={6}
+            required
+            className={`w-full h-11 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all ${
+              isRtl ? "pl-11 pr-4 text-right" : "pl-4 pr-11 text-left"
+            }`}
+          />
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-zinc-200 transition-all flex justify-center items-center gap-2 cursor-pointer mt-2"
+            type="button"
+            tabIndex={-1}
+            onClick={() => {
+              playTapSound();
+              setShowPassword((prev) => !prev);
+            }}
+            aria-label="Toggle password visibility"
+            className={`absolute top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors cursor-pointer ${
+              isRtl ? "left-3.5" : "right-3.5"
+            }`}
           >
-            {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+            {showPassword ? (
+              <Eye className="w-4 h-4" />
             ) : (
-              "إنشاء الحساب"
+              <EyeOff className="w-4 h-4" />
             )}
           </button>
-        </form>
-
-        {/* Links */}
-        <div className="mt-8 text-center text-sm text-zinc-400">
-          <p>
-            لديك حساب بالفعل؟{" "}
-            <Link
-              href="/ar/login"
-              className="text-white hover:underline font-medium"
-            >
-              تسجيل الدخول
-            </Link>
-          </p>
         </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full h-12 bg-white text-black font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-[0_0_28px_rgba(255,255,255,0.45)] hover:shadow-[0_0_38px_rgba(255,255,255,0.65)] hover:bg-zinc-100 active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer mt-3 disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : t.submitBtn}
+        </button>
+      </form>
+
+      {/* Sign-In Footer Link */}
+      <div className="mt-4 text-center text-xs text-zinc-400">
+        <span>{t.hasAccountText} </span>
+        <Link
+          href={`/${locale}/login`}
+          onClick={() => playTapSound()}
+          className="text-white hover:underline font-bold"
+        >
+          {t.signInLink}
+        </Link>
       </div>
-    </div>
+    </AuthGlassShell>
   );
 }

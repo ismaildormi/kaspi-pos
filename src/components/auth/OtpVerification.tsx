@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect } from "react";
+import { playTapSound } from "@/lib/audio";
 
 interface OtpVerificationProps {
   value: string;
@@ -43,9 +44,10 @@ export const OtpVerification: React.FC<OtpVerificationProps> = ({
     const digits = normalizeOtpDigits(pastedOrTyped);
     if (!digits) return;
 
+    playTapSound();
     const chars = Array.from({ length }, (_, idx) => cleanValue[idx] || "");
 
-    // If user pastes a full or multi-digit code, fill from index 0 if it's length >= 4, otherwise from startIndex
+    // If user pastes a full or multi-digit code, fill from index 0 if length >= 4, otherwise from startIndex
     const targetStart = digits.length >= 4 ? 0 : startIndex;
     for (let i = 0; i < digits.length && targetStart + i < length; i++) {
       chars[targetStart + i] = digits[i];
@@ -78,6 +80,7 @@ export const OtpVerification: React.FC<OtpVerificationProps> = ({
       return;
     }
 
+    playTapSound();
     const chars = Array.from({ length }, (_, idx) => cleanValue[idx] || "");
     chars[index] = digits[0];
     const nextCode = chars.join("");
@@ -94,6 +97,7 @@ export const OtpVerification: React.FC<OtpVerificationProps> = ({
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace") {
+      playTapSound();
       if (cleanValue[index]) {
         const chars = Array.from({ length }, (_, idx) => cleanValue[idx] || "");
         chars[index] = "";
@@ -116,7 +120,8 @@ export const OtpVerification: React.FC<OtpVerificationProps> = ({
 
   const handlePaste = (index: number, e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const pastedText = e.clipboardData?.getData("text/plain") || e.clipboardData?.getData("text") || "";
+    const pastedText =
+      e.clipboardData?.getData("text/plain") || e.clipboardData?.getData("text") || "";
     const digits = normalizeOtpDigits(pastedText);
     if (digits) {
       applyDigitsFromIndex(index, digits);
@@ -124,7 +129,7 @@ export const OtpVerification: React.FC<OtpVerificationProps> = ({
   };
 
   return (
-    <div dir="ltr" className="flex items-center justify-center gap-2 sm:gap-2.5 select-none">
+    <div dir="ltr" className="grid grid-cols-6 gap-2 sm:gap-2.5 select-none">
       {Array.from({ length }).map((_, idx) => {
         const digit = cleanValue[idx] || "";
         return (
@@ -144,10 +149,10 @@ export const OtpVerification: React.FC<OtpVerificationProps> = ({
             onPaste={(e) => handlePaste(idx, e)}
             onFocus={(e) => e.currentTarget.select()}
             aria-label={`Digit ${idx + 1}`}
-            className={`w-11 h-14 sm:w-12 sm:h-14 rounded-xl bg-zinc-950 border text-center text-2xl font-mono font-bold text-white transition-all focus:outline-none focus:ring-2 focus:ring-white ${
+            className={`w-full h-13 sm:h-14 rounded-2xl backdrop-blur-xl text-center text-xl sm:text-2xl font-mono font-extrabold text-white transition-all focus:outline-none ${
               digit
-                ? "border-white/80 bg-zinc-900 shadow-inner"
-                : "border-zinc-800 hover:border-zinc-700"
+                ? "bg-white/[0.1] border-2 border-white shadow-[0_0_20px_rgba(255,255,255,0.28)]"
+                : "bg-zinc-900/80 border border-white/15 hover:border-white/35 focus:border-white focus:bg-white/[0.07] focus:shadow-[0_0_18px_rgba(255,255,255,0.22)]"
             } disabled:opacity-50`}
           />
         );

@@ -15,6 +15,7 @@ const RegisterSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   fullName: z.string().min(2, "Full name must be at least 2 characters").trim(),
   shopName: z.string().min(2, "Shop name must be at least 2 characters").trim(),
+  storeType: z.enum(["grocery", "restaurant", "fashion", "electronics"]).optional().default("grocery"),
   phone: z.string().optional(),
   city: z.string().optional(),
 });
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { email, password, fullName, shopName, phone, city } = parsed.data;
+    const { email, password, fullName, shopName, storeType, phone, city } = parsed.data;
 
     // Check if user already exists
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -133,6 +134,31 @@ export async function POST(req: NextRequest) {
           { tenantId: tenant.id, code: "TVA_7", label: "TVA Super-Réduite (7%)", rate: 7.00, isDefault: false },
           { tenantId: tenant.id, code: "TVA_0", label: "Exonéré (0%)", rate: 0.00, isDefault: false },
         ],
+      });
+
+      // 6. Persist selected Store Vertical Profile
+      const activeStoreType = storeType || "grocery";
+      await tx.idempotencyRecord.create({
+        data: {
+          tenantId: tenant.id,
+          scope: "workspace_config",
+          key: "store_profile",
+          requestHash: `onboard_${activeStoreType}`,
+          responseStatus: 200,
+          responseBody: {
+            storeType: activeStoreType,
+            onboardingCompleted: true,
+            currency: "MAD",
+            receiptLanguage: "ar",
+            enableKds: activeStoreType === "restaurant",
+            enableTableGrid: activeStoreType === "restaurant",
+            enableVariantsMatrix: activeStoreType === "fashion",
+            enableSerialTracking: activeStoreType === "electronics",
+            enableWeightScale: activeStoreType === "grocery",
+            completedAt: new Date().toISOString(),
+          },
+          expiresAt: new Date("2099-12-31T23:59:59Z"),
+        },
       });
 
       return { user, tenant, store, membership };

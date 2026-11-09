@@ -1,34 +1,164 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  Loader2,
-  Mail,
-  Lock,
-  KeyRound,
-  ArrowRight,
-  CheckCircle2,
-  RefreshCw,
-  Sparkles,
-  ShieldCheck,
-} from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { getApiUrl } from "@/client/sync-engine";
 import { OtpVerification } from "@/components/auth/OtpVerification";
+import { AuthGlassShell, AuthLocale } from "@/components/auth/MonochromePosBackground";
 import { playTapSound, playSuccessSound, playErrorSound } from "@/lib/audio";
 
 type AuthMode = "password" | "gmail_otp" | "forgot_password";
 
+const LOGIN_I18N: Record<
+  AuthLocale,
+  {
+    titleLogin: string;
+    titleForgot: string;
+    tabPassword: string;
+    tabGmailOtp: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    passwordLabel: string;
+    passwordPlaceholder: string;
+    signInBtn: string;
+    forgotPasswordLink: string;
+    noAccountText: string;
+    createAccountLink: string;
+    sendOtpBtn: string;
+    verifyOtpBtn: string;
+    resendCountdown: (sec: number) => string;
+    resendBtn: string;
+    sendResetBtn: string;
+    newPasswordLabel: string;
+    confirmPasswordLabel: string;
+    savePasswordBtn: string;
+    backToLogin: string;
+    errInvalidEmail: string;
+    errInvalidCredentials: string;
+    errInvalidOtp: string;
+    errPasswordShort: string;
+    errPasswordMismatch: string;
+    errNetwork: string;
+    msgOtpSent: string;
+    msgVerified: string;
+  }
+> = {
+  ar: {
+    titleLogin: "تسجيل الدخول",
+    titleForgot: "استعادة كلمة المرور",
+    tabPassword: "كلمة المرور",
+    tabGmailOtp: "رمز التحقق Gmail",
+    emailLabel: "البريد الإلكتروني",
+    emailPlaceholder: "contact@store.ma",
+    passwordLabel: "كلمة المرور",
+    passwordPlaceholder: "••••••••••",
+    signInBtn: "تسجيل الدخول",
+    forgotPasswordLink: "نسيت كلمة المرور؟",
+    noAccountText: "ليس لديك حساب؟",
+    createAccountLink: "إنشاء حساب جديد",
+    sendOtpBtn: "إرسال رمز التحقق",
+    verifyOtpBtn: "تأكيد الرمز والدخول",
+    resendCountdown: (sec) => `إعادة إرسال الرمز بعد ${sec} ثانية`,
+    resendBtn: "إعادة إرسال الرمز",
+    sendResetBtn: "إرسال رمز الاستعادة",
+    newPasswordLabel: "كلمة المرور الجديدة",
+    confirmPasswordLabel: "تأكيد كلمة المرور",
+    savePasswordBtn: "تحديث كلمة المرور والدخول",
+    backToLogin: "العودة لتسجيل الدخول",
+    errInvalidEmail: "يرجى إدخال بريد إلكتروني صالح",
+    errInvalidCredentials: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+    errInvalidOtp: "يرجى إدخال رمز التحقق المكون من 6 أرقام",
+    errPasswordShort: "كلمة المرور يجب ألا تقل عن 6 أحرف",
+    errPasswordMismatch: "كلمتا المرور غير متطابقتين",
+    errNetwork: "تعذر الاتصال بالخادم، يرجى المحاولة مجدداً",
+    msgOtpSent: "تم إرسال رمز التحقق المكون من 6 أرقام إلى بريدك الإلكتروني",
+    msgVerified: "تم التحقق بنجاح، جاري الدخول...",
+  },
+  fr: {
+    titleLogin: "Connexion",
+    titleForgot: "Mot de passe oublié",
+    tabPassword: "Mot de passe",
+    tabGmailOtp: "Code Gmail",
+    emailLabel: "Adresse e-mail",
+    emailPlaceholder: "contact@store.ma",
+    passwordLabel: "Mot de passe",
+    passwordPlaceholder: "••••••••••",
+    signInBtn: "Se connecter",
+    forgotPasswordLink: "Mot de passe oublié ?",
+    noAccountText: "Vous n'avez pas de compte ?",
+    createAccountLink: "Créer un compte",
+    sendOtpBtn: "Envoyer le code Gmail",
+    verifyOtpBtn: "Confirmer le code et entrer",
+    resendCountdown: (sec) => `Renvoyer le code dans ${sec}s`,
+    resendBtn: "Renvoyer le code",
+    sendResetBtn: "Envoyer le code de récupération",
+    newPasswordLabel: "Nouveau mot de passe",
+    confirmPasswordLabel: "Confirmer le mot de passe",
+    savePasswordBtn: "Mettre à jour et entrer",
+    backToLogin: "Retour à la connexion",
+    errInvalidEmail: "Veuillez saisir une adresse e-mail valide",
+    errInvalidCredentials: "Adresse e-mail ou mot de passe incorrect",
+    errInvalidOtp: "Veuillez saisir le code de vérification à 6 chiffres",
+    errPasswordShort: "Le mot de passe doit contenir au moins 6 caractères",
+    errPasswordMismatch: "Les mots de passe ne correspondent pas",
+    errNetwork: "Erreur de connexion au serveur",
+    msgOtpSent: "Code de vérification à 6 chiffres envoyé sur votre boîte Gmail",
+    msgVerified: "Vérification réussie, redirection...",
+  },
+  en: {
+    titleLogin: "Sign In",
+    titleForgot: "Reset Password",
+    tabPassword: "Password",
+    tabGmailOtp: "Gmail OTP",
+    emailLabel: "Email Address",
+    emailPlaceholder: "contact@store.ma",
+    passwordLabel: "Password",
+    passwordPlaceholder: "••••••••••",
+    signInBtn: "Sign In",
+    forgotPasswordLink: "Forgot password?",
+    noAccountText: "Don't have an account?",
+    createAccountLink: "Create new account",
+    sendOtpBtn: "Send Verification Code",
+    verifyOtpBtn: "Verify Code & Sign In",
+    resendCountdown: (sec) => `Resend code in ${sec}s`,
+    resendBtn: "Resend verification code",
+    sendResetBtn: "Send Recovery Code",
+    newPasswordLabel: "New Password",
+    confirmPasswordLabel: "Confirm Password",
+    savePasswordBtn: "Update Password & Sign In",
+    backToLogin: "Back to Sign In",
+    errInvalidEmail: "Please enter a valid email address",
+    errInvalidCredentials: "Incorrect email address or password",
+    errInvalidOtp: "Please enter the 6-digit verification code",
+    errPasswordShort: "Password must be at least 6 characters",
+    errPasswordMismatch: "Passwords do not match",
+    errNetwork: "Unable to reach the server, please try again",
+    msgOtpSent: "6-digit verification code sent to your Gmail inbox",
+    msgVerified: "Verified successfully, signing in...",
+  },
+};
+
+function normalizeLocale(raw?: string): AuthLocale {
+  if (raw === "fr" || raw === "en" || raw === "ar") return raw;
+  return "ar";
+}
+
 function LoginForm() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const locale = (params?.locale as string) || "ar";
+  const initialLocale = normalizeLocale(params?.locale as string);
+
+  const [locale, setLocale] = useState<AuthLocale>(initialLocale);
+  const t = LOGIN_I18N[locale];
+  const isRtl = locale === "ar";
 
   const [authMode, setAuthMode] = useState<AuthMode>("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   // OTP States
   const [otpStep, setOtpStep] = useState<"request" | "verify">("request");
@@ -40,72 +170,19 @@ function LoginForm() {
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const [demoLoading, setDemoLoading] = useState(false);
-  const [founderLoading, setFounderLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const handleQuickFounderLogin = async () => {
-    playTapSound();
-    setFounderLoading(true);
+  const handleLocaleChange = (nextLocale: AuthLocale) => {
+    setLocale(nextLocale);
     setError("");
-    setSuccess("جاري تسجيل الدخول السريع لحساب المؤسس (@kaspipos)...");
-    try {
-      const res = await fetch(getApiUrl("/api/v1/auth/founder"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) {
-        throw new Error(data?.error?.message || "تعذر تشغيل الدخول السريع");
-      }
-
-      await signIn("credentials", {
-        redirect: false,
-        email: data.data.email,
-        otpCode: data.data.otpCode,
-      }).catch(() => {});
-
-      playSuccessSound();
-      window.location.href = `/${locale}/dashboard`;
-    } catch (err: any) {
-      playErrorSound();
-      setError(err.message || "حدث خطأ أثناء تسجيل الدخول السريع");
-      setSuccess("");
-      setFounderLoading(false);
-    }
-  };
-
-  const handleInstantDemoLogin = async () => {
-    playTapSound();
-    setDemoLoading(true);
-    setError("");
-    setSuccess("جاري تجهيز نسخة العرض التفاعلية (KASPI Showroom)...");
-    try {
-      const res = await fetch(getApiUrl("/api/v1/auth/demo"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) {
-        throw new Error(data?.error?.message || "تعذر تشغيل الوضع التجريبي");
-      }
-
-      await signIn("credentials", {
-        redirect: false,
-        email: data.data.email,
-        password: data.data.password,
-      }).catch(() => {});
-
-      playSuccessSound();
-      window.location.href = `/${locale}/pos`;
-    } catch (err: any) {
-      playErrorSound();
-      setError(err.message || "حدث خطأ أثناء تشغيل النسخة التجريبية");
-      setSuccess("");
-      setDemoLoading(false);
+    setSuccess("");
+    if (typeof window !== "undefined") {
+      const nextPath = window.location.pathname.replace(/^\/(ar|fr|en)(\/|$)/, `/${nextLocale}$2`);
+      window.history.replaceState(null, "", `${nextPath}${window.location.search}`);
     }
   };
 
@@ -118,17 +195,11 @@ function LoginForm() {
     return () => clearInterval(interval);
   }, [otpTimer]);
 
-  // Handle URL parameters: ?email=...&code=...&purpose=...&demo=true
+  // Handle URL parameters: ?email=...&code=...&purpose=...
   useEffect(() => {
     const queryEmail = searchParams.get("email");
     const queryCode = searchParams.get("code");
     const queryPurpose = searchParams.get("purpose");
-    const queryDemo = searchParams.get("demo");
-
-    if (queryDemo === "true") {
-      handleInstantDemoLogin();
-      return;
-    }
 
     if (queryEmail) {
       setEmail(queryEmail);
@@ -148,7 +219,7 @@ function LoginForm() {
     }
   }, [searchParams]);
 
-  const handleRedirect = (_isSuperAdmin?: boolean) => {
+  const handleRedirect = () => {
     playSuccessSound();
     window.location.href = `/${locale}/dashboard`;
   };
@@ -172,18 +243,11 @@ function LoginForm() {
 
       if (!apiRes.ok) {
         playErrorSound();
-        if (apiData?.code === "DEVICE_LIMIT_EXCEEDED") {
-          setError(
-            apiData.error ||
-              "تم الوصول للحد الأقصى لعدد الأجهزة المصرح بها. يرجى إضافة نقطة بيع جديدة من لوحة الفوترة."
-          );
-        } else {
-          const errMsg =
-            apiData?.error?.message ||
-            (typeof apiData?.error === "string" ? apiData.error : null) ||
-            "البريد الإلكتروني أو كلمة المرور غير صحيحة";
-          setError(errMsg);
-        }
+        const errMsg =
+          apiData?.error?.message ||
+          (typeof apiData?.error === "string" ? apiData.error : null) ||
+          t.errInvalidCredentials;
+        setError(errMsg);
         setLoading(false);
         return;
       }
@@ -196,14 +260,10 @@ function LoginForm() {
 
       if (res?.error) {
         playErrorSound();
-        setError("فشل إنشاء جلسة الدخول. يرجى التحقق من البيانات والمحاولة مجدداً.");
+        setError(t.errInvalidCredentials);
         setLoading(false);
         return;
       }
-
-      const isSuperAdmin = Boolean(
-        apiData?.data?.user?.isSuperAdmin || apiData?.user?.isSuperAdmin
-      );
 
       if (
         typeof window !== "undefined" &&
@@ -213,17 +273,17 @@ function LoginForm() {
         try {
           const cred = new (window as any).PasswordCredential({
             id: email,
-            password: password,
+            password,
             name: email,
           });
           await navigator.credentials.store(cred);
         } catch {}
       }
 
-      handleRedirect(isSuperAdmin);
+      handleRedirect();
     } catch {
       playErrorSound();
-      setError("حدث خطأ غير متوقع");
+      setError(t.errNetwork);
     } finally {
       setLoading(false);
     }
@@ -235,7 +295,7 @@ function LoginForm() {
     playTapSound();
     if (!email || !email.includes("@")) {
       playErrorSound();
-      setError("يرجى إدخال بريد إلكتروني صالح");
+      setError(t.errInvalidEmail);
       return;
     }
 
@@ -250,10 +310,10 @@ function LoginForm() {
         body: JSON.stringify({ email, purpose: "login" }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
         playErrorSound();
-        setError(data.error?.message || data.error || "فشل إرسال رمز التحقق إلى بريدك");
+        setError(data?.error?.message || data?.error || t.errNetwork);
         setLoading(false);
         return;
       }
@@ -261,12 +321,10 @@ function LoginForm() {
       playSuccessSound();
       setOtpStep("verify");
       setOtpTimer(60);
-      setSuccess(
-        `تم إرسال رمز التحقق المكون من 6 أرقام إلى ${email}. انسخ الرمز والصقه هنا (Ctrl+V).`
-      );
+      setSuccess(t.msgOtpSent);
     } catch {
       playErrorSound();
-      setError("حدث خطأ في الاتصال بالسيرفر لإرسال الرمز");
+      setError(t.errNetwork);
     } finally {
       setLoading(false);
     }
@@ -289,12 +347,10 @@ function LoginForm() {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
         playErrorSound();
-        setError(
-          data.error?.message || data.error || "رمز التحقق غير صحيح أو انتهت صلاحيته"
-        );
+        setError(data?.error?.message || data?.error || t.errInvalidOtp);
         setLoading(false);
         return;
       }
@@ -305,12 +361,11 @@ function LoginForm() {
         otpCode: codeToVerify,
       }).catch(() => {});
 
-      setSuccess("تم التحقق بنجاح! جاري تحويلك...");
-      const isSuperAdmin = Boolean(data.data?.user?.isSuperAdmin);
-      handleRedirect(isSuperAdmin);
+      setSuccess(t.msgVerified);
+      handleRedirect();
     } catch {
       playErrorSound();
-      setError("حدث خطأ أثناء التحقق من الرمز");
+      setError(t.errNetwork);
       setLoading(false);
     }
   };
@@ -318,9 +373,9 @@ function LoginForm() {
   const handleVerifyOtpSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     playTapSound();
-    if (!otpCode || otpCode.trim().length < 4) {
+    if (!otpCode || otpCode.trim().length < 6) {
       playErrorSound();
-      setError("يرجى إدخال رمز التحقق المكون من 6 أرقام");
+      setError(t.errInvalidOtp);
       return;
     }
     executeOtpLogin(email, otpCode.trim());
@@ -332,7 +387,7 @@ function LoginForm() {
     playTapSound();
     if (!email || !email.includes("@")) {
       playErrorSound();
-      setError("يرجى إدخال بريدك الإلكتروني المسجل");
+      setError(t.errInvalidEmail);
       return;
     }
 
@@ -347,22 +402,20 @@ function LoginForm() {
         body: JSON.stringify({ email, purpose: "reset" }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
         playErrorSound();
-        setError(data.error?.message || data.error || "لم نتمكن من إرسال رمز إعادة التعيين");
+        setError(data?.error?.message || data?.error || t.errNetwork);
         setLoading(false);
         return;
       }
 
       playSuccessSound();
       setResetStep("verify_and_set");
-      setSuccess(
-        `تم إرسال رمز إعادة تعيين كلمة المرور إلى ${email}. أدخل الرمز أدناه.`
-      );
+      setSuccess(t.msgOtpSent);
     } catch {
       playErrorSound();
-      setError("حدث خطأ أثناء طلب رمز استعادة كلمة المرور");
+      setError(t.errNetwork);
     } finally {
       setLoading(false);
     }
@@ -372,19 +425,19 @@ function LoginForm() {
   const handleResetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     playTapSound();
-    if (!resetCode || resetCode.trim().length < 4) {
+    if (!resetCode || resetCode.trim().length < 6) {
       playErrorSound();
-      setError("يرجى إدخال رمز التحقق المستلم في بريدك");
+      setError(t.errInvalidOtp);
       return;
     }
     if (newPassword.length < 6) {
       playErrorSound();
-      setError("كلمة المرور يجب ألا تقل عن 6 أحرف");
+      setError(t.errPasswordShort);
       return;
     }
     if (newPassword !== confirmPassword) {
       playErrorSound();
-      setError("كلمتا المرور غير متطابقتين");
+      setError(t.errPasswordMismatch);
       return;
     }
 
@@ -403,10 +456,10 @@ function LoginForm() {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
         playErrorSound();
-        setError(data.error?.message || data.error || "فشل إعادة تعيين كلمة المرور");
+        setError(data?.error?.message || data?.error || t.errNetwork);
         setLoading(false);
         return;
       }
@@ -417,52 +470,350 @@ function LoginForm() {
         password: newPassword,
       });
 
-      setSuccess("تم تغيير كلمة المرور بنجاح! جاري تحويلك...");
-      const isSuperAdmin = Boolean(data.data?.user?.isSuperAdmin);
-      handleRedirect(isSuperAdmin);
+      setSuccess(t.msgVerified);
+      handleRedirect();
     } catch {
       playErrorSound();
-      setError("حدث خطأ أثناء حفظ كلمة المرور الجديدة");
+      setError(t.errNetwork);
       setLoading(false);
     }
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center bg-zinc-950 p-4 font-sans relative overflow-hidden"
-      dir="rtl"
+    <AuthGlassShell
+      locale={locale}
+      onLocaleChange={handleLocaleChange}
+      title={authMode === "forgot_password" ? t.titleForgot : t.titleLogin}
     >
-      {/* Subtle Ambient Radial Glow */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[560px] h-[320px] rounded-full bg-white/[0.04] blur-3xl" />
-
-      <div className="relative z-10 w-full max-w-md mx-auto backdrop-blur-2xl bg-zinc-900/90 border border-white/15 rounded-3xl p-7 sm:p-8 shadow-2xl transition-all">
-        {/* Brand Header */}
-        <div className="text-center mb-6">
-          <img
-            src="/logo.png"
-            alt="KASPI POS"
-            className="w-14 h-14 object-contain bg-transparent mx-auto mb-3.5"
-            onError={(e) => (e.currentTarget.style.display = "none")}
-          />
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">
-            {authMode === "forgot_password"
-              ? "استعادة كلمة المرور"
-              : authMode === "gmail_otp"
-              ? "الدخول عبر رمز Gmail"
-              : "تسجيل الدخول • Connexion"}
-          </h1>
-          <p className="text-zinc-400 text-xs sm:text-sm mt-1">
-            {authMode === "forgot_password"
-              ? "أدخل بريدك الإلكتروني لتعيين كلمة مرور جديدة"
-              : authMode === "gmail_otp"
-              ? "رمز تحقق فوري مكون من 6 أرقام بدون كلمة مرور"
-              : "منصة إدارة نقاط البيع والمتاجر المتكاملة • KASPI POS"}
-          </p>
+      {/* Segmented Control (Password | Gmail OTP) */}
+      {authMode !== "forgot_password" && (
+        <div className="grid grid-cols-2 bg-zinc-900/85 p-1 rounded-2xl border border-white/10 mb-5">
+          <button
+            type="button"
+            onClick={() => {
+              playTapSound();
+              setAuthMode("password");
+              setError("");
+              setSuccess("");
+            }}
+            className={`py-2 text-xs sm:text-[13px] rounded-xl transition-all cursor-pointer ${
+              authMode === "password"
+                ? "border border-white bg-zinc-900/95 text-white font-bold shadow-[0_0_16px_rgba(255,255,255,0.28)]"
+                : "border border-transparent text-zinc-400 hover:text-zinc-200 font-medium"
+            }`}
+          >
+            {t.tabPassword}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              playTapSound();
+              setAuthMode("gmail_otp");
+              setOtpStep("request");
+              setError("");
+              setSuccess("");
+            }}
+            className={`py-2 text-xs sm:text-[13px] rounded-xl transition-all cursor-pointer ${
+              authMode === "gmail_otp"
+                ? "border border-white bg-zinc-900/95 text-white font-bold shadow-[0_0_16px_rgba(255,255,255,0.28)]"
+                : "border border-transparent text-zinc-400 hover:text-zinc-200 font-medium"
+            }`}
+          >
+            {t.tabGmailOtp}
+          </button>
         </div>
+      )}
 
-        {/* Mode Selector Tabs */}
-        {authMode !== "forgot_password" && (
-          <div className="flex bg-zinc-950/90 p-1 rounded-xl border border-white/10 mb-5">
+      {/* Monochrome Feedback Banners */}
+      {error && (
+        <div className="mb-4 px-3.5 py-2.5 bg-zinc-900/95 border border-white/25 text-zinc-200 text-xs rounded-2xl text-center font-medium">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="mb-4 px-3.5 py-2.5 bg-white/[0.08] border border-white/30 text-white text-xs rounded-2xl text-center font-medium">
+          {success}
+        </div>
+      )}
+
+      {/* MODE 1: Standard Password Login */}
+      {authMode === "password" && (
+        <form onSubmit={handlePasswordSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-zinc-200 mb-2">
+              {t.emailLabel}
+            </label>
+            <input
+              type="email"
+              name="email"
+              dir="ltr"
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t.emailPlaceholder}
+              required
+              className="w-full h-12 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-zinc-200 mb-2">
+              {t.passwordLabel}
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                dir="ltr"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={t.passwordPlaceholder}
+                required
+                className={`w-full h-12 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all ${
+                  isRtl ? "pl-11 pr-4 text-right" : "pl-4 pr-11 text-left"
+                }`}
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => {
+                  playTapSound();
+                  setShowPassword((prev) => !prev);
+                }}
+                aria-label="Toggle password visibility"
+                className={`absolute top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors cursor-pointer ${
+                  isRtl ? "left-3.5" : "right-3.5"
+                }`}
+              >
+                {showPassword ? (
+                  <Eye className="w-4 h-4" />
+                ) : (
+                  <EyeOff className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full h-12 bg-white text-black font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-[0_0_28px_rgba(255,255,255,0.45)] hover:shadow-[0_0_38px_rgba(255,255,255,0.65)] hover:bg-zinc-100 active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer mt-2 disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : t.signInBtn}
+          </button>
+
+          <div className="text-center pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                playTapSound();
+                setAuthMode("forgot_password");
+                setResetStep("request");
+                setError("");
+                setSuccess("");
+              }}
+              className="text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            >
+              {t.forgotPasswordLink}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* MODE 2: Gmail 6-Digit OTP Login */}
+      {authMode === "gmail_otp" && (
+        <div className="space-y-4">
+          {otpStep === "request" ? (
+            <form onSubmit={handleSendOtp} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-zinc-200 mb-2">
+                  {t.emailLabel}
+                </label>
+                <input
+                  type="email"
+                  dir="ltr"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t.emailPlaceholder}
+                  required
+                  className="w-full h-12 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 bg-white text-black font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-[0_0_28px_rgba(255,255,255,0.45)] hover:shadow-[0_0_38px_rgba(255,255,255,0.65)] hover:bg-zinc-100 active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer disabled:opacity-50"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-black" />
+                ) : (
+                  t.sendOtpBtn
+                )}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtpSubmit} className="space-y-4">
+              {/* Static Frosted Active Email Container (Zero Distraction) */}
+              <div
+                dir="ltr"
+                className="w-full h-11 px-4 rounded-2xl bg-zinc-900/80 border border-white/15 flex items-center justify-center text-sm font-mono text-zinc-200 select-all"
+              >
+                {email}
+              </div>
+
+              {/* 6 Individual Illuminated Glass Digit Boxes */}
+              <OtpVerification
+                value={otpCode}
+                onChange={setOtpCode}
+                onComplete={(fullCode) => {
+                  setOtpCode(fullCode);
+                  executeOtpLogin(email, fullCode);
+                }}
+                disabled={loading}
+                autoFocus
+              />
+
+              <button
+                type="submit"
+                disabled={loading || otpCode.length < 6}
+                className="w-full h-12 bg-white text-black font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-[0_0_28px_rgba(255,255,255,0.45)] hover:shadow-[0_0_38px_rgba(255,255,255,0.65)] hover:bg-zinc-100 active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer disabled:opacity-50"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-black" />
+                ) : (
+                  t.verifyOtpBtn
+                )}
+              </button>
+
+              <div className="text-center pt-1">
+                {otpTimer > 0 ? (
+                  <span className="text-xs text-zinc-400 font-mono">
+                    {t.resendCountdown(otpTimer)}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleSendOtp()}
+                    disabled={loading}
+                    className="text-xs text-zinc-300 hover:text-white underline underline-offset-4 transition-colors cursor-pointer"
+                  >
+                    {t.resendBtn}
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+
+      {/* MODE 3: Forgot Password / Reset */}
+      {authMode === "forgot_password" && (
+        <div className="space-y-4">
+          {resetStep === "request" ? (
+            <form onSubmit={handleSendResetCode} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-zinc-200 mb-2">
+                  {t.emailLabel}
+                </label>
+                <input
+                  type="email"
+                  dir="ltr"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t.emailPlaceholder}
+                  required
+                  className="w-full h-12 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 bg-white text-black font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-[0_0_28px_rgba(255,255,255,0.45)] hover:shadow-[0_0_38px_rgba(255,255,255,0.65)] hover:bg-zinc-100 transition-all flex justify-center items-center cursor-pointer disabled:opacity-50"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-black" />
+                ) : (
+                  t.sendResetBtn
+                )}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleResetPasswordSubmit} className="space-y-3.5">
+              <div
+                dir="ltr"
+                className="w-full h-11 px-4 rounded-2xl bg-zinc-900/80 border border-white/15 flex items-center justify-center text-sm font-mono text-zinc-200"
+              >
+                {email}
+              </div>
+
+              <OtpVerification
+                value={resetCode}
+                onChange={setResetCode}
+                disabled={loading}
+                autoFocus
+              />
+
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  dir="ltr"
+                  autoComplete="new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder={t.newPasswordLabel}
+                  required
+                  className={`w-full h-11 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 transition-all ${
+                    isRtl ? "pl-11 pr-4 text-right" : "pl-4 pr-11 text-left"
+                  }`}
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowNewPassword((prev) => !prev)}
+                  className={`absolute top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white cursor-pointer ${
+                    isRtl ? "left-3.5" : "right-3.5"
+                  }`}
+                >
+                  {showNewPassword ? (
+                    <Eye className="w-4 h-4" />
+                  ) : (
+                    <EyeOff className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+
+              <input
+                type={showNewPassword ? "text" : "password"}
+                dir="ltr"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder={t.confirmPasswordLabel}
+                required
+                className={`w-full h-11 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 transition-all ${
+                  isRtl ? "text-right" : "text-left"
+                }`}
+              />
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 bg-white text-black font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-[0_0_28px_rgba(255,255,255,0.45)] hover:shadow-[0_0_38px_rgba(255,255,255,0.65)] transition-all flex justify-center items-center cursor-pointer disabled:opacity-50"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-black" />
+                ) : (
+                  t.savePasswordBtn
+                )}
+              </button>
+            </form>
+          )}
+
+          <div className="text-center pt-1">
             <button
               type="button"
               onClick={() => {
@@ -471,390 +822,26 @@ function LoginForm() {
                 setError("");
                 setSuccess("");
               }}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                authMode === "password"
-                  ? "bg-white text-zinc-950 shadow-xs"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
+              className="text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
             >
-              <Lock className="w-3.5 h-3.5" />
-              <span>كلمة المرور</span>
+              {t.backToLogin}
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                playTapSound();
-                setAuthMode("gmail_otp");
-                setError("");
-                setSuccess("");
-              }}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                authMode === "gmail_otp"
-                  ? "bg-white text-zinc-950 shadow-xs"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              <Mail className="w-3.5 h-3.5 text-red-500" />
-              <span>رمز التحقق Gmail</span>
-            </button>
-          </div>
-        )}
-
-        {/* Feedback Banners */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-950/80 border border-red-500/40 text-red-200 text-xs sm:text-sm rounded-xl text-center font-medium">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-4 p-3 bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 text-xs sm:text-sm rounded-xl text-center font-medium flex items-center justify-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{success}</span>
-          </div>
-        )}
-
-        {/* MODE 1: Standard Password Login */}
-        {authMode === "password" && (
-          <form onSubmit={handlePasswordSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                البريد الإلكتروني المهني • Adresse Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                dir="ltr"
-                autoComplete="username"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="contact@votre-magasin.com"
-                required
-                className="w-full h-11 px-3.5 bg-zinc-950 border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/25 focus:border-white/40 transition-all"
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="block text-xs font-semibold text-zinc-300">
-                  كلمة المرور • Mot de passe
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    playTapSound();
-                    setAuthMode("forgot_password");
-                    setResetStep("request");
-                    setError("");
-                    setSuccess("");
-                  }}
-                  className="text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  نسيت كلمة المرور؟
-                </button>
-              </div>
-              <input
-                type="password"
-                name="password"
-                dir="ltr"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full h-11 px-3.5 bg-zinc-950 border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/25 focus:border-white/40 transition-all"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-11 bg-white text-zinc-950 font-bold text-sm rounded-xl hover:bg-zinc-200 transition-all flex justify-center items-center gap-2 cursor-pointer shadow-sm"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "دخول • Se connecter"}
-            </button>
-          </form>
-        )}
-
-        {/* MODE 2: Gmail 6-Digit OTP Login */}
-        {authMode === "gmail_otp" && (
-          <div className="space-y-4">
-            {otpStep === "request" ? (
-              <form onSubmit={handleSendOtp} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                    البريد الإلكتروني (Gmail)
-                  </label>
-                  <input
-                    type="email"
-                    dir="ltr"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@kaspipos.com"
-                    required
-                    className="w-full h-11 px-3.5 bg-zinc-950 border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/25 focus:border-white/40 transition-all"
-                  />
-                  <p className="text-[11px] text-zinc-400 mt-2">
-                    سنرسل رمز تحقق فوري مكون من 6 أرقام إلى بريدك الإلكتروني لتسجيل الدخول.
-                  </p>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-11 bg-white text-zinc-950 hover:bg-zinc-200 font-bold text-sm rounded-xl transition-all flex justify-center items-center gap-2 cursor-pointer"
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Mail className="w-4 h-4" />
-                      <span>إرسال رمز التحقق (6 أرقام)</span>
-                    </>
-                  )}
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleVerifyOtpSubmit} className="space-y-4">
-                <div>
-                  <div className="flex justify-between items-center mb-2.5">
-                    <label className="block text-xs font-semibold text-zinc-300">
-                      رمز التحقق المستلم (6 أرقام)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        playTapSound();
-                        setOtpStep("request");
-                      }}
-                      className="text-xs text-zinc-400 hover:text-white cursor-pointer"
-                    >
-                      تغيير البريد
-                    </button>
-                  </div>
-                  <OtpVerification
-                    value={otpCode}
-                    onChange={setOtpCode}
-                    onComplete={(fullCode) => {
-                      setOtpCode(fullCode);
-                      executeOtpLogin(email, fullCode);
-                    }}
-                    disabled={loading}
-                    autoFocus
-                  />
-                  <p className="text-[11px] text-zinc-400 mt-2.5 text-center">
-                    يدعم اللصق الفوري عبر{" "}
-                    <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-200 font-mono">
-                      Ctrl+V
-                    </kbd>
-                  </p>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading || otpCode.length < 4}
-                  className="w-full h-11 bg-white text-zinc-950 font-bold text-sm rounded-xl hover:bg-zinc-200 transition-all flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <KeyRound className="w-4 h-4" />
-                      <span>تأكيد الرمز والدخول</span>
-                    </>
-                  )}
-                </button>
-
-                <div className="text-center pt-1">
-                  {otpTimer > 0 ? (
-                    <span className="text-xs text-zinc-500">
-                      إعادة الإرسال متاحة بعد ({otpTimer}) ثانية
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleSendOtp()}
-                      disabled={loading}
-                      className="text-xs text-zinc-400 hover:text-white inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                      <span>إعادة إرسال الرمز</span>
-                    </button>
-                  )}
-                </div>
-              </form>
-            )}
-          </div>
-        )}
-
-        {/* MODE 3: Forgot Password / Reset */}
-        {authMode === "forgot_password" && (
-          <div className="space-y-4">
-            {resetStep === "request" ? (
-              <form onSubmit={handleSendResetCode} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                    البريد الإلكتروني المسجل
-                  </label>
-                  <input
-                    type="email"
-                    dir="ltr"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="contact@votre-magasin.com"
-                    required
-                    className="w-full h-11 px-3.5 bg-zinc-950 border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/25 transition-all"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-11 bg-white text-zinc-950 font-bold text-sm rounded-xl hover:bg-zinc-200 transition-all flex justify-center items-center gap-2 cursor-pointer"
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Mail className="w-4 h-4" />
-                      <span>إرسال رمز استعادة الحساب</span>
-                    </>
-                  )}
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-2">
-                    رمز التحقق (6 أرقام — يدعم Ctrl+V)
-                  </label>
-                  <OtpVerification
-                    value={resetCode}
-                    onChange={setResetCode}
-                    disabled={loading}
-                    autoFocus
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                    كلمة المرور الجديدة
-                  </label>
-                  <input
-                    type="password"
-                    dir="ltr"
-                    autoComplete="new-password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="6 أحرف على الأقل"
-                    required
-                    className="w-full h-11 px-3.5 bg-zinc-950 border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/25 transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                    تأكيد كلمة المرور الجديدة
-                  </label>
-                  <input
-                    type="password"
-                    dir="ltr"
-                    autoComplete="new-password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="w-full h-11 px-3.5 bg-zinc-950 border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/25 transition-all"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-11 bg-white text-zinc-950 font-bold text-sm rounded-xl hover:bg-zinc-200 transition-all flex justify-center items-center gap-2 cursor-pointer"
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    "تحديث كلمة المرور والدخول"
-                  )}
-                </button>
-              </form>
-            )}
-
-            <div className="text-center pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  playTapSound();
-                  setAuthMode("password");
-                  setError("");
-                  setSuccess("");
-                }}
-                className="text-xs text-zinc-400 hover:text-white inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <ArrowRight className="w-3.5 h-3.5" />
-                <span>العودة إلى تسجيل الدخول</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Prominent 1-Click Demo & Founder Action Badges */}
-        <div className="mt-6 pt-5 border-t border-white/10 space-y-2.5">
-          <div className="grid grid-cols-1 gap-2.5">
-            <button
-              type="button"
-              disabled={demoLoading || founderLoading || loading}
-              onClick={handleInstantDemoLogin}
-              className="w-full h-11 px-4 rounded-xl bg-gradient-to-r from-amber-500/20 via-amber-500/15 to-emerald-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 border border-amber-500/40 text-amber-200 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10 cursor-pointer disabled:opacity-50"
-            >
-              {demoLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin text-amber-300" />
-              ) : (
-                <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
-              )}
-              <span>
-                {demoLoading
-                  ? "جاري فتح نقطة البيع التجريبية..."
-                  : "Essayer la Démo Instantanée • تجربة فورية للنظام"}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              disabled={founderLoading || demoLoading || loading}
-              onClick={handleQuickFounderLogin}
-              className="w-full h-10 px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-zinc-200 hover:text-white font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              {founderLoading ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
-              ) : (
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              )}
-              <span dir="ltr">
-                {founderLoading
-                  ? "Signing in @kaspipos..."
-                  : "Quick Founder Sign-In (@kaspipos)"}
-              </span>
-            </button>
-          </div>
-
-          {/* Registration Link */}
-          <div className="pt-2 text-center text-xs text-zinc-400">
-            <p>
-              ليس لديك حساب؟{" "}
-              <Link
-                href={`/${locale}/register`}
-                className="text-white hover:underline font-semibold"
-              >
-                إنشاء حساب جديد • Créer un compte
-              </Link>
-            </p>
           </div>
         </div>
+      )}
+
+      {/* Subtle Horizontal Divider & Registration Footer Link */}
+      <div className="mt-5 pt-4 border-t border-white/10 text-center text-xs text-zinc-400">
+        <span>{t.noAccountText} </span>
+        <Link
+          href={`/${locale}/register`}
+          onClick={() => playTapSound()}
+          className="text-white hover:underline font-bold"
+        >
+          {t.createAccountLink}
+        </Link>
       </div>
-    </div>
+    </AuthGlassShell>
   );
 }
 
@@ -862,14 +849,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div
-          className="min-h-screen bg-zinc-950 flex items-center justify-center text-white"
-          dir="rtl"
-        >
-          <div className="flex items-center gap-3 text-zinc-400">
-            <Loader2 className="w-5 h-5 animate-spin text-white" />
-            <span className="text-sm">جاري تحميل KASPI POS...</span>
-          </div>
+        <div className="min-h-screen bg-[#040405] flex items-center justify-center text-white">
+          <Loader2 className="w-5 h-5 animate-spin text-white" />
         </div>
       }
     >
