@@ -1,517 +1,339 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { Copy, Check, Lock } from "lucide-react";
-import { playTapSound, playSuccessSound } from "@/lib/audio";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { copyTextToClipboard, tryCopyWithoutGesture } from "@/lib/clipboard";
+import {
+  VERIFICATION_COPY,
+  VERIFICATION_LANGS,
+  VerificationLang,
+  VerificationPurpose,
+  normalizeVerificationCode,
+} from "@/lib/email/verification-copy";
 
-export type VerificationCardLocale = "ar" | "fr" | "en";
+export type VerificationCardLocale = VerificationLang;
 
 export interface EmailVerificationCardProps {
-  /**
-   * 6-digit verification code to display and copy. Defaults to "673410" (matching the design spec).
-   */
-  code?: string;
-  /**
-   * Optional callback if the user edits or pastes digits inside the 6 boxes.
-   */
-  onCodeChange?: (nextCode: string) => void;
-  /**
-   * Whether the 6 digit boxes are read-only display inputs or editable. Defaults to false (interactive input/display).
-   */
-  readOnly?: boolean;
-  /**
-   * Initial language ("ar" | "fr" | "en"). Defaults to "ar".
-   */
-  initialLocale?: VerificationCardLocale;
-  /**
-   * Optional callback when language pill is clicked.
-   */
-  onLocaleChange?: (locale: VerificationCardLocale) => void;
-  /**
-   * Optional additional className for the outer container card.
-   */
+  /** 6-digit verification code to display and copy. */
+  code: string;
+  /** Initial language. Defaults to "ar". */
+  initialLocale?: VerificationLang;
+  /** "login" (default) or "reset" — only changes heading/description copy. */
+  purpose?: VerificationPurpose;
+  /** Try to copy the code as soon as the card mounts (used by `?copy=1`). */
+  autoCopy?: boolean;
+  /** Called whenever the user switches language. */
+  onLocaleChange?: (locale: VerificationLang) => void;
   className?: string;
 }
 
-const CARD_COPY: Record<
-  VerificationCardLocale,
-  {
-    systemBadge: string;
-    heading: string;
-    subtitle: string;
-    copyBtn: string;
-    copiedToast: string;
-    langLabel: string;
-  }
-> = {
-  ar: {
-    systemBadge: "نظام إدارة نقاط البيع والمتاجر",
-    heading: "تسجيل الدخول إلى حسابك",
-    subtitle: "استخدم رمز التحقق السري أثناء تسجيل الدخول بأمان إلى النظام.",
-    copyBtn: "نسخ الرمز",
-    copiedToast: "تم النسخ بنجاح!",
-    langLabel: "العربية",
-  },
-  fr: {
-    systemBadge: "Système de gestion des points de vente",
-    heading: "Connectez-vous à votre compte",
-    subtitle:
-      "Utilisez le code de vérification secret pour vous connecter en toute sécurité au système.",
-    copyBtn: "Copier le code",
-    copiedToast: "Copié avec succès !",
-    langLabel: "Français",
-  },
-  en: {
-    systemBadge: "POS & Store Management System",
-    heading: "Sign in to your account",
-    subtitle: "Use the secure verification code to safely sign in to the system.",
-    copyBtn: "Copy Code",
-    copiedToast: "Copied successfully!",
-    langLabel: "English",
-  },
-};
+type CopyStatus = "idle" | "copied" | "failed";
 
-function normalizeSixDigits(raw: string): string {
-  return raw
-    .replace(/[\u0660-\u0669]/g, (c) => String(c.charCodeAt(0) - 0x0660))
-    .replace(/[\u06F0-\u06F9]/g, (c) => String(c.charCodeAt(0) - 0x06f0))
-    .replace(/\D/g, "")
-    .slice(0, 6);
-}
+/* ----------------------------- Inline SVG icons ----------------------------- */
 
-/**
- * KASPI POS Vector Speeding Shopping Cart Logo SVG (matching reference artwork)
- */
-function KaspiSpeedCartSvg() {
+function CopyIcon({ className = "" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 88 58"
+      viewBox="0 0 24 24"
       fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-14 h-10 sm:w-16 sm:h-11 text-zinc-950 dark:text-white shrink-0"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
       aria-hidden="true"
     >
-      {/* Speed Motion Lines */}
+      <rect x="9" y="9" width="12" height="12" rx="2.5" />
+      <path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M5 12.5l4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
+/** Fallback monogram shown if /logo.png fails to load. */
+function KaspiMonogram() {
+  return (
+    <svg viewBox="0 0 40 40" className="w-9 h-9 text-white" aria-hidden="true">
       <path
-        d="M18 14 H36"
+        d="M12 8v24M12 20l13-12M15.5 17l10.5 15"
+        fill="none"
         stroke="currentColor"
-        strokeWidth="3.2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M8 21 H38"
-        stroke="currentColor"
-        strokeWidth="3.2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M2 28 H40"
-        stroke="currentColor"
-        strokeWidth="3.2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M14 35 H42"
-        stroke="currentColor"
-        strokeWidth="3.2"
-        strokeLinecap="round"
-      />
-      {/* Cart Handle & Basket */}
-      <path
-        d="M32 6 H43 L50 38 H77 L83 14 H46"
-        stroke="currentColor"
-        strokeWidth="4.5"
+        strokeWidth="3.6"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      {/* Cart Wheels */}
-      <circle
-        cx="53"
-        cy="49"
-        r="5.5"
-        stroke="currentColor"
-        strokeWidth="4"
-        fill="none"
-      />
-      <circle
-        cx="73"
-        cy="49"
-        r="5.5"
-        stroke="currentColor"
-        strokeWidth="4"
-        fill="none"
-      />
     </svg>
   );
 }
 
-/**
- * Circular French Flag Icon for Language Switcher Pill
- */
-function FrenchFlagIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="w-4 h-4 rounded-full shrink-0 overflow-hidden shadow-xs"
-      aria-hidden="true"
-    >
-      <clipPath id="frFlagClip">
-        <circle cx="12" cy="12" r="12" />
-      </clipPath>
-      <g clipPath="url(#frFlagClip)">
-        <rect x="0" y="0" width="8" height="24" fill="#002395" />
-        <rect x="8" y="0" width="8" height="24" fill="#FFFFFF" />
-        <rect x="16" y="0" width="8" height="24" fill="#ED2939" />
-      </g>
-    </svg>
-  );
-}
-
-/**
- * Circular UK Union Jack Flag Icon for Language Switcher Pill
- */
-function UkFlagIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="w-4 h-4 rounded-full shrink-0 overflow-hidden shadow-xs"
-      aria-hidden="true"
-    >
-      <clipPath id="ukFlagClip">
-        <circle cx="12" cy="12" r="12" />
-      </clipPath>
-      <g clipPath="url(#ukFlagClip)">
-        <rect width="24" height="24" fill="#012169" />
-        <path d="M0 0 L24 24 M24 0 L0 24" stroke="#FFFFFF" strokeWidth="4" />
-        <path d="M0 0 L24 24 M24 0 L0 24" stroke="#C8102E" strokeWidth="2" />
-        <path d="M12 0 V24 M0 12 H24" stroke="#FFFFFF" strokeWidth="6" />
-        <path d="M12 0 V24 M0 12 H24" stroke="#C8102E" strokeWidth="3.5" />
-      </g>
-    </svg>
-  );
-}
+/* --------------------------------- Component -------------------------------- */
 
 export const EmailVerificationCard: React.FC<EmailVerificationCardProps> = ({
-  code = "673410",
-  onCodeChange,
-  readOnly = false,
+  code,
   initialLocale = "ar",
+  purpose = "login",
+  autoCopy = false,
   onLocaleChange,
   className = "",
 }) => {
-  const [locale, setLocale] = useState<VerificationCardLocale>(initialLocale);
-  const [internalCode, setInternalCode] = useState<string>(
-    normalizeSixDigits(code) || "673410"
+  const [locale, setLocale] = useState<VerificationLang>(initialLocale);
+  const [status, setStatus] = useState<CopyStatus>("idle");
+  const [awaitingGesture, setAwaitingGesture] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cleanCode = normalizeVerificationCode(code);
+  const hasCode = cleanCode.length === 6;
+  const t = VERIFICATION_COPY[locale];
+
+  useEffect(() => setLocale(initialLocale), [initialLocale]);
+
+  const flashStatus = useCallback((next: CopyStatus) => {
+    setStatus(next);
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+    resetTimer.current = setTimeout(() => setStatus("idle"), 2000);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (resetTimer.current) clearTimeout(resetTimer.current);
+    },
+    []
   );
-  const [copied, setCopied] = useState(false);
-  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
-  // Re-sync when the parent supplies a new code (e.g. from ?code= query param)
+  const handleCopy = useCallback(async () => {
+    if (!hasCode) return;
+    const ok = await copyTextToClipboard(cleanCode);
+    setAwaitingGesture(false);
+    flashStatus(ok ? "copied" : "failed");
+  }, [cleanCode, hasCode, flashStatus]);
+
+  // `?copy=1`: copy on load where the browser allows it; otherwise copy on the first click/keypress.
   useEffect(() => {
-    setInternalCode(normalizeSixDigits(code));
-  }, [code]);
+    if (!autoCopy || !hasCode) return;
+    let cancelled = false;
+    let armed = false;
 
-  const activeCode = internalCode;
+    const onFirstGesture = () => {
+      document.removeEventListener("click", onFirstGesture, true);
+      document.removeEventListener("keydown", onFirstGesture, true);
+      if (!cancelled) void handleCopy();
+    };
 
-  const t = CARD_COPY[locale];
-  const isRtl = locale === "ar";
-
-  const handleLanguageSelect = (nextLocale: VerificationCardLocale) => {
-    playTapSound();
-    setLocale(nextLocale);
-    onLocaleChange?.(nextLocale);
-  };
-
-  const updateCodeValue = (nextRaw: string) => {
-    const cleaned = normalizeSixDigits(nextRaw);
-    setInternalCode(cleaned);
-    onCodeChange?.(cleaned);
-  };
-
-  const handleDigitChange = (index: number, value: string) => {
-    if (readOnly) return;
-    const digits = normalizeSixDigits(value);
-    const currentChars = Array.from({ length: 6 }, (_, i) => activeCode[i]?.trim() || "");
-
-    if (!digits) {
-      currentChars[index] = "";
-      updateCodeValue(currentChars.join(""));
-      return;
-    }
-
-    if (digits.length > 1) {
-      const start = digits.length >= 4 ? 0 : index;
-      for (let i = 0; i < digits.length && start + i < 6; i++) {
-        currentChars[start + i] = digits[i];
+    tryCopyWithoutGesture(cleanCode).then((ok) => {
+      if (cancelled) return;
+      if (ok) {
+        flashStatus("copied");
+      } else {
+        armed = true;
+        setAwaitingGesture(true);
+        document.addEventListener("click", onFirstGesture, true);
+        document.addEventListener("keydown", onFirstGesture, true);
       }
-      updateCodeValue(currentChars.join(""));
-      const nextFocus = Math.min(5, start + digits.length);
-      inputRefs.current[nextFocus]?.focus();
-      return;
-    }
+    });
 
-    playTapSound();
-    currentChars[index] = digits[0];
-    updateCodeValue(currentChars.join(""));
-    if (index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (readOnly) return;
-    const currentChars = Array.from({ length: 6 }, (_, i) => activeCode[i]?.trim() || "");
-    if (e.key === "Backspace") {
-      playTapSound();
-      if (currentChars[index]) {
-        currentChars[index] = "";
-        updateCodeValue(currentChars.join(""));
-      } else if (index > 0) {
-        currentChars[index - 1] = "";
-        updateCodeValue(currentChars.join(""));
-        inputRefs.current[index - 1]?.focus();
+    return () => {
+      cancelled = true;
+      if (armed) {
+        document.removeEventListener("click", onFirstGesture, true);
+        document.removeEventListener("keydown", onFirstGesture, true);
       }
-      e.preventDefault();
-    } else if (e.key === "ArrowLeft" && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-      e.preventDefault();
-    } else if (e.key === "ArrowRight" && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-      e.preventDefault();
-    }
+    };
+    // Run once per code; handleCopy is stable for a given code.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoCopy, cleanCode]);
+
+  const selectLanguage = (next: VerificationLang) => {
+    setLocale(next);
+    onLocaleChange?.(next);
   };
 
-  const handlePaste = (index: number, e: React.ClipboardEvent<HTMLInputElement>) => {
-    if (readOnly) return;
-    e.preventDefault();
-    const pasted =
-      e.clipboardData?.getData("text/plain") || e.clipboardData?.getData("text") || "";
-    const digits = normalizeSixDigits(pasted);
-    if (digits) {
-      handleDigitChange(index, digits);
-    }
-  };
-
-  const handleCopyCode = async () => {
-    const cleanToCopy = normalizeSixDigits(activeCode) || "673410";
-    try {
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(cleanToCopy);
-      } else if (typeof document !== "undefined") {
-        const tempArea = document.createElement("textarea");
-        tempArea.value = cleanToCopy;
-        tempArea.style.position = "fixed";
-        tempArea.style.opacity = "0";
-        document.body.appendChild(tempArea);
-        tempArea.select();
-        document.execCommand("copy");
-        document.body.removeChild(tempArea);
-      }
-      playSuccessSound();
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2400);
-    } catch {
-      playTapSound();
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2400);
-    }
-  };
+  const copied = status === "copied";
 
   return (
     <div
-      dir={isRtl ? "rtl" : "ltr"}
-      className={`bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 rounded-3xl p-7 sm:p-8 shadow-2xl border border-zinc-200 dark:border-zinc-800 max-w-md w-full mx-auto relative overflow-hidden select-none transition-colors ${className}`}
+      dir={t.dir}
+      lang={locale}
+      className={`relative w-full max-w-md mx-auto overflow-hidden rounded-3xl bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 border border-[#e5e7eb] dark:border-zinc-800 px-6 py-8 sm:px-9 sm:py-10 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_32px_-8px_rgba(16,24,40,0.12),0_40px_80px_-32px_rgba(16,24,40,0.22)] transition-colors ${className}`}
     >
-      {/* Top-Left & Bottom-Right Decorative Monochrome Corner Accents */}
+      {/* Subtle corner accents */}
       <svg
-        viewBox="0 0 180 180"
-        fill="none"
-        className="pointer-events-none absolute -top-2 -left-2 w-32 h-32 text-zinc-950 dark:text-zinc-800"
+        viewBox="0 0 160 160"
+        className="pointer-events-none absolute -top-px -left-px w-28 h-28 text-zinc-950 dark:text-zinc-800"
         aria-hidden="true"
       >
-        <path d="M0 0 H145 C82 14 26 68 0 140 Z" fill="currentColor" />
-        <path
-          d="M0 140 C26 68 82 14 145 0 H175 C102 22 38 78 0 170 Z"
-          fill="currentColor"
-          fillOpacity="0.18"
-        />
+        <path d="M0 0H120C66 12 22 56 0 112Z" fill="currentColor" />
       </svg>
-
       <svg
-        viewBox="0 0 180 180"
-        fill="none"
-        className="pointer-events-none absolute -bottom-2 -right-2 w-32 h-32 text-zinc-950 dark:text-zinc-800"
+        viewBox="0 0 160 160"
+        className="pointer-events-none absolute -bottom-px -right-px w-28 h-28 text-zinc-950 dark:text-zinc-800"
         aria-hidden="true"
       >
-        <path d="M180 180 H35 C98 166 154 112 180 40 Z" fill="currentColor" />
-        <path
-          d="M180 40 C154 112 98 166 35 180 H5 C78 158 142 102 180 10 Z"
-          fill="currentColor"
-          fillOpacity="0.14"
-        />
+        <path d="M160 160H40C94 148 138 104 160 48Z" fill="currentColor" />
       </svg>
 
-      {/* 1. Brand Header */}
-      <div className="relative z-10 text-center">
-        <div
-          dir="ltr"
-          className="inline-flex items-center justify-center gap-3 sm:gap-3.5 mx-auto"
-        >
-          <KaspiSpeedCartSvg />
-          <div className="h-9 w-[2px] bg-zinc-900 dark:bg-zinc-200 rounded-full" />
-          <div className="flex items-center gap-1.5 tracking-tight">
-            <span className="text-2xl sm:text-[28px] font-black text-zinc-950 dark:text-white">
-              KASPI
-            </span>
-            <span className="px-2.5 py-0.5 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-2xl sm:text-[27px] font-black leading-tight">
-              POS
-            </span>
-          </div>
-        </div>
-
-        {/* Subtitle Badge with Flanking Tapered Lines */}
-        <div className="flex items-center justify-center gap-3 mt-2.5 mb-5">
-          <div className="h-[1.5px] flex-1 bg-gradient-to-r from-transparent via-zinc-300 dark:via-zinc-700 to-zinc-500 dark:to-zinc-400" />
-          <span className="text-xs sm:text-sm font-bold text-zinc-800 dark:text-zinc-200 shrink-0">
-            {t.systemBadge}
+      {/* 1. Wordmark */}
+      <div className="relative z-10 flex flex-col items-center">
+        <div dir="ltr" className="flex items-center gap-2">
+          <span className="text-[28px] sm:text-[30px] font-black tracking-[-0.03em] text-zinc-950 dark:text-white leading-none">
+            KASPI
           </span>
-          <div className="h-[1.5px] flex-1 bg-gradient-to-l from-transparent via-zinc-300 dark:via-zinc-700 to-zinc-500 dark:to-zinc-400" />
+          <span className="rounded-lg bg-[#09090b] dark:bg-white px-2.5 py-1 text-[22px] sm:text-[24px] font-black tracking-[-0.02em] text-white dark:text-zinc-950 leading-none">
+            POS
+          </span>
+        </div>
+
+        <div className="mt-3 flex w-full items-center gap-3">
+          <span className="h-px flex-1 bg-gradient-to-r from-transparent to-zinc-300 dark:to-zinc-700" />
+          <span className="shrink-0 text-[12px] sm:text-[13px] font-semibold text-zinc-600 dark:text-zinc-400">
+            {t.subtitle}
+          </span>
+          <span className="h-px flex-1 bg-gradient-to-l from-transparent to-zinc-300 dark:to-zinc-700" />
         </div>
       </div>
 
-      {/* 2. Centered Security Padlock Badge Inside Dashed Circular Ring + Shield */}
-      <div className="relative z-10 flex items-center justify-center gap-4 mb-6">
-        <div className="h-1 flex-1 rounded-full bg-gradient-to-r from-transparent to-zinc-400 dark:to-zinc-600 max-w-[88px]" />
-        <div className="border border-dashed border-zinc-300 dark:border-zinc-700 rounded-full p-4 bg-zinc-50/80 dark:bg-zinc-900/70 shadow-sm flex items-center justify-center">
-          <div className="w-12 h-12 rounded-2xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center shadow-md">
-            <Lock className="w-6 h-6 stroke-[2.4]" />
+      {/* 2. Brand mark in a double-ring badge */}
+      <div className="relative z-10 my-7 flex items-center justify-center gap-4">
+        <span className="h-px w-16 bg-gradient-to-r from-transparent to-zinc-300 dark:to-zinc-700" />
+        <div className="rounded-full border border-zinc-200 dark:border-zinc-800 bg-gradient-to-b from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 p-2 shadow-[inset_0_1px_2px_rgba(16,24,40,0.06)]">
+          <div className="rounded-full border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-1.5">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#09090b] dark:bg-zinc-900 shadow-[0_8px_20px_-6px_rgba(9,9,11,0.55),inset_0_1px_0_rgba(255,255,255,0.18)]">
+              {logoFailed ? (
+                <KaspiMonogram />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src="/logo.png"
+                  alt="KASPI POS"
+                  className="h-10 w-10 object-contain"
+                  onError={() => setLogoFailed(true)}
+                />
+              )}
+            </div>
           </div>
         </div>
-        <div className="h-1 flex-1 rounded-full bg-gradient-to-l from-transparent to-zinc-400 dark:to-zinc-600 max-w-[88px]" />
+        <span className="h-px w-16 bg-gradient-to-l from-transparent to-zinc-300 dark:to-zinc-700" />
       </div>
 
-      {/* 3. Heading & Subtitle Copy */}
-      <div className="relative z-10 text-center mb-6">
-        <h2 className="text-2xl sm:text-[28px] font-black text-zinc-950 dark:text-white tracking-tight leading-snug">
-          {t.heading}
-        </h2>
-        <p className="text-xs sm:text-sm font-medium text-zinc-600 dark:text-zinc-400 mt-2 leading-relaxed">
-          {t.subtitle}
+      {/* 3. Heading + description */}
+      <div className="relative z-10 text-center">
+        <h1 className="text-[24px] sm:text-[27px] font-extrabold tracking-[-0.02em] text-zinc-950 dark:text-white leading-tight">
+          {t.heading[purpose]}
+        </h1>
+        <p className="mx-auto mt-2.5 max-w-[340px] text-[13px] sm:text-[14px] leading-relaxed text-zinc-500 dark:text-zinc-400">
+          {t.description[purpose]}
         </p>
       </div>
 
-      {/* 4. 6 Distinct Digit Boxes (LTR) */}
-      <div
+      {/* 4. Six digit boxes — always LTR; clicking anywhere on them copies */}
+      <button
+        type="button"
         dir="ltr"
-        className="relative z-10 grid grid-cols-6 gap-2 sm:gap-2.5 mb-6"
+        onClick={handleCopy}
+        disabled={!hasCode}
+        aria-label={`${t.copyBtn}: ${cleanCode.split("").join(" ")}`}
+        className="group relative z-10 mt-7 grid w-full grid-cols-6 gap-2 sm:gap-2.5 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 dark:focus-visible:ring-white focus-visible:ring-offset-4 cursor-pointer disabled:cursor-default"
       >
-        {Array.from({ length: 6 }).map((_, idx) => {
-          const digit = activeCode[idx]?.trim() || "";
-          return (
-            <input
-              key={idx}
-              ref={(el) => {
-                inputRefs.current[idx] = el;
-              }}
-              type="text"
-              inputMode="numeric"
-              readOnly={readOnly}
-              maxLength={6}
-              value={digit}
-              onChange={(e) => handleDigitChange(idx, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(idx, e)}
-              onPaste={(e) => handlePaste(idx, e)}
-              onFocus={(e) => e.currentTarget.select()}
-              aria-label={`Verification digit ${idx + 1}`}
-              className="w-full h-14 sm:h-16 rounded-2xl bg-white dark:bg-zinc-900 border-[1.5px] border-zinc-300 dark:border-zinc-700 text-center font-mono text-2xl sm:text-3xl font-black text-zinc-950 dark:text-white shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-zinc-950 dark:focus:ring-white focus:border-zinc-950 dark:focus:border-white selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-950"
-            />
-          );
-        })}
-      </div>
+        {Array.from({ length: 6 }).map((_, idx) => (
+          <span
+            key={idx}
+            className={`flex h-14 sm:h-16 items-center justify-center rounded-xl border font-mono text-[26px] sm:text-[30px] font-bold tabular-nums text-zinc-950 dark:text-white shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)] transition-all duration-150 ${
+              copied
+                ? "border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40"
+                : "border-[#e2e8f0] dark:border-zinc-800 bg-[#f8fafc] dark:bg-zinc-900 group-hover:border-zinc-400 dark:group-hover:border-zinc-600 group-hover:bg-white dark:group-hover:bg-zinc-800"
+            }`}
+          >
+            {cleanCode[idx] ?? "–"}
+          </span>
+        ))}
+      </button>
 
-      {/* 5. Prominent One-Click Copy Button (Strict Exclusion: No Direct Login/Redirect Button) */}
-      <div className="relative z-10 flex flex-col items-center mb-7">
+      {/* 5. Primary copy CTA */}
+      <div className="relative z-10 mt-6 flex flex-col items-center">
         <button
           type="button"
-          onClick={handleCopyCode}
-          className="min-w-[210px] sm:min-w-[230px] h-12 sm:h-13 px-8 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-extrabold text-sm sm:text-base shadow-[0_10px_25px_rgba(0,0,0,0.22)] dark:shadow-[0_10px_25px_rgba(255,255,255,0.14)] hover:opacity-95 active:scale-[0.98] transition-all inline-flex items-center justify-center cursor-pointer"
+          onClick={handleCopy}
+          disabled={!hasCode}
+          aria-live="polite"
+          className={`inline-flex h-12 min-w-[220px] items-center justify-center gap-2.5 rounded-full px-8 text-[15px] font-semibold text-white dark:text-zinc-950 transition-all duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 ${
+            copied
+              ? "bg-[#09090b] dark:bg-white ring-4 ring-emerald-500/25"
+              : "bg-[#09090b] dark:bg-white shadow-[0_10px_24px_-10px_rgba(9,9,11,0.7)] dark:shadow-[0_10px_24px_-10px_rgba(255,255,255,0.3)] hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-12px_rgba(9,9,11,0.75)] active:translate-y-0"
+          }`}
         >
           {copied ? (
             <>
-              <Check className="w-4 h-4 mr-2 shrink-0 stroke-[2.8]" />
-              <span>{t.copiedToast}</span>
+              <CheckIcon className="h-[18px] w-[18px] text-emerald-400 dark:text-emerald-600" />
+              <span>{t.copiedBtn}</span>
             </>
           ) : (
             <>
-              <Copy className="w-4 h-4 mr-2 shrink-0" />
+              <CopyIcon className="h-[18px] w-[18px]" />
               <span>{t.copyBtn}</span>
             </>
           )}
         </button>
 
-        {/* Subtle ARIA Live Toast Confirmation */}
-        <div
-          aria-live="polite"
-          className={`mt-2 text-xs font-bold transition-all duration-200 ${
-            copied
-              ? "opacity-100 translate-y-0 text-emerald-600 dark:text-emerald-400"
-              : "opacity-0 -translate-y-1 pointer-events-none h-0"
+        <p
+          className={`mt-2.5 min-h-[18px] text-center text-[12px] ${
+            status === "failed" ? "text-red-600 dark:text-red-400" : "text-zinc-400 dark:text-zinc-500"
           }`}
         >
-          {t.copiedToast}
-        </div>
+          {status === "failed" ? t.copyFailed : awaitingGesture ? t.tapToCopy : ""}
+        </p>
       </div>
 
-      {/* 6. Dynamic Language Switcher Pills at Bottom (العربية ✓ | Français | English) */}
+      {/* 6. Language switcher */}
       <div
-        dir="rtl"
-        className="relative z-10 flex items-center justify-center gap-2 sm:gap-2.5 flex-wrap"
+        dir="ltr"
+        role="radiogroup"
+        aria-label="Language"
+        className="relative z-10 mt-4 flex flex-wrap items-center justify-center gap-2"
       >
-        {/* Arabic Pill */}
-        <button
-          type="button"
-          onClick={() => handleLanguageSelect("ar")}
-          className={`h-9 px-4 rounded-full text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer border ${
-            locale === "ar"
-              ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-sm"
-              : "bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 hover:border-zinc-500"
-          }`}
-        >
-          {locale === "ar" && <Check className="w-3.5 h-3.5 stroke-[2.8] shrink-0" />}
-          <span>العربية</span>
-        </button>
-
-        {/* French Pill */}
-        <button
-          type="button"
-          dir="ltr"
-          onClick={() => handleLanguageSelect("fr")}
-          className={`h-9 px-3.5 rounded-full text-xs font-semibold transition-all inline-flex items-center gap-1.5 cursor-pointer border ${
-            locale === "fr"
-              ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-sm"
-              : "bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 hover:border-zinc-500"
-          }`}
-        >
-          <FrenchFlagIcon />
-          <span>Français</span>
-          {locale === "fr" && <Check className="w-3.5 h-3.5 stroke-[2.8] shrink-0" />}
-        </button>
-
-        {/* English Pill */}
-        <button
-          type="button"
-          dir="ltr"
-          onClick={() => handleLanguageSelect("en")}
-          className={`h-9 px-3.5 rounded-full text-xs font-semibold transition-all inline-flex items-center gap-1.5 cursor-pointer border ${
-            locale === "en"
-              ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-sm"
-              : "bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 hover:border-zinc-500"
-          }`}
-        >
-          <UkFlagIcon />
-          <span>English</span>
-          {locale === "en" && <Check className="w-3.5 h-3.5 stroke-[2.8] shrink-0" />}
-        </button>
+        {VERIFICATION_LANGS.map((lang) => {
+          const copy = VERIFICATION_COPY[lang];
+          const active = lang === locale;
+          return (
+            <button
+              key={lang}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => selectLanguage(lang)}
+              className={`inline-flex h-9 items-center gap-2 rounded-full border ps-1.5 pe-3.5 text-[13px] font-semibold transition-all duration-200 cursor-pointer ${
+                active
+                  ? "border-[#09090b] dark:border-white bg-[#09090b] dark:bg-white text-white dark:text-zinc-950 shadow-[0_6px_14px_-8px_rgba(9,9,11,0.8)]"
+                  : "border-[#e5e7eb] dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-600 hover:text-zinc-950 dark:hover:text-white"
+              }`}
+            >
+              <span
+                className={`inline-flex h-6 min-w-[28px] items-center justify-center rounded-full px-1.5 font-mono text-[10px] font-bold tracking-wider ${
+                  active
+                    ? "bg-white dark:bg-zinc-950 text-[#09090b] dark:text-white"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
+                }`}
+              >
+                {copy.badge}
+              </span>
+              <span dir={copy.dir}>{copy.name}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

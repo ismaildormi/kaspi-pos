@@ -1,4 +1,5 @@
 import nodemailer, { type Transporter } from "nodemailer";
+import { renderVerificationEmailHtml } from "./verification-email";
 
 export interface SendEmailOptions {
   to: string;
@@ -81,68 +82,21 @@ export function generatePlainTextEmail(options: SendEmailOptions): string {
 }
 
 export function generateArabicEmailHtml(options: SendEmailOptions): string {
-  const isReset = options.type === "password_reset";
-  const isAlert = options.type === "login_alert";
-  const isBroadcast = options.type === "broadcast";
-
-  let titleAr = "تسجيل الدخول إلى حسابك";
-  let descAr = "استخدم رمز التحقق السري أثناء تسجيل الدخول بأمان إلى النظام.";
-
-  if (isReset) {
-    titleAr = "استعادة كلمة المرور";
-    descAr = "استخدم رمز التحقق السري أدناه لإعادة تعيين كلمة المرور لحسابك بأمان.";
-  } else if (isAlert) {
-    titleAr = "تنبيه أمني — تسجيل دخول جديد";
-    descAr = "تم تسجيل الدخول بنجاح إلى حسابك في منصة KASPI POS.";
-  } else if (isBroadcast) {
-    titleAr = options.title || "تحديث هام من منصة KASPI POS";
-    descAr = options.message || "إليك آخر التحديثات والتحسينات المتاحة على نظامك.";
+  if (options.code) {
+    return renderVerificationEmailHtml({
+      code: options.code,
+      lang: "ar",
+      purpose: options.type === "password_reset" ? "reset" : "login",
+    });
   }
 
-  const digits = options.code ? String(options.code).trim().split("") : [];
-
-  const jsonLdSchema = options.code
-    ? `<script type="application/ld+json">
-{
-  "@context": "http://schema.org",
-  "@type": "EmailMessage",
-  "description": "Your KASPI POS verification code is ${options.code}"
-}
-</script>`
-    : "";
-
-  const digitCellsHtml =
-    digits.length > 0
-      ? `
-      <!-- 6 Distinct Digit Boxes (LTR) -->
-      <table role="presentation" dir="ltr" align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 22px auto 22px auto; direction: ltr;">
-        <tr>
-          ${digits
-            .map(
-              (digit) => `
-            <td style="padding: 0 4px;">
-              <div style="width: 46px; height: 56px; line-height: 56px; text-align: center; background-color: #ffffff; border: 1.5px solid #a1a1aa; border-radius: 14px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 28px; font-weight: 900; color: #09090b;">
-                ${digit}
-              </div>
-            </td>`
-            )
-            .join("")}
-        </tr>
-      </table>
-
-      <!-- Prominent Black Pill Copy-Code Box (No Login Redirect Link) -->
-      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 8px 0 24px 0;">
-        <tr>
-          <td align="center">
-            <div style="background-color: #09090b; color: #ffffff; border-radius: 9999px; padding: 12px 34px; display: inline-block; min-width: 210px; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);">
-              <span style="font-size: 15px; font-weight: 800; color: #ffffff; vertical-align: middle;">📋 نسخ الرمز : </span>
-              <span dir="ltr" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 18px; font-weight: 900; letter-spacing: 3px; color: #ffffff; user-select: all; -webkit-user-select: all; -moz-user-select: all; cursor: pointer; vertical-align: middle; padding: 2px 6px; background-color: #18181b; border-radius: 6px;">${options.code}</span>
-            </div>
-          </td>
-        </tr>
-      </table>
-      `
-      : "";
+  const isAlert = options.type === "login_alert";
+  const titleAr = isAlert
+    ? "تنبيه أمني — تسجيل دخول جديد"
+    : options.title || "تحديث هام من منصة KASPI POS";
+  const descAr = isAlert
+    ? "تم تسجيل الدخول بنجاح إلى حسابك في منصة KASPI POS."
+    : options.message || "إليك آخر التحديثات والتحسينات المتاحة على نظامك.";
 
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -150,47 +104,30 @@ export function generateArabicEmailHtml(options: SendEmailOptions): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${titleAr}</title>
-  ${jsonLdSchema}
 </head>
 <body dir="rtl" style="margin: 0; padding: 28px 14px; background-color: #f4f4f5; color: #09090b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Roboto, Helvetica, Arial, sans-serif; direction: rtl;">
-  ${
-    options.code
-      ? `<div style="display:none;font-size:1px;color:#f4f4f5;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Your KASPI POS verification code is ${options.code} • رمز التحقق الخاص بك هو ${options.code}</div>`
-      : ""
-  }
   <table role="presentation" dir="rtl" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 460px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 28px; overflow: hidden; box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08);">
     <tr>
       <td align="center" style="padding: 32px 26px 28px 26px;">
-        <!-- Top Brand Header: KASPI [POS] -->
-        <div dir="ltr" style="text-align: center; margin-bottom: 10px;">
-          <span style="font-size: 26px; font-weight: 900; color: #09090b; letter-spacing: -0.5px; vertical-align: middle;">🛒 KASPI </span>
-          <span style="display: inline-block; background-color: #09090b; color: #ffffff; font-size: 24px; font-weight: 900; padding: 2px 10px; border-radius: 10px; vertical-align: middle;">POS</span>
-        </div>
-
-        <!-- Subtitle Badge -->
-        <div dir="rtl" style="font-size: 13px; font-weight: 700; color: #18181b; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid #e4e4e7; text-align: center;">
+        <table role="presentation" align="center" border="0" cellpadding="0" cellspacing="0" dir="ltr" style="margin:0 auto 10px auto;">
+          <tr>
+            <td style="font-size:28px;font-weight:900;letter-spacing:-0.8px;color:#09090b;line-height:1;padding-right:8px;">KASPI</td>
+            <td style="background-color:#09090b;border-radius:8px;padding:5px 10px;font-size:22px;font-weight:900;letter-spacing:-0.4px;color:#ffffff;line-height:1;">POS</td>
+          </tr>
+        </table>
+        <div dir="rtl" style="font-size: 13px; font-weight: 700; color: #52525b; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid #e4e4e7; text-align: center;">
           نظام إدارة نقاط البيع والمتاجر
         </div>
-
-        <!-- Security Padlock Badge Inside Dashed Circular Ring -->
-        <div style="width: 58px; height: 58px; line-height: 58px; margin: 0 auto 18px auto; border: 1.5px dashed #d4d4d8; border-radius: 9999px; background-color: #fafafa; text-align: center; font-size: 26px;">
-          🔒
-        </div>
-
-        <!-- Main Heading & Copy -->
-        <div dir="rtl" style="font-size: 24px; font-weight: 900; color: #09090b; margin-bottom: 8px; text-align: center;">
+        <div dir="rtl" style="font-size: 22px; font-weight: 900; color: #09090b; margin-bottom: 8px; text-align: center;">
           ${titleAr}
         </div>
-        <div dir="rtl" style="font-size: 13px; line-height: 1.7; color: #52525b; margin-bottom: 12px; text-align: center;">
+        <div dir="rtl" style="font-size: 14px; line-height: 1.7; color: #52525b; margin-bottom: 16px; text-align: center;">
           ${descAr}
         </div>
-
-        ${digitCellsHtml}
-
         ${
           isAlert
             ? `
-        <div dir="rtl" style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 14px; padding: 14px; margin: 16px 0; text-align: right; font-size: 12px; color: #27272a; line-height: 1.8;">
+        <div dir="rtl" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin: 16px 0; text-align: right; font-size: 12px; color: #27272a; line-height: 1.8;">
           <div><strong>التوقيت:</strong> <span dir="ltr">${options.time || new Date().toLocaleString("ar-MA", { timeZone: "Africa/Casablanca" })}</span></div>
           ${options.ip ? `<div><strong>عنوان IP:</strong> <code dir="ltr" style="color:#09090b;">${options.ip}</code></div>` : ""}
           ${options.userAgent ? `<div><strong>الجهاز والمتصفح:</strong> <span dir="ltr">${options.userAgent}</span></div>` : ""}
@@ -198,13 +135,6 @@ export function generateArabicEmailHtml(options: SendEmailOptions): string {
         `
             : ""
         }
-
-        <!-- Bottom Language Pills Row -->
-        <div dir="rtl" style="margin-top: 10px; padding-top: 14px; border-top: 1px solid #f4f4f5; text-align: center;">
-          <span style="display: inline-block; background-color: #09090b; color: #ffffff; font-size: 11px; font-weight: 700; padding: 5px 14px; border-radius: 9999px; margin: 0 3px;">✓ العربية</span>
-          <span dir="ltr" style="display: inline-block; background-color: #ffffff; color: #18181b; border: 1px solid #d4d4d8; font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 9999px; margin: 0 3px;">🇫🇷 Français</span>
-          <span dir="ltr" style="display: inline-block; background-color: #ffffff; color: #18181b; border: 1px solid #d4d4d8; font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 9999px; margin: 0 3px;">🇬🇧 English</span>
-        </div>
       </td>
     </tr>
   </table>
@@ -287,7 +217,7 @@ export async function sendLoginAlertEmail(params: {
 }): Promise<{ success: boolean; messageId?: string; response?: string; error?: string }> {
   return sendKaspiEmail({
     to: params.to,
-    subject: "🔔 KASPI POS — تنبيه أمني: تسجيل دخول جديد إلى حسابك",
+    subject: "KASPI POS — تنبيه أمني: تسجيل دخول جديد إلى حسابك",
     type: "login_alert",
     ip: params.ip,
     userAgent: params.userAgent,
@@ -306,7 +236,7 @@ export async function sendBroadcastEmail(params: {
 }): Promise<{ success: boolean; messageId?: string; response?: string; error?: string }> {
   return sendKaspiEmail({
     to: params.to,
-    subject: `📢 KASPI POS: ${params.title}`,
+    subject: `KASPI POS: ${params.title}`,
     type: "broadcast",
     title: params.title,
     message: params.message,
