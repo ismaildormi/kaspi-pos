@@ -85,30 +85,18 @@ export function generateArabicEmailHtml(options: SendEmailOptions): string {
   const isAlert = options.type === "login_alert";
   const isBroadcast = options.type === "broadcast";
 
-  let titleAr = "رمز التحقق لتسجيل الدخول";
-  let titleFr = "Code de vérification de connexion";
-  let descAr =
-    "استخدم رمز التحقق السري المكون من 6 أرقام أدناه لتسجيل الدخول بأمان إلى تطبيق أو لوحة تحكم KASPI POS دون الحاجة إلى كلمة المرور.";
-  let descFr =
-    "Copiez ce code à 6 chiffres et collez-le (Ctrl+V) dans votre application KASPI POS.";
+  let titleAr = "تسجيل الدخول إلى حسابك";
+  let descAr = "استخدم رمز التحقق السري أثناء تسجيل الدخول بأمان إلى النظام.";
 
   if (isReset) {
-    titleAr = "رمز استعادة وتعيين كلمة المرور";
-    titleFr = "Code de réinitialisation du mot de passe";
-    descAr =
-      "لقد تلقينا طلباً لإعادة تعيين كلمة المرور لحسابك في منصة KASPI POS. انسخ الرمز المكون من 6 أرقام أدناه وأدخله لإتمام العملية بأمان.";
-    descFr =
-      "Utilisez ce code de sécurité à 6 chiffres pour définir votre nouveau mot de passe.";
+    titleAr = "استعادة كلمة المرور";
+    descAr = "استخدم رمز التحقق السري أدناه لإعادة تعيين كلمة المرور لحسابك بأمان.";
   } else if (isAlert) {
     titleAr = "تنبيه أمني — تسجيل دخول جديد";
-    titleFr = "Alerte de sécurité — Nouvelle connexion";
     descAr = "تم تسجيل الدخول بنجاح إلى حسابك في منصة KASPI POS.";
-    descFr = "Une nouvelle connexion a été détectée sur votre compte KASPI POS.";
   } else if (isBroadcast) {
     titleAr = options.title || "تحديث هام من منصة KASPI POS";
-    titleFr = "Annonce Officielle KASPI POS";
     descAr = options.message || "إليك آخر التحديثات والتحسينات المتاحة على نظامك.";
-    descFr = "";
   }
 
   const digits = options.code ? String(options.code).trim().split("") : [];
@@ -118,12 +106,7 @@ export function generateArabicEmailHtml(options: SendEmailOptions): string {
 {
   "@context": "http://schema.org",
   "@type": "EmailMessage",
-  "description": "Your KASPI POS verification code is ${options.code}",
-  "potentialAction": {
-    "@type": "ViewAction",
-    "name": "Copy code ${options.code}",
-    "target": "https://kaspi-pos.vercel.app"
-  }
+  "description": "Your KASPI POS verification code is ${options.code}"
 }
 </script>`
     : "";
@@ -131,14 +114,14 @@ export function generateArabicEmailHtml(options: SendEmailOptions): string {
   const digitCellsHtml =
     digits.length > 0
       ? `
-      <!-- Individual LTR Digit Cells -->
-      <table role="presentation" dir="ltr" align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 24px auto 18px auto; direction: ltr;">
+      <!-- 6 Distinct Digit Boxes (LTR) -->
+      <table role="presentation" dir="ltr" align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 22px auto 22px auto; direction: ltr;">
         <tr>
           ${digits
             .map(
               (digit) => `
             <td style="padding: 0 4px;">
-              <div style="width: 44px; height: 54px; line-height: 54px; text-align: center; background-color: #09090b; border: 1px solid #3f3f46; border-radius: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 26px; font-weight: 900; color: #ffffff;">
+              <div style="width: 46px; height: 56px; line-height: 56px; text-align: center; background-color: #ffffff; border: 1.5px solid #a1a1aa; border-radius: 14px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 28px; font-weight: 900; color: #09090b;">
                 ${digit}
               </div>
             </td>`
@@ -147,26 +130,17 @@ export function generateArabicEmailHtml(options: SendEmailOptions): string {
         </tr>
       </table>
 
-      <!-- Pure White Copy-Code Box (Single-Click Select All for Desktop App Ctrl+C / Ctrl+V) -->
-      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 16px 0 20px 0;">
+      <!-- Prominent Black Pill Copy-Code Box (No Login Redirect Link) -->
+      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin: 8px 0 24px 0;">
         <tr>
           <td align="center">
-            <div style="background-color: #ffffff; color: #09090b; border-radius: 14px; padding: 14px 24px; display: inline-block; min-width: 260px; box-shadow: 0 10px 25px rgba(255, 255, 255, 0.08); border: 2px solid #e4e4e7;">
-              <div dir="rtl" style="font-size: 11px; font-weight: 700; color: #52525b; margin-bottom: 4px; direction: rtl; unicode-bidi: embed; text-align: center;">
-                📋 انقر لتحديد الرمز ونسخه فوراً (Ctrl+C)
-              </div>
-              <div dir="ltr" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 28px; font-weight: 900; letter-spacing: 6px; color: #09090b; user-select: all; -webkit-user-select: all; -moz-user-select: all; cursor: pointer; padding: 4px 10px; background-color: #f4f4f5; border-radius: 8px; direction: ltr; text-align: center;">${options.code}</div>
-              <div dir="ltr" style="font-size: 11px; font-weight: 600; color: #71717a; margin-top: 4px; direction: ltr; text-align: center;">
-                Click code above to select &amp; copy • Coller avec Ctrl+V
-              </div>
+            <div style="background-color: #09090b; color: #ffffff; border-radius: 9999px; padding: 12px 34px; display: inline-block; min-width: 210px; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);">
+              <span style="font-size: 15px; font-weight: 800; color: #ffffff; vertical-align: middle;">📋 نسخ الرمز : </span>
+              <span dir="ltr" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 18px; font-weight: 900; letter-spacing: 3px; color: #ffffff; user-select: all; -webkit-user-select: all; -moz-user-select: all; cursor: pointer; vertical-align: middle; padding: 2px 6px; background-color: #18181b; border-radius: 6px;">${options.code}</span>
             </div>
           </td>
         </tr>
       </table>
-
-      <div dir="rtl" style="font-size: 12px; color: #a1a1aa; margin-top: 10px; direction: rtl; unicode-bidi: embed; text-align: center;">
-        ⏱️ صلاحية هذا الرمز 10 دقائق فقط — لا تشاركه مع أي شخص لحماية حسابك.
-      </div>
       `
       : "";
 
@@ -178,70 +152,58 @@ export function generateArabicEmailHtml(options: SendEmailOptions): string {
   <title>${titleAr}</title>
   ${jsonLdSchema}
 </head>
-<body dir="rtl" style="margin: 0; padding: 28px 16px; background-color: #09090b; color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Roboto, Helvetica, Arial, sans-serif; direction: rtl;">
+<body dir="rtl" style="margin: 0; padding: 28px 14px; background-color: #f4f4f5; color: #09090b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Roboto, Helvetica, Arial, sans-serif; direction: rtl;">
   ${
     options.code
-      ? `<div style="display:none;font-size:1px;color:#09090b;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Your KASPI POS verification code is ${options.code} • رمز التحقق الخاص بك هو ${options.code}</div>`
+      ? `<div style="display:none;font-size:1px;color:#f4f4f5;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Your KASPI POS verification code is ${options.code} • رمز التحقق الخاص بك هو ${options.code}</div>`
       : ""
   }
-  <table role="presentation" dir="rtl" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 540px; margin: 0 auto; background-color: #18181b; border: 1px solid #27272a; border-radius: 22px; overflow: hidden; box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.7);">
-    <!-- Top Brand Header -->
+  <table role="presentation" dir="rtl" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 460px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 28px; overflow: hidden; box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08);">
     <tr>
-      <td align="center" style="padding: 32px 28px 20px 28px; border-bottom: 1px solid #27272a; background-color: #121215;">
-        <img src="https://kaspi-pos.vercel.app/logo.png" alt="KASPI POS" width="52" height="52" style="width: 52px; height: 52px; display: block; margin: 0 auto 12px auto; border-radius: 12px;" />
-        <div dir="ltr" style="font-size: 22px; font-weight: 900; color: #ffffff; letter-spacing: 0.5px;">KASPI POS • كسب</div>
-        <div dir="rtl" style="display: inline-block; background-color: #27272a; color: #d4d4d8; font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 9999px; margin-top: 8px; direction: rtl; unicode-bidi: embed;">
-          ${options.version ? `الإصدار ${options.version}` : "نظام نقاط البيع السحابي والمكتبي المتكامل"}
+      <td align="center" style="padding: 32px 26px 28px 26px;">
+        <!-- Top Brand Header: KASPI [POS] -->
+        <div dir="ltr" style="text-align: center; margin-bottom: 10px;">
+          <span style="font-size: 26px; font-weight: 900; color: #09090b; letter-spacing: -0.5px; vertical-align: middle;">🛒 KASPI </span>
+          <span style="display: inline-block; background-color: #09090b; color: #ffffff; font-size: 24px; font-weight: 900; padding: 2px 10px; border-radius: 10px; vertical-align: middle;">POS</span>
         </div>
-      </td>
-    </tr>
 
-    <!-- Main Body Content -->
-    <tr>
-      <td style="padding: 30px 28px;">
-        <div dir="rtl" style="font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 4px; text-align: right; direction: rtl; unicode-bidi: embed;">
+        <!-- Subtitle Badge -->
+        <div dir="rtl" style="font-size: 13px; font-weight: 700; color: #18181b; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid #e4e4e7; text-align: center;">
+          نظام إدارة نقاط البيع والمتاجر
+        </div>
+
+        <!-- Security Padlock Badge Inside Dashed Circular Ring -->
+        <div style="width: 58px; height: 58px; line-height: 58px; margin: 0 auto 18px auto; border: 1.5px dashed #d4d4d8; border-radius: 9999px; background-color: #fafafa; text-align: center; font-size: 26px;">
+          🔒
+        </div>
+
+        <!-- Main Heading & Copy -->
+        <div dir="rtl" style="font-size: 24px; font-weight: 900; color: #09090b; margin-bottom: 8px; text-align: center;">
           ${titleAr}
         </div>
-        ${
-          titleFr
-            ? `<div dir="ltr" style="font-size: 12px; font-weight: 600; color: #71717a; margin-bottom: 16px; text-align: right; direction: ltr;">${titleFr}</div>`
-            : ""
-        }
-
-        <div dir="rtl" style="font-size: 14px; line-height: 1.8; color: #d4d4d8; margin-bottom: 10px; text-align: right; direction: rtl; unicode-bidi: embed; white-space: pre-line;">
+        <div dir="rtl" style="font-size: 13px; line-height: 1.7; color: #52525b; margin-bottom: 12px; text-align: center;">
           ${descAr}
         </div>
-        ${
-          descFr
-            ? `<div dir="ltr" style="font-size: 12px; line-height: 1.6; color: #a1a1aa; margin-bottom: 20px; text-align: left; direction: ltr; background-color: #09090b; border: 1px solid #27272a; border-radius: 10px; padding: 10px 14px;">${descFr}</div>`
-            : ""
-        }
 
         ${digitCellsHtml}
 
         ${
           isAlert
             ? `
-        <div dir="rtl" style="background-color: #09090b; border: 1px solid #27272a; border-radius: 12px; padding: 16px; margin: 20px 0; text-align: right; font-size: 13px; color: #d4d4d8; line-height: 1.9; direction: rtl; unicode-bidi: embed;">
+        <div dir="rtl" style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 14px; padding: 14px; margin: 16px 0; text-align: right; font-size: 12px; color: #27272a; line-height: 1.8;">
           <div><strong>التوقيت:</strong> <span dir="ltr">${options.time || new Date().toLocaleString("ar-MA", { timeZone: "Africa/Casablanca" })}</span></div>
-          ${options.ip ? `<div><strong>عنوان IP:</strong> <code dir="ltr" style="color:#ffffff;">${options.ip}</code></div>` : ""}
+          ${options.ip ? `<div><strong>عنوان IP:</strong> <code dir="ltr" style="color:#09090b;">${options.ip}</code></div>` : ""}
           ${options.userAgent ? `<div><strong>الجهاز والمتصفح:</strong> <span dir="ltr">${options.userAgent}</span></div>` : ""}
         </div>
-        <p dir="rtl" style="font-size: 12px; color: #ef4444; margin-top: 12px; text-align: right; direction: rtl; unicode-bidi: embed;">إذا لم تكن أنت من قام بتسجيل الدخول، يرجى تغيير كلمة المرور فوراً من خلال شاشة الدخول.</p>
         `
             : ""
         }
-      </td>
-    </tr>
 
-    <!-- Footer -->
-    <tr>
-      <td align="center" style="padding: 20px 28px 26px 28px; border-top: 1px solid #27272a; background-color: #121215;">
-        <div dir="rtl" style="font-size: 12px; color: #71717a; line-height: 1.7; direction: rtl; unicode-bidi: embed; text-align: center;">
-          هذه الرسالة مرسلة تلقائياً من خادم الأمان المشفر لمنصة <strong>KASPI POS</strong>.
-        </div>
-        <div dir="ltr" style="font-size: 11px; color: #52525b; margin-top: 6px; direction: ltr; text-align: center;">
-          © ${new Date().getFullYear()} KASPI POS (ZUVYR). Morocco &amp; Global Retail Cloud.
+        <!-- Bottom Language Pills Row -->
+        <div dir="rtl" style="margin-top: 10px; padding-top: 14px; border-top: 1px solid #f4f4f5; text-align: center;">
+          <span style="display: inline-block; background-color: #09090b; color: #ffffff; font-size: 11px; font-weight: 700; padding: 5px 14px; border-radius: 9999px; margin: 0 3px;">✓ العربية</span>
+          <span dir="ltr" style="display: inline-block; background-color: #ffffff; color: #18181b; border: 1px solid #d4d4d8; font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 9999px; margin: 0 3px;">🇫🇷 Français</span>
+          <span dir="ltr" style="display: inline-block; background-color: #ffffff; color: #18181b; border: 1px solid #d4d4d8; font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 9999px; margin: 0 3px;">🇬🇧 English</span>
         </div>
       </td>
     </tr>
