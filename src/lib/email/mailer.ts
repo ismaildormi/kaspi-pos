@@ -1,5 +1,14 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { renderVerificationEmailHtml } from "./verification-email";
+import { renderWelcomeEmailHtml } from "./welcome-email";
+import {
+  WELCOME_COPY,
+  WelcomeEmailData,
+  WelcomeLang,
+  formatWelcomeDate,
+  normalizeWelcomeLang,
+  resolveStoreCategory,
+} from "./welcome-copy";
 
 export interface SendEmailOptions {
   to: string;
@@ -242,4 +251,85 @@ export async function sendBroadcastEmail(params: {
     message: params.message,
     version: params.version,
   });
+}
+
+/**
+ * Send enterprise Welcome & Successful Sign-In Email upon registration or first-time login
+ */
+export async function sendWelcomeEmail(params: {
+  to: string;
+  userName?: string;
+  storeName?: string;
+  storeCategory?: string;
+  loginDate?: string;
+  lang?: WelcomeLang;
+}): Promise<{ success: boolean; messageId?: string; response?: string; error?: string }> {
+  const lang = normalizeWelcomeLang(params.lang);
+  const copy = WELCOME_COPY[lang];
+
+  const welcomeData: WelcomeEmailData = {
+    userName: params.userName,
+    storeName: params.storeName,
+    storeCategory: params.storeCategory,
+    userEmail: params.to,
+    loginDate: params.loginDate || new Date().toISOString(),
+  };
+
+  const html = renderWelcomeEmailHtml(welcomeData, lang);
+  const resolvedCategory = resolveStoreCategory(params.storeCategory, lang);
+  const formattedDate = formatWelcomeDate(welcomeData.loginDate, lang);
+  const resolvedOwner = params.userName || params.to.split("@")[0] || "Merchant";
+
+  const text = [
+    copy.heroHeading(resolvedOwner),
+    copy.heroDescription,
+    "",
+    `[${copy.storePass.statusBadge}]`,
+    `${copy.storePass.ownerLabel}: ${resolvedOwner}`,
+    `${copy.storePass.categoryLabel}: ${resolvedCategory}`,
+    `${copy.storePass.dateLabel}: ${formattedDate}`,
+    "",
+    copy.onboarding.sectionTitle,
+    ...copy.onboarding.steps.map((s, i) => `0${i + 1}. ${s}`),
+    "",
+    "KASPI POS Dashboard: https://kaspi-pos.vercel.app/dashboard",
+    "",
+    copy.footerNote,
+  ].join("\n");
+
+  const gmailSender = (process.env.GMAIL_USER || OFFICIAL_GMAIL_USER).trim();
+  const from = process.env.SMTP_FROM || `KASPI POS <${gmailSender}>`;
+
+  console.log(`[KASPI MAIL] Sending Welcome Email to: ${params.to} (${resolvedOwner} - ${welcomeData.storeName})`);
+
+  const primaryMailer = getTransporter();
+  try {
+    const info = await primaryMailer.sendMail({
+      from,
+      to: params.to,
+      subject: copy.subject,
+      text,
+      html,
+    });
+    console.log(`[KASPI Mailer] Welcome email delivered via SSL/TLS (465) to ${params.to} | MessageID: ${info.messageId}`);
+    return { success: true, messageId: info.messageId, response: info.response };
+  } catch (primaryErr: any) {
+    console.warn(`[KASPI Mailer] Welcome email port 465 failed (${primaryErr?.message}), retrying via STARTTLS 587...`);
+    try {
+      const fallbackMailer = createSmtpTransporter(587);
+      const info587 = await fallbackMailer.sendMail({
+        from,
+        to: params.to,
+        subject: copy.subject,
+        text,
+        html,
+      });
+      console.log(`[KASPI Mailer] Welcome email delivered via STARTTLS (587) to ${params.to} | MessageID: ${info587.messageId}`);
+      return { success: true, messageId: info587.messageId, response: info587.response };
+    } catch (secondaryErr: any) {
+      const errMsg = secondaryErr?.message || primaryErr?.message || "SMTP Delivery Failure";
+      console.error("[KASPI Mailer] Fatal Welcome email delivery failure:", errMsg);
+      return { success: false, error: errMsg };
+    }
+  }
 }

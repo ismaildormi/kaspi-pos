@@ -5,6 +5,7 @@ import { hashPassword } from "@/server/auth/password";
 import { createSession, SESSION_COOKIE_NAME, SESSION_EXPIRY_DAYS } from "@/server/auth/session";
 import { jsonError, jsonOk } from "@/server/http/response";
 import { syncUserToSupabaseDirectory } from "@/lib/supabase";
+import { sendWelcomeEmail } from "@/lib/email/mailer";
 
 const RegisterSchema = z.object({
   email: z
@@ -174,6 +175,18 @@ export async function POST(req: NextRequest) {
       phone: phone || undefined,
       source: "registration",
     }).catch(() => {});
+
+    // Automatically send Welcome & Successful Sign-In Email asynchronously (non-blocking)
+    sendWelcomeEmail({
+      to: result.user.email ?? email,
+      userName: result.user.fullName || fullName,
+      storeName: result.tenant.displayName || shopName,
+      storeCategory: storeType || "grocery",
+      loginDate: new Date().toISOString(),
+      lang: "ar",
+    }).catch((err) => {
+      console.warn("[Register Welcome Email Dispatch Notice]:", err?.message || err);
+    });
 
     // Create session
     const ip = req.headers.get("x-forwarded-for") || undefined;
