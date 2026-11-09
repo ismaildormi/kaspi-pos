@@ -60,6 +60,39 @@ export default function BillingDashboardPage() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
+  // License Key Activation State (0% Fee Bank Transfer)
+  const [licenseCode, setLicenseCode] = useState("");
+  const [isActivatingLicense, setIsActivatingLicense] = useState(false);
+  const [licenseSuccessMsg, setLicenseSuccessMsg] = useState<string | null>(null);
+  const [licenseErrorMsg, setLicenseErrorMsg] = useState<string | null>(null);
+
+  const handleActivateLicense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = licenseCode.trim();
+    if (!clean) return;
+    setIsActivatingLicense(true);
+    setLicenseErrorMsg(null);
+    setLicenseSuccessMsg(null);
+    try {
+      const res = await fetch("/api/v1/billing/activate-license", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ licenseKey: clean }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Échec d'activation de la licence");
+      }
+      setLicenseSuccessMsg(data.message || (isRtl ? "تم تفعيل الاشتراك بنجاح!" : "Licence activée avec succès !"));
+      setLicenseCode("");
+      await fetchSubscription();
+    } catch (err: any) {
+      setLicenseErrorMsg(err.message || (isRtl ? "رمز تفعيل غير صالح أو مستخدم مسبقاً" : "Code d'activation invalide"));
+    } finally {
+      setIsActivatingLicense(false);
+    }
+  };
+
   useEffect(() => {
     fetchSubscription();
   }, []);
@@ -334,6 +367,92 @@ export default function BillingDashboardPage() {
             >
               {isRtl ? "تجديد أو ترقية الاشتراك" : "Modifier le moyen de paiement"}
             </button>
+          </div>
+        </div>
+
+        {/* Zero-Fee Bank Transfer & License Key Activation (Path B) */}
+        <div className="bg-zinc-900 rounded-3xl border border-zinc-800 p-6 sm:p-8 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
+            <div>
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base font-bold text-white">
+                  {isRtl
+                    ? "تفعيل فوري عبر التحويل البنكي المباشر (عمولة 0%)"
+                    : "Activation Directe par Virement Bancaire (0% Commission)"}
+                </h3>
+              </div>
+              <p className="text-xs text-zinc-400 mt-1">
+                {isRtl
+                  ? "سدد اشتراكك مباشرة عبر حسابنا البنكي، وأدخل كود التفعيل لتجديد اشتراكك فوراً دون وسيط."
+                  : "Payez directement via CIH, Attijari ou Barid Bank et activez instantanément votre licence sans frais tiers."}
+              </p>
+            </div>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-400/15 border border-amber-400/30 text-amber-400">
+              {isRtl ? "توفير 100% من العمولات" : "0% Frais Passerelle"}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+            {/* Bank Coordinates */}
+            <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+              <span className="text-[11px] font-bold text-zinc-300 block uppercase tracking-wider">
+                {isRtl ? "بيانات التحويل البنكي الوطني :" : "Coordonnées Bancaires Nationales :"}
+              </span>
+              <div className="font-mono text-xs space-y-1 text-zinc-300">
+                <div><strong className="text-white">Banque :</strong> CIH Bank / Attijariwafa Bank</div>
+                <div><strong className="text-white">RIB (24 chiffres) :</strong> 230 780 4567890123456701 45</div>
+                <div><strong className="text-white">Bénéficiaire :</strong> KASPI POS SARL AU</div>
+                <div className="text-[11px] text-zinc-500 pt-1">
+                  {isRtl
+                    ? "بعد إجراء التحويل، أرسل الإشعار عبر واتساب (+212 687-597267) لاستلام كود التفعيل."
+                    : "Envoyez l'ordre de virement par WhatsApp (+212 687-597267) pour recevoir votre code d'activation."}
+                </div>
+              </div>
+            </div>
+
+            {/* License Activation Input */}
+            <form onSubmit={handleActivateLicense} className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-3 flex flex-col justify-between">
+              <div>
+                <label className="block text-[11px] font-bold text-zinc-300 mb-1.5 uppercase tracking-wider">
+                  {isRtl ? "أدخل كود التفعيل (License Key) :" : "Saisir votre Code d'Activation :"}
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={licenseCode}
+                    onChange={(e) => setLicenseCode(e.target.value)}
+                    placeholder="KASPI-30D-XXXX-XXXX"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-white font-mono text-xs placeholder-zinc-500 focus:outline-none focus:border-amber-400 uppercase"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isActivatingLicense || !licenseCode.trim()}
+                    className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-40 cursor-pointer"
+                  >
+                    {isActivatingLicense ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    )}
+                    <span>{isRtl ? "تفعيل" : "Activer"}</span>
+                  </button>
+                </div>
+              </div>
+
+              {licenseSuccessMsg && (
+                <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>{licenseSuccessMsg}</span>
+                </div>
+              )}
+
+              {licenseErrorMsg && (
+                <div className="p-2.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-[11px] font-bold">
+                  {licenseErrorMsg}
+                </div>
+              )}
+            </form>
           </div>
         </div>
 

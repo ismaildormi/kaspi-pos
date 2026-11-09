@@ -51,6 +51,40 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
     lastKeyTime: 0,
   });
 
+  // Helper: Electronic Weight Scale Barcode Parser (EAN-13 prefixes 20-29)
+  const resolveScaleOrDirectProduct = (code: string): { product: PosProduct; quantity: number } | null => {
+    const trimmed = code.trim().toLowerCase();
+    const direct = barcodeIndex.get(trimmed);
+    if (direct) {
+      return { product: direct, quantity: 1 };
+    }
+
+    // EAN-13 Electronic Scale Barcode: 13 digits, starting with 20 through 29
+    if (trimmed.length === 13 && /^2[0-9]/.test(trimmed)) {
+      const itemCode = trimmed.slice(2, 7); // digits 3-7 (SKU / item number)
+      const weightRaw = parseInt(trimmed.slice(7, 12), 10); // digits 8-12 (weight in grams)
+      const weightKg = !isNaN(weightRaw) && weightRaw > 0 ? weightRaw / 1000 : 1;
+
+      // Try matching by itemCode, stripped zero code, or prefix+itemCode
+      const match =
+        barcodeIndex.get(itemCode) ||
+        barcodeIndex.get(String(parseInt(itemCode, 10))) ||
+        barcodeIndex.get(`2${itemCode}`) ||
+        products.find(
+          (p) =>
+            p.sku.toLowerCase() === itemCode ||
+            p.sku.toLowerCase() === String(parseInt(itemCode, 10)) ||
+            (p.barcode && p.barcode.includes(itemCode))
+        );
+
+      if (match) {
+        return { product: match, quantity: weightKg };
+      }
+    }
+
+    return null;
+  };
+
   useEffect(() => {
     inputRef.current?.focus();
 
@@ -71,12 +105,16 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
         const rawBuffer = scannerBufferRef.current.chars.join("").trim();
         scannerBufferRef.current.chars = [];
         if (rawBuffer.length >= 3) {
-          const directMatch = barcodeIndex.get(rawBuffer.toLowerCase());
-          if (directMatch) {
+          const matchResult = resolveScaleOrDirectProduct(rawBuffer);
+          if (matchResult) {
             e.preventDefault();
             playBarcodeScanSound();
-            addProductByBarcode(directMatch);
-            toast.success(`Ajouté (Scan): ${directMatch.name}`);
+            addProductByBarcode(matchResult.product, matchResult.quantity);
+            if (matchResult.quantity !== 1) {
+              toast.success(`Ajouté (Balance): ${matchResult.product.name} (${matchResult.quantity.toFixed(3)} kg)`);
+            } else {
+              toast.success(`Ajouté (Scan): ${matchResult.product.name}`);
+            }
             setSearchQuery("");
             return;
           }
@@ -164,8 +202,21 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
     setIsScanning(true);
 
     try {
-      // 0ms In-Memory Fast Lookup
-      let matchedProduct: PosProduct | undefined = barcodeIndex.get(code.toLowerCase());
+      // 0ms In-Memory Fast Lookup (Direct Barcode or Electronic Weight Scale 20-29)
+      const scaleOrDirect = resolveScaleOrDirectProduct(code);
+      if (scaleOrDirect) {
+        playBarcodeScanSound();
+        addProductByBarcode(scaleOrDirect.product, scaleOrDirect.quantity);
+        if (scaleOrDirect.quantity !== 1) {
+          toast.success(
+            `Ajouté (Balance): ${scaleOrDirect.product.name} (${scaleOrDirect.quantity.toFixed(3)} kg)`
+          );
+        }
+        setIsScanning(false);
+        return;
+      }
+
+      let matchedProduct: PosProduct | undefined = undefined;
 
       if (!matchedProduct && offlineDb) {
         try {

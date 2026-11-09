@@ -27,6 +27,8 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
     cart,
     customer,
     setCustomer,
+    pricingTier,
+    setPricingTier,
     selectedTableName,
     setSelectedTable,
     loyaltyPointsToRedeem,
@@ -122,6 +124,32 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             <span>{t("addCustomer")}</span>
           </button>
         )}
+        </div>
+
+        {/* 1-Click Retail vs Wholesale Dual Pricing Toggle */}
+        <div className="flex items-center p-1 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-bold">
+          <button
+            type="button"
+            onClick={() => setPricingTier("retail")}
+            className={`flex-1 py-1 px-2.5 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 ${
+              pricingTier === "retail"
+                ? "bg-white text-zinc-950 shadow-sm"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            <span>تقسيط • Retail</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setPricingTier("wholesale")}
+            className={`flex-1 py-1 px-2.5 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 ${
+              pricingTier === "wholesale"
+                ? "bg-amber-400 text-zinc-950 shadow-sm"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            <span>جملة • Gros</span>
+          </button>
         </div>
       </div>
 

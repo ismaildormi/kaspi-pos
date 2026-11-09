@@ -11,6 +11,7 @@ import {
   TrendingDown,
   Clock,
   ShoppingCart,
+  ArrowRightLeft,
 } from "lucide-react";
 import { StockAuditClient } from "@/components/dashboard/StockAuditClient";
 import { getDictionary, type Locale } from "@/i18n/schema";
@@ -56,6 +57,45 @@ export default async function InventoryPage({
         })
         .catch(() => []);
 
+  // 4. Fetch stores & warehouses
+  let stores = isFallbackTenant
+    ? []
+    : await prisma.store
+        .findMany({
+          where: { tenantId },
+          select: { id: true, name: true, code: true },
+          orderBy: { name: "asc" },
+        })
+        .catch(() => []);
+
+  if (stores.length === 0) {
+    stores = [
+      { id: "00000000-0000-0000-0000-000000000001", name: "Dépôt Principal / المستودع الرئيسي", code: "MAIN" },
+      { id: "00000000-0000-0000-0000-000000000002", name: "Magasin Caisse / نقطة البيع", code: "POS" },
+    ];
+  } else if (stores.length === 1) {
+    stores.push({
+      id: "00000000-0000-0000-0000-000000000002",
+      name: "Dépôt Réserve / مستودع التخزين",
+      code: "RES",
+    });
+  }
+
+  // 5. Fetch recent stock transfers
+  const recentTransfers = isFallbackTenant
+    ? []
+    : await prisma.stockTransfer
+        .findMany({
+          where: { tenantId },
+          include: {
+            sourceStore: { select: { name: true, code: true } },
+            destStore: { select: { name: true, code: true } },
+            items: { include: { product: { select: { name: true, sku: true } } } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 6,
+        })
+        .catch(() => []);
   // 3. AI Predictive Stockout Velocity (Last 14 days sales velocity)
   const fourteenDaysAgo = new Date();
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
@@ -127,6 +167,7 @@ export default async function InventoryPage({
 
         <div className="flex flex-wrap items-center gap-3">
           <StockAuditClient
+            stores={stores}
             products={products.map((p) => ({
               id: p.id,
               name: p.name,
@@ -295,6 +336,66 @@ export default async function InventoryPage({
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* Inter-Store Stock Transfers Table */}
+      <div className="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+            <ArrowRightLeft className="h-4 w-4 text-white" />
+            <span>
+              {locale === "ar"
+                ? "سجل التحويلات بين الفروع والمستودعات"
+                : locale === "en"
+                ? "Inter-Store Stock Transfers History"
+                : "Historique des Transferts Inter-Dépôts"}
+            </span>
+          </h2>
+          <span className="text-xs text-zinc-400 font-mono">
+            {recentTransfers.length} {locale === "ar" ? "عملية" : "transferts"}
+          </span>
+        </div>
+
+        {recentTransfers.length === 0 ? (
+          <p className="text-xs text-zinc-500 py-4 text-center">
+            {locale === "ar"
+              ? "لم يتم تسجيل أي تحويل بين الفروع حتى الآن."
+              : locale === "en"
+              ? "No stock transfers recorded yet."
+              : "Aucun transfert de stock enregistré pour l'instant."}
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead>
+                <tr className="border-b border-zinc-800 text-zinc-400 font-mono">
+                  <th className="py-2.5 px-3">N° Transfert</th>
+                  <th className="py-2.5 px-3">{locale === "ar" ? "المصدر" : "Source"}</th>
+                  <th className="py-2.5 px-3">{locale === "ar" ? "الوجهة" : "Destination"}</th>
+                  <th className="py-2.5 px-3">{locale === "ar" ? "المنتجات المحولة" : "Articles Transférés"}</th>
+                  <th className="py-2.5 px-3 text-end">{locale === "ar" ? "الحالة" : "Statut"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/60 font-mono">
+                {recentTransfers.map((trf) => (
+                  <tr key={trf.id} className="hover:bg-zinc-950/40 transition">
+                    <td className="py-3 px-3 font-bold text-white">{trf.transferNumber}</td>
+                    <td className="py-3 px-3 text-zinc-300">{trf.sourceStore?.name || trf.sourceStore?.code}</td>
+                    <td className="py-3 px-3 text-zinc-300">{trf.destStore?.name || trf.destStore?.code}</td>
+                    <td className="py-3 px-3 text-zinc-400">
+                      {trf.items.map((it) => `${it.product.name} (x${Number(it.quantity)})`).join(", ")}
+                    </td>
+                    <td className="py-3 px-3 text-end">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold">
+                        {locale === "ar" ? "مكتمل" : "Complété"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

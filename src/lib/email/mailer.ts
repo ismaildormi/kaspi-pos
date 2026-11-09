@@ -31,6 +31,44 @@ const OFFICIAL_SMTP_HOST = "smtp.gmail.com";
 const OFFICIAL_SMTP_PORT = 465;
 
 let transporter: Transporter | null = null;
+let backupTransporter: Transporter | null = null;
+
+function createBackupSmtpTransporter(): Transporter | null {
+  const backupUser = (process.env.SMTP_BACKUP_USER || process.env.SMTP2_USER || "").trim();
+  const backupPass = (process.env.SMTP_BACKUP_PASS || process.env.SMTP2_PASS || "").replace(/\s+/g, "");
+  const backupHost = (process.env.SMTP_BACKUP_HOST || process.env.SMTP2_HOST || "smtp.resend.com").trim();
+  const backupPort = Number(process.env.SMTP_BACKUP_PORT || process.env.SMTP2_PORT || 465);
+
+  if (!backupUser || !backupPass) {
+    return null;
+  }
+
+  const isSecure = backupPort === 465;
+  return nodemailer.createTransport({
+    host: backupHost,
+    port: backupPort,
+    secure: isSecure,
+    requireTLS: !isSecure,
+    auth: {
+      user: backupUser,
+      pass: backupPass,
+    },
+    tls: {
+      rejectUnauthorized: false,
+      minVersion: "TLSv1.2",
+    },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
+  });
+}
+
+function getBackupTransporter(): Transporter | null {
+  if (!backupTransporter) {
+    backupTransporter = createBackupSmtpTransporter();
+  }
+  return backupTransporter;
+}
 
 function createSmtpTransporter(portOverride?: number): Transporter {
   const gmailUser = (process.env.GMAIL_USER || OFFICIAL_GMAIL_USER).trim();
@@ -221,8 +259,32 @@ export async function sendKaspiEmail(
         response: info587.response,
       };
     } catch (secondaryErr: any) {
+      console.warn(`[KASPI Mailer] Primary SMTP ports 465 & 587 failed (${secondaryErr?.message}). Checking secondary failover pool...`);
+      const backup = getBackupTransporter();
+      if (backup) {
+        try {
+          const backupUser = (process.env.SMTP_BACKUP_USER || process.env.SMTP2_USER || "").trim();
+          const backupFrom = `"KASPI POS" <${backupUser}>`;
+          const backupInfo = await backup.sendMail({
+            from: backupFrom,
+            to: options.to,
+            subject: emailSubject,
+            text,
+            html,
+            headers: transactionalHeaders,
+          });
+          console.log(`[KASPI Mailer] SUCCESS: Email delivered via Secondary Failover SMTP to ${options.to} | MessageID: ${backupInfo.messageId}`);
+          return {
+            success: true,
+            messageId: backupInfo.messageId,
+            response: backupInfo.response,
+          };
+        } catch (backupErr: any) {
+          console.error(`[KASPI Mailer] Secondary Failover SMTP failed: ${backupErr?.message}`);
+        }
+      }
       const errMsg = secondaryErr?.message || primaryErr?.message || "SMTP Connection Error";
-      console.error("[KASPI Mailer] Fatal SMTP delivery failure on both ports 465 and 587:", errMsg);
+      console.error("[KASPI Mailer] Fatal SMTP delivery failure on all pool endpoints:", errMsg);
       return {
         success: false,
         error: errMsg,
@@ -374,8 +436,28 @@ export async function sendWelcomeEmail(params: {
       console.log(`[KASPI Mailer] Welcome email delivered via STARTTLS (587) to ${params.to} | MessageID: ${info587.messageId}`);
       return { success: true, messageId: info587.messageId, response: info587.response };
     } catch (secondaryErr: any) {
+      console.warn(`[KASPI Mailer] Primary SMTP ports 465 & 587 failed for Welcome Email (${secondaryErr?.message}). Checking secondary failover pool...`);
+      const backup = getBackupTransporter();
+      if (backup) {
+        try {
+          const backupUser = (process.env.SMTP_BACKUP_USER || process.env.SMTP2_USER || "").trim();
+          const backupFrom = `"KASPI POS" <${backupUser}>`;
+          const backupInfo = await backup.sendMail({
+            from: backupFrom,
+            to: params.to,
+            subject: copy.subject,
+            text,
+            html,
+            headers: transactionalHeaders,
+          });
+          console.log(`[KASPI Mailer] SUCCESS: Welcome Email delivered via Secondary Failover SMTP to ${params.to} | MessageID: ${backupInfo.messageId}`);
+          return { success: true, messageId: backupInfo.messageId, response: backupInfo.response };
+        } catch (backupErr: any) {
+          console.error(`[KASPI Mailer] Secondary Failover SMTP failed for Welcome Email: ${backupErr?.message}`);
+        }
+      }
       const errMsg = secondaryErr?.message || primaryErr?.message || "SMTP Delivery Failure";
-      console.error("[KASPI Mailer] Fatal Welcome email delivery failure:", errMsg);
+      console.error("[KASPI Mailer] Fatal Welcome email delivery failure on all pool endpoints:", errMsg);
       return { success: false, error: errMsg };
     }
   }

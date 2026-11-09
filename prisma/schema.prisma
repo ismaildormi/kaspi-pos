@@ -549,6 +549,7 @@ model Product {
   imageUrl          String?     @map("image_url")
   unit              ProductUnit @default(piece)
   salePrice         Decimal     @map("sale_price") @db.Decimal(12, 2)
+  wholesalePrice    Decimal?    @map("wholesale_price") @db.Decimal(12, 2)
   costPrice         Decimal?    @map("cost_price") @db.Decimal(12, 2)
   taxCode           String?     @map("tax_code")
   taxRate           Decimal     @default(20.00) @map("tax_rate") @db.Decimal(5, 2)

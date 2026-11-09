@@ -215,6 +215,9 @@ export interface TranslationSchema {
     inDays: string;
     reorderAdvice: string;
     units: string;
+    interStoreTransfer: string;
+    transferHistory: string;
+    noTransfers: string;
   };
   customers: {
     title: string;
@@ -588,6 +591,9 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       inDays: "خلال {days} أيام",
       reorderAdvice: "اقتراح إعادة الطلب :",
       units: "وحدات",
+      interStoreTransfer: "تحويل المخزون بين الفروع",
+      transferHistory: "سجل التحويلات بين الفروع والمستودعات",
+      noTransfers: "لم يتم تسجيل أي تحويل بين الفروع حتى الآن.",
     },
     customers: {
       title: "الزبائن والكريدي",
@@ -959,6 +965,9 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       inDays: "Dans {days}j",
       reorderAdvice: "Conseil Réappro :",
       units: "unités",
+      interStoreTransfer: "Transfert Inter-Dépôts",
+      transferHistory: "Historique des Transferts Inter-Dépôts",
+      noTransfers: "Aucun transfert de stock enregistré pour l'instant.",
     },
     customers: {
       title: "Clients & Krediat",
@@ -1330,6 +1339,9 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       inDays: "In {days}d",
       reorderAdvice: "Reorder Advice:",
       units: "units",
+      interStoreTransfer: "Inter-Store Stock Transfer",
+      transferHistory: "Inter-Store Stock Transfers History",
+      noTransfers: "No stock transfers recorded yet.",
     },
     customers: {
       title: "Customers & Credit",

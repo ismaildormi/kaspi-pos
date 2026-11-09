@@ -12,6 +12,7 @@ export interface PosProduct {
   barcode?: string | null;
   price?: number;
   salePrice: number;
+  wholesalePrice?: number | null;
   taxRate: number;
   trackStock: boolean;
   stockQuantity?: number;
@@ -35,6 +36,8 @@ export interface CartItem {
   sku: string;
   barcode?: string | null;
   unitPrice: number;
+  retailPrice?: number;
+  wholesalePrice?: number | null;
   quantity: number;
   taxRate: number;
   discountAmount: number;
@@ -94,6 +97,7 @@ interface PosState {
   // Active Cart State
   cart: CartItem[];
   customer: PosCustomer | null;
+  pricingTier: "retail" | "wholesale";
   discountPercent: number; // 0 to 100
   discountFixed: number;
 
@@ -131,7 +135,8 @@ interface PosState {
   setPrinterSettings: (settings: Partial<PosState["printerSettings"]>) => void;
   addToCart: (product: PosProduct, quantity?: number, notes?: string) => void;
   updateItemNotes: (productId: string, notes: string) => void;
-  addProductByBarcode: (product: PosProduct) => void;
+  addProductByBarcode: (product: PosProduct, quantity?: number) => void;
+  setPricingTier: (tier: "retail" | "wholesale") => void;
   updateItemQuantity: (productId: string, delta: number) => void;
   setItemQuantity: (productId: string, quantity: number) => void;
   removeItem: (productId: string) => void;
@@ -186,6 +191,7 @@ export const usePosStore = create<PosState>()(
 
       cart: [],
       customer: null,
+      pricingTier: "retail",
       discountPercent: 0,
       discountFixed: 0,
 
@@ -285,6 +291,26 @@ export const usePosStore = create<PosState>()(
         });
       },
 
+      setPricingTier: (tier) => {
+        set((state) => {
+          const updated = state.cart.map((item) => {
+            const unitPrice =
+              tier === "wholesale" && item.wholesalePrice && item.wholesalePrice > 0
+                ? item.wholesalePrice
+                : (item.retailPrice ?? item.unitPrice);
+            const netAmount = (unitPrice * item.quantity) - item.discountAmount;
+            const taxAmount = (netAmount * item.taxRate) / 100;
+            const lineTotal = roundMoney(toDecimal(netAmount).plus(taxAmount)).toNumber();
+            return {
+              ...item,
+              unitPrice,
+              lineTotal,
+            };
+          });
+          return { pricingTier: tier, cart: updated };
+        });
+      },
+
       addToCart: (product, quantity = 1, notes) => {
         // Stock Availability Check
         if (product.trackStock && (product.stockQuantity ?? 0) <= 0) {
@@ -299,7 +325,12 @@ export const usePosStore = create<PosState>()(
 
         set((state) => {
           const existingIndex = state.cart.findIndex((i) => i.productId === product.id);
-          const resolvedUnitPrice = Number(product.salePrice ?? product.price ?? 0);
+          const retailPrice = Number(product.salePrice ?? product.price ?? 0);
+          const wholesalePrice = product.wholesalePrice ? Number(product.wholesalePrice) : null;
+          const resolvedUnitPrice =
+            state.pricingTier === "wholesale" && wholesalePrice && wholesalePrice > 0
+              ? wholesalePrice
+              : retailPrice;
           const resolvedTaxRate = Number(product.taxRate ?? 20);
 
           if (existingIndex > -1) {
@@ -330,6 +361,8 @@ export const usePosStore = create<PosState>()(
             sku: product.sku,
             barcode: product.barcode,
             unitPrice,
+            retailPrice,
+            wholesalePrice,
             quantity,
             taxRate: resolvedTaxRate,
             discountAmount: 0,
@@ -349,7 +382,7 @@ export const usePosStore = create<PosState>()(
         }));
       },
 
-      addProductByBarcode: (product) => {
+      addProductByBarcode: (product, quantity = 1) => {
         // 1. Stock Availability Check
         if (product.trackStock && (product.stockQuantity ?? 0) <= 0) {
           toast.warning(`Warning: ${product.name} is out of stock!`, {
@@ -372,13 +405,18 @@ export const usePosStore = create<PosState>()(
         // 2. Add or increment item in cart & recalculate line and cart totals (including tax)
         set((state) => {
           const existingIndex = state.cart.findIndex((i) => i.productId === product.id);
-          const resolvedUnitPrice = Number(product.salePrice ?? product.price ?? 0);
+          const retailPrice = Number(product.salePrice ?? product.price ?? 0);
+          const wholesalePrice = product.wholesalePrice ? Number(product.wholesalePrice) : null;
+          const resolvedUnitPrice =
+            state.pricingTier === "wholesale" && wholesalePrice && wholesalePrice > 0
+              ? wholesalePrice
+              : retailPrice;
           const resolvedTaxRate = Number(product.taxRate ?? 20);
 
           if (existingIndex > -1) {
             const updated = [...state.cart];
             const current = updated[existingIndex];
-            const newQty = current.quantity + 1;
+            const newQty = roundMoney(toDecimal(current.quantity).plus(quantity)).toNumber();
             const netAmount = (current.unitPrice * newQty) - current.discountAmount;
             const taxAmount = (netAmount * current.taxRate) / 100;
             const lineTotal = roundMoney(toDecimal(netAmount).plus(taxAmount)).toNumber();
@@ -391,7 +429,7 @@ export const usePosStore = create<PosState>()(
             return { cart: updated };
           }
 
-          const net = resolvedUnitPrice * 1;
+          const net = resolvedUnitPrice * quantity;
           const tax = (net * resolvedTaxRate) / 100;
           const lineTotal = roundMoney(toDecimal(net).plus(tax)).toNumber();
 
@@ -401,7 +439,9 @@ export const usePosStore = create<PosState>()(
             sku: product.sku || product.barcode || "SKU",
             barcode: product.barcode,
             unitPrice: resolvedUnitPrice,
-            quantity: 1,
+            retailPrice,
+            wholesalePrice,
+            quantity,
             taxRate: resolvedTaxRate,
             discountAmount: 0,
             lineTotal,

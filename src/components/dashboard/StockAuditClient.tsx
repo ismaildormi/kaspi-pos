@@ -11,7 +11,9 @@ import {
   CheckCircle2,
   X,
   RefreshCw,
+  ArrowRightLeft,
 } from "lucide-react";
+import { StockTransferModal, TransferStoreItem } from "./StockTransferModal";
 
 export interface StockAuditProductItem {
   id: string;
@@ -23,12 +25,15 @@ export interface StockAuditProductItem {
 
 export function StockAuditClient({
   products,
+  stores = [],
 }: {
   products: StockAuditProductItem[];
+  stores?: TransferStoreItem[];
 }) {
   const router = useRouter();
-  const { t } = useAppDictionary();
+  const { t, locale } = useAppDictionary();
   const [isOpen, setIsOpen] = useState(false);
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string>(
     products[0]?.id || ""
   );
@@ -137,6 +142,34 @@ export function StockAuditClient({
         <ClipboardCheck className="h-3.5 w-3.5" />
         <span>{t.inventory.adjustStock}</span>
       </button>
+
+      <button
+        type="button"
+        onClick={() => setIsTransferOpen(true)}
+        className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-xs font-bold text-zinc-200 hover:text-white hover:bg-zinc-800 transition cursor-pointer shadow-sm"
+      >
+        <ArrowRightLeft className="h-3.5 w-3.5 text-zinc-400" />
+        <span>
+          {locale === "ar"
+            ? "تحويل المخزون بين الفروع"
+            : locale === "en"
+            ? "Inter-Store Transfer"
+            : "Transfert Inter-Dépôts"}
+        </span>
+      </button>
+
+      <StockTransferModal
+        isOpen={isTransferOpen}
+        onClose={() => setIsTransferOpen(false)}
+        stores={stores}
+        products={products.map((p) => ({
+          id: p.id,
+          name: p.name,
+          sku: p.sku || "SKU",
+          stockQuantity: p.currentQty,
+        }))}
+        onTransferCompleted={() => router.refresh()}
+      />
 
       {isOpen && (
         <div dir="ltr" className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAppDictionary } from "@/i18n/schema";
+import { getCachedData, setCachedData } from "@/lib/cache/client-cache";
 import {
   Users,
   Search,
@@ -33,9 +34,13 @@ interface CustomerItem {
 export default function CustomersPage() {
   const { t, locale } = useAppDictionary();
 
-  const [customers, setCustomers] = useState<CustomerItem[]>([]);
+  const [customers, setCustomers] = useState<CustomerItem[]>(() => {
+    return getCachedData<CustomerItem[]>("customers_list", []).data;
+  });
   const [search, setSearch] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => {
+    return !getCachedData<CustomerItem[]>("customers_list", []).isCached;
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // New Customer Form State
@@ -124,13 +129,22 @@ export default function CustomersPage() {
     fetchCustomers();
   }, [search]);
 
-  const fetchCustomers = async () => {
-    setIsLoading(true);
+  const fetchCustomers = async (isBackground = false) => {
+    if (!isBackground && !search) {
+      const hasCached = getCachedData<CustomerItem[]>("customers_list", []).isCached;
+      if (!hasCached) setIsLoading(true);
+    } else if (search) {
+      setIsLoading(true);
+    }
     try {
       const res = await fetch(`/api/v1/customers${search ? `?search=${encodeURIComponent(search)}` : ""}`);
       if (res.ok) {
         const data = await res.json();
-        setCustomers(data.data?.customers || []);
+        const list = data.data?.customers || [];
+        setCustomers(list);
+        if (!search) {
+          setCachedData("customers_list", list);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -145,6 +159,24 @@ export default function CustomersPage() {
 
     setIsSubmitting(true);
     setErrorMsg(null);
+
+    const optimisticCust: CustomerItem = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+      phone: phone.trim() || null,
+      ice: ice.trim() || null,
+      currentCreditBalance: 0,
+      creditLimit: creditLimit ? parseFloat(creditLimit) : null,
+      loyaltyPoints: 0,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Optimistic UI update in 0ms
+    setCustomers((prev) => {
+      const updated = [optimisticCust, ...prev];
+      if (!search) setCachedData("customers_list", updated);
+      return updated;
+    });
 
     try {
       const res = await fetch("/api/v1/customers", {
@@ -168,9 +200,10 @@ export default function CustomersPage() {
       setPhone("");
       setIce("");
       setCreditLimit("");
-      fetchCustomers();
+      await fetchCustomers(true);
     } catch (err: any) {
-      setErrorMsg(err.message || "Erreur de création");
+      setErrorMsg(err.message || "Erreur de connexion");
+      await fetchCustomers();
     } finally {
       setIsSubmitting(false);
     }

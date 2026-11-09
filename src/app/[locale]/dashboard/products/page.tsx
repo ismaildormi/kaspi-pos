@@ -24,6 +24,7 @@ import {
 import { generateProductImageUrl } from "@/lib/pollinations";
 import { uploadProductImage } from "@/lib/supabase-storage";
 import { useAppDictionary } from "@/i18n/schema";
+import { getCachedData, setCachedData } from "@/lib/cache/client-cache";
 
 export interface CatalogProduct {
   id: string;
@@ -32,6 +33,7 @@ export interface CatalogProduct {
   barcode?: string | null;
   imageUrl?: string | null;
   salePrice: number;
+  wholesalePrice?: number | null;
   taxRate: number;
   trackStock: boolean;
   stockQuantity?: number;
@@ -41,8 +43,12 @@ export interface CatalogProduct {
 
 export default function ProductsListPage() {
   const { t, locale } = useAppDictionary();
-  const [products, setProducts] = useState<CatalogProduct[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState<CatalogProduct[]>(() => {
+    return getCachedData<CatalogProduct[]>("products_catalog", []).data;
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    return !getCachedData<CatalogProduct[]>("products_catalog", []).isCached;
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
@@ -124,6 +130,27 @@ export default function ProductsListPage() {
     e.preventDefault();
     if (!createName.trim()) return;
     setIsCreatingProduct(true);
+
+    const optimisticProduct: CatalogProduct = {
+      id: crypto.randomUUID(),
+      name: createName.trim(),
+      sku: createSku.trim() || `SKU-${Date.now().toString().slice(-4)}`,
+      barcode: createBarcode.trim() || null,
+      categoryName: createCategory.trim() || null,
+      salePrice: parseFloat(createSalePrice) || 0,
+      wholesalePrice: null,
+      taxRate: parseFloat(createTaxRate) || 20,
+      trackStock: true,
+      stockQuantity: parseFloat(createInitialStock) || 0,
+    };
+
+    // Optimistic UI update in 0ms
+    setProducts((prev) => {
+      const updated = [optimisticProduct, ...prev];
+      setCachedData("products_catalog", updated);
+      return updated;
+    });
+
     try {
       const res = await fetch("/api/v1/products", {
         method: "POST",
@@ -151,7 +178,7 @@ export default function ProductsListPage() {
       setCreateSalePrice("");
       setCreateCostPrice("");
       setCreateInitialStock("25");
-      await fetchProducts();
+      await fetchProducts(true);
     } catch (err: any) {
       toast.error(err.message || "Erreur lors de la création");
     } finally {
@@ -159,20 +186,22 @@ export default function ProductsListPage() {
     }
   };
 
-  // Fetch Products on Mount
-  const fetchProducts = async () => {
-    setIsLoading(true);
+  // Fetch Products on Mount (Stale-While-Revalidate with Local Cache)
+  const fetchProducts = async (isBackground = false) => {
+    if (!isBackground) {
+      const hasCached = getCachedData<CatalogProduct[]>("products_catalog", []).isCached;
+      if (!hasCached) setIsLoading(true);
+    }
     try {
       const res = await fetch("/api/v1/products");
       if (res.ok) {
         const json = await res.json();
         const list: CatalogProduct[] = json.data?.products || json.products || [];
         setProducts(list);
-      } else {
-        toast.error("Failed to load products catalog");
+        setCachedData("products_catalog", list);
       }
     } catch {
-      toast.error("Network error while loading products");
+      console.warn("[Products] Network error during silent revalidation");
     } finally {
       setIsLoading(false);
     }
