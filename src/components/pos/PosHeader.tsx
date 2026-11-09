@@ -2,10 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useTranslations, useLocale } from "next-intl";
 import {
   Clock,
-  User as UserIcon,
   LayoutDashboard,
   Wallet,
   Sparkles,
@@ -23,6 +21,7 @@ import { usePosStore, type StoreBusinessType } from "@/client/store/usePosStore"
 import { getApiUrl } from "@/client/sync-engine";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SyncStatusBadge } from "./SyncStatusBadge";
+import { useAppDictionary } from "@/i18n/schema";
 
 interface PosHeaderProps {
   storeName?: string;
@@ -34,18 +33,6 @@ interface PosHeaderProps {
   expectedCash?: number;
 }
 
-const VERTICAL_MODES: Array<{
-  id: StoreBusinessType;
-  labelFr: string;
-  labelAr: string;
-  icon: React.ComponentType<{ className?: string }>;
-}> = [
-  { id: "grocery", labelFr: "Épicerie", labelAr: "بقالة", icon: ShoppingBasket },
-  { id: "restaurant", labelFr: "Restaurant", labelAr: "مطعم", icon: UtensilsCrossed },
-  { id: "fashion", labelFr: "Mode", labelAr: "أزياء", icon: Shirt },
-  { id: "electronics", labelFr: "Tech", labelAr: "إلكترونيات", icon: Smartphone },
-];
-
 export const PosHeader: React.FC<PosHeaderProps> = ({
   storeName = "Magasin Principal",
   cashierName = "Caissier",
@@ -55,9 +42,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
   isShiftOpen = false,
   expectedCash = 0,
 }) => {
-  const t = useTranslations("Pos");
-  const locale = useLocale();
-  const isRtl = locale === "ar";
+  const { t, locale } = useAppDictionary();
   const { heldCarts, storeType, setStoreProfile } = usePosStore();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -77,18 +62,25 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
     }
   };
 
+  const verticalModes: Array<{
+    id: StoreBusinessType;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }> = [
+    { id: "grocery", label: t.topbar.grocery, icon: ShoppingBasket },
+    { id: "restaurant", label: t.topbar.restaurant, icon: UtensilsCrossed },
+    { id: "fashion", label: t.topbar.fashion, icon: Shirt },
+    { id: "electronics", label: t.topbar.tech, icon: Smartphone },
+  ];
+
   const handleSwitchVertical = async (nextType: StoreBusinessType) => {
     if (nextType === storeType) {
       if (onOpenIndustryTools) onOpenIndustryTools();
       return;
     }
     setStoreProfile(nextType, true);
-    const modeObj = VERTICAL_MODES.find((m) => m.id === nextType);
-    toast.success(
-      isRtl
-        ? `تم التبديل إلى وضع: ${modeObj?.labelAr}`
-        : `Mode métier activé : ${modeObj?.labelFr}`
-    );
+    const modeObj = verticalModes.find((m) => m.id === nextType);
+    toast.success(`${modeObj?.label || nextType}`);
     try {
       await fetch(getApiUrl("/api/v1/onboarding/setup"), {
         method: "POST",
@@ -99,44 +91,45 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
           seedStarterCatalog: false,
         }),
       });
-    } catch {
-      // Offline-safe state already updated in Zustand
-    }
+    } catch {}
   };
 
   return (
-    <header className="h-14 border-b border-white/10 bg-zinc-950/85 backdrop-blur-xl px-4 flex items-center justify-between gap-3 select-none shrink-0 z-30">
-      {/* LEFT: Brand Identity & Dashboard Switch */}
+    <header
+      dir="ltr"
+      className="h-14 bg-zinc-950 border-b border-zinc-800 px-3 sm:px-4 flex items-center justify-between gap-2 select-none shrink-0"
+    >
+      {/* LEFT: Branding & Workspace Link */}
       <div className="flex items-center gap-2.5 min-w-0">
         <Link
           href={`/${locale}/dashboard`}
-          className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.09] text-xs font-semibold text-zinc-200 hover:text-white transition shrink-0"
-          title={isRtl ? "لوحة التحكم" : "Tableau de bord"}
+          className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/[0.05] text-zinc-300 hover:text-white transition group"
+          title={t.nav.dashboard}
         >
-          <LayoutDashboard className="w-3.5 h-3.5 text-zinc-400" />
-          <span className="hidden sm:inline">{isRtl ? "لوحة التحكم" : "Dashboard"}</span>
+          <LayoutDashboard className="w-4 h-4 text-zinc-400 group-hover:text-white" />
+          <span className="hidden sm:inline text-xs font-semibold">{t.nav.dashboard}</span>
         </Link>
 
-        <div className="h-4 w-px bg-white/10 hidden sm:block" />
+        <div className="h-4 w-px bg-zinc-800 hidden sm:block" />
 
         <div className="flex items-center gap-2 min-w-0">
           <img
             src="/logo.png"
-            alt="KASPI"
-            className="w-6 h-6 object-contain rounded-md shrink-0"
+            alt="KASPI POS"
+            className="w-5 h-5 object-contain rounded shrink-0"
           />
-          <span className="font-extrabold text-sm tracking-tight text-white shrink-0">
-            KASPI
-          </span>
-          <span className="text-[11px] text-zinc-400 font-mono truncate max-w-[130px] px-2 py-0.5 rounded-md bg-white/[0.03] border border-white/10 hidden md:inline-block">
+          <span className="font-bold text-xs tracking-tight text-white hidden md:inline truncate max-w-[140px]">
             {storeName}
+          </span>
+          <span className="text-[10px] font-mono text-zinc-500 hidden lg:inline">
+            ({cashierName})
           </span>
         </div>
       </div>
 
-      {/* CENTER: Core Workspace Vertical Switcher + Specialized Tools Trigger */}
-      <div className="hidden lg:flex items-center gap-1 p-1 rounded-xl bg-zinc-900/90 border border-white/10">
-        {VERTICAL_MODES.map((mode) => {
+      {/* CENTER: Vertical Mode Switcher Pills */}
+      <div className="hidden lg:flex items-center gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
+        {verticalModes.map((mode) => {
           const Icon = mode.icon;
           const active = storeType === mode.id;
           return (
@@ -151,7 +144,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
-              <span>{isRtl ? mode.labelAr : mode.labelFr}</span>
+              <span>{mode.label}</span>
             </button>
           );
         })}
@@ -164,7 +157,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
             title="KDS / Tables / Tailles / Balance / IMEI"
           >
             <Sparkles className="w-3 h-3 text-amber-400" />
-            <span>{isRtl ? "أدوات القطاع" : "Outils"}</span>
+            <span>{t.topbar.tools}</span>
           </button>
         )}
       </div>
@@ -196,7 +189,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
           >
             <Wallet className="w-3.5 h-3.5" />
             <span className="hidden md:inline font-mono">
-              {isShiftOpen ? `${expectedCash.toFixed(0)} DH` : isRtl ? "فتح الصندوق" : "Caisse"}
+              {isShiftOpen ? `${expectedCash.toFixed(0)} ${t.common.currency}` : t.topbar.openRegister}
             </span>
             <span
               className={`w-1.5 h-1.5 rounded-full ${
@@ -212,7 +205,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
             type="button"
             onClick={onOpenHeldCarts}
             className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-white border border-white/10 text-xs font-semibold transition cursor-pointer"
-            title={t("heldOrders")}
+            title={t.pos.heldOrders}
           >
             <Clock className="w-3.5 h-3.5 text-amber-400" />
             <span className="font-mono">{heldCarts.length}</span>
@@ -226,20 +219,23 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         <Link
           href={`/${locale}/download`}
           className="hidden xl:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-xs font-medium text-zinc-300 hover:text-white transition"
-          title="Application Windows Desktop (.exe)"
+          title="Application Desktop"
         >
           <Download className="w-3.5 h-3.5 text-zinc-400" />
-          <span>Desktop</span>
+          <span>{t.topbar.desktopApp}</span>
         </Link>
 
         {/* Store Settings Link */}
         <Link
           href={`/${locale}/dashboard/settings`}
           className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300 hover:text-white transition"
-          title={isRtl ? "إعدادات المتجر" : "Paramètres"}
+          title={t.topbar.settings}
         >
           <Settings className="w-3.5 h-3.5" />
         </Link>
+
+        {/* Language Switcher */}
+        <LanguageSwitcher />
 
         {/* Fullscreen Kiosk Toggle */}
         <button
@@ -248,28 +244,12 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
           className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border text-xs transition cursor-pointer ${
             isFullscreen
               ? "bg-white text-black border-white"
-              : "bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300 hover:text-white border-white/10"
+              : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-700"
           }`}
-          title="Plein Écran (F11)"
+          title="Kiosk Mode"
         >
-          {isFullscreen ? (
-            <Minimize2 className="w-3.5 h-3.5" />
-          ) : (
-            <Maximize2 className="w-3.5 h-3.5" />
-          )}
+          {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
         </button>
-
-        {/* Language Switcher */}
-        <LanguageSwitcher />
-
-        {/* Active Session Profile Pill */}
-        <Link
-          href={`/${locale}/dashboard/settings`}
-          className="hidden sm:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-medium text-zinc-200 transition"
-        >
-          <UserIcon className="w-3.5 h-3.5 text-emerald-400" />
-          <span className="truncate max-w-[90px]">{cashierName}</span>
-        </Link>
       </div>
     </header>
   );

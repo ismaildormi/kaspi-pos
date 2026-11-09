@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   Menu,
   X,
@@ -19,38 +18,20 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { usePosStore, type StoreBusinessType } from "@/client/store/usePosStore";
 import { getApiUrl } from "@/client/sync-engine";
-
-const VERTICAL_MODES: Array<{
-  id: StoreBusinessType;
-  labelFr: string;
-  labelAr: string;
-  icon: React.ComponentType<{ className?: string }>;
-}> = [
-  { id: "grocery", labelFr: "Épicerie", labelAr: "بقالة", icon: ShoppingBasket },
-  { id: "restaurant", labelFr: "Restaurant", labelAr: "مطعم", icon: UtensilsCrossed },
-  { id: "fashion", labelFr: "Mode", labelAr: "أزياء", icon: Shirt },
-  { id: "electronics", labelFr: "Tech", labelAr: "إلكترونيات", icon: Smartphone },
-];
+import { useAppDictionary } from "@/i18n/schema";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
+  const { t, locale } = useAppDictionary();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userName, setUserName] = useState<string>("Compte Actif");
+  const [userName, setUserName] = useState<string>("");
   const [shopName, setShopName] = useState<string>("KASPI POS");
   const { storeType, setStoreProfile } = usePosStore();
 
-  const segments = pathname.split("/").filter(Boolean);
-  const currentLocale =
-    segments[0] === "ar" || segments[0] === "fr" || segments[0] === "en"
-      ? segments[0]
-      : "fr";
-  const isRtl = currentLocale === "ar";
-
-  const localizeHref = (path: string) => `/${currentLocale}${path}`;
+  const localizeHref = (path: string) => `/${locale}${path}`;
 
   useEffect(() => {
     Promise.all([
@@ -98,8 +79,19 @@ export default function DashboardLayout({
     } catch {}
   };
 
+  const verticalModes: Array<{
+    id: StoreBusinessType;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }> = [
+    { id: "grocery", label: t.topbar.grocery, icon: ShoppingBasket },
+    { id: "restaurant", label: t.topbar.restaurant, icon: UtensilsCrossed },
+    { id: "fashion", label: t.topbar.fashion, icon: Shirt },
+    { id: "electronics", label: t.topbar.tech, icon: Smartphone },
+  ];
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
+    <div dir="ltr" className="min-h-screen bg-zinc-950 text-white flex flex-col">
       {/* Unified Glassmorphic Top Navigation Bar */}
       <header className="sticky top-0 z-40 h-14 backdrop-blur-xl bg-zinc-950/85 border-b border-white/10 px-4 flex items-center justify-between gap-4 select-none">
         {/* Left: Brand Identity & Mobile Menu Button */}
@@ -133,7 +125,7 @@ export default function DashboardLayout({
 
         {/* Center: Core Workspace Vertical Modes */}
         <div className="hidden lg:flex items-center gap-1 p-1 rounded-xl bg-zinc-900/90 border border-white/10">
-          {VERTICAL_MODES.map((mode) => {
+          {verticalModes.map((mode) => {
             const Icon = mode.icon;
             const active = storeType === mode.id;
             return (
@@ -148,7 +140,7 @@ export default function DashboardLayout({
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
-                <span>{isRtl ? mode.labelAr : mode.labelFr}</span>
+                <span>{mode.label}</span>
               </button>
             );
           })}
@@ -161,7 +153,7 @@ export default function DashboardLayout({
             className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-bold transition shadow-xs"
           >
             <ShoppingBag className="w-3.5 h-3.5" />
-            <span>{isRtl ? "نقطة البيع POS" : "Caisse POS"}</span>
+            <span>{t.topbar.posRegister}</span>
           </Link>
 
           <Link
@@ -169,7 +161,7 @@ export default function DashboardLayout({
             className="hidden sm:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-xs font-medium text-zinc-300 hover:text-white transition"
           >
             <Download className="w-3.5 h-3.5 text-zinc-400" />
-            <span className="hidden xl:inline">Desktop</span>
+            <span className="hidden xl:inline">{t.topbar.desktopApp}</span>
           </Link>
 
           <LanguageSwitcher />
@@ -177,7 +169,7 @@ export default function DashboardLayout({
           <Link
             href={localizeHref("/dashboard/settings")}
             className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300 hover:text-white transition"
-            title={isRtl ? "الإعدادات" : "Paramètres"}
+            title={t.topbar.settings}
           >
             <Settings className="w-3.5 h-3.5" />
           </Link>
@@ -187,7 +179,9 @@ export default function DashboardLayout({
             className="hidden md:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-medium text-zinc-200 transition"
           >
             <UserIcon className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="truncate max-w-[110px]">{userName}</span>
+            <span className="truncate max-w-[110px]">
+              {userName || t.topbar.activeAccount}
+            </span>
           </Link>
         </div>
       </header>

@@ -9,6 +9,7 @@ import {
   MessageSquare,
   RefreshCw,
 } from "lucide-react";
+import { useAppDictionary } from "@/i18n/schema";
 
 interface SupportTicket {
   id: string;
@@ -22,6 +23,7 @@ interface SupportTicket {
 }
 
 export default function TenantSupportPage() {
+  const { t } = useAppDictionary();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -83,16 +85,16 @@ export default function TenantSupportPage() {
   };
 
   return (
-    <div className="space-y-8 select-none">
+    <div dir="ltr" className="space-y-8 select-none">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-900 pb-6">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
             <HelpCircle className="h-6 w-6 text-white" />
-            Aide & Support Direct (Super Admin)
+            <span>{t.support.title}</span>
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Envoyez un message directement à la boîte de réception interne du propriétaire de la plateforme
+            {t.support.subtitle}
           </p>
         </div>
 
@@ -101,7 +103,7 @@ export default function TenantSupportPage() {
           className="inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
         >
           <RefreshCw className="h-3.5 w-3.5" />
-          Actualiser
+          <span>{t.common.loading}</span>
         </button>
       </div>
 
@@ -113,7 +115,7 @@ export default function TenantSupportPage() {
             className="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-6 space-y-4"
           >
             <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-              Nouveau Message au Support
+              {t.support.newTicket}
             </h2>
 
             {feedback && (

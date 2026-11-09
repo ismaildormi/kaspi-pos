@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useLocale } from "next-intl";
+import { useAppDictionary } from "@/i18n/schema";
 import {
   Users,
   Search,
@@ -31,8 +31,7 @@ interface CustomerItem {
 }
 
 export default function CustomersPage() {
-  const locale = useLocale();
-  const isRtl = locale === "ar";
+  const { t, locale } = useAppDictionary();
 
   const [customers, setCustomers] = useState<CustomerItem[]>([]);
   const [search, setSearch] = useState("");
@@ -183,24 +182,15 @@ export default function CustomersPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white pb-20 select-none">
       {/* Top Bar */}
-      <header className="bg-zinc-950 border-b border-zinc-800 sticky top-0 z-30">
+      <header dir="ltr" className="bg-zinc-950 border-b border-zinc-800 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
               href={`/${locale}/pos`}
               className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors flex items-center gap-1.5 text-xs font-semibold"
             >
-              {isRtl ? (
-                <>
-                  <ArrowRight className="w-4 h-4" />
-                  <span>العودة لنقطة البيع (POS)</span>
-                </>
-              ) : (
-                <>
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Retour au POS</span>
-                </>
-              )}
+              <ArrowLeft className="w-4 h-4" />
+              <span>{t.common.back} (POS)</span>
             </Link>
             <div className="h-5 w-px bg-zinc-800" />
             <div className="flex items-center gap-2">
@@ -208,7 +198,7 @@ export default function CustomersPage() {
                 <Users className="w-4 h-4" />
               </div>
               <h1 className="text-sm font-bold text-white">
-                {isRtl ? "سجل الزبناء والديون (الكريدي)" : "Gestion des Clients & Crédits"}
+                {t.customers.title}
               </h1>
             </div>
           </div>
@@ -218,7 +208,7 @@ export default function CustomersPage() {
             className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Nouveau Client</span>
+            <span>{t.customers.addCustomer}</span>
           </button>
         </div>
       </header>

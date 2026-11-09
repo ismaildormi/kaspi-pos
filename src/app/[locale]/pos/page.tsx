@@ -17,8 +17,10 @@ import type { ShiftFinancialSummary } from "@/server/cash-shift/engine";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { offlineDb } from "@/client/db";
 import { processSyncQueue, getApiUrl } from "@/client/sync-engine";
+import { useAppDictionary } from "@/i18n/schema";
 
 export default function PosPage() {
+  const { t } = useAppDictionary();
   const [products, setProducts] = useState<PosProduct[]>([]);
   const [categories, setCategories] = useState<PosCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -187,7 +189,7 @@ export default function PosPage() {
   }, [cart, isPaymentModalOpen, isHeldModalOpen, openPaymentModal, closePaymentModal]);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-zinc-950 text-white font-sans">
+    <div dir="ltr" className="flex flex-col h-screen overflow-hidden bg-zinc-950 text-white font-sans">
       <Toaster
         theme="dark"
         position="top-center"
@@ -226,7 +228,7 @@ export default function PosPage() {
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="h-64 flex items-center justify-center text-zinc-500 text-sm font-medium">
-                Chargement du catalogue...
+                {t.pos.loadingCatalog}
               </div>
             ) : (
               <ProductGrid products={products} />

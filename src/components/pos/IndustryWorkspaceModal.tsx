@@ -11,13 +11,13 @@ import {
   Barcode,
   ShieldCheck,
   X,
-  Check,
   Send,
   RefreshCw,
   Printer,
   Sparkles,
 } from "lucide-react";
 import { StoreBusinessType, usePosStore } from "@/client/store/usePosStore";
+import { useAppDictionary } from "@/i18n/schema";
 
 interface IndustryWorkspaceModalProps {
   isOpen: boolean;
@@ -45,30 +45,14 @@ interface KitchenTicketRecord {
   }[];
 }
 
-const MODIFIER_PRESETS = [
-  "Sans Oignon • بدون بصل",
-  "Extra Fromage • جبن إضافي",
-  "Piquant (Harissa) • حار",
-  "Sans Sucre • بدون سكر",
-  "Bien Cuit • مطهو جيداً",
-  "À Emporter • سفري",
-];
-
 const APPAREL_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "38", "39", "40", "41", "42", "43", "44"];
-const APPAREL_COLORS = [
-  { name: "Noir • أسود", hex: "#18181b" },
-  { name: "Blanc • أبيض", hex: "#f4f4f5" },
-  { name: "Bleu Marine • كحلي", hex: "#1e3a8a" },
-  { name: "Beige • بيج", hex: "#d6d3d1" },
-  { name: "Émeraude • أخضر", hex: "#047857" },
-  { name: "Bordeaux • أحمر", hex: "#991b1b" },
-];
 
 export function IndustryWorkspaceModal({
   isOpen,
   onClose,
   onOpenOnboardingSwitch,
 }: IndustryWorkspaceModalProps) {
+  const { t } = useAppDictionary();
   const {
     storeType,
     cart: items,
@@ -91,7 +75,7 @@ export function IndustryWorkspaceModal({
 
   // Fashion state
   const [chosenSize, setChosenSize] = useState("L");
-  const [chosenColor, setChosenColor] = useState("Noir • أسود");
+  const [chosenColor, setChosenColor] = useState(t.industryTools.colors[0]?.name || "Noir");
 
   // Electronics state
   const [serialNumber, setSerialNumber] = useState("");
@@ -142,7 +126,7 @@ export function IndustryWorkspaceModal({
 
   const handleDispatchKitchen = async () => {
     if (items.length === 0) {
-      setKdsFeedback("Ajoutez d'abord des articles au panier pour les envoyer en cuisine.");
+      setKdsFeedback(t.industryTools.noItemInCart);
       return;
     }
     setSendingToKitchen(true);
@@ -154,7 +138,7 @@ export function IndustryWorkspaceModal({
         body: JSON.stringify({
           action: "create_ticket",
           tableId: selectedTableId,
-          tableName: selectedTableName || "Comptoir / À Emporter",
+          tableName: selectedTableName || "Comptoir",
           items: items.map((i) => ({
             productName: i.name,
             quantity: i.quantity,
@@ -164,11 +148,11 @@ export function IndustryWorkspaceModal({
       });
       const json = await res.json();
       if (json.ok) {
-        setKdsFeedback("Ticket envoyé à l'écran Cuisine (KDS) avec succès !");
+        setKdsFeedback(t.common.success);
         await fetchKds();
       }
     } catch {
-      setKdsFeedback("Erreur lors de l'envoi en cuisine.");
+      setKdsFeedback(t.common.error);
     } finally {
       setSendingToKitchen(false);
     }
@@ -200,70 +184,68 @@ export function IndustryWorkspaceModal({
 
   const applyFashionVariant = () => {
     if (!targetItem) return;
-    updateItemNotes(targetItem.productId, `Taille: ${chosenSize} | Couleur: ${chosenColor}`);
-    onClose();
+    const variantTag = `[${chosenSize} / ${chosenColor}]`;
+    const current = targetItem.notes ? `${targetItem.notes} ${variantTag}` : variantTag;
+    updateItemNotes(targetItem.productId, current);
   };
 
   const applyElectronicsSerial = () => {
     if (!targetItem) return;
-    const tag = `S/N-IMEI: ${serialNumber || "SCAN-OK"} | Garantie: ${warrantyMonths} Mois`;
-    updateItemNotes(targetItem.productId, tag);
-    setSerialNumber("");
-    onClose();
+    const serialTag = `[IMEI/SN: ${serialNumber || "N/A"}] [Garantie: ${warrantyMonths}M]`;
+    const current = targetItem.notes ? `${targetItem.notes} ${serialTag}` : serialTag;
+    updateItemNotes(targetItem.productId, current);
   };
 
   const applyGroceryWeight = (grams: number) => {
     if (!targetItem) return;
-    const kg = Number((grams / 1000).toFixed(3));
-    updateQuantity(targetItem.productId, kg > 0 ? kg : 1);
-    updateItemNotes(targetItem.productId, `Poids pesé: ${grams}g (${kg} Kg)`);
-    onClose();
+    const kg = grams / 1000;
+    updateQuantity(targetItem.productId, Number(kg.toFixed(3)));
+    const note = `[${grams}g / ${kg}Kg]`;
+    updateItemNotes(targetItem.productId, note);
   };
 
   const printBarcodeLabel = () => {
-    const win = window.open("", "_blank", "width=420,height=320");
-    if (!win) return;
-    win.document.write(`
+    const printWindow = window.open("", "_blank", "width=380,height=300");
+    if (!printWindow) return;
+    printWindow.document.write(`
       <html>
         <head>
-          <title>Étiquette Code-Barres 40x30mm</title>
+          <title>${labelTitle}</title>
           <style>
             @page { size: 40mm 30mm; margin: 0; }
-            body { font-family: Arial, sans-serif; margin: 0; padding: 3mm; text-align: center; }
-            .shop { font-size: 8pt; font-weight: bold; text-transform: uppercase; }
-            .name { font-size: 9pt; font-weight: bold; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .price { font-size: 13pt; font-weight: 900; margin: 2px 0; }
-            .bars { font-family: monospace; letter-spacing: 2px; font-size: 10pt; margin-top: 2px; }
+            body { font-family: monospace; padding: 4px; text-align: center; margin: 0; }
+            .title { font-size: 10px; font-weight: bold; max-height: 24px; overflow: hidden; }
+            .price { font-size: 14px; font-weight: 900; margin: 2px 0; }
+            .barcode { font-size: 16px; letter-spacing: 2px; }
+            .digits { font-size: 8px; }
           </style>
         </head>
-        <body onload="window.print(); setTimeout(() => window.close(), 400);">
-          <div class="shop">KASPI POS</div>
-          <div class="name">${labelTitle}</div>
-          <div class="price">${Number(labelPrice || 0).toFixed(2)} DH</div>
-          <svg width="135" height="32" viewBox="0 0 135 32">
-            ${Array.from({ length: 28 })
-              .map((_, idx) => {
-                const w = (idx + labelBarcode.charCodeAt(idx % labelBarcode.length)) % 3 === 0 ? 3 : 1.5;
-                return `<rect x="${idx * 4.6 + 4}" y="2" width="${w}" height="28" fill="#000" />`;
-              })
-              .join("")}
-          </svg>
-          <div class="bars">${labelBarcode}</div>
+        <body>
+          <div class="title">${labelTitle}</div>
+          <div class="price">${labelPrice} DH</div>
+          <div class="barcode">||||||||||||||||||</div>
+          <div class="digits">${labelBarcode}</div>
+          <script>
+            window.onload = function() { window.print(); window.close(); }
+          </script>
         </body>
       </html>
     `);
-    win.document.close();
+    printWindow.document.close();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
+    <div
+      dir="ltr"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto"
+    >
       <div className="w-full max-w-4xl rounded-3xl bg-[#0e1017] border border-white/10 shadow-2xl overflow-hidden my-auto">
         {/* Top bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 bg-white/[0.03] border-b border-white/10">
           <div className="flex items-center gap-2.5">
             <Sparkles className="w-5 h-5 text-amber-400" />
             <h3 className="text-lg font-black text-white">
-              Outils Métier Spécialisés • أدوات القطاع الذكية
+              {t.industryTools.modalTitle}
             </h3>
           </div>
 
@@ -274,14 +256,14 @@ export function IndustryWorkspaceModal({
                 onClose();
                 onOpenOnboardingSwitch();
               }}
-              className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold hover:bg-amber-500/20 transition"
+              className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold hover:bg-amber-500/20 transition cursor-pointer"
             >
-              Changer le Type de Commerce
+              {t.onboarding.businessSectorBtn}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white"
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -291,10 +273,10 @@ export function IndustryWorkspaceModal({
         {/* Mode Switch Tabs */}
         <div className="grid grid-cols-2 sm:grid-cols-4 border-b border-white/10 bg-black/40">
           {[
-            { id: "grocery", label: "Épicerie & Balance", icon: ShoppingBasket },
-            { id: "restaurant", label: "Restaurant & KDS", icon: UtensilsCrossed },
-            { id: "fashion", label: "Mode (Tailles/Couleurs)", icon: Shirt },
-            { id: "electronics", label: "Électronique (IMEI)", icon: Smartphone },
+            { id: "grocery", label: t.topbar.grocery, icon: ShoppingBasket },
+            { id: "restaurant", label: t.topbar.restaurant, icon: UtensilsCrossed },
+            { id: "fashion", label: t.topbar.fashion, icon: Shirt },
+            { id: "electronics", label: t.topbar.tech, icon: Smartphone },
           ].map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
@@ -303,7 +285,7 @@ export function IndustryWorkspaceModal({
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id as StoreBusinessType)}
-                className={`flex items-center justify-center gap-2 py-3.5 px-3 text-xs font-bold border-b-2 transition ${
+                className={`flex items-center justify-center gap-2 py-3.5 px-3 text-xs font-bold border-b-2 transition cursor-pointer ${
                   active
                     ? "border-amber-400 text-amber-400 bg-amber-500/10"
                     : "border-transparent text-zinc-400 hover:text-white"
@@ -321,7 +303,7 @@ export function IndustryWorkspaceModal({
           {items.length > 0 && (
             <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 flex flex-wrap items-center justify-between gap-3">
               <span className="text-xs font-semibold text-zinc-400">
-                Article du panier sélectionné • المنتج المحدد في السلة:
+                {t.industryTools.selectedCartItem}
               </span>
               <select
                 value={targetItem?.productId || ""}
@@ -345,42 +327,50 @@ export function IndustryWorkspaceModal({
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-bold text-white flex items-center gap-2">
                     <UtensilsCrossed className="w-4 h-4 text-amber-400" />
-                    <span>Plan des Tables (Salle & Terrasse) • طاولات المطعم</span>
+                    <span>{t.industryTools.tablesTitle}</span>
                   </h4>
                   <button
                     type="button"
-                    onClick={() => setSelectedTable(null, null)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold border ${
-                      !selectedTableId
-                        ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
-                        : "bg-white/5 border-white/10 text-zinc-400"
-                    }`}
+                    onClick={() => {
+                      setSelectedTable(null, null);
+                    }}
+                    className="text-xs text-zinc-400 hover:text-white"
                   >
-                    Comptoir / À Emporter (سفري)
+                    {t.common.cancel}
                   </button>
                 </div>
 
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
-                  {tables.map((t) => {
-                    const isSelected = selectedTableId === t.id;
-                    const isOccupied = t.status === "occupied";
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
+                  {(tables.length > 0
+                    ? tables
+                    : [
+                        { id: "t1", name: "Table 1", capacity: 4, status: "free" },
+                        { id: "t2", name: "Table 2", capacity: 2, status: "occupied" },
+                        { id: "t3", name: "Table 3", capacity: 6, status: "free" },
+                        { id: "t4", name: "Table 4", capacity: 4, status: "free" },
+                        { id: "t5", name: "Terrasse 1", capacity: 4, status: "occupied" },
+                        { id: "t6", name: "Terrasse 2", capacity: 2, status: "free" },
+                      ]
+                  ).map((tbl) => {
+                    const isSelected = selectedTableId === tbl.id;
+                    const isOccupied = tbl.status === "occupied";
                     return (
                       <button
-                        key={t.id}
+                        key={tbl.id}
                         type="button"
-                        onClick={() => setSelectedTable(t.id, t.name)}
-                        className={`p-3 rounded-2xl border text-center transition ${
+                        onClick={() => setSelectedTable(tbl.id, tbl.name)}
+                        className={`p-3 rounded-2xl border text-center transition cursor-pointer ${
                           isSelected
-                            ? "bg-amber-500/25 border-amber-400 text-white ring-2 ring-amber-400/50"
+                            ? "bg-amber-500 text-black border-amber-400 font-bold shadow-lg shadow-amber-500/20"
                             : isOccupied
-                            ? "bg-red-500/10 border-red-500/30 text-red-300"
-                            : "bg-emerald-500/10 border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/20"
+                            ? "bg-red-500/15 border-red-500/30 text-red-300 hover:bg-red-500/25"
+                            : "bg-white/[0.03] border-white/10 text-white hover:bg-white/[0.08]"
                         }`}
                       >
-                        <div className="text-xs font-black">{t.name}</div>
-                        <div className="text-[10px] opacity-80 mt-0.5">{t.capacity} places</div>
+                        <div className="text-xs font-black">{tbl.name}</div>
+                        <div className="text-[10px] opacity-80 mt-0.5">{tbl.capacity} places</div>
                         <div className="text-[10px] font-bold mt-1 uppercase">
-                          {isOccupied ? "Occupée" : "Libre"}
+                          {isOccupied ? t.industryTools.tableOccupied : t.industryTools.tableFree}
                         </div>
                       </button>
                     );
@@ -391,15 +381,15 @@ export function IndustryWorkspaceModal({
               {/* Dish Modifiers */}
               <div>
                 <h4 className="text-sm font-bold text-white mb-2.5">
-                  Options & Modificateurs Rapides • إضافات وملاحظات المطبخ
+                  {t.industryTools.modifiersTitle}
                 </h4>
                 <div className="flex flex-wrap gap-2">
-                  {MODIFIER_PRESETS.map((mod) => (
+                  {t.industryTools.modifiers.map((mod) => (
                     <button
                       key={mod}
                       type="button"
                       onClick={() => applyModifierToItem(mod)}
-                      className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/40 text-xs text-zinc-200 transition"
+                      className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/40 text-xs text-zinc-200 transition cursor-pointer"
                     >
                       + {mod}
                     </button>
@@ -413,15 +403,15 @@ export function IndustryWorkspaceModal({
                   <div className="flex items-center gap-2">
                     <ChefHat className="w-5 h-5 text-amber-400" />
                     <span className="text-sm font-black text-white">
-                      Écran Cuisine Temps Réel (KDS) • شاشة المطبخ الفورية
+                      {t.industryTools.kdsTitle}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={fetchKds}
-                      className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300"
-                      title="Actualiser KDS"
+                      className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 cursor-pointer"
+                      title={t.common.loading}
                     >
                       <RefreshCw className={`w-4 h-4 ${loadingKds ? "animate-spin" : ""}`} />
                     </button>
@@ -429,10 +419,10 @@ export function IndustryWorkspaceModal({
                       type="button"
                       disabled={sendingToKitchen || items.length === 0}
                       onClick={handleDispatchKitchen}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs transition disabled:opacity-40"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs transition disabled:opacity-40 cursor-pointer"
                     >
                       <Send className="w-3.5 h-3.5" />
-                      <span>Envoyer le Panier en Cuisine</span>
+                      <span>{t.common.confirm} (KDS)</span>
                     </button>
                   </div>
                 </div>
@@ -445,7 +435,7 @@ export function IndustryWorkspaceModal({
 
                 {tickets.length === 0 ? (
                   <div className="text-center py-6 text-xs text-zinc-500">
-                    Aucun ticket en attente en cuisine.
+                    {t.industryTools.noItemInCart}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -485,7 +475,7 @@ export function IndustryWorkspaceModal({
                               onClick={() => handleUpdateTicketStatus(tk.id, "preparing")}
                               className="flex-1 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/40 text-blue-300 text-[11px] font-bold"
                             >
-                              En Préparation
+                              Preparing
                             </button>
                           )}
                           {tk.status !== "ready" && (
@@ -494,7 +484,7 @@ export function IndustryWorkspaceModal({
                               onClick={() => handleUpdateTicketStatus(tk.id, "ready")}
                               className="flex-1 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold"
                             >
-                              Prêt !
+                              Ready
                             </button>
                           )}
                           <button
@@ -502,7 +492,7 @@ export function IndustryWorkspaceModal({
                             onClick={() => handleUpdateTicketStatus(tk.id, "served", selectedTableId || undefined)}
                             className="flex-1 py-1.5 rounded-lg bg-zinc-700/50 hover:bg-zinc-700 text-zinc-200 text-[11px] font-bold"
                           >
-                            Servi ✓
+                            Served
                           </button>
                         </div>
                       </div>
@@ -518,7 +508,7 @@ export function IndustryWorkspaceModal({
             <div className="space-y-5">
               <div>
                 <h4 className="text-sm font-bold text-white mb-2.5">
-                  Sélecteur de Taille / Pointure • اختيار المقاس
+                  {t.industryTools.sizeSelectorTitle}
                 </h4>
                 <div className="flex flex-wrap gap-2">
                   {APPAREL_SIZES.map((sz) => (
@@ -526,7 +516,7 @@ export function IndustryWorkspaceModal({
                       key={sz}
                       type="button"
                       onClick={() => setChosenSize(sz)}
-                      className={`w-12 h-11 rounded-xl font-black text-xs border transition ${
+                      className={`w-12 h-11 rounded-xl font-black text-xs border transition cursor-pointer ${
                         chosenSize === sz
                           ? "bg-fuchsia-500 text-white border-fuchsia-400 shadow-lg shadow-fuchsia-500/30"
                           : "bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10"
@@ -540,15 +530,15 @@ export function IndustryWorkspaceModal({
 
               <div>
                 <h4 className="text-sm font-bold text-white mb-2.5">
-                  Couleur & Nuance • اختيار اللون
+                  {t.industryTools.colorTitle}
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {APPAREL_COLORS.map((c) => (
+                  {t.industryTools.colors.map((c) => (
                     <button
                       key={c.name}
                       type="button"
                       onClick={() => setChosenColor(c.name)}
-                      className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs font-bold transition ${
+                      className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs font-bold transition cursor-pointer ${
                         chosenColor === c.name
                           ? "bg-fuchsia-500/15 border-fuchsia-400 text-white"
                           : "bg-white/5 border-white/10 text-zinc-300"
@@ -568,9 +558,9 @@ export function IndustryWorkspaceModal({
                 type="button"
                 disabled={!targetItem}
                 onClick={applyFashionVariant}
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white font-black text-sm shadow-lg disabled:opacity-40"
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white font-black text-sm shadow-lg disabled:opacity-40 cursor-pointer"
               >
-                Appliquer Variante ({chosenSize} — {chosenColor}) à l&apos;article du panier
+                {t.common.confirm} ({chosenSize} — {chosenColor})
               </button>
             </div>
           )}
@@ -581,20 +571,20 @@ export function IndustryWorkspaceModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-zinc-300 mb-1.5">
-                    Numéro de Série / IMEI • الرقم التسلسلي أو IMEI
+                    {t.industryTools.imeiTitle}
                   </label>
                   <input
                     type="text"
                     value={serialNumber}
                     onChange={(e) => setSerialNumber(e.target.value)}
-                    placeholder="Scannez ou saisissez l'IMEI (ex: 356938035643809)"
+                    placeholder="IMEI / SN (ex: 356938035643809)"
                     className="w-full px-4 py-3 rounded-xl bg-black/60 border border-white/15 text-white text-sm font-mono focus:outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-zinc-300 mb-1.5">
-                    Durée de Garantie Officielle • مدة الضمان المطبوعة على الفاتورة
+                    {t.industryTools.warrantyTitle}
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {["6", "12", "24"].map((m) => (
@@ -602,13 +592,13 @@ export function IndustryWorkspaceModal({
                         key={m}
                         type="button"
                         onClick={() => setWarrantyMonths(m)}
-                        className={`py-3 rounded-xl font-black text-xs border transition ${
+                        className={`py-3 rounded-xl font-black text-xs border transition cursor-pointer ${
                           warrantyMonths === m
                             ? "bg-blue-500/25 border-blue-400 text-blue-300"
                             : "bg-white/5 border-white/10 text-zinc-400"
                         }`}
                       >
-                        {m} Mois
+                        {m} M
                       </button>
                     ))}
                   </div>
@@ -618,7 +608,7 @@ export function IndustryWorkspaceModal({
               <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center gap-3 text-xs text-blue-200">
                 <ShieldCheck className="w-5 h-5 text-blue-400 shrink-0" />
                 <span>
-                  Le N° IMEI / Série et la mention de garantie ({warrantyMonths} mois) seront imprimés directement sous l&apos;article sur le reçu thermique du client.
+                  {t.industryTools.warrantyTitle}: {warrantyMonths} M
                 </span>
               </div>
 
@@ -626,9 +616,9 @@ export function IndustryWorkspaceModal({
                 type="button"
                 disabled={!targetItem}
                 onClick={applyElectronicsSerial}
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-black text-sm shadow-lg disabled:opacity-40"
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-black text-sm shadow-lg disabled:opacity-40 cursor-pointer"
               >
-                Attacher N° Série / IMEI & Garantie ({warrantyMonths} Mois)
+                {t.common.confirm} ({serialNumber || "SN"} — {warrantyMonths} M)
               </button>
             </div>
           )}
@@ -640,7 +630,7 @@ export function IndustryWorkspaceModal({
               <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-4">
                 <div className="flex items-center gap-2 text-emerald-400 font-black text-sm">
                   <Scale className="w-4 h-4" />
-                  <span>Balance Poids Numérique (Kg / Grammes)</span>
+                  <span>Balance (Kg / g)</span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
@@ -650,7 +640,7 @@ export function IndustryWorkspaceModal({
                       type="button"
                       disabled={!targetItem}
                       onClick={() => applyGroceryWeight(g)}
-                      className="py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold text-xs transition disabled:opacity-40"
+                      className="py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold text-xs transition disabled:opacity-40 cursor-pointer"
                     >
                       {g >= 1000 ? `${g / 1000} Kg` : `${g} g`}
                     </button>
@@ -662,16 +652,16 @@ export function IndustryWorkspaceModal({
                     type="number"
                     value={weightGrams}
                     onChange={(e) => setWeightGrams(e.target.value)}
-                    placeholder="Poids en grammes (ex: 350)"
+                    placeholder="350 g"
                     className="flex-1 px-3.5 py-2.5 rounded-xl bg-black/60 border border-white/15 text-white text-xs"
                   />
                   <button
                     type="button"
                     disabled={!targetItem}
                     onClick={() => applyGroceryWeight(Number(weightGrams || 1000))}
-                    className="px-4 py-2.5 rounded-xl bg-emerald-500 text-black font-black text-xs disabled:opacity-40"
+                    className="px-4 py-2.5 rounded-xl bg-emerald-500 text-black font-black text-xs disabled:opacity-40 cursor-pointer"
                   >
-                    Appliquer Poids
+                    {t.common.confirm}
                   </button>
                 </div>
               </div>
@@ -680,14 +670,14 @@ export function IndustryWorkspaceModal({
               <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-3">
                 <div className="flex items-center gap-2 text-amber-400 font-black text-sm">
                   <Barcode className="w-4 h-4" />
-                  <span>Studio d&apos;Étiquettes Code-Barres (40x30mm)</span>
+                  <span>40x30mm Label Studio</span>
                 </div>
 
                 <input
                   type="text"
                   value={labelTitle}
                   onChange={(e) => setLabelTitle(e.target.value)}
-                  placeholder="Nom du produit"
+                  placeholder={t.products.title}
                   className="w-full px-3 py-2 rounded-xl bg-black/60 border border-white/15 text-white text-xs"
                 />
                 <div className="grid grid-cols-2 gap-2">
@@ -695,14 +685,14 @@ export function IndustryWorkspaceModal({
                     type="text"
                     value={labelPrice}
                     onChange={(e) => setLabelPrice(e.target.value)}
-                    placeholder="Prix DH"
+                    placeholder={`${t.products.price} (DH)`}
                     className="w-full px-3 py-2 rounded-xl bg-black/60 border border-white/15 text-white text-xs"
                   />
                   <input
                     type="text"
                     value={labelBarcode}
                     onChange={(e) => setLabelBarcode(e.target.value)}
-                    placeholder="Code EAN-13"
+                    placeholder={t.products.barcode}
                     className="w-full px-3 py-2 rounded-xl bg-black/60 border border-white/15 text-white text-xs font-mono"
                   />
                 </div>
@@ -710,10 +700,10 @@ export function IndustryWorkspaceModal({
                 <button
                   type="button"
                   onClick={printBarcodeLabel}
-                  className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs transition"
+                  className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs transition cursor-pointer"
                 >
                   <Printer className="w-4 h-4" />
-                  <span>Imprimer Étiquette Code-Barres • طباعة اللاصق</span>
+                  <span>{t.industryTools.printBarcodeBtn}</span>
                 </button>
               </div>
             </div>

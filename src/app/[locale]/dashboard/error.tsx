@@ -26,7 +26,7 @@ export default function DashboardErrorBoundary({
           <h2 className="text-lg font-extrabold text-white tracking-tight">
             Synchronisation de l&apos;espace de travail
           </h2>
-          <p className="text-xs text-zinc-400 leading-relaxed" dir="rtl">
+          <p className="text-xs text-zinc-400 leading-relaxed">
             جاري تحديث بيانات المتجر والربط السحابي — اضغط على إعادة المحاولة أو انتقل مباشرة إلى نقطة البيع.
           </p>
         </div>

@@ -269,7 +269,7 @@ export default function KitchenDisplayPage() {
   const countReady = tickets.filter((t) => t.status === "ready").length;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex flex-col select-none">
+    <div dir="ltr" className="min-h-screen bg-zinc-950 text-white flex flex-col select-none">
       <Toaster
         theme="dark"
         position="top-center"
@@ -291,7 +291,7 @@ export default function KitchenDisplayPage() {
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="text-xl font-black text-white tracking-wide">
-                KASPI KDS • Écran Cuisine
+                KASPI KDS (Kitchen Display System)
               </h1>
               {/* Supabase Realtime Live Indicator */}
               <div

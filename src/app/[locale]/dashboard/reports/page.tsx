@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { prisma } from "@/server/db/prisma";
 import { getSafeServerContext } from "@/server/auth/context";
+import { getDictionary, type Locale } from "@/i18n/schema";
 import {
   FileText,
   DollarSign,
@@ -15,7 +16,15 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function ReportsPage() {
+export default async function ReportsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: rawLocale } = await params;
+  const locale = (rawLocale === "ar" || rawLocale === "en" ? rawLocale : "fr") as Locale;
+  const t = getDictionary(locale);
+
   const ctx = await getSafeServerContext();
   const tenantId = ctx.tenantId;
   const isFallbackTenant = tenantId === "00000000-0000-0000-0000-000000000000";
@@ -59,16 +68,16 @@ export default async function ReportsPage() {
   });
 
   return (
-    <div className="space-y-8 select-none">
+    <div dir="ltr" className="space-y-8 select-none">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-900 pb-6">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
             <FileText className="h-6 w-6 text-white" />
-            Rapports de Caisse & Z-Report
+            <span>{t.reports.title}</span>
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Synthèse financière journalière, répartition des encaissements et envoi automatique WhatsApp
+            {t.reports.subtitle}
           </p>
         </div>
 
@@ -80,7 +89,7 @@ export default async function ReportsPage() {
             className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-zinc-950 transition hover:bg-zinc-200"
           >
             <Send className="h-3.5 w-3.5" />
-            Envoyer le Z-Report WhatsApp
+            <span>{t.reports.sendWhatsapp}</span>
           </a>
         </div>
       </div>
@@ -91,40 +100,40 @@ export default async function ReportsPage() {
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full bg-white animate-pulse" />
             <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-              Z-Report Journalier ({new Date().toLocaleDateString()})
+              {t.reports.zReportTitle} ({new Date().toLocaleDateString()})
             </h2>
           </div>
           <span className="text-xs text-zinc-400 font-mono">
-            {todaySales.length} Transactions aujourd&apos;hui
+            {todaySales.length} {t.reports.transactionsCount}
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-            <span className="text-[11px] text-zinc-400 font-medium">Chiffre Global (TTC)</span>
+            <span className="text-[11px] text-zinc-400 font-medium">{t.reports.dailySales}</span>
             <div className="text-2xl font-black text-white font-mono mt-1">
-              {totalMad.toFixed(2)} MAD
+              {totalMad.toFixed(2)} {t.common.currency}
             </div>
           </div>
 
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-            <span className="text-[11px] text-zinc-400 font-medium">Espèces (Cash)</span>
+            <span className="text-[11px] text-zinc-400 font-medium">{t.reports.todayCash}</span>
             <div className="text-2xl font-black text-white font-mono mt-1">
-              {cashMad.toFixed(2)} MAD
+              {cashMad.toFixed(2)} {t.common.currency}
             </div>
           </div>
 
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-            <span className="text-[11px] text-zinc-400 font-medium">Carte Bancaire (CMI)</span>
+            <span className="text-[11px] text-zinc-400 font-medium">{t.reports.todayCard}</span>
             <div className="text-2xl font-black text-white font-mono mt-1">
-              {cardMad.toFixed(2)} MAD
+              {cardMad.toFixed(2)} {t.common.currency}
             </div>
           </div>
 
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-            <span className="text-[11px] text-zinc-400 font-medium">Crédit Client (Krediat)</span>
+            <span className="text-[11px] text-zinc-400 font-medium">{t.reports.todayCredit}</span>
             <div className="text-2xl font-black text-white font-mono mt-1">
-              {creditMad.toFixed(2)} MAD
+              {creditMad.toFixed(2)} {t.common.currency}
             </div>
           </div>
         </div>

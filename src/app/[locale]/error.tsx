@@ -26,7 +26,7 @@ export default function LocaleErrorBoundary({
           <h2 className="text-lg font-extrabold text-white tracking-tight">
             Synchronisation KASPI POS
           </h2>
-          <p className="text-xs text-zinc-400 leading-relaxed" dir="rtl">
+          <p className="text-xs text-zinc-400 leading-relaxed">
             اضغط على إعادة المحاولة لتحديث الصفحة أو الانتقال مباشرة إلى الكاشير.
           </p>
         </div>

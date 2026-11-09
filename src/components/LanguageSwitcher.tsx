@@ -5,9 +5,9 @@ import { usePathname, useRouter } from "@/i18n/routing";
 import { useTransition } from "react";
 
 const LOCALES = [
-  { code: "ar", label: "العربية", flag: "🇲🇦", dir: "rtl" },
-  { code: "fr", label: "Français", flag: "🇫🇷", dir: "ltr" },
-  { code: "en", label: "English", flag: "🇬🇧", dir: "ltr" },
+  { code: "ar", label: "العربية", short: "AR" },
+  { code: "fr", label: "Français", short: "FR" },
+  { code: "en", label: "English", short: "EN" },
 ] as const;
 
 export function LanguageSwitcher() {
@@ -24,7 +24,10 @@ export function LanguageSwitcher() {
   };
 
   return (
-    <div className="inline-flex items-center gap-1 p-1 bg-zinc-900 rounded-lg border border-zinc-800 text-xs font-medium">
+    <div
+      dir="ltr"
+      className="inline-flex items-center gap-0.5 p-1 bg-zinc-900/90 rounded-lg border border-white/10 text-xs font-medium select-none"
+    >
       {LOCALES.map((loc) => {
         const isActive = loc.code === currentLocale;
         return (
@@ -33,14 +36,13 @@ export function LanguageSwitcher() {
             type="button"
             disabled={isPending}
             onClick={() => handleSelect(loc.code)}
-            className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2 py-1 rounded-md transition-all flex items-center justify-center text-[11px] cursor-pointer ${
               isActive
-                ? "bg-white text-black shadow-xs font-bold"
-                : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                ? "bg-white text-zinc-950 font-bold shadow-xs"
+                : "text-zinc-400 hover:text-white hover:bg-white/[0.06]"
             }`}
             title={loc.label}
           >
-            <span>{loc.flag}</span>
             <span>{loc.label}</span>
           </button>
         );

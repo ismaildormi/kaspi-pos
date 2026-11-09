@@ -26,7 +26,7 @@ export default function PosErrorBoundary({
           <h2 className="text-lg font-extrabold text-white tracking-tight">
             Reconnexion du Terminal de Caisse
           </h2>
-          <p className="text-xs text-zinc-400 leading-relaxed" dir="rtl">
+          <p className="text-xs text-zinc-400 leading-relaxed">
             وضع الأوفلاين جاهز لحماية مبيعاتك — اضغط على إعادة المحاولة لفتح شاشة الكاشير فوراً.
           </p>
         </div>

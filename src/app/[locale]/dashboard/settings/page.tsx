@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useLocale } from "next-intl";
+import { useAppDictionary } from "@/i18n/schema";
 import {
   Settings,
   Store,
@@ -78,7 +78,7 @@ interface VaultTestResult {
 type SettingsTab = "general" | "hardware" | "vault" | "users";
 
 export default function SettingsPage() {
-  const locale = useLocale();
+  const { t, locale } = useAppDictionary();
   const isRtl = locale === "ar";
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
@@ -518,23 +518,21 @@ export default function SettingsPage() {
 
   const TABS: Array<{
     id: SettingsTab;
-    labelFr: string;
-    labelAr: string;
+    label: string;
     icon: React.ComponentType<{ className?: string }>;
   }> = [
-    { id: "general", labelFr: "General & Currency", labelAr: "المتجر والعملة", icon: Store },
+    { id: "general", label: t.settings.general, icon: Store },
     {
       id: "hardware",
-      labelFr: "Thermal Receipt & Hardware",
-      labelAr: "الطباعة والأجهزة",
+      label: t.settings.hardware,
       icon: Printer,
     },
-    { id: "vault", labelFr: "Cloud & API Vault", labelAr: "مفاتيح السحابة API", icon: KeyRound },
-    { id: "users", labelFr: "User & Roles", labelAr: "المستخدمون والصلاحيات", icon: Users },
+    { id: "vault", label: t.settings.security, icon: KeyRound },
+    { id: "users", label: t.nav.customers, icon: Users },
   ];
 
   return (
-    <div className="space-y-6 select-none">
+    <div dir="ltr" className="space-y-6 select-none">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
         <div>
@@ -543,15 +541,13 @@ export default function SettingsPage() {
               href={`/${locale}/dashboard`}
               className="text-xs font-medium text-zinc-400 hover:text-white transition flex items-center gap-1"
             >
-              {isRtl ? <ArrowRight className="w-3.5 h-3.5" /> : <ArrowLeft className="w-3.5 h-3.5" />}
-              <span>{isRtl ? "لوحة التحكم" : "Tableau de Bord"}</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>{t.nav.dashboard}</span>
             </Link>
           </div>
           <h1 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
             <Settings className="h-5 w-5 text-white" />
-            <span>
-              {isRtl ? "إعدادات النظام والربط السحابي" : "Paramètres & Configuration Système"}
-            </span>
+            <span>{t.settings.title}</span>
           </h1>
         </div>
 
@@ -559,7 +555,7 @@ export default function SettingsPage() {
           {saveSuccess && (
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Enregistré</span>
+              <span>{t.settings.saveSuccess}</span>
             </div>
           )}
           <button
@@ -573,7 +569,7 @@ export default function SettingsPage() {
             ) : (
               <Save className="w-3.5 h-3.5" />
             )}
-            <span>{isRtl ? "حفظ الإعدادات" : "Enregistrer"}</span>
+            <span>{t.common.save}</span>
           </button>
         </div>
       </div>
@@ -595,7 +591,7 @@ export default function SettingsPage() {
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
-              <span>{isRtl ? tab.labelAr : tab.labelFr}</span>
+              <span>{tab.label}</span>
             </button>
           );
         })}

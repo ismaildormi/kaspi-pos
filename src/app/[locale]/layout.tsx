@@ -26,12 +26,10 @@ export default async function LocaleLayout({
   } catch {
     // Fallback to empty messages map if next-intl server context is unavailable
   }
-  const dir = locale === "ar" ? "rtl" : "ltr";
-
   return (
     <div
       lang={locale}
-      dir={dir}
+      dir="ltr"
       className={`bg-zinc-950 text-white min-h-screen antialiased ${
         locale === "ar" ? "font-['Cairo',sans-serif]" : "font-['Inter',sans-serif]"
       }`}

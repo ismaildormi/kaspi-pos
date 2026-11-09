@@ -152,7 +152,7 @@ export default function AIProductOnboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white pb-16 select-none">
+    <div dir="ltr" className="min-h-screen bg-zinc-950 text-white pb-16 select-none">
       {/* Top Navbar */}
       <header className="bg-zinc-950 border-b border-zinc-800 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -161,17 +161,8 @@ export default function AIProductOnboardPage() {
               href={`/${locale}/pos`}
               className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors flex items-center gap-1.5 text-xs font-semibold"
             >
-              {isRtl ? (
-                <>
-                  <ArrowRight className="w-4 h-4" />
-                  <span>العودة لنقطة البيع (POS)</span>
-                </>
-              ) : (
-                <>
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Retour au POS</span>
-                </>
-              )}
+              <ArrowLeft className="w-4 h-4" />
+              <span>{isRtl ? "العودة لنقطة البيع (POS)" : "Retour au POS"}</span>
             </Link>
             <div className="h-5 w-px bg-zinc-800" />
             <div className="flex items-center gap-2">

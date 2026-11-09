@@ -221,7 +221,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
   };
 
   return (
-    <div className="relative w-full group">
+    <div dir="ltr" className="relative w-full group">
       <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none text-zinc-400">
         {isScanning ? (
           <Loader2 className="w-4 h-4 animate-spin text-white" />

@@ -327,13 +327,16 @@ export async function POST(req: NextRequest) {
           { tableNumber: "T-06", name: "طلبات سريعة • Comptoir / Takeaway", capacity: 2 },
         ];
         for (const t of defaultTables) {
+          const tableName = receiptLanguage === "ar"
+            ? t.name.split(" • ")[0].trim()
+            : (t.name.split(" • ")[1] || t.name).trim();
           await prisma.diningTable
             .create({
               data: {
                 tenantId: ctx.tenantId,
                 storeId: store.id,
                 tableNumber: t.tableNumber,
-                name: t.name,
+                name: tableName,
                 capacity: t.capacity,
                 status: "available",
               },
@@ -349,17 +352,24 @@ export async function POST(req: NextRequest) {
     if (seedStarterCatalog) {
       const templates = INDUSTRY_STARTER_CATALOGS[storeType] || [];
       for (const tpl of templates) {
+        const cleanCategory = tpl.category.includes(" • ")
+          ? (receiptLanguage === "ar" ? tpl.category.split(" • ")[0].trim() : (tpl.category.split(" • ")[1] || tpl.category).trim())
+          : tpl.category;
+        const cleanName = tpl.name.includes(" • ")
+          ? (receiptLanguage === "ar" ? tpl.name.split(" • ")[0].trim() : (tpl.name.split(" • ")[1] || tpl.name).trim())
+          : tpl.name;
+
         let category = await prisma.category.findFirst({
           where: {
             tenantId: ctx.tenantId,
-            name: { equals: tpl.category, mode: "insensitive" },
+            name: { equals: cleanCategory, mode: "insensitive" },
           },
         });
         if (!category) {
           category = await prisma.category.create({
             data: {
               tenantId: ctx.tenantId,
-              name: tpl.category,
+              name: cleanCategory,
             },
           });
         }
@@ -373,7 +383,7 @@ export async function POST(req: NextRequest) {
             data: {
               tenantId: ctx.tenantId,
               categoryId: category.id,
-              name: tpl.name,
+              name: cleanName,
               sku: tpl.sku,
               barcode: tpl.barcode,
               description: tpl.description || null,

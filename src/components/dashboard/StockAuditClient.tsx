@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAppDictionary } from "@/i18n/schema";
 import {
   ClipboardCheck,
   Barcode,
@@ -26,6 +27,7 @@ export function StockAuditClient({
   products: StockAuditProductItem[];
 }) {
   const router = useRouter();
+  const { t } = useAppDictionary();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string>(
     products[0]?.id || ""
@@ -133,11 +135,11 @@ export function StockAuditClient({
         className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-zinc-950 hover:bg-zinc-200 transition cursor-pointer shadow-sm"
       >
         <ClipboardCheck className="h-3.5 w-3.5" />
-        <span>Inventaire Physique &amp; Ajustement • جرد المخزون</span>
+        <span>{t.inventory.adjustStock}</span>
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div dir="ltr" className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-3xl bg-zinc-950 border border-zinc-800 p-6 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
               <div className="flex items-center gap-2.5">

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { generateProductImageUrl } from "@/lib/pollinations";
 import { uploadProductImage } from "@/lib/supabase-storage";
+import { useAppDictionary } from "@/i18n/schema";
 
 export interface CatalogProduct {
   id: string;
@@ -39,6 +40,7 @@ export interface CatalogProduct {
 }
 
 export default function ProductsListPage() {
+  const { t, locale } = useAppDictionary();
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -347,7 +349,7 @@ export default function ProductsListPage() {
   });
 
   return (
-    <div className="space-y-8 select-none">
+    <div dir="ltr" className="space-y-8 select-none">
       <Toaster
         theme="dark"
         position="top-right"
@@ -365,10 +367,10 @@ export default function ProductsListPage() {
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
             <Package className="h-6 w-6 text-white" />
-            Catalogue des Produits
+            <span>{t.products.title}</span>
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Gérez vos produits, générez des photos par IA gratuitement et modifiez les prix en un clic
+            {t.products.subtitle}
           </p>
         </div>
 
@@ -379,21 +381,21 @@ export default function ProductsListPage() {
             className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 px-4 py-2 text-xs font-black text-black transition cursor-pointer shadow-sm"
           >
             <Plus className="h-3.5 w-3.5" />
-            Nouveau Produit
+            <span>{t.products.addProduct}</span>
           </button>
           <Link
-            href="/dashboard/products/ai-onboard"
+            href={`/${locale}/dashboard/products/ai-onboard`}
             className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-zinc-800 transition"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            On-Boarding par IA (Photo)
+            <span>{t.products.aiStudio}</span>
           </Link>
           <Link
-            href="/dashboard/products/import"
+            href={`/${locale}/dashboard/products/import`}
             className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black transition hover:bg-zinc-200"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" />
-            Importer Excel/CSV
+            <span>{t.dashboard.importExcel}</span>
           </Link>
         </div>
       </div>
@@ -406,7 +408,7 @@ export default function ProductsListPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Rechercher par nom, SKU ou code-barres..."
+            placeholder={t.products.searchPlaceholder}
             className="w-full h-10 ps-10 pe-9 bg-zinc-900 border border-zinc-800 focus:border-white rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none transition"
           />
           {searchQuery && (

@@ -16,19 +16,7 @@ import {
   HelpCircle,
   Crown,
 } from "lucide-react";
-
-export const BASE_NAV_ITEMS = [
-  { name: "Caisse POS", href: "/pos", icon: ShoppingBag, badge: "Live" },
-  { name: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Catalogue Produits", href: "/dashboard/products", icon: Package },
-  { name: "Stocks & Audit", href: "/dashboard/inventory", icon: Layers },
-  { name: "Clients & Krediat", href: "/dashboard/customers", icon: Users },
-  { name: "Fournisseurs", href: "/dashboard/suppliers", icon: Building2 },
-  { name: "Rapports & Clôtures", href: "/dashboard/reports", icon: FileText },
-  { name: "Facturation", href: "/dashboard/billing", icon: CreditCard },
-  { name: "Paramètres & Clés API", href: "/dashboard/settings", icon: Settings },
-  { name: "Support", href: "/dashboard/support", icon: HelpCircle },
-];
+import { useAppDictionary } from "@/i18n/schema";
 
 interface SidebarProps {
   mobileMenuOpen?: boolean;
@@ -37,17 +25,11 @@ interface SidebarProps {
 
 export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
   const pathname = usePathname();
+  const { t, locale } = useAppDictionary();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
-  const segments = pathname.split("/").filter(Boolean);
-  const currentLocale =
-    segments[0] === "ar" || segments[0] === "fr" || segments[0] === "en"
-      ? segments[0]
-      : "";
-
   const localizeHref = (path: string) => {
-    if (!currentLocale) return path;
-    return `/${currentLocale}${path}`;
+    return `/${locale}${path}`;
   };
 
   useEffect(() => {
@@ -61,11 +43,25 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
       .catch(() => {});
   }, []);
 
+  const navItems = [
+    { name: t.nav.posRegister, href: "/pos", icon: ShoppingBag, badge: t.nav.liveBadge },
+    { name: t.nav.dashboard, href: "/dashboard", icon: LayoutDashboard },
+    { name: t.nav.products, href: "/dashboard/products", icon: Package },
+    { name: t.nav.inventory, href: "/dashboard/inventory", icon: Layers },
+    { name: t.nav.customers, href: "/dashboard/customers", icon: Users },
+    { name: t.nav.suppliers, href: "/dashboard/suppliers", icon: Building2 },
+    { name: t.nav.reports, href: "/dashboard/reports", icon: FileText },
+    { name: t.nav.billing, href: "/dashboard/billing", icon: CreditCard },
+    { name: t.nav.settings, href: "/dashboard/settings", icon: Settings },
+    { name: t.nav.support, href: "/dashboard/support", icon: HelpCircle },
+  ];
+
   return (
     <aside
+      dir="ltr"
       className={`${
         mobileMenuOpen ? "block" : "hidden"
-      } md:flex w-full md:w-60 border-e border-white/10 bg-zinc-950/60 p-3 shrink-0 flex-col justify-between select-none`}
+      } md:flex w-full md:w-60 border-r border-white/10 bg-zinc-950/60 p-3 shrink-0 flex-col justify-between select-none`}
     >
       <nav className="space-y-1">
         {isSuperAdmin && (
@@ -80,7 +76,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           >
             <div className="flex items-center gap-2.5">
               <Crown className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-              <span>Owner Studio</span>
+              <span>{t.nav.ownerStudio}</span>
             </div>
             <span className="px-1.5 py-0.5 rounded text-[9px] font-mono uppercase bg-black/40 text-amber-200">
               Admin
@@ -88,13 +84,13 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           </Link>
         )}
 
-        {BASE_NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
           const targetHref = localizeHref(item.href);
           const isActive =
             item.href === "/dashboard"
               ? pathname.endsWith("/dashboard") ||
-                pathname.endsWith(`/${currentLocale}/dashboard`)
+                pathname.endsWith(`/${locale}/dashboard`)
               : pathname.includes(item.href);
 
           return (

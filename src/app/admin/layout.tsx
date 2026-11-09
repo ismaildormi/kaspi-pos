@@ -34,7 +34,7 @@ export default function AdminLayout({
                   Super Admin
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-400 font-mono">Master Control Room • لوحة تحكم مالك المنصة</p>
+              <p className="text-[11px] text-zinc-400 font-mono">Master Control Room (Owner Studio)</p>
             </div>
           </div>
 

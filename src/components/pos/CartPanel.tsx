@@ -54,7 +54,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
   );
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 border-s border-zinc-800 select-none">
+    <div dir="ltr" className="flex flex-col h-full bg-zinc-950 border-s border-zinc-800 select-none">
       {/* Top: Customer & Cart Header */}
       <div className="p-3.5 border-b border-zinc-800 bg-zinc-900/60 space-y-2">
         {selectedTableName && (

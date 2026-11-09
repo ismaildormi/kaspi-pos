@@ -217,7 +217,7 @@ export default function BillingDashboardPage() {
               </p>
             </div>
 
-            <div className="text-right rtl:text-left">
+            <div className="text-right">
               <div className="text-2xl font-black text-white font-mono">
                 {subscription?.priceMAD ?? 200} <span className="text-sm font-bold text-zinc-400">MAD / {isRtl ? "شهر" : "mois"}</span>
               </div>

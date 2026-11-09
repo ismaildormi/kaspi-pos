@@ -217,7 +217,7 @@ export default function ProductImportPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white pb-20 select-none">
+    <div dir="ltr" className="min-h-screen bg-zinc-950 text-white pb-20 select-none">
       <Toaster
         theme="dark"
         position="top-right"
@@ -237,17 +237,8 @@ export default function ProductImportPage() {
               href={`/${locale}/pos`}
               className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors flex items-center gap-1.5 text-xs font-semibold"
             >
-              {isRtl ? (
-                <>
-                  <ArrowRight className="w-4 h-4" />
-                  <span>العودة لنقطة البيع (POS)</span>
-                </>
-              ) : (
-                <>
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Retour au POS</span>
-                </>
-              )}
+              <ArrowLeft className="w-4 h-4" />
+              <span>{isRtl ? "العودة لنقطة البيع (POS)" : "Retour au POS"}</span>
             </Link>
             <div className="h-5 w-px bg-zinc-800" />
             <div className="flex items-center gap-2">
@@ -255,7 +246,7 @@ export default function ProductImportPage() {
                 <FileSpreadsheet className="w-4 h-4" />
               </div>
               <h1 className="text-sm font-bold text-white">
-                {isRtl ? "الهجرة الذكية واستيراد المنتجات (CSV)" : "Migration Intelligente & Import CSV"}
+                {isRtl ? "الهجرة واستيراد المنتجات (CSV/Excel)" : "Migration & Import CSV/Excel"}
               </h1>
             </div>
           </div>

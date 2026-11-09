@@ -13,10 +13,19 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { StockAuditClient } from "@/components/dashboard/StockAuditClient";
+import { getDictionary, type Locale } from "@/i18n/schema";
 
 export const dynamic = "force-dynamic";
 
-export default async function InventoryPage() {
+export default async function InventoryPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: rawLocale } = await params;
+  const locale = (rawLocale === "ar" || rawLocale === "en" ? rawLocale : "fr") as Locale;
+  const t = getDictionary(locale);
+
   const ctx = await getSafeServerContext();
   const tenantId = ctx.tenantId;
   const isFallbackTenant = tenantId === "00000000-0000-0000-0000-000000000000";
@@ -103,16 +112,16 @@ export default async function InventoryPage() {
     .slice(0, 4);
 
   return (
-    <div className="space-y-8 select-none">
+    <div dir="ltr" className="space-y-8 select-none">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-900 pb-6">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
             <Layers className="h-6 w-6 text-white" />
-            Gestion des Stocks &amp; Mouvements
+            <span>{t.inventory.title}</span>
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Suivi des quantités réelles, alertes de stock bas et prédiction IA des ruptures
+            {t.inventory.subtitle}
           </p>
         </div>
 
@@ -127,11 +136,11 @@ export default async function InventoryPage() {
             }))}
           />
           <Link
-            href="/dashboard/products"
+            href={`/${locale}/dashboard/products`}
             className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition"
           >
             <Package className="h-3.5 w-3.5" />
-            Tous les Produits
+            <span>{t.products.title}</span>
           </Link>
         </div>
       </div>

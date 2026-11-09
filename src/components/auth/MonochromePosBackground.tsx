@@ -487,7 +487,7 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
 
   return (
     <div
-      dir={isRtl ? "rtl" : "ltr"}
+      dir="ltr"
       className="min-h-screen w-full flex items-center justify-center bg-[#040405] p-3 sm:p-5 font-sans relative overflow-hidden select-none"
     >
       {/* Keyframes for Continuous Slow Spatial Parallax Drift */}

@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { StoreBusinessType, usePosStore } from "@/client/store/usePosStore";
+import { useAppDictionary } from "@/i18n/schema";
 
 interface StoreOnboardingModalProps {
   isOpen: boolean;
@@ -25,78 +26,6 @@ interface StoreOnboardingModalProps {
   onSuccess?: (storeType: StoreBusinessType) => void;
 }
 
-const STORE_TYPES: {
-  id: StoreBusinessType;
-  titleAr: string;
-  titleFr: string;
-  descFr: string;
-  features: string[];
-  icon: React.ComponentType<{ className?: string }>;
-  gradient: string;
-  badgeColor: string;
-}[] = [
-  {
-    id: "grocery",
-    titleAr: "متجر بقالة / سوبرماركت",
-    titleFr: "Épicerie & Supermarché",
-    descFr: "Priorité lecteur code-barres, balance poids (Kg/g), grille rapide & étiquettes thermiques.",
-    features: [
-      "Calculateur Poids & Balance (Kg / g)",
-      "Priorité Scan Code-Barres EAN-13",
-      "Studio d'Étiquettes Code-Barres 40x30mm",
-      "Suivi Fournisseurs & Péremption",
-    ],
-    icon: ShoppingBasket,
-    gradient: "from-emerald-500/20 to-teal-500/5 border-emerald-500/40",
-    badgeColor: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
-  },
-  {
-    id: "restaurant",
-    titleAr: "مطعم / مقهى / سناك",
-    titleFr: "Restaurant, Café & Fast-Food",
-    descFr: "Plan de salle (Tables T-01..T-06), Écran Cuisine (KDS Temps Réel) & modificateurs plats.",
-    features: [
-      "Gestion des Tables (Sur place / Emporter)",
-      "Écran Cuisine KDS (Nouveau → Prêt → Servi)",
-      "Options & Modificateurs (Sans oignon, Extra fromage)",
-      "Impression Ticket Cuisine & Addition Table",
-    ],
-    icon: UtensilsCrossed,
-    gradient: "from-amber-500/20 to-orange-500/5 border-amber-500/40",
-    badgeColor: "text-amber-400 bg-amber-500/10 border-amber-500/30",
-  },
-  {
-    id: "fashion",
-    titleAr: "محل ملابس وأحذية",
-    titleFr: "Mode, Vêtements & Chaussures",
-    descFr: "Matrice Tailles (S/M/L/XL/XXL, Pointures 38-44) & Couleurs avec étiquetage textile.",
-    features: [
-      "Matrice Tailles (S / M / L / XL / XXL / 38-44)",
-      "Sélecteur Couleurs & Collection Saison",
-      "Impression Étiquettes Prix & Code-Barres",
-      "Gestion Retours & Échanges Rapides",
-    ],
-    icon: Shirt,
-    gradient: "from-fuchsia-500/20 to-pink-500/5 border-fuchsia-500/40",
-    badgeColor: "text-fuchsia-400 bg-fuchsia-500/10 border-fuchsia-500/30",
-  },
-  {
-    id: "electronics",
-    titleAr: "تجارة عامة / إلكترونيات",
-    titleFr: "Électronique & Commerce Général",
-    descFr: "Suivi N° Série / IMEI sur reçu, certificat de garantie (12/24 mois) & vente à crédit.",
-    features: [
-      "Scan & Suivi N° Série / IMEI par article",
-      "Certificat de Garantie (6 / 12 / 24 Mois)",
-      "Carnet de Crédit (الكريدي) & Acomptes",
-      "Facturation TVA & Devis Professionnels",
-    ],
-    icon: Smartphone,
-    gradient: "from-blue-500/20 to-indigo-500/5 border-blue-500/40",
-    badgeColor: "text-blue-400 bg-blue-500/10 border-blue-500/30",
-  },
-];
-
 export function StoreOnboardingModal({
   isOpen,
   onClose,
@@ -105,16 +34,64 @@ export function StoreOnboardingModal({
   canDismiss = true,
   onSuccess,
 }: StoreOnboardingModalProps) {
+  const { t } = useAppDictionary();
   const { setStoreProfile } = usePosStore();
   const [selectedType, setSelectedType] = useState<StoreBusinessType>(initialStoreType);
   const [shopName, setShopName] = useState(initialShopName);
   const [currency, setCurrency] = useState("MAD");
-  const [receiptLanguage, setReceiptLanguage] = useState("ar");
+  const [receiptLanguage, setReceiptLanguage] = useState("fr");
   const [seedCatalog, setSeedCatalog] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  const storeTypes: {
+    id: StoreBusinessType;
+    title: string;
+    desc: string;
+    features: string[];
+    icon: React.ComponentType<{ className?: string }>;
+    gradient: string;
+    badgeColor: string;
+  }[] = [
+    {
+      id: "grocery",
+      title: t.onboarding.groceryTitle,
+      desc: t.onboarding.groceryDesc,
+      features: t.onboarding.features.grocery,
+      icon: ShoppingBasket,
+      gradient: "from-emerald-500/20 to-teal-500/5 border-emerald-500/40",
+      badgeColor: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    },
+    {
+      id: "restaurant",
+      title: t.onboarding.restaurantTitle,
+      desc: t.onboarding.restaurantDesc,
+      features: t.onboarding.features.restaurant,
+      icon: UtensilsCrossed,
+      gradient: "from-amber-500/20 to-orange-500/5 border-amber-500/40",
+      badgeColor: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    },
+    {
+      id: "fashion",
+      title: t.onboarding.fashionTitle,
+      desc: t.onboarding.fashionDesc,
+      features: t.onboarding.features.fashion,
+      icon: Shirt,
+      gradient: "from-purple-500/20 to-pink-500/5 border-purple-500/40",
+      badgeColor: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+    },
+    {
+      id: "electronics",
+      title: t.onboarding.techTitle,
+      desc: t.onboarding.techDesc,
+      features: t.onboarding.features.tech,
+      icon: Smartphone,
+      gradient: "from-sky-500/20 to-blue-500/5 border-sky-500/40",
+      badgeColor: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+    },
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,23 +111,27 @@ export function StoreOnboardingModal({
         }),
       });
 
-      const json = await res.json();
-      if (!res.ok || !json.ok) {
-        throw new Error(json.error?.message || "Impossible de configurer l'espace de travail");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Échec de l'initialisation");
       }
 
       setStoreProfile(selectedType, true);
       if (onSuccess) onSuccess(selectedType);
       onClose();
-    } catch (err: any) {
-      setError(err.message || "Erreur réseau");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erreur réseau";
+      setError(msg);
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
+    <div
+      dir="ltr"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto"
+    >
       <div className="relative w-full max-w-4xl rounded-3xl bg-[#0e1017] border border-white/10 shadow-2xl overflow-hidden my-auto">
         {/* Top Accent Banner */}
         <div className="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-amber-500 to-indigo-500" />
@@ -160,13 +141,13 @@ export function StoreOnboardingModal({
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold mb-2">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>KASPI POS UNIVERSAL ONBOARDING ENGINE • إعداد مساحة العمل الذكية</span>
+                <span>{t.onboarding.businessSectorBtn}</span>
               </div>
               <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
-                Choisissez votre secteur d&apos;activité • اختر نوع مشروعك
+                {t.onboarding.modalTitle}
               </h2>
               <p className="text-sm text-zinc-400 mt-1">
-                KASPI POS adapte automatiquement la caisse, les outils métier, les tables KDS, les variantes et le catalogue à votre commerce.
+                {t.onboarding.modalSubtitle}
               </p>
             </div>
             {canDismiss && (
@@ -189,7 +170,7 @@ export function StoreOnboardingModal({
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* 4 Store Type Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {STORE_TYPES.map((item) => {
+              {storeTypes.map((item) => {
                 const Icon = item.icon;
                 const active = selectedType === item.id;
                 return (
@@ -208,17 +189,16 @@ export function StoreOnboardingModal({
                         <div className={`p-3 rounded-xl border ${item.badgeColor}`}>
                           <Icon className="w-6 h-6" />
                         </div>
-                        <div>
-                          <div className="text-base font-bold text-white">{item.titleFr}</div>
-                          <div className="text-xs font-semibold text-amber-400/90" dir="rtl">
-                            {item.titleAr}
-                          </div>
+                        <div className="text-base font-bold text-white">
+                          {item.title}
                         </div>
                       </div>
                       {active && <CheckCircle2 className="w-6 h-6 text-amber-400 shrink-0" />}
                     </div>
 
-                    <p className="text-xs text-zinc-300 mb-3 leading-relaxed">{item.descFr}</p>
+                    <p className="text-xs text-zinc-300 mb-3 leading-relaxed">
+                      {item.desc}
+                    </p>
 
                     <div className="grid grid-cols-1 gap-1.5 pt-2 border-t border-white/10">
                       {item.features.map((feat, idx) => (
@@ -237,13 +217,13 @@ export function StoreOnboardingModal({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/10">
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
-                  Nom du Commerce • اسم المتجر
+                  {t.onboarding.storeNameLabel}
                 </label>
                 <input
                   type="text"
                   value={shopName}
                   onChange={(e) => setShopName(e.target.value)}
-                  placeholder="Ex: Café Atlas / Supermarché Nour"
+                  placeholder="Ex: Atlas Market / KASPI Store"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-500"
                 />
               </div>
@@ -251,7 +231,7 @@ export function StoreOnboardingModal({
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1.5 flex items-center gap-1.5">
                   <Coins className="w-3.5 h-3.5 text-amber-400" />
-                  Devise • العملة المعتمدة
+                  <span>{t.onboarding.currencyLabel}</span>
                 </label>
                 <select
                   value={currency}
@@ -270,7 +250,7 @@ export function StoreOnboardingModal({
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1.5 flex items-center gap-1.5">
                   <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                  Langue du Ticket • لغة الفاتورة الحرارية
+                  <span>{t.onboarding.ticketLanguageLabel}</span>
                 </label>
                 <select
                   value={receiptLanguage}
@@ -299,7 +279,7 @@ export function StoreOnboardingModal({
                 <div className="text-xs text-zinc-300 flex items-center gap-2">
                   <PackagePlus className="w-4 h-4 text-amber-400 shrink-0" />
                   <span>
-                    Pré-remplir avec des produits de démonstration adaptés (si mon catalogue est vide)
+                    {t.common.confirm} (Starter Catalog)
                   </span>
                 </div>
               </label>
@@ -310,9 +290,7 @@ export function StoreOnboardingModal({
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-black text-sm shadow-lg shadow-amber-500/20 transition disabled:opacity-50"
               >
                 <span>
-                  {saving
-                    ? "Configuration en cours..."
-                    : "Activer mon Espace Métier • تفعيل النظام"}
+                  {saving ? t.onboarding.activatingBtn : t.onboarding.activateBtn}
                 </span>
                 <ArrowRight className="w-4 h-4" />
               </button>

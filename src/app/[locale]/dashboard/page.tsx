@@ -12,10 +12,19 @@ import {
 } from "lucide-react";
 import { DashboardOnboardingTrigger } from "@/components/dashboard/DashboardOnboardingTrigger";
 import type { StoreBusinessType } from "@/client/store/usePosStore";
+import { getDictionary, type Locale } from "@/i18n/schema";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardOverviewPage() {
+export default async function DashboardOverviewPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: rawLocale } = await params;
+  const locale = (rawLocale === "ar" || rawLocale === "en" ? rawLocale : "fr") as Locale;
+  const t = getDictionary(locale);
+
   const ctx = await getSafeServerContext();
   const tenantId = ctx.tenantId;
   const isFallbackTenant = tenantId === "00000000-0000-0000-0000-000000000000";
@@ -80,11 +89,11 @@ export default async function DashboardOverviewPage() {
   );
 
   const totalSalesMad = Number(salesAgg?._sum?.grandTotal || 0).toFixed(2);
-  const safeDisplayName = String(ctx.activeTenant?.displayName || "Tableau de Bord");
-  const safeLegalName = String(ctx.activeTenant?.legalName || "Commerce de détail");
+  const safeDisplayName = String(ctx.activeTenant?.displayName || t.dashboard.title);
+  const safeLegalName = String(ctx.activeTenant?.legalName || safeDisplayName);
 
   return (
-    <div className="space-y-8 select-none">
+    <div dir="ltr" className="space-y-8 select-none">
       {/* Welcome & Actions Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-900 pb-6">
         <div>
@@ -92,7 +101,7 @@ export default async function DashboardOverviewPage() {
             {safeDisplayName}
           </h1>
           <p className="text-xs text-zinc-400 mt-1 font-mono">
-            {safeLegalName} • Devise : MAD (Dirham Marocain)
+            {safeLegalName} • {t.dashboard.currencyNote}
           </p>
         </div>
 
@@ -103,18 +112,18 @@ export default async function DashboardOverviewPage() {
             currentStoreType={currentStoreType}
           />
           <Link
-            href="/dashboard/products/import"
+            href={`/${locale}/dashboard/products/import`}
             className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" />
-            Importer Excel/CSV
+            <span>{t.dashboard.importExcel}</span>
           </Link>
           <Link
-            href="/pos"
+            href={`/${locale}/pos`}
             className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-zinc-950 transition hover:bg-zinc-200"
           >
             <ShoppingBag className="h-3.5 w-3.5" />
-            Ouvrir la Caisse POS
+            <span>{t.dashboard.openPos}</span>
           </Link>
         </div>
       </div>
@@ -124,48 +133,50 @@ export default async function DashboardOverviewPage() {
         {/* Total Sales */}
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
           <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-            <span>Chiffre d&apos;Affaires Global</span>
+            <span>{t.dashboard.kpiRevenue}</span>
             <TrendingUp className="h-4 w-4 text-white" />
           </div>
           <div className="mt-4">
-            <div className="text-2xl font-black text-white font-mono">{totalSalesMad} MAD</div>
-            <p className="text-[11px] text-zinc-400 mt-1">Total des ventes enregistrées</p>
+            <div className="text-2xl font-black text-white font-mono">
+              {totalSalesMad} {t.common.currency}
+            </div>
+            <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiRevenueSub}</p>
           </div>
         </div>
 
         {/* Total Transactions */}
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
           <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-            <span>Total Transactions</span>
+            <span>{t.dashboard.kpiTransactions}</span>
             <ShoppingBag className="h-4 w-4 text-white" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-black text-white font-mono">{salesCount}</div>
-            <p className="text-[11px] text-zinc-400 mt-1">Tickets de caisse validés</p>
+            <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiTransactionsSub}</p>
           </div>
         </div>
 
         {/* Total Products */}
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
           <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-            <span>Articles en Catalogue</span>
+            <span>{t.dashboard.kpiProducts}</span>
             <Package className="h-4 w-4 text-white" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-black text-white font-mono">{productsCount}</div>
-            <p className="text-[11px] text-zinc-400 mt-1">Produits référencés</p>
+            <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiProductsSub}</p>
           </div>
         </div>
 
         {/* Customers */}
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
           <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-            <span>Clients & Carnet (Krediat)</span>
+            <span>{t.dashboard.kpiCustomers}</span>
             <Users className="h-4 w-4 text-white" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-black text-white font-mono">{customersCount}</div>
-            <p className="text-[11px] text-zinc-400 mt-1">Comptes clients enregistrés</p>
+            <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiCustomersSub}</p>
           </div>
         </div>
       </div>
@@ -176,19 +187,19 @@ export default async function DashboardOverviewPage() {
         <div className="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-6 flex flex-col justify-between">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 rounded-lg bg-zinc-800 px-2.5 py-1 text-[11px] font-semibold text-white">
-              Mode Hors-Ligne Actif
+              {t.dashboard.offlineModeActive}
             </div>
-            <h2 className="text-lg font-bold text-white">Caisse Tactile Rapide (POS)</h2>
+            <h2 className="text-lg font-bold text-white">{t.dashboard.fastPosTitle}</h2>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Compatible écrans tactiles, douchettes de code-barres USB/Bluetooth, et imprimantes thermiques 80mm/58mm.
+              {t.dashboard.fastPosDesc}
             </p>
           </div>
           <div className="mt-6">
             <Link
-              href="/pos"
+              href={`/${locale}/pos`}
               className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-zinc-950 transition hover:bg-zinc-200"
             >
-              Lancer le Point de Vente
+              <span>{t.dashboard.launchPosBtn}</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -198,19 +209,19 @@ export default async function DashboardOverviewPage() {
         <div className="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-6 flex flex-col justify-between">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 rounded-lg bg-zinc-800 px-2.5 py-1 text-[11px] font-semibold text-white">
-              Automatisation
+              {t.dashboard.automationBadge}
             </div>
-            <h2 className="text-lg font-bold text-white">Clôtures & Z-Report Quotidien</h2>
+            <h2 className="text-lg font-bold text-white">{t.dashboard.zReportTitle}</h2>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Consultez vos ventes de la journée réparties par mode de règlement et recevez un résumé automatique par WhatsApp.
+              {t.dashboard.zReportDesc}
             </p>
           </div>
           <div className="mt-6">
             <Link
-              href="/dashboard/reports"
+              href={`/${locale}/dashboard/reports`}
               className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-zinc-800"
             >
-              Consulter les Rapports
+              <span>{t.dashboard.viewReportsBtn}</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>

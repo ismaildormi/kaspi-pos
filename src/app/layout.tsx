@@ -34,10 +34,8 @@ export default async function RootLayout({
     // fallback
   }
 
-  const dir = locale === "ar" ? "rtl" : "ltr";
-
   return (
-    <html lang={locale} dir={dir}>
+    <html lang={locale} dir="ltr">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
