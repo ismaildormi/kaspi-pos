@@ -18,6 +18,7 @@ const PUBLIC_API_PATHS = [
   "/api/v1/auth/email-otp/send",
   "/api/v1/auth/email-otp/verify",
   "/api/v1/auth/reset-password",
+  "/api/v1/auth/handoff",
   "/api/updates/latest.json",
   "/api/v1/webhooks",
   "/healthz",
@@ -27,12 +28,14 @@ const PUBLIC_API_PATHS = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Bypass static assets, public download routes, and next internals
+  // 1. Bypass static assets, public download routes, desktop launch bridge, and next internals
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon.ico") ||
     pathname.startsWith("/download") ||
     pathname.includes("/download") ||
+    pathname.startsWith("/launch-desktop") ||
+    pathname.includes("/launch-desktop") ||
     pathname.includes(".")
   ) {
     return NextResponse.next();

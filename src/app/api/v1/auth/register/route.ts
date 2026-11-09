@@ -184,6 +184,8 @@ export async function POST(req: NextRequest) {
       storeCategory: storeType || "grocery",
       loginDate: new Date().toISOString(),
       lang: "ar",
+      userId: result.user.id,
+      activeTenantId: result.tenant.id,
     }).catch((err) => {
       console.warn("[Register Welcome Email Dispatch Notice]:", err?.message || err);
     });

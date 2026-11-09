@@ -1,6 +1,7 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { renderVerificationEmailHtml } from "./verification-email";
 import { renderWelcomeEmailHtml } from "./welcome-email";
+import { createHandoffToken } from "@/server/auth/handoff";
 import {
   WELCOME_COPY,
   WelcomeEmailData,
@@ -263,9 +264,25 @@ export async function sendWelcomeEmail(params: {
   storeCategory?: string;
   loginDate?: string;
   lang?: WelcomeLang;
+  userId?: string;
+  activeTenantId?: string | null;
+  handoffToken?: string;
 }): Promise<{ success: boolean; messageId?: string; response?: string; error?: string }> {
   const lang = normalizeWelcomeLang(params.lang);
   const copy = WELCOME_COPY[lang];
+
+  let handoffToken = params.handoffToken;
+  if (!handoffToken && params.userId) {
+    try {
+      handoffToken = await createHandoffToken({
+        userId: params.userId,
+        email: params.to,
+        activeTenantId: params.activeTenantId,
+      });
+    } catch (e: any) {
+      console.warn("[Welcome Email Handoff Token Generation Warning]:", e?.message || e);
+    }
+  }
 
   const welcomeData: WelcomeEmailData = {
     userName: params.userName,
@@ -273,12 +290,16 @@ export async function sendWelcomeEmail(params: {
     storeCategory: params.storeCategory,
     userEmail: params.to,
     loginDate: params.loginDate || new Date().toISOString(),
+    handoffToken,
   };
 
   const html = renderWelcomeEmailHtml(welcomeData, lang);
   const resolvedCategory = resolveStoreCategory(params.storeCategory, lang);
   const formattedDate = formatWelcomeDate(welcomeData.loginDate, lang);
   const resolvedOwner = params.userName || params.to.split("@")[0] || "Merchant";
+  const launcherUrl = `https://kaspi-pos.vercel.app/launch-desktop?token=${encodeURIComponent(
+    handoffToken || ""
+  )}&lang=${lang}&target=/${lang}/dashboard`;
 
   const text = [
     copy.heroHeading(resolvedOwner),
@@ -292,7 +313,7 @@ export async function sendWelcomeEmail(params: {
     copy.onboarding.sectionTitle,
     ...copy.onboarding.steps.map((s, i) => `0${i + 1}. ${s}`),
     "",
-    "KASPI POS Dashboard: https://kaspi-pos.vercel.app/dashboard",
+    `KASPI POS Desktop Launcher: ${launcherUrl}`,
     "",
     copy.footerNote,
   ].join("\n");

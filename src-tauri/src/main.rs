@@ -4,6 +4,7 @@
 mod printer;
 mod local_ai;
 mod tpe_bridge;
+mod desktop_handoff;
 
 use printer::{encode_escpos, render_rows, send_to_printer, to_western_numerals, Align, Fonts, Row};
 use local_ai::{get_local_ai_capabilities, run_local_ai_inference};
@@ -320,8 +321,32 @@ fn print_receipt(payload: String) -> Result<String, String> {
 }
 
 fn main() {
+    // If launched via kaspipos:// protocol or with handoff token while an instance is already running,
+    // forward the handoff to the running instance over the local IPC socket and exit immediately.
+    for arg in std::env::args().skip(1) {
+        if arg.starts_with("kaspipos://") || arg.contains("token=") {
+            if desktop_handoff::forward_to_running_instance(&arg) {
+                return;
+            }
+        }
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .setup(|app| {
+            // Register Windows protocol association (kaspipos://)
+            desktop_handoff::register_windows_protocol();
+
+            // Start local loopback IPC listener on 127.0.0.1:41732
+            desktop_handoff::start_local_handoff_server(app.handle().clone());
+
+            // If started with handoff token as a fresh instance, navigate directly to dashboard handoff
+            if let Some(target_url) = desktop_handoff::find_handoff_url_from_args() {
+                desktop_handoff::focus_and_navigate(&app.handle(), &target_url);
+            }
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             print_receipt,
             get_local_ai_capabilities,

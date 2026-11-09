@@ -149,6 +149,8 @@ export async function POST(req: NextRequest) {
       storeCategory: "grocery",
       loginDate: new Date().toISOString(),
       lang: "ar",
+      userId: user.id,
+      activeTenantId,
     }).catch((err) => {
       console.warn("[OTP Verify Welcome Email Notice]:", err?.message || err);
     });

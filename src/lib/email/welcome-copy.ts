@@ -13,6 +13,7 @@ export interface WelcomeEmailData {
   storeCategory?: string;
   userEmail?: string;
   loginDate?: string;
+  handoffToken?: string;
 }
 
 export interface WelcomeCopy {

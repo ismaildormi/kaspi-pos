@@ -232,7 +232,9 @@ function renderLanguageBlock(
   const resolvedStore = data.storeName?.trim() || t.defaultStoreName;
   const resolvedCategory = resolveStoreCategory(data.storeCategory, lang);
   const formattedDate = formatWelcomeDate(data.loginDate, lang);
-  const dashboardUrl = `${getAppBaseUrl()}/${lang}/dashboard`;
+  const launcherUrl = `${getAppBaseUrl()}/launch-desktop?token=${encodeURIComponent(
+    data.handoffToken || ""
+  )}&lang=${lang}&target=/${lang}/dashboard`;
 
   return `
   <div class="wkp-b wkp-b-${lang}" dir="${t.dir}" lang="${lang}" style="${visibility}text-align:center;direction:${t.dir};">
@@ -256,11 +258,11 @@ function renderLanguageBlock(
     <!-- 3-Step Quick Onboarding Strip -->
     ${renderOnboardingStrip(lang)}
 
-    <!-- Primary CTA Button (Deep Black Pill) -->
+    <!-- Primary CTA Button (Deep Black Pill linking to Desktop App Launcher) -->
     <table role="presentation" align="center" border="0" cellpadding="0" cellspacing="0" style="margin:0 auto 20px auto;">
       <tr>
         <td align="center" style="border-radius:999px;background-color:#09090b;">
-          <a href="${dashboardUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;min-width:220px;padding:15px 36px;border-radius:999px;background-color:#09090b;font-family:${FONT_STACK};font-size:15px;font-weight:800;color:#ffffff;text-decoration:none;line-height:1;box-shadow:0 10px 24px -10px rgba(9,9,11,0.7);">
+          <a href="${launcherUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;min-width:220px;padding:15px 36px;border-radius:999px;background-color:#09090b;font-family:${FONT_STACK};font-size:15px;font-weight:800;color:#ffffff;text-decoration:none;line-height:1;box-shadow:0 10px 24px -10px rgba(9,9,11,0.7);">
             ${escapeHtml(t.primaryButton)}
           </a>
         </td>
