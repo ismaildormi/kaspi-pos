@@ -28,13 +28,13 @@ export function AdminAlertButton() {
       if (!res.ok) throw new Error(data.error || "Erreur d'envoi");
 
       if (target === "admin_only") {
-        setResult("✅ Alerte envoyée sur votre WhatsApp (+212 687-597267) !");
+        setResult("[OK] Alerte envoyée sur votre WhatsApp (+212 687-597267) !");
       } else {
-        setResult(`✅ Alerte diffusée avec succès à ${data.dispatchedCount} commerces !`);
+        setResult(`[OK] Alerte diffusée avec succès à ${data.dispatchedCount} commerces !`);
       }
       setMessage("");
     } catch (err: any) {
-      setResult(`❌ ${err.message}`);
+      setResult(`[Erreur] ${err.message}`);
     } finally {
       setIsSending(false);
     }

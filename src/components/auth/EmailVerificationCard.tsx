@@ -167,7 +167,7 @@ export const EmailVerificationCard: React.FC<EmailVerificationCardProps> = ({
 
   return (
     <div
-      dir={t.dir}
+      dir="ltr"
       lang={locale}
       className={`relative w-full max-w-md mx-auto overflow-hidden rounded-3xl bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 border border-[#e5e7eb] dark:border-zinc-800 px-6 py-8 sm:px-9 sm:py-10 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_32px_-8px_rgba(16,24,40,0.12),0_40px_80px_-32px_rgba(16,24,40,0.22)] transition-colors ${className}`}
     >

@@ -9,7 +9,6 @@ import {
   UserPlus,
   Trash2,
   ArrowLeft,
-  ArrowRight,
   X,
   Loader2,
   Mail,
@@ -27,9 +26,87 @@ interface MemberItem {
   createdAt: string;
 }
 
+const STAFF_DICT = {
+  ar: {
+    backPos: "العودة لنقطة البيع (POS)",
+    pageTitle: "فريق العمل والصلاحيات",
+    addMemberBtn: "إضافة عضو جديد",
+    thUser: "المستخدم",
+    thEmail: "البريد الإلكتروني",
+    thRole: "الدور",
+    thStatus: "الحالة",
+    thAction: "إجراء",
+    loading: "جاري تحميل فريق العمل...",
+    empty: "لا يوجد أعضاء مسجلين حالياً.",
+    revokeAccess: "إلغاء صلاحية الوصول",
+    revokeConfirm: "هل أنت متأكد من رغبتك في إلغاء وصول هذا المستخدم؟",
+    modalTitle: "إضافة عضو إلى الفريق",
+    fullNameLabel: "الاسم الكامل",
+    emailLabel: "البريد الإلكتروني *",
+    roleLabel: "الدور والصلاحيات",
+    roleCashier: "كاشير (نقطة البيع فقط)",
+    roleManager: "مدير متجر (إدارة شاملة)",
+    roleAccountant: "محاسب (فواتير وتقارير)",
+    roleAdmin: "مسؤول نظام (صلاحية كاملة)",
+    cancel: "إلغاء",
+    submitting: "جاري الحفظ...",
+    submit: "إنشاء حساب الوصول",
+  },
+  fr: {
+    backPos: "Retour au POS",
+    pageTitle: "Équipe & Rôles",
+    addMemberBtn: "Ajouter un membre",
+    thUser: "Utilisateur",
+    thEmail: "Email",
+    thRole: "Rôle",
+    thStatus: "Statut",
+    thAction: "Action",
+    loading: "Chargement de l'équipe...",
+    empty: "Aucun membre enregistré.",
+    revokeAccess: "Révoquer l'accès",
+    revokeConfirm: "Voulez-vous vraiment révoquer l'accès de cet utilisateur ?",
+    modalTitle: "Ajouter un collaborateur",
+    fullNameLabel: "Nom complet",
+    emailLabel: "Adresse Email *",
+    roleLabel: "Rôle & Permissions",
+    roleCashier: "Caissier (Point de vente seul)",
+    roleManager: "Gérant / Responsable de magasin",
+    roleAccountant: "Comptable (Factures & Rapports)",
+    roleAdmin: "Administrateur",
+    cancel: "Annuler",
+    submitting: "Enregistrement...",
+    submit: "Créer l'accès",
+  },
+  en: {
+    backPos: "Back to POS",
+    pageTitle: "Staff & Permissions",
+    addMemberBtn: "Add Staff Member",
+    thUser: "User",
+    thEmail: "Email",
+    thRole: "Role",
+    thStatus: "Status",
+    thAction: "Action",
+    loading: "Loading staff members...",
+    empty: "No staff members registered.",
+    revokeAccess: "Revoke access",
+    revokeConfirm: "Are you sure you want to revoke access for this user?",
+    modalTitle: "Add Team Member",
+    fullNameLabel: "Full Name",
+    emailLabel: "Email Address *",
+    roleLabel: "Role & Permissions",
+    roleCashier: "Cashier (POS Only)",
+    roleManager: "Manager / Store Supervisor",
+    roleAccountant: "Accountant (Invoices & Reports)",
+    roleAdmin: "Administrator (Full Access)",
+    cancel: "Cancel",
+    submitting: "Saving...",
+    submit: "Create Access",
+  },
+};
+
 export default function StaffPage() {
   const locale = useLocale();
-  const isRtl = locale === "ar";
+  const t = STAFF_DICT[locale as keyof typeof STAFF_DICT] || STAFF_DICT.fr;
 
   const [members, setMembers] = useState<MemberItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -93,7 +170,7 @@ export default function StaffPage() {
   };
 
   const handleRevoke = async (id: string) => {
-    if (!confirm("Voulez-vous vraiment révoquer l'accès de cet utilisateur ?")) return;
+    if (!confirm(t.revokeConfirm)) return;
 
     try {
       const res = await fetch(`/api/v1/staff?id=${id}`, { method: "DELETE" });
@@ -116,7 +193,7 @@ export default function StaffPage() {
               className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors flex items-center gap-1.5 text-xs font-semibold"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>{isRtl ? "العودة لنقطة البيع (POS)" : "Retour au POS"}</span>
+              <span>{t.backPos}</span>
             </Link>
             <div className="h-5 w-px bg-zinc-800" />
             <div className="flex items-center gap-2">
@@ -124,7 +201,7 @@ export default function StaffPage() {
                 <UserCheck className="w-4 h-4" />
               </div>
               <h1 className="text-sm font-bold text-white">
-                {isRtl ? "فريق العمل والصلاحيات" : "Équipe & Rôles"}
+                {t.pageTitle}
               </h1>
             </div>
           </div>
@@ -134,7 +211,7 @@ export default function StaffPage() {
             className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm"
           >
             <UserPlus className="w-3.5 h-3.5" />
-            <span>Ajouter un membre</span>
+            <span>{t.addMemberBtn}</span>
           </button>
         </div>
       </header>
@@ -146,24 +223,24 @@ export default function StaffPage() {
             <table className="w-full text-start text-xs">
               <thead className="bg-zinc-950 text-zinc-400 border-b border-zinc-800 font-mono">
                 <tr>
-                  <th className="p-3.5 text-start">Utilisateur</th>
-                  <th className="p-3.5 text-start">Email</th>
-                  <th className="p-3.5 text-start">Rôle</th>
-                  <th className="p-3.5 text-start">Statut</th>
-                  <th className="p-3.5 text-end">Action</th>
+                  <th className="p-3.5 text-start">{t.thUser}</th>
+                  <th className="p-3.5 text-start">{t.thEmail}</th>
+                  <th className="p-3.5 text-start">{t.thRole}</th>
+                  <th className="p-3.5 text-start">{t.thStatus}</th>
+                  <th className="p-3.5 text-end">{t.thAction}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60 font-medium">
                 {isLoading ? (
                   <tr>
                     <td colSpan={5} className="p-8 text-center text-zinc-500">
-                      Chargement de l&apos;équipe...
+                      {t.loading}
                     </td>
                   </tr>
                 ) : members.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="p-8 text-center text-zinc-500">
-                      Aucun membre enregistré.
+                      {t.empty}
                     </td>
                   </tr>
                 ) : (
@@ -192,7 +269,7 @@ export default function StaffPage() {
                           <button
                             onClick={() => handleRevoke(m.id)}
                             className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition cursor-pointer"
-                            title="Révoquer l'accès"
+                            title={t.revokeAccess}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -212,7 +289,7 @@ export default function StaffPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4">
-              <h3 className="font-bold text-white text-base">Ajouter un collaborateur</h3>
+              <h3 className="font-bold text-white text-base">{t.modalTitle}</h3>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 cursor-pointer"
@@ -230,7 +307,7 @@ export default function StaffPage() {
             <form onSubmit={handleInvite} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  Nom complet
+                  {t.fullNameLabel}
                 </label>
                 <input
                   type="text"
@@ -244,7 +321,7 @@ export default function StaffPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  Adresse Email *
+                  {t.emailLabel}
                 </label>
                 <input
                   type="email"
@@ -258,17 +335,17 @@ export default function StaffPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  Rôle & Permissions
+                  {t.roleLabel}
                 </label>
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
                   className="w-full h-11 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-medium cursor-pointer"
                 >
-                  <option value="cashier">Caissier (Point de vente seul)</option>
-                  <option value="manager">Gérant / Responsable de magasin</option>
-                  <option value="accountant">Comptable (Factures & Rapports)</option>
-                  <option value="admin">Administrateur</option>
+                  <option value="cashier">{t.roleCashier}</option>
+                  <option value="manager">{t.roleManager}</option>
+                  <option value="accountant">{t.roleAccountant}</option>
+                  <option value="admin">{t.roleAdmin}</option>
                 </select>
               </div>
 
@@ -278,14 +355,14 @@ export default function StaffPage() {
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 text-zinc-400 hover:text-white text-xs font-semibold cursor-pointer"
                 >
-                  Annuler
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !email.trim()}
                   className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition disabled:opacity-40 cursor-pointer"
                 >
-                  {isSubmitting ? "Enregistrement..." : "Créer l'accès"}
+                  {isSubmitting ? t.submitting : t.submit}
                 </button>
               </div>
             </form>

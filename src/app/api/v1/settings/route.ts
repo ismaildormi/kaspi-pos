@@ -61,6 +61,9 @@ export async function GET(req: NextRequest) {
         receiptHeader: settings?.receiptHeader || "Bienvenue dans notre magasin",
         receiptFooter: settings?.receiptFooter || "Merci de votre visite et à bientôt !",
         whatsappReportNumber: settings?.whatsappReportNumber || "",
+        whatsappReportHour: settings?.whatsappReportHour || "21:00",
+        storeTimezone: settings?.storeTimezone || "Africa/Casablanca",
+        ecommerceSyncConfig: settings?.ecommerceSyncConfig || {},
         isWhatsappReportsActive: settings?.isWhatsappReportsActive ?? true,
         receiptLanguage: printerConfig.receiptLanguage || ctx.activeTenant?.locale || "fr",
         paperWidthMm: printerConfig.paperWidthMm || 80,
@@ -95,6 +98,14 @@ export async function POST(req: NextRequest) {
     const ctx = await getRequestContext();
     const body = await req.json();
 
+    const ecommerceSyncConfig = {
+      ...(body.ecommerceSyncConfig || {}),
+      ...(body.youcanStoreKey !== undefined ? { youcanStoreKey: body.youcanStoreKey } : {}),
+      ...(body.shopifyStoreUrl !== undefined ? { shopifyStoreUrl: body.shopifyStoreUrl } : {}),
+      ...(body.shopifyWebhookSecret !== undefined ? { shopifyWebhookSecret: body.shopifyWebhookSecret } : {}),
+      ...(body.syncStockOnline !== undefined ? { syncStockOnline: Boolean(body.syncStockOnline) } : {}),
+    };
+
     const updated = await prisma.tenantSettings.upsert({
       where: { tenantId: ctx.tenantId },
       create: {
@@ -109,6 +120,9 @@ export async function POST(req: NextRequest) {
         receiptHeader: body.receiptHeader,
         receiptFooter: body.receiptFooter,
         whatsappReportNumber: body.whatsappReportNumber,
+        whatsappReportHour: body.whatsappReportHour || body.nightlyReportHour || "21:00",
+        storeTimezone: body.storeTimezone || "Africa/Casablanca",
+        ecommerceSyncConfig,
         isWhatsappReportsActive: body.isWhatsappReportsActive ?? true,
       },
       update: {
@@ -122,6 +136,9 @@ export async function POST(req: NextRequest) {
         receiptHeader: body.receiptHeader,
         receiptFooter: body.receiptFooter,
         whatsappReportNumber: body.whatsappReportNumber,
+        whatsappReportHour: body.whatsappReportHour || body.nightlyReportHour || "21:00",
+        storeTimezone: body.storeTimezone || "Africa/Casablanca",
+        ecommerceSyncConfig,
         isWhatsappReportsActive: body.isWhatsappReportsActive ?? true,
       },
     });

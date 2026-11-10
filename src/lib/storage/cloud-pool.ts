@@ -141,8 +141,13 @@ export async function uploadWithCasDeduplication(params: {
     // If backend endpoint is unavailable (e.g. offline POS), use blob URL or base64
   }
 
-  // Local URL fallback
-  const localUrl = URL.createObjectURL(blob);
+  // Local URL fallback (guarded for SSR)
+  let localUrl = `cas://${sha256}`;
+  try {
+    if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
+      localUrl = URL.createObjectURL(blob);
+    }
+  } catch {}
   const localRecord: StoredAssetRecord = {
     sha256,
     url: localUrl,

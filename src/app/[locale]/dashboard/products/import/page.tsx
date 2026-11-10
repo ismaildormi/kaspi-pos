@@ -33,9 +33,111 @@ interface ParsedRow {
   errors: string[];
 }
 
+const DICT = {
+  ar: {
+    backPos: "العودة لنقطة البيع (POS)",
+    title: "الهجرة واستيراد المنتجات (CSV/Excel)",
+    downloadTemplate: "تحميل نموذج CSV التجريبي",
+    dropzoneTitle: "اسحب وأفلت ملف المنتجات (CSV) هنا",
+    dropzoneDesc: "يتوافق مع جميع صادرات برامج الكاشير في المغرب (Caissa, POSNEX, Excel, Odoo). سيتم التعرف التلقائي على الأعمدة.",
+    browseFiles: "اختيار ملف من الحاسوب",
+    analyzing: "جاري تحليل الملف والتعرف على الأعمدة...",
+    verifying: "التحقق من عدم تكرار الباركود وتوافق الأسعار",
+    previewTitle: "معاينة قبل الاستيراد :",
+    validLines: "سطور صالحة للاستيراد مباشرة",
+    alertLines: "سطور بها تنبيهات",
+    successTitle: "منتج تم استيرادها بنجاح في الكتالوج!",
+    successDesc: "المنتجات والمخزون الأولي جاهزة الآن للاستخدام في شاشة الكاشير.",
+    importAnother: "استيراد ملف آخر",
+    openPos: "فتح نقطة البيع (POS)",
+    backCatalog: "العودة للكتالوج",
+    confirmImport: "تأكيد واستيراد المنتجات",
+    changeFile: "تغيير الملف",
+    importing: "جاري الاستيراد...",
+    readyLinesTab: "الأسطر الجاهزة",
+    errorLinesTab: "الأسطر المرفوضة / تنبيهات",
+    tableRow: "السطر",
+    tableProduct: "اسم المنتج",
+    tableSku: "الرمز / SKU",
+    tableBarcode: "الباركود",
+    tableCategory: "التصنيف",
+    tableSalePrice: "سعر البيع",
+    tableStock: "المخزون",
+    tableReason: "سبب الرفض",
+    csvOnlyError: "يرجى اختيار ملف بصيغة CSV (.csv)",
+    backgroundJobNotice: "يتم استيراد الملف في الخلفية. يمكنك متابعة العمل بحرية.",
+  },
+  fr: {
+    backPos: "Retour au POS",
+    title: "Migration & Import CSV/Excel",
+    downloadTemplate: "Télécharger modèle CSV",
+    dropzoneTitle: "Glissez-déposez votre fichier de produits (.csv)",
+    dropzoneDesc: "Compatible avec les exports Caissa, POSNEX, Excel et Odoo. Détection automatique des colonnes.",
+    browseFiles: "Parcourir mes fichiers",
+    analyzing: "Analyse et détection des colonnes en cours...",
+    verifying: "Vérification des doublons SKU et compatibilité tarifaire",
+    previewTitle: "Aperçu avant importation :",
+    validLines: "lignes valides prêtes à être injectées",
+    alertLines: "lignes avec alertes",
+    successTitle: "produits importés avec succès !",
+    successDesc: "Les articles et stocks initiaux sont immédiatement disponibles sur votre POS.",
+    importAnother: "Importer un autre fichier",
+    openPos: "Ouvrir la Caisse (POS)",
+    backCatalog: "Retour au Catalogue",
+    confirmImport: "Confirmer l'import",
+    changeFile: "Changer de fichier",
+    importing: "Importation en cours...",
+    readyLinesTab: "Lignes Prêtes",
+    errorLinesTab: "Lignes Ignorées / Erreurs",
+    tableRow: "Ligne",
+    tableProduct: "Nom Produit",
+    tableSku: "SKU / Réf",
+    tableBarcode: "Code-barres",
+    tableCategory: "Catégorie",
+    tableSalePrice: "Prix Vente",
+    tableStock: "Stock",
+    tableReason: "Raison du rejet",
+    csvOnlyError: "Veuillez sélectionner un fichier au format CSV (.csv).",
+    backgroundJobNotice: "Votre fichier est traité en arrière-plan. Vous pouvez continuer à travailler.",
+  },
+  en: {
+    backPos: "Back to POS",
+    title: "Migration & Product CSV/Excel Import",
+    downloadTemplate: "Download Sample CSV",
+    dropzoneTitle: "Drag and drop your products file (.csv) here",
+    dropzoneDesc: "Compatible with POS exports (Caissa, POSNEX, Excel, Odoo). Automatic column detection.",
+    browseFiles: "Browse my files",
+    analyzing: "Analyzing file and detecting columns...",
+    verifying: "Checking SKU duplicates and price compatibility",
+    previewTitle: "Preview before import :",
+    validLines: "valid rows ready to import",
+    alertLines: "rows with alerts",
+    successTitle: "products imported successfully!",
+    successDesc: "Products and initial stock are now ready to use on your POS.",
+    importAnother: "Import another file",
+    openPos: "Open POS Register",
+    backCatalog: "Back to Catalog",
+    confirmImport: "Confirm import",
+    changeFile: "Change file",
+    importing: "Importing...",
+    readyLinesTab: "Ready Rows",
+    errorLinesTab: "Ignored Rows / Errors",
+    tableRow: "Row",
+    tableProduct: "Product Name",
+    tableSku: "SKU / Ref",
+    tableBarcode: "Barcode",
+    tableCategory: "Category",
+    tableSalePrice: "Sale Price",
+    tableStock: "Stock",
+    tableReason: "Rejection Reason",
+    csvOnlyError: "Please select a valid CSV file (.csv).",
+    backgroundJobNotice: "Your file is being processed in the background. You can continue working.",
+  },
+};
+
 export default function ProductImportPage() {
-  const locale = useLocale();
-  const isRtl = locale === "ar";
+  const locale = (useLocale() || "fr") as "ar" | "fr" | "en";
+  const t = DICT[locale] || DICT.fr;
 
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -99,11 +201,7 @@ export default function ProductImportPage() {
 
   const handleFile = async (selectedFile: File) => {
     if (!selectedFile.name.endsWith(".csv")) {
-      setErrorMsg(
-        isRtl
-          ? "يرجى اختيار ملف بصيغة CSV (.csv)"
-          : "Veuillez sélectionner un fichier au format CSV (.csv)."
-      );
+      setErrorMsg(t.csvOnlyError);
       return;
     }
 
@@ -238,7 +336,7 @@ export default function ProductImportPage() {
               className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors flex items-center gap-1.5 text-xs font-semibold"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>{isRtl ? "العودة لنقطة البيع (POS)" : "Retour au POS"}</span>
+              <span>{t.backPos}</span>
             </Link>
             <div className="h-5 w-px bg-zinc-800" />
             <div className="flex items-center gap-2">
@@ -246,7 +344,7 @@ export default function ProductImportPage() {
                 <FileSpreadsheet className="w-4 h-4" />
               </div>
               <h1 className="text-sm font-bold text-white">
-                {isRtl ? "الهجرة واستيراد المنتجات (CSV/Excel)" : "Migration & Import CSV/Excel"}
+                {t.title}
               </h1>
             </div>
           </div>
@@ -257,7 +355,7 @@ export default function ProductImportPage() {
             className="px-3.5 py-1.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 text-zinc-300 text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-white" />
-            <span>{isRtl ? "تحميل نموذج CSV التجريبي" : "Télécharger modèle CSV"}</span>
+            <span>{t.downloadTemplate}</span>
           </button>
         </div>
       </header>
@@ -273,10 +371,10 @@ export default function ProductImportPage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white">
-                  Your file is being processed in the background. You can continue working.
+                  {t.backgroundJobNotice}
                 </h3>
                 <p className="text-xs text-zinc-400 mt-1 font-mono">
-                  Trigger.dev Job ID: {backgroundJob.jobId} • Polling status every 3s...
+                  Trigger.dev Job ID: {backgroundJob.jobId}
                 </p>
               </div>
             </div>
@@ -284,7 +382,7 @@ export default function ProductImportPage() {
               href={`/${locale}/dashboard/products`}
               className="px-4 py-2 rounded-xl bg-white text-black hover:bg-zinc-200 text-xs font-bold shrink-0"
             >
-              Retour au Catalogue
+              {t.backCatalog}
             </Link>
           </div>
         )}
@@ -298,29 +396,25 @@ export default function ProductImportPage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold">
-                  {isRtl
-                    ? `تم استيراد ${importSuccess.count} منتج بنجاح في الكتالوج!`
-                    : `Félicitations ! ${importSuccess.count} produits importés avec succès !`}
+                  {importSuccess.count} {t.successTitle}
                 </h3>
                 <p className="text-xs text-zinc-400 mt-0.5">
-                  {isRtl
-                    ? "المنتجات والمخزون الأولي جاهزة الآن للاستخدام في شاشة الكاشير."
-                    : "Les articles et stocks initiaux sont immédiatement disponibles sur votre POS."}
+                  {t.successDesc}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={resetAll}
-                className="px-4 py-2 rounded-xl border border-zinc-700 hover:bg-zinc-800 text-xs font-semibold"
+                className="px-4 py-2 rounded-xl border border-zinc-700 hover:bg-zinc-800 text-xs font-semibold cursor-pointer"
               >
-                Importer un autre fichier
+                {t.importAnother}
               </button>
               <Link
                 href={`/${locale}/pos`}
                 className="px-4 py-2 rounded-xl bg-white text-black hover:bg-zinc-200 text-xs font-bold"
               >
-                Ouvrir la caisse (POS)
+                {t.openPos}
               </Link>
             </div>
           </div>
@@ -378,10 +472,10 @@ export default function ProductImportPage() {
               <div className="flex flex-col items-center justify-center py-6">
                 <Loader2 className="w-10 h-10 animate-spin text-white mb-3" />
                 <p className="text-sm font-bold text-white">
-                  Analyse et détection des colonnes en cours...
+                  {t.analyzing}
                 </p>
                 <p className="text-xs text-zinc-500 mt-1">
-                  Vérification des doublons SKU et compatibilité tarifaire
+                  {t.verifying}
                 </p>
               </div>
             ) : (
@@ -390,20 +484,20 @@ export default function ProductImportPage() {
                   <UploadCloud className="w-8 h-8 stroke-[1.5]" />
                 </div>
                 <h3 className="text-base font-bold text-white mb-1">
-                  {isRtl
-                    ? "اسحب وأفلت ملف المنتجات (CSV) هنا"
-                    : "Glissez-déposez votre fichier de produits (.csv)"}
+                  {t.dropzoneTitle}
                 </h3>
                 <p className="text-xs text-zinc-400 max-w-md mb-4">
-                  {isRtl
-                    ? "يتوافق مع جميع صادرات برامج الكاشير في المغرب (Caissa, POSNEX, Excel, Odoo). سيتم التعرف التلقائي على الأعمدة."
-                    : "Compatible avec les exports Caissa, POSNEX, Excel et Odoo. Détection automatique des colonnes."}
+                  {t.dropzoneDesc}
                 </p>
                 <button
                   type="button"
-                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-sm transition"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs shadow-sm transition cursor-pointer"
                 >
-                  {isRtl ? "اختيار ملف من الحاسوب" : "Parcourir mes fichiers"}
+                  {t.browseFiles}
                 </button>
               </div>
             )}
@@ -417,11 +511,11 @@ export default function ProductImportPage() {
             <div className="bg-zinc-900 rounded-3xl border border-zinc-800 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h3 className="text-base font-bold text-white">
-                  Aperçu avant importation : {file?.name}
+                  {t.previewTitle} {file?.name}
                 </h3>
                 <p className="text-xs text-zinc-400 mt-0.5">
-                  {previewData.summary.validCount} lignes valides prêtes à être injectées •{" "}
-                  {previewData.summary.invalidCount} lignes avec alertes
+                  {previewData.summary.validCount} {t.validLines} •{" "}
+                  {previewData.summary.invalidCount} {t.alertLines}
                 </p>
               </div>
 
@@ -441,13 +535,13 @@ export default function ProductImportPage() {
                   {isCommitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin text-black" />
-                      <span>Importation en cours...</span>
+                      <span>{t.importing}</span>
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="w-4 h-4 text-black" />
                       <span>
-                        Confirmer l&apos;import ({previewData.validRows.length} produits)
+                        {t.confirmImport} ({previewData.validRows.length})
                       </span>
                     </>
                   )}
@@ -459,23 +553,23 @@ export default function ProductImportPage() {
             <div className="flex gap-2 border-b border-zinc-800 pb-2">
               <button
                 onClick={() => setActiveTab("valid")}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                   activeTab === "valid"
                     ? "bg-white text-black"
                     : "text-zinc-400 hover:text-white"
                 }`}
               >
-                Lignes Prêtes ({previewData.validRows.length})
+                {t.readyLinesTab} ({previewData.validRows.length})
               </button>
               <button
                 onClick={() => setActiveTab("invalid")}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                   activeTab === "invalid"
                     ? "bg-white text-black"
                     : "text-zinc-400 hover:text-white"
                 }`}
               >
-                Lignes Ignorées / Erreurs ({previewData.invalidRows.length})
+                {t.errorLinesTab} ({previewData.invalidRows.length})
               </button>
             </div>
 
@@ -485,14 +579,14 @@ export default function ProductImportPage() {
                 <table className="w-full text-start text-xs">
                   <thead className="bg-zinc-950 text-zinc-400 border-b border-zinc-800 sticky top-0 font-mono">
                     <tr>
-                      <th className="p-3 text-start">Ligne</th>
-                      <th className="p-3 text-start">Nom Produit</th>
-                      <th className="p-3 text-start">SKU / Réf</th>
-                      <th className="p-3 text-start">Code-barres</th>
-                      <th className="p-3 text-start">Catégorie</th>
-                      <th className="p-3 text-end">Prix Vente</th>
-                      <th className="p-3 text-end">Stock</th>
-                      {activeTab === "invalid" && <th className="p-3 text-start">Raison du rejet</th>}
+                      <th className="p-3 text-start">{t.tableRow}</th>
+                      <th className="p-3 text-start">{t.tableProduct}</th>
+                      <th className="p-3 text-start">{t.tableSku}</th>
+                      <th className="p-3 text-start">{t.tableBarcode}</th>
+                      <th className="p-3 text-start">{t.tableCategory}</th>
+                      <th className="p-3 text-end">{t.tableSalePrice}</th>
+                      <th className="p-3 text-end">{t.tableStock}</th>
+                      {activeTab === "invalid" && <th className="p-3 text-start">{t.tableReason}</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800/60 font-medium">

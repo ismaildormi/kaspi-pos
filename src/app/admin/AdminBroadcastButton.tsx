@@ -32,11 +32,11 @@ export function AdminBroadcastButton() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erreur d'envoi");
 
-      setResult(`✅ Annonce diffusée par email avec succès à ${data.sentCount} utilisateur(s) !`);
+      setResult(`[OK] Annonce diffusée par email avec succès à ${data.sentCount} utilisateur(s) !`);
       setTitle("");
       setMessage("");
     } catch (err: any) {
-      setResult(`❌ ${err.message}`);
+      setResult(`[Erreur] ${err.message}`);
     } finally {
       setIsSending(false);
     }

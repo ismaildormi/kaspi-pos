@@ -86,7 +86,7 @@ function LaunchDesktopContent() {
 
   return (
     <main
-      dir={t.dir}
+      dir="ltr"
       className="min-h-screen w-full flex items-center justify-center bg-[#f4f4f5] dark:bg-zinc-950 p-4 sm:p-6 select-none font-sans"
     >
       <div className="relative w-full max-w-[460px] mx-auto overflow-hidden rounded-[24px] bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 border border-[#e5e7eb] dark:border-zinc-800 p-8 sm:p-10 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_32px_-8px_rgba(16,24,40,0.12),0_40px_80px_-32px_rgba(16,24,40,0.22)] text-center">

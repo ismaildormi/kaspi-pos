@@ -320,6 +320,8 @@ export default function SettingsPage() {
           setReceiptHeader(s.receiptHeader || "");
           setReceiptFooter(s.receiptFooter || "");
           setWhatsappReportNumber(s.whatsappReportNumber || "");
+          if (s.whatsappReportHour) setNightlyReportHour(s.whatsappReportHour);
+          if (s.storeTimezone) setStoreTimezone(s.storeTimezone);
           setIsWhatsappReportsActive(s.isWhatsappReportsActive ?? true);
 
           if (s.bankName) setBankName(s.bankName);
@@ -464,6 +466,8 @@ export default function SettingsPage() {
           rcNumber,
           phone,
           whatsappReportNumber,
+          whatsappReportHour: nightlyReportHour,
+          storeTimezone,
           isWhatsappReportsActive,
           bankName,
           bankRib,
@@ -1627,7 +1631,7 @@ export default function SettingsPage() {
                 const previewDict = getReceiptTranslation(receiptLanguage);
                 return (
                   <div
-                    dir={previewDict.dir}
+                    dir="ltr"
                     className={`w-full ${
                       paperWidthMm === 58 ? "max-w-[230px]" : "max-w-xs"
                     } font-mono text-xs p-5 shadow-2xl rounded-sm ${
