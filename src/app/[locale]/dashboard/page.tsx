@@ -120,7 +120,7 @@ export default async function DashboardOverviewPage({
           </Link>
           <Link
             href={`/${locale}/pos`}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-zinc-950 transition hover:bg-zinc-200"
+            className="sheen-btn inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-zinc-950 transition-all hover:bg-zinc-200 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] active:scale-[0.98] cursor-pointer"
           >
             <ShoppingBag className="h-3.5 w-3.5" />
             <span>{t.dashboard.openPos}</span>
@@ -131,10 +131,10 @@ export default async function DashboardOverviewPage({
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Sales */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
+        <div className="group rounded-2xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
           <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
             <span>{t.dashboard.kpiRevenue}</span>
-            <TrendingUp className="h-4 w-4 text-white" />
+            <TrendingUp className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-black text-white font-mono">
@@ -145,10 +145,10 @@ export default async function DashboardOverviewPage({
         </div>
 
         {/* Total Transactions */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
+        <div className="group rounded-2xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
           <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
             <span>{t.dashboard.kpiTransactions}</span>
-            <ShoppingBag className="h-4 w-4 text-white" />
+            <ShoppingBag className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-black text-white font-mono">{salesCount}</div>
@@ -157,10 +157,10 @@ export default async function DashboardOverviewPage({
         </div>
 
         {/* Total Products */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
+        <div className="group rounded-2xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
           <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
             <span>{t.dashboard.kpiProducts}</span>
-            <Package className="h-4 w-4 text-white" />
+            <Package className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-black text-white font-mono">{productsCount}</div>
@@ -169,10 +169,10 @@ export default async function DashboardOverviewPage({
         </div>
 
         {/* Customers */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
+        <div className="group rounded-2xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
           <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
             <span>{t.dashboard.kpiCustomers}</span>
-            <Users className="h-4 w-4 text-white" />
+            <Users className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-black text-white font-mono">{customersCount}</div>

@@ -41,49 +41,62 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products }) => {
     const emptyI18n = {
       ar: {
         title: "لا توجد منتجات مطابقة",
-        subtitle: "أضف منتجاتك من الكتالوج أو قم باستيراد ملف Excel/CSV مباشرة.",
+        subtitle: "أضف منتجاتك من الكتالوج أو قم باستيراد ملف Excel و CSV مباشرة",
         manage: "كتالوج المنتجات",
         import: "استيراد CSV",
       },
       fr: {
         title: "Aucun article trouvé",
-        subtitle: "Ajoutez vos articles depuis le catalogue ou importez un fichier Excel/CSV.",
+        subtitle: "Ajoutez vos articles depuis le catalogue ou importez un fichier Excel/CSV",
         manage: "Gérer les Produits",
         import: "Importer CSV",
       },
       en: {
         title: "No products found",
-        subtitle: "Add items from the catalog or import an Excel/CSV file directly.",
+        subtitle: "Add items from the catalog or import an Excel/CSV file directly",
         manage: "Manage Products",
         import: "Import CSV",
       },
     }[locale] || {
       title: "No products found",
-      subtitle: "Add items from the catalog or import an Excel/CSV file directly.",
+      subtitle: "Add items from the catalog or import an Excel/CSV file directly",
       manage: "Manage Products",
       import: "Import CSV",
     };
 
     return (
-      <div className="h-72 flex flex-col items-center justify-center text-zinc-500 border border-dashed border-white/10 rounded-2xl p-8 text-center select-none bg-zinc-900/30">
-        <div className="w-11 h-11 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-400 mb-3">
-          <Package className="w-5 h-5 stroke-[1.5]" />
+      <div className="group h-80 flex flex-col items-center justify-center text-zinc-500 border border-dashed border-white/10 rounded-2xl p-8 text-center select-none bg-zinc-900/30 bg-dot-matrix relative overflow-hidden transition-all duration-300">
+        {/* Soft Radial Ambient Glow */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.06)_0%,transparent_70%)] group-hover:bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.12)_0%,transparent_75%)] transition-all duration-500 pointer-events-none" />
+
+        {/* Interactive Multi-Ring Kinetic Badge */}
+        <div className="relative mb-4 cursor-pointer">
+          {/* Outer ring scales and illuminates on hover */}
+          <div className="absolute -inset-3 rounded-3xl border border-white/5 group-hover:border-white/30 group-hover:scale-105 transition-all duration-500 bg-white/[0.02]" />
+          
+          {/* Inner 3D Container with sweeping laser */}
+          <div className="relative w-14 h-14 rounded-2xl bg-zinc-900/90 border border-white/15 flex items-center justify-center text-white shadow-xl overflow-hidden group-hover:border-white/40 transition-colors">
+            <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white to-transparent top-0 animate-laser pointer-events-none opacity-60" />
+            <Package className="w-6 h-6 stroke-[1.8] group-hover:-translate-y-1 transition-transform duration-300 text-white" />
+          </div>
         </div>
-        <p className="text-sm font-semibold text-white">{emptyI18n.title}</p>
+
+        <p className="text-sm font-bold text-white tracking-tight">{emptyI18n.title}</p>
         <p className="text-xs text-zinc-400 mt-1 max-w-sm">
           {emptyI18n.subtitle}
         </p>
-        <div className="flex gap-2 mt-4">
+
+        <div className="flex gap-2.5 mt-5">
           <Link
             href={`/${locale}/dashboard/products`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-black font-semibold text-xs hover:bg-zinc-200 transition"
+            className="sheen-btn flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-zinc-950 font-bold text-xs hover:bg-zinc-200 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] active:scale-[0.98] transition-all duration-200 cursor-pointer"
           >
             <span>{emptyI18n.manage}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
           <Link
             href={`/${locale}/dashboard/products/import`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 text-white border border-white/10 font-semibold text-xs hover:bg-zinc-800 transition"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-white border border-white/10 hover:border-white/20 font-semibold text-xs hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
           >
             <span>{emptyI18n.import}</span>
           </Link>

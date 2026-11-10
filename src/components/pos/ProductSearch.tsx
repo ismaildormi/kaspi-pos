@@ -352,7 +352,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
           }, 80);
         }}
         placeholder={`${t("searchPlaceholder")}  •  /pay  /hold  /clear`}
-        className="w-full h-11 ps-10 pe-32 rounded-xl bg-zinc-900/90 border border-white/10 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 transition-all shadow-inner"
+        className="w-full h-11 ps-10 pe-32 rounded-xl bg-zinc-900/90 border border-white/10 hover:border-white/20 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/15 transition-all shadow-inner"
       />
 
       <div className="absolute inset-y-0 end-0 flex items-center pe-2.5 gap-1.5">
@@ -368,14 +368,19 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
             <X className="w-3.5 h-3.5" />
           </button>
         )}
-        <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-zinc-950/90 border border-white/10 text-[10px] font-mono text-zinc-400">
+        <div className="relative overflow-hidden hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-950/90 border border-white/15 group-hover:border-white/30 group-focus-within:border-white/50 text-[10px] font-mono text-zinc-400 group-focus-within:text-white transition-all shadow-xs">
+          {/* Animated Scanning Laser Bar */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
           <span
             className={`w-1.5 h-1.5 rounded-full ${
-              isScanning ? "bg-amber-400 animate-ping" : "bg-emerald-400"
+              isScanning ? "bg-white animate-ping" : "bg-emerald-400"
             }`}
           />
-          <Barcode className="w-3 h-3 text-zinc-400" />
-          <span>F2 / ⌘K</span>
+          <div className="relative flex items-center">
+            <Barcode className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white group-focus-within:text-white transition-colors" />
+            <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0.5 bg-white/80 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity" />
+          </div>
+          <span className="tracking-wider">F2 / ⌘K</span>
         </div>
       </div>
     </div>

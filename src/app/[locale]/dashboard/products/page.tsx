@@ -429,23 +429,23 @@ export default function ProductsListPage() {
           <button
             type="button"
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 px-4 py-2 text-xs font-black text-black transition cursor-pointer shadow-sm"
+            className="group sheen-btn inline-flex items-center gap-1.5 rounded-xl bg-white hover:bg-zinc-200 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] active:scale-[0.98] px-4 py-2 text-xs font-bold text-zinc-950 transition-all cursor-pointer shadow-sm"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3.5 w-3.5 group-hover:rotate-90 transition-transform duration-300" />
             <span>{t.products.addProduct}</span>
           </button>
           <Link
             href={`/${locale}/dashboard/products/ai-onboard`}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-zinc-800 transition"
+            className="group inline-flex items-center gap-1.5 rounded-xl border border-white/10 hover:border-white/20 bg-zinc-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-zinc-800 hover:-translate-y-0.5 transition-all"
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            <Sparkles className="h-3.5 w-3.5 text-zinc-400 group-hover:text-white group-hover:scale-110 group-hover:rotate-6 transition-all duration-300" />
             <span>{t.products.aiStudio}</span>
           </Link>
           <Link
             href={`/${locale}/dashboard/products/import`}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black transition hover:bg-zinc-200"
+            className="group inline-flex items-center gap-1.5 rounded-xl border border-white/10 hover:border-white/20 bg-zinc-900/90 hover:bg-zinc-800 px-4 py-2 text-xs font-bold text-white hover:-translate-y-0.5 transition-all"
           >
-            <FileSpreadsheet className="h-3.5 w-3.5" />
+            <FileSpreadsheet className="h-3.5 w-3.5 text-zinc-400 group-hover:text-white group-hover:scale-105 transition-all duration-200" />
             <span>{t.dashboard.importExcel}</span>
           </Link>
         </div>
@@ -516,12 +516,19 @@ export default function ProductsListPage() {
           </span>
         </div>
       ) : filteredProducts.length === 0 ? (
-        <div className="py-16 rounded-2xl border border-zinc-800 bg-zinc-900/40 text-center text-zinc-500">
-          <Package className="h-10 w-10 mx-auto mb-3 text-zinc-600" />
-          <p className="text-sm font-bold text-zinc-300">
+        <div className="group relative overflow-hidden py-16 rounded-2xl border border-white/10 bg-zinc-900/40 bg-dot-matrix text-center text-zinc-500 select-none transition-all duration-300">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)] pointer-events-none" />
+          <div className="relative inline-flex items-center justify-center mb-3">
+            <div className="absolute -inset-2.5 rounded-3xl border border-white/5 group-hover:border-white/30 group-hover:scale-105 transition-all duration-500 bg-white/[0.02]" />
+            <div className="relative w-14 h-14 rounded-2xl bg-zinc-900/90 border border-white/15 flex items-center justify-center text-white shadow-xl overflow-hidden group-hover:border-white/40 transition-colors">
+              <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white to-transparent top-0 animate-laser pointer-events-none opacity-60" />
+              <Package className="h-6 w-6 stroke-[1.8] text-white group-hover:-translate-y-1 transition-transform duration-300" />
+            </div>
+          </div>
+          <p className="text-sm font-bold text-white tracking-tight">
             {t.products.noProductsFound}
           </p>
-          <p className="text-xs text-zinc-500 mt-1">
+          <p className="text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
             {t.products.noProductsSub}
           </p>
         </div>

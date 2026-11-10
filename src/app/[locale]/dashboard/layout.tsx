@@ -150,17 +150,17 @@ export default function DashboardLayout({
         <div className="flex items-center gap-2 shrink-0">
           <Link
             href={localizeHref("/pos")}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-bold transition shadow-xs"
+            className="group sheen-btn inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white text-zinc-950 hover:bg-zinc-200 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] active:scale-[0.98] text-xs font-bold transition-all shadow-xs cursor-pointer"
           >
-            <ShoppingBag className="w-3.5 h-3.5" />
+            <ShoppingBag className="w-3.5 h-3.5 group-hover:-translate-y-0.5 group-hover:scale-105 transition-transform duration-200" />
             <span>{t.topbar.posRegister}</span>
           </Link>
 
           <Link
             href={localizeHref("/download")}
-            className="hidden sm:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-xs font-medium text-zinc-300 hover:text-white transition"
+            className="group hidden sm:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 hover:border-white/20 bg-white/[0.03] hover:bg-white/[0.08] text-xs font-medium text-zinc-300 hover:text-white transition-all"
           >
-            <Download className="w-3.5 h-3.5 text-zinc-400" />
+            <Download className="w-3.5 h-3.5 text-zinc-400 group-hover:translate-y-0.5 transition-transform duration-200" />
             <span className="hidden xl:inline">{t.topbar.desktopApp}</span>
           </Link>
 
@@ -168,15 +168,15 @@ export default function DashboardLayout({
 
           <Link
             href={localizeHref("/dashboard/settings")}
-            className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300 hover:text-white transition"
+            className="group inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 hover:border-white/20 bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300 hover:text-white transition-all"
             title={t.topbar.settings}
           >
-            <Settings className="w-3.5 h-3.5" />
+            <Settings className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-500 ease-out" />
           </Link>
 
           <Link
             href={localizeHref("/dashboard/settings")}
-            className="hidden md:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-medium text-zinc-200 transition"
+            className="hidden md:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 hover:border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-medium text-zinc-200 transition-all"
           >
             <UserIcon className="w-3.5 h-3.5 text-emerald-400" />
             <span className="truncate max-w-[110px]">

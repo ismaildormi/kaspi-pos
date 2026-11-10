@@ -276,8 +276,17 @@ export default async function InventoryPage({
             <tbody className="divide-y divide-zinc-800/60 font-medium">
               {products.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-zinc-500">
-                    {t.products.noProducts}
+                  <td colSpan={5} className="py-16 text-center text-zinc-500 bg-dot-matrix relative overflow-hidden">
+                    <div className="group inline-flex flex-col items-center">
+                      <div className="relative inline-flex items-center justify-center mb-3">
+                        <div className="absolute -inset-2.5 rounded-3xl border border-white/5 group-hover:border-white/30 group-hover:scale-105 transition-all duration-500 bg-white/[0.02]" />
+                        <div className="relative w-12 h-12 rounded-2xl bg-zinc-900 border border-white/15 flex items-center justify-center text-white shadow-xl overflow-hidden group-hover:border-white/40 transition-colors">
+                          <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white to-transparent top-0 animate-laser pointer-events-none opacity-60" />
+                          <Layers className="w-5 h-5 text-white group-hover:-translate-y-0.5 transition-transform duration-300" />
+                        </div>
+                      </div>
+                      <p className="text-sm font-bold text-white tracking-tight">{t.products.noProducts}</p>
+                    </div>
                   </td>
                 </tr>
               ) : (

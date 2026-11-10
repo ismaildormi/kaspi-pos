@@ -51,18 +51,18 @@ export function Navbar() {
           <Link
             href="/download"
             prefetch={true}
-            className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-zinc-700 bg-zinc-900 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-800 hover:text-white hover:border-zinc-500"
+            className="group hidden sm:inline-flex items-center gap-1.5 rounded-full border border-zinc-700 bg-zinc-900 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-all hover:bg-zinc-800 hover:text-white hover:border-zinc-500 hover:-translate-y-0.5"
           >
-            <Download className="h-3.5 w-3.5 text-zinc-400" />
+            <Download className="h-3.5 w-3.5 text-zinc-400 group-hover:text-white group-hover:translate-y-0.5 transition-transform duration-200" />
             <span>Download (.exe)</span>
           </Link>
 
           <Link
             href="/login"
             prefetch={true}
-            className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 sm:px-4 py-1.5 text-xs font-bold text-zinc-950 transition hover:bg-zinc-200 shadow-md"
+            className="group sheen-btn inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 sm:px-4 py-1.5 text-xs font-bold text-zinc-950 transition-all hover:bg-zinc-200 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(255,255,255,0.25)] active:scale-[0.98] shadow-md"
           >
-            <LogIn className="h-3.5 w-3.5" />
+            <LogIn className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform duration-200" />
             <span>Login</span>
           </Link>
         </div>

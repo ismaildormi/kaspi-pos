@@ -96,20 +96,27 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
                 pathname.endsWith(`/${locale}/dashboard`)
               : pathname.includes(item.href);
 
+          const iconAnimationClass =
+            item.href === "/dashboard/settings"
+              ? "group-hover:rotate-90 transition-transform duration-500 ease-out"
+              : item.href === "/pos"
+              ? "group-hover:-translate-y-0.5 group-hover:scale-105 transition-transform duration-200"
+              : "group-hover:scale-110 transition-transform duration-200";
+
           return (
             <Link
               key={item.href}
               href={targetHref}
               prefetch={true}
               onClick={onNavigate}
-              className={`flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition ${
+              className={`group flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition ${
                 isActive
                   ? "bg-white text-zinc-950 font-semibold shadow-xs"
                   : "text-zinc-400 hover:bg-white/[0.05] hover:text-white"
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <Icon className={`h-3.5 w-3.5 shrink-0 ${iconAnimationClass}`} />
                 <span>{item.name}</span>
               </div>
               {item.badge && (
@@ -134,14 +141,14 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           onClick={() => {
             window.dispatchEvent(new CustomEvent("open-ai-chat"));
           }}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-850 border border-white/10 text-xs font-semibold text-zinc-300 hover:text-white transition cursor-pointer"
+          className="group w-full flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-850 border border-white/10 hover:border-white/25 text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer"
           title="KASPI AI Assistant"
         >
           <div className="flex items-center gap-2">
-            <Bot className="w-3.5 h-3.5 text-zinc-400" />
+            <Bot className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
             <span>KASPI AI</span>
           </div>
-          <Sparkles className="w-3 h-3 text-zinc-500" />
+          <Sparkles className="w-3 h-3 text-zinc-500 group-hover:text-white group-hover:rotate-12 transition-transform duration-300" />
         </button>
       </div>
     </aside>

@@ -13,6 +13,8 @@ import {
   UserPlus,
   X,
   UtensilsCrossed,
+  Tag,
+  Boxes,
 } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
@@ -71,7 +73,13 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
           <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-zinc-900 border border-white/10 text-zinc-200 text-xs font-semibold">
             <span className="flex items-center gap-1.5">
               <UtensilsCrossed className="w-3.5 h-3.5 text-zinc-400" />
-              <span>Table: {selectedTableName}</span>
+              <span>
+                {locale === "ar"
+                  ? `الطاولة: ${selectedTableName.replace(/Table\s*/i, "")}`
+                  : locale === "fr"
+                  ? `Table : ${selectedTableName.replace(/Table\s*/i, "")}`
+                  : `Table: ${selectedTableName.replace(/Table\s*/i, "")}`}
+              </span>
             </span>
             <button
               onClick={() => setSelectedTable(null, null)}
@@ -143,23 +151,25 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
           <button
             type="button"
             onClick={() => setPricingTier("retail")}
-            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
+            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
               pricingTier === "retail"
-                ? "bg-white text-zinc-950 shadow-xs"
-                : "text-zinc-400 hover:text-white"
+                ? "bg-white text-zinc-950 shadow-xs scale-[1.02]"
+                : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
             }`}
           >
+            <Tag className="w-3.5 h-3.5 shrink-0" />
             <span>{retailLabel}</span>
           </button>
           <button
             type="button"
             onClick={() => setPricingTier("wholesale")}
-            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
+            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
               pricingTier === "wholesale"
-                ? "bg-white text-zinc-950 shadow-xs"
-                : "text-zinc-400 hover:text-white"
+                ? "bg-white text-zinc-950 shadow-xs scale-[1.02]"
+                : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
             }`}
           >
+            <Boxes className="w-3.5 h-3.5 shrink-0" />
             <span>{wholesaleLabel}</span>
           </button>
         </div>
@@ -168,9 +178,72 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
       {/* Cart Items List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {cart.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-zinc-500 p-6 text-center">
-            <ShoppingCart className="w-10 h-10 mb-3 text-zinc-700 stroke-[1.2]" />
-            <p className="text-sm font-medium text-zinc-400">{t("emptyCart")}</p>
+          <div className="h-full flex flex-col items-center justify-center p-6 text-center select-none relative overflow-hidden bg-dot-matrix rounded-2xl border border-dashed border-white/5">
+            {/* Interactive Supermarket Trolley SVG Scene */}
+            <div className="relative group w-32 h-32 flex items-center justify-center mb-2 cursor-pointer">
+              {/* Soft radial monochrome glow */}
+              <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08)_0%,transparent_70%)] group-hover:bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.18)_0%,transparent_75%)] transition-all duration-500" />
+              
+              <div className="relative w-24 h-24 rounded-2xl bg-zinc-900/80 border border-white/10 group-hover:border-white/30 transition-all duration-500 shadow-2xl backdrop-blur-xs flex items-center justify-center overflow-hidden animate-float">
+                {/* Laser scan line */}
+                <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white/40 to-transparent top-0 animate-laser pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                {/* Cascading falling product boxes */}
+                <div className="absolute top-2.5 left-5 w-3 h-3 rounded-xs bg-white text-zinc-950 font-black text-[6px] flex items-center justify-center -translate-y-4 opacity-0 group-hover:translate-y-2 group-hover:opacity-100 transition-all duration-500 delay-75 shadow-md rotate-12 pointer-events-none">
+                  1
+                </div>
+                <div className="absolute top-1.5 right-5 w-2.5 h-3.5 rounded-xs bg-zinc-300 border border-white/20 -translate-y-4 opacity-0 group-hover:translate-y-2.5 group-hover:opacity-100 transition-all duration-500 delay-150 shadow-md -rotate-6 pointer-events-none" />
+                <div className="absolute top-1 left-10 w-2 h-2 rounded-full bg-zinc-400 -translate-y-4 opacity-0 group-hover:translate-y-3.5 group-hover:opacity-100 transition-all duration-500 delay-200 shadow-md pointer-events-none" />
+
+                {/* Supermarket Trolley SVG */}
+                <svg
+                  className="w-12 h-12 text-white transition-all duration-500 ease-out transform group-hover:translate-x-1.5 group-hover:-rotate-2"
+                  viewBox="0 0 64 64"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M8 18H14L20 40H46L52 24H18"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M24 24V40M30 24V40M36 24V40M42 24V40M19 32H48"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                    strokeOpacity="0.5"
+                  />
+                  <path
+                    d="M22 46H44"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                  <g className="origin-[22px_51px] transition-transform duration-700 ease-out group-hover:rotate-180">
+                    <circle cx="22" cy="51" r="4.5" stroke="currentColor" strokeWidth="2" fill="#18181b" />
+                    <line x1="22" y1="46.5" x2="22" y2="55.5" stroke="currentColor" strokeWidth="1" />
+                    <line x1="17.5" y1="51" x2="26.5" y2="51" stroke="currentColor" strokeWidth="1" />
+                  </g>
+                  <g className="origin-[44px_51px] transition-transform duration-700 ease-out group-hover:rotate-180">
+                    <circle cx="44" cy="51" r="4.5" stroke="currentColor" strokeWidth="2" fill="#18181b" />
+                    <line x1="44" y1="46.5" x2="44" y2="55.5" stroke="currentColor" strokeWidth="1" />
+                    <line x1="39.5" y1="51" x2="48.5" y2="51" stroke="currentColor" strokeWidth="1" />
+                  </g>
+                </svg>
+              </div>
+            </div>
+
+            <p className="text-sm font-bold text-white tracking-tight">{t("emptyCart")}</p>
+            <p className="text-xs text-zinc-400 mt-1 max-w-[200px]">
+              {locale === "ar"
+                ? "امسح الباركود أو اختر منتجاً من القائمة"
+                : locale === "fr"
+                ? "Scannez un code-barres ou sélectionnez un article"
+                : "Scan a barcode or select an item from catalog"}
+            </p>
           </div>
         ) : (
           cart.map((item) => (
@@ -274,29 +347,29 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
           <button
             onClick={() => holdCurrentCart()}
             disabled={cart.length === 0}
-            className="col-span-1 h-12 flex flex-col items-center justify-center rounded-xl bg-zinc-900 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-800 text-zinc-300 hover:text-white transition cursor-pointer"
+            className="group col-span-1 h-12 flex flex-col items-center justify-center rounded-xl bg-zinc-900 hover:bg-zinc-850 hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer"
             title={t("holdCart")}
           >
-            <PauseCircle className="w-4 h-4 mb-0.5" />
+            <PauseCircle className="w-4 h-4 mb-0.5 group-hover:scale-110 transition-transform duration-200" />
             <span className="text-[10px] font-semibold">{t("holdCart")}</span>
           </button>
 
           <button
             onClick={clearCart}
             disabled={cart.length === 0}
-            className="col-span-1 h-12 flex flex-col items-center justify-center rounded-xl bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed border border-zinc-800 text-zinc-300 hover:text-white transition cursor-pointer"
+            className="group col-span-1 h-12 flex flex-col items-center justify-center rounded-xl bg-zinc-900 hover:bg-zinc-850 hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer"
             title={t("clearCart")}
           >
-            <Trash2 className="w-4 h-4 mb-0.5" />
+            <Trash2 className="w-4 h-4 mb-0.5 group-hover:-rotate-12 group-hover:scale-110 transition-transform duration-200" />
             <span className="text-[10px] font-semibold">{t("clearCart")}</span>
           </button>
 
           <button
             onClick={openPaymentModal}
             disabled={cart.length === 0}
-            className="col-span-2 h-12 flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-zinc-200 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed text-black font-bold text-base shadow-sm transition cursor-pointer"
+            className="group sheen-btn col-span-2 h-12 flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-zinc-200 hover:-translate-y-0.5 hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none text-zinc-950 font-bold text-base shadow-sm transition-all duration-200 cursor-pointer"
           >
-            <CreditCard className="w-5 h-5 stroke-[2.2]" />
+            <CreditCard className="w-5 h-5 stroke-[2.2] group-hover:scale-105 transition-transform duration-200" />
             <span>{t("checkout")}</span>
           </button>
         </div>

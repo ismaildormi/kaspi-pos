@@ -51,6 +51,85 @@ html[lang="ar"] * {
   text-transform: none !important;
 }
 
+/* Natural Arabic text bidi resolution: prevents trailing periods and parentheses from jumping to the far left while keeping outer LTR container geometry intact */
+html[lang="ar"] p,
+html[lang="ar"] span:not([dir="ltr"]),
+html[lang="ar"] h1,
+html[lang="ar"] h2,
+html[lang="ar"] h3,
+html[lang="ar"] h4,
+html[lang="ar"] h5,
+html[lang="ar"] h6,
+html[lang="ar"] label,
+:lang(ar) p,
+:lang(ar) span:not([dir="ltr"]) {
+  unicode-bidi: plaintext;
+}
+
+/* Kinetic Physics & Specular Sheen Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes laser-sweep {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.8;
+  }
+  70% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(200%);
+    opacity: 0;
+  }
+}
+
+.animate-laser {
+  animation: laser-sweep 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Architectural Dot-Matrix Background Texture */
+.bg-dot-matrix {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Specular Sheen Sweep on Hover */
+.sheen-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.sheen-btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.sheen-btn:hover::after {
+  transform: translateX(100%);
+}
+
 /* Custom monochrome scrollbars */
 ::-webkit-scrollbar {
   width: 6px;

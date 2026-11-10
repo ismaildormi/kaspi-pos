@@ -79,13 +79,15 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
           <img
             src="/logo.png"
             alt="KASPI POS"
-            className="w-5 h-5 object-contain rounded shrink-0"
+            className="w-5 h-5 object-contain rounded shrink-0 transition-transform hover:scale-105"
           />
           <span className="font-bold text-xs tracking-tight text-white hidden md:inline truncate max-w-[140px]">
             {storeName}
           </span>
-          <span className="text-[10px] font-mono text-zinc-500 hidden lg:inline">
-            ({cashierName})
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.05] border border-white/10 text-zinc-400 hidden lg:inline">
+            {cashierName === "Caissier" || cashierName === "Cashier" || cashierName === "كاشير"
+              ? (locale === "ar" ? "كاشير" : locale === "en" ? "Cashier" : "Caissier")
+              : cashierName}
           </span>
         </div>
       </div>
@@ -96,10 +98,10 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
           <button
             type="button"
             onClick={onOpenIndustryTools}
-            className="h-8 px-3 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 text-zinc-200 hover:text-white text-xs font-medium flex items-center gap-1.5 transition cursor-pointer"
+            className="group h-8 px-3 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 hover:border-white/20 text-zinc-200 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
             title="KDS / Tables / Tailles / Balance / IMEI"
           >
-            <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
+            <Sparkles className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white group-hover:scale-110 group-hover:rotate-6 transition-all duration-300" />
             <span>{t.topbar.tools}</span>
           </button>
         )}
@@ -112,14 +114,14 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
           <button
             type="button"
             onClick={onOpenCashShift}
-            className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border text-xs font-semibold transition cursor-pointer ${
+            className={`group inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
               isShiftOpen
-                ? "bg-zinc-900 border-white/15 text-zinc-200 hover:bg-zinc-800 hover:text-white"
-                : "bg-zinc-900 border-white/10 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                ? "bg-zinc-900 border-white/15 hover:border-white/30 text-zinc-200 hover:bg-zinc-800 hover:text-white"
+                : "bg-zinc-900 border-white/10 hover:border-white/20 text-zinc-400 hover:bg-zinc-800 hover:text-white"
             }`}
             title="Fond de Caisse / Rapport X & Z"
           >
-            <Wallet className="w-3.5 h-3.5 text-zinc-400" />
+            <Wallet className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white group-hover:-translate-y-0.5 transition-all duration-200" />
             <span className="hidden md:inline font-mono">
               {isShiftOpen ? `${expectedCash.toFixed(0)} ${t.common.currency}` : t.topbar.openRegister}
             </span>
@@ -136,10 +138,10 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
           <button
             type="button"
             onClick={onOpenHeldCarts}
-            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-white border border-white/10 text-xs font-semibold transition cursor-pointer"
+            className="group inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-white border border-white/10 hover:border-white/20 text-xs font-semibold transition-all cursor-pointer"
             title={t.pos.heldOrders}
           >
-            <Clock className="w-3.5 h-3.5 text-zinc-400" />
+            <Clock className="w-3.5 h-3.5 text-zinc-400 group-hover:scale-110 transition-transform duration-200" />
             <span className="font-mono">{heldCarts.length}</span>
           </button>
         )}
@@ -153,29 +155,29 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
           onClick={() => {
             window.dispatchEvent(new CustomEvent("open-ai-chat"));
           }}
-          className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300 hover:text-white transition cursor-pointer"
+          className="group inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 hover:border-white/25 bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300 hover:text-white transition-all cursor-pointer"
           title="KASPI AI Assistant"
         >
-          <Bot className="w-3.5 h-3.5 text-zinc-300" />
+          <Bot className="w-3.5 h-3.5 text-zinc-300 group-hover:text-white group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
         </button>
 
         {/* Desktop App Link */}
         <Link
           href={`/${locale}/download`}
-          className="hidden xl:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-xs font-medium text-zinc-300 hover:text-white transition"
+          className="group hidden xl:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 hover:border-white/25 bg-white/[0.03] hover:bg-white/[0.08] text-xs font-medium text-zinc-300 hover:text-white transition-all"
           title="Application Desktop"
         >
-          <Download className="w-3.5 h-3.5 text-zinc-400" />
+          <Download className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white group-hover:translate-y-0.5 transition-all duration-200" />
           <span>{t.topbar.desktopApp}</span>
         </Link>
 
         {/* Store Settings Link */}
         <Link
           href={`/${locale}/dashboard/settings`}
-          className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300 hover:text-white transition"
+          className="group inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 hover:border-white/25 bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300 hover:text-white transition-all"
           title={t.topbar.settings}
         >
-          <Settings className="w-3.5 h-3.5" />
+          <Settings className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-500 ease-out" />
         </Link>
 
         {/* Language Switcher */}
@@ -185,14 +187,18 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         <button
           type="button"
           onClick={toggleKioskFullscreen}
-          className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border text-xs transition cursor-pointer ${
+          className={`group inline-flex items-center justify-center w-8 h-8 rounded-lg border text-xs transition-all cursor-pointer ${
             isFullscreen
               ? "bg-white text-black border-white"
               : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-700"
           }`}
           title="Kiosk Mode"
         >
-          {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          {isFullscreen ? (
+            <Minimize2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform duration-200" />
+          ) : (
+            <Maximize2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform duration-200" />
+          )}
         </button>
       </div>
     </header>
