@@ -17,8 +17,17 @@ import {
   Crown,
   Bot,
   Sparkles,
+  ChefHat,
+  ShoppingBasket,
+  UtensilsCrossed,
+  Shirt,
+  Smartphone,
+  Beef,
+  Croissant,
+  Boxes,
 } from "lucide-react";
 import { useAppDictionary } from "@/i18n/schema";
+import { usePosStore } from "@/client/store/usePosStore";
 
 interface SidebarProps {
   mobileMenuOpen?: boolean;
@@ -28,6 +37,7 @@ interface SidebarProps {
 export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const { t, locale } = useAppDictionary();
+  const { storeType } = usePosStore();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const localizeHref = (path: string) => {
@@ -45,8 +55,60 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
       .catch(() => {});
   }, []);
 
+  const sectorBadgeInfo = React.useMemo(() => {
+    switch (storeType) {
+      case "restaurant":
+        return {
+          label: locale === "ar" ? "وضع المطعم والمقهى" : locale === "en" ? "Restaurant & Café Mode" : "Mode Restaurant & Café",
+          icon: UtensilsCrossed,
+        };
+      case "butchery":
+        return {
+          label: locale === "ar" ? "وضع المجزرة واللحوم" : locale === "en" ? "Butchery & Meats Mode" : "Mode Boucherie & Viandes",
+          icon: Beef,
+        };
+      case "bakery":
+        return {
+          label: locale === "ar" ? "وضع المخبزة والحلويات" : locale === "en" ? "Bakery & Pastry Mode" : "Mode Boulangerie & Pâtisserie",
+          icon: Croissant,
+        };
+      case "fashion":
+        return {
+          label: locale === "ar" ? "وضع الملابس والأزياء" : locale === "en" ? "Fashion & Apparel Mode" : "Mode Prêt-à-Porter",
+          icon: Shirt,
+        };
+      case "electronics":
+      case "tech":
+        return {
+          label: locale === "ar" ? "وضع الإلكترونيات والتقنية" : locale === "en" ? "Tech & Electronics Mode" : "Mode Électronique & Tech",
+          icon: Smartphone,
+        };
+      case "wholesale":
+        return {
+          label: locale === "ar" ? "وضع الجملة والتوزيع" : locale === "en" ? "Wholesale & Distribution Mode" : "Mode Grossiste & Distribution",
+          icon: Boxes,
+        };
+      case "grocery":
+      default:
+        return {
+          label: locale === "ar" ? "وضع البقالة والسوبرماركت" : locale === "en" ? "Grocery & Supermarket Mode" : "Mode Épicerie & Supermarché",
+          icon: ShoppingBasket,
+        };
+    }
+  }, [storeType, locale]);
+
   const navItems = [
     { name: t.nav.posRegister, href: "/pos", icon: ShoppingBag, badge: t.nav.liveBadge },
+    ...(storeType === "restaurant"
+      ? [
+          {
+            name: locale === "ar" ? "شاشة المطبخ (KDS)" : locale === "en" ? "Kitchen Display (KDS)" : "Écran Cuisine (KDS)",
+            href: "/dashboard/restaurant/kds",
+            icon: ChefHat,
+            badge: "KDS",
+          },
+        ]
+      : []),
     { name: t.nav.dashboard, href: "/dashboard", icon: LayoutDashboard },
     { name: t.nav.products, href: "/dashboard/products", icon: Package },
     { name: t.nav.inventory, href: "/dashboard/inventory", icon: Layers },
@@ -58,6 +120,8 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
     { name: t.nav.support, href: "/dashboard/support", icon: HelpCircle },
   ];
 
+  const SectorIcon = sectorBadgeInfo.icon;
+
   return (
     <aside
       dir="ltr"
@@ -66,6 +130,16 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
       } md:flex w-full md:w-60 border-r border-white/10 bg-zinc-950/60 p-3 shrink-0 flex-col justify-between select-none`}
     >
       <nav className="space-y-1">
+        {/* Active Sector Mode Indicator Badge */}
+        <div className="mb-2 px-2.5 py-1.5 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <SectorIcon className="w-3.5 h-3.5 text-zinc-300 shrink-0" />
+            <span className="text-[11px] font-bold text-white truncate">
+              {sectorBadgeInfo.label}
+            </span>
+          </div>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
+        </div>
         {isSuperAdmin && (
           <Link
             href={localizeHref("/admin")}

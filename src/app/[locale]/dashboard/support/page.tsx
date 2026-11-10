@@ -10,6 +10,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useAppDictionary } from "@/i18n/schema";
+import { KineticSupportShieldPulseEmpty } from "@/components/ui/KineticEmptyState";
 
 interface SupportTicket {
   id: string;
@@ -183,7 +184,7 @@ export default function TenantSupportPage() {
             <button
               type="submit"
               disabled={sending}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white py-3 text-xs font-bold text-black hover:bg-zinc-200 transition cursor-pointer disabled:opacity-50"
+              className="w-full sheen-btn inline-flex items-center justify-center gap-2 rounded-xl bg-white py-3 text-xs font-bold text-black hover:bg-zinc-200 transition cursor-pointer disabled:opacity-50"
             >
               <Send className="h-3.5 w-3.5" />
               {sending ? t.common.loading : t.support.sendTicket}
@@ -209,8 +210,17 @@ export default function TenantSupportPage() {
                 {t.common.loading}
               </div>
             ) : tickets.length === 0 ? (
-              <div className="p-12 text-center text-xs text-zinc-500">
-                {t.support.noTickets}
+              <div className="py-12">
+                <KineticSupportShieldPulseEmpty
+                  title={t.support.noTickets}
+                  subtitle={
+                    locale === "ar"
+                      ? "فريق الدعم الفني كسب في خدمتك على مدار الساعة"
+                      : locale === "en"
+                      ? "KASPI technical support is at your service 24/7"
+                      : "L'équipe technique KASPI est à votre écoute 24/7"
+                  }
+                />
               </div>
             ) : (
               <div className="divide-y divide-zinc-800/60">

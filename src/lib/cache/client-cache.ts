@@ -10,6 +10,16 @@ interface CacheEnvelope<T> {
 
 const memoryCache = new Map<string, CacheEnvelope<any>>();
 
+export function getScopedKey(key: string): string {
+  if (typeof window === "undefined") return key;
+  try {
+    const tenantId = window.localStorage.getItem("kaspi_active_tenant_id") || "default";
+    return `${tenantId}_${key}`;
+  } catch {
+    return key;
+  }
+}
+
 export function getCachedData<T>(
   key: string,
   fallback: T
@@ -18,24 +28,26 @@ export function getCachedData<T>(
     return { data: fallback, isCached: false, ageMs: 0 };
   }
 
+  const scopedKey = getScopedKey(key);
+
   try {
     // 1. Try memory cache first (instant)
-    const mem = memoryCache.get(key);
+    const mem = memoryCache.get(scopedKey);
     if (mem) {
       const ageMs = Date.now() - mem.timestamp;
       return { data: mem.data, isCached: true, ageMs };
     }
 
     // 2. Try localStorage
-    const raw = window.localStorage.getItem(`kaspi_cache_${key}`);
+    const raw = window.localStorage.getItem(`kaspi_cache_${scopedKey}`);
     if (raw) {
       const parsed: CacheEnvelope<T> = JSON.parse(raw);
-      memoryCache.set(key, parsed);
+      memoryCache.set(scopedKey, parsed);
       const ageMs = Date.now() - parsed.timestamp;
       return { data: parsed.data, isCached: true, ageMs };
     }
   } catch (err) {
-    console.warn(`[Client Cache] Error reading cache key "${key}":`, err);
+    console.warn(`[Client Cache] Error reading cache key "${scopedKey}":`, err);
   }
 
   return { data: fallback, isCached: false, ageMs: 0 };
@@ -48,26 +60,29 @@ export function setCachedData<T>(
 ): void {
   if (typeof window === "undefined") return;
 
+  const scopedKey = getScopedKey(key);
+
   const envelope: CacheEnvelope<T> = {
     data,
     timestamp: Date.now(),
     ttlMs,
   };
 
-  memoryCache.set(key, envelope);
+  memoryCache.set(scopedKey, envelope);
 
   try {
-    window.localStorage.setItem(`kaspi_cache_${key}`, JSON.stringify(envelope));
+    window.localStorage.setItem(`kaspi_cache_${scopedKey}`, JSON.stringify(envelope));
   } catch (err) {
-    console.warn(`[Client Cache] Error saving cache key "${key}":`, err);
+    console.warn(`[Client Cache] Error saving cache key "${scopedKey}":`, err);
   }
 }
 
 export function removeCachedData(key: string): void {
-  memoryCache.delete(key);
+  const scopedKey = getScopedKey(key);
+  memoryCache.delete(scopedKey);
   if (typeof window !== "undefined") {
     try {
-      window.localStorage.removeItem(`kaspi_cache_${key}`);
+      window.localStorage.removeItem(`kaspi_cache_${scopedKey}`);
     } catch {}
   }
 }

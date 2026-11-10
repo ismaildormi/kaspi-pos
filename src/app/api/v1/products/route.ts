@@ -136,9 +136,12 @@ export async function POST(req: NextRequest) {
         imageUrl: body.imageUrl?.trim() || null,
         salePrice,
         costPrice,
+        wholesalePrice: body.wholesalePrice ? Number(body.wholesalePrice) : null,
         taxRate: Number(body.taxRate ?? 20),
-        unit: body.unit || "piece",
+        unit: body.unit === "kg" || body.unit === "g" ? body.unit : "piece",
         trackStock: body.trackStock ?? true,
+        expiryDate: body.expiryDate ? new Date(body.expiryDate) : null,
+        batchNumber: body.scalePlu || body.serialImei || body.fashionSize || null,
       } as any,
     });
 

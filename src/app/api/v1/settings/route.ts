@@ -80,8 +80,16 @@ export async function GET(req: NextRequest) {
         enableKds: workspaceConfig.enableKds ?? (workspaceConfig.storeType === "restaurant"),
         enableTableGrid: workspaceConfig.enableTableGrid ?? (workspaceConfig.storeType === "restaurant"),
         enableVariantsMatrix: workspaceConfig.enableVariantsMatrix ?? (workspaceConfig.storeType === "fashion"),
-        enableSerialTracking: workspaceConfig.enableSerialTracking ?? (workspaceConfig.storeType === "electronics"),
-        enableWeightScale: workspaceConfig.enableWeightScale ?? (workspaceConfig.storeType === "grocery"),
+        enableSerialTracking:
+          workspaceConfig.enableSerialTracking ??
+          (workspaceConfig.storeType === "electronics" || workspaceConfig.storeType === "tech"),
+        enableWeightScale:
+          workspaceConfig.enableWeightScale ??
+          (workspaceConfig.storeType === "grocery" ||
+            workspaceConfig.storeType === "butchery" ||
+            workspaceConfig.storeType === "bakery"),
+        enableWholesaleTiers:
+          workspaceConfig.enableWholesaleTiers ?? (workspaceConfig.storeType === "wholesale"),
         bankName: payoutConfig.bankName || "",
         bankRib: payoutConfig.bankRib || "",
         tpeTerminalId: payoutConfig.tpeTerminalId || "",
@@ -209,8 +217,15 @@ export async function POST(req: NextRequest) {
         enableKds: body.enableKds ?? (nextStoreType === "restaurant"),
         enableTableGrid: body.enableTableGrid ?? (nextStoreType === "restaurant"),
         enableVariantsMatrix: body.enableVariantsMatrix ?? (nextStoreType === "fashion"),
-        enableSerialTracking: body.enableSerialTracking ?? (nextStoreType === "electronics"),
-        enableWeightScale: body.enableWeightScale ?? (nextStoreType === "grocery"),
+        enableSerialTracking:
+          body.enableSerialTracking ??
+          (nextStoreType === "electronics" || nextStoreType === "tech"),
+        enableWeightScale:
+          body.enableWeightScale ??
+          (nextStoreType === "grocery" ||
+            nextStoreType === "butchery" ||
+            nextStoreType === "bakery"),
+        enableWholesaleTiers: body.enableWholesaleTiers ?? (nextStoreType === "wholesale"),
         updatedAt: new Date().toISOString(),
       };
 

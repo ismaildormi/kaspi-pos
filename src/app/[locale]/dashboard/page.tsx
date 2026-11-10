@@ -75,8 +75,12 @@ export default async function DashboardOverviewPage({
   const validStoreTypes: StoreBusinessType[] = [
     "grocery",
     "restaurant",
+    "butchery",
+    "bakery",
     "fashion",
     "electronics",
+    "tech",
+    "wholesale",
   ];
   const rawStoreType = String(workspacePayload.storeType || "grocery") as StoreBusinessType;
   const currentStoreType: StoreBusinessType = validStoreTypes.includes(rawStoreType)
@@ -97,9 +101,27 @@ export default async function DashboardOverviewPage({
       {/* Welcome & Actions Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-900 pb-6">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
-            {safeDisplayName}
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-black text-white tracking-tight">
+              {safeDisplayName}
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-white/10 text-white border border-white/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              {currentStoreType === "restaurant"
+                ? locale === "ar" ? "مطعم ومقهى • KDS" : "Restaurant & Café • KDS"
+                : currentStoreType === "butchery"
+                ? locale === "ar" ? "مجزرة ولحوم • ميزان" : "Boucherie & Viandes"
+                : currentStoreType === "bakery"
+                ? locale === "ar" ? "مخبزة وحلويات" : "Boulangerie & Pâtisserie"
+                : currentStoreType === "fashion"
+                ? locale === "ar" ? "أزياء وملابس • مقاسات" : "Mode & Prêt-à-Porter"
+                : currentStoreType === "electronics" || currentStoreType === "tech"
+                ? locale === "ar" ? "إلكترونيات • IMEI" : "Tech & IMEI"
+                : currentStoreType === "wholesale"
+                ? locale === "ar" ? "جملة وتوزيع • B2B" : "Grossiste & B2B"
+                : locale === "ar" ? "بقالة وسوبرماركت • EAN" : "Supermarché & Épicerie"}
+            </span>
+          </div>
           <p className="text-xs text-zinc-400 mt-1 font-mono">
             {safeLegalName} • {t.dashboard.currencyNote}
           </p>
@@ -131,52 +153,64 @@ export default async function DashboardOverviewPage({
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Sales */}
-        <div className="group rounded-2xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-            <span>{t.dashboard.kpiRevenue}</span>
-            <TrendingUp className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
-          </div>
-          <div className="mt-4">
-            <div className="text-2xl font-black text-white font-mono">
-              {totalSalesMad} {t.common.currency}
+        <div className="group relative rounded-3xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden">
+          <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
+          <div className="relative">
+            <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
+              <span>{t.dashboard.kpiRevenue}</span>
+              <TrendingUp className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
             </div>
-            <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiRevenueSub}</p>
+            <div className="mt-4">
+              <div className="text-2xl font-black text-white font-mono">
+                {totalSalesMad} {t.common.currency}
+              </div>
+              <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiRevenueSub}</p>
+            </div>
           </div>
         </div>
 
         {/* Total Transactions */}
-        <div className="group rounded-2xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-            <span>{t.dashboard.kpiTransactions}</span>
-            <ShoppingBag className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
-          </div>
-          <div className="mt-4">
-            <div className="text-2xl font-black text-white font-mono">{salesCount}</div>
-            <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiTransactionsSub}</p>
+        <div className="group relative rounded-3xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden">
+          <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
+          <div className="relative">
+            <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
+              <span>{t.dashboard.kpiTransactions}</span>
+              <ShoppingBag className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
+            </div>
+            <div className="mt-4">
+              <div className="text-2xl font-black text-white font-mono">{salesCount}</div>
+              <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiTransactionsSub}</p>
+            </div>
           </div>
         </div>
 
         {/* Total Products */}
-        <div className="group rounded-2xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-            <span>{t.dashboard.kpiProducts}</span>
-            <Package className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
-          </div>
-          <div className="mt-4">
-            <div className="text-2xl font-black text-white font-mono">{productsCount}</div>
-            <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiProductsSub}</p>
+        <div className="group relative rounded-3xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden">
+          <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
+          <div className="relative">
+            <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
+              <span>{t.dashboard.kpiProducts}</span>
+              <Package className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
+            </div>
+            <div className="mt-4">
+              <div className="text-2xl font-black text-white font-mono">{productsCount}</div>
+              <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiProductsSub}</p>
+            </div>
           </div>
         </div>
 
         {/* Customers */}
-        <div className="group rounded-2xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-            <span>{t.dashboard.kpiCustomers}</span>
-            <Users className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
-          </div>
-          <div className="mt-4">
-            <div className="text-2xl font-black text-white font-mono">{customersCount}</div>
-            <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiCustomersSub}</p>
+        <div className="group relative rounded-3xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden">
+          <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
+          <div className="relative">
+            <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
+              <span>{t.dashboard.kpiCustomers}</span>
+              <Users className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
+            </div>
+            <div className="mt-4">
+              <div className="text-2xl font-black text-white font-mono">{customersCount}</div>
+              <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiCustomersSub}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -197,7 +231,7 @@ export default async function DashboardOverviewPage({
           <div className="mt-6">
             <Link
               href={`/${locale}/pos`}
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-zinc-950 transition hover:bg-zinc-200"
+              className="sheen-btn inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-zinc-950 transition hover:bg-zinc-200"
             >
               <span>{t.dashboard.launchPosBtn}</span>
               <ArrowRight className="h-3.5 w-3.5" />

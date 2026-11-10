@@ -39,6 +39,11 @@ export default function DashboardLayout({
       fetch(getApiUrl("/api/v1/settings")).then((r) => (r.ok ? r.json() : null)),
     ])
       .then(([meData, settingsData]) => {
+        const activeTenantId =
+          meData?.data?.currentTenant?.id || meData?.data?.user?.tenantId;
+        if (activeTenantId && typeof window !== "undefined") {
+          window.localStorage.setItem("kaspi_active_tenant_id", activeTenantId);
+        }
         if (meData?.data?.user?.fullName || meData?.data?.user?.email) {
           setUserName(
             meData.data.user.fullName ||

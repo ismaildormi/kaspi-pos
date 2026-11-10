@@ -25,6 +25,17 @@ import { generateProductImageUrl } from "@/lib/pollinations";
 import { uploadProductImage } from "@/lib/supabase-storage";
 import { useAppDictionary } from "@/i18n/schema";
 import { getCachedData, setCachedData } from "@/lib/cache/client-cache";
+import { usePosStore } from "@/client/store/usePosStore";
+import { KineticProductCubeBarcodeEmpty } from "@/components/ui/KineticEmptyState";
+import {
+  Scale,
+  Shirt,
+  Smartphone,
+  UtensilsCrossed,
+  Boxes,
+  Calendar,
+  ShieldCheck,
+} from "lucide-react";
 
 export interface CatalogProduct {
   id: string;
@@ -77,6 +88,9 @@ export default function ProductsListPage() {
   const [newSalePrice, setNewSalePrice] = useState("");
   const [isSavingPrice, setIsSavingPrice] = useState(false);
 
+  // Pos Store Sector Type
+  const { storeType } = usePosStore();
+
   // Modal State: Create New Product
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createName, setCreateName] = useState("");
@@ -89,6 +103,17 @@ export default function ProductsListPage() {
   const [createTaxRate, setCreateTaxRate] = useState("20");
   const [createInitialStock, setCreateInitialStock] = useState("25");
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
+
+  // Sector-Specific Product Field States
+  const [createUnit, setCreateUnit] = useState<"piece" | "kg" | "g">("piece");
+  const [createScalePlu, setCreateScalePlu] = useState("");
+  const [createExpiryDate, setCreateExpiryDate] = useState("");
+  const [createFashionSize, setCreateFashionSize] = useState("");
+  const [createFashionColor, setCreateFashionColor] = useState("");
+  const [createSerialImei, setCreateSerialImei] = useState("");
+  const [createWarrantyMonths, setCreateWarrantyMonths] = useState("12");
+  const [createPrepStation, setCreatePrepStation] = useState("cuisine");
+  const [createCartonPackQty, setCreateCartonPackQty] = useState("");
 
   const handlePrintProductBarcode = (product: CatalogProduct) => {
     setOpenMenuProductId(null);
@@ -166,6 +191,15 @@ export default function ProductsListPage() {
           costPrice: createCostPrice ? parseFloat(createCostPrice) : undefined,
           taxRate: parseFloat(createTaxRate) || 20,
           initialStock: parseFloat(createInitialStock) || 0,
+          unit: createUnit,
+          scalePlu: createScalePlu.trim() || undefined,
+          expiryDate: createExpiryDate || undefined,
+          fashionSize: createFashionSize.trim() || undefined,
+          fashionColor: createFashionColor.trim() || undefined,
+          serialImei: createSerialImei.trim() || undefined,
+          warrantyMonths: createWarrantyMonths ? parseInt(createWarrantyMonths) : undefined,
+          prepStation: createPrepStation,
+          cartonPackQty: createCartonPackQty ? parseInt(createCartonPackQty) : undefined,
         }),
       });
       if (!res.ok) {
@@ -193,6 +227,15 @@ export default function ProductsListPage() {
       setCreateWholesalePrice("");
       setCreateCostPrice("");
       setCreateInitialStock("25");
+      setCreateUnit("piece");
+      setCreateScalePlu("");
+      setCreateExpiryDate("");
+      setCreateFashionSize("");
+      setCreateFashionColor("");
+      setCreateSerialImei("");
+      setCreateWarrantyMonths("12");
+      setCreatePrepStation("cuisine");
+      setCreateCartonPackQty("");
       await fetchProducts(true);
     } catch (err: any) {
       toast.error(
@@ -516,21 +559,11 @@ export default function ProductsListPage() {
           </span>
         </div>
       ) : filteredProducts.length === 0 ? (
-        <div className="group relative overflow-hidden py-16 rounded-2xl border border-white/10 bg-zinc-900/40 bg-dot-matrix text-center text-zinc-500 select-none transition-all duration-300">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)] pointer-events-none" />
-          <div className="relative inline-flex items-center justify-center mb-3">
-            <div className="absolute -inset-2.5 rounded-3xl border border-white/5 group-hover:border-white/30 group-hover:scale-105 transition-all duration-500 bg-white/[0.02]" />
-            <div className="relative w-14 h-14 rounded-2xl bg-zinc-900/90 border border-white/15 flex items-center justify-center text-white shadow-xl overflow-hidden group-hover:border-white/40 transition-colors">
-              <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white to-transparent top-0 animate-laser pointer-events-none opacity-60" />
-              <Package className="h-6 w-6 stroke-[1.8] text-white group-hover:-translate-y-1 transition-transform duration-300" />
-            </div>
-          </div>
-          <p className="text-sm font-bold text-white tracking-tight">
-            {t.products.noProductsFound}
-          </p>
-          <p className="text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
-            {t.products.noProductsSub}
-          </p>
+        <div className="py-12 rounded-2xl border border-white/10 bg-zinc-900/40 text-center select-none">
+          <KineticProductCubeBarcodeEmpty
+            title={t.products.noProductsFound}
+            subtitle={t.products.noProductsSub}
+          />
         </div>
       ) : viewMode === "grid" ? (
         /* ====================================================================
@@ -1231,6 +1264,251 @@ export default function ProductsListPage() {
                     />
                   </div>
                 </div>
+
+                {/* ====================================================================
+                   SECTOR-SPECIFIC SPECIALIZED FIELDS
+                   ==================================================================== */}
+                {(storeType === "butchery" || storeType === "grocery" || storeType === "bakery") && (
+                  <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-bold text-white">
+                      <Scale className="w-3.5 h-3.5 text-white" />
+                      <span>
+                        {locale === "ar"
+                          ? "إعدادات الميزان والوزن والصلاحية"
+                          : locale === "en"
+                          ? "Weight Scale & Expiry Settings"
+                          : "Paramètres Balance & DLC"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                          {locale === "ar" ? "وحدة البيع" : locale === "en" ? "Sale Unit" : "Unité de Vente"}
+                        </label>
+                        <select
+                          value={createUnit}
+                          onChange={(e) => setCreateUnit(e.target.value as any)}
+                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white focus:border-white focus:outline-none"
+                        >
+                          <option value="piece">{locale === "ar" ? "قطعة (Pièce)" : "Pièce"}</option>
+                          <option value="kg">{locale === "ar" ? "كيلوغرام (KG)" : "KG"}</option>
+                          <option value="g">{locale === "ar" ? "غرام (Gram)" : "Gramme"}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                          {locale === "ar" ? "رمز الميزان (PLU)" : locale === "en" ? "Scale PLU" : "Code PLU Balance"}
+                        </label>
+                        <input
+                          type="text"
+                          value={createScalePlu}
+                          onChange={(e) => setCreateScalePlu(e.target.value)}
+                          placeholder="Ex: 0102"
+                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white font-mono focus:border-white focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                          {locale === "ar" ? "تاريخ الصلاحية (DLC)" : locale === "en" ? "Expiry Date" : "Date DLC"}
+                        </label>
+                        <input
+                          type="date"
+                          value={createExpiryDate}
+                          onChange={(e) => setCreateExpiryDate(e.target.value)}
+                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white font-mono focus:border-white focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {storeType === "fashion" && (
+                  <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-bold text-white">
+                      <Shirt className="w-3.5 h-3.5 text-white" />
+                      <span>
+                        {locale === "ar"
+                          ? "المقاس واللون (الملابس والأزياء)"
+                          : locale === "en"
+                          ? "Size & Color (Fashion & Apparel)"
+                          : "Taille & Coloris (Prêt-à-Porter)"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                          {locale === "ar" ? "المقاس" : locale === "en" ? "Size" : "Taille"}
+                        </label>
+                        <div className="flex flex-wrap gap-1 mb-1.5">
+                          {["S", "M", "L", "XL", "XXL", "38", "40", "42"].map((sz) => (
+                            <button
+                              key={sz}
+                              type="button"
+                              onClick={() => setCreateFashionSize(sz)}
+                              className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition ${
+                                createFashionSize === sz
+                                  ? "bg-white text-black"
+                                  : "bg-zinc-900 text-zinc-300 hover:bg-zinc-800"
+                              }`}
+                            >
+                              {sz}
+                            </button>
+                          ))}
+                        </div>
+                        <input
+                          type="text"
+                          value={createFashionSize}
+                          onChange={(e) => setCreateFashionSize(e.target.value)}
+                          placeholder="Autre taille..."
+                          className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white focus:border-white focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                          {locale === "ar" ? "اللون / الموسم" : locale === "en" ? "Color / Season" : "Couleur / Saison"}
+                        </label>
+                        <input
+                          type="text"
+                          value={createFashionColor}
+                          onChange={(e) => setCreateFashionColor(e.target.value)}
+                          placeholder={locale === "ar" ? "أسود، أبيض، كحلي..." : "Noir, Blanc, Bleu Ciel..."}
+                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white focus:border-white focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {(storeType === "electronics" || storeType === "tech") && (
+                  <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-bold text-white">
+                      <Smartphone className="w-3.5 h-3.5 text-white" />
+                      <span>
+                        {locale === "ar"
+                          ? "الرقم التسلسلي IMEI والضمان"
+                          : locale === "en"
+                          ? "Serial Number IMEI & Warranty"
+                          : "Numéro de Série IMEI & Garantie"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                          {locale === "ar" ? "رقم IMEI / Serial" : "Numéro IMEI / Serial"}
+                        </label>
+                        <input
+                          type="text"
+                          value={createSerialImei}
+                          onChange={(e) => setCreateSerialImei(e.target.value)}
+                          placeholder="35894109..."
+                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white font-mono focus:border-white focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                          {locale === "ar" ? "مدة الضمان (أشهر)" : locale === "en" ? "Warranty (Months)" : "Garantie (Mois)"}
+                        </label>
+                        <select
+                          value={createWarrantyMonths}
+                          onChange={(e) => setCreateWarrantyMonths(e.target.value)}
+                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white focus:border-white focus:outline-none"
+                        >
+                          <option value="3">3 {locale === "ar" ? "أشهر" : "Mois"}</option>
+                          <option value="6">6 {locale === "ar" ? "أشهر" : "Mois"}</option>
+                          <option value="12">12 {locale === "ar" ? "شهراً" : "Mois"}</option>
+                          <option value="24">24 {locale === "ar" ? "شهراً" : "Mois"}</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {storeType === "restaurant" && (
+                  <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-bold text-white">
+                      <UtensilsCrossed className="w-3.5 h-3.5 text-white" />
+                      <span>
+                        {locale === "ar"
+                          ? "شاشة المطبخ KDS ومحطة التحضير"
+                          : locale === "en"
+                          ? "KDS Kitchen Station & Routing"
+                          : "Poste de Préparation KDS"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                          {locale === "ar" ? "محطة التحضير" : locale === "en" ? "Preparation Station" : "Poste KDS"}
+                        </label>
+                        <select
+                          value={createPrepStation}
+                          onChange={(e) => setCreatePrepStation(e.target.value)}
+                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white focus:border-white focus:outline-none"
+                        >
+                          <option value="cuisine">{locale === "ar" ? "المطبخ الرئيسي (Cuisine)" : "Cuisine Principale"}</option>
+                          <option value="bar">{locale === "ar" ? "البار والمشروبات (Bar)" : "Bar & Boissons"}</option>
+                          <option value="patisserie">{locale === "ar" ? "الحلويات (Pâtisserie)" : "Pâtisserie & Desserts"}</option>
+                          <option value="grill">{locale === "ar" ? "الشواية (Grill)" : "Grillade"}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                          {locale === "ar" ? "توجيه الطابعة" : locale === "en" ? "Ticket Routing" : "Routage Ticket"}
+                        </label>
+                        <div className="text-[11px] font-mono text-zinc-400 p-2 bg-zinc-900 border border-zinc-800 rounded-lg">
+                          POS &rarr; KDS {createPrepStation.toUpperCase()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {storeType === "wholesale" && (
+                  <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-bold text-white">
+                      <Boxes className="w-3.5 h-3.5 text-white" />
+                      <span>
+                        {locale === "ar"
+                          ? "بيانات الجملة والكرتون (B2B)"
+                          : locale === "en"
+                          ? "Wholesale & Carton Pack (B2B)"
+                          : "Colisage & Grossiste (B2B)"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                          {locale === "ar" ? "كمية الصندوق / الكرتون" : locale === "en" ? "Box/Carton Qty" : "Unités par Carton"}
+                        </label>
+                        <input
+                          type="number"
+                          value={createCartonPackQty}
+                          onChange={(e) => setCreateCartonPackQty(e.target.value)}
+                          placeholder="Ex: 12, 24, 48"
+                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white font-mono focus:border-white focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="flex flex-col justify-end">
+                        <p className="text-[10px] text-zinc-500 leading-tight">
+                          {locale === "ar"
+                            ? "يتم تطبيق سعر الجملة آلياً عند بيع الكرتون الكامل في نقطة البيع."
+                            : "Le prix de gros s'applique automatiquement au colisage complet."}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-end gap-2 pt-2">
                   <button

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAppDictionary } from "@/i18n/schema";
 import { getCachedData, setCachedData } from "@/lib/cache/client-cache";
+import { KineticVipCustomerCardEmpty } from "@/components/ui/KineticEmptyState";
 import {
   Users,
   Search,
@@ -237,7 +238,7 @@ export default function CustomersPage() {
 
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm"
+            className="sheen-btn px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{t.customers.addCustomer}</span>
@@ -249,21 +250,30 @@ export default function CustomersPage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 space-y-6">
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="p-5 rounded-3xl bg-zinc-900 border border-zinc-800">
-            <span className="text-xs text-zinc-500 block mb-1">{t.customers.totalCustomers}</span>
-            <span className="text-2xl font-black text-white font-mono">{customers.length}</span>
+          <div className="group relative p-5 rounded-3xl bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-white/20 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+            <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
+            <div className="relative">
+              <span className="text-xs text-zinc-500 block mb-1 group-hover:text-zinc-400 transition-colors">{t.customers.totalCustomers}</span>
+              <span className="text-2xl font-black text-white font-mono">{customers.length}</span>
+            </div>
           </div>
 
-          <div className="p-5 rounded-3xl bg-zinc-900 border border-zinc-800">
-            <span className="text-xs text-zinc-500 block mb-1">{t.customers.totalActiveCredits}</span>
-            <span className="text-2xl font-black text-white font-mono">
-              {totalCredit.toFixed(2)} MAD
-            </span>
+          <div className="group relative p-5 rounded-3xl bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-white/20 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+            <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
+            <div className="relative">
+              <span className="text-xs text-zinc-500 block mb-1 group-hover:text-zinc-400 transition-colors">{t.customers.totalActiveCredits}</span>
+              <span className="text-2xl font-black text-white font-mono">
+                {totalCredit.toFixed(2)} MAD
+              </span>
+            </div>
           </div>
 
-          <div className="p-5 rounded-3xl bg-zinc-900 border border-zinc-800">
-            <span className="text-xs text-zinc-500 block mb-1">{t.customers.loyaltyPointsAccumulated}</span>
-            <span className="text-2xl font-black text-white font-mono">{totalPoints} pts</span>
+          <div className="group relative p-5 rounded-3xl bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-white/20 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+            <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
+            <div className="relative">
+              <span className="text-xs text-zinc-500 block mb-1 group-hover:text-zinc-400 transition-colors">{t.customers.loyaltyPointsAccumulated}</span>
+              <span className="text-2xl font-black text-white font-mono">{totalPoints} pts</span>
+            </div>
           </div>
         </div>
 
@@ -303,17 +313,8 @@ export default function CustomersPage() {
                   </tr>
                 ) : customers.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-16 text-center text-zinc-500 bg-dot-matrix relative overflow-hidden">
-                      <div className="group inline-flex flex-col items-center">
-                        <div className="relative inline-flex items-center justify-center mb-3">
-                          <div className="absolute -inset-2.5 rounded-3xl border border-white/5 group-hover:border-white/30 group-hover:scale-105 transition-all duration-500 bg-white/[0.02]" />
-                          <div className="relative w-12 h-12 rounded-2xl bg-zinc-900 border border-white/15 flex items-center justify-center text-white shadow-xl overflow-hidden group-hover:border-white/40 transition-colors">
-                            <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white to-transparent top-0 animate-laser pointer-events-none opacity-60" />
-                            <Users className="w-5 h-5 text-white group-hover:-translate-y-0.5 transition-transform duration-300" />
-                          </div>
-                        </div>
-                        <p className="text-sm font-bold text-white tracking-tight">{t.customers.noCustomersRegistered}</p>
-                      </div>
+                    <td colSpan={7} className="py-12 text-center text-zinc-500">
+                      <KineticVipCustomerCardEmpty title={t.customers.noCustomersRegistered} />
                     </td>
                   </tr>
                 ) : (
