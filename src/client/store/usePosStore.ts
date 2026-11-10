@@ -54,7 +54,15 @@ export interface HeldCart {
 }
 
 export type PaymentMethodType = "cash" | "card" | "credit" | "transfer";
-export type StoreIndustryType = "grocery" | "restaurant" | "fashion" | "electronics";
+export type StoreIndustryType =
+  | "grocery"
+  | "butchery"
+  | "restaurant"
+  | "bakery"
+  | "fashion"
+  | "electronics"
+  | "tech"
+  | "wholesale";
 export type StoreBusinessType = StoreIndustryType;
 
 interface PosState {

@@ -44,6 +44,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
     setPricingTier,
     selectedTableName,
     setSelectedTable,
+    storeType,
     loyaltyPointsToRedeem,
     setLoyaltyPointsToRedeem,
     discountPercent,
@@ -113,7 +114,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
     <div dir="ltr" className="flex flex-col h-full bg-zinc-950 border-s border-zinc-800 select-none">
       {/* Top: Customer & Cart Header */}
       <div className="p-3.5 border-b border-zinc-800 bg-zinc-900/60 space-y-2">
-        {selectedTableName && (
+        {storeType === "restaurant" && selectedTableName && (
           <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-zinc-900 border border-white/10 text-zinc-200 text-xs font-semibold">
             <span className="flex items-center gap-1.5">
               <UtensilsCrossed className="w-3.5 h-3.5 text-zinc-400" />

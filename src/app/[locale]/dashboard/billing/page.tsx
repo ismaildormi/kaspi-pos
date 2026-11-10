@@ -20,7 +20,7 @@ import {
   Monitor,
   Plus,
 } from "lucide-react";
-import { AddDeviceModal } from "@/components/billing/AddDeviceModal";
+import { UnifiedCheckoutModal } from "@/components/billing/UnifiedCheckoutModal";
 
 interface SubscriptionData {
   id: string | null;
@@ -225,8 +225,8 @@ export default function BillingDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [payments, setPayments] = useState<PaymentHistoryItem[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isAddDeviceModalOpen, setIsAddDeviceModalOpen] = useState(false);
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [checkoutMode, setCheckoutMode] = useState<"plan" | "add_device">("plan");
   const [selectedProvider, setSelectedProvider] = useState<"paddle" | "youcanpay">("youcanpay");
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -510,7 +510,10 @@ export default function BillingDashboardPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-zinc-800">
             <button
-              onClick={() => setIsAddDeviceModalOpen(true)}
+              onClick={() => {
+                setCheckoutMode("add_device");
+                setCheckoutModalOpen(true);
+              }}
               className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
@@ -518,7 +521,10 @@ export default function BillingDashboardPage() {
             </button>
 
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                setCheckoutMode("plan");
+                setCheckoutModalOpen(true);
+              }}
               className="w-full sm:w-auto px-6 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-white border border-white/10 font-bold text-xs sm:text-sm transition cursor-pointer"
             >
               {t.updatePaymentBtn}
@@ -643,148 +649,29 @@ export default function BillingDashboardPage() {
       </main>
 
       {/* Checkout Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-          <div className="bg-zinc-950 rounded-3xl border border-zinc-800 shadow-2xl max-w-lg w-full p-6 sm:p-8 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between pb-4 border-b border-zinc-800 mb-6">
-              <h3 className="text-base font-bold text-white">
-                {t.choosePaymentModalTitle}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="p-1.5 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {checkoutError && (
-              <div className="mb-4 p-3 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs">
-                {checkoutError}
-              </div>
-            )}
-
-            <div className="space-y-3 mb-6">
-              {/* Option 1: Moroccan Card via YouCan Pay */}
-              <label
-                onClick={() => setSelectedProvider("youcanpay")}
-                className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-start gap-3.5 block ${
-                  selectedProvider === "youcanpay"
-                    ? "border-white bg-zinc-900 shadow-xs"
-                    : "border-zinc-800 hover:border-zinc-700 bg-zinc-900/40"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="paymentProvider"
-                  value="youcanpay"
-                  checked={selectedProvider === "youcanpay"}
-                  onChange={() => setSelectedProvider("youcanpay")}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-white">
-                      {t.moroccanCardTitle}
-                    </span>
-                    <span className="text-xs font-bold text-white font-mono">100 MAD</span>
-                  </div>
-                  <p className="text-xs text-zinc-400 mt-1">
-                    {t.moroccanCardDesc}
-                  </p>
-                  <div className="mt-2.5 flex items-center gap-1.5 text-[10px] text-zinc-400 font-medium">
-                    <Building2 className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>{t.moroccanCardBadge}</span>
-                  </div>
-                </div>
-              </label>
-
-              {/* Option 2: International Card via Paddle (MoR) */}
-              <label
-                onClick={() => setSelectedProvider("paddle")}
-                className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-start gap-3.5 block ${
-                  selectedProvider === "paddle"
-                    ? "border-white bg-zinc-900 shadow-xs"
-                    : "border-zinc-800 hover:border-zinc-700 bg-zinc-900/40"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="paymentProvider"
-                  value="paddle"
-                  checked={selectedProvider === "paddle"}
-                  onChange={() => setSelectedProvider("paddle")}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-white">
-                      {t.intlCardTitle}
-                    </span>
-                    <span className="text-xs font-bold text-white font-mono">$10 USD</span>
-                  </div>
-                  <p className="text-xs text-zinc-400 mt-1">
-                    {t.intlCardDesc}
-                  </p>
-                  <div className="mt-2.5 flex items-center gap-1.5 text-[10px] text-zinc-400 font-medium">
-                    <Globe className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>{t.intlCardBadge}</span>
-                  </div>
-                </div>
-              </label>
-            </div>
-
-            <div className="pt-4 border-t border-zinc-800 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 text-xs font-semibold cursor-pointer"
-              >
-                {t.cancel}
-              </button>
-              <button
-                type="button"
-                onClick={handleStartCheckout}
-                disabled={isCheckingOut}
-                className="px-6 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-all shadow-sm disabled:opacity-40 flex items-center gap-2 cursor-pointer"
-              >
-                {isCheckingOut ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>{t.connectingGateway}</span>
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>{t.proceedCheckout}</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Device Modal */}
-      <AddDeviceModal
-        isOpen={isAddDeviceModalOpen}
-        onClose={() => setIsAddDeviceModalOpen(false)}
+      {/* Unified Smart Auto-Detect Payment & Subscription Modal */}
+      <UnifiedCheckoutModal
+        isOpen={checkoutModalOpen}
+        onClose={() => setCheckoutModalOpen(false)}
+        mode={checkoutMode}
+        locale={locale}
         currentDevices={subscription?.maxDevices ?? 1}
-        onDeviceAdded={(newMax) => {
-          setSubscription((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  maxDevices: newMax,
-                  priceMAD: 200 + (newMax - 1) * 150,
-                  priceUSD: 20 + (newMax - 1) * 15,
-                }
-              : null
-          );
+        onSuccess={(updatedData) => {
+          if (checkoutMode === "add_device") {
+            const newMax = typeof updatedData === "number" ? updatedData : (subscription?.maxDevices ?? 1) + 1;
+            setSubscription((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    maxDevices: newMax,
+                    priceMAD: 200 + (newMax - 1) * 150,
+                    priceUSD: 20 + (newMax - 1) * 15,
+                  }
+                : null
+            );
+          }
           fetchSubscription();
         }}
-        isRtl={locale === "ar"}
       />
     </div>
   );

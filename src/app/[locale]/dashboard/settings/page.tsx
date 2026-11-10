@@ -61,21 +61,7 @@ interface StoreItem {
   salesCount: number;
 }
 
-interface VaultKeyStatus {
-  key: string;
-  configured: boolean;
-  maskedValue: string;
-  source: "vault_override" | "system_env" | "missing";
-}
-
-interface VaultTestResult {
-  service: string;
-  ok: boolean;
-  latencyMs: number;
-  detail: string;
-}
-
-type SettingsTab = "general" | "hardware" | "vault" | "users" | "ecommerce";
+type SettingsTab = "general" | "hardware" | "users" | "ecommerce";
 
 export default function SettingsPage() {
   const { t, locale } = useAppDictionary();
@@ -132,16 +118,6 @@ export default function SettingsPage() {
   const [isCreatingStore, setIsCreatingStore] = useState(false);
   const [storeCreateError, setStoreCreateError] = useState<string | null>(null);
 
-  // Cloud & API Vault State
-  const [vaultKeys, setVaultKeys] = useState<VaultKeyStatus[]>([]);
-  const [vaultInputs, setVaultInputs] = useState<Record<string, string>>({});
-  const [rawEnvBlock, setRawEnvBlock] = useState("");
-  const [isSavingVault, setIsSavingVault] = useState(false);
-  const [vaultFeedback, setVaultFeedback] = useState<string | null>(null);
-  const [isTestingVault, setIsTestingVault] = useState(false);
-  const [vaultTestResults, setVaultTestResults] = useState<VaultTestResult[]>([]);
-  const [useLocalGpuAi, setUseLocalGpuAi] = useState(true);
-
   // User & Roles State
   const [currentUser, setCurrentUser] = useState<{
     id?: string;
@@ -188,14 +164,8 @@ export default function SettingsPage() {
 
     fetchSettings();
     fetchStores();
-    fetchVaultStatus();
     fetchMeProfile();
     setAudioFeedbackEnabled(isAudioEnabled());
-
-    const storedGpu = localStorage.getItem("kaspi_use_local_gpu");
-    if (storedGpu !== null) {
-      setUseLocalGpuAi(storedGpu === "true");
-    }
     const storedGw = localStorage.getItem("kaspi_payment_gateway") as any;
     if (storedGw) setSelectedGateway(storedGw);
 
@@ -228,79 +198,6 @@ export default function SettingsPage() {
         }
       }
     } catch {}
-  };
-
-  const fetchVaultStatus = async () => {
-    try {
-      const res = await fetch("/api/v1/settings/vault");
-      if (res.ok) {
-        const json = await res.json();
-        setVaultKeys(json.data?.keys || []);
-      }
-    } catch {}
-  };
-
-  const handleParseRawEnv = (text: string) => {
-    setRawEnvBlock(text);
-    const parsed: Record<string, string> = { ...vaultInputs };
-    text.split(/\r?\n/).forEach((line) => {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) return;
-      const eqIdx = trimmed.indexOf("=");
-      if (eqIdx > 0) {
-        const k = trimmed.slice(0, eqIdx).trim();
-        let v = trimmed.slice(eqIdx + 1).trim();
-        if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
-          v = v.slice(1, -1);
-        }
-        parsed[k] = v;
-      }
-    });
-    setVaultInputs(parsed);
-  };
-
-  const handleSaveVault = async () => {
-    setIsSavingVault(true);
-    setVaultFeedback(null);
-    try {
-      const res = await fetch("/api/v1/settings/vault", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "save",
-          values: vaultInputs,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.ok) {
-        throw new Error(json.error?.message || (locale === "ar" ? "فشل حفظ مفاتيح الخزنة" : locale === "fr" ? "Erreur de sauvegarde du coffre API" : "Failed to save API vault"));
-      }
-      setVaultFeedback(locale === "ar" ? "تم حفظ مفاتيح API بنجاح" : locale === "fr" ? "Clés API enregistrées avec succès" : "API keys saved successfully");
-      setVaultInputs({});
-      setRawEnvBlock("");
-      await fetchVaultStatus();
-    } catch (err: any) {
-      setVaultFeedback(err.message);
-    } finally {
-      setIsSavingVault(false);
-    }
-  };
-
-  const handleTestVaultConnections = async () => {
-    setIsTestingVault(true);
-    try {
-      const res = await fetch("/api/v1/settings/vault", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "test" }),
-      });
-      const json = await res.json();
-      if (res.ok && json.ok) {
-        setVaultTestResults(json.data?.results || []);
-      }
-    } catch {} finally {
-      setIsTestingVault(false);
-    }
   };
 
   const fetchSettings = async () => {
@@ -550,10 +447,7 @@ export default function SettingsPage() {
     }
   };
 
-  const toggleGpuAi = (enabled: boolean) => {
-    setUseLocalGpuAi(enabled);
-    localStorage.setItem("kaspi_use_local_gpu", String(enabled));
-  };
+
 
   const st = {
     ar: {
@@ -901,7 +795,6 @@ export default function SettingsPage() {
       icon: Printer,
     },
     { id: "ecommerce", label: locale === "ar" ? "المتاجر الإلكترونية" : locale === "en" ? "E-Commerce Sync" : "E-Commerce", icon: Globe },
-    { id: "vault", label: t.settings.security, icon: KeyRound },
     { id: "users", label: st.usersTab, icon: Users },
   ];
 
@@ -1692,171 +1585,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* =================================================================== */}
-      {/* TAB 3: CLOUD & API VAULT                                            */}
-      {/* =================================================================== */}
-      {activeTab === "vault" && (
-        <div className="space-y-6">
-          <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 sm:p-6 space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
-              <div className="flex items-center gap-2.5">
-                <KeyRound className="w-4 h-4 text-amber-400" />
-                <div>
-                  <h2 className="text-sm font-bold text-white">
-                    {st.vaultTitle}
-                  </h2>
-                  <p className="text-[11px] text-zinc-400">
-                    {st.vaultSubtitle}
-                  </p>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleTestVaultConnections}
-                  disabled={isTestingVault}
-                  className="h-8 px-3 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
-                >
-                  {isTestingVault ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Activity className="w-3.5 h-3.5" />
-                  )}
-                  <span>{st.testConnectionsBtn}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveVault}
-                  disabled={isSavingVault}
-                  className="h-8 px-3.5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer"
-                >
-                  {isSavingVault ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Save className="w-3.5 h-3.5" />
-                  )}
-                  <span>{st.saveKeysBtn}</span>
-                </button>
-              </div>
-            </div>
-
-            {vaultFeedback && (
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
-                {vaultFeedback}
-              </div>
-            )}
-
-            {/* Live Connection Diagnostics Results */}
-            {vaultTestResults.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {vaultTestResults.map((r) => (
-                  <div
-                    key={r.service}
-                    className={`p-3.5 rounded-xl border ${
-                      r.ok
-                        ? "bg-emerald-950/20 border-emerald-500/30"
-                        : "bg-red-950/20 border-red-500/30"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between text-xs font-bold text-white">
-                      <span className="truncate">{r.service}</span>
-                      <span
-                        className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                          r.ok
-                            ? "bg-emerald-500/20 text-emerald-300"
-                            : "bg-red-500/20 text-red-300"
-                        }`}
-                      >
-                        {r.latencyMs}ms
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 mt-1 font-mono truncate">
-                      {r.detail}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Quick .env Paste Box */}
-            <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                {st.pasteEnvLabel}
-              </label>
-              <textarea
-                rows={3}
-                dir="ltr"
-                value={rawEnvBlock}
-                onChange={(e) => handleParseRawEnv(e.target.value)}
-                placeholder={'GMAIL_USER="kaspipos.official@gmail.com"\nGMAIL_APP_PASSWORD="xxxx xxxx xxxx xxxx"\nGROQ_API_KEY="gsk_..."'}
-                className="w-full p-3 rounded-xl bg-zinc-950 border border-white/10 text-xs text-white font-mono focus:outline-none focus:border-white/30"
-              />
-            </div>
-
-            {/* Individual Key Inputs & Status */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {vaultKeys.map((item) => (
-                <div
-                  key={item.key}
-                  className="p-3 rounded-xl bg-zinc-950 border border-white/10 space-y-1.5"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold text-white" dir="ltr">
-                      {item.key}
-                    </span>
-                    <span
-                      className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                        item.configured
-                          ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
-                          : "bg-zinc-800 text-zinc-400"
-                      }`}
-                    >
-                      {item.configured ? `${st.activeKey} (${item.maskedValue})` : st.notSetKey}
-                    </span>
-                  </div>
-                  <input
-                    type="text"
-                    dir="ltr"
-                    value={vaultInputs[item.key] || ""}
-                    onChange={(e) =>
-                      setVaultInputs((prev) => ({ ...prev, [item.key]: e.target.value }))
-                    }
-                    placeholder={`${st.newValPlaceholder} ${item.key}...`}
-                    className="w-full h-8 px-2.5 rounded-lg bg-zinc-900 border border-white/10 text-xs text-white font-mono focus:outline-none focus:border-white/30"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* WebGPU Local Acceleration Toggle */}
-          <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Cpu className="w-5 h-5 text-purple-400 shrink-0" />
-              <div>
-                <h3 className="text-sm font-bold text-white">
-                  {st.gpuTitle}
-                </h3>
-                <p className="text-xs text-zinc-400">
-                  {st.gpuSubtitle}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleGpuAi(!useLocalGpuAi)}
-              className={`h-8 px-3 rounded-lg text-xs font-bold font-mono border transition cursor-pointer shrink-0 ${
-                useLocalGpuAi
-                  ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
-                  : "bg-zinc-800 text-zinc-400 border-white/10"
-              }`}
-            >
-              {useLocalGpuAi ? st.gpuActive : st.cloudOnly}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* =================================================================== */}
       {/* TAB 4: USER & ROLES                                                 */}

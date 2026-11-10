@@ -115,17 +115,14 @@ async function handleDailyReport(req: NextRequest) {
     });
 
     // 5. Maturing supplier checks / bills (within 48 hours)
-    const twoDaysFromNow = new Date(Date.now() + 48 * 3600 * 1000).toISOString().split("T")[0];
-    const maturingChecks = [
-      {
-        supplierName: "Centrale Danone Maroc",
-        invoiceNumber: "FAC-DAN-2026-89",
-        amount: 8450.0,
-        dueDate: twoDaysFromNow,
-        paymentMethod: "Effet",
-        checkNumber: "EFF-84920-ATW",
-      },
-    ];
+    const maturingChecks: Array<{
+      supplierName: string;
+      invoiceNumber: string;
+      amount: number;
+      dueDate: string;
+      paymentMethod: string;
+      checkNumber?: string | null;
+    }> = [];
 
     // 6. Resolve Store Name
     const store = await prisma.store.findFirst({

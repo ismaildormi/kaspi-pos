@@ -22,6 +22,7 @@ import {
   formatNightlyExecutiveReportForWhatsApp,
   generateWhatsAppLink,
 } from "@/lib/whatsapp";
+import { ExecutiveReportSheet } from "@/components/reports/ExecutiveReportSheet";
 
 export const dynamic = "force-dynamic";
 
@@ -108,17 +109,14 @@ export default async function ReportsPage({
   }));
 
   // 5. Maturing checks
-  const twoDaysFromNow = new Date(Date.now() + 48 * 3600 * 1000).toISOString().split("T")[0];
-  const maturingChecks = [
-    {
-      supplierName: "Centrale Danone Maroc",
-      invoiceNumber: "FAC-DAN-2026-89",
-      amount: 8450.0,
-      dueDate: twoDaysFromNow,
-      paymentMethod: "Effet",
-      checkNumber: "EFF-84920-ATW",
-    },
-  ];
+  const maturingChecks: Array<{
+    supplierName: string;
+    invoiceNumber: string;
+    amount: number;
+    dueDate: string;
+    paymentMethod: string;
+    checkNumber?: string | null;
+  }> = [];
 
   // 6. Settings & Owner Info
   const settings = isFallbackTenant
@@ -179,16 +177,6 @@ export default async function ReportsPage({
             <Download className="h-3.5 w-3.5 text-zinc-300" />
             <span>{t.reports.exportAccountingSage}</span>
           </a>
-
-          <a
-            href={whatsappReportUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-zinc-950 transition hover:bg-zinc-200 shadow-xs"
-          >
-            <Send className="h-3.5 w-3.5" />
-            <span>{t.reports.sendNightlyReportNow}</span>
-          </a>
         </div>
       </div>
 
@@ -237,68 +225,29 @@ export default async function ReportsPage({
         </div>
       </div>
 
-      {/* =========================================================================
-          STORE OWNER'S 24-HOUR NIGHTLY EXECUTIVE REPORT CARD (21:00 / 22:00)
-         ========================================================================= */}
-      <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-6 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white text-zinc-950 flex items-center justify-center font-bold shadow-xs">
-              <MessageSquare className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <span>{t.reports.ownerNightlyReportTitle}</span>
-                <span className="px-2 py-0.5 rounded-full bg-white/10 text-[10px] font-mono text-zinc-300 border border-white/15">
-                  {deliveryTime}
-                </span>
-              </h2>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                {t.reports.ownerNightlyReportSubtitle}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-zinc-400">
-              GSM: <strong className="text-white">{ownerPhone}</strong>
-            </span>
-          </div>
-        </div>
-
-        {/* Message Preview Box */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs font-semibold text-zinc-400">
-            <span className="flex items-center gap-1.5">
-              <Eye className="w-3.5 h-3.5" />
-              <span>{t.reports.previewTitle}</span>
-            </span>
-            <span className="text-[11px] font-mono text-zinc-500">
-              {t.reports.scheduledAt} {deliveryTime}
-            </span>
-          </div>
-
-          <pre className="p-4 rounded-2xl bg-zinc-950 border border-white/10 font-mono text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap overflow-x-auto max-h-72 select-all">
-            {nightlyReportMessage}
-          </pre>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-          <p className="text-[11px] text-zinc-500 font-mono">
-            {t.reports.nightlyDeliveryNotice}
-          </p>
-
-          <a
-            href={whatsappReportUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-          >
-            <Send className="w-3.5 h-3.5" />
-            <span>{t.reports.sendNightlyReportNow}</span>
-          </a>
-        </div>
-      </div>
+      {/* 3D Elevated Strategic Executive Document Sheet & Scheduled Automation */}
+      <ExecutiveReportSheet
+        storeName={storeName}
+        storePhone={settings?.phone || ownerPhone}
+        reportDate={startOfDay.toISOString().split("T")[0]}
+        deliveryTime={deliveryTime}
+        totalMad={totalMad}
+        cashMad={cashMad}
+        cardMad={cardMad}
+        creditMad={creditMad}
+        transactionsCount={todaySales.length}
+        topProducts={itemsSold}
+        maturingChecks={maturingChecks}
+        lowStockItems={lowStockDirectives.map((d) => ({
+          name: d.productName,
+          stock: d.currentQty,
+          reorderQty: d.suggestedReorder,
+        }))}
+        creditCollectedMad={0}
+        creditOutstandingMad={creditMad}
+        locale={locale}
+        initialWhatsappPhone={settings?.whatsappReportNumber || ""}
+      />
 
       {/* Today's Transactions Table */}
       <div className="rounded-3xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">

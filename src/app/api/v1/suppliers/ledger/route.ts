@@ -26,39 +26,7 @@ const tenantSupplierLedgers = new Map<string, SupplierLedgerItem[]>();
 function getTenantLedger(tenantId: string): SupplierLedgerItem[] {
   let list = tenantSupplierLedgers.get(tenantId);
   if (!list) {
-    // Initial sample seed based on Moroccan wholesale suppliers (Centrale Danone, Lesieur, Coca-Cola)
-    list = [
-      {
-        id: "sup-inv-001",
-        supplierId: "sup-danone",
-        supplierName: "Centrale Danone Maroc",
-        supplierPhone: "+212522001122",
-        invoiceNumber: "FAC-DAN-2026-89",
-        amountMAD: 8450.0,
-        balanceOwedMAD: 8450.0,
-        paymentMethod: "effet",
-        checkNumber: "EFF-84920-ATW",
-        dueDate: new Date(Date.now() + 10 * 24 * 3600 * 1000).toISOString().split("T")[0],
-        status: "pending",
-        notes: "Livraison produits laitiers & yaourts - Échéance 10 jours",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: "sup-inv-002",
-        supplierId: "sup-lesieur",
-        supplierName: "Lesieur Cristal",
-        supplierPhone: "+212522334455",
-        invoiceNumber: "FAC-LES-2026-44",
-        amountMAD: 12500.0,
-        balanceOwedMAD: 6000.0,
-        paymentMethod: "check",
-        checkNumber: "CHQ-009412-BP",
-        dueDate: new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString().split("T")[0],
-        status: "pending",
-        notes: "Huiles de table & sauces - Acompte 6500 DH versé",
-        createdAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
-      },
-    ];
+    list = [];
     tenantSupplierLedgers.set(tenantId, list);
   }
   return list;
@@ -95,7 +63,7 @@ export async function GET(req: NextRequest) {
 
     return jsonOk({
       summary: {
-        totalSuppliers: Math.max(suppliersCount, 2),
+        totalSuppliers: suppliersCount,
         totalDebtOwedMAD,
         upcomingMaturitiesCount,
         upcomingMaturitiesAmountMAD,

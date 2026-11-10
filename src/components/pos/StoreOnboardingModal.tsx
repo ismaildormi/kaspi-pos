@@ -6,6 +6,9 @@ import {
   UtensilsCrossed,
   Shirt,
   Smartphone,
+  Beef,
+  Croissant,
+  Boxes,
   Sparkles,
   CheckCircle2,
   Globe,
@@ -34,7 +37,7 @@ export function StoreOnboardingModal({
   canDismiss = true,
   onSuccess,
 }: StoreOnboardingModalProps) {
-  const { t } = useAppDictionary();
+  const { t, locale } = useAppDictionary();
   const { setStoreProfile } = usePosStore();
   const [selectedType, setSelectedType] = useState<StoreBusinessType>(initialStoreType);
   const [shopName, setShopName] = useState(initialShopName);
@@ -52,44 +55,55 @@ export function StoreOnboardingModal({
     desc: string;
     features: string[];
     icon: React.ComponentType<{ className?: string }>;
-    gradient: string;
-    badgeColor: string;
   }[] = [
     {
       id: "grocery",
-      title: t.onboarding.groceryTitle,
-      desc: t.onboarding.groceryDesc,
-      features: t.onboarding.features.grocery,
+      title: locale === "ar" ? "بقالة وسوبرماركت" : locale === "en" ? "Grocery & Supermarket" : "Épicerie & Supermarché",
+      desc: locale === "ar" ? "مسح باركود سريع، ميزان الوزن، وإيصالات حرارية للمواد الغذائية." : locale === "en" ? "Rapid barcode scanning, weight scale integration, and thermal grocery receipts." : "Scan code-barres rapide, intégration balance au poids et tickets alimentaires.",
+      features: locale === "ar" ? ["ميزان الوزن (كغ / غ)", "باركود موازين EAN-13", "مراقبة الصلاحيات"] : locale === "en" ? ["Weight Scale (kg/g)", "EAN-13 Barcode Support", "Expiry Tracking"] : ["Balance au poids (kg/g)", "Codes balances EAN-13", "Suivi des dates d'expiration"],
       icon: ShoppingBasket,
-      gradient: "from-emerald-500/20 to-teal-500/5 border-emerald-500/40",
-      badgeColor: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    },
+    {
+      id: "butchery",
+      title: locale === "ar" ? "مجزرة ولحوم" : locale === "en" ? "Butchery & Meats" : "Boucherie & Viandes",
+      desc: locale === "ar" ? "تسعير فوري بالوزن، تتبع الذبائح والتقطيع، وملصقات الميزان الإلكتروني." : locale === "en" ? "Live weight calculation, cuts tracking, and scale barcode labels." : "Tarification au poids vif/découpé, étiquettes balance et gestion des lots.",
+      features: locale === "ar" ? ["حساب السعر بالوزن الفوري", "تتبع الذبائح والتقطيع", "تسعير خاص للمطاعم"] : locale === "en" ? ["Instant Price-by-Weight", "Cuts & Carcass Tracking", "Wholesale Restaurant Pricing"] : ["Calcul instantané prix au poids", "Suivi des carcasses et découpes", "Tarifs de gros pour restaurants"],
+      icon: Beef,
     },
     {
       id: "restaurant",
-      title: t.onboarding.restaurantTitle,
-      desc: t.onboarding.restaurantDesc,
-      features: t.onboarding.features.restaurant,
+      title: locale === "ar" ? "مطعم ومقهى" : locale === "en" ? "Restaurant & Café" : "Restaurant & Café",
+      desc: locale === "ar" ? "خريطة طاولات الصالة، شاشة المطبخ (KDS)، إضافات الأطباق والطلبات السفرية." : locale === "en" ? "Table floor plan, Kitchen Display System (KDS), dish modifiers, and takeout." : "Plan de tables, écran cuisine KDS, modificateurs de plats et commandes à emporter.",
+      features: locale === "ar" ? ["خريطة الطاولات الحية", "شاشة تحضير المطبخ (KDS)", "تعديلات المطبخ (بدون بصل/حار)"] : locale === "en" ? ["Interactive Table Floorplan", "Kitchen Display System (KDS)", "Dish Customization Modifiers"] : ["Plan de tables interactif", "Écran cuisine direct (KDS)", "Modificateurs (sans oignons, piment...)"],
       icon: UtensilsCrossed,
-      gradient: "from-amber-500/20 to-orange-500/5 border-amber-500/40",
-      badgeColor: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    },
+    {
+      id: "bakery",
+      title: locale === "ar" ? "مخبزة وحلويات" : locale === "en" ? "Bakery & Pastry" : "Boulangerie & Pâtisserie",
+      desc: locale === "ar" ? "بيع بالقطعة أو الوزن، حجوزات الكعك والمناسبات، وسرعة فائقة في أوقات الذروة." : locale === "en" ? "Item & weight checkout, custom cake pre-orders, and peak hour speed." : "Vente à la pièce et au kilo, commandes de gâteaux personnalisés et rapidité.",
+      features: locale === "ar" ? ["أزرار لمس سريعة بدون باركود", "دفتر طلبيات الحلويات والمناسبات", "ميزان حلويات بالغرام"] : locale === "en" ? ["Touch Quick-Keys (No Barcode)", "Special Order & Event Bookings", "Gram Precision Scale"] : ["Touches tactiles rapides", "Carnet de commandes gâteaux", "Balance au gramme"],
+      icon: Croissant,
     },
     {
       id: "fashion",
-      title: t.onboarding.fashionTitle,
-      desc: t.onboarding.fashionDesc,
-      features: t.onboarding.features.fashion,
+      title: locale === "ar" ? "ملابس وأزياء" : locale === "en" ? "Fashion & Apparel" : "Mode & Prêt-à-Porter",
+      desc: locale === "ar" ? "مصفوفة المقاسات والألوان، لاصقات الملابس، وتتبع حركة الموديلات والمخزون." : locale === "en" ? "Size & color matrix, clothing barcode tags, and fashion inventory lifecycle." : "Matrice tailles & coloris, étiquettes vêtements et rotation des collections.",
+      features: locale === "ar" ? ["مصفوفة المقاس واللون", "طباعة لاصقات الملابس 40x30", "تتبع الموديلات والأحجام"] : locale === "en" ? ["Size & Color Variant Grid", "Apparel Barcode Tag Studio", "Collection & Model Tracking"] : ["Matrice tailles & couleurs", "Impression étiquettes vêtements", "Suivi des collections et modèles"],
       icon: Shirt,
-      gradient: "from-purple-500/20 to-pink-500/5 border-purple-500/40",
-      badgeColor: "bg-purple-500/15 text-purple-400 border-purple-500/30",
     },
     {
       id: "electronics",
-      title: t.onboarding.techTitle,
-      desc: t.onboarding.techDesc,
-      features: t.onboarding.features.tech,
+      title: locale === "ar" ? "إلكترونيات وتقنية" : locale === "en" ? "Tech & Electronics" : "Électronique & Tech",
+      desc: locale === "ar" ? "تتبع الأرقام التسلسلية وIMEI، شهادات الضمان المطبوعة، وإكسسوارات الأجهزة." : locale === "en" ? "IMEI & serial number tracking, printed warranty certificates, and accessories." : "Traçabilité IMEI et numéros de série, garanties imprimées et SAV.",
+      features: locale === "ar" ? ["تسجيل IMEI والرقم التسلسلي", "تحديد مدة الضمان على الإيصال", "سجل الصيانة والإصلاح"] : locale === "en" ? ["IMEI & Serial Number Tracking", "Warranty Period on Receipt", "Repair & Service History"] : ["Enregistrement IMEI & n° série", "Mention garantie sur le ticket", "Fiches SAV et réparations"],
       icon: Smartphone,
-      gradient: "from-sky-500/20 to-blue-500/5 border-sky-500/40",
-      badgeColor: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+    },
+    {
+      id: "wholesale",
+      title: locale === "ar" ? "تجارة الجملة والدروكري" : locale === "en" ? "Wholesale & Distribution" : "Grossiste & Droguerie",
+      desc: locale === "ar" ? "أسعار الجملة والكرتون، إدارة دفعات الموردين، وإصدار فواتير ببيانات ICE الرسمية." : locale === "en" ? "Carton & case tier pricing, supplier bills & effects, and ICE B2B invoices." : "Prix de gros & cartons, effets fournisseurs et factures professionnelles ICE.",
+      features: locale === "ar" ? ["تسعير تلقائي بالكرتون والتقسيط", "فواتير رسمية بـ ICE والضريبة", "دفتر كمبيالات الموردين"] : locale === "en" ? ["Box / Carton Tier Pricing", "Official Moroccan ICE Invoices", "Supplier Bills & Effets Ledger"] : ["Tarifs dégressifs au carton", "Facturation ICE et TVA marocaine", "Gestion des effets fournisseurs"],
+      icon: Boxes,
     },
   ];
 
@@ -168,8 +182,8 @@ export function StoreOnboardingModal({
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 4 Store Type Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Sector Profile Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
               {storeTypes.map((item) => {
                 const Icon = item.icon;
                 const active = selectedType === item.id;
@@ -178,33 +192,43 @@ export function StoreOnboardingModal({
                     key={item.id}
                     type="button"
                     onClick={() => setSelectedType(item.id)}
-                    className={`text-left p-5 rounded-2xl border transition-all duration-200 relative overflow-hidden ${
+                    className={`text-left p-4 sm:p-5 rounded-2xl border transition-all duration-200 relative overflow-hidden cursor-pointer ${
                       active
-                        ? `bg-gradient-to-br ${item.gradient} ring-2 ring-amber-400/70 shadow-lg`
+                        ? "bg-zinc-900 border-white ring-1 ring-white/60 shadow-lg"
                         : "bg-white/[0.02] border-white/10 hover:border-white/25 hover:bg-white/[0.04]"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-start justify-between gap-3 mb-2.5">
                       <div className="flex items-center gap-3">
-                        <div className={`p-3 rounded-xl border ${item.badgeColor}`}>
-                          <Icon className="w-6 h-6" />
+                        <div
+                          className={`p-2.5 rounded-xl border transition-colors ${
+                            active
+                              ? "border-white bg-white text-zinc-950 shadow-xs"
+                              : "border-white/10 bg-white/[0.04] text-white"
+                          }`}
+                        >
+                          <Icon className="w-5 h-5" />
                         </div>
-                        <div className="text-base font-bold text-white">
+                        <div className="text-sm font-bold text-white">
                           {item.title}
                         </div>
                       </div>
-                      {active && <CheckCircle2 className="w-6 h-6 text-amber-400 shrink-0" />}
+                      {active && <CheckCircle2 className="w-5 h-5 text-white shrink-0" />}
                     </div>
 
-                    <p className="text-xs text-zinc-300 mb-3 leading-relaxed">
+                    <p className="text-[11px] text-zinc-400 mb-2.5 leading-relaxed">
                       {item.desc}
                     </p>
 
-                    <div className="grid grid-cols-1 gap-1.5 pt-2 border-t border-white/10">
+                    <div className="grid grid-cols-1 gap-1 pt-2 border-t border-white/10">
                       {item.features.map((feat, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-[11px] text-zinc-300">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                          <span>{feat}</span>
+                        <div key={idx} className="flex items-center gap-2 text-[10px] text-zinc-300">
+                          <span
+                            className={`w-1 h-1 rounded-full shrink-0 ${
+                              active ? "bg-white" : "bg-zinc-500"
+                            }`}
+                          />
+                          <span className="truncate">{feat}</span>
                         </div>
                       ))}
                     </div>

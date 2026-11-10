@@ -52,7 +52,7 @@ export function IndustryWorkspaceModal({
   onClose,
   onOpenOnboardingSwitch,
 }: IndustryWorkspaceModalProps) {
-  const { t } = useAppDictionary();
+  const { t, locale } = useAppDictionary();
   const {
     storeType,
     cart: items,
@@ -114,10 +114,10 @@ export function IndustryWorkspaceModal({
   };
 
   useEffect(() => {
-    if (isOpen && activeTab === "restaurant") {
+    if (isOpen && storeType === "restaurant") {
       fetchKds();
     }
-  }, [isOpen, activeTab]);
+  }, [isOpen, storeType]);
 
   if (!isOpen) return null;
 
@@ -256,7 +256,7 @@ export function IndustryWorkspaceModal({
                 onClose();
                 onOpenOnboardingSwitch();
               }}
-              className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold hover:bg-amber-500/20 transition cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-zinc-300 text-xs font-bold hover:bg-white/[0.08] hover:text-white transition cursor-pointer"
             >
               {t.onboarding.businessSectorBtn}
             </button>
@@ -270,32 +270,29 @@ export function IndustryWorkspaceModal({
           </div>
         </div>
 
-        {/* Mode Switch Tabs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 border-b border-white/10 bg-black/40">
-          {[
-            { id: "grocery", label: t.topbar.grocery, icon: ShoppingBasket },
-            { id: "restaurant", label: t.topbar.restaurant, icon: UtensilsCrossed },
-            { id: "fashion", label: t.topbar.fashion, icon: Shirt },
-            { id: "electronics", label: t.topbar.tech, icon: Smartphone },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id as StoreBusinessType)}
-                className={`flex items-center justify-center gap-2 py-3.5 px-3 text-xs font-bold border-b-2 transition cursor-pointer ${
-                  active
-                    ? "border-amber-400 text-amber-400 bg-amber-500/10"
-                    : "border-transparent text-zinc-400 hover:text-white"
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+        {/* Sector Profile Header Banner */}
+        <div className="px-6 py-3 border-b border-white/10 bg-zinc-950 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs font-bold text-white uppercase tracking-wider">
+              {storeType === "restaurant"
+                ? t.topbar.restaurant
+                : storeType === "fashion"
+                ? t.topbar.fashion
+                : storeType === "electronics" || storeType === "tech"
+                ? t.topbar.tech
+                : storeType === "butchery"
+                ? (locale === "ar" ? "مجزرة ولحوم" : locale === "en" ? "Butchery & Meats" : "Boucherie & Viandes")
+                : storeType === "bakery"
+                ? (locale === "ar" ? "مخبزة وحلويات" : locale === "en" ? "Bakery & Pastry" : "Boulangerie & Pâtisserie")
+                : storeType === "wholesale"
+                ? (locale === "ar" ? "تجارة الجملة والدروكري" : locale === "en" ? "Wholesale & Distribution" : "Grossiste & Droguerie")
+                : t.topbar.grocery}
+            </span>
+          </div>
+          <span className="text-[11px] font-mono text-zinc-400">
+            {locale === "ar" ? "الأدوات مفعلة ومخصصة لنشاطك" : locale === "en" ? "Tools customized for your business" : "Outils métiers adaptés à votre secteur"}
+          </span>
         </div>
 
         <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
@@ -320,7 +317,7 @@ export function IndustryWorkspaceModal({
           )}
 
           {/* 1. RESTAURANT / CAFE WORKSPACE */}
-          {activeTab === "restaurant" && (
+          {storeType === "restaurant" && (
             <div className="space-y-6">
               {/* Dining Table Grid */}
               <div>
@@ -504,7 +501,7 @@ export function IndustryWorkspaceModal({
           )}
 
           {/* 2. CLOTHING & FASHION WORKSPACE */}
-          {activeTab === "fashion" && (
+          {storeType === "fashion" && (
             <div className="space-y-5">
               <div>
                 <h4 className="text-sm font-bold text-white mb-2.5">
@@ -566,7 +563,7 @@ export function IndustryWorkspaceModal({
           )}
 
           {/* 3. ELECTRONICS & GENERAL RETAIL WORKSPACE */}
-          {activeTab === "electronics" && (
+          {(storeType === "electronics" || storeType === "tech") && (
             <div className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -623,8 +620,8 @@ export function IndustryWorkspaceModal({
             </div>
           )}
 
-          {/* 4. GROCERY / SUPERMARKET WORKSPACE */}
-          {activeTab === "grocery" && (
+          {/* 4. GROCERY / BUTCHERY / BAKERY / WHOLESALE WORKSPACE */}
+          {(storeType === "grocery" || storeType === "butchery" || storeType === "bakery" || storeType === "wholesale") && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Digital Weight Scale Calculator */}
               <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-4">

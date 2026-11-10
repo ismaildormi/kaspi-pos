@@ -31,9 +31,9 @@ export function DashboardOnboardingTrigger({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3.5 py-2 text-xs font-bold text-amber-300 hover:bg-amber-500/20 transition cursor-pointer"
+        className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 hover:border-white/25 bg-white/[0.04] hover:bg-white/[0.08] px-3.5 py-2 text-xs font-bold text-zinc-200 hover:text-white transition cursor-pointer"
       >
-        <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+        <Sparkles className="h-3.5 w-3.5 text-zinc-300" />
         <span>{t.onboarding.businessSectorBtn}</span>
       </button>
 

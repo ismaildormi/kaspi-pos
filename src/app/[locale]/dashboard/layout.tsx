@@ -64,32 +64,6 @@ export default function DashboardLayout({
       .catch(() => {});
   }, [setStoreProfile]);
 
-  const handleSwitchVertical = async (nextType: StoreBusinessType) => {
-    setStoreProfile(nextType, true);
-    try {
-      await fetch(getApiUrl("/api/v1/onboarding/setup"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          storeType: nextType,
-          shopName,
-          seedStarterCatalog: false,
-        }),
-      });
-    } catch {}
-  };
-
-  const verticalModes: Array<{
-    id: StoreBusinessType;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-  }> = [
-    { id: "grocery", label: t.topbar.grocery, icon: ShoppingBasket },
-    { id: "restaurant", label: t.topbar.restaurant, icon: UtensilsCrossed },
-    { id: "fashion", label: t.topbar.fashion, icon: Shirt },
-    { id: "electronics", label: t.topbar.tech, icon: Smartphone },
-  ];
-
   return (
     <div dir="ltr" className="min-h-screen bg-zinc-950 text-white flex flex-col">
       {/* Unified Glassmorphic Top Navigation Bar */}
@@ -121,29 +95,6 @@ export default function DashboardLayout({
               {shopName}
             </span>
           </Link>
-        </div>
-
-        {/* Center: Core Workspace Vertical Modes */}
-        <div className="hidden lg:flex items-center gap-1 p-1 rounded-xl bg-zinc-900/90 border border-white/10">
-          {verticalModes.map((mode) => {
-            const Icon = mode.icon;
-            const active = storeType === mode.id;
-            return (
-              <button
-                key={mode.id}
-                type="button"
-                onClick={() => handleSwitchVertical(mode.id)}
-                className={`h-7 px-2.5 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 transition cursor-pointer ${
-                  active
-                    ? "bg-white text-zinc-950 shadow-xs"
-                    : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{mode.label}</span>
-              </button>
-            );
-          })}
         </div>
 
         {/* Right: Action Pills (POS Launch, Language, Desktop App, Settings, Session Profile) */}
