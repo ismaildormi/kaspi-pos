@@ -230,6 +230,8 @@ export interface TranslationSchema {
     daysRemaining: string;
     orderViaWhatsapp: string;
     whatsappOrderGreeting: string;
+    suggestedReorderBadge: string;
+    nightlyReportNotice: string;
   };
   customers: {
     title: string;
@@ -304,6 +306,28 @@ export interface TranslationSchema {
     ocrCommitSuccess: string;
     ocrCommitBtn: string;
     extractedItemsCount: string;
+    ledgerTitle: string;
+    activeInvoicesCount: string;
+    invoiceNumber: string;
+    paymentModeCheck: string;
+    balanceRemaining: string;
+    settled: string;
+    rescan: string;
+    item: string;
+    quantity: string;
+    costPrice: string;
+    salePrice: string;
+    registeredPartners: string;
+    totalDebtDesc: string;
+    maturitiesDesc: string;
+    invoiceNumberLabel: string;
+    amountTtcLabel: string;
+    paymentMethodLabel: string;
+    notesLabel: string;
+    notesPlaceholder: string;
+    selectSupplierOption: string;
+    ocrCompressionNote: string;
+    ocrWholesaleExamples: string;
   };
   reports: {
     title: string;
@@ -319,6 +343,12 @@ export interface TranslationSchema {
     exportAccountingSage: string;
     exportAccountingNotice: string;
     sendCustomerReceipt: string;
+    ownerNightlyReportTitle: string;
+    ownerNightlyReportSubtitle: string;
+    sendNightlyReportNow: string;
+    scheduledAt: string;
+    previewTitle: string;
+    nightlyDeliveryNotice: string;
   };
   billing: {
     title: string;
@@ -360,6 +390,11 @@ export interface TranslationSchema {
     shopifyWebhookSecret: string;
     syncStockOnline: string;
     webhookEndpointLabel: string;
+    ownerWhatsappNumber: string;
+    nightlyReportHour: string;
+    nightlyHour21: string;
+    nightlyHour22: string;
+    timezoneLabel: string;
   };
   support: {
     title: string;
@@ -646,6 +681,8 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       daysRemaining: "متبقي {days} أيام قبل النفاد",
       orderViaWhatsapp: "طلب التزويد عبر WhatsApp",
       whatsappOrderGreeting: "السلام عليكم، نود تزويد متجرنا بالمنتجات التالية وفق النواقص المسجلة:",
+      suggestedReorderBadge: "كمية الطلب المقترحة: +{qty} {unit}",
+      nightlyReportNotice: "مدرج تلقائياً في التقرير التنفيذي لمالك المتجر (21:00 / 22:00)",
     },
     customers: {
       title: "الزبائن والكريدي",
@@ -720,6 +757,28 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       ocrCommitSuccess: "تم تحديث المخزون وأسعار الشراء بنجاح!",
       ocrCommitBtn: "اعتماد وتحديث المخزون دفعة واحدة",
       extractedItemsCount: "بند مستخرج",
+      ledgerTitle: "سجل استحقاقات وديون الموردين (الشيكات والكمبيالات)",
+      activeInvoicesCount: "{count} فواتير جارية",
+      invoiceNumber: "رقم الفاتورة",
+      paymentModeCheck: "طريقة الأداء / رقم الورقة",
+      balanceRemaining: "المبلغ المتبقي",
+      settled: "تمت التسوية",
+      rescan: "إعادة المسح",
+      item: "المنتج",
+      quantity: "الكمية",
+      costPrice: "سعر الشراء",
+      salePrice: "سعر البيع",
+      registeredPartners: "الشركاء والموزعون المسجلون",
+      totalDebtDesc: "إجمالي المستحقات الواجب تسديدها للموردين",
+      maturitiesDesc: "شيكات وكمبيالات مستحقة خلال 48-72 ساعة",
+      invoiceNumberLabel: "رقم الفاتورة *",
+      amountTtcLabel: "المبلغ الإجمالي شامل الضريبة (MAD) *",
+      paymentMethodLabel: "طريقة التسوية",
+      notesLabel: "ملاحظات أو بيان السلع",
+      notesPlaceholder: "تم استلام البضائع بحالة جيدة",
+      selectSupplierOption: "اختر المورد...",
+      ocrCompressionNote: "ضغط WebP على المتصفح واستخراج البنود آلياً...",
+      ocrWholesaleExamples: "فواتير الموزعين والشركات الكبرى (سنترال دانون، لوسيور، كوكاكولا، إلخ)",
     },
     reports: {
       title: "التقارير والإقفالات",
@@ -735,6 +794,12 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       exportAccountingSage: "تصدير المحاسبة (Sage / DGI Maroc)",
       exportAccountingNotice: "ملف CSV بترميز UTF-8 متوافق مع معايير المادة 145 من المدونة العامة للضرائب (CGI)",
       sendCustomerReceipt: "إرسال الوصل للزبون عبر WhatsApp",
+      ownerNightlyReportTitle: "التقرير التنفيذي اليومي لمالك المتجر (21:00 / 22:00)",
+      ownerNightlyReportSubtitle: "ملخص مالي وتشغيلي لآخر 24 ساعة: رقم المعاملات، تفاصيل السلع المباعة، وتوجيهات المخزون وشيكات الموردين.",
+      sendNightlyReportNow: "إرسال التقرير التنفيذي لمالك المتجر الآن عبر WhatsApp",
+      scheduledAt: "الموعد المحدد للإرسال:",
+      previewTitle: "معاينة رسالة WhatsApp الرسمية الخاصة بمالك المتجر",
+      nightlyDeliveryNotice: "يتم إرسال هذا التقرير تلقائياً كل ليلة لمالك المتجر وفق التوقيت المحدد.",
     },
     billing: {
       title: "الاشتراك والفوترة",
@@ -776,6 +841,11 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       shopifyWebhookSecret: "المفتاح السري لـ Webhook",
       syncStockOnline: "تفعيل المزامنة التلقائية للمخزون",
       webhookEndpointLabel: "رابط استقبال الإشعارات (Webhook URL):",
+      ownerWhatsappNumber: "رقم WhatsApp الخاص بمالك المتجر (المدير)",
+      nightlyReportHour: "توقيت إرسال التقرير التنفيذي اليومي عبر WhatsApp",
+      nightlyHour21: "21:00 (نهاية الدوام المعتاد)",
+      nightlyHour22: "22:00 (للمتاجر المتأخرة والمطاعم)",
+      timezoneLabel: "المنطقة الزمنية للمتجر",
     },
     support: {
       title: "الدعم والمساعدة",
@@ -1046,7 +1116,7 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       aiAnticipationTitle: "Anticipation Prédictive IA des Ruptures de Stock",
       velocityModel: "Modèle Vélocité 14j",
       velocitySubtitle: "Prévisions calculées en continu d'après le rythme réel en caisse",
-      optimalStockBanner: "✨ Tous vos stocks sont à des niveaux optimaux. Aucune rupture imminente sous 10 jours.",
+      optimalStockBanner: "Tous vos stocks sont à des niveaux optimaux — Aucune rupture imminente sous 10 jours.",
       realtimeLevels: "Niveaux de Stock en Temps Réel",
       trackedItemsCount: "Articles Suivis",
       today: "Aujourd'hui",
@@ -1060,6 +1130,8 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       daysRemaining: "{days} jours avant rupture",
       orderViaWhatsapp: "Commander au fournisseur via WhatsApp",
       whatsappOrderGreeting: "Bonjour, nous souhaitons passer commande pour le réassort des articles suivants :",
+      suggestedReorderBadge: "Quantité suggérée : +{qty} {unit}",
+      nightlyReportNotice: "Inclus automatiquement dans le rapport exécutif propriétaire (21h/22h)",
     },
     customers: {
       title: "Clients & Krediat",
@@ -1134,6 +1206,28 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       ocrCommitSuccess: "Stock et prix de revient mis à jour avec succès !",
       ocrCommitBtn: "Valider & Mettre à jour le Stock",
       extractedItemsCount: "lignes extraites",
+      ledgerTitle: "Échéancier & Dettes Fournisseurs (Chèques / Effets)",
+      activeInvoicesCount: "{count} factures actives",
+      invoiceNumber: "Facture N°",
+      paymentModeCheck: "Mode / N° Pièce",
+      balanceRemaining: "Reste Dû",
+      settled: "Réglé",
+      rescan: "Rescanner",
+      item: "Article",
+      quantity: "Qté",
+      costPrice: "Coût Achat",
+      salePrice: "Prix Vente",
+      registeredPartners: "Partenaires & grossistes enregistrés",
+      totalDebtDesc: "Encours global à régler aux fournisseurs",
+      maturitiesDesc: "Chèques & Effets dus sous 48-72 heures",
+      invoiceNumberLabel: "Numéro de Facture *",
+      amountTtcLabel: "Montant TTC (MAD) *",
+      paymentMethodLabel: "Mode de Règlement",
+      notesLabel: "Notes ou Description",
+      notesPlaceholder: "Marchandises reçues en bon état",
+      selectSupplierOption: "Sélectionnez un fournisseur...",
+      ocrCompressionNote: "Compression WebP client & extraction des lignes...",
+      ocrWholesaleExamples: "Factures grossistes Centrale Danone, Lesieur, Coca-Cola, etc.",
     },
     reports: {
       title: "Rapports & Clôtures",
@@ -1149,6 +1243,12 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       exportAccountingSage: "Export Comptable (Sage / DGI Maroc)",
       exportAccountingNotice: "Fichier CSV UTF-8 conforme aux exigences de l'Article 145 du CGI Maroc",
       sendCustomerReceipt: "Envoyer le ticket au client par WhatsApp",
+      ownerNightlyReportTitle: "Rapport Exécutif Journalier du Propriétaire (21h / 22h)",
+      ownerNightlyReportSubtitle: "Synthèse financière et opérationnelle 24h : chiffre d'affaires, détail des articles vendus, alertes réapprovisionnement et échéances chèques.",
+      sendNightlyReportNow: "Envoyer le Rapport Exécutif au Propriétaire via WhatsApp",
+      scheduledAt: "Programmé à :",
+      previewTitle: "Aperçu du message WhatsApp officiel du Propriétaire",
+      nightlyDeliveryNotice: "Ce rapport est envoyé automatiquement chaque soir au propriétaire selon l'horaire sélectionné.",
     },
     billing: {
       title: "Facturation & Licences",
@@ -1190,6 +1290,11 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       shopifyWebhookSecret: "Secret Signature Webhook",
       syncStockOnline: "Activer la synchronisation automatique des stocks",
       webhookEndpointLabel: "URL de Réception Webhook :",
+      ownerWhatsappNumber: "Numéro WhatsApp du Propriétaire (Directeur)",
+      nightlyReportHour: "Heure d'Envoi du Rapport Journalier WhatsApp",
+      nightlyHour21: "21:00 (Fin de service normale)",
+      nightlyHour22: "22:00 (Commerce tardif / Restauration)",
+      timezoneLabel: "Fuseau Horaire Commercial",
     },
     support: {
       title: "Support & Assistance",
@@ -1460,7 +1565,7 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       aiAnticipationTitle: "AI Predictive Stockout Anticipation",
       velocityModel: "14-Day Velocity Model",
       velocitySubtitle: "Continuous forecasts based on real checkout sales velocity",
-      optimalStockBanner: "✨ All stock levels are optimal. No imminent stockouts detected within 10 days.",
+      optimalStockBanner: "All stock levels are optimal — No imminent stockouts detected within 10 days.",
       realtimeLevels: "Real-Time Stock Levels",
       trackedItemsCount: "Tracked Items",
       today: "Today",
@@ -1474,6 +1579,8 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       daysRemaining: "{days} days before stockout",
       orderViaWhatsapp: "Reorder from Supplier via WhatsApp",
       whatsappOrderGreeting: "Hello, we would like to place an order to restock the following items:",
+      suggestedReorderBadge: "Suggested reorder: +{qty} {unit}",
+      nightlyReportNotice: "Automatically included in nightly Owner Report (21:00 / 22:00)",
     },
     customers: {
       title: "Customers & Credit",
@@ -1548,6 +1655,28 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       ocrCommitSuccess: "Stock and cost prices updated successfully!",
       ocrCommitBtn: "Commit & Update Stock in 1-Click",
       extractedItemsCount: "extracted items",
+      ledgerTitle: "Supplier Checks & Debt Ledger",
+      activeInvoicesCount: "{count} active invoices",
+      invoiceNumber: "Invoice #",
+      paymentModeCheck: "Method / Check #",
+      balanceRemaining: "Balance Due",
+      settled: "Settled",
+      rescan: "Rescan",
+      item: "Item",
+      quantity: "Qty",
+      costPrice: "Cost Price",
+      salePrice: "Sale Price",
+      registeredPartners: "Registered wholesale partners",
+      totalDebtDesc: "Total outstanding supplier liabilities",
+      maturitiesDesc: "Checks & bills due within 48-72 hours",
+      invoiceNumberLabel: "Invoice Number *",
+      amountTtcLabel: "Total Amount (MAD) *",
+      paymentMethodLabel: "Payment Method",
+      notesLabel: "Notes or Description",
+      notesPlaceholder: "Goods received in good condition",
+      selectSupplierOption: "Select a supplier...",
+      ocrCompressionNote: "Client-side WebP compression & line extraction...",
+      ocrWholesaleExamples: "Wholesale invoices (Centrale Danone, Lesieur, Coca-Cola, etc.)",
     },
     reports: {
       title: "Reports & Closures",
@@ -1563,6 +1692,12 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       exportAccountingSage: "Export for Accountant (Sage / Moroccan DGI)",
       exportAccountingNotice: "UTF-8 CSV compliant with Moroccan Tax Code (Article 145 CGI / CGNC)",
       sendCustomerReceipt: "Send Digital Receipt to Customer via WhatsApp",
+      ownerNightlyReportTitle: "Store Owner 24-Hour Executive Report (21:00 / 22:00)",
+      ownerNightlyReportSubtitle: "24h financial & operational digest: revenue breakdown, itemized sold items, reorder directives, and maturing supplier checks.",
+      sendNightlyReportNow: "Send Executive Report to Store Owner via WhatsApp",
+      scheduledAt: "Scheduled at:",
+      previewTitle: "Store Owner Official WhatsApp Digest Preview",
+      nightlyDeliveryNotice: "This report is dispatched automatically every evening to the store owner based on selected schedule.",
     },
     billing: {
       title: "Billing & Subscriptions",
@@ -1604,6 +1739,11 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       shopifyWebhookSecret: "Webhook Signature Secret",
       syncStockOnline: "Enable Automatic Stock Sync",
       webhookEndpointLabel: "Webhook Endpoint URL:",
+      ownerWhatsappNumber: "Store Owner WhatsApp Number (Executive)",
+      nightlyReportHour: "Nightly WhatsApp Report Delivery Hour",
+      nightlyHour21: "21:00 (Standard evening closure)",
+      nightlyHour22: "22:00 (Late-night stores & dining)",
+      timezoneLabel: "Store Timezone",
     },
     support: {
       title: "Support & Help",

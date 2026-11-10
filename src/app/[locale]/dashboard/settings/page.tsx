@@ -98,6 +98,8 @@ export default function SettingsPage() {
   const [receiptFooter, setReceiptFooter] = useState("");
   const [whatsappReportNumber, setWhatsappReportNumber] = useState("");
   const [isWhatsappReportsActive, setIsWhatsappReportsActive] = useState(true);
+  const [nightlyReportHour, setNightlyReportHour] = useState("21:00");
+  const [storeTimezone, setStoreTimezone] = useState("Africa/Casablanca");
 
   // Bank & Payout Configuration (Owner Settlement)
   const [bankName, setBankName] = useState("");
@@ -472,6 +474,8 @@ export default function SettingsPage() {
       });
 
       if (res.ok) {
+        localStorage.setItem("kaspi_nightly_report_hour", nightlyReportHour);
+        localStorage.setItem("kaspi_store_timezone", storeTimezone);
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
       }
@@ -527,7 +531,7 @@ export default function SettingsPage() {
     setTestResult(locale === "ar" ? "جاري إرسال التقرير..." : locale === "fr" ? "Envoi du Z-Report en cours..." : "Sending Z-Report...");
     try {
       const res = await fetch(
-        `/api/reports/daily-whatsapp?autoSend=true&phone=${encodeURIComponent(
+        `/api/reports/daily-whatsapp?autoSend=true&locale=${locale}&deliveryTime=${nightlyReportHour}&phone=${encodeURIComponent(
           whatsappReportNumber
         )}`
       );
@@ -1242,19 +1246,51 @@ export default function SettingsPage() {
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1">
-                    {st.whatsappManagerPhone}
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                    {t.settings.ownerWhatsappNumber}
                   </label>
                   <input
                     type="tel"
                     value={whatsappReportNumber}
                     onChange={(e) => setWhatsappReportNumber(e.target.value)}
                     placeholder="+2126XXXXXXXX"
-                    className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-mono"
+                    className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
                   />
                 </div>
 
-                <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                      {t.settings.nightlyReportHour}
+                    </label>
+                    <select
+                      value={nightlyReportHour}
+                      onChange={(e) => setNightlyReportHour(e.target.value)}
+                      className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
+                    >
+                      <option value="21:00">{t.settings.nightlyHour21}</option>
+                      <option value="22:00">{t.settings.nightlyHour22}</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                      {t.settings.timezoneLabel}
+                    </label>
+                    <select
+                      value={storeTimezone}
+                      onChange={(e) => setStoreTimezone(e.target.value)}
+                      className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
+                    >
+                      <option value="Africa/Casablanca">Africa/Casablanca (GMT+1)</option>
+                      <option value="Europe/Paris">Europe/Paris (CET)</option>
+                      <option value="Asia/Riyadh">Asia/Riyadh (AST)</option>
+                      <option value="UTC">UTC (Universal)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer pt-1">
                   <input
                     type="checkbox"
                     checked={isWhatsappReportsActive}
@@ -1274,7 +1310,7 @@ export default function SettingsPage() {
                     <span>{st.testSend}</span>
                   </button>
                   {testResult && (
-                    <span className="text-xs text-emerald-400 font-mono">{testResult}</span>
+                    <span className="text-xs text-white font-mono font-bold">{testResult}</span>
                   )}
                 </div>
               </div>

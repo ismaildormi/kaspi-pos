@@ -11,8 +11,6 @@ import {
   Printer,
   RotateCcw,
   FileText,
-  Send,
-  MessageSquare,
   AlertTriangle,
 } from "lucide-react";
 import { usePosStore, type PaymentMethodType } from "@/client/store/usePosStore";
@@ -20,7 +18,6 @@ import { useAppDictionary } from "@/i18n/schema";
 import { ThermalReceipt, type ReceiptData } from "./ThermalReceipt";
 import { printReceipt } from "@/client/printing";
 import { formatReceiptDate, toWesternNumerals } from "@/lib/printing/receipt-translations";
-import { formatReceiptForWhatsApp, generateWhatsAppLink } from "@/lib/whatsapp";
 import { calculatePaymentFees } from "@/lib/fees";
 import { playTapSound, playSuccessSound, playErrorSound } from "@/lib/audio";
 
@@ -57,41 +54,6 @@ export const CheckoutModal: React.FC = () => {
   } | null>(null);
 
   const [showReceiptPreview, setShowReceiptPreview] = useState(false);
-  const [recipientPhone, setRecipientPhone] = useState("");
-  const [showPhoneInput, setShowPhoneInput] = useState(false);
-
-  const handleSendWhatsApp = (targetPhone?: string) => {
-    if (!saleResult?.receiptData) return;
-    const phone = targetPhone || recipientPhone || customer?.phone || "";
-    if (!phone && !showPhoneInput) {
-      setShowPhoneInput(true);
-      return;
-    }
-
-    const message = formatReceiptForWhatsApp({
-      storeName: saleResult.receiptData.shopName,
-      receiptNumber: saleResult.receiptData.receiptNumber,
-      createdAt: new Date().toISOString(),
-      cashierName: saleResult.receiptData.cashierName,
-      items: saleResult.receiptData.items.map((i) => ({
-        name: i.name,
-        quantity: i.quantity,
-        unitPrice: i.unitPrice,
-        lineTotal: i.lineTotal,
-      })),
-      subtotal: saleResult.receiptData.subtotal,
-      taxTotal: saleResult.receiptData.taxTotal,
-      grandTotal: saleResult.receiptData.grandTotal,
-      paymentMethod: saleResult.receiptData.paymentMethod,
-      paidTotal: saleResult.receiptData.paidTotal,
-      changeDue: saleResult.receiptData.changeDue,
-    });
-
-    const link = generateWhatsAppLink(phone, message);
-    if (typeof window !== "undefined") {
-      window.open(link, "_blank");
-    }
-  };
 
   if (!isPaymentModalOpen) return null;
 
@@ -190,7 +152,6 @@ export const CheckoutModal: React.FC = () => {
   const handleClose = () => {
     setSaleResult(null);
     setShowReceiptPreview(false);
-    setShowPhoneInput(false);
     closePaymentModal();
   };
 
@@ -261,41 +222,6 @@ export const CheckoutModal: React.FC = () => {
                 />
               </div>
             )}
-
-            {/* WhatsApp Digital Receipt Option */}
-            <div className="pt-1">
-              {showPhoneInput ? (
-                <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 space-y-2">
-                  <label className="block text-xs font-semibold text-zinc-300">
-                    Numéro WhatsApp du client (ex: 0612345678) :
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="tel"
-                      value={recipientPhone}
-                      onChange={(e) => setRecipientPhone(e.target.value)}
-                      placeholder="06 XX XX XX XX"
-                      className="flex-1 px-3 py-2 text-xs rounded-lg bg-zinc-950 border border-zinc-700 text-white focus:outline-none focus:border-white font-mono"
-                    />
-                    <button
-                      onClick={() => handleSendWhatsApp()}
-                      className="px-3 py-2 rounded-lg bg-white hover:bg-zinc-200 text-black font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Envoyer</span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => handleSendWhatsApp()}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-white font-semibold text-xs border border-zinc-800 transition cursor-pointer"
-                >
-                  <MessageSquare className="w-4 h-4 text-zinc-400" />
-                  <span>Envoyer le ticket par WhatsApp</span>
-                </button>
-              )}
-            </div>
 
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button

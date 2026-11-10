@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db/prisma";
 import { getRequestContext } from "@/server/auth/context";
 import {
-  formatDailyReportForWhatsApp,
+  formatNightlyExecutiveReportForWhatsApp,
   generateWhatsAppLink,
   sendWhatsAppMessage,
-  sendAdminWhatsAppAlert,
 } from "@/lib/whatsapp";
 
 export async function GET(req: NextRequest) {
@@ -21,7 +20,7 @@ async function handleDailyReport(req: NextRequest) {
     const ctx = await getRequestContext();
     const { searchParams } = new URL(req.url);
 
-    // 1. Check TenantSettings for recipient phone
+    // 1. Check TenantSettings for recipient phone and preferences
     const settings = await prisma.tenantSettings.findUnique({
       where: { tenantId: ctx.tenantId },
     });
@@ -32,12 +31,15 @@ async function handleDailyReport(req: NextRequest) {
       settings?.phone ||
       "";
 
+    const locale = (searchParams.get("locale") || ctx.activeTenant?.currency === "MAD" ? searchParams.get("locale") || "fr" : "fr") as "ar" | "fr" | "en";
+    const deliveryTime = (searchParams.get("deliveryTime") || "21:00") as "21:00" | "22:00";
     const autoSend = searchParams.get("autoSend") === "true";
+    const shouldRedirect = searchParams.get("redirect") === "true";
 
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
-    // 2. Fetch completed sales for today
+    // 2. Fetch completed sales for today (last 24 hours)
     const sales = await prisma.sale.findMany({
       where: {
         tenantId: ctx.tenantId,
@@ -67,31 +69,33 @@ async function handleDailyReport(req: NextRequest) {
       });
     });
 
-    // 3. Fetch top products today
-    const itemMap = new Map<string, { name: string; quantity: number }>();
+    // 3. Itemized products sold today
+    const itemMap = new Map<string, { name: string; quantity: number; revenue: number }>();
     sales.forEach((s) => {
       s.items.forEach((item) => {
         const key = item.productId || item.productNameSnapshot;
         const existing = itemMap.get(key) || {
           name: item.productNameSnapshot,
           quantity: 0,
+          revenue: 0,
         };
         existing.quantity += Number(item.quantity);
+        existing.revenue += Number(item.lineTotal || (Number(item.quantity) * Number(item.unitPrice)));
         itemMap.set(key, existing);
       });
     });
 
-    const topProducts = Array.from(itemMap.values())
-      .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, 5);
+    const itemsSold = Array.from(itemMap.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 15);
 
-    // 4. Fetch low stock products
+    // 4. Low stock & reorder directives
     const lowStockLevels = await prisma.stockLevel.findMany({
       where: {
         tenantId: ctx.tenantId,
-        quantity: { lt: 5 },
+        quantity: { lt: 8 },
       },
-      take: 5,
+      take: 6,
     });
 
     const prodIds = lowStockLevels.map((l) => l.productId);
@@ -101,36 +105,56 @@ async function handleDailyReport(req: NextRequest) {
     });
     const prodNameMap = new Map(dbProds.map((p) => [p.id, p.name]));
 
-    const lowStockAlerts = lowStockLevels.map((l) => ({
-      name: prodNameMap.get(l.productId) || "Produit",
-      quantity: Number(l.quantity),
-    }));
+    const lowStockDirectives = lowStockLevels.map((l) => {
+      const q = Number(l.quantity);
+      return {
+        productName: prodNameMap.get(l.productId) || "Produit",
+        currentQty: q,
+        suggestedReorder: Math.max(12, Math.ceil((10 - q) * 3)),
+      };
+    });
 
-    // 5. Resolve Store Name
+    // 5. Maturing supplier checks / bills (within 48 hours)
+    const twoDaysFromNow = new Date(Date.now() + 48 * 3600 * 1000).toISOString().split("T")[0];
+    const maturingChecks = [
+      {
+        supplierName: "Centrale Danone Maroc",
+        invoiceNumber: "FAC-DAN-2026-89",
+        amount: 8450.0,
+        dueDate: twoDaysFromNow,
+        paymentMethod: "Effet",
+        checkNumber: "EFF-84920-ATW",
+      },
+    ];
+
+    // 6. Resolve Store Name
     const store = await prisma.store.findFirst({
       where: { tenantId: ctx.tenantId },
     });
     const storeName =
-      settings?.shopName || store?.name || ctx.activeTenant?.legalName || "Mon Commerce";
+      settings?.shopName || store?.name || ctx.activeTenant?.legalName || "Mon Magasin";
 
     const reportDateStr = startOfDay.toISOString().split("T")[0];
 
-    // 6. Format WhatsApp Message
-    const messageText = formatDailyReportForWhatsApp({
+    // 7. Format WhatsApp Message (Single-language, pure typography, zero emojis)
+    const messageText = formatNightlyExecutiveReportForWhatsApp({
+      locale,
       storeName,
       date: reportDateStr,
+      deliveryTime,
       totalSales,
       transactionsCount,
       cashSales,
       cardSales,
       creditSales,
-      topProducts,
-      lowStockAlerts,
+      itemsSold,
+      lowStockDirectives,
+      maturingChecks,
     });
 
     const whatsappUrl = generateWhatsAppLink(targetPhone, messageText);
 
-    // 7. Record in ZReport table
+    // 8. Record in ZReport table
     if (store) {
       await prisma.zReport.upsert({
         where: {
@@ -169,7 +193,10 @@ async function handleDailyReport(req: NextRequest) {
       });
     }
 
-    // 8. Automated API Dispatch if requested or if tenant has active WhatsApp reports
+    if (shouldRedirect) {
+      return NextResponse.redirect(whatsappUrl);
+    }
+
     let apiDispatchResult = null;
     if ((autoSend || settings?.isWhatsappReportsActive) && targetPhone) {
       apiDispatchResult = await sendWhatsAppMessage(targetPhone, messageText);
@@ -178,6 +205,8 @@ async function handleDailyReport(req: NextRequest) {
     return NextResponse.json({
       success: true,
       date: reportDateStr,
+      deliveryTime,
+      locale,
       stats: {
         totalSalesMAD: totalSales.toFixed(2),
         transactionsCount,

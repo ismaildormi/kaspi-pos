@@ -12,7 +12,6 @@ import {
   Clock,
   ShoppingCart,
   ArrowRightLeft,
-  MessageSquare,
 } from "lucide-react";
 import { StockAuditClient } from "@/components/dashboard/StockAuditClient";
 import { getDictionary, type Locale } from "@/i18n/schema";
@@ -245,21 +244,23 @@ export default async function InventoryPage({
                   <span className="text-zinc-400 font-mono">{t.inventory.reorderAdvice}</span>
                   <span className="font-mono font-bold text-white flex items-center gap-1">
                     <ShoppingCart className="w-3 h-3 text-zinc-400" />
-                    +{item.suggestedReorder} u.
+                    +{item.suggestedReorder} {t.inventory.units}
                   </span>
                 </div>
 
-                <a
-                  href={`https://wa.me/?text=${encodeURIComponent(
-                    `${t.inventory.whatsappOrderGreeting}\n- ${item.product.name} (Réf/SKU: ${item.product.sku || item.product.barcode || "N/A"})\nQuantité: ${item.suggestedReorder} unités`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full mt-2 py-1.5 px-3 rounded-xl bg-white hover:bg-zinc-200 text-black text-[11px] font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>{t.inventory.orderViaWhatsapp}</span>
-                </a>
+                <div className="w-full mt-2.5 p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-[11px] space-y-1">
+                  <div className="flex items-center justify-between text-zinc-300 font-medium">
+                    <span className="text-zinc-400">
+                      {t.inventory.suggestedReorderBadge.replace("{qty}", String(item.suggestedReorder)).replace("{unit}", t.inventory.units)}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-zinc-400 flex items-center gap-1.5 pt-0.5 border-t border-zinc-800/60">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0" />
+                    <span className="leading-tight">
+                      {t.inventory.nightlyReportNotice}
+                    </span>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

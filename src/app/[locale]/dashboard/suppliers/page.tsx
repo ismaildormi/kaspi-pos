@@ -394,7 +394,7 @@ export default function SuppliersPage() {
               {summary.totalSuppliers || suppliers.length}
             </div>
             <div className="text-[11px] text-zinc-500 mt-1">
-              Partenaires & grossistes enregistrés
+              {t.suppliers.registeredPartners}
             </div>
           </div>
 
@@ -408,7 +408,7 @@ export default function SuppliersPage() {
               {summary.totalDebtOwedMAD.toLocaleString()} <span className="text-sm font-normal text-zinc-400">MAD</span>
             </div>
             <div className="text-[11px] text-zinc-500 mt-1">
-              Encours global à régler aux fournisseurs
+              {t.suppliers.totalDebtDesc}
             </div>
           </div>
 
@@ -425,7 +425,7 @@ export default function SuppliersPage() {
               </span>
             </div>
             <div className="text-[11px] text-zinc-500 mt-1">
-              Chèques & Effets dus sous 7 jours
+              {t.suppliers.maturitiesDesc}
             </div>
           </div>
         </div>
@@ -437,11 +437,11 @@ export default function SuppliersPage() {
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-zinc-400" />
                 <h2 className="text-xs font-bold text-white uppercase tracking-wider">
-                  Échéancier & Dettes Fournisseurs (Chèques / Effets)
+                  {t.suppliers.ledgerTitle}
                 </h2>
               </div>
               <span className="text-xs font-mono text-zinc-400">
-                {ledgerItems.filter((i) => i.status !== "settled").length} factures actives
+                {t.suppliers.activeInvoicesCount.replace("{count}", String(ledgerItems.filter((i) => i.status !== "settled").length))}
               </span>
             </div>
             <div className="overflow-x-auto">
@@ -449,11 +449,11 @@ export default function SuppliersPage() {
                 <thead className="bg-zinc-950 text-zinc-400 border-b border-zinc-800 font-mono">
                   <tr>
                     <th className="p-3 text-start">{t.suppliers.name}</th>
-                    <th className="p-3 text-start">Facture N°</th>
-                    <th className="p-3 text-start">Mode / Chèque</th>
+                    <th className="p-3 text-start">{t.suppliers.invoiceNumber}</th>
+                    <th className="p-3 text-start">{t.suppliers.paymentModeCheck}</th>
                     <th className="p-3 text-start">{t.suppliers.dueDate}</th>
-                    <th className="p-3 text-end">Montant (MAD)</th>
-                    <th className="p-3 text-end">Reste Dû</th>
+                    <th className="p-3 text-end">{t.common.currency}</th>
+                    <th className="p-3 text-end">{t.suppliers.balanceRemaining}</th>
                     <th className="p-3 text-center">{t.common.actions}</th>
                   </tr>
                 </thead>
@@ -483,7 +483,7 @@ export default function SuppliersPage() {
                         ) : (
                           <span className="text-[11px] text-zinc-500 font-mono flex items-center justify-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5 text-zinc-400" />
-                            Réglé
+                            {t.suppliers.settled}
                           </span>
                         )}
                       </td>
@@ -504,7 +504,9 @@ export default function SuppliersPage() {
                 {t.suppliers.subtitle}
               </h2>
             </div>
-            <span className="text-xs font-mono text-zinc-400">{suppliers.length} fournisseurs</span>
+            <span className="text-xs font-mono text-zinc-400">
+              {suppliers.length} {locale === "ar" ? "موردين" : locale === "en" ? "suppliers" : "fournisseurs"}
+            </span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-start text-xs">
@@ -690,7 +692,7 @@ export default function SuppliersPage() {
                   onChange={(e) => setDebtSupplierId(e.target.value)}
                   className="w-full h-11 px-3.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-medium"
                 >
-                  <option value="">Sélectionnez un fournisseur...</option>
+                  <option value="">{t.suppliers.selectSupplierOption}</option>
                   {suppliers.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
@@ -702,7 +704,7 @@ export default function SuppliersPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                    Numéro de Facture *
+                    {t.suppliers.invoiceNumberLabel}
                   </label>
                   <input
                     type="text"
@@ -715,7 +717,7 @@ export default function SuppliersPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                    Montant TTC (MAD) *
+                    {t.suppliers.amountTtcLabel}
                   </label>
                   <input
                     type="number"
@@ -732,7 +734,7 @@ export default function SuppliersPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                    Mode de Règlement
+                    {t.suppliers.paymentMethodLabel}
                   </label>
                   <select
                     value={debtPaymentMethod}
@@ -774,13 +776,13 @@ export default function SuppliersPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  Notes ou Description
+                  {t.suppliers.notesLabel}
                 </label>
                 <input
                   type="text"
                   value={debtNotes}
                   onChange={(e) => setDebtNotes(e.target.value)}
-                  placeholder="Marchandises reçues en bon état"
+                  placeholder={t.suppliers.notesPlaceholder}
                   className="w-full h-11 px-3.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-medium"
                 />
               </div>
@@ -851,7 +853,7 @@ export default function SuppliersPage() {
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="w-8 h-8 text-white animate-spin" />
                     <p className="text-xs font-bold text-white">{t.suppliers.ocrProcessing}</p>
-                    <p className="text-[11px] text-zinc-500">Compression WebP client & extraction des lignes...</p>
+                    <p className="text-[11px] text-zinc-500">{t.suppliers.ocrCompressionNote}</p>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-3">
@@ -860,7 +862,7 @@ export default function SuppliersPage() {
                     </div>
                     <div>
                       <p className="text-xs font-bold text-white">{t.suppliers.ocrDropzoneText}</p>
-                      <p className="text-[11px] text-zinc-500 mt-1">Factures grossistes Centrale Danone, Lesieur, Coca-Cola, etc.</p>
+                      <p className="text-[11px] text-zinc-500 mt-1">{t.suppliers.ocrWholesaleExamples}</p>
                     </div>
                   </div>
                 )}
@@ -880,7 +882,7 @@ export default function SuppliersPage() {
                     className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
                   >
                     <RefreshCw className="w-3 h-3" />
-                    <span>Rescanner</span>
+                    <span>{t.suppliers.rescan}</span>
                   </button>
                 </div>
 
@@ -888,11 +890,11 @@ export default function SuppliersPage() {
                   <table className="w-full text-start text-xs font-medium">
                     <thead className="bg-zinc-950 text-zinc-400 border-b border-zinc-800 font-mono">
                       <tr>
-                        <th className="p-2.5 text-start">Article</th>
-                        <th className="p-2.5 text-start">Code / SKU</th>
-                        <th className="p-2.5 text-center">Qté</th>
-                        <th className="p-2.5 text-end">Coût Achat</th>
-                        <th className="p-2.5 text-end">Prix Vente</th>
+                        <th className="p-2.5 text-start">{t.suppliers.item}</th>
+                        <th className="p-2.5 text-start">{t.products.sku} / {t.products.barcode}</th>
+                        <th className="p-2.5 text-center">{t.suppliers.quantity}</th>
+                        <th className="p-2.5 text-end">{t.suppliers.costPrice}</th>
+                        <th className="p-2.5 text-end">{t.suppliers.salePrice}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-800/60 font-mono">
@@ -901,8 +903,8 @@ export default function SuppliersPage() {
                           <td className="p-2.5 text-white font-sans font-bold">{item.name}</td>
                           <td className="p-2.5 text-zinc-400 text-[11px]">{item.barcode}</td>
                           <td className="p-2.5 text-center text-white font-bold">{item.quantity}</td>
-                          <td className="p-2.5 text-end text-zinc-300">{item.unitCost.toFixed(2)} DH</td>
-                          <td className="p-2.5 text-end text-white font-bold">{item.salePrice.toFixed(2)} DH</td>
+                          <td className="p-2.5 text-end text-zinc-300">{item.unitCost.toFixed(2)} {t.common.currency}</td>
+                          <td className="p-2.5 text-end text-white font-bold">{item.salePrice.toFixed(2)} {t.common.currency}</td>
                         </tr>
                       ))}
                     </tbody>

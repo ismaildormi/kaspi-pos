@@ -17,7 +17,6 @@ import {
   X,
   Loader2,
   Check,
-  MessageSquare,
 } from "lucide-react";
 
 interface CustomerItem {
@@ -350,21 +349,6 @@ export default function CustomersPage() {
                                 : t.customers.karneRecord}
                             </span>
                           </button>
-
-                          {c.currentCreditBalance > 0 && c.phone && (
-                            <a
-                              href={`https://wa.me/${c.phone.replace(/[^\d]/g, "")}?text=${encodeURIComponent(
-                                `Salam Si/Lalla ${c.name},\nRappel: solde en cours Karné: *${c.currentCreditBalance.toFixed(2)} MAD*.\nKASPI POS`
-                              )}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 text-[11px] font-mono transition"
-                              title="WhatsApp"
-                            >
-                              <MessageSquare className="w-3 h-3" />
-                              <span>WhatsApp</span>
-                            </a>
-                          )}
                         </div>
                       </td>
                     </tr>
