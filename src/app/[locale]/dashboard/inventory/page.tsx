@@ -70,13 +70,21 @@ export default async function InventoryPage({
 
   if (stores.length === 0) {
     stores = [
-      { id: "00000000-0000-0000-0000-000000000001", name: "Dépôt Principal / المستودع الرئيسي", code: "MAIN" },
-      { id: "00000000-0000-0000-0000-000000000002", name: "Magasin Caisse / نقطة البيع", code: "POS" },
+      {
+        id: "00000000-0000-0000-0000-000000000001",
+        name: locale === "ar" ? "المستودع الرئيسي" : locale === "en" ? "Main Warehouse" : "Dépôt Principal",
+        code: "MAIN",
+      },
+      {
+        id: "00000000-0000-0000-0000-000000000002",
+        name: locale === "ar" ? "نقطة البيع الرئيسية" : locale === "en" ? "POS Register Store" : "Magasin Caisse",
+        code: "POS",
+      },
     ];
   } else if (stores.length === 1) {
     stores.push({
       id: "00000000-0000-0000-0000-000000000002",
-      name: "Dépôt Réserve / مستودع التخزين",
+      name: locale === "ar" ? "مستودع التخزين الاحتياطي" : locale === "en" ? "Reserve Storage" : "Dépôt Réserve",
       code: "RES",
     });
   }
@@ -186,17 +194,17 @@ export default async function InventoryPage({
         </div>
       </div>
 
-      {/* HIDDEN GEM 1: AI PREDICTIVE STOCKOUT ANTICIPATION MODULE */}
-      <div className="rounded-3xl border border-purple-500/30 bg-gradient-to-b from-purple-950/20 to-zinc-900/60 p-6 space-y-4 relative overflow-hidden">
-        <div className="flex items-center justify-between pb-3 border-b border-purple-500/20">
+      {/* AI PREDICTIVE STOCKOUT ANTICIPATION MODULE */}
+      <div className="rounded-2xl border border-white/10 bg-[#111113] p-5 space-y-4 relative overflow-hidden">
+        <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-300 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 text-white flex items-center justify-center">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <span>{t.inventory.aiAnticipationTitle}</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-white/[0.06] text-zinc-300 border border-white/10">
                   {t.inventory.velocityModel}
                 </span>
               </h2>
@@ -208,7 +216,7 @@ export default async function InventoryPage({
         </div>
 
         {predictedStockouts.length === 0 ? (
-          <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 text-center text-xs text-zinc-400 font-mono">
+          <div className="p-4 rounded-xl bg-zinc-950/80 border border-white/10 text-center text-xs text-zinc-400 font-mono">
             {t.inventory.optimalStockBanner}
           </div>
         ) : (
@@ -216,13 +224,13 @@ export default async function InventoryPage({
             {predictedStockouts.map((item) => (
               <div
                 key={item.product.id}
-                className="p-4 rounded-2xl bg-zinc-950/90 border border-purple-900/40 flex flex-col justify-between space-y-2.5 hover:border-purple-500/50 transition"
+                className="p-4 rounded-xl bg-zinc-950 border border-white/10 flex flex-col justify-between space-y-2.5 hover:border-white/25 transition"
               >
                 <div>
                   <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 mb-1">
                     <span className="truncate">{item.product.category?.name || "Rayon"}</span>
-                    <span className="text-rose-400 font-bold flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
+                    <span className="text-zinc-200 font-bold flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-zinc-400" />
                       {item.daysRemaining <= 1 ? t.inventory.today : t.inventory.inDays.replace("{days}", String(item.daysRemaining))}
                     </span>
                   </div>
@@ -232,10 +240,10 @@ export default async function InventoryPage({
                   </p>
                 </div>
 
-                <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
+                <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px]">
                   <span className="text-zinc-400 font-mono">{t.inventory.reorderAdvice}</span>
-                  <span className="font-mono font-bold text-emerald-400 flex items-center gap-1">
-                    <ShoppingCart className="w-3 h-3" />
+                  <span className="font-mono font-bold text-white flex items-center gap-1">
+                    <ShoppingCart className="w-3 h-3 text-zinc-400" />
                     +{item.suggestedReorder} u.
                   </span>
                 </div>

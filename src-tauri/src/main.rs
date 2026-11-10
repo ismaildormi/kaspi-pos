@@ -9,6 +9,7 @@ mod desktop_handoff;
 use printer::{encode_escpos, render_rows, send_to_printer, to_western_numerals, Align, Fonts, Row};
 use local_ai::{get_local_ai_capabilities, run_local_ai_inference};
 use tpe_bridge::initiate_tpe_payment;
+use tauri::Manager;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -334,6 +335,10 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_theme(Some(tauri::Theme::Dark));
+            }
+
             // Register Windows protocol association (kaspipos://)
             desktop_handoff::register_windows_protocol();
 

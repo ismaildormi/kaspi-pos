@@ -254,14 +254,14 @@ export default function SettingsPage() {
       });
       const json = await res.json();
       if (!res.ok || !json.ok) {
-        throw new Error(json.error?.message || "Erreur de sauvegarde du coffre API");
+        throw new Error(json.error?.message || (locale === "ar" ? "فشل حفظ مفاتيح الخزنة" : locale === "fr" ? "Erreur de sauvegarde du coffre API" : "Failed to save API vault"));
       }
-      setVaultFeedback(`✓ ${json.data?.message || "Clés API enregistrées avec succès"}`);
+      setVaultFeedback(locale === "ar" ? "تم حفظ مفاتيح API بنجاح" : locale === "fr" ? "Clés API enregistrées avec succès" : "API keys saved successfully");
       setVaultInputs({});
       setRawEnvBlock("");
       await fetchVaultStatus();
     } catch (err: any) {
-      setVaultFeedback(`❌ ${err.message}`);
+      setVaultFeedback(err.message);
     } finally {
       setIsSavingVault(false);
     }
@@ -387,15 +387,15 @@ export default function SettingsPage() {
       }
       const s = json.data?.summary || {};
       setResetFeedback(
-        `✓ Données purgées (${s.deletedSales || 0} ventes, ${
-          s.deletedShifts || 0
-        } sessions caisse${
-          resetClearCatalog ? `, ${s.deletedProducts || 0} produits démo` : ""
-        }). Prêt pour l'exploitation réelle.`
+        locale === "ar"
+          ? `تم تطهير البيانات (${s.deletedSales || 0} مبيعات، ${s.deletedShifts || 0} جلسات صندوق${resetClearCatalog ? `، ${s.deletedProducts || 0} منتجات ديمو` : ""}). جاهز للعمل الفعلي.`
+          : locale === "fr"
+          ? `Données purgées (${s.deletedSales || 0} ventes, ${s.deletedShifts || 0} sessions caisse${resetClearCatalog ? `, ${s.deletedProducts || 0} produits démo` : ""}). Prêt pour l'exploitation réelle.`
+          : `Data purged (${s.deletedSales || 0} sales, ${s.deletedShifts || 0} cash shifts${resetClearCatalog ? `, ${s.deletedProducts || 0} demo products` : ""}). Ready for live production.`
       );
       setResetConfirmOpen(false);
     } catch (err: any) {
-      setResetFeedback(`Erreur: ${err.message || "Échec de l'opération"}`);
+      setResetFeedback(err.message || (locale === "ar" ? "فشلت العملية" : locale === "fr" ? "Échec de l'opération" : "Operation failed"));
     } finally {
       setIsResettingDemo(false);
     }
@@ -493,21 +493,21 @@ export default function SettingsPage() {
       if (res.success) {
         setTestPrintStatus(
           res.transport === "tauri_escpos"
-            ? "✅ Ticket envoyé à l'imprimante thermique ESC/POS"
-            : "✅ Aperçu d'impression lancé"
+            ? (locale === "ar" ? "تم إرسال التذكرة إلى الطابعة الحرارية ESC/POS" : locale === "fr" ? "Ticket envoyé à l'imprimante thermique ESC/POS" : "Receipt sent to ESC/POS thermal printer")
+            : (locale === "ar" ? "تم تشغيل معاينة الطباعة" : locale === "fr" ? "Aperçu d'impression lancé" : "Print preview launched")
         );
       } else {
-        setTestPrintStatus("❌ Échec du test d'impression");
+        setTestPrintStatus(locale === "ar" ? "فشل اختبار الطباعة" : locale === "fr" ? "Échec du test d'impression" : "Print test failed");
       }
     } catch (err: any) {
-      setTestPrintStatus(`❌ Erreur: ${err?.message || "Impossible d'imprimer"}`);
+      setTestPrintStatus(err?.message || (locale === "ar" ? "تعذر الطباعة" : locale === "fr" ? "Impossible d'imprimer" : "Unable to print"));
     } finally {
       setIsTestPrinting(false);
     }
   };
 
   const handleTestWhatsAppReport = async () => {
-    setTestResult("Envoi du Z-Report en cours...");
+    setTestResult(locale === "ar" ? "جاري إرسال التقرير..." : locale === "fr" ? "Envoi du Z-Report en cours..." : "Sending Z-Report...");
     try {
       const res = await fetch(
         `/api/reports/daily-whatsapp?autoSend=true&phone=${encodeURIComponent(
@@ -516,18 +516,352 @@ export default function SettingsPage() {
       );
       const data = await res.json();
       if (res.ok && data.success) {
-        setTestResult("✓ Rapport WhatsApp envoyé !");
+        setTestResult(locale === "ar" ? "تم إرسال تقرير واتساب بنجاح" : locale === "fr" ? "Rapport WhatsApp envoyé avec succès" : "WhatsApp report sent successfully");
       } else {
-        setTestResult(data.error || "Erreur d'envoi WhatsApp");
+        setTestResult(data.error || (locale === "ar" ? "خطأ في إرسال واتساب" : locale === "fr" ? "Erreur d'envoi WhatsApp" : "WhatsApp send error"));
       }
     } catch {
-      setTestResult("Erreur de connexion avec l'API WhatsApp");
+      setTestResult(locale === "ar" ? "خطأ في الاتصال بواجهة واتساب" : locale === "fr" ? "Erreur de connexion avec l'API WhatsApp" : "Connection error with WhatsApp API");
     }
   };
 
   const toggleGpuAi = (enabled: boolean) => {
     setUseLocalGpuAi(enabled);
     localStorage.setItem("kaspi_use_local_gpu", String(enabled));
+  };
+
+  const st = {
+    ar: {
+      usersTab: "المستخدمون والصلاحيات",
+      legalTitle: "الهوية القانونية، العملة (MAD) ومواصفات DGI",
+      currencyBadge: "العملة : درهم مغربي (MAD)",
+      shopName: "الاسم التجاري للمحل",
+      ice: "الرقم الموحد (ICE 15 رقماً)",
+      taxId: "التعريف الضريبي (IF)",
+      rc: "السجل التجاري (RC)",
+      address: "عنوان نقطة البيع",
+      branchesTitle: "الفروع ونقاط البيع",
+      newBranch: "إضافة فرع جديد",
+      branchNamePlaceholder: "الاسم (مثال: فرع المعاريف)",
+      branchCodePlaceholder: "الرمز (مثال: MAARIF-01)",
+      branchAddressPlaceholder: "المدينة / العنوان",
+      cancel: "إلغاء",
+      create: "إنشاء",
+      creating: "جاري الإنشاء...",
+      defaultStoreActive: "المتجر الرئيسي مفعّل كفرع افتراضي.",
+      terminalCount: "أجهزة كاشير",
+      salesCount: "مبيعات",
+      paymentGateways: "بوابات الدفع الإلكتروني وأجهزة TPE",
+      cmiTpe: "جهاز TPE البنكي الميداني",
+      cmiTpeSub: "ربط شبكي مباشر (LAN)",
+      youcanpay: "YouCan Pay المغرب",
+      youcanpaySub: "بطاقات بنكية مغربية ودولية",
+      stripe: "Stripe العالمية",
+      stripeSub: "بطاقات دولية بالعملات الصعبة",
+      cashOnly: "نقداً وكريدي فقط",
+      cashOnlySub: "عمولة 0%",
+      tpeIpLabel: "عنوان IP المحلي لجهاز TPE",
+      whatsappReportTitle: "التقرير اليومي عبر واتساب (Z-Report)",
+      whatsappManagerPhone: "رقم واتساب المدير المسؤول",
+      whatsappAutoSend: "إرسال تقرير الإقفال تلقائياً كل مساء",
+      testSend: "اختبار الإرسال",
+      demoResetTitle: "إعادة تعيين بيانات التجارب (الانتقال للإنتاج الفعلي)",
+      demoResetSubtitle: "حذف المبيعات التجريبية، جلسات الصندوق وتذاكر المطبخ قبل بدء العمل الحقيقي",
+      purgeDemoBtn: "تطهير بيانات الديمو",
+      purgeWarning: "سيتم حذف جميع المبيعات التجريبية، تذاكر KDS وجلسات X/Z نهائياً.",
+      purgeCatalogCheckbox: "حذف المنتجات التجريبية والكتالوج أيضاً",
+      confirmPurgeBtn: "تأكيد التطهير النهائي",
+      purgingBtn: "جاري التطهير...",
+      hardwareTitle: "استوديو الطباعة الحرارية ESC/POS (80mm / 58mm)",
+      hardwareSubtitle: "دعم اللغات المتعددة، الأرقام القياسية ودرج الكاشير RJ11",
+      testReceiptBtn: "طباعة تذكرة تجريبية",
+      paperColor: "لون الورق",
+      paperDark: "داكن",
+      paperLight: "أبيض",
+      receiptLang: "لغة التذكرة الحرارية",
+      rollWidth: "عرض لفة الورق",
+      connMode: "طريقة الربط بالطابعة",
+      connAuto: "تلقائي (Tauri ESC/POS → Web)",
+      connUsb: "USB / منفذ تسلسلي مباشر (Spooler)",
+      connNetwork: "شبكة محلية LAN TCP/IP (:9100)",
+      connBrowser: "مربع حوار المتصفح / PDF",
+      printerNamePort: "اسم الطابعة أو المنفذ COM",
+      lanIpAddress: "عنوان IP المحلي",
+      port: "المنفذ",
+      autoPrintCheck: "طباعة التذكرة تلقائياً بمجرد إتمام الدفع",
+      drawerPulseCheck: "فتح درج الكاشير RJ11 تلقائياً مع كل عملية",
+      logoCheck: "إظهار الشعار في أعلى التذكرة الحرارية",
+      audioCheck: "المؤثرات الصوتية لنقطة البيع (صوت الباركود، النقرات وتأكيد الدفع)",
+      receiptHeaderLabel: "ترويسة التذكرة الحرارية",
+      receiptFooterLabel: "تذييل التذكرة الحرارية",
+      vaultTitle: "خزنة المفاتيح السحابية وربط API (.env Runtime Vault)",
+      vaultSubtitle: "تهيئة مفاتيح البريد الإلكتروني، Supabase، وقواعد البيانات مباشرة من المتصفح",
+      testConnectionsBtn: "فحص الاتصال المباشر",
+      saveKeysBtn: "حفظ المفاتيح",
+      pasteEnvLabel: "لصق إعدادات ملف .env كاملاً (استخراج تلقائي للمفاتيح)",
+      activeKey: "مفعّل",
+      notSetKey: "غير محدد",
+      newValPlaceholder: "قيمة جديدة لـ",
+      gpuTitle: "التسريع المحلي للذكاء الاصطناعي (WebGPU / الجهاز المحلي)",
+      gpuSubtitle: "تشغيل التنبؤات والتحليلات محلياً على المعالج الرسومي بدون تكلفة سحابية",
+      gpuActive: "WebGPU مفعّل",
+      cloudOnly: "سحابي فقط",
+      rbacTitle: "الجلسة المصادق عليها وصلاحيات الوصول (RBAC)",
+      refreshBtn: "تحديث",
+      connectedUser: "المستخدم المتصل",
+      rolePrivileges: "الدور والصلاحيات",
+      fullAccess: "صلاحيات كاملة (نقطة البيع، المخزون، الإقفالات، المفاتيح)",
+      authorizedDevices: "الأجهزة المرخصة",
+      cloudOfflineSync: "مزامنة سحابية + محرك Dexie بدون إنترنت",
+    },
+    fr: {
+      usersTab: "Utilisateurs & Accès",
+      legalTitle: "Identité Légale, Devise (MAD) & Mentions DGI",
+      currencyBadge: "Devise : MAD (Dirham)",
+      shopName: "Enseigne Commerciale",
+      ice: "ICE (15 chiffres)",
+      taxId: "Identifiant Fiscal (IF)",
+      rc: "Registre de Commerce (RC)",
+      address: "Adresse du Point de Vente",
+      branchesTitle: "Succursales & Points de Vente",
+      newBranch: "Nouvelle Succursale",
+      branchNamePlaceholder: "Nom (ex: Succursale Maarif)",
+      branchCodePlaceholder: "Code (ex: MAARIF-01)",
+      branchAddressPlaceholder: "Ville / Adresse",
+      cancel: "Annuler",
+      create: "Créer",
+      creating: "Création...",
+      defaultStoreActive: "Magasin Principal actif par défaut.",
+      terminalCount: "terminaux",
+      salesCount: "ventes",
+      paymentGateways: "Passerelle de Paiement & TPE",
+      cmiTpe: "CMI / TPE Physique",
+      cmiTpeSub: "Terminal Bancaire LAN",
+      youcanpay: "YouCanPay Maroc",
+      youcanpaySub: "Cartes MAD & CMI",
+      stripe: "Stripe Global",
+      stripeSub: "Cartes Internationales",
+      cashOnly: "Espèces & Krediat",
+      cashOnlySub: "0% Commission",
+      tpeIpLabel: "IP Locale du Terminal TPE CMI",
+      whatsappReportTitle: "Z-Report Quotidien WhatsApp",
+      whatsappManagerPhone: "Numéro WhatsApp du Gérant",
+      whatsappAutoSend: "Envoyer automatiquement le rapport de clôture chaque soir",
+      testSend: "Tester l'envoi",
+      demoResetTitle: "Réinitialiser les données de test (Passage en Production)",
+      demoResetSubtitle: "Purge les ventes démo, sessions de caisse et tickets KDS avant exploitation réelle",
+      purgeDemoBtn: "Purger les données démo",
+      purgeWarning: "Toutes les ventes de test, tickets KDS et sessions X/Z seront supprimés.",
+      purgeCatalogCheckbox: "Supprimer aussi les produits de démonstration",
+      confirmPurgeBtn: "Confirmer la purge",
+      purgingBtn: "Purge...",
+      hardwareTitle: "Studio d'Impression Thermique ESC/POS (80mm / 58mm)",
+      hardwareSubtitle: "Multi-langues (AR, FR, EN) • Chiffres 0-9 • Tiroir-caisse RJ11",
+      testReceiptBtn: "Imprimer Ticket Test",
+      paperColor: "Papier",
+      paperDark: "Sombre",
+      paperLight: "Blanc",
+      receiptLang: "Langue du Ticket",
+      rollWidth: "Largeur du Rouleau",
+      connMode: "Mode de Connexion Matérielle",
+      connAuto: "Auto (Tauri ESC/POS → Web)",
+      connUsb: "USB / Série Direct (Spooler)",
+      connNetwork: "Réseau LAN TCP/IP (:9100)",
+      connBrowser: "Dialogue Navigateur / PDF",
+      printerNamePort: "Nom de l'imprimante ou Port COM",
+      lanIpAddress: "Adresse IP LAN",
+      port: "Port",
+      autoPrintCheck: "Impression automatique dès validation de l'encaissement",
+      drawerPulseCheck: "Impulsion automatique du Tiroir-Caisse RJ11",
+      logoCheck: "Afficher le logo en haut du ticket thermique",
+      audioCheck: "Sons & Retour Acoustique POS (Bip Scanner Laser, Clics & Validation)",
+      receiptHeaderLabel: "En-tête du ticket",
+      receiptFooterLabel: "Pied de page",
+      vaultTitle: "Coffre-Fort Cloud & Clés API (.env Runtime Vault)",
+      vaultSubtitle: "Configurez vos clés SMTP, Supabase, Neon PostgreSQL et moteurs IA directement depuis le navigateur",
+      testConnectionsBtn: "Tester les Connexions Live",
+      saveKeysBtn: "Sauvegarder les Clés",
+      pasteEnvLabel: "Coller un bloc .env complet (détection automatique des clés)",
+      activeKey: "Actif",
+      notSetKey: "Non défini",
+      newValPlaceholder: "Nouvelle valeur pour",
+      gpuTitle: "Accélération IA Locale (WebGPU / Terminal Hardware)",
+      gpuSubtitle: "Exécute les prédictions de stock en local à coût zéro lorsque aucune clé Cloud externe n'est requise",
+      gpuActive: "WebGPU Actif",
+      cloudOnly: "Cloud Uniquement",
+      rbacTitle: "Session Authentifiée & Contrôle d'Accès (RBAC)",
+      refreshBtn: "Actualiser",
+      connectedUser: "Utilisateur Connecté",
+      rolePrivileges: "Rôle & Privilèges",
+      fullAccess: "Accès complet (Caisse, Stocks, Clôtures Z, Clés API)",
+      authorizedDevices: "Terminaux Autorisés",
+      cloudOfflineSync: "Synchronisation Cloud + Offline Dexie active",
+    },
+    en: {
+      usersTab: "Users & Access",
+      legalTitle: "Legal Identity, Currency (MAD) & DGI Tax Info",
+      currencyBadge: "Currency: MAD (Dirham)",
+      shopName: "Store / Brand Name",
+      ice: "ICE (15 digits)",
+      taxId: "Tax ID (IF)",
+      rc: "Commercial Register (RC)",
+      address: "Store Address",
+      branchesTitle: "Branches & Locations",
+      newBranch: "New Branch",
+      branchNamePlaceholder: "Name (e.g., Maarif Branch)",
+      branchCodePlaceholder: "Code (e.g., MAARIF-01)",
+      branchAddressPlaceholder: "City / Address",
+      cancel: "Cancel",
+      create: "Create",
+      creating: "Creating...",
+      defaultStoreActive: "Main Store active by default.",
+      terminalCount: "terminals",
+      salesCount: "sales",
+      paymentGateways: "Payment Gateways & Card Terminals",
+      cmiTpe: "CMI / Physical TPE",
+      cmiTpeSub: "Direct LAN Terminal",
+      youcanpay: "YouCanPay Morocco",
+      youcanpaySub: "MAD & CMI Cards",
+      stripe: "Stripe Global",
+      stripeSub: "International Cards",
+      cashOnly: "Cash & Ledger Only",
+      cashOnlySub: "0% Commission",
+      tpeIpLabel: "Local IP of CMI Card Terminal",
+      whatsappReportTitle: "Daily WhatsApp Z-Report",
+      whatsappManagerPhone: "Manager WhatsApp Number",
+      whatsappAutoSend: "Automatically send closing report every evening",
+      testSend: "Test Send",
+      demoResetTitle: "Reset Demo Data (Production Cutover)",
+      demoResetSubtitle: "Purge demo sales, cash sessions, and kitchen tickets before live operation",
+      purgeDemoBtn: "Purge Demo Data",
+      purgeWarning: "All test sales, KDS tickets, and X/Z sessions will be permanently deleted.",
+      purgeCatalogCheckbox: "Also delete demo catalog products",
+      confirmPurgeBtn: "Confirm Purge",
+      purgingBtn: "Purging...",
+      hardwareTitle: "ESC/POS Thermal Printing Studio (80mm / 58mm)",
+      hardwareSubtitle: "Multi-language support, standard digits, and RJ11 cash drawer kick",
+      testReceiptBtn: "Print Test Receipt",
+      paperColor: "Paper",
+      paperDark: "Dark",
+      paperLight: "White",
+      receiptLang: "Receipt Language",
+      rollWidth: "Paper Roll Width",
+      connMode: "Hardware Connection Mode",
+      connAuto: "Auto (Tauri ESC/POS → Web)",
+      connUsb: "USB / Direct Serial (Spooler)",
+      connNetwork: "Network LAN TCP/IP (:9100)",
+      connBrowser: "Browser Print / PDF",
+      printerNamePort: "Printer Name or COM Port",
+      lanIpAddress: "LAN IP Address",
+      port: "Port",
+      autoPrintCheck: "Automatically print receipt on payment completion",
+      drawerPulseCheck: "Automatic RJ11 Cash Drawer pulse on checkout",
+      logoCheck: "Display store logo at the top of the receipt",
+      audioCheck: "POS Acoustic Feedback (Laser scanner beep, clicks & validation)",
+      receiptHeaderLabel: "Receipt Header",
+      receiptFooterLabel: "Receipt Footer",
+      vaultTitle: "Cloud Vault & API Keys (.env Runtime Vault)",
+      vaultSubtitle: "Configure SMTP, Supabase, Neon PostgreSQL and AI engine keys directly from browser",
+      testConnectionsBtn: "Test Live Connections",
+      saveKeysBtn: "Save Keys",
+      pasteEnvLabel: "Paste full .env block (automatic key extraction)",
+      activeKey: "Active",
+      notSetKey: "Not Set",
+      newValPlaceholder: "New value for",
+      gpuTitle: "Local AI Acceleration (WebGPU / Hardware)",
+      gpuSubtitle: "Execute inventory predictions locally at zero cloud cost",
+      gpuActive: "WebGPU Active",
+      cloudOnly: "Cloud Only",
+      rbacTitle: "Authenticated Session & Access Control (RBAC)",
+      refreshBtn: "Refresh",
+      connectedUser: "Logged-in User",
+      rolePrivileges: "Role & Privileges",
+      fullAccess: "Full Access (POS, Stock, Z-Closures, API Keys)",
+      authorizedDevices: "Authorized Terminals",
+      cloudOfflineSync: "Cloud + Offline Dexie sync active",
+    },
+  }[locale] || {
+    usersTab: "Users & Access",
+    legalTitle: "Legal Identity, Currency (MAD) & DGI Tax Info",
+    currencyBadge: "Currency: MAD (Dirham)",
+    shopName: "Store / Brand Name",
+    ice: "ICE (15 digits)",
+    taxId: "Tax ID (IF)",
+    rc: "Commercial Register (RC)",
+    address: "Store Address",
+    branchesTitle: "Branches & Locations",
+    newBranch: "New Branch",
+    branchNamePlaceholder: "Name",
+    branchCodePlaceholder: "Code",
+    branchAddressPlaceholder: "City / Address",
+    cancel: "Cancel",
+    create: "Create",
+    creating: "Creating...",
+    defaultStoreActive: "Main Store active by default.",
+    terminalCount: "terminals",
+    salesCount: "sales",
+    paymentGateways: "Payment Gateways & Card Terminals",
+    cmiTpe: "CMI / Physical TPE",
+    cmiTpeSub: "Direct LAN Terminal",
+    youcanpay: "YouCanPay Morocco",
+    youcanpaySub: "MAD & CMI Cards",
+    stripe: "Stripe Global",
+    stripeSub: "International Cards",
+    cashOnly: "Cash & Ledger Only",
+    cashOnlySub: "0% Commission",
+    tpeIpLabel: "Local IP of CMI Card Terminal",
+    whatsappReportTitle: "Daily WhatsApp Z-Report",
+    whatsappManagerPhone: "Manager WhatsApp Number",
+    whatsappAutoSend: "Automatically send closing report every evening",
+    testSend: "Test Send",
+    demoResetTitle: "Reset Demo Data (Production Cutover)",
+    demoResetSubtitle: "Purge demo sales, cash sessions, and kitchen tickets before live operation",
+    purgeDemoBtn: "Purge Demo Data",
+    purgeWarning: "All test sales, KDS tickets, and X/Z sessions will be permanently deleted.",
+    purgeCatalogCheckbox: "Also delete demo catalog products",
+    confirmPurgeBtn: "Confirm Purge",
+    purgingBtn: "Purging...",
+    hardwareTitle: "ESC/POS Thermal Printing Studio (80mm / 58mm)",
+    hardwareSubtitle: "Multi-language support, standard digits, and RJ11 cash drawer kick",
+    testReceiptBtn: "Print Test Receipt",
+    paperColor: "Paper",
+    paperDark: "Dark",
+    paperLight: "White",
+    receiptLang: "Receipt Language",
+    rollWidth: "Paper Roll Width",
+    connMode: "Hardware Connection Mode",
+    connAuto: "Auto (Tauri ESC/POS → Web)",
+    connUsb: "USB / Direct Serial (Spooler)",
+    connNetwork: "Network LAN TCP/IP (:9100)",
+    connBrowser: "Browser Print / PDF",
+    printerNamePort: "Printer Name or COM Port",
+    lanIpAddress: "LAN IP Address",
+    port: "Port",
+    autoPrintCheck: "Automatically print receipt on payment completion",
+    drawerPulseCheck: "Automatic RJ11 Cash Drawer pulse on checkout",
+    logoCheck: "Display store logo at the top of the receipt",
+    audioCheck: "POS Acoustic Feedback",
+    receiptHeaderLabel: "Receipt Header",
+    receiptFooterLabel: "Receipt Footer",
+    vaultTitle: "Cloud Vault & API Keys (.env Runtime Vault)",
+    vaultSubtitle: "Configure keys directly from browser",
+    testConnectionsBtn: "Test Live Connections",
+    saveKeysBtn: "Save Keys",
+    pasteEnvLabel: "Paste full .env block",
+    activeKey: "Active",
+    notSetKey: "Not Set",
+    newValPlaceholder: "New value for",
+    gpuTitle: "Local AI Acceleration",
+    gpuSubtitle: "Execute inventory predictions locally at zero cloud cost",
+    gpuActive: "WebGPU Active",
+    cloudOnly: "Cloud Only",
+    rbacTitle: "Authenticated Session & Access Control (RBAC)",
+    refreshBtn: "Refresh",
+    connectedUser: "Logged-in User",
+    rolePrivileges: "Role & Privileges",
+    fullAccess: "Full Access",
+    authorizedDevices: "Authorized Terminals",
+    cloudOfflineSync: "Cloud + Offline Dexie sync active",
   };
 
   const TABS: Array<{
@@ -542,7 +876,7 @@ export default function SettingsPage() {
       icon: Printer,
     },
     { id: "vault", label: t.settings.security, icon: KeyRound },
-    { id: "users", label: t.nav.customers, icon: Users },
+    { id: "users", label: st.usersTab, icon: Users },
   ];
 
   return (
@@ -622,31 +956,31 @@ export default function SettingsPage() {
               <div className="flex items-center gap-2">
                 <Store className="w-4 h-4 text-white" />
                 <h2 className="text-sm font-bold text-white">
-                  Identité Légale, Devise (MAD) &amp; Mentions DGI
+                  {st.legalTitle}
                 </h2>
               </div>
               <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white/[0.05] text-zinc-300 border border-white/10">
-                Devise : MAD (Dirham)
+                {st.currencyBadge}
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-medium text-zinc-400 mb-1">
-                  Enseigne Commerciale
+                  {st.shopName}
                 </label>
                 <input
                   type="text"
                   value={shopName}
                   onChange={(e) => setShopName(e.target.value)}
-                  placeholder="KASPI Flagship Store"
+                  placeholder="KASPI Store"
                   className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-white/40"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-zinc-400 mb-1">
-                  ICE (15 chiffres)
+                  {st.ice}
                 </label>
                 <input
                   type="text"
@@ -659,7 +993,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs font-medium text-zinc-400 mb-1">
-                  Identifiant Fiscal (IF)
+                  {st.taxId}
                 </label>
                 <input
                   type="text"
@@ -672,26 +1006,26 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs font-medium text-zinc-400 mb-1">
-                  Registre de Commerce (RC)
+                  {st.rc}
                 </label>
                 <input
                   type="text"
                   value={rcNumber}
                   onChange={(e) => setRcNumber(e.target.value)}
-                  placeholder="98765 Casablanca"
+                  placeholder="98765"
                   className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white/40"
                 />
               </div>
 
               <div className="sm:col-span-2">
                 <label className="block text-xs font-medium text-zinc-400 mb-1">
-                  Adresse du Point de Vente
+                  {st.address}
                 </label>
                 <input
                   type="text"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Boulevard d'Anfa, Casablanca"
+                  placeholder="Casablanca, Maroc"
                   className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-white/40"
                 />
               </div>
@@ -703,7 +1037,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-emerald-400" />
-                <h2 className="text-sm font-bold text-white">Succursales &amp; Points de Vente</h2>
+                <h2 className="text-sm font-bold text-white">{st.branchesTitle}</h2>
               </div>
               <button
                 type="button"
@@ -711,7 +1045,7 @@ export default function SettingsPage() {
                 className="h-8 px-3 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-white text-xs font-semibold flex items-center gap-1.5 border border-white/10 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Nouvelle Succursale</span>
+                <span>{st.newBranch}</span>
               </button>
             </div>
 
@@ -723,21 +1057,21 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <input
                     type="text"
-                    placeholder="Nom (ex: Succursale Maarif)"
+                    placeholder={st.branchNamePlaceholder}
                     value={newStoreName}
                     onChange={(e) => setNewStoreName(e.target.value)}
                     className="h-9 px-3 bg-zinc-900 border border-white/10 rounded-lg text-xs text-white"
                   />
                   <input
                     type="text"
-                    placeholder="Code (ex: MAARIF-01)"
+                    placeholder={st.branchCodePlaceholder}
                     value={newStoreCode}
                     onChange={(e) => setNewStoreCode(e.target.value)}
                     className="h-9 px-3 bg-zinc-900 border border-white/10 rounded-lg text-xs text-white uppercase font-mono"
                   />
                   <input
                     type="text"
-                    placeholder="Ville / Adresse"
+                    placeholder={st.branchAddressPlaceholder}
                     value={newStoreAddress}
                     onChange={(e) => setNewStoreAddress(e.target.value)}
                     className="h-9 px-3 bg-zinc-900 border border-white/10 rounded-lg text-xs text-white"
@@ -749,7 +1083,7 @@ export default function SettingsPage() {
                     onClick={() => setIsAddingStore(false)}
                     className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white"
                   >
-                    Annuler
+                    {st.cancel}
                   </button>
                   <button
                     type="button"
@@ -757,7 +1091,7 @@ export default function SettingsPage() {
                     disabled={isCreatingStore}
                     className="px-4 py-1.5 bg-white text-black font-bold text-xs rounded-lg hover:bg-zinc-200 cursor-pointer"
                   >
-                    {isCreatingStore ? "Création..." : "Créer"}
+                    {isCreatingStore ? st.creating : st.create}
                   </button>
                 </div>
               </div>
@@ -766,7 +1100,7 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {stores.length === 0 ? (
                 <div className="sm:col-span-3 p-4 rounded-xl bg-zinc-950/60 border border-white/5 text-center text-xs text-zinc-400 font-mono">
-                  Magasin Principal actif par défaut.
+                  {st.defaultStoreActive}
                 </div>
               ) : (
                 stores.map((s) => (
@@ -784,8 +1118,8 @@ export default function SettingsPage() {
                       {s.address || "Casablanca"}
                     </p>
                     <div className="pt-2 border-t border-white/5 flex justify-between text-[10px] text-zinc-400 font-mono">
-                      <span>{s.devicesCount} terminal</span>
-                      <span>{s.salesCount} ventes</span>
+                      <span>{s.devicesCount} {st.terminalCount}</span>
+                      <span>{s.salesCount} {st.salesCount}</span>
                     </div>
                   </div>
                 ))
@@ -799,15 +1133,15 @@ export default function SettingsPage() {
             <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 space-y-4">
               <div className="flex items-center gap-2 border-b border-white/10 pb-3">
                 <CreditCard className="w-4 h-4 text-amber-400" />
-                <h2 className="text-sm font-bold text-white">Passerelle de Paiement &amp; TPE</h2>
+                <h2 className="text-sm font-bold text-white">{st.paymentGateways}</h2>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
                 {[
-                  { id: "cmi_tpe", name: "CMI / TPE Physique", sub: "Terminal Bancaire LAN" },
-                  { id: "youcanpay", name: "YouCanPay Maroc", sub: "Cartes MAD & CMI" },
-                  { id: "stripe", name: "Stripe Global", sub: "Cartes Internationales" },
-                  { id: "cash_only", name: "Espèces & Krediat", sub: "0% Commission" },
+                  { id: "cmi_tpe", name: st.cmiTpe, sub: st.cmiTpeSub },
+                  { id: "youcanpay", name: st.youcanpay, sub: st.youcanpaySub },
+                  { id: "stripe", name: st.stripe, sub: st.stripeSub },
+                  { id: "cash_only", name: st.cashOnly, sub: st.cashOnlySub },
                 ].map((gw) => (
                   <button
                     key={gw.id}
@@ -834,7 +1168,7 @@ export default function SettingsPage() {
               {selectedGateway === "cmi_tpe" && (
                 <div className="pt-1">
                   <label className="block text-[11px] text-zinc-400 mb-1">
-                    IP Locale du Terminal TPE CMI
+                    {st.tpeIpLabel}
                   </label>
                   <input
                     type="text"
@@ -885,13 +1219,13 @@ export default function SettingsPage() {
             <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 space-y-4">
               <div className="flex items-center gap-2 border-b border-white/10 pb-3">
                 <MessageSquare className="w-4 h-4 text-emerald-400" />
-                <h2 className="text-sm font-bold text-white">Z-Report Quotidien WhatsApp</h2>
+                <h2 className="text-sm font-bold text-white">{st.whatsappReportTitle}</h2>
               </div>
 
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-zinc-400 mb-1">
-                    Numéro WhatsApp du Gérant
+                    {st.whatsappManagerPhone}
                   </label>
                   <input
                     type="tel"
@@ -909,7 +1243,7 @@ export default function SettingsPage() {
                     onChange={(e) => setIsWhatsappReportsActive(e.target.checked)}
                     className="w-4 h-4 rounded accent-white"
                   />
-                  <span>Envoyer automatiquement le rapport de clôture chaque soir</span>
+                  <span>{st.whatsappAutoSend}</span>
                 </label>
 
                 <div className="flex items-center gap-3 pt-1">
@@ -919,7 +1253,7 @@ export default function SettingsPage() {
                     className="h-8 px-3 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-semibold text-white flex items-center gap-1.5 cursor-pointer"
                   >
                     <Send className="w-3 h-3" />
-                    <span>Tester l&apos;envoi</span>
+                    <span>{st.testSend}</span>
                   </button>
                   {testResult && (
                     <span className="text-xs text-emerald-400 font-mono">{testResult}</span>
@@ -936,10 +1270,10 @@ export default function SettingsPage() {
                 <Trash2 className="w-4 h-4 text-red-400" />
                 <div>
                   <h2 className="text-sm font-bold text-white">
-                    Réinitialiser les données de test (Passage en Production)
+                    {st.demoResetTitle}
                   </h2>
                   <p className="text-[11px] text-zinc-400">
-                    Purge les ventes démo, sessions de caisse et tickets KDS avant exploitation réelle
+                    {st.demoResetSubtitle}
                   </p>
                 </div>
               </div>
@@ -951,7 +1285,7 @@ export default function SettingsPage() {
                   className="h-8 px-3 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>Purger les données démo</span>
+                  <span>{st.purgeDemoBtn}</span>
                 </button>
               )}
             </div>
@@ -967,7 +1301,7 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2 text-xs text-amber-300">
                   <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
                   <span>
-                    Toutes les ventes de test, tickets KDS et sessions X/Z seront supprimés.
+                    {st.purgeWarning}
                   </span>
                 </div>
                 <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
@@ -977,7 +1311,7 @@ export default function SettingsPage() {
                     onChange={(e) => setResetClearCatalog(e.target.checked)}
                     className="w-4 h-4 rounded accent-red-500"
                   />
-                  <span>Supprimer aussi les produits de démonstration</span>
+                  <span>{st.purgeCatalogCheckbox}</span>
                 </label>
                 <div className="flex items-center gap-2">
                   <button
@@ -986,14 +1320,14 @@ export default function SettingsPage() {
                     onClick={handleResetDemoData}
                     className="h-8 px-3 rounded-lg bg-red-500 hover:bg-red-400 text-black font-bold text-xs cursor-pointer"
                   >
-                    {isResettingDemo ? "Purge..." : "Confirmer la purge"}
+                    {isResettingDemo ? st.purgingBtn : st.confirmPurgeBtn}
                   </button>
                   <button
                     type="button"
                     onClick={() => setResetConfirmOpen(false)}
                     className="h-8 px-3 rounded-lg bg-zinc-800 text-zinc-300 text-xs font-semibold cursor-pointer"
                   >
-                    Annuler
+                    {st.cancel}
                   </button>
                 </div>
               </div>
@@ -1012,10 +1346,10 @@ export default function SettingsPage() {
               <Printer className="w-4 h-4 text-sky-400" />
               <div>
                 <h2 className="text-sm font-bold text-white">
-                  Studio d&apos;Impression Thermique ESC/POS (80mm / 58mm)
+                  {st.hardwareTitle}
                 </h2>
                 <p className="text-[11px] text-zinc-400">
-                  Multi-langues (AR, FR, EN, TR, ES, DE) • Chiffres 0-9 • Tiroir-caisse RJ11
+                  {st.hardwareSubtitle}
                 </p>
               </div>
             </div>
@@ -1031,14 +1365,14 @@ export default function SettingsPage() {
                 ) : (
                   <Printer className="w-3.5 h-3.5" />
                 )}
-                <span>Imprimer Ticket Test</span>
+                <span>{st.testReceiptBtn}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setReceiptPaperDark(!receiptPaperDark)}
                 className="h-8 px-3 rounded-lg bg-white/[0.05] border border-white/10 text-xs text-zinc-300 hover:text-white cursor-pointer"
               >
-                Papier : {receiptPaperDark ? "Sombre" : "Blanc"}
+                {st.paperColor} : {receiptPaperDark ? st.paperDark : st.paperLight}
               </button>
             </div>
           </div>
@@ -1055,7 +1389,7 @@ export default function SettingsPage() {
                 <div>
                   <label className="block text-xs font-medium text-zinc-400 mb-1 flex items-center gap-1.5">
                     <Globe className="w-3.5 h-3.5 text-sky-400" />
-                    <span>Langue du Ticket</span>
+                    <span>{st.receiptLang}</span>
                   </label>
                   <select
                     value={receiptLanguage}
@@ -1072,7 +1406,7 @@ export default function SettingsPage() {
 
                 <div>
                   <label className="block text-xs font-medium text-zinc-400 mb-1">
-                    Largeur du Rouleau
+                    {st.rollWidth}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {[
@@ -1098,14 +1432,14 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-                  Mode de Connexion Matérielle
+                  {st.connMode}
                 </label>
                 <div className="grid grid-cols-2 gap-2.5">
                   {[
-                    { id: "auto" as const, title: "Auto (Tauri ESC/POS → Web)" },
-                    { id: "usb_serial" as const, title: "USB / Série Direct (Spooler)" },
-                    { id: "network" as const, title: "Réseau LAN TCP/IP (:9100)" },
-                    { id: "browser" as const, title: "Dialogue Navigateur / PDF" },
+                    { id: "auto" as const, title: st.connAuto },
+                    { id: "usb_serial" as const, title: st.connUsb },
+                    { id: "network" as const, title: st.connNetwork },
+                    { id: "browser" as const, title: st.connBrowser },
                   ].map((m) => (
                     <button
                       key={m.id}
@@ -1126,7 +1460,7 @@ export default function SettingsPage() {
               {printerConnectionMode === "usb_serial" && (
                 <div>
                   <label className="block text-xs text-zinc-400 mb-1">
-                    Nom de l&apos;imprimante ou Port COM
+                    {st.printerNamePort}
                   </label>
                   <input
                     type="text"
@@ -1141,7 +1475,7 @@ export default function SettingsPage() {
               {printerConnectionMode === "network" && (
                 <div className="grid grid-cols-3 gap-3">
                   <div className="col-span-2">
-                    <label className="block text-xs text-zinc-400 mb-1">Adresse IP LAN</label>
+                    <label className="block text-xs text-zinc-400 mb-1">{st.lanIpAddress}</label>
                     <input
                       type="text"
                       value={printerIp}
@@ -1151,7 +1485,7 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1">Port</label>
+                    <label className="block text-xs text-zinc-400 mb-1">{st.port}</label>
                     <input
                       type="text"
                       value={printerPort}
@@ -1171,7 +1505,7 @@ export default function SettingsPage() {
                     onChange={(e) => setAutoPrintReceipt(e.target.checked)}
                     className="w-4 h-4 rounded accent-white"
                   />
-                  <span>Impression automatique dès validation de l&apos;encaissement</span>
+                  <span>{st.autoPrintCheck}</span>
                 </label>
                 <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
                   <input
@@ -1180,7 +1514,7 @@ export default function SettingsPage() {
                     onChange={(e) => setOpenDrawer(e.target.checked)}
                     className="w-4 h-4 rounded accent-white"
                   />
-                  <span>Impulsion automatique du Tiroir-Caisse RJ11</span>
+                  <span>{st.drawerPulseCheck}</span>
                 </label>
                 <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
                   <input
@@ -1189,7 +1523,7 @@ export default function SettingsPage() {
                     onChange={(e) => setShowStoreLogo(e.target.checked)}
                     className="w-4 h-4 rounded accent-white"
                   />
-                  <span>Afficher le logo en haut du ticket thermique</span>
+                  <span>{st.logoCheck}</span>
                 </label>
                 <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
                   <input
@@ -1204,14 +1538,14 @@ export default function SettingsPage() {
                     className="w-4 h-4 rounded accent-white"
                   />
                   <span>
-                    Sons &amp; Retour Acoustique POS (Bip Scanner Laser, Clics &amp; Validation — Web Audio API)
+                    {st.audioCheck}
                   </span>
                 </label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-zinc-400 mb-1">En-tête du ticket</label>
+                  <label className="block text-xs text-zinc-400 mb-1">{st.receiptHeaderLabel}</label>
                   <input
                     type="text"
                     value={receiptHeader}
@@ -1221,7 +1555,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-zinc-400 mb-1">Pied de page</label>
+                  <label className="block text-xs text-zinc-400 mb-1">{st.receiptFooterLabel}</label>
                   <input
                     type="text"
                     value={receiptFooter}
@@ -1311,10 +1645,10 @@ export default function SettingsPage() {
                 <KeyRound className="w-4 h-4 text-amber-400" />
                 <div>
                   <h2 className="text-sm font-bold text-white">
-                    Coffre-Fort Cloud &amp; Clés API (.env Runtime Vault)
+                    {st.vaultTitle}
                   </h2>
                   <p className="text-[11px] text-zinc-400">
-                    Configurez vos clés SMTP, Supabase, Neon PostgreSQL et moteurs IA directement depuis le navigateur
+                    {st.vaultSubtitle}
                   </p>
                 </div>
               </div>
@@ -1331,7 +1665,7 @@ export default function SettingsPage() {
                   ) : (
                     <Activity className="w-3.5 h-3.5" />
                   )}
-                  <span>Tester les Connexions Live</span>
+                  <span>{st.testConnectionsBtn}</span>
                 </button>
                 <button
                   type="button"
@@ -1344,7 +1678,7 @@ export default function SettingsPage() {
                   ) : (
                     <Save className="w-3.5 h-3.5" />
                   )}
-                  <span>Sauvegarder les Clés</span>
+                  <span>{st.saveKeysBtn}</span>
                 </button>
               </div>
             </div>
@@ -1390,7 +1724,7 @@ export default function SettingsPage() {
             {/* Quick .env Paste Box */}
             <div>
               <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                Coller un bloc <code className="text-amber-300 font-mono">.env</code> complet (détection automatique des clés)
+                {st.pasteEnvLabel}
               </label>
               <textarea
                 rows={3}
@@ -1420,7 +1754,7 @@ export default function SettingsPage() {
                           : "bg-zinc-800 text-zinc-400"
                       }`}
                     >
-                      {item.configured ? `Actif (${item.maskedValue})` : "Non défini"}
+                      {item.configured ? `${st.activeKey} (${item.maskedValue})` : st.notSetKey}
                     </span>
                   </div>
                   <input
@@ -1430,7 +1764,7 @@ export default function SettingsPage() {
                     onChange={(e) =>
                       setVaultInputs((prev) => ({ ...prev, [item.key]: e.target.value }))
                     }
-                    placeholder={`Nouvelle valeur pour ${item.key}...`}
+                    placeholder={`${st.newValPlaceholder} ${item.key}...`}
                     className="w-full h-8 px-2.5 rounded-lg bg-zinc-900 border border-white/10 text-xs text-white font-mono focus:outline-none focus:border-white/30"
                   />
                 </div>
@@ -1444,10 +1778,10 @@ export default function SettingsPage() {
               <Cpu className="w-5 h-5 text-purple-400 shrink-0" />
               <div>
                 <h3 className="text-sm font-bold text-white">
-                  Accélération IA Locale (WebGPU / Terminal Hardware)
+                  {st.gpuTitle}
                 </h3>
                 <p className="text-xs text-zinc-400">
-                  Exécute les prédictions de stock en local à coût zéro lorsque aucune clé Cloud externe n&apos;est requise
+                  {st.gpuSubtitle}
                 </p>
               </div>
             </div>
@@ -1460,7 +1794,7 @@ export default function SettingsPage() {
                   : "bg-zinc-800 text-zinc-400 border-white/10"
               }`}
             >
-              {useLocalGpuAi ? "WebGPU Actif" : "Cloud Uniquement"}
+              {useLocalGpuAi ? st.gpuActive : st.cloudOnly}
             </button>
           </div>
         </div>
@@ -1476,7 +1810,7 @@ export default function SettingsPage() {
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
                 <h2 className="text-sm font-bold text-white">
-                  Session Authentifiée &amp; Contrôle d&apos;Accès (RBAC)
+                  {st.rbacTitle}
                 </h2>
               </div>
               <button
@@ -1485,15 +1819,15 @@ export default function SettingsPage() {
                 className="h-8 px-2.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-xs text-zinc-300 flex items-center gap-1.5 cursor-pointer"
               >
                 <RefreshCw className="w-3 h-3" />
-                <span>Actualiser</span>
+                <span>{st.refreshBtn}</span>
               </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="p-4 rounded-xl bg-zinc-950 border border-white/10">
-                <span className="text-[11px] text-zinc-400">Utilisateur Connecté</span>
+                <span className="text-[11px] text-zinc-400">{st.connectedUser}</span>
                 <div className="text-sm font-bold text-white mt-1">
-                  {currentUser?.fullName || "Propriétaire KASPI"}
+                  {currentUser?.fullName || (locale === "ar" ? "مالك كاسبي" : locale === "fr" ? "Propriétaire KASPI" : "KASPI Owner")}
                 </div>
                 <div className="text-xs text-zinc-400 font-mono mt-0.5" dir="ltr">
                   {currentUser?.email || "admin@kaspipos.com"}
@@ -1501,22 +1835,22 @@ export default function SettingsPage() {
               </div>
 
               <div className="p-4 rounded-xl bg-zinc-950 border border-white/10">
-                <span className="text-[11px] text-zinc-400">Rôle &amp; Privilèges</span>
+                <span className="text-[11px] text-zinc-400">{st.rolePrivileges}</span>
                 <div className="text-sm font-bold text-emerald-400 uppercase font-mono mt-1">
                   {currentUser?.role || "OWNER"}
                 </div>
                 <div className="text-xs text-zinc-400 mt-0.5">
-                  Accès complet (Caisse, Stocks, Clôtures Z, Clés API)
+                  {st.fullAccess}
                 </div>
               </div>
 
               <div className="p-4 rounded-xl bg-zinc-950 border border-white/10">
-                <span className="text-[11px] text-zinc-400">Terminaux Autorisés</span>
+                <span className="text-[11px] text-zinc-400">{st.authorizedDevices}</span>
                 <div className="text-sm font-bold text-white font-mono mt-1">
-                  {currentUser?.maxDevices || 3} Terminaux POS
+                  {currentUser?.maxDevices || 3} {locale === "ar" ? "أجهزة نقطة بيع" : locale === "fr" ? "Terminaux POS" : "POS Terminals"}
                 </div>
                 <div className="text-xs text-zinc-400 mt-0.5">
-                  Synchronisation Cloud + Offline Dexie active
+                  {st.cloudOfflineSync}
                 </div>
               </div>
             </div>

@@ -15,6 +15,8 @@ import {
   Settings,
   HelpCircle,
   Crown,
+  Bot,
+  Sparkles,
 } from "lucide-react";
 import { useAppDictionary } from "@/i18n/schema";
 
@@ -126,12 +128,21 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
         })}
       </nav>
 
-      <div className="mt-6 pt-3 border-t border-white/10 px-2 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
-        <span>Dexie Offline Engine</span>
-        <span className="inline-flex items-center gap-1.5 text-emerald-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Ready
-        </span>
+      <div className="mt-auto pt-4 border-t border-white/10 px-1">
+        <button
+          type="button"
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent("open-ai-chat"));
+          }}
+          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-850 border border-white/10 text-xs font-semibold text-zinc-300 hover:text-white transition cursor-pointer"
+          title="KASPI AI Assistant"
+        >
+          <div className="flex items-center gap-2">
+            <Bot className="w-3.5 h-3.5 text-zinc-400" />
+            <span>KASPI AI</span>
+          </div>
+          <Sparkles className="w-3 h-3 text-zinc-500" />
+        </button>
       </div>
     </aside>
   );

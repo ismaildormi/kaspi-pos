@@ -132,7 +132,7 @@ export function WhatsAppReportSimulator() {
               <div className="self-end max-w-[95%] rounded-2xl rounded-tr-xs bg-[#005c4b] p-3.5 text-white shadow-md text-xs space-y-2.5 border border-emerald-600/40 animate-in fade-in duration-300">
                 <div className="border-b border-emerald-400/30 pb-2">
                   <div className="font-black text-xs text-white tracking-wide">
-                    📊 RAPPORT Z QUOTIDIEN - KASPI POS
+                    RAPPORT Z QUOTIDIEN - KASPI POS
                   </div>
                   <div className="text-[10px] text-emerald-200 font-mono mt-0.5">
                     Date: {todayFormatted} • 23:59
@@ -141,22 +141,22 @@ export function WhatsAppReportSimulator() {
 
                 <div className="space-y-1 font-mono text-[11px] bg-black/15 p-2 rounded-xl">
                   <div className="flex justify-between">
-                    <span className="text-emerald-100">👥 Nombre de clients:</span>
+                    <span className="text-emerald-100">Nombre de clients:</span>
                     <span className="font-bold text-white">142 clients</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-emerald-100">🛒 Articles vendus:</span>
+                    <span className="text-emerald-100">Articles vendus:</span>
                     <span className="font-bold text-white">385 articles</span>
                   </div>
                   <div className="flex justify-between pt-1 border-t border-emerald-400/20 text-white font-extrabold text-xs">
-                    <span className="text-emerald-200">💰 Chiffre d&apos;Affaires Total:</span>
+                    <span className="text-emerald-200">Chiffre d&apos;Affaires Total:</span>
                     <span className="text-amber-300">12,450.00 MAD</span>
                   </div>
                 </div>
 
                 <div className="space-y-1 font-mono text-[11px] bg-black/15 p-2 rounded-xl">
                   <span className="text-emerald-200 font-bold block text-[10px] uppercase">
-                    💵 Répartition des paiements:
+                    Répartition des paiements:
                   </span>
                   <div className="flex justify-between text-emerald-100 pl-1 text-[10px]">
                     <span>- Espèces (Cash):</span>
@@ -170,7 +170,7 @@ export function WhatsAppReportSimulator() {
 
                 <div className="text-[11px] space-y-1 font-sans">
                   <p className="text-emerald-100">
-                    🏆 <strong>Top Produit:</strong> Coca Cola 33cl (85 unités)
+                    <strong>Top Produit:</strong> Coca Cola 33cl (85 unités)
                   </p>
                   <p className="text-amber-200 text-[10px] flex items-center gap-1 font-medium">
                     <AlertTriangle className="h-3 w-3 shrink-0" />
@@ -179,7 +179,7 @@ export function WhatsAppReportSimulator() {
                 </div>
 
                 <div className="flex items-center justify-between pt-1.5 border-t border-emerald-400/20 text-[9px] text-emerald-200 font-mono">
-                  <span>🧾 Tickets: #842 à #984 (100% séquentiel DGI)</span>
+                  <span>Tickets: #842 à #984 (100% séquentiel DGI)</span>
                   <span className="flex items-center gap-0.5 text-[#53bdeb]">
                     <CheckCheck className="h-3.5 w-3.5" />
                   </span>
@@ -189,7 +189,7 @@ export function WhatsAppReportSimulator() {
               <div className="self-end max-w-[95%] rounded-2xl rounded-tr-xs bg-[#005c4b] p-3.5 text-white shadow-md text-xs space-y-2.5 border border-emerald-600/40 animate-in fade-in duration-300">
                 <div className="border-b border-emerald-400/30 pb-2">
                   <div className="font-black text-xs text-white tracking-wide">
-                    📈 BILAN MENSUEL AUTOMATIQUE - KASPI POS
+                    BILAN MENSUEL AUTOMATIQUE - KASPI POS
                   </div>
                   <div className="text-[10px] text-emerald-200 font-mono mt-0.5">
                     Période: Clôture Mensuelle • 00:01
@@ -212,7 +212,7 @@ export function WhatsAppReportSimulator() {
                 </div>
 
                 <div className="border-t border-emerald-400/20 pt-1 text-[10px] text-emerald-100">
-                  <p>📁 <em>Export comptable FEC &amp; récapitulatif TVA générés en pièce jointe PDF conforme DGI.</em></p>
+                  <p><em>Export comptable FEC &amp; récapitulatif TVA générés en pièce jointe PDF conforme DGI.</em></p>
                 </div>
 
                 <div className="flex items-center justify-between pt-1 text-[9px] text-emerald-200 font-mono">

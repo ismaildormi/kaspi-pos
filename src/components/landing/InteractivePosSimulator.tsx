@@ -625,10 +625,10 @@ export function InteractivePosSimulator() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {(
             [
-              { key: "supermarket", icon: ShoppingCart, label: "🛒 Supermarché" },
-              { key: "restaurant", icon: Utensils, label: "🍔 Restaurant / Fast-Food" },
-              { key: "clothing", icon: Shirt, label: "👕 Prêt-à-Porter" },
-              { key: "grocery", icon: Store, label: "🏪 Épicerie (Hanout)" },
+              { key: "supermarket", icon: ShoppingCart, label: "Supermarché" },
+              { key: "restaurant", icon: Utensils, label: "Restaurant / Fast-Food" },
+              { key: "clothing", icon: Shirt, label: "Prêt-à-Porter" },
+              { key: "grocery", icon: Store, label: "Épicerie (Hanout)" },
             ] as const
           ).map((tab) => {
             const isActive = activeVertical === tab.key;
@@ -949,7 +949,7 @@ export function InteractivePosSimulator() {
                 <span className="font-bold">{tenderAmount.toFixed(2)} DH</span>
               </div>
               <div className="flex justify-between text-emerald-800 font-extrabold text-xs">
-                <span>الصرف / À Rendre :</span>
+                <span>Monnaie à rendre :</span>
                 <span>{changeDue.toFixed(2)} DH</span>
               </div>
             </div>
@@ -962,7 +962,7 @@ export function InteractivePosSimulator() {
                 </div>
               </div>
               <p className="text-[9px] text-zinc-600 uppercase tracking-wider font-semibold">
-                Merci de votre visite • شكراً لزيارتكم
+                Merci de votre visite
               </p>
               <p className="text-[8px] text-zinc-500">
                 Signature Électronique Certifiée • Conforme DGI Art. 145 &amp; NF525

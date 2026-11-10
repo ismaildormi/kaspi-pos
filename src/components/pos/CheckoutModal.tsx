@@ -13,8 +13,10 @@ import {
   FileText,
   Send,
   MessageSquare,
+  AlertTriangle,
 } from "lucide-react";
 import { usePosStore, type PaymentMethodType } from "@/client/store/usePosStore";
+import { useAppDictionary } from "@/i18n/schema";
 import { ThermalReceipt, type ReceiptData } from "./ThermalReceipt";
 import { printReceipt } from "@/client/printing";
 import { formatReceiptDate, toWesternNumerals } from "@/lib/printing/receipt-translations";
@@ -25,6 +27,7 @@ import { playTapSound, playSuccessSound, playErrorSound } from "@/lib/audio";
 export const CheckoutModal: React.FC = () => {
   const t = useTranslations("Pos");
   const tCommon = useTranslations("Common");
+  const { locale } = useAppDictionary();
 
   const {
     isPaymentModalOpen,
@@ -364,22 +367,32 @@ export const CheckoutModal: React.FC = () => {
 
             {/* TPE Fee Breakdown Notification */}
             {selectedPaymentMethod === "card" && (
-              <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-800/80 text-amber-200 text-xs space-y-2 shadow-inner">
-                <div className="flex items-center justify-between font-bold text-amber-300">
+              <div className="p-3.5 rounded-xl bg-zinc-900 border border-white/10 text-zinc-300 text-xs space-y-2">
+                <div className="flex items-center justify-between font-bold text-white">
                   <div className="flex items-center gap-2">
-                    <span>Paiement Carte / TPE CMI</span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300">
-                      {deviceCount || 1} {((deviceCount || 1) > 1) ? "Appareils" : "Appareil"} ({feeInfo.customerPercentage}% / {feeInfo.merchantPercentage}%)
+                    <span>
+                      {locale === "ar"
+                        ? "دفع بالبطاقة البنكية / جهاز TPE"
+                        : locale === "en"
+                        ? "Card / POS Terminal Payment"
+                        : "Paiement Carte / TPE CMI"}
+                    </span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-zinc-300">
+                      {deviceCount || 1} {((deviceCount || 1) > 1) ? (locale === "ar" ? "أجهزة" : "Appareils") : (locale === "ar" ? "جهاز" : "Appareil")} ({feeInfo.customerPercentage}% / {feeInfo.merchantPercentage}%)
                     </span>
                   </div>
-                  <span className="font-mono text-sm">{feeInfo.customerTotal.toFixed(2)} DH</span>
+                  <span className="font-mono text-sm">{feeInfo.customerTotal.toFixed(2)} {tCommon("currency")}</span>
                 </div>
-                <p className="text-[11px] font-mono leading-relaxed text-amber-200/90 bg-amber-950/60 p-2.5 rounded-lg border border-amber-900/60 select-all">
+                <p className="text-[11px] font-mono leading-relaxed text-zinc-400 bg-zinc-950 p-2.5 rounded-lg border border-white/10 select-all">
                   {feeInfo.breakdownText}
                 </p>
-                <div className="flex items-center justify-between text-[10px] text-amber-300/80 pt-0.5">
-                  <span>Part Commerçant ({feeInfo.merchantPercentage}%) : -{feeInfo.merchantFee.toFixed(2)} DH</span>
-                  <span className="font-semibold text-emerald-400">Total Client ({feeInfo.customerPercentage}%) : {feeInfo.customerTotal.toFixed(2)} DH</span>
+                <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-0.5">
+                  <span>
+                    {locale === "ar" ? "حصة التاجر" : "Part Commerçant"} ({feeInfo.merchantPercentage}%) : -{feeInfo.merchantFee.toFixed(2)} {tCommon("currency")}
+                  </span>
+                  <span className="font-semibold text-white">
+                    {locale === "ar" ? "إجمالي الزبون" : "Total Client"} ({feeInfo.customerPercentage}%) : {feeInfo.customerTotal.toFixed(2)} {tCommon("currency")}
+                  </span>
                 </div>
               </div>
             )}
@@ -415,7 +428,7 @@ export const CheckoutModal: React.FC = () => {
                       onClick={() => handleQuickCash(val)}
                       className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-xs font-mono font-bold text-white border border-zinc-800 transition cursor-pointer"
                     >
-                      +{val} DH
+                      +{val} {tCommon("currency")}
                     </button>
                   ))}
                 </div>
@@ -435,12 +448,33 @@ export const CheckoutModal: React.FC = () => {
               <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs leading-relaxed">
                 {customer ? (
                   <>
-                    Vente à crédit attribuée à <strong>{customer.name}</strong>.
-                    Solde actuel : <strong>{customer.currentCreditBalance.toFixed(2)} DH</strong>.
+                    {locale === "ar" ? (
+                      <>
+                        تسجيل البيع بالكريدي باسم <strong>{customer.name}</strong>.
+                        الرصيد الجاري : <strong>{customer.currentCreditBalance.toFixed(2)} {tCommon("currency")}</strong>.
+                      </>
+                    ) : locale === "en" ? (
+                      <>
+                        Credit sale assigned to <strong>{customer.name}</strong>.
+                        Current balance : <strong>{customer.currentCreditBalance.toFixed(2)} {tCommon("currency")}</strong>.
+                      </>
+                    ) : (
+                      <>
+                        Vente à crédit attribuée à <strong>{customer.name}</strong>.
+                        Solde actuel : <strong>{customer.currentCreditBalance.toFixed(2)} {tCommon("currency")}</strong>.
+                      </>
+                    )}
                   </>
                 ) : (
-                  <span className="text-zinc-400 font-bold">
-                    ⚠️ Veuillez d&apos;abord sélectionner un client avant d&apos;enregistrer une vente à crédit.
+                  <span className="text-zinc-400 font-medium flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-zinc-300 shrink-0" />
+                    <span>
+                      {locale === "ar"
+                        ? "يرجى تحديد زبون أولاً قبل تسجيل عملية بيع بالكريدي."
+                        : locale === "en"
+                        ? "Please select a customer first before recording a credit sale."
+                        : "Veuillez d'abord sélectionner un client avant d'enregistrer une vente à crédit."}
+                    </span>
                   </span>
                 )}
               </div>
@@ -456,7 +490,15 @@ export const CheckoutModal: React.FC = () => {
               className="w-full h-13 rounded-xl bg-white hover:bg-zinc-200 active:scale-[0.99] disabled:opacity-30 disabled:cursor-not-allowed text-black font-extrabold text-base shadow-sm transition flex items-center justify-center gap-2 cursor-pointer"
             >
               <CheckCircle2 className="w-5 h-5" />
-              <span>{isProcessingPayment ? "Traitement..." : t("completeSale")}</span>
+              <span>
+                {isProcessingPayment
+                  ? locale === "ar"
+                    ? "جاري المعالجة..."
+                    : locale === "en"
+                    ? "Processing..."
+                    : "Traitement..."
+                  : t("completeSale")}
+              </span>
             </button>
           </div>
         )}

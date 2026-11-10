@@ -1,11 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
 import {
   X,
   Search,
-  UserCheck,
   UserPlus,
   Coins,
   CreditCard,
@@ -15,6 +13,7 @@ import {
 import { usePosStore, type PosCustomer } from "@/client/store/usePosStore";
 import { offlineDb } from "@/client/db";
 import { getApiUrl } from "@/client/sync-engine";
+import { useAppDictionary } from "@/i18n/schema";
 
 interface CustomerModalProps {
   isOpen: boolean;
@@ -25,9 +24,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const t = useTranslations("Pos");
-  const tCommon = useTranslations("Common");
-
+  const { t, locale } = useAppDictionary();
   const { customer: selectedCustomer, setCustomer } = usePosStore();
 
   const [search, setSearch] = useState("");
@@ -42,6 +39,88 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
   const [newCreditLimit, setNewCreditLimit] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const modalI18n = {
+    ar: {
+      title: "قائمة الزبائن",
+      newTitle: "إضافة زبون جديد",
+      searchTab: "البحث في القائمة",
+      newTab: "زبون جديد",
+      fullName: "الاسم الكامل / الشركة *",
+      fullNamePlaceholder: "مثال: محمد التازي أو شركة أطلس",
+      phone: "رقم الهاتف (GSM)",
+      ice: "التعريف الموحد (ICE)",
+      creditLimit: "سقف الكريدي المسموح به (MAD)",
+      saveBtn: "حفظ واختيار الزبون",
+      saving: "جاري الحفظ...",
+      searchPlaceholder: "بحث بالاسم، رقم الهاتف أو ICE...",
+      guestTitle: "زبون عادي (بدون حساب)",
+      guestSubtitle: "بيع مباشر نقداً بدون تسجيل في السجل",
+      searching: "جاري البحث...",
+      noResults: "لا يوجد أي زبون مطابق للبحث.",
+      credit: "كريدي",
+      pts: "نقطة",
+    },
+    fr: {
+      title: "Clients",
+      newTitle: "Nouveau Client",
+      searchTab: "Rechercher existant",
+      newTab: "Nouveau client",
+      fullName: "Nom complet / Raison Sociale *",
+      fullNamePlaceholder: "Ex: Mohammed Tazi ou Ste Atlas SARL",
+      phone: "Téléphone (GSM)",
+      ice: "ICE (Pour entreprises)",
+      creditLimit: "Plafond de Crédit Autorisé (MAD)",
+      saveBtn: "Enregistrer et Sélectionner",
+      saving: "Enregistrement...",
+      searchPlaceholder: "Rechercher par nom, téléphone ou ICE...",
+      guestTitle: "Client Comptoir (Passager)",
+      guestSubtitle: "Vente directe sans compte client",
+      searching: "Recherche en cours...",
+      noResults: "Aucun client trouvé.",
+      credit: "Crédit",
+      pts: "pts",
+    },
+    en: {
+      title: "Customers",
+      newTitle: "New Customer",
+      searchTab: "Search Existing",
+      newTab: "New Customer",
+      fullName: "Full Name / Company Name *",
+      fullNamePlaceholder: "e.g., John Doe or Atlas Corp",
+      phone: "Phone Number",
+      ice: "Tax ID / ICE",
+      creditLimit: "Authorized Credit Limit (MAD)",
+      saveBtn: "Save & Select Customer",
+      saving: "Saving...",
+      searchPlaceholder: "Search by name, phone or tax ID...",
+      guestTitle: "Walk-in Customer (Guest)",
+      guestSubtitle: "Direct cash sale without account",
+      searching: "Searching...",
+      noResults: "No customers found.",
+      credit: "Credit",
+      pts: "pts",
+    },
+  }[locale] || {
+    title: "Customers",
+    newTitle: "New Customer",
+    searchTab: "Search Existing",
+    newTab: "New Customer",
+    fullName: "Full Name / Company Name *",
+    fullNamePlaceholder: "e.g., John Doe or Atlas Corp",
+    phone: "Phone Number",
+    ice: "Tax ID / ICE",
+    creditLimit: "Authorized Credit Limit (MAD)",
+    saveBtn: "Save & Select Customer",
+    saving: "Saving...",
+    searchPlaceholder: "Search by name, phone or tax ID...",
+    guestTitle: "Walk-in Customer (Guest)",
+    guestSubtitle: "Direct cash sale without account",
+    searching: "Searching...",
+    noResults: "No customers found.",
+    credit: "Credit",
+    pts: "pts",
+  };
 
   // Search customers
   useEffect(() => {
@@ -72,7 +151,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
             ).catch(() => {});
           }
         }
-      } catch (err) {
+      } catch {
         // Fallback to Dexie local cache if offline
         if (offlineDb) {
           try {
@@ -126,7 +205,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error?.message || "Échec de création du client");
+        throw new Error(errorData.error?.message || "Customer creation failed");
       }
 
       const data = await res.json();
@@ -146,7 +225,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
 
       handleSelect(created);
     } catch (err: any) {
-      setErrorMessage(err.message || "Erreur lors de la création du client");
+      setErrorMessage(err.message || "Error");
     } finally {
       setIsSubmitting(false);
     }
@@ -160,7 +239,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
           <div className="flex items-center gap-2">
             <User className="w-5 h-5 text-white" />
             <h3 className="font-bold text-white text-base">
-              {isCreating ? "Nouveau Client (إضافة زبون)" : t("customer")}
+              {isCreating ? modalI18n.newTitle : modalI18n.title}
             </h3>
           </div>
           <button
@@ -181,7 +260,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                 : "bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800"
             }`}
           >
-            Rechercher existant
+            {modalI18n.searchTab}
           </button>
 
           <button
@@ -193,7 +272,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
             }`}
           >
             <UserPlus className="w-4 h-4" />
-            <span>Nouveau client</span>
+            <span>{modalI18n.newTab}</span>
           </button>
         </div>
 
@@ -208,14 +287,14 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                Nom complet / Raison Sociale *
+                {modalI18n.fullName}
               </label>
               <input
                 type="text"
                 required
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="Ex: Mohammed Tazi ou Ste Atlas SARL"
+                placeholder={modalI18n.fullNamePlaceholder}
                 className="w-full h-11 px-3.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white focus:border-white focus:outline-none"
               />
             </div>
@@ -223,7 +302,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  Téléphone (GSM)
+                  {modalI18n.phone}
                 </label>
                 <input
                   type="tel"
@@ -236,7 +315,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  ICE (Pour entreprises)
+                  {modalI18n.ice}
                 </label>
                 <input
                   type="text"
@@ -250,7 +329,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                Plafond de Crédit Autorisé (DH)
+                {modalI18n.creditLimit}
               </label>
               <input
                 type="number"
@@ -267,7 +346,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
               disabled={isSubmitting || !newName.trim()}
               className="w-full h-12 rounded-xl bg-white hover:bg-zinc-200 active:scale-[0.99] disabled:opacity-40 text-black font-bold text-sm transition cursor-pointer mt-2"
             >
-              {isSubmitting ? tCommon("loading") : "Enregistrer et Sélectionner"}
+              {isSubmitting ? modalI18n.saving : modalI18n.saveBtn}
             </button>
           </form>
         ) : (
@@ -280,7 +359,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher par nom, téléphone ou ICE..."
+                placeholder={modalI18n.searchPlaceholder}
                 className="w-full h-11 ps-9 pe-4 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white focus:border-white focus:outline-none"
               />
             </div>
@@ -295,8 +374,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                   <User className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="text-sm font-bold text-white block">Client Comptoir (Passager)</span>
-                  <span className="text-xs text-zinc-400">Vente directe sans compte client</span>
+                  <span className="text-sm font-bold text-white block">{modalI18n.guestTitle}</span>
+                  <span className="text-xs text-zinc-400">{modalI18n.guestSubtitle}</span>
                 </div>
               </div>
               {selectedCustomer === null && (
@@ -307,12 +386,12 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
             {/* Customer List */}
             <div className="flex-1 overflow-y-auto space-y-2 pr-1">
               {isLoading ? (
-                <div className="py-8 text-center text-zinc-500 text-sm">
-                  Recherche en cours...
+                <div className="py-8 text-center text-zinc-500 text-sm font-mono">
+                  {modalI18n.searching}
                 </div>
               ) : customers.length === 0 ? (
-                <div className="py-8 text-center text-zinc-500 text-sm">
-                  Aucun client trouvé.
+                <div className="py-8 text-center text-zinc-500 text-sm font-mono">
+                  {modalI18n.noResults}
                 </div>
               ) : (
                 customers.map((c) => {
@@ -348,11 +427,11 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                           {c.currentCreditBalance > 0 ? (
                             <span className="flex items-center gap-1 text-zinc-300 font-mono font-semibold">
                               <CreditCard className="w-3 h-3 text-zinc-500" />
-                              Crédit: {c.currentCreditBalance.toFixed(2)} DH
+                              {modalI18n.credit}: {c.currentCreditBalance.toFixed(2)} {t.common.currency}
                             </span>
                           ) : (
                             <span className="text-zinc-500 font-mono">
-                              Crédit: 0.00 DH
+                              {modalI18n.credit}: 0.00 {t.common.currency}
                             </span>
                           )}
 
@@ -360,7 +439,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
 
                           <span className="flex items-center gap-1 text-zinc-400 font-mono font-medium">
                             <Coins className="w-3 h-3 text-zinc-500" />
-                            {c.loyaltyPoints ?? 0} pts
+                            {c.loyaltyPoints ?? 0} {modalI18n.pts}
                           </span>
                         </div>
                       </div>

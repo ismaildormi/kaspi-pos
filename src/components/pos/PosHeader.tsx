@@ -11,14 +11,9 @@ import {
   Minimize2,
   Settings,
   Download,
-  ShoppingBasket,
-  UtensilsCrossed,
-  Shirt,
-  Smartphone,
+  Bot,
 } from "lucide-react";
-import { toast } from "sonner";
-import { usePosStore, type StoreBusinessType } from "@/client/store/usePosStore";
-import { getApiUrl } from "@/client/sync-engine";
+import { usePosStore } from "@/client/store/usePosStore";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SyncStatusBadge } from "./SyncStatusBadge";
 import { useAppDictionary } from "@/i18n/schema";
@@ -43,7 +38,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
   expectedCash = 0,
 }) => {
   const { t, locale } = useAppDictionary();
-  const { heldCarts, storeType, setStoreProfile } = usePosStore();
+  const { heldCarts } = usePosStore();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -62,38 +57,6 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
     }
   };
 
-  const verticalModes: Array<{
-    id: StoreBusinessType;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-  }> = [
-    { id: "grocery", label: t.topbar.grocery, icon: ShoppingBasket },
-    { id: "restaurant", label: t.topbar.restaurant, icon: UtensilsCrossed },
-    { id: "fashion", label: t.topbar.fashion, icon: Shirt },
-    { id: "electronics", label: t.topbar.tech, icon: Smartphone },
-  ];
-
-  const handleSwitchVertical = async (nextType: StoreBusinessType) => {
-    if (nextType === storeType) {
-      if (onOpenIndustryTools) onOpenIndustryTools();
-      return;
-    }
-    setStoreProfile(nextType, true);
-    const modeObj = verticalModes.find((m) => m.id === nextType);
-    toast.success(`${modeObj?.label || nextType}`);
-    try {
-      await fetch(getApiUrl("/api/v1/onboarding/setup"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          storeType: nextType,
-          shopName: storeName,
-          seedStarterCatalog: false,
-        }),
-      });
-    } catch {}
-  };
-
   return (
     <header
       dir="ltr"
@@ -103,7 +66,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
       <div className="flex items-center gap-2.5 min-w-0">
         <Link
           href={`/${locale}/dashboard`}
-          className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/[0.05] text-zinc-300 hover:text-white transition group"
+          className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-white/[0.05] text-zinc-300 hover:text-white transition group border border-transparent hover:border-white/10"
           title={t.nav.dashboard}
         >
           <LayoutDashboard className="w-4 h-4 text-zinc-400 group-hover:text-white" />
@@ -127,36 +90,16 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         </div>
       </div>
 
-      {/* CENTER: Vertical Mode Switcher Pills */}
-      <div className="hidden lg:flex items-center gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
-        {verticalModes.map((mode) => {
-          const Icon = mode.icon;
-          const active = storeType === mode.id;
-          return (
-            <button
-              key={mode.id}
-              type="button"
-              onClick={() => handleSwitchVertical(mode.id)}
-              className={`h-7 px-2.5 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 transition cursor-pointer ${
-                active
-                  ? "bg-white text-zinc-950 shadow-xs"
-                  : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{mode.label}</span>
-            </button>
-          );
-        })}
-
+      {/* CENTER: Minimal Industry Tools Action if Available */}
+      <div className="flex items-center gap-2">
         {onOpenIndustryTools && (
           <button
             type="button"
             onClick={onOpenIndustryTools}
-            className="h-7 px-2.5 ms-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer"
+            className="h-8 px-3 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 text-zinc-200 hover:text-white text-xs font-medium flex items-center gap-1.5 transition cursor-pointer"
             title="KDS / Tables / Tailles / Balance / IMEI"
           >
-            <Sparkles className="w-3 h-3 text-amber-400" />
+            <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
             <span>{t.topbar.tools}</span>
           </button>
         )}
@@ -164,17 +107,6 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
 
       {/* RIGHT: Clean Action Pills */}
       <div className="flex items-center gap-2 shrink-0">
-        {/* Mobile Industry Tools Trigger */}
-        {onOpenIndustryTools && (
-          <button
-            type="button"
-            onClick={onOpenIndustryTools}
-            className="lg:hidden inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-semibold cursor-pointer"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-          </button>
-        )}
-
         {/* Cash Drawer Shift Pill */}
         {onOpenCashShift && (
           <button
@@ -182,18 +114,18 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
             onClick={onOpenCashShift}
             className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border text-xs font-semibold transition cursor-pointer ${
               isShiftOpen
-                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20"
-                : "bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20"
+                ? "bg-zinc-900 border-white/15 text-zinc-200 hover:bg-zinc-800 hover:text-white"
+                : "bg-zinc-900 border-white/10 text-zinc-400 hover:bg-zinc-800 hover:text-white"
             }`}
             title="Fond de Caisse / Rapport X & Z"
           >
-            <Wallet className="w-3.5 h-3.5" />
+            <Wallet className="w-3.5 h-3.5 text-zinc-400" />
             <span className="hidden md:inline font-mono">
               {isShiftOpen ? `${expectedCash.toFixed(0)} ${t.common.currency}` : t.topbar.openRegister}
             </span>
             <span
               className={`w-1.5 h-1.5 rounded-full ${
-                isShiftOpen ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
+                isShiftOpen ? "bg-emerald-400" : "bg-zinc-500"
               }`}
             />
           </button>
@@ -207,13 +139,25 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
             className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-white border border-white/10 text-xs font-semibold transition cursor-pointer"
             title={t.pos.heldOrders}
           >
-            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            <Clock className="w-3.5 h-3.5 text-zinc-400" />
             <span className="font-mono">{heldCarts.length}</span>
           </button>
         )}
 
         {/* Sync Status */}
         <SyncStatusBadge />
+
+        {/* AI Assistant Docked Trigger */}
+        <button
+          type="button"
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent("open-ai-chat"));
+          }}
+          className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300 hover:text-white transition cursor-pointer"
+          title="KASPI AI Assistant"
+        >
+          <Bot className="w-3.5 h-3.5 text-zinc-300" />
+        </button>
 
         {/* Desktop App Link */}
         <Link

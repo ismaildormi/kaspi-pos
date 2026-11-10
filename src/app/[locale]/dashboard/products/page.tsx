@@ -84,6 +84,7 @@ export default function ProductsListPage() {
   const [createBarcode, setCreateBarcode] = useState("");
   const [createCategory, setCreateCategory] = useState("");
   const [createSalePrice, setCreateSalePrice] = useState("");
+  const [createWholesalePrice, setCreateWholesalePrice] = useState("");
   const [createCostPrice, setCreateCostPrice] = useState("");
   const [createTaxRate, setCreateTaxRate] = useState("20");
   const [createInitialStock, setCreateInitialStock] = useState("25");
@@ -138,7 +139,7 @@ export default function ProductsListPage() {
       barcode: createBarcode.trim() || null,
       categoryName: createCategory.trim() || null,
       salePrice: parseFloat(createSalePrice) || 0,
-      wholesalePrice: null,
+      wholesalePrice: createWholesalePrice ? parseFloat(createWholesalePrice) : null,
       taxRate: parseFloat(createTaxRate) || 20,
       trackStock: true,
       stockQuantity: parseFloat(createInitialStock) || 0,
@@ -161,26 +162,47 @@ export default function ProductsListPage() {
           barcode: createBarcode.trim() || undefined,
           categoryName: createCategory.trim() || undefined,
           salePrice: parseFloat(createSalePrice) || 0,
+          wholesalePrice: createWholesalePrice ? parseFloat(createWholesalePrice) : undefined,
           costPrice: createCostPrice ? parseFloat(createCostPrice) : undefined,
           taxRate: parseFloat(createTaxRate) || 20,
           initialStock: parseFloat(createInitialStock) || 0,
         }),
       });
       if (!res.ok) {
-        throw new Error("Impossible de créer le produit");
+        throw new Error(
+          locale === "ar"
+            ? "تعذر إضافة المنتج إلى الكتالوج"
+            : locale === "en"
+            ? "Unable to create product"
+            : "Impossible de créer le produit"
+        );
       }
-      toast.success("Produit ajouté au catalogue avec succès !");
+      toast.success(
+        locale === "ar"
+          ? "تمت إضافة المنتج إلى الكتالوج بنجاح"
+          : locale === "en"
+          ? "Product created successfully"
+          : "Produit ajouté au catalogue avec succès !"
+      );
       setIsCreateModalOpen(false);
       setCreateName("");
       setCreateSku("");
       setCreateBarcode("");
       setCreateCategory("");
       setCreateSalePrice("");
+      setCreateWholesalePrice("");
       setCreateCostPrice("");
       setCreateInitialStock("25");
       await fetchProducts(true);
     } catch (err: any) {
-      toast.error(err.message || "Erreur lors de la création");
+      toast.error(
+        err.message ||
+          (locale === "ar"
+            ? "حدث خطأ أثناء إنشاء المنتج"
+            : locale === "en"
+            ? "Error while creating product"
+            : "Erreur lors de la création")
+      );
     } finally {
       setIsCreatingProduct(false);
     }
@@ -796,7 +818,7 @@ export default function ProductsListPage() {
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <ImageIcon className="w-4 h-4" />
-                  تغيير الصورة • Change Image URL
+                  {locale === "ar" ? "تغيير صورة المنتج" : locale === "fr" ? "Modifier l'image" : "Change Product Image"}
                 </h3>
                 <p className="text-xs text-zinc-400 mt-0.5">
                   {imageModalProduct.name}
@@ -913,7 +935,7 @@ export default function ProductsListPage() {
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <DollarSign className="w-4 h-4" />
-                  تعديل الثمن • Edit Sale Price
+                  {locale === "ar" ? "تعديل سعر البيع" : locale === "fr" ? "Modifier le prix de vente" : "Edit Selling Price"}
                 </h3>
                 <p className="text-xs text-zinc-400 mt-0.5">
                   {priceModalProduct.name} ({priceModalProduct.sku})
@@ -974,164 +996,261 @@ export default function ProductsListPage() {
       {/* ====================================================================
          MODAL 3: CREATE NEW PRODUCT ("+ Nouveau Produit")
          ==================================================================== */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="w-full max-w-lg rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-5 shadow-2xl my-auto">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-amber-400" />
-                  Nouveau Produit • إضافة منتج جديد
-                </h3>
-                <p className="text-xs text-zinc-400 mt-0.5">
-                  Création directe avec SKU, Code-barres EAN-13 et stock initial
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsCreateModalOpen(false)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      {isCreateModalOpen && (() => {
+        const modalI18n = {
+          ar: {
+            title: "إضافة منتج جديد",
+            subtitle: "إنشاء مباشر مع رمز SKU، الباركود الدولي EAN-13 والمخزون الأولي",
+            name: "اسم وتعيين المنتج *",
+            namePlaceholder: "مثال: زيت زيتون بكر ممتاز 1 لتر",
+            category: "القسم / التصنيف",
+            categoryPlaceholder: "مثال: بقالة / مشروبات",
+            sku: "رمز SKU (اختياري)",
+            skuPlaceholder: "توليد تلقائي في حال تركه فارغاً",
+            barcode: "رمز الباركود EAN-13",
+            generateBarcode: "+ توليد باركود مغربي (611)",
+            barcodePlaceholder: "امسح بالماسح أو ولّد كود EAN-13",
+            salePrice: "سعر البيع للعموم (MAD) *",
+            wholesalePrice: "سعر الجملة (MAD)",
+            costPrice: "سعر الشراء والتكلفة (MAD)",
+            initialStock: "المخزون الأولي",
+            cancel: "إلغاء",
+            submit: "حفظ المنتج في الكتالوج",
+            submitting: "جاري الحفظ...",
+          },
+          fr: {
+            title: "Nouveau Produit",
+            subtitle: "Création directe avec SKU, Code-barres EAN-13 et stock initial",
+            name: "Désignation du Produit *",
+            namePlaceholder: "Ex: Huile d'Olive Extra Vierge 1L",
+            category: "Catégorie / Rayon",
+            categoryPlaceholder: "Ex: Épicerie / Boissons",
+            sku: "Code SKU (Optionnel)",
+            skuPlaceholder: "Auto-généré si vide",
+            barcode: "Code-barres EAN-13",
+            generateBarcode: "+ Générer EAN-13 Maroc (611)",
+            barcodePlaceholder: "Scannez ou générez un code EAN-13",
+            salePrice: "Prix Vente Détail (MAD) *",
+            wholesalePrice: "Prix de Gros (MAD)",
+            costPrice: "Prix d'Achat (MAD)",
+            initialStock: "Stock Initial",
+            cancel: "Annuler",
+            submit: "Créer le Produit",
+            submitting: "Création en cours...",
+          },
+          en: {
+            title: "New Product",
+            subtitle: "Direct product creation with SKU, EAN-13 barcode, and initial stock",
+            name: "Product Name *",
+            namePlaceholder: "e.g., Extra Virgin Olive Oil 1L",
+            category: "Category / Department",
+            categoryPlaceholder: "e.g., Grocery / Beverages",
+            sku: "SKU Code (Optional)",
+            skuPlaceholder: "Auto-generated if blank",
+            barcode: "EAN-13 Barcode",
+            generateBarcode: "+ Generate Moroccan EAN-13 (611)",
+            barcodePlaceholder: "Scan or generate EAN-13 barcode",
+            salePrice: "Retail Price (MAD) *",
+            wholesalePrice: "Wholesale Price (MAD)",
+            costPrice: "Cost / Purchase Price (MAD)",
+            initialStock: "Initial Stock",
+            cancel: "Cancel",
+            submit: "Create Product",
+            submitting: "Creating...",
+          },
+        }[locale] || {
+          title: "New Product",
+          subtitle: "Direct product creation with SKU, EAN-13 barcode, and initial stock",
+          name: "Product Name *",
+          namePlaceholder: "e.g., Extra Virgin Olive Oil 1L",
+          category: "Category / Department",
+          categoryPlaceholder: "e.g., Grocery / Beverages",
+          sku: "SKU Code (Optional)",
+          skuPlaceholder: "Auto-generated if blank",
+          barcode: "EAN-13 Barcode",
+          generateBarcode: "+ Generate Moroccan EAN-13 (611)",
+          barcodePlaceholder: "Scan or generate EAN-13 barcode",
+          salePrice: "Retail Price (MAD) *",
+          wholesalePrice: "Wholesale Price (MAD)",
+          costPrice: "Cost / Purchase Price (MAD)",
+          initialStock: "Initial Stock",
+          cancel: "Cancel",
+          submit: "Create Product",
+          submitting: "Creating...",
+        };
 
-            <form onSubmit={handleCreateProductSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                  Désignation du Produit *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={createName}
-                  onChange={(e) => setCreateName(e.target.value)}
-                  placeholder="Ex: Huile d'Olive Extra Vierge 1L"
-                  className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-white focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+        return (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+            <div className="w-full max-w-lg rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-5 shadow-2xl my-auto">
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    Catégorie / Rayon
-                  </label>
-                  <input
-                    type="text"
-                    value={createCategory}
-                    onChange={(e) => setCreateCategory(e.target.value)}
-                    placeholder="Ex: Épicerie / Boissons"
-                    className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-white focus:outline-none"
-                  />
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <Plus className="w-4 h-4 text-white" />
+                    <span>{modalI18n.title}</span>
+                  </h3>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    {modalI18n.subtitle}
+                  </p>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    Code SKU (Optionnel)
-                  </label>
-                  <input
-                    type="text"
-                    value={createSku}
-                    onChange={(e) => setCreateSku(e.target.value)}
-                    placeholder="Auto-généré si vide"
-                    className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:border-white focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold text-zinc-300">
-                    Code-barres EAN-13
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCreateBarcode(
-                        `6111${Math.floor(100000000 + Math.random() * 899999999)}`
-                      )
-                    }
-                    className="text-[11px] font-bold text-amber-400 hover:underline"
-                  >
-                    + Générer EAN-13 Maroc (611)
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  value={createBarcode}
-                  onChange={(e) => setCreateBarcode(e.target.value)}
-                  placeholder="Scannez ou générez un code EAN-13"
-                  className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:border-white focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    Prix Vente (MAD) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={createSalePrice}
-                    onChange={(e) => setCreateSalePrice(e.target.value)}
-                    placeholder="85.00"
-                    className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono font-bold text-white focus:border-white focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    Prix Achat (MAD)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={createCostPrice}
-                    onChange={(e) => setCreateCostPrice(e.target.value)}
-                    placeholder="65.00"
-                    className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-white focus:border-white focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    Stock Initial
-                  </label>
-                  <input
-                    type="number"
-                    step="1"
-                    value={createInitialStock}
-                    onChange={(e) => setCreateInitialStock(e.target.value)}
-                    placeholder="25"
-                    className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono font-bold text-white focus:border-white focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-950 text-xs font-bold text-zinc-300 hover:text-white transition cursor-pointer"
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
                 >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={isCreatingProduct}
-                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black transition inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  {isCreatingProduct ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Check className="w-3.5 h-3.5" />
-                  )}
-                  <span>Créer le Produit</span>
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-            </form>
+
+              <form onSubmit={handleCreateProductSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                    {modalI18n.name}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={createName}
+                    onChange={(e) => setCreateName(e.target.value)}
+                    placeholder={modalI18n.namePlaceholder}
+                    className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-white focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                      {modalI18n.category}
+                    </label>
+                    <input
+                      type="text"
+                      value={createCategory}
+                      onChange={(e) => setCreateCategory(e.target.value)}
+                      placeholder={modalI18n.categoryPlaceholder}
+                      className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-white focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                      {modalI18n.sku}
+                    </label>
+                    <input
+                      type="text"
+                      value={createSku}
+                      onChange={(e) => setCreateSku(e.target.value)}
+                      placeholder={modalI18n.skuPlaceholder}
+                      className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:border-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-zinc-300">
+                      {modalI18n.barcode}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCreateBarcode(
+                          `6111${Math.floor(100000000 + Math.random() * 899999999)}`
+                        )
+                      }
+                      className="text-[11px] font-bold text-zinc-300 hover:text-white hover:underline cursor-pointer"
+                    >
+                      {modalI18n.generateBarcode}
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={createBarcode}
+                    onChange={(e) => setCreateBarcode(e.target.value)}
+                    placeholder={modalI18n.barcodePlaceholder}
+                    className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:border-white focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                      {modalI18n.salePrice}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={createSalePrice}
+                      onChange={(e) => setCreateSalePrice(e.target.value)}
+                      placeholder="85.00"
+                      className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono font-bold text-white focus:border-white focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                      {modalI18n.wholesalePrice}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={createWholesalePrice}
+                      onChange={(e) => setCreateWholesalePrice(e.target.value)}
+                      placeholder="70.00"
+                      className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-white focus:border-white focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                      {modalI18n.costPrice}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={createCostPrice}
+                      onChange={(e) => setCreateCostPrice(e.target.value)}
+                      placeholder="65.00"
+                      className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-white focus:border-white focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                      {modalI18n.initialStock}
+                    </label>
+                    <input
+                      type="number"
+                      step="1"
+                      value={createInitialStock}
+                      onChange={(e) => setCreateInitialStock(e.target.value)}
+                      placeholder="25"
+                      className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono font-bold text-white focus:border-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-950 text-xs font-bold text-zinc-300 hover:text-white transition cursor-pointer"
+                  >
+                    {modalI18n.cancel}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isCreatingProduct}
+                    className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-bold transition inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {isCreatingProduct ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Check className="w-3.5 h-3.5" />
+                    )}
+                    <span>{isCreatingProduct ? modalI18n.submitting : modalI18n.submit}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

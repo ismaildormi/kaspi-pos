@@ -26,10 +26,29 @@
   body {
     background-color: #09090b;
     color: #fafafa;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+}
+
+/* Universal Arabic Typography & Cursive Ligature Preservation */
+:lang(ar),
+[lang="ar"],
+.arabic-text,
+html[lang="ar"],
+html[lang="ar"] body {
+  font-family: 'Inter', 'IBM Plex Sans Arabic', 'Cairo', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum" 1;
+}
+
+/* Strictly prevent any tracking utilities (tracking-wider, tracking-widest) from breaking cursive connections */
+:lang(ar) *,
+html[lang="ar"] * {
+  letter-spacing: 0 !important;
+  text-transform: none !important;
 }
 
 /* Custom monochrome scrollbars */

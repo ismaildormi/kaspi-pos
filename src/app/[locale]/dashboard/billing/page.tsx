@@ -170,7 +170,7 @@ export default function BillingDashboardPage() {
       default:
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-zinc-900 text-zinc-400 border border-zinc-800">
-            <span>{status || "Non souscrit"}</span>
+            <span>{status || (locale === "ar" ? "غير مفعل" : locale === "en" ? "Unsubscribed" : "Non souscrit")}</span>
           </span>
         );
     }
@@ -345,9 +345,9 @@ export default function BillingDashboardPage() {
                   ? "bg-zinc-800 border-white text-white font-bold ring-1 ring-white/20"
                   : "bg-zinc-900/60 border-zinc-800/80 text-zinc-400"
               }`}>
-                <span className="block text-[11px] mb-0.5">4 Caisses</span>
+                <span className="block text-[11px] mb-0.5">{locale === "ar" ? "4 أجهزة كاشير" : locale === "en" ? "4 Registers" : "4 Caisses"}</span>
                 <span className="font-mono text-sm font-black text-white">650 DH</span>
-                <span className="block text-[9px] text-zinc-500">Supermarché</span>
+                <span className="block text-[9px] text-zinc-500">{locale === "ar" ? "سوبرماركت كبير" : locale === "en" ? "Supermarket" : "Supermarché"}</span>
               </div>
             </div>
           </div>
@@ -355,17 +355,17 @@ export default function BillingDashboardPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-zinc-800">
             <button
               onClick={() => setIsAddDeviceModalOpen(true)}
-              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-500/20 cursor-pointer"
+              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>{isRtl ? "إضافة نقطة بيع جديدة (+150 درهم)" : "Ajouter un nouveau poste de caisse (+150 DH)"}</span>
+              <span>{isRtl ? "إضافة نقطة بيع جديدة (+150 درهم)" : locale === "en" ? "Add Extra Register (+150 MAD)" : "Ajouter un nouveau poste de caisse (+150 DH)"}</span>
             </button>
 
             <button
               onClick={() => setIsModalOpen(true)}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs sm:text-sm transition shadow-sm cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-white border border-white/10 font-bold text-xs sm:text-sm transition cursor-pointer"
             >
-              {isRtl ? "تجديد أو ترقية الاشتراك" : "Modifier le moyen de paiement"}
+              {isRtl ? "تجديد أو ترقية الاشتراك" : locale === "en" ? "Update Payment Method" : "Modifier le moyen de paiement"}
             </button>
           </div>
         </div>
@@ -400,9 +400,9 @@ export default function BillingDashboardPage() {
                 {isRtl ? "بيانات التحويل البنكي الوطني :" : "Coordonnées Bancaires Nationales :"}
               </span>
               <div className="font-mono text-xs space-y-1 text-zinc-300">
-                <div><strong className="text-white">Banque :</strong> CIH Bank / Attijariwafa Bank</div>
-                <div><strong className="text-white">RIB (24 chiffres) :</strong> 230 780 4567890123456701 45</div>
-                <div><strong className="text-white">Bénéficiaire :</strong> KASPI POS SARL AU</div>
+                <div><strong className="text-white">{locale === "ar" ? "البنك :" : locale === "en" ? "Bank:" : "Banque :"}</strong> CIH Bank / Attijariwafa Bank</div>
+                <div><strong className="text-white">{locale === "ar" ? "رقم الحساب (RIB) :" : locale === "en" ? "RIB (24 digits):" : "RIB (24 chiffres) :"}</strong> 230 780 4567890123456701 45</div>
+                <div><strong className="text-white">{locale === "ar" ? "اسم المستفيد :" : locale === "en" ? "Beneficiary:" : "Bénéficiaire :"}</strong> KASPI POS SARL AU</div>
                 <div className="text-[11px] text-zinc-500 pt-1">
                   {isRtl
                     ? "بعد إجراء التحويل، أرسل الإشعار عبر واتساب (+212 687-597267) لاستلام كود التفعيل."
@@ -423,12 +423,12 @@ export default function BillingDashboardPage() {
                     value={licenseCode}
                     onChange={(e) => setLicenseCode(e.target.value)}
                     placeholder="KASPI-30D-XXXX-XXXX"
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-white font-mono text-xs placeholder-zinc-500 focus:outline-none focus:border-amber-400 uppercase"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-white font-mono text-xs placeholder-zinc-500 focus:outline-none focus:border-white uppercase"
                   />
                   <button
                     type="submit"
                     disabled={isActivatingLicense || !licenseCode.trim()}
-                    className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-40 cursor-pointer"
+                    className="px-4 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-40 cursor-pointer"
                   >
                     {isActivatingLicense ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -460,12 +460,12 @@ export default function BillingDashboardPage() {
         <div className="bg-zinc-900 rounded-3xl border border-zinc-800 p-6 sm:p-8">
           <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
             <Receipt className="w-4 h-4 text-zinc-400" />
-            <span>Historique des paiements</span>
+            <span>{locale === "ar" ? "سجل المدفوعات والاشتراكات" : locale === "en" ? "Payment History" : "Historique des paiements"}</span>
           </h3>
 
           {payments.length === 0 ? (
             <p className="py-6 text-center text-zinc-500 text-xs font-mono">
-              Aucun historique de paiement pour ce commerce.
+              {locale === "ar" ? "لا توجد دفعات مسجلة لهذا المتجر حالياً." : locale === "en" ? "No payment history found for this store." : "Aucun historique de paiement pour ce commerce."}
             </p>
           ) : (
             <div className="space-y-2">

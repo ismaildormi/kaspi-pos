@@ -152,7 +152,7 @@ export function ReceiptSimulator() {
             <span className="font-bold">50.00 DH</span>
           </div>
           <div className="flex justify-between text-emerald-800 font-extrabold">
-            <span>الصرف / À Rendre :</span>
+            <span>Monnaie à rendre :</span>
             <span>15.00 DH</span>
           </div>
         </div>
@@ -165,7 +165,7 @@ export function ReceiptSimulator() {
             </div>
           </div>
           <p className="text-[9px] text-zinc-600 uppercase tracking-wider font-semibold">
-            Merci de votre visite • شكراً لزيارتكم
+            Merci de votre visite
           </p>
           <p className="text-[8px] text-zinc-500">
             Signature Électronique Certifiée • Conforme DGI Art. 145 &amp; NF525

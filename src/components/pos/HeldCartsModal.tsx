@@ -4,6 +4,7 @@ import React from "react";
 import { useTranslations } from "next-intl";
 import { X, Play, Trash2, Clock } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
+import { useAppDictionary } from "@/i18n/schema";
 
 interface HeldCartsModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface HeldCartsModalProps {
 export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({ isOpen, onClose }) => {
   const t = useTranslations("Pos");
   const tCommon = useTranslations("Common");
+  const { locale } = useAppDictionary();
   const { heldCarts, resumeHeldCart, deleteHeldCart } = usePosStore();
 
   if (!isOpen) return null;
@@ -37,8 +39,12 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({ isOpen, onClose 
         {/* List */}
         <div className="p-4 overflow-y-auto max-h-96 space-y-2.5">
           {heldCarts.length === 0 ? (
-            <p className="py-8 text-center text-zinc-500 text-sm">
-              Aucune commande en attente.
+            <p className="py-8 text-center text-zinc-500 text-sm font-mono">
+              {locale === "ar"
+                ? "لا توجد طلبات معلقة حالياً."
+                : locale === "en"
+                ? "No held orders currently."
+                : "Aucune commande en attente."}
             </p>
           ) : (
             heldCarts.map((h) => {
@@ -51,7 +57,7 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({ isOpen, onClose 
                   <div>
                     <h4 className="font-semibold text-white text-sm">{h.label}</h4>
                     <p className="text-xs text-zinc-400 mt-0.5">
-                      {h.items.length} {t("itemsCount")} • {h.customer ? h.customer.name : "Client Comptoir"}
+                      {h.items.length} {t("itemsCount")} • {h.customer ? h.customer.name : (locale === "ar" ? "زبون عادي" : locale === "en" ? "Walk-in" : "Client Comptoir")}
                     </p>
                     <p className="text-xs font-mono font-bold text-white mt-1">
                       {total.toFixed(2)} {tCommon("currency")}
@@ -73,7 +79,7 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({ isOpen, onClose 
                     <button
                       onClick={() => deleteHeldCart(h.id)}
                       className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition cursor-pointer"
-                      title="Supprimer"
+                      title={locale === "ar" ? "حذف" : locale === "en" ? "Delete" : "Supprimer"}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

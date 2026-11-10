@@ -760,19 +760,19 @@ STRICT OPERATIONAL RULES:
           fetchPlatformRevenue(),
           fetchAIUsageStats(),
         ]);
-        fallbackReply = `👑 **Master AI • Chief Data Officer (KASPI POS)**
-📊 **إحصائيات المنصة الشاملة**:
+        fallbackReply = `**Master AI • Chief Data Officer (KASPI POS)**
+**إحصائيات المنصة الشاملة**:
 • إجمالي المتاجر المسجلة (Tenants): **${pStats.totalTenants}**
 • إجمالي المستخدمين: **${pStats.totalUsers}**
 • الاشتراكات النشطة: **${pStats.activeSubscriptions}**
-💰 **الإيرادات الشهرية المتكررة (MRR)**: **$${pRev.mrrUSD}** (≈ **${pRev.mrrMAD} MAD**) | إجمالي مبيعات المنصة (GMV): **${pRev.totalPlatformGmvMAD} MAD**
-🤖 **استهلاك الذكاء الاصطناعي**: **${aiUsage.totalMessagesConsumed}** رسالة عبر **${aiUsage.totalChatSessions}** جلسة.`;
+• **الإيرادات الشهرية المتكررة (MRR)**: **$${pRev.mrrUSD}** (≈ **${pRev.mrrMAD} MAD**) | إجمالي مبيعات المنصة (GMV): **${pRev.totalPlatformGmvMAD} MAD**
+• **استهلاك الذكاء الاصطناعي**: **${aiUsage.totalMessagesConsumed}** رسالة عبر **${aiUsage.totalChatSessions}** جلسة.`;
       } else {
         const sales = await fetchTodaySales(tenantId!);
         const lowStock = await fetchLowStockProducts(tenantId!, 5);
         fallbackReply = `مرحباً بك! أنا مساعد كسب الذكي (KASPI AI). 
-📊 **مبيعات اليوم**: ${sales.completedSalesCount} مبيعات بمجموع ${sales.totalRevenueMAD} درهم.
-⚠️ **المنتجات المنخفضة في المخزون**: ${
+**مبيعات اليوم**: ${sales.completedSalesCount} مبيعات بمجموع ${sales.totalRevenueMAD} درهم.
+**المنتجات المنخفضة في المخزون**: ${
           lowStock.length > 0
             ? lowStock
                 .map((p) => p.name + ` (${p.currentQuantity} متبقية)`)

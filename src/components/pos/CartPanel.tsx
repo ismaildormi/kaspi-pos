@@ -12,8 +12,10 @@ import {
   UserCheck,
   UserPlus,
   X,
+  UtensilsCrossed,
 } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
+import { useAppDictionary } from "@/i18n/schema";
 
 interface CartPanelProps {
   onOpenCustomerModal?: () => void;
@@ -22,6 +24,7 @@ interface CartPanelProps {
 export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => {
   const t = useTranslations("Pos");
   const tCommon = useTranslations("Common");
+  const { locale } = useAppDictionary();
 
   const {
     cart,
@@ -55,75 +58,84 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
     Math.floor((subtotal + taxTotal) * 10)
   );
 
+  const retailLabel =
+    locale === "ar" ? "بيع بالتقسيط" : locale === "en" ? "Retail" : "Vente Détail";
+  const wholesaleLabel =
+    locale === "ar" ? "بيع بالجملة" : locale === "en" ? "Wholesale" : "Vente en Gros";
+
   return (
     <div dir="ltr" className="flex flex-col h-full bg-zinc-950 border-s border-zinc-800 select-none">
       {/* Top: Customer & Cart Header */}
       <div className="p-3.5 border-b border-zinc-800 bg-zinc-900/60 space-y-2">
         {selectedTableName && (
-          <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold">
-            <span>🍽️ Table: {selectedTableName}</span>
+          <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-zinc-900 border border-white/10 text-zinc-200 text-xs font-semibold">
+            <span className="flex items-center gap-1.5">
+              <UtensilsCrossed className="w-3.5 h-3.5 text-zinc-400" />
+              <span>Table: {selectedTableName}</span>
+            </span>
             <button
               onClick={() => setSelectedTable(null, null)}
-              className="text-amber-300 hover:text-white"
+              className="text-zinc-400 hover:text-white cursor-pointer"
               title="Détacher la table"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
         )}
+
         <div className="flex items-center justify-between gap-2">
-        {customer ? (
-          <div className="flex flex-col gap-1.5 bg-zinc-900 border border-zinc-700 px-3 py-1.5 rounded-lg w-full">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 truncate">
-                <UserCheck className="w-4 h-4 text-white shrink-0" />
-                <div className="truncate">
-                  <span className="text-xs font-bold text-white block truncate">
-                    {customer.name}
-                  </span>
-                  <span className="text-[10px] text-zinc-400 block font-mono">
-                    {customer.phone || (customer.ice ? `ICE: ${customer.ice}` : "Client")}
-                    {availablePoints > 0 ? ` • ⭐ ${availablePoints} pts` : ""}
-                  </span>
+          {customer ? (
+            <div className="flex flex-col gap-1.5 bg-zinc-900 border border-zinc-700 px-3 py-1.5 rounded-lg w-full">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 truncate">
+                  <UserCheck className="w-4 h-4 text-white shrink-0" />
+                  <div className="truncate">
+                    <span className="text-xs font-bold text-white block truncate">
+                      {customer.name}
+                    </span>
+                    <span className="text-[10px] text-zinc-400 block font-mono">
+                      {customer.phone || (customer.ice ? `ICE: ${customer.ice}` : "Client")}
+                      {availablePoints > 0 ? ` • ${availablePoints} pts` : ""}
+                    </span>
+                  </div>
                 </div>
+                <button
+                  onClick={() => setCustomer(null)}
+                  className="p-1 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded transition cursor-pointer"
+                  title="Détacher client"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <button
-                onClick={() => setCustomer(null)}
-                className="p-1 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded transition cursor-pointer"
-                title="Détacher client"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+              {maxRedeemablePoints >= 10 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLoyaltyPointsToRedeem(
+                      loyaltyPointsToRedeem > 0 ? 0 : maxRedeemablePoints
+                    )
+                  }
+                  className={`w-full py-1 px-2 rounded text-[11px] font-bold border transition cursor-pointer ${
+                    loyaltyPointsToRedeem > 0
+                      ? "bg-zinc-800 border-white text-white"
+                      : "bg-zinc-900 border-white/10 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                  }`}
+                >
+                  {loyaltyPointsToRedeem > 0
+                    ? `- ${(loyaltyPointsToRedeem * 0.1).toFixed(2)} ${tCommon("currency")} (${loyaltyPointsToRedeem} pts)`
+                    : `${maxRedeemablePoints} pts (- ${(maxRedeemablePoints * 0.1).toFixed(2)} ${tCommon("currency")})`}
+                </button>
+              )}
             </div>
-            {maxRedeemablePoints >= 10 && (
-              <button
-                type="button"
-                onClick={() =>
-                  setLoyaltyPointsToRedeem(
-                    loyaltyPointsToRedeem > 0 ? 0 : maxRedeemablePoints
-                  )
-                }
-                className={`w-full py-1 px-2 rounded text-[11px] font-bold border transition ${
-                  loyaltyPointsToRedeem > 0
-                    ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
-                    : "bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20"
-                }`}
-              >
-                {loyaltyPointsToRedeem > 0
-                  ? `✓ Fidélité appliquée: -${(loyaltyPointsToRedeem * 0.1).toFixed(2)} DH (${loyaltyPointsToRedeem} pts)`
-                  : `⭐ Utiliser ${maxRedeemablePoints} pts (-${(maxRedeemablePoints * 0.1).toFixed(2)} DH)`}
-              </button>
-            )}
-          </div>
-        ) : (
-          <button
-            onClick={onOpenCustomerModal}
-            className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white transition cursor-pointer"
-          >
-            <UserPlus className="w-4 h-4 text-zinc-400" />
-            <span>{t("addCustomer")}</span>
-          </button>
-        )}
+          ) : (
+            <button
+              onClick={onOpenCustomerModal}
+              className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white transition cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4 text-zinc-400" />
+              <span>{t("addCustomer")}</span>
+            </button>
+          )}
         </div>
 
         {/* 1-Click Retail vs Wholesale Dual Pricing Toggle */}
@@ -131,24 +143,24 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
           <button
             type="button"
             onClick={() => setPricingTier("retail")}
-            className={`flex-1 py-1 px-2.5 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 ${
+            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
               pricingTier === "retail"
-                ? "bg-white text-zinc-950 shadow-sm"
+                ? "bg-white text-zinc-950 shadow-xs"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
-            <span>تقسيط • Retail</span>
+            <span>{retailLabel}</span>
           </button>
           <button
             type="button"
             onClick={() => setPricingTier("wholesale")}
-            className={`flex-1 py-1 px-2.5 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 ${
+            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
               pricingTier === "wholesale"
-                ? "bg-amber-400 text-zinc-950 shadow-sm"
+                ? "bg-white text-zinc-950 shadow-xs"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
-            <span>جملة • Gros</span>
+            <span>{wholesaleLabel}</span>
           </button>
         </div>
       </div>
@@ -180,7 +192,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                   )}
                 </div>
                 {item.notes && (
-                  <div className="mt-1 text-[10px] font-semibold text-amber-300 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded truncate">
+                  <div className="mt-1 text-[10px] font-semibold text-zinc-300 bg-white/[0.05] border border-white/10 px-1.5 py-0.5 rounded truncate">
                     {item.notes}
                   </div>
                 )}

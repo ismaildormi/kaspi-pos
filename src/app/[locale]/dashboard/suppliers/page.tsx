@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAppDictionary } from "@/i18n/schema";
+import { getCachedData, setCachedData } from "@/lib/cache/client-cache";
 import {
   Truck,
   Plus,
@@ -30,8 +31,12 @@ interface SupplierItem {
 export default function SuppliersPage() {
   const { t, locale } = useAppDictionary();
 
-  const [suppliers, setSuppliers] = useState<SupplierItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [suppliers, setSuppliers] = useState<SupplierItem[]>(() => {
+    return getCachedData<SupplierItem[]>("suppliers_cache", []).data;
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    return !getCachedData<SupplierItem[]>("suppliers_cache", []).isCached;
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form State
@@ -49,12 +54,13 @@ export default function SuppliersPage() {
   }, []);
 
   const fetchSuppliers = async () => {
-    setIsLoading(true);
     try {
       const res = await fetch("/api/v1/suppliers");
       if (res.ok) {
         const data = await res.json();
-        setSuppliers(data.data?.suppliers || []);
+        const list = data.data?.suppliers || [];
+        setSuppliers(list);
+        setCachedData("suppliers_cache", list);
       }
     } catch (err) {
       console.error(err);

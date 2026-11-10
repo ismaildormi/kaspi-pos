@@ -136,16 +136,16 @@ export function AddDeviceModal({
                 </span>
                 <span className="font-mono font-bold text-white flex items-center gap-1.5">
                   <Monitor className="w-3.5 h-3.5 text-zinc-400" />
-                  {currentDevices} {currentDevices === 1 ? "poste" : "postes"}
+                  {currentDevices} {currentDevices === 1 ? (isRtl ? "جهاز مرخص" : "poste") : (isRtl ? "أجهزة مرخصة" : "postes")}
                 </span>
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-zinc-400 font-medium">
                   {isRtl ? "السعة الجديدة بعد الترقية :" : "Nouvelle capacité :"}
                 </span>
-                <span className="font-mono font-bold text-emerald-400 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  {newDeviceCount} postes simultanés
+                <span className="font-mono font-bold text-white flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
+                  {newDeviceCount} {isRtl ? "أجهزة كاشير متزامنة" : "postes simultanés"}
                 </span>
               </div>
             </div>
@@ -154,15 +154,15 @@ export function AddDeviceModal({
             <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/80 space-y-2 font-mono text-xs">
               <div className="flex justify-between text-zinc-400">
                 <span>{isRtl ? "سعر التفعيل الإضافي :" : "Poste additionnel :"}</span>
-                <span className="text-white font-bold">+150.00 MAD / mois</span>
+                <span className="text-white font-bold">+150.00 MAD / {isRtl ? "شهر" : "mois"}</span>
               </div>
               <div className="flex justify-between text-zinc-400">
                 <span>{isRtl ? "الفاتورة الشهرية الحالية :" : "Forfait actuel :"}</span>
-                <span>{currentTotalMAD}.00 MAD / mois</span>
+                <span>{currentTotalMAD}.00 MAD / {isRtl ? "شهر" : "mois"}</span>
               </div>
               <div className="pt-2 border-t border-zinc-800 flex justify-between items-baseline text-sm font-bold text-white">
                 <span>{isRtl ? "المجموع الشهري الجديد :" : "Nouveau total mensuel :"}</span>
-                <span className="text-emerald-400 font-black text-base">{newTotalMAD}.00 MAD / mois</span>
+                <span className="text-white font-black text-base">{newTotalMAD}.00 MAD / {isRtl ? "شهر" : "mois"}</span>
               </div>
               <p className="text-[10px] text-zinc-500 font-sans pt-1">
                 {isRtl
@@ -188,10 +188,14 @@ export function AddDeviceModal({
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs text-white">Carte Maroc (CMI)</span>
+                    <span className="font-bold text-xs text-white">
+                      {isRtl ? "بطاقة بنكية مغربية (CMI)" : "Carte Maroc (CMI)"}
+                    </span>
                     <Building2 className="w-3.5 h-3.5 text-zinc-400" />
                   </div>
-                  <span className="text-[10px] font-mono text-zinc-400">YouCan Pay • 150 DH</span>
+                  <span className="text-[10px] font-mono text-zinc-400">
+                    {isRtl ? "YouCan Pay • 150 درهم" : "YouCan Pay • 150 DH"}
+                  </span>
                 </button>
 
                 <button
@@ -204,7 +208,9 @@ export function AddDeviceModal({
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs text-white">Carte Internationale</span>
+                    <span className="font-bold text-xs text-white">
+                      {isRtl ? "بطاقة دولية" : "Carte Internationale"}
+                    </span>
                     <Globe className="w-3.5 h-3.5 text-zinc-400" />
                   </div>
                   <span className="text-[10px] font-mono text-zinc-400">Paddle MoR • $15 USD</span>

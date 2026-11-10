@@ -163,7 +163,7 @@ export function AiAnalyticsSimulator() {
                     <>
                       <p className="leading-relaxed text-zinc-200">{displayedAnswer}</p>
                       <div className="pt-2 border-t border-purple-500/20 flex items-center justify-between text-[10px] font-mono text-purple-300">
-                        <span>💡 Synthèse : {selectedPrompt.highlight}</span>
+                        <span>Synthèse : {selectedPrompt.highlight}</span>
                       </div>
                     </>
                   )}

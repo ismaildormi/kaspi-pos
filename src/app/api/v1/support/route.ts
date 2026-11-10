@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     // Notify Super Admin via WhatsApp adapter (non-blocking)
     sendAdminWhatsAppAlert(
-      `📩 *NOUVEAU TICKET SUPPORT KASPI POS*\nDe : ${created.senderName}\nSujet : ${created.subject}\nMessage : ${created.message}`
+      `*NOUVEAU TICKET SUPPORT KASPI POS*\nDe : ${created.senderName}\nSujet : ${created.subject}\nMessage : ${created.message}`
     ).catch(() => {});
 
     return NextResponse.json({ success: true, supportMessage: created }, { status: 201 });

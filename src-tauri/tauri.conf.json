@@ -14,6 +14,8 @@
       {
         "title": "KASPI POS - Caisse & ERP",
         "url": "https://kaspi-pos.vercel.app/ar/login",
+        "theme": "Dark",
+        "backgroundColor": "#09090b",
         "width": 1280,
         "height": 800,
         "minWidth": 1024,

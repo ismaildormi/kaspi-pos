@@ -238,7 +238,7 @@ export function StockTransferModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-600"
-              placeholder={locale === "ar" ? "مثلاً: شحنة تموين طارئة" : "ex: Réapprovisionnement hebdomadaire"}
+              placeholder={locale === "ar" ? "مثلاً: شحنة تموين طارئة" : locale === "en" ? "e.g., Weekly replenishment" : "ex: Réapprovisionnement hebdomadaire"}
             />
           </div>
 
@@ -259,7 +259,7 @@ export function StockTransferModal({
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>{locale === "ar" ? "جاري التحويل..." : "Transfert en cours..."}</span>
+                  <span>{locale === "ar" ? "جاري التحويل..." : locale === "en" ? "Transferring..." : "Transfert en cours..."}</span>
                 </>
               ) : (
                 <>

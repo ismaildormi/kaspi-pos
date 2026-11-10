@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     // Also send confirmation copy to Super Admin
     await sendAdminWhatsAppAlert(
-      `📢 [Alerte Diffusée] Votre message a été envoyé à ${results.length} commerces :\n\n"${message}"`
+      `[Alerte Diffusée] Votre message a été envoyé à ${results.length} commerces :\n\n"${message}"`
     );
 
     return NextResponse.json({

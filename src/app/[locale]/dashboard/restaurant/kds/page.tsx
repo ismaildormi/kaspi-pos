@@ -21,6 +21,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase-client";
+import { useAppDictionary } from "@/i18n/schema";
 
 export interface KDSTicketItem {
   id: string;
@@ -52,6 +53,7 @@ export interface KDSTicket {
 }
 
 export default function KitchenDisplayPage() {
+  const { t, locale } = useAppDictionary();
   const [tickets, setTickets] = useState<KDSTicket[]>([]);
   const [tenantId, setTenantId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
@@ -144,7 +146,7 @@ export default function KitchenDisplayPage() {
           const data = payload?.payload;
 
           if (data?.event === "ticket:created") {
-            toast.info(`🔔 Nouvelle commande reçue: #${data?.ticketNumber || ""}`, {
+            toast.info(`${locale === "ar" ? "طلب جديد وارد:" : locale === "fr" ? "Nouvelle commande reçue:" : "New order received:"} #${data?.ticketNumber || ""}`, {
               duration: 4000,
             });
             playAlertSound();

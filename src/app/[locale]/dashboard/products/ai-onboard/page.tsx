@@ -375,7 +375,7 @@ export default function AIProductOnboardPage() {
                     <div>
                       <label className="block text-xs font-semibold text-zinc-300 mb-1 flex items-center gap-1.5">
                         <Barcode className="w-3.5 h-3.5 text-zinc-400" />
-                        <span>{isRtl ? "الباركود (EAN / Code-barres)" : "Code-barres EAN"}</span>
+                        <span>{isRtl ? "رمز الباركود (EAN)" : "Code-barres EAN"}</span>
                       </label>
                       <input
                         type="text"
@@ -411,7 +411,7 @@ export default function AIProductOnboardPage() {
                     {/* Cost Price */}
                     <div>
                       <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                        {isRtl ? "سعر الشراء / التكلفة (MAD)" : "Prix d'achat estimé (MAD)"}
+                        {isRtl ? "سعر الشراء والتكلفة (MAD)" : "Prix d'achat estimé (MAD)"}
                       </label>
                       <input
                         type="number"

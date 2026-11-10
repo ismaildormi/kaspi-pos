@@ -6,6 +6,7 @@ import { Package, Plus, ArrowRight, Scale, Utensils, Shirt, ShieldCheck } from "
 import Link from "next/link";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { playBarcodeScanSound } from "@/lib/audio";
+import { useAppDictionary } from "@/i18n/schema";
 
 interface ProductGridProps {
   products: PosProduct[];
@@ -14,6 +15,7 @@ interface ProductGridProps {
 export const ProductGrid: React.FC<ProductGridProps> = ({ products }) => {
   const t = useTranslations("Pos");
   const tCommon = useTranslations("Common");
+  const { locale } = useAppDictionary();
   const { searchQuery, activeCategoryId, addToCart, storeType } = usePosStore();
 
   const filteredProducts = useMemo(() => {
@@ -36,28 +38,54 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products }) => {
   }, [products, activeCategoryId, searchQuery]);
 
   if (filteredProducts.length === 0) {
+    const emptyI18n = {
+      ar: {
+        title: "لا توجد منتجات مطابقة",
+        subtitle: "أضف منتجاتك من الكتالوج أو قم باستيراد ملف Excel/CSV مباشرة.",
+        manage: "كتالوج المنتجات",
+        import: "استيراد CSV",
+      },
+      fr: {
+        title: "Aucun article trouvé",
+        subtitle: "Ajoutez vos articles depuis le catalogue ou importez un fichier Excel/CSV.",
+        manage: "Gérer les Produits",
+        import: "Importer CSV",
+      },
+      en: {
+        title: "No products found",
+        subtitle: "Add items from the catalog or import an Excel/CSV file directly.",
+        manage: "Manage Products",
+        import: "Import CSV",
+      },
+    }[locale] || {
+      title: "No products found",
+      subtitle: "Add items from the catalog or import an Excel/CSV file directly.",
+      manage: "Manage Products",
+      import: "Import CSV",
+    };
+
     return (
       <div className="h-72 flex flex-col items-center justify-center text-zinc-500 border border-dashed border-white/10 rounded-2xl p-8 text-center select-none bg-zinc-900/30">
         <div className="w-11 h-11 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-400 mb-3">
           <Package className="w-5 h-5 stroke-[1.5]" />
         </div>
-        <p className="text-sm font-semibold text-white">Aucun article trouvé</p>
+        <p className="text-sm font-semibold text-white">{emptyI18n.title}</p>
         <p className="text-xs text-zinc-400 mt-1 max-w-sm">
-          Ajoutez vos articles depuis le catalogue ou importez un fichier Excel/CSV.
+          {emptyI18n.subtitle}
         </p>
         <div className="flex gap-2 mt-4">
           <Link
-            href="/dashboard/products"
+            href={`/${locale}/dashboard/products`}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-black font-semibold text-xs hover:bg-zinc-200 transition"
           >
-            <span>Gérer les Produits</span>
+            <span>{emptyI18n.manage}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
           <Link
-            href="/dashboard/products/import"
+            href={`/${locale}/dashboard/products/import`}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 text-white border border-white/10 font-semibold text-xs hover:bg-zinc-800 transition"
           >
-            <span>Importer CSV</span>
+            <span>{emptyI18n.import}</span>
           </Link>
         </div>
       </div>

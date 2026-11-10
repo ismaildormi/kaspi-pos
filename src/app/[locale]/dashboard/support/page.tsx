@@ -23,7 +23,7 @@ interface SupportTicket {
 }
 
 export default function TenantSupportPage() {
-  const { t } = useAppDictionary();
+  const { t, locale } = useAppDictionary();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -100,10 +100,11 @@ export default function TenantSupportPage() {
 
         <button
           onClick={fetchTickets}
-          className="inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+          disabled={loading}
+          className="inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition cursor-pointer disabled:opacity-50"
         >
-          <RefreshCw className="h-3.5 w-3.5" />
-          <span>{t.common.loading}</span>
+          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-white" : ""}`} />
+          <span>{loading ? t.common.loading : (locale === "ar" ? "تحديث" : locale === "en" ? "Refresh" : "Actualiser")}</span>
         </button>
       </div>
 

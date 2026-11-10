@@ -73,18 +73,21 @@ export function AIChatWidget() {
 
   const shouldRenderWidget = !isAuthPage && isAuthenticatedWorkspaceRoute && isAuthenticated;
 
-  // Listen for custom "open-master-ai" events triggered from the Super Admin dashboard
+  // Listen for custom "open-master-ai" and "open-ai-chat" events
   useEffect(() => {
-    const handleOpenMasterAi = (ev: Event) => {
-      setIsOpen(true);
+    const handleOpenAi = (ev: Event) => {
+      setIsOpen((prev) => !prev);
       const customEv = ev as CustomEvent<{ prompt?: string }>;
       if (customEv.detail?.prompt) {
         setInput(customEv.detail.prompt);
       }
     };
-    window.addEventListener("open-master-ai", handleOpenMasterAi);
-    return () =>
-      window.removeEventListener("open-master-ai", handleOpenMasterAi);
+    window.addEventListener("open-master-ai", handleOpenAi);
+    window.addEventListener("open-ai-chat", handleOpenAi);
+    return () => {
+      window.removeEventListener("open-master-ai", handleOpenAi);
+      window.removeEventListener("open-ai-chat", handleOpenAi);
+    };
   }, []);
 
   // Memoize transport with standard API endpoint
@@ -179,30 +182,6 @@ export function AIChatWidget() {
 
   return (
     <>
-      {/* Floating Trigger Button */}
-      <div className="fixed bottom-6 right-6 z-50 print:hidden">
-        {!isOpen && (
-          <button
-            type="button"
-            onClick={() => setIsOpen(true)}
-            aria-label="Open KASPI AI Assistant"
-            className="group relative flex items-center gap-2.5 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 text-white rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 font-medium cursor-pointer border border-zinc-700"
-          >
-            <div className="relative">
-              <Bot className="w-5 h-5 transition-transform group-hover:rotate-12 text-white" />
-              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-zinc-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
-              </span>
-            </div>
-            <span className="text-sm font-semibold tracking-wide text-white">
-              {isAdminView ? "Master AI • Chief Data Officer" : t("title")}
-            </span>
-            <Sparkles className="w-4 h-4 text-zinc-400" />
-          </button>
-        )}
-      </div>
-
       {/* Floating Chat Window Modal / Sheet */}
       {isOpen && (
         <div
