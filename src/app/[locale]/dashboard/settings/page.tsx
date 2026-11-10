@@ -75,7 +75,7 @@ interface VaultTestResult {
   detail: string;
 }
 
-type SettingsTab = "general" | "hardware" | "vault" | "users";
+type SettingsTab = "general" | "hardware" | "vault" | "users" | "ecommerce";
 
 export default function SettingsPage() {
   const { t, locale } = useAppDictionary();
@@ -162,6 +162,13 @@ export default function SettingsPage() {
   >("cmi_tpe");
   const [tpeTerminalIp, setTpeTerminalIp] = useState("192.168.1.150");
 
+  // E-Commerce Sync State (YouCan & Shopify)
+  const [youcanApiKey, setYoucanApiKey] = useState("");
+  const [shopifyStoreUrl, setShopifyStoreUrl] = useState("");
+  const [shopifySecret, setShopifySecret] = useState("");
+  const [isSyncActive, setIsSyncActive] = useState(true);
+  const [ecommerceSavedFeedback, setEcommerceSavedFeedback] = useState(false);
+
   useEffect(() => {
     const localPrinter = getPrinterSettings();
     if (localPrinter.receiptLanguage) setReceiptLanguage(localPrinter.receiptLanguage);
@@ -189,6 +196,16 @@ export default function SettingsPage() {
     }
     const storedGw = localStorage.getItem("kaspi_payment_gateway") as any;
     if (storedGw) setSelectedGateway(storedGw);
+
+    // Load E-Commerce config
+    const savedYoucan = localStorage.getItem("kaspi_youcan_api_key") || "";
+    const savedShopifyUrl = localStorage.getItem("kaspi_shopify_store_url") || "";
+    const savedShopifySecret = localStorage.getItem("kaspi_shopify_webhook_secret") || "";
+    const savedSyncActive = localStorage.getItem("kaspi_ecommerce_sync_active") !== "false";
+    setYoucanApiKey(savedYoucan);
+    setShopifyStoreUrl(savedShopifyUrl);
+    setShopifySecret(savedShopifySecret);
+    setIsSyncActive(savedSyncActive);
   }, []);
 
   const fetchMeProfile = async () => {
@@ -875,6 +892,7 @@ export default function SettingsPage() {
       label: t.settings.hardware,
       icon: Printer,
     },
+    { id: "ecommerce", label: locale === "ar" ? "المتاجر الإلكترونية" : locale === "en" ? "E-Commerce Sync" : "E-Commerce", icon: Globe },
     { id: "vault", label: t.settings.security, icon: KeyRound },
     { id: "users", label: st.usersTab, icon: Users },
   ];
@@ -1853,6 +1871,161 @@ export default function SettingsPage() {
                   {st.cloudOfflineSync}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* TAB 5: E-COMMERCE SYNC HUB (YOUCAN & SHOPIFY)                       */}
+      {/* =================================================================== */}
+      {activeTab === "ecommerce" && (
+        <div className="space-y-6">
+          <div className="p-6 rounded-3xl bg-zinc-900/60 border border-white/10 space-y-6">
+            <div className="flex items-start justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white text-zinc-950 flex items-center justify-center font-bold shadow-xs">
+                  <Globe className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {t.settings.ecommerceSyncTitle}
+                  </h3>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    {t.settings.ecommerceSyncSubtitle}
+                  </p>
+                </div>
+              </div>
+
+              {/* Sync Active Toggle */}
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isSyncActive}
+                  onChange={(e) => setIsSyncActive(e.target.checked)}
+                  className="sr-only"
+                />
+                <div
+                  className={`w-11 h-6 rounded-full transition-colors p-0.5 ${
+                    isSyncActive ? "bg-white" : "bg-zinc-800"
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-full bg-zinc-950 transition-transform ${
+                      isSyncActive ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </div>
+                <span className="text-xs font-semibold text-zinc-300">
+                  {t.settings.syncStockOnline}
+                </span>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* YouCan Platform Integration */}
+              <div className="p-5 rounded-2xl bg-zinc-950 border border-white/10 space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                    <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                    YouCan Maroc
+                  </h4>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-zinc-300 border border-white/15">
+                    Webhooks & API
+                  </span>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                    {t.settings.youcanStoreKey}
+                  </label>
+                  <input
+                    type="password"
+                    value={youcanApiKey}
+                    onChange={(e) => setYoucanApiKey(e.target.value)}
+                    placeholder="yc_live_xxxxxxxxxxxxxxxx"
+                    className="w-full h-10 px-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white font-mono focus:outline-none focus:border-white"
+                  />
+                </div>
+                <p className="text-[11px] text-zinc-500 leading-relaxed">
+                  Permet la mise à jour instantanée des stocks sur votre boutique YouCan lors d&apos;un encaissement en magasin.
+                </p>
+              </div>
+
+              {/* Shopify Platform Integration */}
+              <div className="p-5 rounded-2xl bg-zinc-950 border border-white/10 space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                    <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                    Shopify
+                  </h4>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-zinc-300 border border-white/15">
+                    REST & GraphQL
+                  </span>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                    {t.settings.shopifyStoreUrl}
+                  </label>
+                  <input
+                    type="text"
+                    value={shopifyStoreUrl}
+                    onChange={(e) => setShopifyStoreUrl(e.target.value)}
+                    placeholder="mon-magasin.myshopify.com"
+                    className="w-full h-10 px-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white font-mono focus:outline-none focus:border-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                    {t.settings.shopifyWebhookSecret}
+                  </label>
+                  <input
+                    type="password"
+                    value={shopifySecret}
+                    onChange={(e) => setShopifySecret(e.target.value)}
+                    placeholder="shpss_xxxxxxxxxxxx"
+                    className="w-full h-10 px-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white font-mono focus:outline-none focus:border-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Webhook Endpoint Info */}
+            <div className="p-4 rounded-2xl bg-zinc-950 border border-white/10 space-y-2">
+              <span className="text-xs font-bold text-white block">
+                {t.settings.webhookEndpointLabel}
+              </span>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300 select-all">
+                  /api/v1/webhooks/ecommerce
+                </code>
+              </div>
+              <p className="text-[11px] text-zinc-500">
+                Copiez cette URL dans les paramètres de Webhooks de votre boutique YouCan ou Shopify (événements supportés : commande créée, modification de stock).
+              </p>
+            </div>
+
+            {/* Save Button */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              {ecommerceSavedFeedback && (
+                <span className="text-xs font-bold text-white flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Paramètres synchronisés !
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.setItem("kaspi_youcan_api_key", youcanApiKey);
+                  localStorage.setItem("kaspi_shopify_store_url", shopifyStoreUrl);
+                  localStorage.setItem("kaspi_shopify_webhook_secret", shopifySecret);
+                  localStorage.setItem("kaspi_ecommerce_sync_active", String(isSyncActive));
+                  setEcommerceSavedFeedback(true);
+                  setTimeout(() => setEcommerceSavedFeedback(false), 2000);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition cursor-pointer shadow-xs"
+              >
+                {t.settings.saveBtn}
+              </button>
             </div>
           </div>
         </div>

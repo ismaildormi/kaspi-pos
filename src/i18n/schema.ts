@@ -154,6 +154,14 @@ export interface TranslationSchema {
     outOfStock: string;
     itemsCount: string;
     loadingCatalog: string;
+    applyCoupon: string;
+    couponPlaceholder: string;
+    couponApplied: string;
+    invalidCoupon: string;
+    sendDigitalReceipt: string;
+    receiptSentWhatsapp: string;
+    whatsappReceiptPreview: string;
+    digitalReceiptTitle: string;
   };
   products: {
     title: string;
@@ -218,6 +226,10 @@ export interface TranslationSchema {
     interStoreTransfer: string;
     transferHistory: string;
     noTransfers: string;
+    stockoutVelocityTitle: string;
+    daysRemaining: string;
+    orderViaWhatsapp: string;
+    whatsappOrderGreeting: string;
   };
   customers: {
     title: string;
@@ -274,6 +286,24 @@ export interface TranslationSchema {
     ice: string;
     address: string;
     noSuppliers: string;
+    totalDebtOwed: string;
+    upcomingMaturities: string;
+    recordDebtInvoice: string;
+    scanInvoiceOcr: string;
+    paymentMethodCheck: string;
+    paymentMethodEffet: string;
+    paymentMethodCash: string;
+    paymentMethodVirement: string;
+    settleDebt: string;
+    dueDate: string;
+    checkNumber: string;
+    ocrModalTitle: string;
+    ocrModalSubtitle: string;
+    ocrDropzoneText: string;
+    ocrProcessing: string;
+    ocrCommitSuccess: string;
+    ocrCommitBtn: string;
+    extractedItemsCount: string;
   };
   reports: {
     title: string;
@@ -286,6 +316,9 @@ export interface TranslationSchema {
     whatsappSent: string;
     zReportTitle: string;
     transactionsCount: string;
+    exportAccountingSage: string;
+    exportAccountingNotice: string;
+    sendCustomerReceipt: string;
   };
   billing: {
     title: string;
@@ -320,6 +353,13 @@ export interface TranslationSchema {
     saveBtn: string;
     saving: string;
     tpeSettings: string;
+    ecommerceSyncTitle: string;
+    ecommerceSyncSubtitle: string;
+    youcanStoreKey: string;
+    shopifyStoreUrl: string;
+    shopifyWebhookSecret: string;
+    syncStockOnline: string;
+    webhookEndpointLabel: string;
   };
   support: {
     title: string;
@@ -530,6 +570,14 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       outOfStock: "نفد من المخزون",
       itemsCount: "منتجات",
       loadingCatalog: "جاري تحميل الكتالوج...",
+      applyCoupon: "تطبيق الكوبون",
+      couponPlaceholder: "رمز القسيمة أو التخفيض (مثلاً PROMO10)",
+      couponApplied: "تم تطبيق التخفيض بنجاح",
+      invalidCoupon: "رمز القسيمة غير صالح أو منتهي",
+      sendDigitalReceipt: "إرسال وصل إلكتروني عبر WhatsApp",
+      receiptSentWhatsapp: "تم إرسال الوصل للزبون عبر WhatsApp",
+      whatsappReceiptPreview: "معاينة رسالة WhatsApp",
+      digitalReceiptTitle: "الوصل الرقمي الفوري",
     },
     products: {
       title: "كتالوج المنتجات",
@@ -594,6 +642,10 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       interStoreTransfer: "تحويل المخزون بين الفروع",
       transferHistory: "سجل التحويلات بين الفروع والمستودعات",
       noTransfers: "لم يتم تسجيل أي تحويل بين الفروع حتى الآن",
+      stockoutVelocityTitle: "سرعة استهلاك المخزون والتنبؤ بالخصاص",
+      daysRemaining: "متبقي {days} أيام قبل النفاد",
+      orderViaWhatsapp: "طلب التزويد عبر WhatsApp",
+      whatsappOrderGreeting: "السلام عليكم، نود تزويد متجرنا بالمنتجات التالية وفق النواقص المسجلة:",
     },
     customers: {
       title: "الزبائن والكريدي",
@@ -650,6 +702,24 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       ice: "رقم ICE",
       address: "العنوان",
       noSuppliers: "لا يوجد موردون مسجلون",
+      totalDebtOwed: "إجمالي ديون الموردين الجارية",
+      upcomingMaturities: "استحقاقات الشيكات والكمبيالات القادمة",
+      recordDebtInvoice: "تسجيل فاتورة / مديونية مورد",
+      scanInvoiceOcr: "مسح فاتورة الشراء بالذكاء الاصطناعي (OCR)",
+      paymentMethodCheck: "شيك بنكي",
+      paymentMethodEffet: "كمبيالة (Effet)",
+      paymentMethodCash: "نقداً (Espèces)",
+      paymentMethodVirement: "تحويل بنكي (Virement)",
+      settleDebt: "تسديد دفعة للمورد",
+      dueDate: "تاريخ الاستحقاق",
+      checkNumber: "رقم الشيك / الكمبيالة",
+      ocrModalTitle: "المسح الذكي لفاتورة المورد الورقية",
+      ocrModalSubtitle: "استخراج تلقائي لبنود الفاتورة والكميات وأسعار التكلفة وتحديث المخزون بنقرة واحدة",
+      ocrDropzoneText: "اسحب صورة الفاتورة إلى هنا أو اضغط لرفع ملف (JPEG, PNG, WebP)",
+      ocrProcessing: "جاري تحليل بنود الفاتورة واستخراج البيانات...",
+      ocrCommitSuccess: "تم تحديث المخزون وأسعار الشراء بنجاح!",
+      ocrCommitBtn: "اعتماد وتحديث المخزون دفعة واحدة",
+      extractedItemsCount: "بند مستخرج",
     },
     reports: {
       title: "التقارير والإقفالات",
@@ -662,6 +732,9 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       whatsappSent: "تم إرسال التقرير بنجاح",
       zReportTitle: "تقرير الإقفال اليومي (Z-Report)",
       transactionsCount: "عدد العمليات",
+      exportAccountingSage: "تصدير المحاسبة (Sage / DGI Maroc)",
+      exportAccountingNotice: "ملف CSV بترميز UTF-8 متوافق مع معايير المادة 145 من المدونة العامة للضرائب (CGI)",
+      sendCustomerReceipt: "إرسال الوصل للزبون عبر WhatsApp",
     },
     billing: {
       title: "الاشتراك والفوترة",
@@ -696,6 +769,13 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       saveBtn: "حفظ التغييرات",
       saving: "جاري الحفظ...",
       tpeSettings: "إعدادات جهاز الدفع الإلكتروني (TPE CMI)",
+      ecommerceSyncTitle: "المزامنة اللحظية مع المتاجر الإلكترونية (YouCan & Shopify)",
+      ecommerceSyncSubtitle: "ربط المخزون تلقائياً بين الصندوق المحلي ومتجرك الإلكتروني لتفادي البيع بدون رصيد",
+      youcanStoreKey: "مفتاح الربط YouCan API Key",
+      shopifyStoreUrl: "رابط متجر Shopify (myshopify.com)",
+      shopifyWebhookSecret: "المفتاح السري لـ Webhook",
+      syncStockOnline: "تفعيل المزامنة التلقائية للمخزون",
+      webhookEndpointLabel: "رابط استقبال الإشعارات (Webhook URL):",
     },
     support: {
       title: "الدعم والمساعدة",
@@ -904,6 +984,14 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       outOfStock: "Rupture de stock",
       itemsCount: "articles",
       loadingCatalog: "Chargement du catalogue...",
+      applyCoupon: "Appliquer",
+      couponPlaceholder: "Code promo ou bon d'achat (ex: PROMO10)",
+      couponApplied: "Code promo appliqué avec succès",
+      invalidCoupon: "Code promo invalide ou expiré",
+      sendDigitalReceipt: "Envoyer ticket digital via WhatsApp",
+      receiptSentWhatsapp: "Ticket envoyé au client par WhatsApp",
+      whatsappReceiptPreview: "Aperçu du message WhatsApp",
+      digitalReceiptTitle: "Ticket de Caisse Numérique",
     },
     products: {
       title: "Catalogue Produits",
@@ -968,6 +1056,10 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       interStoreTransfer: "Transfert Inter-Dépôts",
       transferHistory: "Historique des Transferts Inter-Dépôts",
       noTransfers: "Aucun transfert de stock enregistré pour l'instant.",
+      stockoutVelocityTitle: "Vélocité d'écoulement & Risques de Rupture",
+      daysRemaining: "{days} jours avant rupture",
+      orderViaWhatsapp: "Commander au fournisseur via WhatsApp",
+      whatsappOrderGreeting: "Bonjour, nous souhaitons passer commande pour le réassort des articles suivants :",
     },
     customers: {
       title: "Clients & Krediat",
@@ -1024,6 +1116,24 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       ice: "Numéro ICE",
       address: "Adresse",
       noSuppliers: "Aucun fournisseur enregistré",
+      totalDebtOwed: "Total Dettes Fournisseurs en Cours",
+      upcomingMaturities: "Échéances Chèques & Effets à Venir",
+      recordDebtInvoice: "Enregistrer Facture / Dette Fournisseur",
+      scanInvoiceOcr: "Scanner Facture d'Achat (OCR IA)",
+      paymentMethodCheck: "Chèque Bancaire",
+      paymentMethodEffet: "Effet de Commerce (Kembyala)",
+      paymentMethodCash: "Espèces",
+      paymentMethodVirement: "Virement Bancaire",
+      settleDebt: "Régler une Dette Fournisseur",
+      dueDate: "Date d'Échéance",
+      checkNumber: "Numéro de Chèque / Effet",
+      ocrModalTitle: "Scanner Intelligent de Facture Fournisseur",
+      ocrModalSubtitle: "Extraction automatique des lignes, quantités et prix d'achat avec mise à jour du stock en 1 clic",
+      ocrDropzoneText: "Glissez la facture ou cliquez pour importer une photo (JPEG, PNG, WebP)",
+      ocrProcessing: "Extraction et analyse des lignes de facture en cours...",
+      ocrCommitSuccess: "Stock et prix de revient mis à jour avec succès !",
+      ocrCommitBtn: "Valider & Mettre à jour le Stock",
+      extractedItemsCount: "lignes extraites",
     },
     reports: {
       title: "Rapports & Clôtures",
@@ -1036,6 +1146,9 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       whatsappSent: "Rapport envoyé avec succès",
       zReportTitle: "Clôture Journalière (Z-Report)",
       transactionsCount: "Nombre de Ventes",
+      exportAccountingSage: "Export Comptable (Sage / DGI Maroc)",
+      exportAccountingNotice: "Fichier CSV UTF-8 conforme aux exigences de l'Article 145 du CGI Maroc",
+      sendCustomerReceipt: "Envoyer le ticket au client par WhatsApp",
     },
     billing: {
       title: "Facturation & Licences",
@@ -1070,6 +1183,13 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       saveBtn: "Enregistrer les modifications",
       saving: "Enregistrement...",
       tpeSettings: "Paramètres TPE CMI",
+      ecommerceSyncTitle: "Synchronisation E-Commerce en Direct (YouCan & Shopify)",
+      ecommerceSyncSubtitle: "Mise à jour bidirectionnelle automatique des stocks entre le POS et vos boutiques en ligne",
+      youcanStoreKey: "Clé API Boutique YouCan",
+      shopifyStoreUrl: "URL Boutique Shopify (myshopify.com)",
+      shopifyWebhookSecret: "Secret Signature Webhook",
+      syncStockOnline: "Activer la synchronisation automatique des stocks",
+      webhookEndpointLabel: "URL de Réception Webhook :",
     },
     support: {
       title: "Support & Assistance",
@@ -1278,6 +1398,14 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       outOfStock: "Out of Stock",
       itemsCount: "items",
       loadingCatalog: "Loading catalog...",
+      applyCoupon: "Apply Coupon",
+      couponPlaceholder: "Promo or discount coupon (e.g. PROMO10)",
+      couponApplied: "Discount coupon applied successfully",
+      invalidCoupon: "Invalid or expired coupon code",
+      sendDigitalReceipt: "Send Digital Receipt via WhatsApp",
+      receiptSentWhatsapp: "Receipt sent to customer via WhatsApp",
+      whatsappReceiptPreview: "WhatsApp Message Preview",
+      digitalReceiptTitle: "Instant Digital Receipt",
     },
     products: {
       title: "Product Catalog",
@@ -1342,6 +1470,10 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       interStoreTransfer: "Inter-Store Stock Transfer",
       transferHistory: "Inter-Store Stock Transfers History",
       noTransfers: "No stock transfers recorded yet.",
+      stockoutVelocityTitle: "Stockout Velocity & Burn-Rate Forecast",
+      daysRemaining: "{days} days before stockout",
+      orderViaWhatsapp: "Reorder from Supplier via WhatsApp",
+      whatsappOrderGreeting: "Hello, we would like to place an order to restock the following items:",
     },
     customers: {
       title: "Customers & Credit",
@@ -1398,6 +1530,24 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       ice: "ICE Number",
       address: "Address",
       noSuppliers: "No registered suppliers",
+      totalDebtOwed: "Total Supplier Debt Outstanding",
+      upcomingMaturities: "Upcoming Check & Bill Maturities",
+      recordDebtInvoice: "Record Supplier Debt / Invoice",
+      scanInvoiceOcr: "Scan Purchase Invoice (AI OCR)",
+      paymentMethodCheck: "Bank Check",
+      paymentMethodEffet: "Commercial Bill (Effet)",
+      paymentMethodCash: "Cash",
+      paymentMethodVirement: "Bank Wire Transfer",
+      settleDebt: "Settle Supplier Debt",
+      dueDate: "Due Date",
+      checkNumber: "Check / Bill Number",
+      ocrModalTitle: "AI Supplier Invoice Paperless Scanner",
+      ocrModalSubtitle: "Automatic extraction of line items, quantities, and cost prices with 1-click inventory update",
+      ocrDropzoneText: "Drop invoice image here or click to browse (JPEG, PNG, WebP)",
+      ocrProcessing: "Analyzing and extracting invoice line items...",
+      ocrCommitSuccess: "Stock and cost prices updated successfully!",
+      ocrCommitBtn: "Commit & Update Stock in 1-Click",
+      extractedItemsCount: "extracted items",
     },
     reports: {
       title: "Reports & Closures",
@@ -1410,6 +1560,9 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       whatsappSent: "Report sent successfully",
       zReportTitle: "Daily Closure (Z-Report)",
       transactionsCount: "Sales Count",
+      exportAccountingSage: "Export for Accountant (Sage / Moroccan DGI)",
+      exportAccountingNotice: "UTF-8 CSV compliant with Moroccan Tax Code (Article 145 CGI / CGNC)",
+      sendCustomerReceipt: "Send Digital Receipt to Customer via WhatsApp",
     },
     billing: {
       title: "Billing & Subscriptions",
@@ -1444,6 +1597,13 @@ export const DICTIONARY: Record<Locale, TranslationSchema> = {
       saveBtn: "Save Changes",
       saving: "Saving...",
       tpeSettings: "CMI POS Terminal Settings",
+      ecommerceSyncTitle: "Real-Time E-Commerce Inventory Sync (YouCan & Shopify)",
+      ecommerceSyncSubtitle: "Bidirectional stock synchronization between local POS and online storefronts",
+      youcanStoreKey: "YouCan API Key",
+      shopifyStoreUrl: "Shopify Store URL (myshopify.com)",
+      shopifyWebhookSecret: "Webhook Signature Secret",
+      syncStockOnline: "Enable Automatic Stock Sync",
+      webhookEndpointLabel: "Webhook Endpoint URL:",
     },
     support: {
       title: "Support & Help",

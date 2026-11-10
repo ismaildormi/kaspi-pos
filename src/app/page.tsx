@@ -10,6 +10,7 @@ import { AiScannerSimulator } from "@/components/landing/AiScannerSimulator";
 import { EnterpriseChainShowcase } from "@/components/landing/EnterpriseChainShowcase";
 import { LocalGpuShowcase } from "@/components/landing/LocalGpuShowcase";
 import { DevicePricingCalculator } from "@/components/landing/DevicePricingCalculator";
+import { QuantumEnterpriseSections } from "@/components/landing/QuantumEnterpriseSections";
 import {
   Download,
   LogIn,
@@ -332,6 +333,11 @@ export default function LandingPage() {
           <DevicePricingCalculator />
         </div>
       </section>
+
+      {/* =========================================================================
+          QUANTUM ENTERPRISE CONVERSION SECTIONS (Migration, Hardware, V4.0 Changelog, Security)
+         ========================================================================= */}
+      <QuantumEnterpriseSections />
 
       {/* =========================================================================
           FAQ SECTION

@@ -12,6 +12,8 @@ import {
   Send,
   Calendar,
   CheckCircle2,
+  Download,
+  ShieldCheck,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -81,12 +83,22 @@ export default async function ReportsPage({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href="/api/v1/reports/accounting-export"
+            download
+            className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-zinc-800 shadow-xs"
+            title={t.reports.exportAccountingNotice}
+          >
+            <Download className="h-3.5 w-3.5 text-zinc-300" />
+            <span>{t.reports.exportAccountingSage}</span>
+          </a>
+
           <a
             href={`/api/reports/daily-whatsapp?autoSend=true`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-zinc-950 transition hover:bg-zinc-200"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-zinc-950 transition hover:bg-zinc-200 shadow-xs"
           >
             <Send className="h-3.5 w-3.5" />
             <span>{t.reports.sendWhatsapp}</span>
@@ -157,17 +169,17 @@ export default async function ReportsPage({
                 <th className="py-3 px-4 text-start font-semibold">{t.pos.itemsCount}</th>
                 <th className="py-3 px-4 text-start font-semibold">{t.pos.paymentMethods}</th>
                 <th className="py-3 px-4 text-end font-semibold">{t.pos.total}</th>
+                <th className="py-3 px-4 text-center font-semibold">{t.common.actions}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60 font-medium">
               {todaySales.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-16 text-center text-zinc-500 bg-dot-matrix relative overflow-hidden">
+                  <td colSpan={6} className="py-16 text-center text-zinc-500 bg-dot-matrix relative overflow-hidden">
                     <div className="group inline-flex flex-col items-center">
                       <div className="relative inline-flex items-center justify-center mb-3">
                         <div className="absolute -inset-2.5 rounded-3xl border border-white/5 group-hover:border-white/30 group-hover:scale-105 transition-all duration-500 bg-white/[0.02]" />
                         <div className="relative w-12 h-12 rounded-2xl bg-zinc-900 border border-white/15 flex items-center justify-center text-white shadow-xl overflow-hidden group-hover:border-white/40 transition-colors">
-                          <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white to-transparent top-0 animate-laser pointer-events-none opacity-60" />
                           <FileText className="w-5 h-5 text-white group-hover:-translate-y-0.5 transition-transform duration-300" />
                         </div>
                       </div>
@@ -194,6 +206,20 @@ export default async function ReportsPage({
                     </td>
                     <td className="py-3 px-4 text-end font-mono font-bold text-white">
                       {Number(sale.grandTotal).toFixed(2)} MAD
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <a
+                        href={`https://wa.me/?text=${encodeURIComponent(
+                          `*Reçu Numérique - KASPI POS*\nReçu: ${sale.receiptNumber || sale.id.slice(0, 8)}\nDate: ${new Date(sale.completedAt || sale.createdAt).toLocaleString()}\nTotal: ${Number(sale.grandTotal).toFixed(2)} MAD\nPaiement: ${sale.payments.map((p) => p.method).join("+") || "ESPECES"}\nMerci pour votre visite!`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/80 text-[11px] font-bold transition shadow-2xs"
+                        title={t.reports.sendCustomerReceipt}
+                      >
+                        <MessageSquare className="w-3 h-3 text-zinc-400" />
+                        <span>WhatsApp</span>
+                      </a>
                     </td>
                   </tr>
                 ))

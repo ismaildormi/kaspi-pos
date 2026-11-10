@@ -12,6 +12,7 @@ import {
   Clock,
   ShoppingCart,
   ArrowRightLeft,
+  MessageSquare,
 } from "lucide-react";
 import { StockAuditClient } from "@/components/dashboard/StockAuditClient";
 import { getDictionary, type Locale } from "@/i18n/schema";
@@ -247,6 +248,18 @@ export default async function InventoryPage({
                     +{item.suggestedReorder} u.
                   </span>
                 </div>
+
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(
+                    `${t.inventory.whatsappOrderGreeting}\n- ${item.product.name} (Réf/SKU: ${item.product.sku || item.product.barcode || "N/A"})\nQuantité: ${item.suggestedReorder} unités`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full mt-2 py-1.5 px-3 rounded-xl bg-white hover:bg-zinc-200 text-black text-[11px] font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>{t.inventory.orderViaWhatsapp}</span>
+                </a>
               </div>
             ))}
           </div>
