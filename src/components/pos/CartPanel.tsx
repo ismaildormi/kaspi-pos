@@ -107,9 +107,37 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
   );
 
   const retailLabel =
-    locale === "ar" ? "بيع بالتقسيط" : locale === "en" ? "Retail" : "Vente Détail";
+    storeType === "grocery"
+      ? (locale === "ar" ? "بيع بالحبة (Unité)" : locale === "en" ? "Unit Price" : "Vente Unité")
+      : (locale === "ar" ? "بيع بالتقسيط" : locale === "en" ? "Retail" : "Vente Détail");
   const wholesaleLabel =
-    locale === "ar" ? "بيع بالجملة" : locale === "en" ? "Wholesale" : "Vente en Gros";
+    storeType === "grocery"
+      ? (locale === "ar" ? "بيع بالباك (Pack)" : locale === "en" ? "Pack / Carton" : "Vente Pack")
+      : (locale === "ar" ? "بيع بالجملة" : locale === "en" ? "Wholesale" : "Vente en Gros");
+
+  const handleConsigneDeposit = (type: string, amount: number) => {
+    const isGas = type.includes("gas");
+    const isReturn = amount < 0;
+    const name = isGas
+      ? (isReturn
+          ? (locale === "ar" ? "إرجاع رهن قنينة غاز" : locale === "fr" ? "Retour Consigne Gaz" : "Gas Bottle Return")
+          : (locale === "ar" ? "رهن قنينة غاز فارغة" : locale === "fr" ? "Consigne Bouteille Gaz" : "Gas Bottle Deposit"))
+      : (isReturn
+          ? (locale === "ar" ? "إرجاع رهن صندوق مشروبات" : locale === "fr" ? "Retour Consigne Casier" : "Crate Return")
+          : (locale === "ar" ? "رهن صندوق مشروبات" : locale === "fr" ? "Consigne Casier Boissons" : "Beverage Crate Deposit"));
+
+    const consigneProduct = {
+      id: `consigne_${type}_${Date.now()}`,
+      name,
+      sku: `CONSIGNE-${type.toUpperCase()}`,
+      barcode: `CONSIGNE-${type.toUpperCase()}`,
+      salePrice: amount,
+      taxRate: 0,
+      trackStock: false,
+      categoryId: "consigne",
+    };
+    usePosStore.getState().addToCart(consigneProduct, 1);
+  };
 
   const restaurantTables = [
     { id: "t1", name: "T-01" },
@@ -219,6 +247,55 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             <span>{wholesaleLabel}</span>
           </button>
         </div>
+
+        {/* Consigne Returnable Deposit Bar for Supermarket Mode */}
+        {storeType === "grocery" && (
+          <div className="pt-2 border-t border-zinc-800/80 space-y-1.5">
+            <div className="flex items-center justify-between text-[10px] font-mono font-bold text-teal-400 px-0.5">
+              <span>
+                {locale === "ar"
+                  ? "رهن واسترجاع القنينات والصناديق (Consigne)"
+                  : locale === "fr"
+                  ? "Consignes Gaz & Casiers Bouteilles"
+                  : "Returnable Deposits (Consigne)"}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 text-[11px] font-bold">
+              <button
+                type="button"
+                onClick={() => handleConsigneDeposit("gas_deposit", 100)}
+                className="keycap-3d py-1.5 px-2 rounded-lg bg-zinc-900 border border-teal-500/30 hover:border-teal-400 text-teal-300 flex items-center justify-between cursor-pointer transition active:scale-[0.98]"
+              >
+                <span>{locale === "ar" ? "+ الغاز" : "+ Gaz"}</span>
+                <span className="font-mono font-black tabular-nums">+100 DH</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConsigneDeposit("gas_return", -100)}
+                className="keycap-3d py-1.5 px-2 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-zinc-500 text-zinc-300 flex items-center justify-between cursor-pointer transition active:scale-[0.98]"
+              >
+                <span>{locale === "ar" ? "- إرجاع الغاز" : "- Retour Gaz"}</span>
+                <span className="font-mono font-black tabular-nums">-100 DH</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConsigneDeposit("crate_deposit", 15)}
+                className="keycap-3d py-1.5 px-2 rounded-lg bg-zinc-900 border border-teal-500/30 hover:border-teal-400 text-teal-300 flex items-center justify-between cursor-pointer transition active:scale-[0.98]"
+              >
+                <span>{locale === "ar" ? "+ الصندوق" : "+ Casier"}</span>
+                <span className="font-mono font-black tabular-nums">+15 DH</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConsigneDeposit("crate_return", -15)}
+                className="keycap-3d py-1.5 px-2 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-zinc-500 text-zinc-300 flex items-center justify-between cursor-pointer transition active:scale-[0.98]"
+              >
+                <span>{locale === "ar" ? "- إرجاع الصندوق" : "- Retour Casier"}</span>
+                <span className="font-mono font-black tabular-nums">-15 DH</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Clean Restaurant 3-Pill Mode + Table Dropdown */}
         {storeType === "restaurant" && (

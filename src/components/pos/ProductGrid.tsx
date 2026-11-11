@@ -137,9 +137,15 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
                 : "bg-zinc-900/80 hover:bg-zinc-900 border-white/10 hover:border-white/30"
             }`}
           >
-            {/* Live Instant Tak-Tak-Tak Quantity Counter Badge */}
+            {/* Live Instant Quantity Counter Badge */}
             {inCartQty > 0 && (
-              <div className="absolute -top-2 -end-2 z-10 px-2 py-0.5 rounded-full bg-white text-zinc-950 font-black font-mono text-[11px] shadow-[0_2px_10px_rgba(255,255,255,0.45)] border border-white animate-scale-in">
+              <div
+                className={`absolute -top-2 -end-2 z-10 px-2 py-0.5 rounded-full font-black font-mono text-[11px] shadow-md border animate-scale-in ${
+                  storeType === "grocery"
+                    ? "bg-teal-400 text-zinc-950 border-teal-300 shadow-[0_0_14px_rgba(45,212,191,0.55)]"
+                    : "bg-white text-zinc-950 border-white shadow-[0_2px_10px_rgba(255,255,255,0.45)]"
+                }`}
+              >
                 ×{inCartQty}
               </div>
             )}
@@ -179,9 +185,9 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
                 )}
 
                 {storeType === "grocery" && (
-                  <span className="inline-flex items-center gap-1 text-[9px] font-mono text-emerald-400">
+                  <span className="inline-flex items-center gap-1 text-[9px] font-mono text-teal-400">
                     <Scale className="w-2.5 h-2.5" />
-                    <span>Code / Poids</span>
+                    <span>{product.barcode ? `EAN • ${product.barcode.slice(-4)}` : "PLU Code"}</span>
                   </span>
                 )}
                 {storeType === "restaurant" && (
@@ -217,13 +223,20 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
 
             {/* Bottom: Price & Add */}
             <div className="flex items-end justify-between gap-2 mt-3 pt-2.5 border-t border-white/10 w-full">
-              <div>
-                <span className="text-base font-extrabold text-white font-mono tracking-tight">
-                  {product.salePrice.toFixed(2)}
-                </span>
-                <span className="text-[11px] font-medium text-zinc-400 ms-1">
-                  {tCommon("currency")}
-                </span>
+              <div className="flex flex-col">
+                <div className="flex items-baseline">
+                  <span className="text-base font-extrabold text-white font-mono tracking-tight">
+                    {product.salePrice.toFixed(2)}
+                  </span>
+                  <span className="text-[11px] font-medium text-zinc-400 ms-1">
+                    {tCommon("currency")}
+                  </span>
+                </div>
+                {storeType === "grocery" && product.wholesalePrice && (
+                  <span className="text-[10px] font-mono font-bold text-teal-400">
+                    Pack: {Number(product.wholesalePrice).toFixed(2)}
+                  </span>
+                )}
               </div>
 
               <div className="w-7 h-7 rounded-lg bg-white/[0.06] group-hover:bg-white text-zinc-300 group-hover:text-black flex items-center justify-center transition-all border border-white/10 group-hover:border-white">

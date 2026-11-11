@@ -18,7 +18,10 @@ import {
   X,
   Loader2,
   Check,
+  MessageSquare,
 } from "lucide-react";
+import { toast } from "sonner";
+import { usePosStore } from "@/client/store/usePosStore";
 
 interface CustomerItem {
   id: string;
@@ -33,6 +36,7 @@ interface CustomerItem {
 
 export default function CustomersPage() {
   const { t, locale } = useAppDictionary();
+  const { storeType } = usePosStore();
 
   const [customers, setCustomers] = useState<CustomerItem[]>(() => {
     return getCachedData<CustomerItem[]>("customers_list", []).data;
@@ -42,6 +46,31 @@ export default function CustomersPage() {
     return !getCachedData<CustomerItem[]>("customers_list", []).isCached;
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleSendWhatsAppStatement = (c: CustomerItem) => {
+    const rawDigits = (c.phone || "").replace(/[^0-9]/g, "");
+    if (!rawDigits || rawDigits.length < 8) {
+      toast.error(
+        locale === "ar"
+          ? "رقم الهاتف غير مسجل أو غير صالح لهذا الزبون"
+          : "Numéro de téléphone non renseigné ou invalide"
+      );
+      return;
+    }
+    const intlPhone = rawDigits.startsWith("0") ? "212" + rawDigits.slice(1) : rawDigits;
+    const limitLabel = c.creditLimit ? `${c.creditLimit.toFixed(2)} MAD` : (locale === "ar" ? "غير محدد" : "Illimité");
+    const statementText =
+      locale === "ar"
+        ? `السلام عليكم ${c.name}،\nنوافيكم بكشف الحساب الشهري من متجرنا:\n• رصيد الكريدي الحالي: ${c.currentCreditBalance.toFixed(2)} درهم\n• سقف الكريدي الشهري: ${limitLabel}\n• رصيد نقاط الوفاء: ${c.loyaltyPoints || 0} نقطة (1 نقطة لكل 10 دراهم)\nشكراً لوفائكم وثقتكم بنا!`
+        : `Bonjour ${c.name},\nVoici votre relevé de compte mensuel :\n• Solde crédit en cours : ${c.currentCreditBalance.toFixed(2)} MAD\n• Plafond mensuel : ${limitLabel}\n• Points de fidélité : ${c.loyaltyPoints || 0} pts (1 pt / 10 MAD)\nMerci pour votre fidélité !`;
+
+    window.open(`https://wa.me/${intlPhone}?text=${encodeURIComponent(statementText)}`, "_blank");
+    toast.success(
+      locale === "ar"
+        ? `تم فتح واتساب لإرسال كشف الحساب إلى ${c.name}`
+        : `Relevé WhatsApp préparé pour ${c.name}`
+    );
+  };
 
   // New Customer Form State
   const [name, setName] = useState("");
@@ -333,14 +362,46 @@ export default function CustomersPage() {
                           <span className="text-zinc-500">0.00</span>
                         )}
                       </td>
-                      <td className="p-3.5 text-end font-mono text-zinc-400">
-                        {c.creditLimit ? `${c.creditLimit.toFixed(2)} MAD` : t.customers.unlimited}
+                      <td className="p-3.5 text-end font-mono">
+                        {c.creditLimit ? (
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-xs text-zinc-300 font-bold">
+                              {c.creditLimit.toFixed(2)} MAD
+                            </span>
+                            <div className="w-24 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                              {(() => {
+                                const percent = Math.min(100, Math.round((c.currentCreditBalance / c.creditLimit) * 100));
+                                return (
+                                  <div
+                                    className={`h-full rounded-full transition-all ${
+                                      percent > 85 ? "bg-rose-500" : percent > 60 ? "bg-amber-400" : "bg-teal-400"
+                                    }`}
+                                    style={{ width: `${percent}%` }}
+                                  />
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-zinc-500">{t.customers.unlimited}</span>
+                        )}
                       </td>
-                      <td className="p-3.5 text-end font-mono text-zinc-300">
-                        {c.loyaltyPoints ?? 0} pts
+                      <td className="p-3.5 text-end font-mono">
+                        <span className="text-zinc-200 font-bold">{c.loyaltyPoints ?? 0} pts</span>
+                        {storeType === "grocery" && (
+                          <span className="text-[10px] text-zinc-500 block">1 pt / 10 DH</span>
+                        )}
                       </td>
                       <td className="p-3.5 text-center">
                         <div className="inline-flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSendWhatsAppStatement(c)}
+                            title={locale === "ar" ? "إرسال كشف الحساب الشهري عبر واتساب" : "Envoyer Relevé WhatsApp"}
+                            className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition cursor-pointer"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                          </button>
                           <button
                             type="button"
                             onClick={() => openCreditModal(c)}

@@ -4,7 +4,7 @@ import { hashPassword } from "../auth/password";
 import { createSession } from "../auth/session";
 
 async function runSuperAdminTests() {
-  console.log("🚀 Testing Super Admin Infrastructure & MRR Aggregation against PostgreSQL...");
+  console.log(" Testing Super Admin Infrastructure & MRR Aggregation against PostgreSQL...");
 
   const testSuffix = Date.now().toString().slice(-6);
 
@@ -83,7 +83,7 @@ async function runSuperAdminTests() {
 
   // 4. Test Stats Aggregation
   const stats = await getAdminDashboardStats();
-  console.log("\n📊 Live Admin Stats Aggregated:");
+  console.log("\n Live Admin Stats Aggregated:");
   console.log(`  • Total Tenants: ${stats.totalTenants}`);
   console.log(`  • Active Subscriptions: ${stats.activeSubscriptions}`);
   console.log(`  • Monthly Recurring Revenue (MRR): $${stats.mrrUsd} USD`);
@@ -100,7 +100,7 @@ async function runSuperAdminTests() {
   }
 
   console.log(`✅ Tenant ${foundTenant.displayName} correctly listed with Active status and $10/mo MRR contribution`);
-  console.log("\n🎉 SUPER ADMIN INFRASTRUCTURE & METRICS VERIFIED!");
+  console.log("\n SUPER ADMIN INFRASTRUCTURE & METRICS VERIFIED!");
 }
 
 runSuperAdminTests()

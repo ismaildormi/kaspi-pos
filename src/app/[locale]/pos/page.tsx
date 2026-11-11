@@ -16,6 +16,8 @@ import { IndustryWorkspaceModal } from "@/components/pos/IndustryWorkspaceModal"
 import { OwnerProfileModal } from "@/components/layout/OwnerProfileModal";
 import { QuickProductModal } from "@/components/pos/QuickProductModal";
 import { CatalogProgressLoader } from "@/components/pos/CatalogProgressLoader";
+import { GroceryScannerUtilityBar } from "@/components/pos/grocery/GroceryScannerUtilityBar";
+import { getSectorCssVariables } from "@/lib/sector/sector-blueprint";
 import { InAppPaywallModal, triggerPaywallModal } from "@/components/billing/InAppPaywallModal";
 import { Plus } from "lucide-react";
 import type { ShiftFinancialSummary } from "@/server/cash-shift/engine";
@@ -329,7 +331,11 @@ export default function PosPage() {
   }, [cart, isPaymentModalOpen, isHeldModalOpen, openPaymentModal, closePaymentModal]);
 
   return (
-    <div dir="ltr" className="flex flex-col h-screen overflow-hidden bg-zinc-950 text-white font-sans">
+    <div
+      dir="ltr"
+      style={getSectorCssVariables(storeType)}
+      className="flex flex-col h-screen overflow-hidden bg-zinc-950 text-white font-sans"
+    >
       <Toaster
         theme="dark"
         position="top-center"
@@ -377,6 +383,11 @@ export default function PosPage() {
               </span>
             </button>
           </div>
+
+          {/* Supermarket Utility Bar (Multipliers, Price Check & PLU Produce) */}
+          {storeType === "grocery" && (
+            <GroceryScannerUtilityBar products={products} />
+          )}
 
           {/* Categories Pill Selector */}
           <CategoryFilter categories={categories} />

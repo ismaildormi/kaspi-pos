@@ -96,6 +96,12 @@ export default function SettingsPage() {
   const [bankRib, setBankRib] = useState("");
   const [tpeTerminalId, setTpeTerminalId] = useState("");
 
+  // Supermarket Hardware & Operational Preferences
+  const [barcodeAutoEnter, setBarcodeAutoEnter] = useState(true);
+  const [scaleEanPrefix, setScaleEanPrefix] = useState("20");
+  const [defaultGasDeposit, setDefaultGasDeposit] = useState("100.00");
+  const [defaultCrateDeposit, setDefaultCrateDeposit] = useState("15.00");
+
   // Thermal Printing State
   const { setPrinterSettings, setTenantInfo, storeType, setStoreProfile } = usePosStore();
   const [receiptLanguage, setReceiptLanguage] = useState<ReceiptLanguage>("fr");
@@ -1584,6 +1590,73 @@ export default function SettingsPage() {
                     placeholder={getReceiptTranslation(receiptLanguage).thankYou}
                     className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white"
                   />
+                </div>
+              </div>
+
+              {/* Supermarket Hardware & Operational Preferences */}
+              <div className="p-4 rounded-xl bg-zinc-950 border border-teal-500/20 space-y-4">
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                  <span className="text-xs font-bold text-teal-300">
+                    {locale === "ar"
+                      ? "إعدادات عتاد السوبرماركت والميزان (Mode Supermarché)"
+                      : "Paramètres Matériel Supermarché & Balance"}
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-400">Mode 1</span>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="flex items-center justify-between text-xs text-zinc-300 cursor-pointer">
+                    <span>
+                      {locale === "ar"
+                        ? "الماسح الضوئي USB: إدخال تلقائي (Enter) وإضافة سريعة للسلة"
+                        : "Scanner USB : Auto-Enter (Ajout instantané au panier)"}
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={barcodeAutoEnter}
+                      onChange={(e) => setBarcodeAutoEnter(e.target.checked)}
+                      className="w-4 h-4 rounded accent-teal-400"
+                    />
+                  </label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <div>
+                      <label className="block text-[11px] text-zinc-400 mb-1 font-mono">
+                        {locale === "ar" ? "بادئة باركود الميزان (EAN-13)" : "Préfixe Balance EAN-13"}
+                      </label>
+                      <input
+                        type="text"
+                        value={scaleEanPrefix}
+                        onChange={(e) => setScaleEanPrefix(e.target.value)}
+                        placeholder="20 / 21"
+                        className="w-full h-9 px-3 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-zinc-400 mb-1 font-mono">
+                        {locale === "ar" ? "سعر رهن قنينة الغاز (MAD)" : "Consigne Bouteille Gaz"}
+                      </label>
+                      <input
+                        type="number"
+                        step="1"
+                        value={defaultGasDeposit}
+                        onChange={(e) => setDefaultGasDeposit(e.target.value)}
+                        className="w-full h-9 px-3 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-zinc-400 mb-1 font-mono">
+                        {locale === "ar" ? "سعر رهن الصندوق (MAD)" : "Consigne Caisse Plastique"}
+                      </label>
+                      <input
+                        type="number"
+                        step="1"
+                        value={defaultCrateDeposit}
+                        onChange={(e) => setDefaultCrateDeposit(e.target.value)}
+                        className="w-full h-9 px-3 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white font-mono"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -201,4 +201,17 @@
 | `catalog_loader_track` | Progress Bar | مسار ثلاثي الأبعاد مجوف مع شريط إضاءة أبيض متوهج | `w-64 h-2.5 rounded-full bg-zinc-950 border border-white/10` | شريط أبيض ناصع `bg-white shadow-[0_0_14px_rgba(255,255,255,0.85)]` مع انتقال فائق النعومة `duration-75 ease-out` | يمتلئ لحظياً مع إتمام جلب الأصناف من IndexedDB |
 | `catalog_loader_subtitle` | Status Subtitle | جاري تجهيز كتالوج المنتجات... • Chargement du catalogue produits... • Loading product catalog... | `text-xs font-medium text-zinc-400 tracking-wide` | دعم اتجاه `rtl` / `ltr` وفق اللغة النشطة | يحل محل النصوص الثابتة القديمة لتقديم تجربة تشغيل احترافية |
 
+---
+
+## 11. أدوات السوبرماركت ورهن القنينات وحزم البيع (`GroceryScannerUtilityBar.tsx` & `CartPanel.tsx`)
+
+| معرّف العنصر (Element ID) | نوع العنصر | التسمية والرمز (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `grocery_multiplier_buttons` | Button Group | مضاعفات سريعة للكمية: `x2`, `x6 Pack`, `x12 Carton`, `x24 Caisse` | `font-mono font-bold text-xs` | `px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-teal-400/50 hover:bg-zinc-850 active:scale-95 keycap-3d` | يضاعف الكمية الممسوحة فوراً قبل إضافة المنتج إلى السلة |
+| `grocery_price_checker_btn` | Action Button | فاحص الثمن والصلاحية • Vérificateur Prix & DLC | `font-bold text-xs text-zinc-200` | نافذة منبثقة تفاعلية مع حقل مسح باركود وعرض فوري لثمن الحبة، ثمن الباك، الجناح ورصيد المخزون | يساعد الزبائن وموظفي الرفوف على فحص الأسعار دون تسجيل بيع |
+| `grocery_plu_modal_btn` | Action Button | إدخال خضر وفواكه وميزان (4 أرقام PLU) • Saisie PLU Balance | `font-bold text-xs text-teal-300` | نافذة إدخال الأكواد المعيارية (4011 موز، 4012 تفاح...) مع أزرار أوزان سريعة `0.25kg`, `0.5kg`, `1kg`, `2kg` | يربط المنتجات الوزنية بالسلة مع الحساب الآلي للسعر التناسبي |
+| `cart_pack_pricing_toggle` | Toggle Switch | تبديل بيع بالحبة (Unité) ↔ بيع بالباك (Pack) | `font-bold text-xs` | زر تفاعلي `keycap-3d` مع وسائط لونية مونوكرومية راقية | يعيد حساب خط السلة باعتماد سعر الباك مباشرة |
+| `cart_consigne_return_bar` | Quick Action Bar | رهن القنينات والصناديق: `+ الغاز +100 DH`, `- إرجاع الغاز -100 DH`, `+ الصندوق +15 DH`, `- إرجاع الصندوق -15 DH` | `font-mono font-bold text-xs` | شريط مدمج أسفل السلة مع تعيين تلقائي للرهن المسترجع أو المقبوض | يضمن تدقيق حركة القنينات الفارغة والمملوءة ومطابقة الخزينة |
+
+
 

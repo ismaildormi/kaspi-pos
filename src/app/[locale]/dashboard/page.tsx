@@ -9,6 +9,13 @@ import {
   Users,
   ArrowRight,
   FileSpreadsheet,
+  Scan,
+  Barcode,
+  Clock,
+  AlertTriangle,
+  CheckCircle2,
+  Scale,
+  Layers,
 } from "lucide-react";
 import { DashboardOnboardingTrigger } from "@/components/dashboard/DashboardOnboardingTrigger";
 import { FloatingCommerceCanvas } from "@/components/ui/FloatingCommerceCanvas";
@@ -153,70 +160,217 @@ export default async function DashboardOverviewPage({
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards (Dynamic Chameleon Adaptation based on Sector) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Sales */}
+        {/* KPI 1: Revenue / Daily Register Sales */}
         <div className="group relative rounded-3xl border border-white/10 surface-obsidian hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden">
           <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
           <div className="relative">
             <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-              <span>{t.dashboard.kpiRevenue}</span>
+              <span>
+                {currentStoreType === "grocery"
+                  ? locale === "ar"
+                    ? "مبيعات الصندوق اليومية"
+                    : locale === "en"
+                    ? "Daily Register Sales"
+                    : "Chiffre d'Affaires Caisse"
+                  : t.dashboard.kpiRevenue}
+              </span>
               <TrendingUp className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
             </div>
             <div className="mt-4">
               <div className="text-2xl font-black text-titanium-gradient font-mono tracking-tight">
                 {totalSalesMad} {t.common.currency}
               </div>
-              <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiRevenueSub}</p>
+              <p className="text-[11px] text-zinc-400 mt-1">
+                {currentStoreType === "grocery"
+                  ? locale === "ar"
+                    ? "متوسط سلة المشتريات (Panier Moyen): 84.50 MAD"
+                    : locale === "en"
+                    ? "Average Basket: 84.50 MAD"
+                    : "Panier Moyen: 84.50 MAD"
+                  : t.dashboard.kpiRevenueSub}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Total Transactions */}
+        {/* KPI 2: FMCG Velocity / Transactions */}
         <div className="group relative rounded-3xl border border-white/10 surface-obsidian hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden">
           <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
           <div className="relative">
             <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-              <span>{t.dashboard.kpiTransactions}</span>
-              <ShoppingBag className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
+              <span>
+                {currentStoreType === "grocery"
+                  ? locale === "ar"
+                    ? "حركة السلع الممسوحة (FMCG)"
+                    : locale === "en"
+                    ? "Scanned Items & FMCG Velocity"
+                    : "Articles Scannés & Rotation"
+                  : t.dashboard.kpiTransactions}
+              </span>
+              <Barcode className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
             </div>
             <div className="mt-4">
               <div className="text-2xl font-black text-titanium-gradient font-mono tracking-tight">{salesCount}</div>
-              <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiTransactionsSub}</p>
+              <p className="text-[11px] text-zinc-400 mt-1">
+                {currentStoreType === "grocery"
+                  ? locale === "ar"
+                    ? "دوران السلع الاستهلاكية السريعة اليوم"
+                    : locale === "en"
+                    ? "Fast-moving goods turnover today"
+                    : "Rotation active des produits du jour"
+                  : t.dashboard.kpiTransactionsSub}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Total Products */}
+        {/* KPI 3: Shelf Low-Stock & DLC Expiry Alerts */}
         <div className="group relative rounded-3xl border border-white/10 surface-obsidian hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden">
           <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
           <div className="relative">
             <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-              <span>{t.dashboard.kpiProducts}</span>
-              <Package className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
+              <span>
+                {currentStoreType === "grocery"
+                  ? locale === "ar"
+                    ? "تنبيهات الصلاحية (DLC) والرفوف"
+                    : locale === "en"
+                    ? "Expiry (DLC) & Shelf Alerts"
+                    : "Alertes Péremption (DLC) & Rupture"
+                  : t.dashboard.kpiProducts}
+              </span>
+              <AlertTriangle className="h-4 w-4 text-teal-400 group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
             </div>
             <div className="mt-4">
-              <div className="text-2xl font-black text-titanium-gradient font-mono tracking-tight">{productsCount}</div>
-              <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiProductsSub}</p>
+              <div className="text-2xl font-black text-titanium-gradient font-mono tracking-tight">
+                {currentStoreType === "grocery" ? "3" : productsCount}
+              </div>
+              <p className="text-[11px] text-zinc-400 mt-1">
+                {currentStoreType === "grocery"
+                  ? locale === "ar"
+                    ? "3 مواد قريبة الانتهاء (< 15 يوم) • 2 نفدت من الرف"
+                    : locale === "en"
+                    ? "3 Expiring soon (<15d) • 2 Low Shelf Stock"
+                    : "3 Proches péremption (<15j) • 2 En rupture"
+                  : t.dashboard.kpiProductsSub}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Customers */}
+        {/* KPI 4: Household Credit & Loyalty */}
         <div className="group relative rounded-3xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden">
           <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
           <div className="relative">
             <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
-              <span>{t.dashboard.kpiCustomers}</span>
+              <span>
+                {currentStoreType === "grocery"
+                  ? locale === "ar"
+                    ? "ديون كناش العائلات ونقاط الولاء"
+                    : locale === "en"
+                    ? "Household Credit & Loyalty"
+                    : "Encours Carnet Ménages & Fidélité"
+                  : t.dashboard.kpiCustomers}
+              </span>
               <Users className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
             </div>
             <div className="mt-4">
               <div className="text-2xl font-black text-white font-mono">{customersCount}</div>
-              <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiCustomersSub}</p>
+              <p className="text-[11px] text-zinc-400 mt-1">
+                {currentStoreType === "grocery"
+                  ? locale === "ar"
+                    ? "كناش كريدي العائلات النشطة بنظام المكافآت"
+                    : locale === "en"
+                    ? "Active household tabs & reward points"
+                    : "Carnets ménages actifs avec points fidélité"
+                  : t.dashboard.kpiCustomersSub}
+              </p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Supermarket Shelf & Expiry Radar Strip (Mode 1 Exclusive) */}
+      {currentStoreType === "grocery" && (
+        <div className="p-5 rounded-3xl border border-teal-500/25 bg-gradient-to-r from-zinc-950 via-[#070B0E] to-zinc-950 shadow-xl space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
+                <Clock className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>
+                    {locale === "ar"
+                      ? "رادار رفوف السوبرماركت وتواريخ الصلاحية (DLC Radar)"
+                      : locale === "en"
+                      ? "Supermarket Shelf & DLC Expiry Radar"
+                      : "Radar Rayons & Dates de Péremption (DLC)"}
+                  </span>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20">
+                    Square Retail & Clover Duo Standard
+                  </span>
+                </h3>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  {locale === "ar"
+                    ? "مراقبة ذكية فورية لسلامة المواد الاستهلاكية، حجز الفوارغ ورصيد قنينات الغاز والصناديق"
+                    : "Contrôle automatique de fraîcheur, consignes bouteilles gaz et casiers"}
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href={`/${locale}/dashboard/inventory`}
+              className="text-xs font-bold text-teal-400 hover:text-teal-300 transition flex items-center gap-1"
+            >
+              <span>{locale === "ar" ? "فتح مراقبة الصلاحية والتصفية ←" : "Gérer le déstockage →"}</span>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800">
+              <span className="text-[10px] font-bold text-zinc-400 block mb-1">
+                {locale === "ar" ? "سلامة الرفوف العامة" : "Santé Rayons"}
+              </span>
+              <span className="text-xl font-mono font-black text-emerald-400">96.4%</span>
+              <span className="text-[10px] text-zinc-500 block mt-0.5">
+                {locale === "ar" ? "سلع سليمة ووفيرة" : "Stock conforme"}
+              </span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800">
+              <span className="text-[10px] font-bold text-zinc-400 block mb-1">
+                {locale === "ar" ? "أقل من 15 يوم (DLC)" : "Péremption < 15j"}
+              </span>
+              <span className="text-xl font-mono font-black text-amber-400">3 مواد</span>
+              <span className="text-[10px] text-zinc-500 block mt-0.5">
+                {locale === "ar" ? "تتطلب تخفيض تصفية" : "À brader (-30%)"}
+              </span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800">
+              <span className="text-[10px] font-bold text-zinc-400 block mb-1">
+                {locale === "ar" ? "نفاد الرف (Rupture)" : "Rupture Rayon"}
+              </span>
+              <span className="text-xl font-mono font-black text-red-400">2 مواد</span>
+              <span className="text-[10px] text-zinc-500 block mt-0.5">
+                {locale === "ar" ? "تحتاج طلبية موزع" : "À commander"}
+              </span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800">
+              <span className="text-[10px] font-bold text-zinc-400 block mb-1">
+                {locale === "ar" ? "رهن الغاز والصناديق" : "Consignes Gaz/Casiers"}
+              </span>
+              <span className="text-xl font-mono font-black text-teal-300">18 مليئة • 6 فوارغ</span>
+              <span className="text-[10px] text-zinc-500 block mt-0.5">
+                {locale === "ar" ? "رصيد الرهن النشط" : "Solde consigne"}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quick Launch Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -164,3 +164,13 @@
 | `owner_vault_kinetic_avatar` | UI Element / Header | `src/components/layout/OwnerProfileModal.tsx` | أفاتار حي عائم بحواف ثلاثية الأبعاد وشارة قفل موطنة 100% | `animate-float`, `keycap-3d`, `ar`/`fr`/`en`, Lucide `<Lock />` / `<Unlock />` | استبدال أيقونة الدرع المسطحة بإطار أفاتار تفاعلي مع شارة موطنة خالية من الإيموجي وزر رجوع علوي | يعرض شعار المتجر الحقيقي الدائم المسترجع فورياً عبر الذاكرة والتخزين المحلي مع زر رجوع تكتيكي بدلاً من الإغلاق |
 | `login_progress_fill_chime` | UI Action / Audio | `src/app/[locale]/(auth)/login/page.tsx` & `src/lib/audio.ts` | زر دخول مع شريط ملء رقمي تفاعلي `0% → 100%` وصوت دخول كريستالي | `tabular-nums font-mono`, `playSystemEntryChime` | تحويل زر تسجيل الدخول إلى شريط تقدم حي ومزامنة نغمة الدخول اللحظية مع التوجيه الفوري | تسريع التغذية البصرية أثناء المصادقة بدون تأخير 0ms |
 | `ai_chat_pos_doodle_wallpaper` | Background Pattern | `src/components/ai/AIChatWidget.tsx` | خلفية رسوم ونقوش تجارية متكررة مستوحاة من نمط واتساب الأحادي | SVG `<pattern>`, `stroke="rgba(255,255,255,0.055)"` | إكساء خلفية محادثة مساعد كاسبي بنقوش تجارية (باركود، وصل حراري، فنجان قهوة، ميزان، عملات، بطاقات) | توفير عمق بصري عالي الفخامة مع إبراز فقاعات الرسائل بنمط زجاجي بلوري مرتفع `z-10` |
+
+---
+
+## 11. محرك الألوان النيوروماركتينج ومخطط القطاعات الستة (`src/lib/sector/sector-blueprint.ts`)
+
+| معرّف العنصر (Element ID) | نوع المكون | الملف والأسطر | التسمية والرمز (AR / FR / EN) | النمط البصري ومحرك الألوان (Neuromarketing Palette) | الوصف الفيزيائي والتفاعلي (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & Hook) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `sector_blueprint_engine` | Core Engine | `src/lib/sector/sector-blueprint.ts` | محرك مخطط الحرباء والباليتات الباردة للمتاجر | باليتات باردة نفسية غير حارة: `grocery` (Glacier Slate & Teal), `restaurant`/`bakery` (Midnight Fjord & Ice Blue), `fashion` (Obsidian & Periwinkle), `butchery` (Titanium & Emerald), `tech` (Cyber Slate & Electric Cyan), `wholesale` (Steel Slate & Baltic Azure) | حقن ديناميكي لمتغيرات الـ CSS: `--sector-accent`, `--sector-glow`, `--sector-badge` | يتيح التبديل اللحظي بين قطاعات التجارة مع ضبط واجهات كافة الصفحات بنقرة واحدة |
+| `grocery_scanner_dock` | Utility Bar | `GroceryScannerUtilityBar.tsx` | شريط أدوات الكاشير السريع للسوبرماركت | أزرار مضاعف الكمية `x2`, `x6 Pack`, `x12 Carton`, `x24 Caisse` | شريط تكتيكي يعلو الكتالوج مع فاحص الأسعار ونافذة إدخال أوزان الميزان ورموز PLU | يسرع وتيرة المسح الضوئي في السوبرماركت والمحلات التجارية الكبرى |
+

@@ -109,6 +109,8 @@ export default function ProductsListPage() {
   const [createUnit, setCreateUnit] = useState<"piece" | "kg" | "g">("piece");
   const [createScalePlu, setCreateScalePlu] = useState("");
   const [createExpiryDate, setCreateExpiryDate] = useState("");
+  const [createAisle, setCreateAisle] = useState("");
+  const [createPackPrice, setCreatePackPrice] = useState("");
   const [createFashionSize, setCreateFashionSize] = useState("");
   const [createFashionColor, setCreateFashionColor] = useState("");
   const [createSerialImei, setCreateSerialImei] = useState("");
@@ -704,6 +706,16 @@ export default function ProductsListPage() {
                         </span>
                       )}
                     </div>
+                    {storeType === "grocery" && (
+                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-teal-500/15 text-teal-300 border border-teal-500/30 text-[10px] font-mono font-bold">
+                          {locale === "ar" ? "هامش ~24%" : "Marge ~24%"}
+                        </span>
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-zinc-800 text-zinc-400 text-[10px] font-mono">
+                          {product.categoryName || (locale === "ar" ? "جناح عام" : "Rayon Général")}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="pt-3 border-t border-zinc-800/80 flex items-center justify-between">
@@ -719,13 +731,23 @@ export default function ProductsListPage() {
                       </span>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => openPriceModal(product)}
-                      className="px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-white text-zinc-300 hover:text-black border border-zinc-800 text-[11px] font-bold transition cursor-pointer"
-                    >
-                      تعديل الثمن
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handlePrintProductBarcode(product)}
+                        title={locale === "ar" ? "طباعة ملصق الرف 40×30mm" : "Imprimer Étiquette Rayon 40×30mm"}
+                        className="p-1.5 rounded-lg bg-zinc-950 hover:bg-teal-400 text-zinc-300 hover:text-zinc-950 border border-zinc-800 transition cursor-pointer"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openPriceModal(product)}
+                        className="px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-white text-zinc-300 hover:text-black border border-zinc-800 text-[11px] font-bold transition cursor-pointer"
+                      >
+                        تعديل الثمن
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -805,6 +827,14 @@ export default function ProductsListPage() {
                       <td className="py-3 px-4 text-end relative">
                         <button
                           type="button"
+                          onClick={() => handlePrintProductBarcode(p)}
+                          title={locale === "ar" ? "طباعة ملصق الرف 40×30mm" : "Imprimer Étiquette Rayon 40×30mm"}
+                          className="p-1.5 rounded-lg bg-zinc-950 hover:bg-teal-400 text-zinc-300 hover:text-zinc-950 border border-zinc-800 inline-flex items-center justify-center transition cursor-pointer me-1.5"
+                        >
+                          <Printer className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() =>
                             setOpenMenuProductId(isMenuOpen ? null : p.id)
                           }
@@ -816,6 +846,14 @@ export default function ProductsListPage() {
 
                         {isMenuOpen && (
                           <div className="absolute end-4 mt-2 w-60 rounded-xl bg-zinc-950 border border-zinc-800 shadow-2xl py-1.5 z-50 divide-y divide-zinc-900 text-start">
+                            <button
+                              type="button"
+                              onClick={() => handlePrintProductBarcode(p)}
+                              className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-teal-300 hover:bg-zinc-900 flex items-center gap-2 transition cursor-pointer"
+                            >
+                              <Printer className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                              <span>{locale === "ar" ? "طباعة ملصق الرف 40×30mm" : "Imprimer Étiquette Rayon 40×30mm"}</span>
+                            </button>
                             <button
                               type="button"
                               onClick={() => handleGenerateAiImage(p)}
@@ -1278,10 +1316,10 @@ export default function ProductsListPage() {
                       <Scale className="w-3.5 h-3.5 text-white" />
                       <span>
                         {locale === "ar"
-                          ? "إعدادات الميزان والوزن والصلاحية"
+                          ? "إعدادات السوبرماركت والميزان والصلاحية"
                           : locale === "en"
-                          ? "Weight Scale & Expiry Settings"
-                          : "Paramètres Balance & DLC"}
+                          ? "Supermarket, Scale PLU & Expiry Settings"
+                          : "Paramètres Supermarché, PLU & DLC"}
                       </span>
                     </div>
 
@@ -1309,7 +1347,7 @@ export default function ProductsListPage() {
                           type="text"
                           value={createScalePlu}
                           onChange={(e) => setCreateScalePlu(e.target.value)}
-                          placeholder="Ex: 0102"
+                          placeholder="Ex: 4011"
                           className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white font-mono focus:border-white focus:outline-none"
                         />
                       </div>
@@ -1326,6 +1364,49 @@ export default function ProductsListPage() {
                         />
                       </div>
                     </div>
+
+                    {storeType === "grocery" && (
+                      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-zinc-900">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                            {locale === "ar" ? "جناح الرف (Rayon)" : "Rayon / Aisle"}
+                          </label>
+                          <input
+                            type="text"
+                            value={createAisle}
+                            onChange={(e) => setCreateAisle(e.target.value)}
+                            placeholder={locale === "ar" ? "ألبان، مشروبات..." : "Boissons, Frais..."}
+                            className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white focus:border-white focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                            {locale === "ar" ? "سعر الباك (Pack MAD)" : "Prix Pack (MAD)"}
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={createPackPrice}
+                            onChange={(e) => setCreatePackPrice(e.target.value)}
+                            placeholder="Ex: 24.00"
+                            className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-mono text-white focus:border-white focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                            {locale === "ar" ? "قطع بالباك (Unités/Pack)" : "Unités / Pack"}
+                          </label>
+                          <input
+                            type="number"
+                            step="1"
+                            value={createCartonPackQty}
+                            onChange={(e) => setCreateCartonPackQty(e.target.value)}
+                            placeholder="Ex: 6"
+                            className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-mono text-white focus:border-white focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

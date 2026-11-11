@@ -74,3 +74,15 @@
 | `inv_btn_fast_plus` | Button | `inventory/page.tsx` [290–298] | تعديل سريع زيادة (+) • Stock In | أيقونة `Plus w-3.5 h-3.5 text-zinc-200` | `w-7 h-7 rounded-lg border border-white/10 bg-zinc-800 hover:bg-zinc-700 active:scale-90 flex items-center justify-center cursor-pointer` | يزيد رصيد المخزون بوحدة واحدة مباشرة في السجل |
 | `inv_btn_fast_minus` | Button | `inventory/page.tsx` [299–308] | تعديل سريع خصم (-) • Stock Out | أيقونة `Minus w-3.5 h-3.5 text-zinc-200` | `w-7 h-7 rounded-lg border border-white/10 bg-zinc-800 hover:bg-zinc-700 active:scale-90 flex items-center justify-center cursor-pointer` | يخصم وحدة من رصيد المخزون مع توثيق الحركة |
 | `inv_empty_state_radar` | Empty State Box | `inventory/page.tsx` [295–315] | لا توجد منتجات في المخزون حالياً • Aucun produit en stock | `font-bold text-sm text-white` + `font-bold text-xs text-zinc-950` | حاوية مونوكرومية عريضة `py-14` مع رادار حركي 3D وزر `+ إضافة منتج جديد` مونوكرومي أبيض | يوجه التاجر مباشرة إلى `/dashboard/products` لإضافة المنتجات عند فراغ المخزون |
+
+---
+
+## 4. منصة تتبع الصلاحية ومخزون السوبرماركت والتالف (`GroceryInventoryConsole.tsx`)
+
+| معرّف العنصر (Element ID) | نوع المكون | الملف والأسطر | التسمية والرمز (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `grocery_shelf_warehouse_tab` | Tab Component | `GroceryInventoryConsole.tsx` [125–142] | مخزون الرفوف والمستودع • Stock Rayons & Réserve | `font-bold text-xs text-zinc-300` | شريط تصفية الأجنحة (ألبان، مشروبات، بقالة جافة، تنظيف) مع بطاقات تقييم رأس المال بسعر البيع وسعر التكلفة | يعرض الرصيد المباشر لكل سلعة على الرفوف والمخزن الاحتياطي |
+| `grocery_dlc_clearance_tab` | Tab Component | `GroceryInventoryConsole.tsx` [145–165] | مراقبة الصلاحية DLC والتصفية (-30%) • Péremptions DLC & Déstockage | `font-bold text-xs text-amber-300 font-mono` | رادار تاريخ الصلاحية مع زر بنقرة واحدة لتطبيق تخفيض تصفية فوري `-30%` لتجنب الخسارة قبل انتهاء التاريخ | يربط المنتجات القريبة من النفاد بتخفيضات آلية في السلة والكتالوج |
+| `grocery_shrinkage_consigne_tab` | Tab Component | `GroceryInventoryConsole.tsx` [167–183] | سجل التالف ورهن الغاز والصناديق • Casse & Consignes Bouteilles | `font-bold text-xs text-zinc-300` | تدقيق قنينات الغاز المملوءة والفارغة وصناديق المشروبات مع سجل الإتلاف التلقائي | يسجل العجز والكسر ويخصم التالف من المخزون فورياً |
+| `grocery_shelf_label_print_btn` | Action Button | `products/page.tsx` & `ProductGrid.tsx` | طباعة ملصق الرف 40×30mm • Imprimer Étiquette Rayon 40×30mm | `font-bold text-xs font-mono` | نافذة طباعة مخصصة بالحجم القياسي 40 مم × 30 مم مع الباركود واسم السلعة والسعر بالدرهم | متوافق مع طابعات الملصقات الحرارية USB وBluetooth |
+

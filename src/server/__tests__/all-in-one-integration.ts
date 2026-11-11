@@ -3,7 +3,7 @@ import { toDecimal, roundMoney } from "../../domain/money";
 import { calculatePointsEarned, calculateDiscountForPoints } from "../loyalty/engine";
 
 async function runAllInOneIntegrationTests() {
-  console.log("🚀 Starting All-in-One Features Integration Test Suite against PostgreSQL...");
+  console.log(" Starting All-in-One Features Integration Test Suite against PostgreSQL...");
 
   const testSuffix = Date.now().toString().slice(-6);
 
@@ -59,7 +59,7 @@ async function runAllInOneIntegrationTests() {
   // ========================================================
   // TEST 1: Advanced Inventory (Supplier & PO & Receiving)
   // ========================================================
-  console.log("\n📦 Testing Module 1: Advanced Inventory (Suppliers & Purchase Orders)...");
+  console.log("\n Testing Module 1: Advanced Inventory (Suppliers & Purchase Orders)...");
 
   const supplier = await prisma.supplier.create({
     data: {
@@ -180,7 +180,7 @@ async function runAllInOneIntegrationTests() {
   // ========================================================
   // TEST 2: Customer Credit & Debt Ledger
   // ========================================================
-  console.log("\n💳 Testing Module 2: Customer Credit & Debt Ledger (Carnet de Crédit)...");
+  console.log("\n Testing Module 2: Customer Credit & Debt Ledger (Carnet de Crédit)...");
 
   const customer = await prisma.customer.create({
     data: {
@@ -240,7 +240,7 @@ async function runAllInOneIntegrationTests() {
   // ========================================================
   // TEST 3: Invoicing & Quotes (Devis) with Moroccan ICE
   // ========================================================
-  console.log("\n📄 Testing Module 3: Invoicing & Quotes (Devis) with ICE & Tax Breakdown...");
+  console.log("\n Testing Module 3: Invoicing & Quotes (Devis) with ICE & Tax Breakdown...");
 
   const quote = await prisma.invoice.create({
     data: {
@@ -265,7 +265,7 @@ async function runAllInOneIntegrationTests() {
   // ========================================================
   // TEST 4: Loyalty Program
   // ========================================================
-  console.log("\n🎁 Testing Module 4: Loyalty Program (1 pt per 10 MAD)...");
+  console.log("\n Testing Module 4: Loyalty Program (1 pt per 10 MAD)...");
 
   // Sale of 350 MAD -> should earn 35 points
   const pointsEarned = calculatePointsEarned(350);
@@ -311,7 +311,7 @@ async function runAllInOneIntegrationTests() {
   // ========================================================
   // TEST 5: Restaurant Mode & KDS
   // ========================================================
-  console.log("\n🍽️ Testing Module 5: Restaurant Tables & Kitchen Display System (KDS)...");
+  console.log("\n️ Testing Module 5: Restaurant Tables & Kitchen Display System (KDS)...");
 
   const table = await prisma.diningTable.create({
     data: {
@@ -360,7 +360,7 @@ async function runAllInOneIntegrationTests() {
   // ========================================================
   // TEST 6: Reporting Summaries
   // ========================================================
-  console.log("\n📊 Testing Module 6: Reporting Aggregations (Sales, Products & Moroccan TVA)...");
+  console.log("\n Testing Module 6: Reporting Aggregations (Sales, Products & Moroccan TVA)...");
 
   // Create a completed sale to test reporting
   const sale = await prisma.sale.create({
@@ -413,7 +413,7 @@ async function runAllInOneIntegrationTests() {
 
   console.log(`✅ Reporting aggregations verified: Processed sale ${sale.receiptNumber} with Moroccan TVA 14% and 20%`);
 
-  console.log("\n🎉 ALL 6 MODULES VERIFIED & WORKING PERFECTLY AGAINST POSTGRESQL!");
+  console.log("\n ALL 6 MODULES VERIFIED & WORKING PERFECTLY AGAINST POSTGRESQL!");
 }
 
 runAllInOneIntegrationTests()

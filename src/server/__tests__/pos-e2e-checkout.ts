@@ -3,7 +3,7 @@ import { toDecimal } from "../../domain/money";
 import { calculatePointsEarned } from "../loyalty/engine";
 
 async function runPosEndToEndCheckoutTest() {
-  console.log("🚀 Starting POS End-to-End Checkout & Receipt Integration Test against PostgreSQL...");
+  console.log(" Starting POS End-to-End Checkout & Receipt Integration Test against PostgreSQL...");
 
   const testSuffix = Date.now().toString().slice(-6);
 
@@ -94,7 +94,7 @@ async function runPosEndToEndCheckoutTest() {
   const subtotal = 84.47; // HT approx
   const taxTotal = 15.53;
 
-  console.log("\n💳 Processing Checkout in POS (Credit Payment Mode)...");
+  console.log("\n Processing Checkout in POS (Credit Payment Mode)...");
 
   // Execute Database Transaction
   const createdSale = await prisma.$transaction(async (tx) => {
@@ -272,7 +272,7 @@ async function runPosEndToEndCheckoutTest() {
   console.log(`✅ Loyalty points awarded: Customer earned ${totalLoyalty} points for 100 DH spend`);
   console.log(`✅ Thermal Receipt Number generated: ${createdSale.receiptNumber}`);
 
-  console.log("\n🎉 END-TO-END POS CHECKOUT & RECEIPT CYCLE VERIFIED SUCCESSFULLY!");
+  console.log("\n END-TO-END POS CHECKOUT & RECEIPT CYCLE VERIFIED SUCCESSFULLY!");
 }
 
 runPosEndToEndCheckoutTest()

@@ -15,6 +15,7 @@ import {
   Plus,
 } from "lucide-react";
 import { StockAuditClient } from "@/components/dashboard/StockAuditClient";
+import { GroceryInventoryConsole } from "@/components/dashboard/GroceryInventoryConsole";
 import { getDictionary, type Locale } from "@/i18n/schema";
 import { KineticWarehouseRadarEmpty } from "@/components/ui/KineticEmptyState";
 import { FloatingCommerceCanvas } from "@/components/ui/FloatingCommerceCanvas";
@@ -107,6 +108,39 @@ export default async function InventoryPage({
           take: 6,
         })
         .catch(() => []);
+  // 6. Fetch workspace profile for storeType
+  const workspaceRecord = isFallbackTenant
+    ? null
+    : await prisma.idempotencyRecord
+        .findUnique({
+          where: {
+            tenantId_scope_key: {
+              tenantId,
+              scope: "workspace_config",
+              key: "store_profile",
+            },
+          },
+        })
+        .catch(() => null);
+
+  const workspacePayload =
+    workspaceRecord?.responseBody && typeof workspaceRecord.responseBody === "object"
+      ? (workspaceRecord.responseBody as Record<string, unknown>)
+      : {};
+  const currentStoreType = String(workspacePayload.storeType || "grocery");
+
+  const groceryProducts = products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    sku: p.sku || "",
+    barcode: p.barcode || "",
+    salePrice: Number(p.salePrice || 0),
+    stockQuantity: Number(p.stockLevels[0]?.quantity ?? 12),
+    aisle: p.category?.name || (locale === "ar" ? "البقالة العامة" : "Épicerie Générale"),
+    dlc: "2026-11-28",
+    unit: p.unit || "unit",
+  }));
+
   // 3. AI Predictive Stockout Velocity (Last 14 days sales velocity)
   const fourteenDaysAgo = new Date();
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
@@ -196,6 +230,11 @@ export default async function InventoryPage({
           </Link>
         </div>
       </div>
+
+      {/* SUPERMARKET & GROCERY CONSOLE (Mode 1) */}
+      {currentStoreType === "grocery" && (
+        <GroceryInventoryConsole initialProducts={groceryProducts} />
+      )}
 
       {/* AI PREDICTIVE STOCKOUT ANTICIPATION MODULE */}
       <div className="rounded-2xl border border-white/10 bg-[#111113] p-5 space-y-4 relative overflow-hidden">

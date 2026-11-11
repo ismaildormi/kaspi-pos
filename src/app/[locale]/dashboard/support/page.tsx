@@ -8,6 +8,9 @@ import {
   Clock,
   MessageSquare,
   RefreshCw,
+  Barcode,
+  Scale,
+  Printer,
 } from "lucide-react";
 import { useAppDictionary } from "@/i18n/schema";
 import { KineticSupportShieldPulseEmpty } from "@/components/ui/KineticEmptyState";
@@ -270,6 +273,61 @@ export default function TenantSupportPage() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* SUPERMARKET HARDWARE INTERACTIVE QUICK GUIDES */}
+      <div className="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-teal-400" />
+            <h2 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+              {locale === "ar"
+                ? "دليل تشغيل عتاد السوبرماركت ونقاط البيع (Mode Supermarché)"
+                : "Guides d'Installation Matériel Supermarché & Caisse"}
+            </h2>
+          </div>
+          <span className="px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20 text-[10px] font-mono font-bold">
+            Hardware Docs
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
+            <div className="flex items-center gap-2 text-white text-xs font-bold">
+              <Barcode className="w-4 h-4 text-teal-400" />
+              <span>{locale === "ar" ? "قارئ الباركود USB" : "Lecteur Code-barres USB"}</span>
+            </div>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              {locale === "ar"
+                ? "يدعم التوصيل الفوري Plug & Play. قم بمسح باركود السلعة مباشرة دون الحاجة للضغط على الفأرة؛ يرسل تلقائياً مفتاح Enter لإضافة المنتج للسلة فوراً."
+                : "Connexion Plug & Play directe. Scannez n'importe quel code EAN-13; le lecteur transmet un suffixe Entrée pour l'ajout immédiat au panier."}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
+            <div className="flex items-center gap-2 text-white text-xs font-bold">
+              <Scale className="w-4 h-4 text-teal-400" />
+              <span>{locale === "ar" ? "ميزان الأوزان EAN-13" : "Balance Poids-Prix EAN-13"}</span>
+            </div>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              {locale === "ar"
+                ? "فك تشفير تلقائي لباركود الميزان المطبوع (بادئة 20 أو 21) وحساب الوزن الإجمالي والسعر بالدرهم بدقة مئوية في أجزاء من الثانية."
+                : "Décodage automatique du code balance (préfixe 20 ou 21) extrayant instantanément le code PLU et le poids en kilogrammes."}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
+            <div className="flex items-center gap-2 text-white text-xs font-bold">
+              <Printer className="w-4 h-4 text-teal-400" />
+              <span>{locale === "ar" ? "طابعة ملصقات الرف 40×30mm" : "Étiqueteuse Rayon 40×30mm"}</span>
+            </div>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              {locale === "ar"
+                ? "طباعة بنقرة واحدة من صفحة المنتجات والمخزون لملصقات الرفوف بالمقاس القياسي 40×30 مم متضمنة اسم السلعة، السعر والباركود."
+                : "Impression 1-clic au format standard 40×30 mm avec nom de l'article, prix TTC et code-barres net prêt pour les rayons."}
+            </p>
           </div>
         </div>
       </div>
