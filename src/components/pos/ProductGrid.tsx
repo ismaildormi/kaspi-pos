@@ -2,11 +2,118 @@
 
 import React, { useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { Package, Plus, ArrowRight, Scale, Utensils, Shirt, ShieldCheck } from "lucide-react";
+import { Package, Plus, ArrowRight, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { playBarcodeScanSound } from "@/lib/audio";
 import { useAppDictionary } from "@/i18n/schema";
+
+export const MOROCCAN_GROCERY_DEMO_ITEMS: PosProduct[] = [
+  {
+    id: "demo-gro-01",
+    name: "Huile d'Olive Extra Vierge Atlas 1L",
+    sku: "DEMO-GRO-01",
+    barcode: "6111000900011",
+    salePrice: 85.0,
+    wholesalePrice: 80.0,
+    stockQuantity: 48,
+    trackStock: true,
+    taxRate: 20,
+    categoryId: "grocery",
+    categoryName: "Épicerie & Huiles",
+  },
+  {
+    id: "demo-gro-02",
+    name: "Thé Vert Sultan Habka 200g",
+    sku: "DEMO-GRO-02",
+    barcode: "6111000900028",
+    salePrice: 18.5,
+    wholesalePrice: 17.0,
+    stockQuantity: 120,
+    trackStock: true,
+    taxRate: 7,
+    categoryId: "grocery",
+    categoryName: "Thé & Café",
+  },
+  {
+    id: "demo-gro-03",
+    name: "Amlou Beldi aux Amandes & Argan 500g",
+    sku: "DEMO-GRO-03",
+    barcode: "6111000900035",
+    salePrice: 110.0,
+    wholesalePrice: 102.0,
+    stockQuantity: 30,
+    trackStock: true,
+    taxRate: 20,
+    categoryId: "grocery",
+    categoryName: "Tartinables & Terroir",
+  },
+  {
+    id: "demo-gro-04",
+    name: "Lait UHT Centrale Entier 1L",
+    sku: "DEMO-GRO-04",
+    barcode: "6111000900042",
+    salePrice: 6.5,
+    wholesalePrice: 6.0,
+    stockQuantity: 180,
+    trackStock: true,
+    taxRate: 14,
+    categoryId: "grocery",
+    categoryName: "Laiterie & Frais",
+  },
+  {
+    id: "demo-gro-05",
+    name: "Farine Finot Supérieure 5kg",
+    sku: "DEMO-GRO-05",
+    barcode: "6111000900059",
+    salePrice: 42.0,
+    wholesalePrice: 39.5,
+    stockQuantity: 65,
+    trackStock: true,
+    taxRate: 0,
+    categoryId: "grocery",
+    categoryName: "Farines & Semoules",
+  },
+  {
+    id: "demo-gro-06",
+    name: "Eau Minérale Sidi Ali 1.5L",
+    sku: "DEMO-GRO-06",
+    barcode: "6111000900066",
+    salePrice: 6.0,
+    wholesalePrice: 5.5,
+    stockQuantity: 240,
+    trackStock: true,
+    taxRate: 7,
+    categoryId: "grocery",
+    categoryName: "Boissons & Eaux",
+  },
+  {
+    id: "demo-gro-07",
+    name: "Sucre Morceaux Tigre 1kg",
+    sku: "DEMO-GRO-07",
+    barcode: "6111000900073",
+    salePrice: 6.0,
+    wholesalePrice: 5.75,
+    stockQuantity: 150,
+    trackStock: true,
+    taxRate: 0,
+    categoryId: "grocery",
+    categoryName: "Épicerie de Base",
+  },
+  {
+    id: "demo-gro-08",
+    name: "Café Moulu Dubois Gold 250g",
+    sku: "DEMO-GRO-08",
+    barcode: "6111000900080",
+    salePrice: 28.0,
+    wholesalePrice: 26.0,
+    stockQuantity: 85,
+    trackStock: true,
+    taxRate: 20,
+    categoryId: "grocery",
+    categoryName: "Thé & Café",
+  },
+];
 
 interface ProductGridProps {
   products: PosProduct[];
@@ -19,12 +126,34 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
   const { locale } = useAppDictionary();
   const { searchQuery, activeCategoryId, addToCart, storeType, cart } = usePosStore();
 
+  const baseProducts = useMemo(() => {
+    if (storeType === "grocery") {
+      const nonGrocerySkus = ["DEMO-RES-", "DEMO-FAS-", "DEMO-ELC-", "DEMO-BUT-", "DEMO-BAK-"];
+      const filtered = products.filter(
+        (p) =>
+          !nonGrocerySkus.some(
+            (prefix) =>
+              p.sku?.toUpperCase().startsWith(prefix) ||
+              p.barcode?.toUpperCase().startsWith(prefix)
+          )
+      );
+
+      const hasDemo = filtered.some((p) => p.sku?.startsWith("DEMO-GRO-"));
+      if (hasDemo || filtered.length === 0) {
+        const existingSkus = new Set(filtered.map((p) => p.sku));
+        const missingDemos = MOROCCAN_GROCERY_DEMO_ITEMS.filter((d) => !existingSkus.has(d.sku));
+        return [...filtered, ...missingDemos];
+      }
+      return filtered;
+    }
+    return products;
+  }, [products, storeType]);
+
   const filteredProducts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    // Do not filter product grid when typing a slash command (/pay, /clear, etc.)
     const isCommand = q.startsWith("/");
 
-    return products.filter((p) => {
+    return baseProducts.filter((p) => {
       if (activeCategoryId && p.categoryId !== activeCategoryId) {
         return false;
       }
@@ -36,7 +165,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
       }
       return true;
     });
-  }, [products, activeCategoryId, searchQuery]);
+  }, [baseProducts, activeCategoryId, searchQuery]);
 
   if (filteredProducts.length === 0) {
     const emptyI18n = {
@@ -119,10 +248,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 overflow-y-auto pb-4 select-none">
       {filteredProducts.map((product) => {
-        const isOutOfStock = product.trackStock && (product.stockQuantity ?? 0) <= 0;
-        const initial = (product.name || "P").trim().charAt(0).toUpperCase();
-        const cartItem = cart.find((i) => i.productId === product.id);
-        const inCartQty = cartItem ? cartItem.quantity : 0;
+        const inCartItem = cart.find((i) => i.productId === product.id);
+        const inCartQty = inCartItem ? inCartItem.quantity : 0;
 
         return (
           <button
@@ -131,29 +258,20 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
               playBarcodeScanSound();
               addToCart(product);
             }}
-            className={`group relative flex flex-col justify-between p-3.5 rounded-xl border active:scale-[0.98] transition-all text-start shadow-xs cursor-pointer ${
-              inCartQty > 0
-                ? "border-white shadow-[0_0_18px_rgba(255,255,255,0.18)] bg-zinc-900 ring-1 ring-white/50"
-                : "bg-zinc-900/80 hover:bg-zinc-900 border-white/10 hover:border-white/30"
-            }`}
+            className="group relative h-[142px] rounded-xl bg-[#0D1116] hover:bg-[#11171E] border border-white/[0.08] hover:border-[#14B8A6]/50 p-3.5 flex flex-col justify-between overflow-hidden transition-all duration-150 active:scale-[0.985] cursor-pointer shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_8px_20px_-8px_rgba(0,0,0,0.6)] text-start"
           >
-            {/* Live Instant Quantity Counter Badge */}
-            {inCartQty > 0 && (
-              <div
-                className={`absolute -top-2 -end-2 z-10 px-2 py-0.5 rounded-full font-black font-mono text-[11px] shadow-md border animate-scale-in ${
-                  storeType === "grocery"
-                    ? "bg-teal-400 text-zinc-950 border-teal-300 shadow-[0_0_14px_rgba(45,212,191,0.55)]"
-                    : "bg-white text-zinc-950 border-white shadow-[0_2px_10px_rgba(255,255,255,0.45)]"
-                }`}
-              >
-                ×{inCartQty}
-              </div>
-            )}
+            {/* Top 3px Square Department Accent Bar */}
+            <div
+              className="absolute top-0 inset-x-0 h-[3px] transition-opacity"
+              style={{
+                background: inCartQty > 0 ? "#14B8A6" : "rgba(20, 184, 166, 0.35)",
+              }}
+            />
 
-            {/* Top row: Avatar/Image + Stock Indicator */}
-            <div className="flex items-start justify-between gap-2 w-full mb-2.5">
-              {product.image ? (
-                <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-zinc-800 shrink-0 shadow-inner group-hover:border-white/30 transition-colors">
+            {/* Row 1 (Top Header of Tile): Left Icon Box + Right Stock/Cart Pill */}
+            <div className="flex items-center justify-between gap-2 w-full">
+              <div className="w-9 h-9 rounded-lg bg-[#131920] border border-white/[0.07] flex items-center justify-center shrink-0 overflow-hidden">
+                {product.image ? (
                   <img
                     src={product.image}
                     alt={product.name}
@@ -162,84 +280,43 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
                       e.currentTarget.style.display = "none";
                     }}
                   />
-                </div>
-              ) : (
-                <div className="w-9 h-9 rounded-lg bg-zinc-800/90 border border-white/10 flex items-center justify-center text-white font-mono font-bold text-sm shrink-0 group-hover:border-white/30 transition-colors">
-                  {initial}
-                </div>
-              )}
-
-              <div className="flex flex-col items-end gap-1">
-                {product.trackStock && (
-                  <span
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-medium border ${
-                      isOutOfStock
-                        ? "bg-red-500/10 text-red-300 border-red-500/20"
-                        : inCartQty > 0
-                        ? "bg-white/15 text-white border-white/30 font-bold"
-                        : "bg-white/[0.04] text-zinc-300 border-white/10"
-                    }`}
-                  >
-                    {locale === "ar" ? `الرصيد: ${product.stockQuantity ?? 0}` : `Stock: ${product.stockQuantity ?? 0}`}
-                  </span>
-                )}
-
-                {storeType === "grocery" && (
-                  <span className="inline-flex items-center gap-1 text-[9px] font-mono text-teal-400">
-                    <Scale className="w-2.5 h-2.5" />
-                    <span>{product.barcode ? `EAN • ${product.barcode.slice(-4)}` : "PLU Code"}</span>
-                  </span>
-                )}
-                {storeType === "restaurant" && (
-                  <span className="inline-flex items-center gap-1 text-[9px] font-mono text-amber-400">
-                    <Utensils className="w-2.5 h-2.5" />
-                    <span>Direct KDS</span>
-                  </span>
-                )}
-                {storeType === "fashion" && (
-                  <span className="inline-flex items-center gap-1 text-[9px] font-mono text-purple-400">
-                    <Shirt className="w-2.5 h-2.5" />
-                    <span>S • M • L • XL</span>
-                  </span>
-                )}
-                {storeType === "electronics" && (
-                  <span className="inline-flex items-center gap-1 text-[9px] font-mono text-sky-400">
-                    <ShieldCheck className="w-2.5 h-2.5" />
-                    <span>Garantie 12M</span>
-                  </span>
+                ) : (
+                  <ShoppingBag className="w-4 h-4 text-[#2DD4BF]" />
                 )}
               </div>
+
+              {inCartQty > 0 ? (
+                <span className="px-2.5 py-0.5 rounded-md bg-[#14B8A6] text-[#041E1B] font-mono font-black text-[11px] shadow-sm">
+                  ×{inCartQty}
+                </span>
+              ) : (
+                product.trackStock && (
+                  <span className="px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.07] font-mono text-[10.5px] font-semibold text-zinc-300">
+                    Stock: {product.stockQuantity ?? 0}
+                  </span>
+                )
+              )}
             </div>
 
-            {/* Middle: Category & Title */}
-            <div className="my-auto py-0.5">
-              <span className="text-[10px] text-zinc-500 font-mono block truncate">
-                {product.categoryName || product.sku}
-              </span>
-              <h3 className="font-bold text-white text-sm leading-snug line-clamp-2 mt-0.5">
+            {/* Row 2 (Middle Title & Code) */}
+            <div className="my-auto pt-1">
+              <h3 className="font-sans font-semibold text-[13.5px] leading-[1.28] text-white line-clamp-2">
                 {product.name}
               </h3>
             </div>
 
-            {/* Bottom: Price & Add */}
-            <div className="flex items-end justify-between gap-2 mt-3 pt-2.5 border-t border-white/10 w-full">
-              <div className="flex flex-col">
-                <div className="flex items-baseline">
-                  <span className="text-base font-extrabold text-white font-mono tracking-tight">
-                    {product.salePrice.toFixed(2)}
-                  </span>
-                  <span className="text-[11px] font-medium text-zinc-400 ms-1">
-                    {tCommon("currency")}
-                  </span>
-                </div>
-                {storeType === "grocery" && product.wholesalePrice && (
-                  <span className="text-[10px] font-mono font-bold text-teal-400">
-                    Pack: {Number(product.wholesalePrice).toFixed(2)}
-                  </span>
-                )}
+            {/* Row 3 (Bottom Price & Uniform Plus Keycap) */}
+            <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between w-full">
+              <div className="flex items-baseline">
+                <span className="font-mono font-extrabold text-[15px] text-white tabular-nums tracking-tight">
+                  {product.salePrice.toFixed(2)}
+                </span>
+                <span className="text-[10.5px] font-semibold text-zinc-400 ms-1">
+                  MAD
+                </span>
               </div>
 
-              <div className="w-7 h-7 rounded-lg bg-white/[0.06] group-hover:bg-white text-zinc-300 group-hover:text-black flex items-center justify-center transition-all border border-white/10 group-hover:border-white">
+              <div className="w-7 h-7 rounded-lg bg-[#151C24] group-hover:bg-[#14B8A6] text-zinc-300 group-hover:text-[#041E1B] border border-white/[0.08] group-hover:border-[#2DD4BF] flex items-center justify-center transition-colors">
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
               </div>
             </div>

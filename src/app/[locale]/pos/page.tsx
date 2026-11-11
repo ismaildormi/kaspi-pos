@@ -19,7 +19,9 @@ import { CatalogProgressLoader } from "@/components/pos/CatalogProgressLoader";
 import { GroceryScannerUtilityBar } from "@/components/pos/grocery/GroceryScannerUtilityBar";
 import { getSectorCssVariables } from "@/lib/sector/sector-blueprint";
 import { InAppPaywallModal, triggerPaywallModal } from "@/components/billing/InAppPaywallModal";
-import { Plus } from "lucide-react";
+import { Plus, LayoutGrid, Scale, ScanBarcode } from "lucide-react";
+import { SquarePluScalePanel } from "@/components/pos/grocery/SquarePluScalePanel";
+import { SquarePriceDlcModal } from "@/components/pos/grocery/SquarePriceDlcModal";
 import type { ShiftFinancialSummary } from "@/server/cash-shift/engine";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { offlineDb } from "@/client/db";
@@ -42,6 +44,8 @@ export default function PosPage() {
   const [userName, setUserName] = useState("AYMANE");
   const [activeShift, setActiveShift] = useState<ShiftFinancialSummary | null>(null);
   const [recentShifts, setRecentShifts] = useState<ShiftFinancialSummary[]>([]);
+  const [groceryView, setGroceryView] = useState<"grid" | "plu" | "price_check">("grid");
+  const [scanMultiplier, setScanMultiplier] = useState<number>(1);
 
   const {
     openPaymentModal,
@@ -49,6 +53,7 @@ export default function PosPage() {
     isPaymentModalOpen,
     cart,
     addToCart,
+    updateItemQuantity,
     setDeviceCount,
     setTenantInfo,
     setPrinterSettings,
@@ -56,6 +61,14 @@ export default function PosPage() {
     tenantInfo,
     storeType,
   } = usePosStore();
+
+  const handleSetScanMultiplier = (m: number) => {
+    setScanMultiplier(m);
+    if (cart.length > 0 && m > 1) {
+      const last = cart[cart.length - 1];
+      updateItemQuantity(last.productId, m);
+    }
+  };
 
   const fetchCashShift = React.useCallback(async () => {
     try {
@@ -365,40 +378,120 @@ export default function PosPage() {
       {/* Main Split-Screen Workspace */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left Side: Clean Catalog & Search Area */}
-        <div className="flex-1 flex flex-col min-w-0 p-3 sm:p-4 overflow-hidden space-y-3">
-          {/* Top Bar: Barcode / Search Input + Quick Add */}
-          <div className="flex items-center gap-2">
+        <div className="flex-1 flex flex-col min-w-0 p-3 sm:p-4 overflow-hidden space-y-2.5">
+          {/* Zone L1: Top Command & Mode Switcher Row */}
+          <div className="flex items-center gap-2.5 h-12">
+            {/* Left: Barcode & Search Input */}
             <div className="flex-1 min-w-0">
               <ProductSearch products={products} />
             </div>
+
+            {/* Middle: Square Register Segmented View Switcher */}
+            {storeType === "grocery" && (
+              <div className="h-11 p-1 rounded-xl bg-[#0D1014] border border-white/[0.08] flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setGroceryView("grid")}
+                  className={`h-9 px-3 rounded-lg font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all cursor-pointer ${
+                    groceryView === "grid"
+                      ? "bg-[#14B8A6] text-[#041E1B]"
+                      : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span className="hidden xl:inline">
+                    {locale === "ar" ? "الشبكة الذكية" : locale === "en" ? "Smart Grid" : "Grille Articles"}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setGroceryView("plu")}
+                  className={`h-9 px-3 rounded-lg font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all cursor-pointer ${
+                    groceryView === "plu"
+                      ? "bg-[#14B8A6] text-[#041E1B]"
+                      : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <Scale className="w-3.5 h-3.5" />
+                  <span className="hidden xl:inline">
+                    {locale === "ar" ? "ميزان وخضر PLU" : locale === "en" ? "PLU & Scale" : "Balance & PLU"}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setGroceryView("price_check")}
+                  className={`h-9 px-3 rounded-lg font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all cursor-pointer ${
+                    groceryView === "price_check"
+                      ? "bg-[#14B8A6] text-[#041E1B]"
+                      : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <ScanBarcode className="w-3.5 h-3.5" />
+                  <span className="hidden xl:inline">
+                    {locale === "ar" ? "فاحص الثمن والصلاحية" : locale === "en" ? "Price & DLC" : "Vérif. Prix & DLC"}
+                  </span>
+                </button>
+              </div>
+            )}
+
+            {/* Right: + New Product */}
             <button
               type="button"
               onClick={() => setIsQuickProductModalOpen(true)}
-              className="sheen-btn h-11 px-3.5 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 active:scale-[0.98] text-xs font-black flex items-center gap-1.5 shrink-0 transition-all cursor-pointer shadow-[0_2px_12px_rgba(255,255,255,0.15)]"
+              className="h-11 px-4 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-extrabold text-xs flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0 transition-all active:scale-[0.98]"
               title={locale === "ar" ? "إضافة منتج جديد" : "Ajouter un produit"}
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span className="hidden sm:inline font-bold">
+              <span className="hidden sm:inline">
                 {locale === "ar" ? "+ منتج جديد" : locale === "en" ? "+ New Product" : "+ Nouveau"}
               </span>
             </button>
           </div>
 
-          {/* Supermarket Utility Bar (Multipliers, Price Check & PLU Produce) */}
-          {storeType === "grocery" && (
-            <GroceryScannerUtilityBar products={products} />
-          )}
+          {/* Zone L2: Flush Department Tabs & Scan Multiplier Bar */}
+          <div className="flex items-center justify-between gap-2 h-10 pb-1 border-b border-white/[0.06]">
+            <div className="flex-1 min-w-0 overflow-x-auto scrollbar-none">
+              <CategoryFilter categories={categories} />
+            </div>
 
-          {/* Categories Pill Selector */}
-          <CategoryFilter categories={categories} />
+            {storeType === "grocery" && (
+              <div className="h-8 p-0.5 rounded-lg bg-[#0D1014] border border-white/[0.08] flex items-center gap-0.5 shrink-0">
+                <span className="font-mono text-[10px] font-bold text-zinc-500 px-2">QTY</span>
+                {[
+                  { m: 1, label: "×1" },
+                  { m: 2, label: "×2" },
+                  { m: 6, label: "×6 Pack" },
+                  { m: 12, label: "×12 Carton" },
+                  { m: 24, label: "×24 Caisse" },
+                ].map((item) => (
+                  <button
+                    key={item.m}
+                    type="button"
+                    onClick={() => handleSetScanMultiplier(item.m)}
+                    className={`h-7 px-2 rounded-md font-mono text-[11px] transition-colors cursor-pointer ${
+                      scanMultiplier === item.m
+                        ? "bg-[#14B8A6] text-[#041E1B] font-black"
+                        : "text-zinc-400 hover:text-white font-bold"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
-          {/* Products Grid */}
+          {/* Main Workspace (Smart Grid or PLU Scale Touch Keypad) */}
           <div className="flex-1 overflow-y-auto">
             {!loaderDone ? (
               <CatalogProgressLoader
                 isLoading={isLoading}
                 onReady={() => setLoaderDone(true)}
               />
+            ) : groceryView === "plu" && storeType === "grocery" ? (
+              <SquarePluScalePanel onBack={() => setGroceryView("grid")} />
             ) : (
               <ProductGrid
                 products={products}
@@ -406,6 +499,13 @@ export default function PosPage() {
               />
             )}
           </div>
+
+          {/* Price & DLC Check Modal */}
+          <SquarePriceDlcModal
+            isOpen={groceryView === "price_check" && storeType === "grocery"}
+            onClose={() => setGroceryView("grid")}
+            products={products}
+          />
         </div>
 
         {/* Right Side: Clean Cart & Checkout Panel */}

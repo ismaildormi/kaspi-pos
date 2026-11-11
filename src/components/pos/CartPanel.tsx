@@ -18,6 +18,7 @@ import {
   Percent,
   ChevronDown,
   ChevronUp,
+  RefreshCw,
 } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
@@ -32,6 +33,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
   const tCommon = useTranslations("Common");
   const { t: tDict, locale } = useAppDictionary();
   const [isCouponOpen, setIsCouponOpen] = useState(false);
+  const [isConsigneDrawerOpen, setIsConsigneDrawerOpen] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [couponMsg, setCouponMsg] = useState<{ text: string; error?: boolean } | null>(null);
   const [orderMode, setOrderMode] = useState<"dine_in" | "takeaway" | "delivery">("dine_in");
@@ -159,147 +161,102 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
   ];
 
   return (
-    <div dir="ltr" className="flex flex-col h-full bg-zinc-950 border-s border-zinc-800 select-none">
-      {/* Top Header: Customer + Retail/Wholesale + Restaurant Mode */}
-      <div className="p-3.5 border-b border-zinc-800 bg-zinc-900/60 space-y-2.5">
+    <div dir="ltr" className="flex flex-col h-full bg-[#080B0E] border-s border-white/[0.08] select-none">
+      {/* Zone R1: Top Customer & Unit/Pack Switcher */}
+      <div className="p-3 border-b border-white/[0.07] bg-[#0A0E12] space-y-2">
         {/* Customer Select / Detach */}
         <div className="flex items-center justify-between gap-2">
           {customer ? (
-            <div className="flex flex-col gap-1.5 bg-zinc-900 border border-zinc-700 px-3 py-1.5 rounded-lg w-full">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 truncate">
-                  <UserCheck className="w-4 h-4 text-white shrink-0" />
-                  <div className="truncate">
-                    <span className="text-xs font-bold text-white block truncate">
-                      {customer.name}
-                    </span>
-                    <span className="text-[10px] text-zinc-400 block font-mono">
-                      {customer.phone || (customer.ice ? `ICE: ${customer.ice}` : "Client")}
-                      {availablePoints > 0 ? ` • ${availablePoints} pts` : ""}
-                    </span>
-                  </div>
+            <div className="h-9 w-full px-3 rounded-lg bg-[#0D1116] border border-white/[0.08] hover:border-white/[0.16] flex items-center justify-between text-xs font-semibold text-zinc-200">
+              <div className="flex items-center gap-2 truncate">
+                <UserCheck className="w-3.5 h-3.5 text-[#14B8A6] shrink-0" />
+                <div className="truncate">
+                  <span className="text-xs font-bold text-white block truncate">
+                    {customer.name}
+                  </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setCustomer(null)}
-                  className="p-1 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded transition cursor-pointer"
-                  title="Détacher client"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                {availablePoints > 0 && (
+                  <span className="text-[10px] text-zinc-400 font-mono shrink-0">
+                    • {availablePoints} pts
+                  </span>
+                )}
               </div>
-              {maxRedeemablePoints >= 10 && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setLoyaltyPointsToRedeem(
-                      loyaltyPointsToRedeem > 0 ? 0 : maxRedeemablePoints
-                    )
-                  }
-                  className={`w-full py-1 px-2 rounded text-[11px] font-bold border transition cursor-pointer ${
-                    loyaltyPointsToRedeem > 0
-                      ? "bg-zinc-800 border-white text-white"
-                      : "bg-zinc-900 border-white/10 text-zinc-300 hover:bg-zinc-800 hover:text-white"
-                  }`}
-                >
-                  {loyaltyPointsToRedeem > 0
-                    ? `- ${(loyaltyPointsToRedeem * 0.1).toFixed(2)} ${tCommon("currency")} (${loyaltyPointsToRedeem} pts)`
-                    : `${maxRedeemablePoints} pts (- ${(maxRedeemablePoints * 0.1).toFixed(2)} ${tCommon("currency")})`}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setCustomer(null)}
+                className="p-1 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded transition cursor-pointer"
+                title="Détacher client"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           ) : (
             <button
               type="button"
               onClick={onOpenCustomerModal}
-              className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] text-xs font-bold text-white transition cursor-pointer"
+              className="h-9 w-full px-3 rounded-lg bg-[#0D1116] border border-white/[0.08] hover:border-white/[0.16] flex items-center justify-between text-xs font-semibold text-zinc-200 cursor-pointer transition-colors"
             >
-              <UserPlus className="w-4 h-4 text-white" />
-              <span>{t("addCustomer")}</span>
+              <span className="flex items-center gap-2">
+                <UserPlus className="w-3.5 h-3.5 text-zinc-400" />
+                <span>{t("addCustomer")}</span>
+              </span>
+              <span className="text-[10px] text-zinc-500 font-mono">F3</span>
             </button>
           )}
         </div>
 
-        {/* Retail vs Wholesale Dual Pricing Toggle */}
-        <div className="flex items-center p-1 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-bold gap-1">
+        {/* Unit vs. Pack Segmented Switch */}
+        <div className="h-9 p-1 rounded-lg bg-[#080B0E] border border-white/[0.07] grid grid-cols-2 gap-1">
           <button
             type="button"
             onClick={() => setPricingTier("retail")}
-            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
               pricingTier === "retail"
-                ? "bg-white text-zinc-950 font-black shadow-[0_2px_10px_rgba(255,255,255,0.2)] border border-white"
-                : "bg-zinc-900/90 text-zinc-200 hover:text-white hover:bg-zinc-800 border border-white/10 font-bold"
+                ? "bg-white text-zinc-950 font-bold text-xs rounded-md shadow-xs"
+                : "text-zinc-400 hover:text-white font-semibold text-xs rounded-md"
             }`}
           >
-            <Tag className="w-3.5 h-3.5 shrink-0" />
+            <Tag className="w-3 h-3 shrink-0" />
             <span>{retailLabel}</span>
           </button>
           <button
             type="button"
             onClick={() => setPricingTier("wholesale")}
-            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
               pricingTier === "wholesale"
-                ? "bg-white text-zinc-950 font-black shadow-[0_2px_10px_rgba(255,255,255,0.2)] border border-white"
-                : "bg-zinc-900/90 text-zinc-200 hover:text-white hover:bg-zinc-800 border border-white/10 font-bold"
+                ? "bg-[#14B8A6] text-[#041E1B] font-bold text-xs rounded-md shadow-xs"
+                : "text-zinc-400 hover:text-white font-semibold text-xs rounded-md"
             }`}
           >
-            <Boxes className="w-3.5 h-3.5 shrink-0" />
+            <Boxes className="w-3 h-3 shrink-0" />
             <span>{wholesaleLabel}</span>
           </button>
         </div>
 
-        {/* Consigne Returnable Deposit Bar for Supermarket Mode */}
-        {storeType === "grocery" && (
-          <div className="pt-2 border-t border-zinc-800/80 space-y-1.5">
-            <div className="flex items-center justify-between text-[10px] font-mono font-bold text-teal-400 px-0.5">
-              <span>
-                {locale === "ar"
-                  ? "رهن واسترجاع القنينات والصناديق (Consigne)"
-                  : locale === "fr"
-                  ? "Consignes Gaz & Casiers Bouteilles"
-                  : "Returnable Deposits (Consigne)"}
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-1.5 text-[11px] font-bold">
-              <button
-                type="button"
-                onClick={() => handleConsigneDeposit("gas_deposit", 100)}
-                className="keycap-3d py-1.5 px-2 rounded-lg bg-zinc-900 border border-teal-500/30 hover:border-teal-400 text-teal-300 flex items-center justify-between cursor-pointer transition active:scale-[0.98]"
-              >
-                <span>{locale === "ar" ? "+ الغاز" : "+ Gaz"}</span>
-                <span className="font-mono font-black tabular-nums">+100 DH</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleConsigneDeposit("gas_return", -100)}
-                className="keycap-3d py-1.5 px-2 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-zinc-500 text-zinc-300 flex items-center justify-between cursor-pointer transition active:scale-[0.98]"
-              >
-                <span>{locale === "ar" ? "- إرجاع الغاز" : "- Retour Gaz"}</span>
-                <span className="font-mono font-black tabular-nums">-100 DH</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleConsigneDeposit("crate_deposit", 15)}
-                className="keycap-3d py-1.5 px-2 rounded-lg bg-zinc-900 border border-teal-500/30 hover:border-teal-400 text-teal-300 flex items-center justify-between cursor-pointer transition active:scale-[0.98]"
-              >
-                <span>{locale === "ar" ? "+ الصندوق" : "+ Casier"}</span>
-                <span className="font-mono font-black tabular-nums">+15 DH</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleConsigneDeposit("crate_return", -15)}
-                className="keycap-3d py-1.5 px-2 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-zinc-500 text-zinc-300 flex items-center justify-between cursor-pointer transition active:scale-[0.98]"
-              >
-                <span>{locale === "ar" ? "- إرجاع الصندوق" : "- Retour Casier"}</span>
-                <span className="font-mono font-black tabular-nums">-15 DH</span>
-              </button>
-            </div>
-          </div>
+        {/* Loyalty Points Reducer if Selected */}
+        {customer && maxRedeemablePoints >= 10 && (
+          <button
+            type="button"
+            onClick={() =>
+              setLoyaltyPointsToRedeem(
+                loyaltyPointsToRedeem > 0 ? 0 : maxRedeemablePoints
+              )
+            }
+            className={`w-full py-1 px-2 rounded text-[11px] font-bold border transition cursor-pointer ${
+              loyaltyPointsToRedeem > 0
+                ? "bg-[#14B8A6]/20 border-[#14B8A6] text-[#2DD4BF]"
+                : "bg-zinc-900 border-white/10 text-zinc-300 hover:bg-zinc-850 hover:text-white"
+            }`}
+          >
+            {loyaltyPointsToRedeem > 0
+              ? `- ${(loyaltyPointsToRedeem * 0.1).toFixed(2)} ${tCommon("currency")} (${loyaltyPointsToRedeem} pts)`
+              : `${maxRedeemablePoints} pts (- ${(maxRedeemablePoints * 0.1).toFixed(2)} ${tCommon("currency")})`}
+          </button>
         )}
 
         {/* Clean Restaurant 3-Pill Mode + Table Dropdown */}
         {storeType === "restaurant" && (
-          <div className="space-y-2 pt-1 border-t border-zinc-800/80">
+          <div className="space-y-1.5 pt-1">
             <div className="flex items-center gap-1">
               {[
                 { id: "dine_in", labelAr: "محلي", labelFr: "Sur Place", labelEn: "Dine In" },
@@ -310,7 +267,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                   key={mode.id}
                   type="button"
                   onClick={() => setOrderMode(mode.id as any)}
-                  className={`keycap-3d flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
+                  className={`flex-1 py-1 px-1.5 rounded-md text-[10px] font-bold border transition cursor-pointer ${
                     orderMode === mode.id
                       ? "bg-white text-zinc-950 border-white shadow-xs"
                       : "bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white"
@@ -322,9 +279,9 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             </div>
 
             {orderMode === "dine_in" && (
-              <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5">
-                <UtensilsCrossed className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                <span className="text-[11px] font-bold text-zinc-300 shrink-0">
+              <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1">
+                <UtensilsCrossed className="w-3 h-3 text-zinc-400 shrink-0" />
+                <span className="text-[10px] font-bold text-zinc-400 shrink-0">
                   {locale === "ar" ? "الطاولة:" : "Table :"}
                 </span>
                 <select
@@ -334,7 +291,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                     const found = restaurantTables.find((t) => t.name === val);
                     setSelectedTable(found ? found.id : null, val || null);
                   }}
-                  className="flex-1 bg-transparent text-xs font-mono font-bold text-white focus:outline-none cursor-pointer"
+                  className="flex-1 bg-transparent text-[11px] font-mono font-bold text-white focus:outline-none cursor-pointer"
                 >
                   <option value="" className="bg-zinc-900 text-zinc-400">
                     {locale === "ar" ? "-- اختر طاولة --" : "-- Choisir table --"}
@@ -345,16 +302,6 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                     </option>
                   ))}
                 </select>
-                {selectedTableName && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTable(null, null)}
-                    className="text-zinc-500 hover:text-white p-0.5"
-                    title="Détacher table"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
               </div>
             )}
           </div>
@@ -589,154 +536,198 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
         )}
       </div>
 
-      {/* Cart Summary & Action Buttons */}
-      <div className="p-4 border-t border-zinc-800 bg-zinc-950 space-y-3">
-        {/* Promo / Coupon Bar */}
-        <div className="border border-zinc-800 rounded-xl bg-zinc-900/60 overflow-hidden">
-          <div
-            onClick={() => setIsCouponOpen(!isCouponOpen)}
-            className="px-3 py-2 flex items-center justify-between text-xs font-semibold text-zinc-300 hover:text-white cursor-pointer transition select-none"
+      {/* Zone R3: Square Register 4-Action Utility Dock */}
+      <div className="px-3 py-2 border-t border-white/[0.07] bg-[#0A0E12]">
+        <div className="grid grid-cols-4 gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              setIsCouponOpen(!isCouponOpen);
+              if (isConsigneDrawerOpen) setIsConsigneDrawerOpen(false);
+            }}
+            className={`h-8 rounded-lg border text-[11px] font-semibold flex items-center justify-center gap-1 cursor-pointer transition-colors ${
+              isCouponOpen || discountPercent > 0 || discountFixed > 0
+                ? "bg-white text-zinc-950 font-bold border-white"
+                : "bg-[#11161D] hover:bg-[#171E27] border-white/[0.08] text-zinc-300 hover:text-white"
+            }`}
           >
-            <div className="flex items-center gap-1.5">
-              <Percent className="w-3.5 h-3.5 text-zinc-400" />
-              <span>{t("discount")} / Coupon</span>
-              {(discountPercent > 0 || discountFixed > 0) && (
-                <span className="px-1.5 py-0.2 rounded-md bg-white text-black font-mono text-[10px] font-bold">
-                  {discountPercent > 0 ? `-${discountPercent}%` : `-${discountFixed} MAD`}
-                </span>
-              )}
-            </div>
-            {isCouponOpen ? (
-              <ChevronUp className="w-3.5 h-3.5 text-zinc-400" />
-            ) : (
-              <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
-            )}
-          </div>
+            <Percent className="w-3 h-3" />
+            <span>{locale === "ar" ? "تخفيض" : "% Remise"}</span>
+          </button>
 
-          {isCouponOpen && (
-            <div className="p-2.5 pt-0 border-t border-zinc-800/60 space-y-2 mt-1">
-              <div className="flex gap-1.5">
-                <input
-                  type="text"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value)}
-                  placeholder={tDict.pos.couponPlaceholder}
-                  className="flex-1 h-8 px-2.5 rounded-lg bg-zinc-950 border border-zinc-700 text-xs text-white uppercase font-mono placeholder:normal-case placeholder:text-zinc-500 focus:outline-none focus:border-white"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleApplyCoupon()}
-                  className="px-3 h-8 rounded-lg bg-white hover:bg-zinc-200 text-black font-bold text-xs cursor-pointer transition"
-                >
-                  {tDict.pos.applyCoupon}
-                </button>
-              </div>
+          <button
+            type="button"
+            onClick={() => {
+              setIsConsigneDrawerOpen(!isConsigneDrawerOpen);
+              if (isCouponOpen) setIsCouponOpen(false);
+            }}
+            className={`h-8 rounded-lg border text-[11px] font-semibold flex items-center justify-center gap-1 cursor-pointer transition-colors ${
+              isConsigneDrawerOpen
+                ? "bg-[#14B8A6] text-[#041E1B] font-bold border-[#2DD4BF]"
+                : "bg-[#11161D] hover:bg-[#171E27] border-white/[0.08] text-zinc-300 hover:text-white"
+            }`}
+          >
+            <RefreshCw className="w-3 h-3" />
+            <span>{locale === "ar" ? "رهن" : "Consigne"}</span>
+          </button>
 
-              {/* Quick Preset Pills */}
-              <div className="flex items-center gap-1 pt-0.5">
-                {[5, 10, 15, 20].map((pct) => (
-                  <button
-                    key={pct}
-                    type="button"
-                    onClick={() => {
-                      setDiscount(pct, 0);
-                      setCouponMsg({ text: `${tDict.pos.couponApplied} (${pct}%)` });
-                    }}
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition cursor-pointer ${
-                      discountPercent === pct
-                        ? "bg-white text-black border-white"
-                        : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700"
-                    }`}
-                  >
-                    -{pct}%
-                  </button>
-                ))}
-                {(discountPercent > 0 || discountFixed > 0) && (
-                  <button
-                    type="button"
-                    onClick={handleClearDiscount}
-                    className="ml-auto text-[10px] text-zinc-400 hover:text-white underline cursor-pointer"
-                  >
-                    Effacer
-                  </button>
-                )}
-              </div>
-
-              {couponMsg && (
-                <p className={`text-[11px] font-medium ${couponMsg.error ? "text-zinc-400" : "text-white font-bold"}`}>
-                  {couponMsg.text}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Subtotal, TVA, Grand Total */}
-        <div className="space-y-1.5 text-xs">
-          <div className="flex justify-between text-zinc-400">
-            <span>{t("subtotal")}</span>
-            <span className="font-mono text-zinc-300">{subtotal.toFixed(2)} {tCommon("currency")}</span>
-          </div>
-
-          <div className="flex justify-between text-zinc-400">
-            <span>{t("tax")}</span>
-            <span className="font-mono text-zinc-300">{taxTotal.toFixed(2)} {tCommon("currency")}</span>
-          </div>
-
-          {discountTotal > 0 && (
-            <div className="flex justify-between text-zinc-300">
-              <span>{t("discount")}</span>
-              <span className="font-mono">-{discountTotal.toFixed(2)} {tCommon("currency")}</span>
-            </div>
-          )}
-
-          <div className="flex justify-between items-baseline pt-2 border-t border-zinc-800">
-            <div className="flex items-center gap-2">
-              <span className="text-base font-bold text-white">{t("total")}</span>
-              <span className="text-xs text-zinc-500 font-mono">
-                ({itemsCount} {t("itemsCount")})
-              </span>
-            </div>
-            <span className="text-2xl font-black text-white font-mono tracking-tight">
-              {grandTotal.toFixed(2)} {tCommon("currency")}
-            </span>
-          </div>
-        </div>
-
-        {/* Buttons Row */}
-        <div className="grid grid-cols-4 gap-2 pt-1">
           <button
             type="button"
             onClick={() => holdCurrentCart()}
             disabled={cart.length === 0}
-            className="group col-span-1 h-12 flex flex-col items-center justify-center rounded-xl bg-zinc-900 hover:bg-zinc-850 hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer"
-            title={t("holdCart")}
+            className="h-8 rounded-lg bg-[#11161D] hover:bg-[#171E27] disabled:opacity-30 disabled:cursor-not-allowed border border-white/[0.08] text-[11px] font-semibold text-zinc-300 hover:text-white flex items-center justify-center gap-1 cursor-pointer transition-colors"
           >
-            <PauseCircle className="w-4 h-4 mb-0.5 group-hover:scale-110 transition-transform duration-200" />
-            <span className="text-[10px] font-semibold">{t("holdCart")}</span>
+            <PauseCircle className="w-3 h-3" />
+            <span>{locale === "ar" ? "تعليق" : "Attente"}</span>
           </button>
 
           <button
             type="button"
             onClick={clearCart}
             disabled={cart.length === 0}
-            className="group col-span-1 h-12 flex flex-col items-center justify-center rounded-xl bg-zinc-900 hover:bg-zinc-850 hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer"
-            title={t("clearCart")}
+            className="h-8 rounded-lg bg-[#11161D] hover:bg-rose-950/40 hover:border-rose-500/40 disabled:opacity-30 disabled:cursor-not-allowed border border-white/[0.08] text-[11px] font-semibold text-zinc-300 hover:text-rose-300 flex items-center justify-center gap-1 cursor-pointer transition-colors"
           >
-            <Trash2 className="w-4 h-4 mb-0.5 group-hover:-rotate-12 group-hover:scale-110 transition-transform duration-200" />
-            <span className="text-[10px] font-semibold">{t("clearCart")}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={openPaymentModal}
-            disabled={cart.length === 0}
-            className="group sheen-btn col-span-2 h-12 flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-zinc-200 hover:-translate-y-0.5 hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none text-zinc-950 font-bold text-base shadow-sm transition-all duration-200 cursor-pointer"
-          >
-            <CreditCard className="w-5 h-5 stroke-[2.2] group-hover:scale-105 transition-transform duration-200" />
-            <span>{t("checkout")}</span>
+            <Trash2 className="w-3 h-3" />
+            <span>{locale === "ar" ? "إفراغ" : "Vider"}</span>
           </button>
         </div>
+      </div>
+
+      {/* Zone R4: Square Register Totals & Full-Width Charge CTA Button */}
+      <div className="p-3.5 border-t border-white/[0.08] bg-[#070A0D] space-y-2.5">
+        {/* Consigne Drawer Popover */}
+        {isConsigneDrawerOpen && (
+          <div className="p-2.5 rounded-xl bg-[#0D1116] border border-teal-500/30 space-y-1.5 animate-fadeIn">
+            <div className="flex items-center justify-between text-[10px] font-mono font-bold text-teal-400">
+              <span>{locale === "ar" ? "رهن القنينات والصناديق (Consigne)" : "Consignes Bouteilles & Casiers"}</span>
+              <button
+                type="button"
+                onClick={() => setIsConsigneDrawerOpen(false)}
+                className="text-zinc-400 hover:text-white p-0.5 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 text-[11px] font-bold">
+              <button
+                type="button"
+                onClick={() => handleConsigneDeposit("gas_deposit", 100)}
+                className="py-1 px-2 rounded-lg bg-zinc-900 border border-teal-500/30 hover:border-teal-400 text-teal-300 flex items-center justify-between cursor-pointer"
+              >
+                <span>{locale === "ar" ? "+ الغاز" : "+ Gaz"}</span>
+                <span className="font-mono font-black">+100 DH</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConsigneDeposit("gas_return", -100)}
+                className="py-1 px-2 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-zinc-500 text-zinc-300 flex items-center justify-between cursor-pointer"
+              >
+                <span>{locale === "ar" ? "- إرجاع الغاز" : "- Retour Gaz"}</span>
+                <span className="font-mono font-black">-100 DH</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConsigneDeposit("crate_deposit", 15)}
+                className="py-1 px-2 rounded-lg bg-zinc-900 border border-teal-500/30 hover:border-teal-400 text-teal-300 flex items-center justify-between cursor-pointer"
+              >
+                <span>{locale === "ar" ? "+ الصندوق" : "+ Casier"}</span>
+                <span className="font-mono font-black">+15 DH</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConsigneDeposit("crate_return", -15)}
+                className="py-1 px-2 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-zinc-500 text-zinc-300 flex items-center justify-between cursor-pointer"
+              >
+                <span>{locale === "ar" ? "- إرجاع الصندوق" : "- Retour Casier"}</span>
+                <span className="font-mono font-black">-15 DH</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Coupon Discount Drawer */}
+        {isCouponOpen && (
+          <div className="p-2.5 rounded-xl bg-[#0D1116] border border-white/[0.12] space-y-2 animate-fadeIn">
+            <div className="flex gap-1.5">
+              <input
+                type="text"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                placeholder={tDict.pos.couponPlaceholder}
+                className="flex-1 h-8 px-2.5 rounded-lg bg-zinc-950 border border-zinc-700 text-xs text-white uppercase font-mono placeholder:normal-case placeholder:text-zinc-500 focus:outline-none focus:border-white"
+              />
+              <button
+                type="button"
+                onClick={() => handleApplyCoupon()}
+                className="px-3 h-8 rounded-lg bg-white hover:bg-zinc-200 text-black font-bold text-xs cursor-pointer transition"
+              >
+                {tDict.pos.applyCoupon}
+              </button>
+            </div>
+            <div className="flex items-center gap-1 pt-0.5">
+              {[5, 10, 15, 20].map((pct) => (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => {
+                    setDiscount(pct, 0);
+                    setCouponMsg({ text: `${tDict.pos.couponApplied} (${pct}%)` });
+                  }}
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition cursor-pointer ${
+                    discountPercent === pct
+                      ? "bg-white text-black border-white"
+                      : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white"
+                  }`}
+                >
+                  -{pct}%
+                </button>
+              ))}
+              {(discountPercent > 0 || discountFixed > 0) && (
+                <button
+                  type="button"
+                  onClick={handleClearDiscount}
+                  className="ml-auto text-[10px] text-zinc-400 hover:text-white underline cursor-pointer"
+                >
+                  Effacer
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Totals Subtotal & Tax */}
+        <div className="space-y-1 text-xs">
+          <div className="flex justify-between text-zinc-400 font-mono">
+            <span>{t("subtotal")}</span>
+            <span className="text-zinc-300">{subtotal.toFixed(2)} MAD</span>
+          </div>
+          <div className="flex justify-between text-zinc-400 font-mono">
+            <span>{t("tax")} (TVA)</span>
+            <span className="text-zinc-300">{taxTotal.toFixed(2)} MAD</span>
+          </div>
+          {discountTotal > 0 && (
+            <div className="flex justify-between text-teal-400 font-mono font-bold">
+              <span>{t("discount")}</span>
+              <span>-{discountTotal.toFixed(2)} MAD</span>
+            </div>
+          )}
+        </div>
+
+        {/* Square Register Full-Width Primary Charge CTA Button */}
+        <button
+          type="button"
+          onClick={openPaymentModal}
+          disabled={cart.length === 0}
+          className="h-12 w-full rounded-xl bg-[#14B8A6] hover:bg-[#2DD4BF] text-[#041E1B] font-black text-sm shadow-[0_8px_24px_-6px_rgba(20,184,166,0.45)] flex items-center justify-between px-4 cursor-pointer active:scale-[0.99] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:pointer-events-none"
+        >
+          <span className="flex items-center gap-2 font-sans font-extrabold text-sm">
+            <CreditCard className="w-4 h-4 stroke-[2.5]" />
+            <span>{t("checkout")} (F10)</span>
+          </span>
+          <span className="font-mono font-black text-base tabular-nums">
+            {grandTotal.toFixed(2)} MAD
+          </span>
+        </button>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { Toaster, toast } from "sonner";
 import {
@@ -28,6 +28,7 @@ import { getCachedData, setCachedData } from "@/lib/cache/client-cache";
 import { usePosStore } from "@/client/store/usePosStore";
 import { KineticProductCubeBarcodeEmpty } from "@/components/ui/KineticEmptyState";
 import { FloatingCommerceCanvas } from "@/components/ui/FloatingCommerceCanvas";
+import { MOROCCAN_GROCERY_DEMO_ITEMS } from "@/components/pos/ProductGrid";
 import {
   Scale,
   Shirt,
@@ -435,15 +436,41 @@ export default function ProductsListPage() {
     }
   };
 
-  const filteredProducts = products.filter((p) => {
+  const filteredProducts = useMemo(() => {
+    let list = products;
+    if (storeType === "grocery") {
+      const nonGrocerySkus = ["DEMO-RES-", "DEMO-FAS-", "DEMO-ELC-", "DEMO-BUT-", "DEMO-BAK-"];
+      list = list.filter((p) => {
+        const code = ((p.sku || "") + (p.barcode || "")).toUpperCase();
+        return !nonGrocerySkus.some((prefix) => code.includes(prefix));
+      });
+      const hasDemo = list.some((p) => p.sku?.startsWith("DEMO-GRO-"));
+      if (hasDemo || list.length === 0) {
+        const existingSkus = new Set(list.map((p) => p.sku));
+        const missing = MOROCCAN_GROCERY_DEMO_ITEMS.filter((d) => !existingSkus.has(d.sku)).map((d) => ({
+          id: d.id,
+          name: d.name,
+          sku: d.sku,
+          barcode: d.barcode,
+          salePrice: d.salePrice,
+          wholesalePrice: d.wholesalePrice,
+          taxRate: d.taxRate || 20,
+          trackStock: true,
+          stockQuantity: d.stockQuantity,
+          categoryName: d.categoryName,
+        }));
+        list = [...list, ...missing];
+      }
+    }
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      p.name.toLowerCase().includes(q) ||
-      p.sku.toLowerCase().includes(q) ||
-      Boolean(p.barcode && p.barcode.toLowerCase().includes(q))
+    if (!q) return list;
+    return list.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q) ||
+        Boolean(p.barcode && p.barcode.toLowerCase().includes(q))
     );
-  });
+  }, [products, searchQuery, storeType]);
 
   return (
     <div dir="ltr" className="space-y-8 select-none">
@@ -736,16 +763,17 @@ export default function ProductsListPage() {
                         type="button"
                         onClick={() => handlePrintProductBarcode(product)}
                         title={locale === "ar" ? "طباعة ملصق الرف 40×30mm" : "Imprimer Étiquette Rayon 40×30mm"}
-                        className="p-1.5 rounded-lg bg-zinc-950 hover:bg-teal-400 text-zinc-300 hover:text-zinc-950 border border-zinc-800 transition cursor-pointer"
+                        className="h-9 px-2.5 rounded-lg bg-[#0D1116] hover:bg-[#14B8A6] text-zinc-300 hover:text-[#041E1B] border border-white/[0.08] hover:border-[#14B8A6] flex items-center justify-center gap-1.5 text-xs font-semibold transition cursor-pointer"
                       >
                         <Printer className="w-3.5 h-3.5" />
+                        <span className="text-[11px] font-mono">40×30mm</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => openPriceModal(product)}
-                        className="px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-white text-zinc-300 hover:text-black border border-zinc-800 text-[11px] font-bold transition cursor-pointer"
+                        className="h-9 px-3 rounded-lg bg-[#0D1116] hover:bg-white text-zinc-300 hover:text-black border border-white/[0.08] text-xs font-bold transition cursor-pointer"
                       >
-                        تعديل الثمن
+                        {locale === "ar" ? "تعديل الثمن" : "Prix"}
                       </button>
                     </div>
                   </div>
@@ -825,24 +853,27 @@ export default function ProductsListPage() {
                         {Number(p.salePrice).toFixed(2)} MAD
                       </td>
                       <td className="py-3 px-4 text-end relative">
-                        <button
-                          type="button"
-                          onClick={() => handlePrintProductBarcode(p)}
-                          title={locale === "ar" ? "طباعة ملصق الرف 40×30mm" : "Imprimer Étiquette Rayon 40×30mm"}
-                          className="p-1.5 rounded-lg bg-zinc-950 hover:bg-teal-400 text-zinc-300 hover:text-zinc-950 border border-zinc-800 inline-flex items-center justify-center transition cursor-pointer me-1.5"
-                        >
-                          <Printer className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setOpenMenuProductId(isMenuOpen ? null : p.id)
-                          }
-                          disabled={isUpdating}
-                          className="p-1.5 rounded-lg bg-zinc-950 hover:bg-white text-zinc-300 hover:text-black border border-zinc-800 inline-flex items-center justify-center transition cursor-pointer"
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                        <div className="inline-flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handlePrintProductBarcode(p)}
+                            title={locale === "ar" ? "طباعة ملصق الرف 40×30mm" : "Imprimer Étiquette Rayon 40×30mm"}
+                            className="h-9 px-2.5 rounded-lg bg-[#0D1116] hover:bg-[#14B8A6] text-zinc-300 hover:text-[#041E1B] border border-white/[0.08] hover:border-[#14B8A6] inline-flex items-center justify-center gap-1.5 transition cursor-pointer text-xs font-semibold"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline text-[11px] font-mono">40×30mm</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenMenuProductId(isMenuOpen ? null : p.id)
+                            }
+                            disabled={isUpdating}
+                            className="h-9 w-9 rounded-lg bg-[#0D1116] hover:bg-white text-zinc-300 hover:text-black border border-white/[0.08] inline-flex items-center justify-center transition cursor-pointer"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                        </div>
 
                         {isMenuOpen && (
                           <div className="absolute end-4 mt-2 w-60 rounded-xl bg-zinc-950 border border-zinc-800 shadow-2xl py-1.5 z-50 divide-y divide-zinc-900 text-start">

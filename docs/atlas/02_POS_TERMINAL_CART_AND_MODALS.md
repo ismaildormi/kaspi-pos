@@ -203,15 +203,20 @@
 
 ---
 
-## 11. أدوات السوبرماركت ورهن القنينات وحزم البيع (`GroceryScannerUtilityBar.tsx` & `CartPanel.tsx`)
+## 11. أدوات السوبرماركت وطبوغرافية Square Register 1:1 (`pos/page.tsx` & `CartPanel.tsx`)
 
 | معرّف العنصر (Element ID) | نوع العنصر | التسمية والرمز (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `grocery_multiplier_buttons` | Button Group | مضاعفات سريعة للكمية: `x2`, `x6 Pack`, `x12 Carton`, `x24 Caisse` | `font-mono font-bold text-xs` | `px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-teal-400/50 hover:bg-zinc-850 active:scale-95 keycap-3d` | يضاعف الكمية الممسوحة فوراً قبل إضافة المنتج إلى السلة |
-| `grocery_price_checker_btn` | Action Button | فاحص الثمن والصلاحية • Vérificateur Prix & DLC | `font-bold text-xs text-zinc-200` | نافذة منبثقة تفاعلية مع حقل مسح باركود وعرض فوري لثمن الحبة، ثمن الباك، الجناح ورصيد المخزون | يساعد الزبائن وموظفي الرفوف على فحص الأسعار دون تسجيل بيع |
-| `grocery_plu_modal_btn` | Action Button | إدخال خضر وفواكه وميزان (4 أرقام PLU) • Saisie PLU Balance | `font-bold text-xs text-teal-300` | نافذة إدخال الأكواد المعيارية (4011 موز، 4012 تفاح...) مع أزرار أوزان سريعة `0.25kg`, `0.5kg`, `1kg`, `2kg` | يربط المنتجات الوزنية بالسلة مع الحساب الآلي للسعر التناسبي |
-| `cart_pack_pricing_toggle` | Toggle Switch | تبديل بيع بالحبة (Unité) ↔ بيع بالباك (Pack) | `font-bold text-xs` | زر تفاعلي `keycap-3d` مع وسائط لونية مونوكرومية راقية | يعيد حساب خط السلة باعتماد سعر الباك مباشرة |
-| `cart_consigne_return_bar` | Quick Action Bar | رهن القنينات والصناديق: `+ الغاز +100 DH`, `- إرجاع الغاز -100 DH`, `+ الصندوق +15 DH`, `- إرجاع الصندوق -15 DH` | `font-mono font-bold text-xs` | شريط مدمج أسفل السلة مع تعيين تلقائي للرهن المسترجع أو المقبوض | يضمن تدقيق حركة القنينات الفارغة والمملوءة ومطابقة الخزينة |
+| `square_zone_l1_switcher` | Segmented Switcher | الشبكة الذكية • ميزان وخضر PLU • فاحص الثمن والصلاحية | `font-bold text-xs` | `h-11 p-1 rounded-xl bg-[#0D1014] border border-white/[0.08]` (النشط: `bg-[#14B8A6] text-[#041E1B]`) | يبدل مساحة العمل الرئيسية بين شبكة المنتجات، لوحة أوزان وميزان PLU، ونافذة فاحص السعر |
+| `square_zone_l2_multiplier` | Multiplier Segmented Bar | QTY: `×1`, `×2`, `×6 Pack`, `×12 Carton`, `×24 Caisse` | `font-mono font-bold text-[11px]` | `h-8 p-0.5 rounded-lg bg-[#0D1014] border border-white/[0.08]` (النشط: `bg-[#14B8A6] text-[#041E1B] font-black`) | شريط مضاعفة المسح المباشر الموازي لشريط الأقسام بدون أي صفوف عائمة إضافية |
+| `square_zone_l3_tile` | Bento Product Tile | بطاقة السوبرماركت المونوكرومية التكتيكية | `font-sans font-semibold text-[13.5px]` | `h-[142px] rounded-xl bg-[#0D1116] hover:bg-[#11171E] border border-white/[0.08] hover:border-[#14B8A6]/50` مع شريط علوي `h-[3px]` بلون `#14B8A6` وأيقونة `ShoppingBag` وزر `+` موحد | نقر مباشر سريع مع صوت المسح اللحظي وحساب فوري لسلة الشراء |
+| `square_zone_r1_ticket_head` | Customer & Mode Row | زر العميل + محول التجزئة / الجملة | `font-bold text-xs` | `p-3 border-b border-white/[0.07] space-y-2` مع إزالة شريط الرهن من منتصف السلة لإبقاء المساحة مفتوحة للمنتجات | يبدل بين أسعار التقسيط والتجزئة وأسعار الجملة للحبة والكرتون |
+| `square_zone_r2_cart_items` | Spacious Item List | قائمة سطور المشتريات الواسعة | `font-mono font-bold text-sm text-white` | صفوف مدمجة متسعة `py-2.5 border-b border-white/[0.06]` مع أزرار التحكم بالكمية `[-] [qty] [+]` ومفتاح الوحدة/الكرتون | عرض مشهد العربة الحركي عند الفراغ وعرض تفصيلي نظيف عند الامتلاء |
+| `square_zone_r3_utility_dock` | 4-Action Utility Dock | `[ % Remise ]` • `[ Consigne ]` • `[ Attente ]` • `[ Vider ]` | `font-semibold text-[11px] text-zinc-300` | شبكة رباعية منتظمة `grid grid-cols-4 gap-1.5` بأزرار موحدة `h-8 rounded-lg bg-[#11161D] border border-white/[0.08]` | يدمج الرهن والخصم في أدراج منبثقة أسفل السلة بدون إشغال أي مساحة دائمة |
+| `square_zone_r4_charge_cta` | Full-Width Charge CTA | تأكيد ودفع الطلب (F10) • {grandTotal} MAD | `font-sans font-extrabold text-sm` + `font-mono font-black text-base` | زر عريض ممتد `h-12 w-full rounded-xl bg-[#14B8A6] hover:bg-[#2DD4BF] text-[#041E1B] shadow-[0_8px_24px_-6px_rgba(20,184,166,0.45)]` | ينشئ عملية الدفع ويفتح نافذة `UnifiedCheckoutModal` |
+| `square_plu_scale_panel` | Touch Keypad & Scale Panel | ميزان الخضر والفواكه مع لوحة لمسية 3×4 وأكواد PLU القياسية (4011 موز، 4065 طماطم...) وأوزان سريعة 0.25kg إلى 5kg | `font-mono font-bold` | حاوية لوحة اللمس المزدوجة المدمجة ببرمجية وزن فورية بالجرام والدرهم | يتيح للكاشير بيع المواد الوزنية بدون مغادرة الشاشة الرئيسية |
+| `square_price_dlc_verifier` | Price & DLC Modal | فاحص الثمن وتواريخ الصلاحية مع كاشف باركود الحبة والباك والجناح وحالة الصلاحية | `font-sans font-bold text-sm` | نافذة منبثقة تفاعلية مع زر إضافة مباشر للسلة بنقرة واحدة | فحص فوري لأسعار السلع وتواريخ الانتهاء على الرفوف |
+
 
 
 

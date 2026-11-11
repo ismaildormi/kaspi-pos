@@ -119,15 +119,15 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
 
   return (
     <div dir="ltr" className="space-y-6">
-      {/* 3 Supermarket Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-zinc-800 pb-2 overflow-x-auto">
+      {/* 3 Supermarket Navigation Tabs (Square Segmented Tab Bar) */}
+      <div className="bg-[#0D1014] p-1 rounded-xl border border-white/[0.08] inline-flex items-center gap-1 overflow-x-auto max-w-full">
         <button
           type="button"
           onClick={() => setActiveTab("shelf")}
-          className={`keycap-3d px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+          className={`h-9 px-3.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === "shelf"
-              ? "bg-teal-400 text-zinc-950 font-black shadow-md border border-teal-300"
-              : "bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white"
+              ? "bg-[#14B8A6] text-[#041E1B] shadow-sm font-black"
+              : "text-zinc-400 hover:text-white hover:bg-white/[0.04] font-semibold"
           }`}
         >
           <Layers className="w-4 h-4" />
@@ -143,10 +143,10 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
         <button
           type="button"
           onClick={() => setActiveTab("dlc")}
-          className={`keycap-3d px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+          className={`h-9 px-3.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === "dlc"
-              ? "bg-teal-400 text-zinc-950 font-black shadow-md border border-teal-300"
-              : "bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white"
+              ? "bg-[#14B8A6] text-[#041E1B] shadow-sm font-black"
+              : "text-zinc-400 hover:text-white hover:bg-white/[0.04] font-semibold"
           }`}
         >
           <Clock className="w-4 h-4" />
@@ -157,7 +157,11 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
               ? "Péremptions DLC & Déstockage"
               : "DLC Expiry & Clearance"}
           </span>
-          <span className="px-1.5 py-0.2 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-mono font-bold">
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
+            activeTab === "dlc"
+              ? "bg-[#041E1B]/20 text-[#041E1B]"
+              : "bg-amber-400/20 text-amber-300"
+          }`}>
             3
           </span>
         </button>
@@ -165,10 +169,10 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
         <button
           type="button"
           onClick={() => setActiveTab("shrinkage")}
-          className={`keycap-3d px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+          className={`h-9 px-3.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === "shrinkage"
-              ? "bg-teal-400 text-zinc-950 font-black shadow-md border border-teal-300"
-              : "bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white"
+              ? "bg-[#14B8A6] text-[#041E1B] shadow-sm font-black"
+              : "text-zinc-400 hover:text-white hover:bg-white/[0.04] font-semibold"
           }`}
         >
           <Trash2 className="w-4 h-4" />

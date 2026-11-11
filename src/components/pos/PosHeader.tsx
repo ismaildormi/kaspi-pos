@@ -43,6 +43,58 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
   const { heldCarts } = usePosStore();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Store identity resolution matching dashboard/layout.tsx
+  const [displayShopName, setDisplayShopName] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("kaspi_store_name");
+      if (saved && saved !== "KASPI POS" && saved !== "Magasin Principal") return saved;
+    }
+    return storeName && storeName !== "Magasin Principal" && storeName !== "KASPI POS" ? storeName : "ASIMA";
+  });
+
+  const [displayLogo, setDisplayLogo] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("kaspi_store_logo");
+      if (saved) return saved;
+    }
+    return ownerAvatarUrl || "";
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const syncStoreIdentity = () => {
+      const savedName = localStorage.getItem("kaspi_store_name");
+      const savedLogo = localStorage.getItem("kaspi_store_logo");
+      if (savedName) setDisplayShopName(savedName);
+      if (savedLogo) setDisplayLogo(savedLogo);
+    };
+    syncStoreIdentity();
+
+    fetch("/api/v1/settings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.settings?.shopName) {
+          setDisplayShopName(data.settings.shopName);
+          localStorage.setItem("kaspi_store_name", data.settings.shopName);
+        }
+        if (data?.settings?.logoUrl) {
+          setDisplayLogo(data.settings.logoUrl);
+          localStorage.setItem("kaspi_store_logo", data.settings.logoUrl);
+        }
+      })
+      .catch(() => {});
+
+    const handleProfileUpdate = (e: any) => {
+      if (e.detail?.shopName) setDisplayShopName(e.detail.shopName);
+      if (e.detail?.logoUrl !== undefined) setDisplayLogo(e.detail.logoUrl);
+    };
+
+    window.addEventListener("kaspi_store_profile_updated", handleProfileUpdate);
+    return () => {
+      window.removeEventListener("kaspi_store_profile_updated", handleProfileUpdate);
+    };
+  }, []);
+
   useEffect(() => {
     const onFullscreenChange = () => {
       setIsFullscreen(Boolean(document.fullscreenElement));
@@ -189,19 +241,19 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
           className="inline-flex items-center gap-2 h-8 px-2.5 rounded-lg border border-white/10 hover:border-white/25 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-zinc-200 transition-all cursor-pointer"
           title={locale === "ar" ? "خزنة المالك والملف الشخصي" : "Profil Propriétaire & Coffre-Fort"}
         >
-          <div className="w-5 h-5 rounded-full overflow-hidden border border-white/25 bg-zinc-800 shrink-0 flex items-center justify-center text-[9px] font-bold text-white shadow-inner">
-            {ownerAvatarUrl ? (
+          <div className="w-6 h-6 rounded-full overflow-hidden border border-white/25 bg-zinc-800 shrink-0 flex items-center justify-center text-[10px] font-bold text-white shadow-inner">
+            {displayLogo ? (
               <img
-                src={ownerAvatarUrl}
-                alt={storeName || cashierName || "Store"}
+                src={displayLogo}
+                alt={displayShopName}
                 className="w-full h-full object-cover rounded-full"
               />
             ) : (
-              <span>{(storeName || cashierName || "K").slice(0, 1).toUpperCase()}</span>
+              <span>{displayShopName.slice(0, 1).toUpperCase()}</span>
             )}
           </div>
           <span className="hidden sm:inline truncate max-w-[120px] font-bold text-white">
-            {storeName || cashierName}
+            {displayShopName}
           </span>
         </button>
 
