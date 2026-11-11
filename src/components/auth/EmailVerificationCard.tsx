@@ -210,23 +210,21 @@ export const EmailVerificationCard: React.FC<EmailVerificationCardProps> = ({
       {/* 2. Brand mark */}
       <div className="relative z-10 my-7 flex items-center justify-center gap-4">
         <span className="h-px w-16 bg-gradient-to-r from-transparent to-zinc-300 dark:to-zinc-700" />
-        <div className="flex h-16 w-16 items-center justify-center p-0 bg-transparent border-0 shadow-none">
-          {logoFailed ? (
-            <KaspiMonogram />
-          ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src="/logo-mark.png"
-              alt="KASPI POS"
-              className="w-16 h-16 object-contain drop-shadow-[0_4px_20px_rgba(255,255,255,0.18)] bg-transparent border-0"
-              onError={() => {
-                if (!logoFailed) {
-                  setLogoFailed(true);
-                }
-              }}
-            />
-          )}
-        </div>
+        {logoFailed ? (
+          <KaspiMonogram />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="/logo.png"
+            alt="KASPI POS"
+            className="w-14 h-14 rounded-2xl object-cover shadow-lg"
+            onError={() => {
+              if (!logoFailed) {
+                setLogoFailed(true);
+              }
+            }}
+          />
+        )}
         <span className="h-px w-16 bg-gradient-to-l from-transparent to-zinc-300 dark:to-zinc-700" />
       </div>
 

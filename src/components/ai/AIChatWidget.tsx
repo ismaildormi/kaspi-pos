@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { getApiUrl } from "@/client/sync-engine";
 import {
@@ -28,6 +27,133 @@ interface LocalChatMessage {
   parts?: Array<{ type: string; url?: string; name?: string; mediaType?: string; text?: string }>;
 }
 
+export type SupportedLocale = "ar" | "fr" | "en";
+
+export const AI_I18N: Record<
+  SupportedLocale,
+  {
+    headerTitle: string;
+    headerTitleAdmin: string;
+    activeBadge: string;
+    activeBadgeAdmin: string;
+    subtitle: string;
+    subtitleAdmin: string;
+    quickPrompts: Array<{ text: string; icon: "trending" | "alert" | "bag" }>;
+    quickPromptsAdmin: Array<{ text: string; icon: "trending" | "alert" | "bag" }>;
+    inputPlaceholder: string;
+    uploadTooltip: string;
+    thinking: string;
+    error: string;
+    retry: string;
+    documentAttachment: string;
+    closeTitle: string;
+    analyzePrompt: string;
+  }
+> = {
+  ar: {
+    headerTitle: "مساعد كسب الذكي",
+    headerTitleAdmin: "المساعد الرئيسي • مسؤول البيانات",
+    activeBadge: "مساعد فوري نشط",
+    activeBadgeAdmin: "وصول كامل للبيانات",
+    subtitle: "مستشارك للأعمال وتحليل المبيعات",
+    subtitleAdmin: "الذكاء الاصطناعي لتحليل منصة كسب والبيانات الحية",
+    quickPrompts: [
+      { text: "كم مبيعات اليوم؟", icon: "trending" },
+      { text: "ما هي السلع المنخفضة في المخزون؟", icon: "alert" },
+      { text: "ما هي المنتجات الأكثر مبيعاً هذا الأسبوع؟", icon: "bag" },
+    ],
+    quickPromptsAdmin: [
+      { text: "ما هو إجمالي الإيرادات ومبيعات المنصة؟", icon: "trending" },
+      { text: "عرض قائمة كافة المتاجر وحالة الاشتراكات", icon: "alert" },
+      { text: "إحصائيات استهلاك الذكاء الاصطناعي في المنصة", icon: "bag" },
+    ],
+    inputPlaceholder: "اسأل المستشار الذكي عن مبيعاتك وأرباحك...",
+    uploadTooltip: "إرفاق صورة أو فاتورة تجارية (OCR)",
+    thinking: "المساعد الذكي يفكر ويحلل البيانات...",
+    error: "تعذر الاتصال بالمساعد الذكي",
+    retry: "إعادة المحاولة",
+    documentAttachment: "مستند تجاري",
+    closeTitle: "إغلاق النافذة",
+    analyzePrompt: "تحليل المستند المرفق",
+  },
+  fr: {
+    headerTitle: "Assistant KASPI IA",
+    headerTitleAdmin: "Master IA • Directeur des Données",
+    activeBadge: "IA Active en Direct",
+    activeBadgeAdmin: "Accès Total Base",
+    subtitle: "Votre conseiller business et analyse des ventes",
+    subtitleAdmin: "Intelligence d'affaires et métriques globales KASPI POS",
+    quickPrompts: [
+      { text: "Quelles sont les ventes d'aujourd'hui ?", icon: "trending" },
+      { text: "Quels articles sont en rupture ou stock faible ?", icon: "alert" },
+      { text: "Quels sont les produits les plus vendus cette semaine ?", icon: "bag" },
+    ],
+    quickPromptsAdmin: [
+      { text: "Quel est le MRR global et le GMV de la plateforme ?", icon: "trending" },
+      { text: "Liste des boutiques enregistrées et statuts d'abonnement", icon: "alert" },
+      { text: "Statistiques d'utilisation IA sur la plateforme", icon: "bag" },
+    ],
+    inputPlaceholder: "Posez votre question sur vos ventes, stock ou bénéfices...",
+    uploadTooltip: "Joindre une image ou facture d'achat (OCR)",
+    thinking: "L'IA analyse vos indicateurs en direct...",
+    error: "Impossible de joindre l'assistant IA",
+    retry: "Réessayer",
+    documentAttachment: "Document Commercial",
+    closeTitle: "Fermer",
+    analyzePrompt: "Analyser le document joint",
+  },
+  en: {
+    headerTitle: "KASPI AI Assistant",
+    headerTitleAdmin: "Master AI • Chief Data Officer",
+    activeBadge: "Live AI Active",
+    activeBadgeAdmin: "Full DB Access",
+    subtitle: "Your business & sales intelligence advisor",
+    subtitleAdmin: "Business intelligence & platform-wide data telemetry",
+    quickPrompts: [
+      { text: "What are today's total sales?", icon: "trending" },
+      { text: "Which items are running low on stock?", icon: "alert" },
+      { text: "What are the top-selling products this week?", icon: "bag" },
+    ],
+    quickPromptsAdmin: [
+      { text: "What is our total platform MRR, GMV, and revenue?", icon: "trending" },
+      { text: "List all registered tenants and their subscription status", icon: "alert" },
+      { text: "Platform-wide AI usage stats and telemetry", icon: "bag" },
+    ],
+    inputPlaceholder: "Ask about your sales, inventory, or margins...",
+    uploadTooltip: "Attach receipt image or PDF invoice (OCR)",
+    thinking: "AI is analyzing live store data...",
+    error: "Unable to reach KASPI AI Assistant",
+    retry: "Retry",
+    documentAttachment: "Commercial Document",
+    closeTitle: "Close",
+    analyzePrompt: "Analyze attached document",
+  },
+};
+
+/**
+ * Robust Locale Detector:
+ * Inspects pathname (/en/..., /fr/..., /ar/...), document cookies, and navigator.
+ */
+function resolveCurrentLocale(pathname: string): SupportedLocale {
+  if (pathname.startsWith("/en") || pathname.includes("/en/")) return "en";
+  if (pathname.startsWith("/fr") || pathname.includes("/fr/")) return "fr";
+  if (pathname.startsWith("/ar") || pathname.includes("/ar/")) return "ar";
+
+  if (typeof document !== "undefined") {
+    const cookieMatch = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/);
+    if (cookieMatch) {
+      const val = cookieMatch[1].toLowerCase().slice(0, 2);
+      if (val === "en" || val === "fr" || val === "ar") return val as SupportedLocale;
+    }
+    const htmlLang = document.documentElement.lang?.toLowerCase().slice(0, 2);
+    if (htmlLang === "en" || htmlLang === "fr" || htmlLang === "ar") {
+      return htmlLang as SupportedLocale;
+    }
+  }
+
+  return "ar";
+}
+
 export function AIChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -41,11 +167,19 @@ export function AIChatWidget() {
   const [isLocalThinking, setIsLocalThinking] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const locale = useLocale();
   const pathname = usePathname() || "";
   const isAdminView = pathname.includes("/admin");
-  const isRtl = locale === "ar";
-  const t = useTranslations("Ai");
+
+  // Dynamically resolve active locale from pathname and environment
+  const [activeLocale, setActiveLocale] = useState<SupportedLocale>(() =>
+    resolveCurrentLocale(pathname)
+  );
+
+  useEffect(() => {
+    setActiveLocale(resolveCurrentLocale(pathname));
+  }, [pathname]);
+
+  const t = AI_I18N[activeLocale] || AI_I18N.ar;
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Strictly hide AI Assistant Widget on authentication/public screens
@@ -99,10 +233,15 @@ export function AIChatWidget() {
     };
   }, []);
 
-  // Memoize transport with standard API endpoint
+  // Memoize transport with activeLocale passed in body and headers
   const transport = useMemo(
-    () => new DefaultChatTransport({ api: "/api/ai/chat" }),
-    []
+    () =>
+      new DefaultChatTransport({
+        api: "/api/ai/chat",
+        body: { locale: activeLocale },
+        headers: { "x-app-locale": activeLocale },
+      }),
+    [activeLocale]
   );
 
   const {
@@ -121,10 +260,10 @@ export function AIChatWidget() {
   const generateLocalStoreInsight = async (
     query: string,
     attachedFile: { name: string; type: string; url: string } | null,
-    activeLocale: string
+    targetLocale: SupportedLocale
   ): Promise<string> => {
-    const isAr = activeLocale === "ar";
-    const isEn = activeLocale === "en";
+    const isAr = targetLocale === "ar";
+    const isEn = targetLocale === "en";
 
     // 1. Image / Receipt Analysis
     if (attachedFile?.type?.startsWith("image/")) {
@@ -158,6 +297,7 @@ export function AIChatWidget() {
     if (
       lower.includes("vente") ||
       lower.includes("sales") ||
+      lower.includes("revenue") ||
       query.includes("مبيعات") ||
       query.includes("دخل") ||
       query.includes("شحال")
@@ -175,6 +315,7 @@ export function AIChatWidget() {
     if (
       lower.includes("stock") ||
       lower.includes("inventaire") ||
+      lower.includes("low") ||
       query.includes("مخزون") ||
       query.includes("سلع") ||
       query.includes("ناقص")
@@ -194,7 +335,7 @@ export function AIChatWidget() {
     } else if (isEn) {
       return `KASPI AI Assistant is always online for your business:\n\nI continuously monitor your live store sales and stock levels. You can ask me about today's revenue, low stock items, or attach purchase invoices for immediate on-device analysis.`;
     } else {
-      return `L'Assistant KASPI AI est toujours actif pour votre commerce :\n\nJe surveille vos ventes et votre stock en temps réel. Vous pouvez me demander les chiffres du jour, l'état des stocks ou joindre des factures d'achat pour une analyse immédiate.`;
+      return `L'Assistant KASPI IA est toujours actif pour votre commerce :\n\nJe surveille vos ventes et votre stock en temps réel. Vous pouvez me demander les chiffres du jour, l'état des stocks ou joindre des factures d'achat pour une analyse immédiate.`;
     }
   };
 
@@ -235,7 +376,7 @@ export function AIChatWidget() {
     const userMsg: LocalChatMessage = {
       id: userMessageId,
       role: "user",
-      content: messageText || (locale === "ar" ? "تحليل المستند المرفق" : locale === "en" ? "Analyze attached document" : "Analyser le document joint"),
+      content: messageText || t.analyzePrompt,
       parts: currentAttachment
         ? [
             {
@@ -252,23 +393,35 @@ export function AIChatWidget() {
 
     try {
       if (currentAttachment) {
-        await sendMessage({
-          text: messageText || "Analyze this attached file",
-          files: [
-            {
-              type: "file",
-              mediaType: currentAttachment.type,
-              url: currentAttachment.url,
-            },
-          ],
-        });
+        await sendMessage(
+          {
+            text: messageText || t.analyzePrompt,
+            files: [
+              {
+                type: "file",
+                mediaType: currentAttachment.type,
+                url: currentAttachment.url,
+              },
+            ],
+          },
+          {
+            body: { locale: activeLocale },
+            headers: { "x-app-locale": activeLocale },
+          }
+        );
       } else {
-        await sendMessage({ text: messageText });
+        await sendMessage(
+          { text: messageText },
+          {
+            body: { locale: activeLocale },
+            headers: { "x-app-locale": activeLocale },
+          }
+        );
       }
     } catch {
-      // Graceful instant fallback to local business engine (Zero dead errors!)
+      // Graceful instant fallback to local business engine (Zero dead errors)
       setIsLocalThinking(true);
-      const insight = await generateLocalStoreInsight(messageText, currentAttachment, locale);
+      const insight = await generateLocalStoreInsight(messageText, currentAttachment, activeLocale);
       setIsLocalThinking(false);
       setLocalFallbackMessages((prev) => [
         ...prev,
@@ -291,10 +444,16 @@ export function AIChatWidget() {
     setLocalFallbackMessages((prev) => [...prev, userMsg]);
 
     try {
-      await sendMessage({ text: promptText });
+      await sendMessage(
+        { text: promptText },
+        {
+          body: { locale: activeLocale },
+          headers: { "x-app-locale": activeLocale },
+        }
+      );
     } catch {
       setIsLocalThinking(true);
-      const insight = await generateLocalStoreInsight(promptText, null, locale);
+      const insight = await generateLocalStoreInsight(promptText, null, activeLocale);
       setIsLocalThinking(false);
       setLocalFallbackMessages((prev) => [
         ...prev,
@@ -329,27 +488,11 @@ export function AIChatWidget() {
     return null;
   }
 
-  const statusBadgeText = isAdminView
-    ? locale === "ar"
-      ? "وصول كامل للبيانات"
-      : locale === "en"
-      ? "Full DB Access"
-      : "Accès Total Base"
-    : locale === "ar"
-    ? "مساعد فوري نشط"
-    : locale === "en"
-    ? "Instant Advisor Active"
-    : "Conseiller Actif";
-
-  const retryText =
-    locale === "ar" ? "إعادة المحاولة" : locale === "en" ? "Retry" : "Réessayer";
-
-  const docText =
-    locale === "ar" ? "مستند تجاري" : locale === "en" ? "Commercial Document" : "Document Commercial";
+  const promptSuggestions = isAdminView ? t.quickPromptsAdmin : t.quickPrompts;
 
   return (
     <>
-      {/* Floating Chat Window Modal / Sheet */}
+      {/* Floating Chat Window Modal / Sheet — Strict LTR geometry */}
       {isOpen && (
         <div
           dir="ltr"
@@ -358,27 +501,21 @@ export function AIChatWidget() {
           {/* Header */}
           <div className="bg-zinc-900 border-b border-zinc-800 text-white p-4 flex items-center justify-between shadow-xs">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700">
+              <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 shrink-0">
                 <Bot className="w-5 h-5 text-white" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-sm tracking-wide text-white">
-                    {isAdminView
-                      ? locale === "ar"
-                        ? "المساعد الرئيسي • مسؤول البيانات"
-                        : locale === "en"
-                        ? "Master AI • Chief Data Officer"
-                        : "Master AI • Directeur des Données"
-                      : t("title")}
+                  <h3 className="font-bold text-sm tracking-wide text-white truncate">
+                    {isAdminView ? t.headerTitleAdmin : t.headerTitle}
                   </h3>
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white text-black">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white text-black shrink-0">
                     <Zap className="w-2.5 h-2.5" />
-                    {statusBadgeText}
+                    {isAdminView ? t.activeBadgeAdmin : t.activeBadge}
                   </span>
                 </div>
-                <p className="text-xs text-zinc-400 font-normal">
-                  {t("subtitle")}
+                <p className="text-xs text-zinc-400 font-normal truncate">
+                  {isAdminView ? t.subtitleAdmin : t.subtitle}
                 </p>
               </div>
             </div>
@@ -386,8 +523,9 @@ export function AIChatWidget() {
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
-              title="Close"
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+              title={t.closeTitle}
+              aria-label={t.closeTitle}
             >
               <X className="w-5 h-5" />
             </button>
@@ -401,76 +539,29 @@ export function AIChatWidget() {
                   <Sparkles className="w-7 h-7" />
                 </div>
                 <h4 className="font-bold text-white text-sm mb-1">
-                  {t("title")}
+                  {isAdminView ? t.headerTitleAdmin : t.headerTitle}
                 </h4>
-                <p className="text-xs text-zinc-400 max-w-[260px] mb-4 leading-relaxed">
-                  {t("subtitle")}
+                <p className="text-xs text-zinc-400 max-w-[280px] mb-4 leading-relaxed">
+                  {isAdminView ? t.subtitleAdmin : t.subtitle}
                 </p>
 
-                {/* Quick Suggestion Chips */}
+                {/* 100% Localized Quick Suggestion Chips */}
                 <div className="w-full space-y-2 text-start">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleQuickPrompt(
-                        isAdminView
-                          ? "What is our total platform MRR, GMV, and active subscriptions?"
-                          : t("suggestedSales")
-                      )
-                    }
-                    className="w-full p-2.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-850 hover:border-zinc-700 transition-all text-xs font-medium text-zinc-300 flex items-center gap-2.5 shadow-xs cursor-pointer group"
-                  >
-                    <div className="p-1 rounded-md bg-zinc-800 text-white group-hover:scale-110 transition-transform">
-                      <TrendingUp className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="truncate">
-                      {isAdminView
-                        ? "Platform Revenue (MRR & GMV Breakdown)"
-                        : t("suggestedSales")}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleQuickPrompt(
-                        isAdminView
-                          ? "List all registered tenants, their subscription status, and sales count."
-                          : t("suggestedStock")
-                      )
-                    }
-                    className="w-full p-2.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-850 hover:border-zinc-700 transition-all text-xs font-medium text-zinc-300 flex items-center gap-2.5 shadow-xs cursor-pointer group"
-                  >
-                    <div className="p-1 rounded-md bg-zinc-800 text-white group-hover:scale-110 transition-transform">
-                      <AlertTriangle className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="truncate">
-                      {isAdminView
-                        ? "All Registered Tenants & Subscriptions"
-                        : t("suggestedStock")}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleQuickPrompt(
-                        isAdminView
-                          ? "Show platform-wide AI usage stats and most active shops."
-                          : t("suggestedTop")
-                      )
-                    }
-                    className="w-full p-2.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-850 hover:border-zinc-700 transition-all text-xs font-medium text-zinc-300 flex items-center gap-2.5 shadow-xs cursor-pointer group"
-                  >
-                    <div className="p-1 rounded-md bg-zinc-800 text-white group-hover:scale-110 transition-transform">
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="truncate">
-                      {isAdminView
-                        ? "Platform-Wide AI Usage & Telemetry"
-                        : t("suggestedTop")}
-                    </span>
-                  </button>
+                  {promptSuggestions.map((prompt, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleQuickPrompt(prompt.text)}
+                      className="w-full p-2.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-850 hover:border-zinc-700 transition-all text-xs font-medium text-zinc-300 flex items-center gap-2.5 shadow-xs cursor-pointer group"
+                    >
+                      <div className="p-1 rounded-md bg-zinc-800 text-white group-hover:scale-110 transition-transform shrink-0">
+                        {prompt.icon === "trending" && <TrendingUp className="w-3.5 h-3.5" />}
+                        {prompt.icon === "alert" && <AlertTriangle className="w-3.5 h-3.5" />}
+                        {prompt.icon === "bag" && <ShoppingBag className="w-3.5 h-3.5" />}
+                      </div>
+                      <span className="truncate">{prompt.text}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
             ) : (
@@ -498,8 +589,8 @@ export function AIChatWidget() {
                     <div
                       className={`max-w-[82%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed ${
                         isUser
-                          ? "bg-white text-black font-medium rounded-tr-none shadow-xs"
-                          : "bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-tl-none shadow-xs whitespace-pre-wrap"
+                          ? "bg-white text-black font-medium rounded-tr-none shadow-xs text-start"
+                          : "bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-tl-none shadow-xs whitespace-pre-wrap text-start"
                       }`}
                     >
                       {fileParts.map((f: any, fIdx: number) => {
@@ -527,7 +618,7 @@ export function AIChatWidget() {
                             }`}
                           >
                             <FileText className="w-4 h-4 text-zinc-400 shrink-0" />
-                            <span className="truncate">{f.name || docText}</span>
+                            <span className="truncate">{f.name || t.documentAttachment}</span>
                           </div>
                         );
                       })}
@@ -545,21 +636,21 @@ export function AIChatWidget() {
                 </div>
                 <div className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-3 py-2 rounded-2xl rounded-tl-none text-xs flex items-center gap-2 shadow-xs">
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                  <span>{t("thinking")}</span>
+                  <span>{t.thinking}</span>
                 </div>
               </div>
             )}
 
             {sdkError && localFallbackMessages.length === 0 && (
               <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs flex items-center justify-between">
-                <span>{t("error")}</span>
+                <span>{t.error}</span>
                 <button
                   type="button"
                   onClick={() => regenerate()}
                   className="p-1 rounded-md hover:bg-zinc-800 transition-colors text-white font-semibold flex items-center gap-1 cursor-pointer"
                 >
                   <RotateCcw className="w-3 h-3" />
-                  <span>{retryText}</span>
+                  <span>{t.retry}</span>
                 </button>
               </div>
             )}
@@ -612,8 +703,8 @@ export function AIChatWidget() {
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
               className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-900 rounded-xl transition-colors cursor-pointer flex items-center justify-center shrink-0"
-              title="Upload image or PDF document"
-              aria-label="Upload image or PDF"
+              title={t.uploadTooltip}
+              aria-label={t.uploadTooltip}
             >
               <Paperclip className="w-4 h-4" />
             </button>
@@ -621,7 +712,7 @@ export function AIChatWidget() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={t("placeholder")}
+              placeholder={t.inputPlaceholder}
               disabled={isLoading}
               className="flex-1 px-3.5 py-2.5 text-xs bg-zinc-900 border border-zinc-800 rounded-xl focus:outline-none focus:border-white transition-all text-white placeholder-zinc-500"
             />
@@ -643,3 +734,5 @@ export function AIChatWidget() {
     </>
   );
 }
+
+export default AIChatWidget;

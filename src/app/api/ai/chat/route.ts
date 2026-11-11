@@ -341,7 +341,12 @@ async function fetchAIUsageStats() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages = [], sessionId: requestedSessionId } = body;
+    const { messages = [], sessionId: requestedSessionId, locale: requestLocale } = body;
+    const headerLocale = req.headers.get("x-app-locale") || req.cookies.get("NEXT_LOCALE")?.value;
+    const clientLocale = (requestLocale || headerLocale || "ar").toLowerCase();
+    const isEnLocale = clientLocale.startsWith("en");
+    const isFrLocale = clientLocale.startsWith("fr");
+    const targetLanguageName = isEnLocale ? "English" : isFrLocale ? "French" : "Arabic";
 
     // 1. Resolve Authenticated User & Super Admin Status
     let tenantId: string | undefined;
@@ -438,9 +443,15 @@ export async function POST(req: NextRequest) {
 
       const MAX_DAILY_AI_MESSAGES = 30;
       if (currentUsage >= MAX_DAILY_AI_MESSAGES) {
+        const quotaErrorMsg = isEnLocale
+          ? `Daily AI messages limit reached (${MAX_DAILY_AI_MESSAGES}/30 messages). Please try again tomorrow or activate your own API key (BYOK).`
+          : isFrLocale
+          ? `Limite quotidienne de messages IA atteinte (${MAX_DAILY_AI_MESSAGES}/30 messages). Veuillez réessayer demain ou activer votre propre clé API (BYOK).`
+          : `تم استهلاك الحد اليومي لرسائل المساعد الذكي (${MAX_DAILY_AI_MESSAGES}/30 رسالة). لحماية التدفق المالي، يرجى المحاولة غداً أو تفعيل مفتاحك الخاص (BYOK).`;
+
         return new Response(
           JSON.stringify({
-            error: `تم استهلاك الحد اليومي لرسائل المساعد الذكي (${MAX_DAILY_AI_MESSAGES}/30 رسالة). لحماية التدفق المالي، يرجى المحاولة غداً أو تفعيل مفتاحك الخاص (BYOK).`,
+            error: quotaErrorMsg,
             code: "AI_QUOTA_EXCEEDED",
             limit: MAX_DAILY_AI_MESSAGES,
             used: currentUsage,
@@ -539,8 +550,11 @@ export async function POST(req: NextRequest) {
         );
 
       if (isGeneralQuery) {
-        const rejectionMsg =
-          "I am KASPI AI. I can only assist you with your store's sales, inventory, and statistics.";
+        const rejectionMsg = isEnLocale
+          ? "I am KASPI AI. I can only assist you with your store's sales, inventory, and statistics."
+          : isFrLocale
+          ? "Je suis KASPI IA. Je peux uniquement vous aider avec les ventes, les stocks et les statistiques de votre boutique."
+          : "أنا مساعد كسب الذكي KASPI AI. يمكنني فقط مساعدتك في مبيعات متجرك، ومخزونك، وإحصائيات نشاطك التجاري.";
         await prisma.aIChatMessage.create({
           data: {
             sessionId: chatSession.id,
@@ -670,6 +684,8 @@ export async function POST(req: NextRequest) {
     const activeTools = isSuperAdmin ? superAdminTools : tenantTools;
 
     // 6. System Instructions (Super Admin Chief Data Officer vs Standard Merchant)
+    const languageDirective = `\nMANDATORY RESPONSE LANGUAGE: You MUST generate your response in ${targetLanguageName} because the merchant's application is currently configured in ${targetLanguageName}. Do not default to Arabic when the client is in English or French.`;
+
     const superAdminSystemPrompt = `You are the Chief Data Officer for KASPI POS. You have full access to the platform's database. Answer the owner's questions with precise data, business insights, and strategic advice. You can see all shops, all revenue, and all AI usage. If the user asks for revenue, use the getPlatformRevenue tool.
 
 Available Super Admin Tools:
@@ -680,7 +696,7 @@ Available Super Admin Tools:
 - getAIUsageStats: Platform-wide AI message and session consumption.
 - Plus store-level tools (getTodaySales, getLowStockProducts, getTopSellingProducts).
 
-Always respond in the language used by the owner (Arabic, Moroccan Darija, French, or English) with executive precision.`;
+${languageDirective}`;
 
     const merchantSystemPrompt = `You are KASPI AI (كسب AI), a specialized POS assistant and retail data advisor for KASPI POS in Morocco.
 You are strictly forbidden from answering questions unrelated to the user's shop, sales, inventory, or the KASPI POS platform. If the user attempts to ask general knowledge, coding, or casual chat questions, you MUST refuse politely and say: 'I am KASPI AI. I can only assist you with your store's sales, inventory, and statistics.'
@@ -695,8 +711,8 @@ STRICT OPERATIONAL RULES:
 1. STRICT DATA HONESTY: Rely ONLY on Function Calling (Tools) to fetch real statistics directly from the database. NEVER guess, invent, simulate, or generate fake numbers. If a tool returns no data or zero, state that accurately.
 2. If asked about sales, revenue, stock, products, or store performance, ALWAYS call the appropriate tool first.
 3. Prices and revenue MUST always be stated in Moroccan Dirhams (MAD / درهم).
-4. Seamlessly reply in the user's language: Moroccan Darija / Arabic, French, or English.
-5. Keep answers professional, concise, and focused strictly on store operations.`;
+4. Keep answers professional, concise, and focused strictly on store operations.
+${languageDirective}`;
 
     const commonConfig = {
       system: isSuperAdmin ? superAdminSystemPrompt : merchantSystemPrompt,

@@ -576,20 +576,13 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
           })}
         </div>
 
-        {/* Brand Identity Header: Frameless Standalone KASPI POS Logo */}
+        {/* Brand Identity Header */}
         <div className="text-center mb-4">
-          <div className="relative mx-auto mb-2.5 flex items-center justify-center p-0 bg-transparent border-0 shadow-none">
-            <img
-              src="/logo-mark.png"
-              alt="KASPI POS"
-              className="w-16 h-16 object-contain drop-shadow-[0_4px_20px_rgba(255,255,255,0.18)] select-none bg-transparent border-0"
-              onError={(e) => {
-                if (!e.currentTarget.src.endsWith("/logo.png")) {
-                  e.currentTarget.src = "/logo.png";
-                }
-              }}
-            />
-          </div>
+          <img
+            src="/logo.png"
+            alt="KASPI POS"
+            className="w-14 h-14 rounded-2xl object-cover shadow-lg mx-auto mb-2.5 select-none"
+          />
           <div
             dir="ltr"
             className="text-[11px] tracking-[0.18em] uppercase text-zinc-300 font-semibold"

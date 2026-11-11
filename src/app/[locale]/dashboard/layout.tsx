@@ -115,14 +115,12 @@ export default function DashboardLayout({
             href={localizeHref("/dashboard")}
             className="flex items-center gap-2.5 min-w-0 group"
           >
-            {/* Frameless KASPI POS Logo Mark */}
-            <div className="w-8 h-8 shrink-0 flex items-center justify-center p-0 bg-transparent border-0 shadow-none">
-              <img
-                src="/logo-mark.png"
-                alt="KASPI POS"
-                className="w-8 h-8 object-contain drop-shadow-[0_2px_8px_rgba(255,255,255,0.18)] transition-transform group-hover:scale-105"
-              />
-            </div>
+            {/* KASPI POS Logo */}
+            <img
+              src="/logo.png"
+              alt="KASPI POS"
+              className="w-8 h-8 rounded-xl object-cover shrink-0 transition-transform group-hover:scale-105"
+            />
             <span className="font-extrabold text-sm tracking-tight text-white shrink-0">
               KASPI POS
             </span>

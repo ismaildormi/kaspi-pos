@@ -137,14 +137,17 @@
 
 ---
 
-## 9. مساعد الذكاء الاصطناعي الذكي المثبت (`AIChatWidget.tsx`)
+## 9. مساعد الذكاء الاصطناعي الذكي المتكامل (`AIChatWidget.tsx` & `/api/ai/chat`)
 
 | معرّف العنصر (Element ID) | نوع العنصر | الملف والأسطر | التسمية والرمز (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والحاوية (Surfaces & Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `ai_chat_docked_trigger` | Button (Docked) | `PosHeader.tsx` & `Sidebar.tsx` | زر المساعد الذكي المدمج في الهيدر والشريط الجانبي | أيقونة `Sparkles w-4 h-4 text-white` | `h-8 px-2.5 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] active:scale-95 keycap-3d flex items-center gap-1.5 cursor-pointer` | يبث حدث `open-ai-chat` لفتح المساعد دون أي زر عائم يحجب السلة أو الدفع |
-| `ai_chat_modal_panel` | Container | `AIChatWidget.tsx` [350–385] | نافذة الدردشة وتحليل بيانات المتجر الذكية | `font-sans text-xs` | `fixed bottom-6 right-6 z-50 w-[92vw] sm:w-[420px] h-[600px] max-h-[85vh] rounded-2xl bg-zinc-950 border border-zinc-800 surface-obsidian-3d shadow-2xl flex flex-col overflow-hidden` | إطار الشات الذكي مع نموذج تحليل المبيعات والقرارات والـ OCR |
-| `ai_chat_input_message` | Input (Text) | `AIChatWidget.tsx` [610–620] | اسأل المستشار الذكي عن مبيعاتك وأرباحك... | `font-sans text-xs text-white` | `flex-1 px-3.5 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl focus:border-white focus:outline-none` | يربط بـ `input` ويرسل للنموذج |
-| `ai_chat_btn_send` | Button | `AIChatWidget.tsx` [621–632] | إرسال • Envoyer • Send | أيقونة `Send w-4 h-4 text-black` | `p-2.5 rounded-xl bg-white text-black hover:bg-zinc-200 active:scale-95 keycap-3d flex items-center justify-center cursor-pointer` | يرسل عبر `/api/ai/chat` مع السقوط التلقائي على محرك التحليل المحلي |
+| `ai_chat_modal_panel` | Container | `AIChatWidget.tsx` [350–395] | نافذة الدردشة وتحليل بيانات المتجر الذكية (هندسة LTR دائمة) | `font-sans text-xs` | `fixed bottom-6 right-6 z-50 w-[92vw] sm:w-[420px] h-[600px] max-h-[85vh] rounded-2xl bg-zinc-950 border border-zinc-800 surface-obsidian-3d shadow-2xl flex flex-col overflow-hidden` | إطار الشات الذكي مع نموذج تحليل المبيعات والقرارات والـ OCR مع استماع ديناميكي لمسار اللغة `usePathname()` |
+| `ai_chat_header_title` | Heading | `AIChatWidget.tsx` [360–375] | مساعد كسب الذكي • Assistant KASPI IA • KASPI AI Assistant | `font-bold text-sm tracking-wide text-white` | ترويسة مونوكرومية مع شارة النشاط اللحظي وزر الإغلاق X | يتغير نص الترويسة آلياً ومزامنة 100% مع لغة التطبيق النشطة (AR / FR / EN) |
+| `ai_chat_active_badge` | Badge | `AIChatWidget.tsx` [376–380] | مساعد فوري نشط • IA Active en Direct • Live AI Active | `text-[10px] font-semibold bg-white text-black px-1.5 py-0.5 rounded` | شارة ناصعة التباين مع وميض أيقونة Zap | تدل على جاهزية نموذج الذكاء الاصطناعي والمحرك المحلي |
+| `ai_chat_prompt_chips` | Chip Group | `AIChatWidget.tsx` [410–445] | الاقتراحات السريعة (المبيعات، المخزون، المنتجات الأكثر طلباً) | `font-medium text-xs text-zinc-300` | `p-2.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-850 flex items-center gap-2.5` | نصوص موطنة بالكامل في اللغات الثلاث لإرسال الاستفسار بنقرة واحدة |
+| `ai_chat_input_message` | Input (Text) | `AIChatWidget.tsx` [610–630] | اسأل المستشار الذكي عن مبيعاتك وأرباحك... | `font-sans text-xs text-white` | `flex-1 px-3.5 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl focus:border-white focus:outline-none` | يربط بـ `input` ويرسل للملقم عبر `DefaultChatTransport` مع تضمين معيار `locale` بالطلب |
+| `ai_chat_btn_send` | Button | `AIChatWidget.tsx` [631–640] | إرسال • Envoyer • Send | أيقونة `Send w-4 h-4 text-black` | `p-2.5 rounded-xl bg-white text-black hover:bg-zinc-200 active:scale-95 keycap-3d flex items-center justify-center cursor-pointer` | يرسل عبر `/api/ai/chat` مع السقوط التلقائي على محرك التحليل المحلي الموطن ثلاثياً |
 
 ---
 

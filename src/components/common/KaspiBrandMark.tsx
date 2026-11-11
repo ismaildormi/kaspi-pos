@@ -1,29 +1,33 @@
 import React from "react";
 
-interface KaspiBrandMarkProps {
+export interface KaspiBrandMarkProps {
   className?: string;
-  size?: number | string;
+  size?: "sm" | "md" | "lg" | "auth";
   alt?: string;
 }
 
 /**
- * Pure 3D Metallic KASPI Infinity Brand Mark
- * Guaranteed 100% frameless: No borders, no square cards, no background padding.
+ * Official KASPI POS Brand Logo
+ * Displays the original uncropped logo.png with zero outer wrapper/border box.
+ * Image itself carries rounded-xl or rounded-2xl and object-cover.
  */
 export const KaspiBrandMark: React.FC<KaspiBrandMarkProps> = ({
-  className = "w-8 h-8",
+  className = "",
+  size = "sm",
   alt = "KASPI POS",
 }) => {
+  let defaultSizeClass = "w-8 h-8 rounded-xl object-cover";
+  if (size === "auth" || size === "lg") {
+    defaultSizeClass = "w-14 h-14 rounded-2xl object-cover shadow-lg";
+  } else if (size === "md") {
+    defaultSizeClass = "w-10 h-10 rounded-xl object-cover shadow-md";
+  }
+
   return (
     <img
-      src="/logo-mark.png"
+      src="/logo.png"
       alt={alt}
-      className={`object-contain drop-shadow-[0_2px_12px_rgba(255,255,255,0.18)] select-none bg-transparent border-0 shadow-none p-0 ${className}`}
-      onError={(e) => {
-        if (!e.currentTarget.src.endsWith("/logo.png")) {
-          e.currentTarget.src = "/logo.png";
-        }
-      }}
+      className={`${defaultSizeClass} ${className} shrink-0 select-none`}
     />
   );
 };

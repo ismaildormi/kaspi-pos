@@ -101,9 +101,7 @@ function LaunchDesktopContent() {
 
         {/* Brand Header */}
         <div dir="ltr" className="flex items-center justify-center gap-3 mb-6">
-          <div className="w-10 h-10 shrink-0 flex items-center justify-center p-0 bg-transparent border-0 shadow-none">
-            <img src="/logo-mark.png" alt="KASPI POS" className="w-10 h-10 object-contain drop-shadow-[0_2px_8px_rgba(255,255,255,0.18)]" />
-          </div>
+          <img src="/logo.png" alt="KASPI POS" className="w-10 h-10 rounded-xl object-cover shadow-md shrink-0" />
           <div className="flex items-center gap-2">
             <span className="text-[28px] font-black tracking-[-0.03em] text-zinc-950 dark:text-white leading-none">
               KASPI
