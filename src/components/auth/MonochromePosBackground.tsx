@@ -580,11 +580,13 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
         <div className="text-center mb-4">
           <div className="relative mx-auto mb-2.5 flex items-center justify-center p-0 bg-transparent border-0 shadow-none">
             <img
-              src="/logo.png"
+              src="/logo-mark.png"
               alt="KASPI POS"
-              className="w-16 h-16 object-contain drop-shadow-[0_4px_20px_rgba(255,255,255,0.15)] select-none"
+              className="w-16 h-16 object-contain drop-shadow-[0_4px_20px_rgba(255,255,255,0.18)] select-none bg-transparent border-0"
               onError={(e) => {
-                e.currentTarget.style.display = "none";
+                if (!e.currentTarget.src.endsWith("/logo.png")) {
+                  e.currentTarget.src = "/logo.png";
+                }
               }}
             />
           </div>

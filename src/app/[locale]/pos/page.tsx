@@ -15,6 +15,7 @@ import { StoreOnboardingModal } from "@/components/pos/StoreOnboardingModal";
 import { IndustryWorkspaceModal } from "@/components/pos/IndustryWorkspaceModal";
 import { OwnerProfileModal } from "@/components/layout/OwnerProfileModal";
 import { QuickProductModal } from "@/components/pos/QuickProductModal";
+import { InAppPaywallModal, triggerPaywallModal } from "@/components/billing/InAppPaywallModal";
 import { Plus } from "lucide-react";
 import type { ShiftFinancialSummary } from "@/server/cash-shift/engine";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
@@ -172,6 +173,23 @@ export default function PosPage() {
             receiptFooter: sData.receiptFooter || "",
           });
         }
+
+        // Check active subscription status & trigger paywall if expired
+        fetch(getApiUrl("/api/billing/subscription"))
+          .then((res) => (res.ok ? res.json() : null))
+          .then((subData) => {
+            if (subData?.subscription) {
+              const sub = subData.subscription;
+              if (
+                sub.status === "expired" ||
+                sub.status === "past_due" ||
+                (sub.status === "trialing" && sub.daysRemaining <= 0)
+              ) {
+                triggerPaywallModal("expired");
+              }
+            }
+          })
+          .catch(() => {});
 
         if (prodRes.ok) {
           const prodData = await prodRes.json();
@@ -420,6 +438,9 @@ export default function PosPage() {
           addToCart(newProduct);
         }}
       />
+
+      {/* Enterprise In-App Paywall & Device Handover Modal */}
+      <InAppPaywallModal />
     </div>
   );
 }

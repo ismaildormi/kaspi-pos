@@ -80,9 +80,9 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-8 h-8 shrink-0 flex items-center justify-center p-0 bg-transparent border-0 shadow-none">
             <img
-              src="/logo.png"
+              src="/logo-mark.png"
               alt="KASPI POS"
-              className="w-8 h-8 object-contain drop-shadow-[0_2px_8px_rgba(255,255,255,0.15)] transition-transform hover:scale-105"
+              className="w-8 h-8 object-contain drop-shadow-[0_2px_8px_rgba(255,255,255,0.18)] transition-transform hover:scale-105"
             />
           </div>
           <span className="font-extrabold text-xs tracking-tight text-white hidden md:inline shrink-0">

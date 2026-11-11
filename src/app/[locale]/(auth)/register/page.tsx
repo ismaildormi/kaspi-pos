@@ -8,6 +8,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { getApiUrl } from "@/client/sync-engine";
 import { AuthGlassShell, AuthLocale } from "@/components/auth/MonochromePosBackground";
 import { playTapSound, playSuccessSound, playErrorSound } from "@/lib/audio";
+import { getLocalizedAuthError } from "@/lib/auth-errors";
 
 type StoreVertical = "grocery" | "restaurant" | "fashion" | "electronics";
 
@@ -145,10 +146,11 @@ export default function RegisterPage() {
 
       if (!res.ok) {
         playErrorSound();
-        const errorMsg =
+        const rawErr =
           typeof data?.error === "string"
             ? data.error
-            : data?.error?.message || data?.message || t.errFailed;
+            : data?.error?.message || data?.message || data?.code || t.errFailed;
+        const errorMsg = getLocalizedAuthError(rawErr, locale);
         setError(errorMsg);
         setLoading(false);
         return;

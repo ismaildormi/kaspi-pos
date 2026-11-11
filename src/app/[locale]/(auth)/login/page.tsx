@@ -9,6 +9,7 @@ import { getApiUrl } from "@/client/sync-engine";
 import { OtpVerification } from "@/components/auth/OtpVerification";
 import { AuthGlassShell, AuthLocale } from "@/components/auth/MonochromePosBackground";
 import { playTapSound, playSuccessSound, playErrorSound } from "@/lib/audio";
+import { getLocalizedAuthError } from "@/lib/auth-errors";
 
 type AuthMode = "password" | "gmail_otp" | "forgot_password";
 
@@ -236,17 +237,19 @@ function LoginForm() {
       const apiRes = await fetch(getApiUrl("/api/v1/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, locale }),
       });
 
       const apiData = await apiRes.json().catch(() => null);
 
       if (!apiRes.ok) {
         playErrorSound();
-        const errMsg =
+        const rawErr =
           apiData?.error?.message ||
           (typeof apiData?.error === "string" ? apiData.error : null) ||
-          t.errInvalidCredentials;
+          apiData?.code ||
+          apiData?.message;
+        const errMsg = getLocalizedAuthError(rawErr, locale);
         setError(errMsg);
         setLoading(false);
         return;
@@ -260,7 +263,7 @@ function LoginForm() {
 
       if (res?.error) {
         playErrorSound();
-        setError(t.errInvalidCredentials);
+        setError(getLocalizedAuthError(res.error, locale));
         setLoading(false);
         return;
       }
@@ -307,13 +310,14 @@ function LoginForm() {
       const res = await fetch(getApiUrl("/api/v1/auth/email-otp/send"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, purpose: "login" }),
+        body: JSON.stringify({ email, purpose: "login", locale }),
       });
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         playErrorSound();
-        setError(data?.error?.message || data?.error || t.errNetwork);
+        const rawErr = data?.error?.message || data?.error || data?.code || t.errNetwork;
+        setError(getLocalizedAuthError(rawErr, locale));
         setLoading(false);
         return;
       }
@@ -344,13 +348,15 @@ function LoginForm() {
           email: targetEmail,
           code: codeToVerify,
           purpose: "login",
+          locale,
         }),
       });
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         playErrorSound();
-        setError(data?.error?.message || data?.error || t.errInvalidOtp);
+        const rawErr = data?.error?.message || data?.error || data?.code || t.errInvalidOtp;
+        setError(getLocalizedAuthError(rawErr, locale));
         setLoading(false);
         return;
       }
@@ -399,13 +405,14 @@ function LoginForm() {
       const res = await fetch(getApiUrl("/api/v1/auth/email-otp/send"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, purpose: "reset" }),
+        body: JSON.stringify({ email, purpose: "reset", locale }),
       });
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         playErrorSound();
-        setError(data?.error?.message || data?.error || t.errNetwork);
+        const rawErr = data?.error?.message || data?.error || data?.code || t.errNetwork;
+        setError(getLocalizedAuthError(rawErr, locale));
         setLoading(false);
         return;
       }
@@ -453,13 +460,15 @@ function LoginForm() {
           email,
           code: resetCode.trim(),
           newPassword,
+          locale,
         }),
       });
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         playErrorSound();
-        setError(data?.error?.message || data?.error || t.errNetwork);
+        const rawErr = data?.error?.message || data?.error || data?.code || t.errNetwork;
+        setError(getLocalizedAuthError(rawErr, locale));
         setLoading(false);
         return;
       }

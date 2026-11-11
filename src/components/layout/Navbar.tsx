@@ -11,9 +11,9 @@ export function Navbar() {
         {/* Brand with Transparent Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
           <img
-            src="/logo.png"
+            src="/logo-mark.png"
             alt="KASPI POS"
-            className="w-8 h-8 object-contain bg-transparent transition-transform group-hover:scale-105"
+            className="w-8 h-8 object-contain bg-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.18)] transition-transform group-hover:scale-105"
           />
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-base tracking-tight text-white">

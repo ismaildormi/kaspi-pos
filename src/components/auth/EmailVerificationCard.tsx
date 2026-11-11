@@ -216,10 +216,14 @@ export const EmailVerificationCard: React.FC<EmailVerificationCardProps> = ({
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src="/logo.png"
+              src="/logo-mark.png"
               alt="KASPI POS"
-              className="w-16 h-16 object-contain drop-shadow-[0_4px_20px_rgba(255,255,255,0.15)]"
-              onError={() => setLogoFailed(true)}
+              className="w-16 h-16 object-contain drop-shadow-[0_4px_20px_rgba(255,255,255,0.18)] bg-transparent border-0"
+              onError={() => {
+                if (!logoFailed) {
+                  setLogoFailed(true);
+                }
+              }}
             />
           )}
         </div>

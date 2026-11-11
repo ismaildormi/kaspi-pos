@@ -151,7 +151,7 @@
 
 | معرّف العنصر (Element ID) | نوع العنصر | التسمية والوظيفة (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `grocery_express_shelf_btns` | Button Grid | سلع يومية سريعة (خبز 1.20، حليب 3.50، ماء 6.00، بيض 1.50، كيس 0.10) | `font-bold text-xs` + `font-mono text-zinc-300` | `keycap-3d p-3 rounded-2xl bg-zinc-950 border border-zinc-800 text-center` | إضافة بنقرة واحدة للسلة دون الحاجة للباركود |
+| `grocery_quick_product_shortcut` | Action Button | إضافة منتج سريع للكتالوج • Quick Add | `font-bold text-xs text-white` | `keycap-3d py-2.5 px-3.5 rounded-xl bg-zinc-900 border border-zinc-800` | يفتح نافذة QuickProductModal لتعريف المنتجات وإضافتها للسلة |
 | `grocery_consigne_gaz_btns` | Button Pair | رهن قنينة الغاز (+100 MAD) وإرجاع الرهن (-100 MAD) | `font-bold text-xs` | `keycap-3d py-2 rounded-lg bg-zinc-900 border border-zinc-700` | يضيف أو يخصم قيمة رهن البوطا من المجموع |
 | `grocery_consigne_caisse_btns` | Button Pair | رهن صندوق المشروبات (+15 MAD) وإرجاعه (-15 MAD) | `font-bold text-xs` | `keycap-3d py-2 rounded-lg bg-zinc-900 border border-zinc-700` | يضيف أو يخصم قيمة رهن الصندوق والصناديق |
 | `grocery_label_studio_print` | Button (Action) | طباعة ملصق الباركود الحراري 40x30mm | `font-black text-xs text-zinc-950` | `keycap-3d py-2.5 rounded-xl bg-white text-zinc-950 shadow-xs` | يفتح نافذة الطباعة المباشرة لملصقات الرفوف والميزان |
@@ -180,16 +180,14 @@
 
 ---
 
-## 9. منصة الأجهزة القطاعية المباشرة المدمجة (`PosSectorLiveDock.tsx`)
+## 9. نافذة إضافة المنتجات السريعة الحية (`QuickProductModal.tsx`)
 
-| معرّف العنصر (Element ID) | نوع العنصر | القطاع والملف | التسمية والرمز (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `live_dock_view_menu` | View Switcher | `restaurant` • `PosSectorLiveDock.tsx` | القائمة / Menu | `font-bold text-xs` | `keycap-3d py-1.5 px-3 rounded-lg` | يبدل الواجهة المركزية لشاشة المنتجات مع شريط ملاحظات الطهي السريعة |
-| `live_dock_view_tables` | View Switcher | `restaurant` • `PosSectorLiveDock.tsx` | خريطة الطاولات 3D • Plan de Salle | `font-bold text-xs` | `keycap-3d py-1.5 px-3 rounded-lg` | يعرض شبكة الطاولات الحية T-01..T-12 مع عدادات الجلوس ومبالغ الحسابات |
-| `live_dock_view_kds` | View Switcher | `restaurant` • `PosSectorLiveDock.tsx` | شاشة المطبخ (KDS) • Écran Cuisine | `font-bold text-xs` | `keycap-3d py-1.5 px-3 rounded-lg` | يعرض تذاكر المطبخ النشطة وزر الإرسال المباشر وتجزيء الحساب |
-| `live_dock_butchery_lcd` | LCD Screen | `butchery` • `PosSectorLiveDock.tsx` | شاشة الميزان المدمجة (الوزن × السعر = الإجمالي) | `font-mono font-black text-xl text-white tabular-nums` | `p-2.5 px-4 rounded-xl bg-zinc-950 border border-zinc-800` | حساب فوري ومباشر لوزن اللحوم مع التقطيع والـ Tare في شاشة الـ POS مباشرة |
-| `live_dock_bakery_box_btns` | Button Grid | `bakery` • `PosSectorLiveDock.tsx` | علب حلويات سريعة (250g, 500g, 1kg, Plateau) | `font-bold text-xs` + `font-mono text-zinc-400` | `keycap-3d p-2 rounded-xl bg-zinc-900 border border-zinc-800` | إضافة بلاطو مشكل بنقرة واحدة مباشرة من الشاشة الرئيسية |
-| `live_dock_fashion_size_pills` | Pill Group | `fashion` • `PosSectorLiveDock.tsx` | مقاسات الملابس والأحذية (XS-XXL / 38-44) | `font-mono font-bold text-[10px]` | `keycap-3d px-2 py-1 rounded-md bg-zinc-900 border` | ربط مقاس القطعة فورياً بالسلعة النشطة بالسلة دون فتح نوافذ إضافية |
-| `live_dock_tech_imei_input` | Recessed Input | `tech` • `PosSectorLiveDock.tsx` | إدخال ومسح 15-digit IMEI | `font-mono text-xs text-white` | `h-8 px-3 rounded-xl bg-zinc-950 border border-zinc-800` | كتابة أو مسح الرقم التسلسلي وربطه فورياً بالهاتف المباع |
-| `live_dock_wholesale_colisage` | Multipliers | `wholesale` • `PosSectorLiveDock.tsx` | معاملات الطرود (x1, x6, x12, x24, x50) | `font-mono font-bold text-[10px]` | `keycap-3d flex-1 py-1 rounded-lg bg-zinc-900 border` | تحويل الكمية وحساب سعر الجملة ووضع وصل التسليم BL بنقرة واحدة |
-| `live_dock_grocery_staples` | Express Shelf | `grocery` • `PosSectorLiveDock.tsx` | سلع بدون باركود (خبز، حليب، ماء، بيض، كيس، سكر) | `font-bold text-[11px]` + `font-mono text-[10px]` | `keycap-3d py-1.5 px-2 rounded-xl bg-zinc-900 border` | أزرار إدخال فوري للسلع اليومية دون مسح الباركود |
+| معرّف العنصر (Element ID) | نوع العنصر | التسمية والرمز (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `quick_prod_modal_title` | Header | إضافة منتج سريع • Ajout Rapide d'Article | `font-black text-xl text-white tracking-tight` | ترويسة مونوكرومية مع زر إغلاق X | يفتح في 0ms فوق شاشة البيع عند النقر على `+ منتج جديد` |
+| `quick_prod_input_name` | Input (Text) | اسم السلعة / Désignation de l'article | `font-bold text-sm text-white` | `w-full h-11 px-3.5 rounded-xl bg-zinc-900 border border-zinc-800 focus:border-white/40` | يحدد اسم السلعة المباشر ويربطه تلقائياً بالسلة والكتالوج |
+| `quick_prod_input_price` | Input (Money) | سعر البيع (MAD) • Prix de Vente | `font-mono font-black text-base text-white tabular-nums` | `w-full h-11 px-3.5 rounded-xl bg-zinc-900 border border-zinc-800` | يحدد سعر البيع الفوري للزبون |
+| `quick_prod_input_barcode` | Input (Code) | الباركود الدولي أو المولد آلياً • Code-barres | `font-mono text-xs text-white uppercase` | `w-full h-11 px-3.5 rounded-xl bg-zinc-900 border border-zinc-800` | يدعم قراءة الماسح الضوئي أو إنشاء باركود عشوائي فريد |
+| `quick_prod_select_category` | Dropdown | التصنيف / Catégorie | `font-bold text-xs text-zinc-300` | `w-full h-11 px-3 rounded-xl bg-zinc-900 border border-zinc-800` | يربط المنتج الجديد بقسم محدد في شاشة البيع |
+| `quick_prod_btn_submit` | Action Button | حفظ وإضافة للسلة فوراً • Enregistrer & Ajouter | `font-black text-xs text-zinc-950` | `sheen-btn w-full h-12 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 active:scale-[0.98] shadow-md cursor-pointer flex items-center justify-center gap-2` | يستدعي `POST /api/v1/products` ويحدث IndexedDB ويضيف المنتج لسلة التسوق في 0ms |
+

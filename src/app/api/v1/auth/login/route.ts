@@ -7,25 +7,29 @@ import { jsonError, jsonOk } from "@/server/http/response";
 import { syncUserToSupabaseDirectory } from "@/lib/supabase";
 import { sendLoginAlertEmail } from "@/lib/email/mailer";
 
+import { getLocalizedAuthError, AuthLocale } from "@/lib/auth-errors";
+
 const LoginSchema = z.object({
   email: z.string().email().transform((v) => v.toLowerCase().trim()),
   password: z.string().optional(),
   otpCode: z.string().optional(),
+  locale: z.enum(["ar", "fr", "en"]).optional(),
 });
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const parsed = LoginSchema.safeParse(body);
+    const locale: AuthLocale = (body?.locale as AuthLocale) || "ar";
 
     if (!parsed.success) {
-      return jsonError("VALIDATION_ERROR", "Invalid login credentials", 400);
+      return jsonError("VALIDATION_ERROR", getLocalizedAuthError("VALIDATION_ERROR", locale), 400);
     }
 
     const { email, password, otpCode } = parsed.data;
 
     if (!password && !otpCode) {
-      return jsonError("VALIDATION_ERROR", "يرجى إدخال كلمة المرور أو رمز التحقق", 400);
+      return jsonError("VALIDATION_ERROR", getLocalizedAuthError("VALIDATION_ERROR", locale), 400);
     }
 
     const user = await prisma.user.findUnique({
@@ -41,11 +45,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      return jsonError("INVALID_CREDENTIALS", "البريد الإلكتروني أو كلمة المرور غير صحيحة", 401);
+      return jsonError("INVALID_CREDENTIALS", getLocalizedAuthError("INVALID_CREDENTIALS", locale), 401);
     }
 
     if (!user.isActive) {
-      return jsonError("USER_DISABLED", "الحساب معطل حالياً", 403);
+      return jsonError("USER_DISABLED", getLocalizedAuthError("USER_DISABLED", locale), 403);
     }
 
     if (otpCode) {
@@ -58,7 +62,7 @@ export async function POST(req: NextRequest) {
       });
 
       if (!tokenRecord || new Date() > tokenRecord.expires) {
-        return jsonError("INVALID_CREDENTIALS", "رمز التحقق غير صحيح أو انتهت صلاحيته", 401);
+        return jsonError("INVALID_CREDENTIALS", getLocalizedAuthError("INVALID_CREDENTIALS", locale), 401);
       }
 
       await prisma.verificationToken.deleteMany({
@@ -78,13 +82,13 @@ export async function POST(req: NextRequest) {
       } else {
         const isValid = await verifyPassword(user.passwordHash, password);
         if (!isValid) {
-          return jsonError("INVALID_CREDENTIALS", "البريد الإلكتروني أو كلمة المرور غير صحيحة", 401);
+          return jsonError("INVALID_CREDENTIALS", getLocalizedAuthError("INVALID_CREDENTIALS", locale), 401);
         }
       }
     }
 
     if (user.memberships.length === 0) {
-      return jsonError("NO_MEMBERSHIP", "User has no active tenant memberships", 403);
+      return jsonError("NO_MEMBERSHIP", getLocalizedAuthError("NO_MEMBERSHIP", locale), 403);
     }
 
     const activeTenantId =
@@ -120,12 +124,30 @@ export async function POST(req: NextRequest) {
       (s) => s.ip === ip && s.userAgent === userAgent
     );
 
+    let deviceLimitHandover = false;
+    // Smart Session Rotation / Handover (Shopify POS / Square pattern):
+    // NEVER block valid user logins on device limits! If active sessions reach or exceed maxDevices,
+    // automatically rotate/revoke the oldest session so this login proceeds smoothly.
     if (!isExistingDeviceSession && activeSessions.length >= maxDevices) {
-      return jsonError(
-        "DEVICE_LIMIT_EXCEEDED",
-        `Limite d'appareils atteinte (${maxDevices} poste${maxDevices > 1 ? "s" : ""} max). Votre abonnement actuel ne permet pas de connecter un poste supplémentaire. Veuillez ajouter un nouveau poste de caisse (+150 DH/mois) depuis l'onglet Facturation.`,
-        403
-      );
+      const excessCount = activeSessions.length - maxDevices + 1;
+      const oldestSessions = await prisma.session.findMany({
+        where: {
+          activeTenantId,
+          revokedAt: null,
+          expires: { gt: new Date() },
+        },
+        orderBy: { createdAt: "asc" },
+        take: excessCount,
+        select: { id: true },
+      });
+
+      if (oldestSessions.length > 0) {
+        await prisma.session.updateMany({
+          where: { id: { in: oldestSessions.map((s) => s.id) } },
+          data: { revokedAt: new Date() },
+        });
+        deviceLimitHandover = true;
+      }
     }
 
     // Update last login
@@ -170,6 +192,7 @@ export async function POST(req: NextRequest) {
         isSuperAdmin: user.isSuperAdmin,
       },
       activeTenantId,
+      deviceLimitHandover,
       memberships: user.memberships.map((m) => ({
         tenantId: m.tenantId,
         shopName: m.tenant.displayName,

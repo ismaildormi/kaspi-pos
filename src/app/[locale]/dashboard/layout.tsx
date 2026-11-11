@@ -18,6 +18,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { OwnerProfileModal } from "@/components/layout/OwnerProfileModal";
 import { StoreOnboardingModal } from "@/components/pos/StoreOnboardingModal";
+import { InAppPaywallModal } from "@/components/billing/InAppPaywallModal";
 import { usePosStore, type StoreBusinessType } from "@/client/store/usePosStore";
 import { getApiUrl } from "@/client/sync-engine";
 import { useAppDictionary } from "@/i18n/schema";
@@ -117,9 +118,9 @@ export default function DashboardLayout({
             {/* Frameless KASPI POS Logo Mark */}
             <div className="w-8 h-8 shrink-0 flex items-center justify-center p-0 bg-transparent border-0 shadow-none">
               <img
-                src="/logo.png"
+                src="/logo-mark.png"
                 alt="KASPI POS"
-                className="w-8 h-8 object-contain drop-shadow-[0_2px_8px_rgba(255,255,255,0.15)] transition-transform group-hover:scale-105"
+                className="w-8 h-8 object-contain drop-shadow-[0_2px_8px_rgba(255,255,255,0.18)] transition-transform group-hover:scale-105"
               />
             </div>
             <span className="font-extrabold text-sm tracking-tight text-white shrink-0">
@@ -213,6 +214,9 @@ export default function DashboardLayout({
           setStoreProfile(newType, true);
         }}
       />
+
+      {/* Enterprise In-App Paywall & Device Handover Modal */}
+      <InAppPaywallModal />
     </div>
   );
 }
