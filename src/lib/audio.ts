@@ -160,3 +160,42 @@ export function playErrorSound(): void {
     osc.stop(now + 0.23);
   } catch {}
 }
+
+/**
+ * Signature KASPI POS Harmonic System Entry Chime
+ * Two-note ascending crystal chord (C5 -> G5) triggered in 0ms upon successful login.
+ */
+export function playSystemEntryChime(): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  try {
+    const now = ctx.currentTime;
+
+    // Tone 1: C5 (523.25 Hz)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(523.25, now);
+    gain1.gain.setValueAtTime(0.001, now);
+    gain1.gain.linearRampToValueAtTime(0.12, now + 0.015);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.23);
+
+    // Tone 2: G5 (783.99 Hz) Crystal Harmonic
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(783.99, now + 0.055);
+    gain2.gain.setValueAtTime(0.001, now + 0.055);
+    gain2.gain.linearRampToValueAtTime(0.14, now + 0.075);
+    gain2.gain.exponentialRampToValueAtTime(0.0005, now + 0.38);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.055);
+    osc2.stop(now + 0.4);
+  } catch {}
+}

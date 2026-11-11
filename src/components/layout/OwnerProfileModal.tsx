@@ -79,6 +79,14 @@ export function OwnerProfileModal({
   const [showPassword, setShowPassword] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [gateError, setGateError] = useState<string | null>(null);
+  const [storeLogoUrl, setStoreLogoUrl] = useState<string>("");
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("kaspi_store_logo") || "";
+      if (saved) setStoreLogoUrl(saved);
+    }
+  }, [isOpen]);
 
   // Vault form state
   const [vaultData, setVaultData] = useState<OwnerVaultData>({
@@ -246,17 +254,28 @@ export function OwnerProfileModal({
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden border border-white/25 bg-zinc-900 flex items-center justify-center text-white shadow-inner shrink-0">
-              {vaultData.logoUrl ? (
-                <img
-                  src={vaultData.logoUrl}
-                  alt="Profile"
-                  className="w-full h-full object-cover rounded-full"
-                />
-              ) : (
-                <ShieldCheck className="w-5 h-5 text-white" />
-              )}
+            {/* Live Kinetic Profile Avatar */}
+            <div className="relative group shrink-0">
+              <div className="w-12 h-12 rounded-2xl border border-white/20 bg-zinc-900 shadow-[0_8px_24px_rgba(255,255,255,0.08)] animate-float group-hover:scale-105 transition-all overflow-hidden relative shrink-0 flex items-center justify-center">
+                {vaultData.logoUrl || storeLogoUrl ? (
+                  <img
+                    src={vaultData.logoUrl || storeLogoUrl}
+                    alt="Store Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-950 text-white font-mono font-black text-lg">
+                    {(vaultData.shopName || "K")[0]?.toUpperCase() || "K"}
+                  </div>
+                )}
+              </div>
+              <span
+                className={`absolute -bottom-0.5 -end-0.5 w-3.5 h-3.5 rounded-full border-2 border-zinc-950 ${
+                  isUnlocked ? "bg-emerald-400" : "bg-amber-400"
+                } shadow-sm`}
+              />
             </div>
+
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <span>
@@ -266,8 +285,18 @@ export function OwnerProfileModal({
                     ? "Owner Profile & Secure Vault"
                     : "Profil Propriétaire & Coffre-Fort"}
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-zinc-300 border border-white/10">
-                  {isUnlocked ? "UNLOCKED" : "LOCKED"}
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-white/10 text-zinc-200 border border-white/15">
+                  {locale === "ar"
+                    ? isUnlocked
+                      ? "مفتوحة 🔓"
+                      : "مقفلة 🔒"
+                    : locale === "fr"
+                    ? isUnlocked
+                      ? "DÉVERROUILLÉ 🔓"
+                      : "VERROUILLÉ 🔒"
+                    : isUnlocked
+                    ? "UNLOCKED 🔓"
+                    : "LOCKED 🔒"}
                 </span>
               </h3>
               <p
@@ -284,13 +313,25 @@ export function OwnerProfileModal({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleModalClose}
-            className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {isUnlocked && (
+              <button
+                type="button"
+                onClick={() => setIsUnlocked(false)}
+                title={locale === "ar" ? "قفل الخزنة" : locale === "en" ? "Lock Vault" : "Verrouiller"}
+                className="keycap-3d text-[11px] font-bold px-2.5 py-1 rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white transition flex items-center gap-1 cursor-pointer"
+              >
+                <span>{locale === "ar" ? "← قفل" : locale === "en" ? "← Lock" : "← Verrouiller"}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleModalClose}
+              className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* ====================================================================
@@ -343,25 +384,29 @@ export function OwnerProfileModal({
               </div>
             </div>
 
-            <div className="pt-2 flex items-center justify-end gap-2">
+            <div className="pt-2 flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={handleModalClose}
-                className="px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-300 hover:text-white transition cursor-pointer"
+                className="keycap-3d px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-300 hover:text-white transition cursor-pointer flex items-center gap-1.5"
               >
-                {locale === "ar" ? "إلغاء" : locale === "en" ? "Cancel" : "Annuler"}
+                <span>{locale === "ar" ? "← رجوع" : locale === "en" ? "← Back" : "← Retour"}</span>
               </button>
               <button
                 type="submit"
                 disabled={isVerifying || !password.trim()}
-                className="sheen-btn inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-bold transition disabled:opacity-50 cursor-pointer shadow-sm"
+                className="sheen-btn keycap-3d inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-black transition disabled:opacity-50 cursor-pointer shadow-md active:scale-[0.98]"
               >
-                {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+                {isVerifying ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
+                ) : (
+                  <Lock className="w-4 h-4 text-zinc-950" />
+                )}
                 <span>
                   {locale === "ar"
                     ? "فتح الخزنة المشفرة"
                     : locale === "en"
-                    ? "Unlock Secure Vault"
+                    ? "Unlock Encrypted Vault"
                     : "Déverrouiller le Coffre"}
                 </span>
               </button>
@@ -705,28 +750,42 @@ export function OwnerProfileModal({
             </div>
 
             {/* Actions */}
-            <div className="pt-2 flex items-center justify-end gap-2">
+            <div className="pt-2 flex items-center justify-between gap-2">
               <button
                 type="button"
-                onClick={handleModalClose}
-                className="px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-300 hover:text-white transition cursor-pointer"
+                onClick={() => setIsUnlocked(false)}
+                className="keycap-3d px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-300 hover:text-white transition cursor-pointer flex items-center gap-1.5"
               >
-                {locale === "ar" ? "إغلاق" : locale === "en" ? "Close" : "Fermer"}
+                <span>{locale === "ar" ? "← قفل ورجوع" : locale === "en" ? "← Lock & Back" : "← Verrouiller & Retour"}</span>
               </button>
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="sheen-btn inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-bold transition disabled:opacity-50 cursor-pointer shadow-sm"
-              >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                <span>
-                  {locale === "ar"
-                    ? "حفظ البيانات وتأمين الخزنة"
-                    : locale === "en"
-                    ? "Save & Seal Vault"
-                    : "Enregistrer & Verrouiller"}
-                </span>
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleModalClose}
+                  className="px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-300 hover:text-white transition cursor-pointer"
+                >
+                  {locale === "ar" ? "إغلاق" : locale === "en" ? "Close" : "Fermer"}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="sheen-btn keycap-3d inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-black transition disabled:opacity-50 cursor-pointer shadow-md active:scale-[0.98]"
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
+                  ) : (
+                    <Check className="w-4 h-4 text-zinc-950" />
+                  )}
+                  <span>
+                    {locale === "ar"
+                      ? "حفظ البيانات وتأمين الخزنة"
+                      : locale === "en"
+                      ? "Save & Seal Vault"
+                      : "Enregistrer & Verrouiller"}
+                  </span>
+                </button>
+              </div>
             </div>
           </form>
         )}

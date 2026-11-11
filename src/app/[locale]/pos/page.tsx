@@ -15,6 +15,7 @@ import { StoreOnboardingModal } from "@/components/pos/StoreOnboardingModal";
 import { IndustryWorkspaceModal } from "@/components/pos/IndustryWorkspaceModal";
 import { OwnerProfileModal } from "@/components/layout/OwnerProfileModal";
 import { QuickProductModal } from "@/components/pos/QuickProductModal";
+import { CatalogProgressLoader } from "@/components/pos/CatalogProgressLoader";
 import { InAppPaywallModal, triggerPaywallModal } from "@/components/billing/InAppPaywallModal";
 import { Plus } from "lucide-react";
 import type { ShiftFinancialSummary } from "@/server/cash-shift/engine";
@@ -344,9 +345,7 @@ export default function PosPage() {
           {/* Products Grid */}
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
-              <div className="h-64 flex items-center justify-center text-zinc-500 text-sm font-medium">
-                {t.pos.loadingCatalog}
-              </div>
+              <CatalogProgressLoader />
             ) : (
               <ProductGrid
                 products={products}

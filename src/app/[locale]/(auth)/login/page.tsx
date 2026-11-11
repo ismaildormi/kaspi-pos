@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -8,7 +8,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { getApiUrl } from "@/client/sync-engine";
 import { OtpVerification } from "@/components/auth/OtpVerification";
 import { AuthGlassShell, AuthLocale } from "@/components/auth/MonochromePosBackground";
-import { playTapSound, playSuccessSound, playErrorSound } from "@/lib/audio";
+import { playTapSound, playSuccessSound, playErrorSound, playSystemEntryChime } from "@/lib/audio";
 import { getLocalizedAuthError } from "@/lib/auth-errors";
 
 type AuthMode = "password" | "gmail_otp" | "forgot_password";
@@ -174,8 +174,37 @@ function LoginForm() {
   const [showNewPassword, setShowNewPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [loginProgress, setLoginProgress] = useState(0);
+  const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const startLoginProgress = () => {
+    setLoginProgress(15);
+    if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+    progressTimerRef.current = setInterval(() => {
+      setLoginProgress((prev) => {
+        if (prev < 35) return prev + 10;
+        if (prev < 75) return prev + 8;
+        if (prev < 92) return prev + 2;
+        return prev;
+      });
+    }, 100);
+  };
+
+  const stopLoginProgress = () => {
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+    setLoginProgress(0);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+    };
+  }, []);
 
   const handleLocaleChange = (nextLocale: AuthLocale) => {
     setLocale(nextLocale);
@@ -221,7 +250,12 @@ function LoginForm() {
   }, [searchParams]);
 
   const handleRedirect = () => {
-    playSuccessSound();
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+    setLoginProgress(100);
+    playSystemEntryChime();
     window.location.href = `/${locale}/dashboard`;
   };
 
@@ -230,6 +264,7 @@ function LoginForm() {
     e.preventDefault();
     playTapSound();
     setLoading(true);
+    startLoginProgress();
     setError("");
     setSuccess("");
 
@@ -243,6 +278,8 @@ function LoginForm() {
       const apiData = await apiRes.json().catch(() => null);
 
       if (!apiRes.ok) {
+        stopLoginProgress();
+        setLoading(false);
         playErrorSound();
         const rawErr =
           apiData?.error?.message ||
@@ -251,7 +288,6 @@ function LoginForm() {
           apiData?.message;
         const errMsg = getLocalizedAuthError(rawErr, locale);
         setError(errMsg);
-        setLoading(false);
         return;
       }
 
@@ -262,9 +298,10 @@ function LoginForm() {
       });
 
       if (res?.error) {
+        stopLoginProgress();
+        setLoading(false);
         playErrorSound();
         setError(getLocalizedAuthError(res.error, locale));
-        setLoading(false);
         return;
       }
 
@@ -285,10 +322,10 @@ function LoginForm() {
 
       handleRedirect();
     } catch {
+      stopLoginProgress();
+      setLoading(false);
       playErrorSound();
       setError(t.errNetwork);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -337,6 +374,7 @@ function LoginForm() {
   // 3. Verify OTP & Log In
   const executeOtpLogin = async (targetEmail: string, codeToVerify: string) => {
     setLoading(true);
+    startLoginProgress();
     setError("");
     setSuccess("");
 
@@ -354,10 +392,11 @@ function LoginForm() {
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
+        stopLoginProgress();
+        setLoading(false);
         playErrorSound();
         const rawErr = data?.error?.message || data?.error || data?.code || t.errInvalidOtp;
         setError(getLocalizedAuthError(rawErr, locale));
-        setLoading(false);
         return;
       }
 
@@ -370,9 +409,10 @@ function LoginForm() {
       setSuccess(t.msgVerified);
       handleRedirect();
     } catch {
+      stopLoginProgress();
+      setLoading(false);
       playErrorSound();
       setError(t.errNetwork);
-      setLoading(false);
     }
   };
 
@@ -608,9 +648,31 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 bg-white text-black font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-[0_0_28px_rgba(255,255,255,0.45)] hover:shadow-[0_0_38px_rgba(255,255,255,0.65)] hover:bg-zinc-100 active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer mt-2 disabled:opacity-50"
+            className="relative w-full h-12 bg-white text-black font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-[0_0_28px_rgba(255,255,255,0.45)] hover:shadow-[0_0_38px_rgba(255,255,255,0.65)] hover:bg-zinc-100 active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer mt-2 overflow-hidden disabled:cursor-not-allowed"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : t.signInBtn}
+            {loading ? (
+              <>
+                <div
+                  className="absolute inset-y-0 left-0 bg-zinc-200 transition-all duration-100 ease-out z-0"
+                  style={{ width: `${loginProgress}%` }}
+                />
+                <div className="relative z-10 flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-black shrink-0" />
+                  <span className="font-bold text-black text-sm">
+                    {locale === "ar"
+                      ? "جاري الدخول... "
+                      : locale === "fr"
+                      ? "Connexion... "
+                      : "Signing in... "}
+                  </span>
+                  <span className="font-mono font-black text-black tabular-nums text-sm">
+                    {loginProgress}%
+                  </span>
+                </div>
+              </>
+            ) : (
+              t.signInBtn
+            )}
           </button>
 
           <div className="text-center pt-1">
@@ -688,10 +750,28 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading || otpCode.length < 6}
-                className="w-full h-12 bg-white text-black font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-[0_0_28px_rgba(255,255,255,0.45)] hover:shadow-[0_0_38px_rgba(255,255,255,0.65)] hover:bg-zinc-100 active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer disabled:opacity-50"
+                className="relative w-full h-12 bg-white text-black font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-[0_0_28px_rgba(255,255,255,0.45)] hover:shadow-[0_0_38px_rgba(255,255,255,0.65)] hover:bg-zinc-100 active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-black" />
+                  <>
+                    <div
+                      className="absolute inset-y-0 left-0 bg-zinc-200 transition-all duration-100 ease-out z-0"
+                      style={{ width: `${loginProgress}%` }}
+                    />
+                    <div className="relative z-10 flex items-center justify-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-black shrink-0" />
+                      <span className="font-bold text-black text-sm">
+                        {locale === "ar"
+                          ? "جاري الدخول... "
+                          : locale === "fr"
+                          ? "Connexion... "
+                          : "Signing in... "}
+                      </span>
+                      <span className="font-mono font-black text-black tabular-nums text-sm">
+                        {loginProgress}%
+                      </span>
+                    </div>
+                  </>
                 ) : (
                   t.verifyOtpBtn
                 )}

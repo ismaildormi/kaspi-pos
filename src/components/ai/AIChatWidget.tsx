@@ -531,11 +531,64 @@ export function AIChatWidget() {
             </button>
           </div>
 
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-zinc-950">
+          {/* Messages Area with WhatsApp-Style Monochrome POS Doodle Wallpaper */}
+          <div className="relative flex-1 overflow-y-auto p-4 bg-[#09090B]">
+            {/* Vector Doodle Wallpaper Layer */}
+            <div className="pointer-events-none absolute inset-0 overflow-hidden z-0 select-none">
+              <svg
+                className="w-full h-full opacity-60"
+                xmlns="http://www.w3.org/2000/svg"
+                width="100%"
+                height="100%"
+              >
+                <defs>
+                  <pattern
+                    id="kaspi-pos-doodles"
+                    x="0"
+                    y="0"
+                    width="160"
+                    height="160"
+                    patternUnits="userSpaceOnUse"
+                  >
+                    <g
+                      stroke="rgba(255,255,255,0.055)"
+                      strokeWidth="1.25"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      {/* Barcode */}
+                      <path d="M 15 15 v 18 M 20 15 v 18 M 23 15 v 18 M 28 15 v 18 M 34 15 v 18 M 38 15 v 18" />
+                      {/* Thermal Receipt */}
+                      <path d="M 120 15 h 22 v 28 l -3 -2 l -3 2 l -3 -2 l -3 2 l -3 -2 l -3 2 l -4 -2 z M 125 22 h 12 M 125 27 h 8 M 125 32 h 10" />
+                      {/* Shopping Bag */}
+                      <path d="M 70 20 h 18 l 3 22 h -24 z M 75 20 a 4 4 0 0 1 8 0" />
+                      {/* Coffee Cup */}
+                      <path d="M 20 70 h 16 v 14 a 6 6 0 0 1 -6 6 h -4 a 6 6 0 0 1 -6 -6 z M 36 74 h 4 a 3 3 0 0 1 0 6 h -4 M 18 94 h 20" />
+                      {/* Weighing Scale */}
+                      <path d="M 75 85 h 16 M 83 70 v 15 M 70 70 l 13 -6 l 13 6 M 68 76 a 5 3 0 0 0 10 0 z M 88 76 a 5 3 0 0 0 10 0 z" />
+                      {/* Credit Card */}
+                      <path d="M 118 72 h 24 a 3 3 0 0 1 3 3 v 14 a 3 3 0 0 1 -3 3 h -24 a 3 3 0 0 1 -3 -3 v -14 a 3 3 0 0 1 3 -3 z M 115 78 h 30 M 120 86 h 5" />
+                      {/* Coins Stack */}
+                      <path d="M 22 125 a 8 3 0 1 0 16 0 a 8 3 0 1 0 -16 0 M 22 130 a 8 3 0 0 0 16 0 M 22 135 a 8 3 0 0 0 16 0" />
+                      {/* Price Tag */}
+                      <path d="M 70 125 l 10 -10 h 14 v 14 l -10 10 z M 89 120 a 1.5 1.5 0 1 0 0 -3 a 1.5 1.5 0 0 0 0 3" />
+                      {/* Sparkles */}
+                      <path d="M 125 125 l 1.5 3.5 l 3.5 1.5 l -3.5 1.5 l -1.5 3.5 l -1.5 -3.5 l -3.5 -1.5 l 3.5 -1.5 z M 142 140 l 1 2 l 2 1 l -2 1 l -1 2 l -1 -2 l -2 -1 l 2 -1 z" />
+                      {/* KASPI Infinity */}
+                      <path d="M 135 112 c -3 -3 -6 -3 -9 0 c -3 3 -6 3 -9 0 c 3 -3 6 -3 9 0 c 3 3 6 3 9 0" />
+                    </g>
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#kaspi-pos-doodles)" />
+              </svg>
+            </div>
+
+            {/* Elevated Messages Content */}
+            <div className="relative z-10 space-y-3.5">
             {allDisplayMessages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white mb-3 shadow-inner">
+                <div className="w-14 h-14 rounded-2xl bg-zinc-900/90 backdrop-blur-md border border-zinc-800 flex items-center justify-center text-white mb-3 shadow-inner">
                   <Sparkles className="w-7 h-7" />
                 </div>
                 <h4 className="font-bold text-white text-sm mb-1">
@@ -552,7 +605,7 @@ export function AIChatWidget() {
                       key={idx}
                       type="button"
                       onClick={() => handleQuickPrompt(prompt.text)}
-                      className="w-full p-2.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-850 hover:border-zinc-700 transition-all text-xs font-medium text-zinc-300 flex items-center gap-2.5 shadow-xs cursor-pointer group"
+                      className="w-full p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/90 backdrop-blur-md hover:bg-zinc-850 hover:border-zinc-700 transition-all text-xs font-medium text-zinc-300 flex items-center gap-2.5 shadow-xs cursor-pointer group"
                     >
                       <div className="p-1 rounded-md bg-zinc-800 text-white group-hover:scale-110 transition-transform shrink-0">
                         {prompt.icon === "trending" && <TrendingUp className="w-3.5 h-3.5" />}
@@ -582,7 +635,7 @@ export function AIChatWidget() {
                     }`}
                   >
                     {!isUser && (
-                      <div className="w-7 h-7 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 mt-0.5">
+                      <div className="w-7 h-7 rounded-full bg-zinc-900/90 backdrop-blur-md border border-zinc-800 flex items-center justify-center shrink-0 mt-0.5">
                         <Bot className="w-3.5 h-3.5 text-white" />
                       </div>
                     )}
@@ -590,7 +643,7 @@ export function AIChatWidget() {
                       className={`max-w-[82%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed ${
                         isUser
                           ? "bg-white text-black font-medium rounded-tr-none shadow-xs text-start"
-                          : "bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-tl-none shadow-xs whitespace-pre-wrap text-start"
+                          : "bg-zinc-900/90 backdrop-blur-md border border-zinc-800 text-zinc-200 rounded-tl-none shadow-xs whitespace-pre-wrap text-start"
                       }`}
                     >
                       {fileParts.map((f: any, fIdx: number) => {
@@ -631,10 +684,10 @@ export function AIChatWidget() {
 
             {isLoading && (
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 rounded-full bg-zinc-900/90 backdrop-blur-md border border-zinc-800 flex items-center justify-center shrink-0">
                   <Bot className="w-3.5 h-3.5 text-white" />
                 </div>
-                <div className="bg-zinc-900 border border-zinc-800 text-zinc-400 px-3 py-2 rounded-2xl rounded-tl-none text-xs flex items-center gap-2 shadow-xs">
+                <div className="bg-zinc-900/90 backdrop-blur-md border border-zinc-800 text-zinc-400 px-3 py-2 rounded-2xl rounded-tl-none text-xs flex items-center gap-2 shadow-xs">
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
                   <span>{t.thinking}</span>
                 </div>
@@ -642,7 +695,7 @@ export function AIChatWidget() {
             )}
 
             {sdkError && localFallbackMessages.length === 0 && (
-              <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-zinc-900/90 backdrop-blur-md border border-zinc-800 text-zinc-300 text-xs flex items-center justify-between">
                 <span>{t.error}</span>
                 <button
                   type="button"
@@ -656,6 +709,7 @@ export function AIChatWidget() {
             )}
 
             <div ref={messagesEndRef} />
+            </div>
           </div>
 
           {/* Attachment Preview Badge */}

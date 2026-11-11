@@ -191,3 +191,14 @@
 | `quick_prod_select_category` | Dropdown | التصنيف / Catégorie | `font-bold text-xs text-zinc-300` | `w-full h-11 px-3 rounded-xl bg-zinc-900 border border-zinc-800` | يربط المنتج الجديد بقسم محدد في شاشة البيع |
 | `quick_prod_btn_submit` | Action Button | حفظ وإضافة للسلة فوراً • Enregistrer & Ajouter | `font-black text-xs text-zinc-950` | `sheen-btn w-full h-12 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 active:scale-[0.98] shadow-md cursor-pointer flex items-center justify-center gap-2` | يستدعي `POST /api/v1/products` ويحدث IndexedDB ويضيف المنتج لسلة التسوق في 0ms |
 
+---
+
+## 10. مؤشر تحميل الكتالوج الرقمي التفاعلي (`CatalogProgressLoader.tsx`)
+
+| معرّف العنصر (Element ID) | نوع العنصر | التسمية والرمز (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `catalog_loader_counter` | Monospace Counter | عداد رقمي تصاعدي من 0% إلى 100% | `font-mono font-black text-4xl text-white tabular-nums tracking-tight` | تأثير توهج أوبسيدياني خفيف `drop-shadow-[0_4px_16px_rgba(255,255,255,0.2)]` | يحاكي تسريع تجهيز الذاكرة المحلية والمنتجات في 0ms |
+| `catalog_loader_track` | Progress Bar | مسار ثلاثي الأبعاد مجوف مع شريط إضاءة أبيض متوهج | `w-64 h-2.5 rounded-full bg-zinc-950 border border-white/10` | شريط أبيض ناصع `bg-white shadow-[0_0_14px_rgba(255,255,255,0.85)]` مع انتقال فائق النعومة `duration-75 ease-out` | يمتلئ لحظياً مع إتمام جلب الأصناف من IndexedDB |
+| `catalog_loader_subtitle` | Status Subtitle | جاري تجهيز كتالوج المنتجات... • Chargement du catalogue produits... • Loading product catalog... | `text-xs font-medium text-zinc-400 tracking-wide` | دعم اتجاه `rtl` / `ltr` وفق اللغة النشطة | يحل محل النصوص الثابتة القديمة لتقديم تجربة تشغيل احترافية |
+
+
