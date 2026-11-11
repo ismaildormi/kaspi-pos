@@ -297,7 +297,7 @@ export function OwnerProfileModal({
                 onClick={handleModalClose}
                 className="px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-300 hover:text-white transition"
               >
-                {locale === "ar" ? "إلغاء" : "Annuler"}
+                {locale === "ar" ? "إلغاء" : locale === "en" ? "Cancel" : "Annuler"}
               </button>
               <button
                 type="submit"
@@ -510,7 +510,7 @@ export function OwnerProfileModal({
                 onClick={handleModalClose}
                 className="px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-300 hover:text-white transition"
               >
-                {locale === "ar" ? "إغلاق" : "Fermer"}
+                {locale === "ar" ? "إغلاق" : locale === "en" ? "Close" : "Fermer"}
               </button>
               <button
                 type="submit"

@@ -52,7 +52,7 @@ const BILLING_DICT = {
     backPos: "العودة لنقطة البيع (POS)",
     pageTitle: "الاشتراكات والفوترة",
     heroBadge: "خطة كسب المتدرجة — 200 درهم شهرياً",
-    heroTitle: "برنامج كاشير سحابي متكامل بدون أي رسوم إضافية",
+    heroTitle: "برنامج كاشير سحابي شامل بدون أي رسوم إضافية",
     heroDesc: "200 درهم للخادم/الجهاز الأول، و 150 درهم فقط لكل نقطة بيع إضافية. نظام مرن يواكب نمو متجرك.",
     gatewayPrefix: "بوابة الدفع المسجلة :",
     perMonth: "شهر",
@@ -376,13 +376,13 @@ export default function BillingDashboardPage() {
       {/* Main Container */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 space-y-8">
         {/* Header Hero */}
-        <div className="bg-zinc-900 border border-zinc-800 text-white rounded-3xl p-6 sm:p-10 shadow-xl relative overflow-hidden">
+        <div className="bg-zinc-900 border border-zinc-800 text-white rounded-3xl p-6 sm:p-10 shadow-xl relative">
           <div className="relative z-10 max-w-2xl">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-800 text-zinc-300 text-xs font-bold border border-zinc-700 mb-4">
               <Sparkles className="w-3.5 h-3.5" />
               <span>{t.heroBadge}</span>
             </span>
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
+            <h2 className="text-2xl sm:text-3xl font-black tracking-normal leading-relaxed sm:leading-normal pt-1.5 pb-1 mb-2">
               {t.heroTitle}
             </h2>
             <p className="text-sm text-zinc-400 leading-relaxed">

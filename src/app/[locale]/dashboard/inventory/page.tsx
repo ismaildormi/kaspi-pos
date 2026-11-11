@@ -12,6 +12,7 @@ import {
   Clock,
   ShoppingCart,
   ArrowRightLeft,
+  Plus,
 } from "lucide-react";
 import { StockAuditClient } from "@/components/dashboard/StockAuditClient";
 import { getDictionary, type Locale } from "@/i18n/schema";
@@ -294,11 +295,30 @@ export default async function InventoryPage({
                 <tr>
                   <td colSpan={5} className="relative py-14 text-center text-zinc-500 overflow-hidden">
                     <FloatingCommerceCanvas opacity="opacity-10" />
-                    <div className="relative z-10">
+                    <div className="relative z-10 flex flex-col items-center justify-center py-4">
                       <KineticWarehouseRadarEmpty
-                        title={t.products.noProducts}
+                        title={
+                          locale === "ar"
+                            ? "لا توجد منتجات في المخزون حالياً"
+                            : locale === "fr"
+                            ? "Aucun produit en stock actuellement"
+                            : "No products currently in stock"
+                        }
                         subtitle={t.inventory.optimalStockBanner}
                       />
+                      <Link
+                        href={`/${locale}/dashboard/products`}
+                        className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs shadow-md transition active:scale-95 cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>
+                          {locale === "ar"
+                            ? "+ إضافة منتج جديد"
+                            : locale === "fr"
+                            ? "+ Ajouter un nouveau produit"
+                            : "+ Add New Product"}
+                        </span>
+                      </Link>
                     </div>
                   </td>
                 </tr>

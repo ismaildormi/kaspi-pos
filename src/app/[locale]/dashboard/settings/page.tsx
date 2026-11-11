@@ -1130,184 +1130,126 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Payment Gateways & WhatsApp Z-Report Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Payment Gateways */}
-            <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 space-y-4">
-              <div className="flex items-center gap-2 border-b border-white/10 pb-3">
-                <CreditCard className="w-4 h-4 text-amber-400" />
-                <h2 className="text-sm font-bold text-white">{st.paymentGateways}</h2>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                {[
-                  { id: "cmi_tpe", name: st.cmiTpe, sub: st.cmiTpeSub },
-                  { id: "youcanpay", name: st.youcanpay, sub: st.youcanpaySub },
-                  { id: "stripe", name: st.stripe, sub: st.stripeSub },
-                  { id: "cash_only", name: st.cashOnly, sub: st.cashOnlySub },
-                ].map((gw) => (
-                  <button
-                    key={gw.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedGateway(gw.id as any);
-                      localStorage.setItem("kaspi_payment_gateway", gw.id);
-                    }}
-                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
-                      selectedGateway === gw.id
-                        ? "bg-zinc-950 border-white text-white"
-                        : "bg-zinc-950/50 border-white/10 text-zinc-400 hover:border-white/20"
-                    }`}
-                  >
-                    <div className="text-xs font-bold flex items-center justify-between">
-                      <span>{gw.name}</span>
-                      {selectedGateway === gw.id && <Check className="w-3.5 h-3.5 text-emerald-400" />}
-                    </div>
-                    <div className="text-[10px] text-zinc-500 mt-0.5">{gw.sub}</div>
-                  </button>
-                ))}
-              </div>
-
-              {selectedGateway === "cmi_tpe" && (
-                <div className="pt-1">
-                  <label className="block text-[11px] text-zinc-400 mb-1">
-                    {st.tpeIpLabel}
-                  </label>
-                  <input
-                    type="text"
-                    value={tpeTerminalIp}
-                    onChange={(e) => setTpeTerminalIp(e.target.value)}
-                    className="w-full h-9 px-3 bg-zinc-950 border border-white/10 rounded-lg text-xs text-white font-mono"
-                  />
+          {/* Locked Sensitive Owner Vault Security Card */}
+          <div className="bg-zinc-900/80 border border-white/10 rounded-3xl p-6 sm:p-7 space-y-6 shadow-xl relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-zinc-950 border border-zinc-800 text-amber-400 flex items-center justify-center shadow-inner">
+                  <Lock className="w-5 h-5 text-amber-400" />
                 </div>
-              )}
-
-              {/* Protected Owner Payout & Bank Settlement Vault */}
-              <div className="pt-3 border-t border-white/10 space-y-3">
-                <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-bold text-white">
-                      <Lock className="w-3.5 h-3.5 text-amber-400" />
-                      <span>
-                        {locale === "ar"
-                          ? "الحساب البنكي والـ RIB محمي بخزنة المالك"
-                          : "Coordonnées Bancaires (Protégées par Coffre-Fort)"}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                      SECURED
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800 font-mono text-xs">
-                    <span className="text-zinc-400">RIB Maroc :</span>
-                    <span className="text-white font-bold tracking-widest">
-                      •••• •••• •••• {bankRib ? bankRib.slice(-4) : "7014"}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1">
-                    <p className="text-[11px] text-zinc-500 max-w-xs">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-sm font-bold text-white">
                       {locale === "ar"
-                        ? "هذه البيانات الحساسة مخفية عن موظفي الصندوق وتتطلب كلمة مرور المالك لتعديلها."
-                        : "Données masquées aux caissiers. Mot de passe propriétaire requis."}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => window.dispatchEvent(new CustomEvent("open-owner-vault"))}
-                      className="sheen-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition cursor-pointer shadow-xs"
-                    >
-                      <Lock className="w-3 h-3" />
-                      <span>
-                        {locale === "ar"
-                          ? "فتح خزنة المالك"
-                          : locale === "en"
-                          ? "Unlock Owner Vault"
-                          : "Ouvrir le Coffre"}
-                      </span>
-                    </button>
+                        ? "خزنة المالك والبيانات المالية الحساسة"
+                        : locale === "en"
+                        ? "Owner Vault & Sensitive Financial Gateways"
+                        : "Coffre Propriétaire & Données Financières Sensibles"}
+                    </h2>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-bold">
+                      SECURED & MASKED
+                    </span>
                   </div>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    {locale === "ar"
+                      ? "بوابات الدفع، عنوان TPE، الحساب البنكي، ورقم WhatsApp الخاص بالتقارير مشفرة ومحمية بكلمة مرور المالك."
+                      : locale === "en"
+                      ? "Payment gateways, TPE IP, bank RIB, and owner WhatsApp are encrypted and password-protected from staff."
+                      : "Passerelles de paiement, IP TPE, RIB bancaire et WhatsApp propriétaire sont chiffrés et masqués aux employés."}
+                  </p>
                 </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent("open-owner-vault"))}
+                className="sheen-btn inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-black transition cursor-pointer shadow-md shrink-0 active:scale-95"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>
+                  {locale === "ar"
+                    ? "فتح خزنة المالك"
+                    : locale === "en"
+                    ? "Unlock Owner Vault"
+                    : "Ouvrir le Coffre"}
+                </span>
+              </button>
+            </div>
+
+            {/* Masked Previews Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* RIB Preview */}
+              <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1">
+                <span className="text-[11px] font-medium text-zinc-400 flex items-center gap-1.5">
+                  <CreditCard className="w-3.5 h-3.5 text-zinc-500" />
+                  <span>{locale === "ar" ? "الحساب البنكي (RIB) :" : "RIB Bancaire :"}</span>
+                </span>
+                <p className="text-xs font-mono font-bold text-white tracking-wider pt-0.5">
+                  •••• •••• •••• {bankRib ? bankRib.slice(-4) : "7014"}
+                </p>
+              </div>
+
+              {/* WhatsApp Preview */}
+              <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1">
+                <span className="text-[11px] font-medium text-zinc-400 flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{locale === "ar" ? "رقم WhatsApp المالك :" : "WhatsApp Propriétaire :"}</span>
+                </span>
+                <p className="text-xs font-mono font-bold text-white tracking-wider pt-0.5">
+                  {whatsappReportNumber && whatsappReportNumber.length > 5
+                    ? `•••• •••• ••${whatsappReportNumber.slice(-2)}`
+                    : "•••• •••• ••00"}
+                </p>
+              </div>
+
+              {/* Payment Gateway Preview */}
+              <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1">
+                <span className="text-[11px] font-medium text-zinc-400 flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>{locale === "ar" ? "بوابة الدفع المسجلة :" : "Passerelle Active :"}</span>
+                </span>
+                <p className="text-xs font-mono font-bold text-white uppercase pt-0.5">
+                  {selectedGateway === "cmi_tpe"
+                    ? "CMI / TPE Electronique"
+                    : selectedGateway === "youcanpay"
+                    ? "YouCan Pay Maroc"
+                    : selectedGateway === "stripe"
+                    ? "Stripe Global"
+                    : "Espèces & Chèques"}
+                </p>
+              </div>
+
+              {/* TPE IP Preview */}
+              <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1">
+                <span className="text-[11px] font-medium text-zinc-400 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>{locale === "ar" ? "عنوان IP المحلي TPE :" : "IP Terminal TPE :"}</span>
+                </span>
+                <p className="text-xs font-mono font-bold text-white pt-0.5">
+                  192.168.1.•••
+                </p>
               </div>
             </div>
 
-            {/* WhatsApp Z-Report Automation */}
-            <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 space-y-4">
-              <div className="flex items-center gap-2 border-b border-white/10 pb-3">
-                <MessageSquare className="w-4 h-4 text-emerald-400" />
-                <h2 className="text-sm font-bold text-white">{st.whatsappReportTitle}</h2>
+            {/* Quick Automation Schedule Indicators */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 text-xs text-zinc-400 border-t border-white/5">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>
+                  {locale === "ar"
+                    ? `التقرير الليلي التلقائي مجدول عند ${nightlyReportHour} (بتوقيت الدار البيضاء)`
+                    : `Rapport nocturne automatique planifié à ${nightlyReportHour} (${storeTimezone})`}
+                </span>
               </div>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    {t.settings.ownerWhatsappNumber}
-                  </label>
-                  <input
-                    type="tel"
-                    value={whatsappReportNumber}
-                    onChange={(e) => setWhatsappReportNumber(e.target.value)}
-                    placeholder="+2126XXXXXXXX"
-                    className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                      {t.settings.nightlyReportHour}
-                    </label>
-                    <select
-                      value={nightlyReportHour}
-                      onChange={(e) => setNightlyReportHour(e.target.value)}
-                      className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
-                    >
-                      <option value="21:00">{t.settings.nightlyHour21}</option>
-                      <option value="22:00">{t.settings.nightlyHour22}</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                      {t.settings.timezoneLabel}
-                    </label>
-                    <select
-                      value={storeTimezone}
-                      onChange={(e) => setStoreTimezone(e.target.value)}
-                      className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-white"
-                    >
-                      <option value="Africa/Casablanca">Africa/Casablanca (GMT+1)</option>
-                      <option value="Europe/Paris">Europe/Paris (CET)</option>
-                      <option value="Asia/Riyadh">Asia/Riyadh (AST)</option>
-                      <option value="UTC">UTC (Universal)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer pt-1">
-                  <input
-                    type="checkbox"
-                    checked={isWhatsappReportsActive}
-                    onChange={(e) => setIsWhatsappReportsActive(e.target.checked)}
-                    className="w-4 h-4 rounded accent-white"
-                  />
-                  <span>{st.whatsappAutoSend}</span>
-                </label>
-
-                <div className="flex items-center gap-3 pt-1">
-                  <button
-                    type="button"
-                    onClick={handleTestWhatsAppReport}
-                    className="h-8 px-3 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-semibold text-white flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Send className="w-3 h-3" />
-                    <span>{st.testSend}</span>
-                  </button>
-                  {testResult && (
-                    <span className="text-xs text-white font-mono font-bold">{testResult}</span>
-                  )}
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={handleTestWhatsAppReport}
+                className="h-8 px-3 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-semibold text-white flex items-center gap-1.5 cursor-pointer"
+              >
+                <Send className="w-3 h-3" />
+                <span>{st.testSend}</span>
+                {testResult && <span className="text-emerald-400 font-mono ml-1">{testResult}</span>}
+              </button>
             </div>
           </div>
 
@@ -1662,7 +1604,13 @@ export default function SettingsPage() {
 
                     <div className="py-2 space-y-1 text-[11px] border-b border-dashed border-current/40">
                       <div className="flex justify-between">
-                        <span>1x Café Arabica</span>
+                        <span>
+                          {receiptLanguage === "ar"
+                            ? "1x قهوة أرابيكا"
+                            : receiptLanguage === "en"
+                            ? "1x Arabica Coffee"
+                            : "1x Café Arabica"}
+                        </span>
                         <span dir="ltr">{formatReceiptAmount(18.0)} MAD</span>
                       </div>
                       <div className="flex justify-between font-bold pt-1 border-t border-current/20">
@@ -1813,7 +1761,11 @@ export default function SettingsPage() {
                   />
                 </div>
                 <p className="text-[11px] text-zinc-500 leading-relaxed">
-                  Permet la mise à jour instantanée des stocks sur votre boutique YouCan lors d&apos;un encaissement en magasin.
+                  {locale === "ar"
+                    ? "يتيح التحديث الفوري للكميات في متجرك على YouCan بمجرد إتمام أي عملية بيع في المحل."
+                    : locale === "en"
+                    ? "Enables instant inventory synchronization on your YouCan store upon in-store POS checkout."
+                    : "Permet la mise à jour instantanée des stocks sur votre boutique YouCan lors d'un encaissement en magasin."}
                 </p>
               </div>
 
@@ -1866,7 +1818,11 @@ export default function SettingsPage() {
                 </code>
               </div>
               <p className="text-[11px] text-zinc-500">
-                Copiez cette URL dans les paramètres de Webhooks de votre boutique YouCan ou Shopify (événements supportés : commande créée, modification de stock).
+                {locale === "ar"
+                  ? "انسخ هذا الرابط والصقه في إعدادات Webhooks في متجرك الإلكتروني على YouCan أو Shopify (الأحداث: إنشاء طلب، تعديل المخزون)."
+                  : locale === "en"
+                  ? "Copy this webhook URL into your YouCan or Shopify webhook settings (events: order created, inventory modified)."
+                  : "Copiez cette URL dans les paramètres de Webhooks de votre boutique YouCan ou Shopify (événements supportés : commande créée, modification de stock)."}
               </p>
             </div>
 
@@ -1875,7 +1831,11 @@ export default function SettingsPage() {
               {ecommerceSavedFeedback && (
                 <span className="text-xs font-bold text-white flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  Paramètres synchronisés !
+                  {locale === "ar"
+                    ? "تم حفظ إعدادات المتاجر بنجاح!"
+                    : locale === "en"
+                    ? "E-Commerce settings synced!"
+                    : "Paramètres synchronisés !"}
                 </span>
               )}
               <button

@@ -43,27 +43,6 @@ export const SUPPORTED_RECEIPT_LANGUAGES: ReceiptLanguageMeta[] = [
     flag: "🇬🇧",
     dir: "ltr",
   },
-  {
-    code: "tr",
-    label: "Türkçe (Turkish)",
-    nativeName: "Türkçe",
-    flag: "🇹🇷",
-    dir: "ltr",
-  },
-  {
-    code: "es",
-    label: "Español (Spanish)",
-    nativeName: "Español",
-    flag: "🇪🇸",
-    dir: "ltr",
-  },
-  {
-    code: "de",
-    label: "Deutsch (German)",
-    nativeName: "Deutsch",
-    flag: "🇩🇪",
-    dir: "ltr",
-  },
 ];
 
 /**

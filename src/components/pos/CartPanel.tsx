@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   ShoppingCart,
@@ -18,17 +18,6 @@ import {
   Percent,
   ChevronDown,
   ChevronUp,
-  Sparkles,
-  Check,
-  Scale,
-  Beef,
-  Croissant,
-  Shirt,
-  Smartphone,
-  Flame,
-  Gift,
-  Wrench,
-  Package,
 } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
@@ -38,15 +27,14 @@ interface CartPanelProps {
   onOpenIndustryTools?: () => void;
 }
 
-export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpenIndustryTools }) => {
+export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => {
   const t = useTranslations("Pos");
   const tCommon = useTranslations("Common");
   const { t: tDict, locale } = useAppDictionary();
-  const [isCouponOpen, setIsCouponOpen] = React.useState(false);
-  const [couponCode, setCouponCode] = React.useState("");
-  const [couponMsg, setCouponMsg] = React.useState<{ text: string; error?: boolean } | null>(null);
-  const [orderMode, setOrderMode] = React.useState<"dine_in" | "takeaway" | "delivery">("dine_in");
-  const [quickImei, setQuickImei] = React.useState("");
+  const [isCouponOpen, setIsCouponOpen] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponMsg, setCouponMsg] = useState<{ text: string; error?: boolean } | null>(null);
+  const [orderMode, setOrderMode] = useState<"dine_in" | "takeaway" | "delivery">("dine_in");
 
   const {
     cart,
@@ -62,10 +50,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpe
     discountPercent,
     discountFixed,
     setDiscount,
-    addToCart,
     updateItemQuantity,
-    setItemQuantity,
-    updateItemNotes,
     removeItem,
     clearCart,
     holdCurrentCart,
@@ -75,33 +60,6 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpe
     getGrandTotal,
     openPaymentModal,
   } = usePosStore();
-
-  const lastCartItem = cart.length > 0 ? cart[cart.length - 1] : null;
-
-  const handleApplyNoteToLastItem = (noteText: string) => {
-    if (!lastCartItem) return;
-    const existing = lastCartItem.notes ? `${lastCartItem.notes} • ` : "";
-    updateItemNotes(lastCartItem.productId, `${existing}${noteText}`);
-  };
-
-  const handleQuickExpressAdd = (item: {
-    id: string;
-    name: string;
-    sku: string;
-    salePrice: number;
-    wholesalePrice?: number;
-    taxRate?: number;
-  }) => {
-    addToCart({
-      id: item.id,
-      name: item.name,
-      sku: item.sku,
-      salePrice: item.salePrice,
-      wholesalePrice: item.wholesalePrice || item.salePrice,
-      taxRate: item.taxRate ?? 0,
-      trackStock: false,
-    });
-  };
 
   const handleApplyCoupon = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -152,32 +110,30 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpe
   const wholesaleLabel =
     locale === "ar" ? "بيع بالجملة" : locale === "en" ? "Wholesale" : "Vente en Gros";
 
+  const restaurantTables = [
+    { id: "t1", name: "T-01" },
+    { id: "t2", name: "T-02" },
+    { id: "t3", name: "T-03" },
+    { id: "t4", name: "T-04" },
+    { id: "t5", name: "T-05" },
+    { id: "t6", name: "T-06" },
+    { id: "t7", name: "T-07" },
+    { id: "t8", name: "T-08" },
+    { id: "t9", name: "T-09" },
+    { id: "t10", name: "T-10" },
+    { id: "t11", name: "T-11" },
+    { id: "t12", name: "T-12" },
+    { id: "ter1", name: "Terrasse 1" },
+    { id: "ter2", name: "Terrasse 2" },
+    { id: "ter3", name: "Terrasse 3" },
+    { id: "ter4", name: "Terrasse 4" },
+  ];
+
   return (
     <div dir="ltr" className="flex flex-col h-full bg-zinc-950 border-s border-zinc-800 select-none">
-      {/* Top: Customer & Cart Header */}
-      <div className="p-3.5 border-b border-zinc-800 bg-zinc-900/60 space-y-2">
-        {storeType === "restaurant" && selectedTableName && (
-          <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-zinc-900 border border-white/10 text-zinc-200 text-xs font-semibold">
-            <span className="flex items-center gap-1.5">
-              <UtensilsCrossed className="w-3.5 h-3.5 text-zinc-400" />
-              <span>
-                {locale === "ar"
-                  ? `الطاولة: ${selectedTableName.replace(/Table\s*/i, "")}`
-                  : locale === "fr"
-                  ? `Table : ${selectedTableName.replace(/Table\s*/i, "")}`
-                  : `Table: ${selectedTableName.replace(/Table\s*/i, "")}`}
-              </span>
-            </span>
-            <button
-              onClick={() => setSelectedTable(null, null)}
-              className="text-zinc-400 hover:text-white cursor-pointer"
-              title="Détacher la table"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
+      {/* Top Header: Customer + Retail/Wholesale + Restaurant Mode */}
+      <div className="p-3.5 border-b border-zinc-800 bg-zinc-900/60 space-y-2.5">
+        {/* Customer Select / Detach */}
         <div className="flex items-center justify-between gap-2">
           {customer ? (
             <div className="flex flex-col gap-1.5 bg-zinc-900 border border-zinc-700 px-3 py-1.5 rounded-lg w-full">
@@ -195,6 +151,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpe
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setCustomer(null)}
                   className="p-1 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded transition cursor-pointer"
                   title="Détacher client"
@@ -224,6 +181,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpe
             </div>
           ) : (
             <button
+              type="button"
               onClick={onOpenCustomerModal}
               className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white transition cursor-pointer"
             >
@@ -233,7 +191,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpe
           )}
         </div>
 
-        {/* 1-Click Retail vs Wholesale Dual Pricing Toggle */}
+        {/* Retail vs Wholesale Dual Pricing Toggle */}
         <div className="flex items-center p-1 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-bold">
           <button
             type="button"
@@ -261,339 +219,68 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpe
           </button>
         </div>
 
-        {/* Chameleon Sector-Morphing Quick Bar (7 Niches) */}
-        <div className="pt-2 border-t border-zinc-800/80">
-          {/* RESTAURANT */}
-          {storeType === "restaurant" && (
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1">
-                {[
-                  { id: "dine_in", labelAr: "محلي", labelFr: "Sur Place", labelEn: "Dine In" },
-                  { id: "takeaway", labelAr: "سفري", labelFr: "À Emporter", labelEn: "Takeaway" },
-                  { id: "delivery", labelAr: "توصيل", labelFr: "Livraison", labelEn: "Delivery" },
-                ].map((mode) => (
-                  <button
-                    key={mode.id}
-                    type="button"
-                    onClick={() => setOrderMode(mode.id as any)}
-                    className={`keycap-3d flex-1 py-1 px-1.5 rounded-lg text-[10px] font-bold border transition ${
-                      orderMode === mode.id
-                        ? "bg-white text-zinc-950 border-white"
-                        : "bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white"
-                    }`}
-                  >
-                    {locale === "ar" ? mode.labelAr : locale === "en" ? mode.labelEn : mode.labelFr}
-                  </button>
-                ))}
-                {onOpenIndustryTools && (
-                  <button
-                    type="button"
-                    onClick={onOpenIndustryTools}
-                    className="keycap-3d py-1 px-2 rounded-lg bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-700 text-[10px] font-bold flex items-center gap-1"
-                    title="Tables & KDS"
-                  >
-                    <UtensilsCrossed className="w-3 h-3 text-white" />
-                    <span>{selectedTableName || (locale === "ar" ? "طاولات" : "Tables")}</span>
-                  </button>
-                )}
-              </div>
-              {lastCartItem && (
-                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-                  <span className="text-[9px] text-zinc-500 uppercase font-bold shrink-0">Note:</span>
-                  {[
-                    { ar: "بدون بصل", fr: "Sans oignon" },
-                    { ar: "طهي جيد", fr: "Bien cuit" },
-                    { ar: "صلصة جانبية", fr: "Sauce à part" },
-                    { ar: "زبون VIP", fr: "VIP" },
-                  ].map((chip) => (
-                    <button
-                      key={chip.fr}
-                      type="button"
-                      onClick={() => handleApplyNoteToLastItem(locale === "ar" ? chip.ar : chip.fr)}
-                      className="keycap-3d px-1.5 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[9px] font-semibold text-zinc-300 hover:text-white shrink-0"
-                    >
-                      +{locale === "ar" ? chip.ar : chip.fr}
-                    </button>
-                  ))}
-                </div>
-              )}
+        {/* Clean Restaurant 3-Pill Mode + Table Dropdown */}
+        {storeType === "restaurant" && (
+          <div className="space-y-2 pt-1 border-t border-zinc-800/80">
+            <div className="flex items-center gap-1">
+              {[
+                { id: "dine_in", labelAr: "محلي", labelFr: "Sur Place", labelEn: "Dine In" },
+                { id: "takeaway", labelAr: "سفري", labelFr: "À Emporter", labelEn: "Takeaway" },
+                { id: "delivery", labelAr: "توصيل", labelFr: "Livraison", labelEn: "Delivery" },
+              ].map((mode) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  onClick={() => setOrderMode(mode.id as any)}
+                  className={`keycap-3d flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
+                    orderMode === mode.id
+                      ? "bg-white text-zinc-950 border-white shadow-xs"
+                      : "bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white"
+                  }`}
+                >
+                  {locale === "ar" ? mode.labelAr : locale === "en" ? mode.labelEn : mode.labelFr}
+                </button>
+              ))}
             </div>
-          )}
 
-          {/* BUTCHERY */}
-          {storeType === "butchery" && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between gap-1 bg-zinc-900/70 border border-zinc-800 p-1.5 rounded-lg">
-                <div className="flex items-center gap-1 text-[10px] text-zinc-400">
-                  <Scale className="w-3.5 h-3.5 text-white" />
-                  <span className="font-mono font-bold text-white">
-                    {lastCartItem ? `${lastCartItem.quantity} kg` : "0.000 kg"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  {[
-                    { label: "-15g Sac", val: "-15g" },
-                    { label: "-30g Barq.", val: "-30g" },
-                    { label: "-50g Plat.", val: "-50g" },
-                  ].map((tare) => (
-                    <button
-                      key={tare.val}
-                      type="button"
-                      onClick={() => handleApplyNoteToLastItem(`Tare: ${tare.val}`)}
-                      className="keycap-3d px-1.5 py-0.5 rounded text-[9px] font-mono bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white"
-                    >
-                      {tare.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-                {[
-                  { ar: "كفتة مفرومة", fr: "Haché" },
-                  { ar: "ستيك", fr: "Steak" },
-                  { ar: "طاجين", fr: "Tagine" },
-                  { ar: "متبل", fr: "Mariné" },
-                ].map((cut) => (
-                  <button
-                    key={cut.fr}
-                    type="button"
-                    onClick={() => handleApplyNoteToLastItem(locale === "ar" ? cut.ar : cut.fr)}
-                    className="keycap-3d flex-1 py-1 px-1 rounded-md bg-zinc-900 border border-zinc-800 text-[9px] font-bold text-zinc-300 hover:text-white text-center"
-                  >
-                    {locale === "ar" ? cut.ar : cut.fr}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* BAKERY */}
-          {storeType === "bakery" && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[10px]">
-                <span className="flex items-center gap-1 text-zinc-400 font-mono">
-                  <Flame className="w-3 h-3 text-white" />
-                  <span>{locale === "ar" ? "دفعة الفرن القادمة: 14د" : "Fournée dans 14 min"}</span>
+            {orderMode === "dine_in" && (
+              <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5">
+                <UtensilsCrossed className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                <span className="text-[11px] font-bold text-zinc-300 shrink-0">
+                  {locale === "ar" ? "الطاولة:" : "Table :"}
                 </span>
-                {onOpenIndustryTools && (
-                  <button
-                    type="button"
-                    onClick={onOpenIndustryTools}
-                    className="text-[10px] text-zinc-300 hover:text-white underline cursor-pointer"
-                  >
-                    {locale === "ar" ? "حجز حلوى" : "Réservation Gâteau"}
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-4 gap-1">
-                {[
-                  { label: "250g", price: 35 },
-                  { label: "500g", price: 65 },
-                  { label: "1 kg", price: 120 },
-                  { label: "Plateau", price: 160 },
-                ].map((box) => (
-                  <button
-                    key={box.label}
-                    type="button"
-                    onClick={() =>
-                      handleQuickExpressAdd({
-                        id: `box-${box.label.toLowerCase().replace(/\s/g, "-")}`,
-                        name: `Plateau Pâtisserie Assortie (${box.label})`,
-                        sku: `BOX-${box.label.toUpperCase()}`,
-                        salePrice: box.price,
-                      })
-                    }
-                    className="keycap-3d py-1 px-1 rounded-lg bg-zinc-900 border border-zinc-800 text-center hover:border-zinc-700"
-                  >
-                    <div className="text-[10px] font-bold text-white">{box.label}</div>
-                    <div className="text-[8px] font-mono text-zinc-400">{box.price} MAD</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* FASHION */}
-          {storeType === "fashion" && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between gap-1 overflow-x-auto no-scrollbar">
-                <span className="text-[9px] text-zinc-500 uppercase font-bold shrink-0">Taille:</span>
-                {["S", "M", "L", "XL", "XXL", "40", "42"].map((sz) => (
-                  <button
-                    key={sz}
-                    type="button"
-                    onClick={() => handleApplyNoteToLastItem(`Taille: ${sz}`)}
-                    className="keycap-3d px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[9px] font-mono font-bold text-zinc-300 hover:text-white"
-                  >
-                    {sz}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center justify-between gap-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[9px] text-zinc-500 uppercase font-bold shrink-0">Couleur:</span>
-                  {[
-                    { name: "Noir", bg: "#000000" },
-                    { name: "Blanc", bg: "#ffffff" },
-                    { name: "Gris", bg: "#6b7280" },
-                    { name: "Bleu", bg: "#1e3a8a" },
-                    { name: "Rouge", bg: "#dc2626" },
-                  ].map((c) => (
-                    <button
-                      key={c.name}
-                      type="button"
-                      onClick={() => handleApplyNoteToLastItem(`Couleur: ${c.name}`)}
-                      className="w-4 h-4 rounded-full border border-white/20 active:scale-95 transition"
-                      style={{ backgroundColor: c.bg }}
-                      title={c.name}
-                    />
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleApplyNoteToLastItem("Ticket Cadeau / Échange 15j")}
-                  className="keycap-3d px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[9px] font-bold text-zinc-300 hover:text-white flex items-center gap-1"
-                >
-                  <Gift className="w-2.5 h-2.5" />
-                  <span>{locale === "ar" ? "تذكرة تبديل" : "Échange 15j"}</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* TECH / ELECTRONICS */}
-          {(storeType === "tech" || (storeType as string) === "electronics") && (
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1">
-                <input
-                  type="text"
-                  value={quickImei}
-                  onChange={(e) => setQuickImei(e.target.value)}
-                  placeholder="IMEI / SN (15 chiffres)..."
-                  className="flex-1 h-6 px-2 rounded bg-zinc-950 border border-zinc-800 text-[10px] font-mono text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (quickImei.trim()) {
-                      handleApplyNoteToLastItem(`IMEI: ${quickImei.trim()}`);
-                      setQuickImei("");
-                    }
+                <select
+                  value={selectedTableName || ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const found = restaurantTables.find((t) => t.name === val);
+                    setSelectedTable(found ? found.id : null, val || null);
                   }}
-                  className="keycap-3d h-6 px-2 rounded bg-zinc-900 border border-zinc-700 text-[9px] font-bold text-white"
+                  className="flex-1 bg-transparent text-xs font-mono font-bold text-white focus:outline-none cursor-pointer"
                 >
-                  OK
-                </button>
-              </div>
-              <div className="flex items-center justify-between gap-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-[9px] text-zinc-500 uppercase font-bold shrink-0">Garantie:</span>
-                  {["Sans", "3M", "6M", "1 An", "2 Ans"].map((w) => (
-                    <button
-                      key={w}
-                      type="button"
-                      onClick={() => handleApplyNoteToLastItem(`Garantie: ${w}`)}
-                      className="keycap-3d px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[9px] font-mono text-zinc-300 hover:text-white"
-                    >
-                      {w}
-                    </button>
+                  <option value="" className="bg-zinc-900 text-zinc-400">
+                    {locale === "ar" ? "-- اختر طاولة --" : "-- Choisir table --"}
+                  </option>
+                  {restaurantTables.map((tbl) => (
+                    <option key={tbl.id} value={tbl.name} className="bg-zinc-900 text-white">
+                      {tbl.name}
+                    </option>
                   ))}
-                </div>
-                {onOpenIndustryTools && (
+                </select>
+                {selectedTableName && (
                   <button
                     type="button"
-                    onClick={onOpenIndustryTools}
-                    className="keycap-3d px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[9px] font-bold text-zinc-300 hover:text-white flex items-center gap-1"
+                    onClick={() => setSelectedTable(null, null)}
+                    className="text-zinc-500 hover:text-white p-0.5"
+                    title="Détacher table"
                   >
-                    <Wrench className="w-2.5 h-2.5" />
-                    <span>{locale === "ar" ? "صيانة" : "SAV"}</span>
+                    <X className="w-3 h-3" />
                   </button>
                 )}
               </div>
-            </div>
-          )}
-
-          {/* WHOLESALE */}
-          {storeType === "wholesale" && (
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] text-zinc-500 uppercase font-bold shrink-0">Colisage:</span>
-                {[
-                  { factor: 1, label: "x1" },
-                  { factor: 6, label: "x6 Pack" },
-                  { factor: 12, label: "x12 Ctn" },
-                  { factor: 24, label: "x24 Colis" },
-                  { factor: 50, label: "x50 Pal." },
-                ].map((mult) => (
-                  <button
-                    key={mult.label}
-                    type="button"
-                    onClick={() => {
-                      if (lastCartItem) {
-                        setItemQuantity(lastCartItem.productId, mult.factor);
-                        setPricingTier("wholesale");
-                        handleApplyNoteToLastItem(`Colisage ${mult.label}`);
-                      }
-                    }}
-                    className="keycap-3d flex-1 py-1 rounded bg-zinc-900 border border-zinc-800 text-[9px] font-mono font-bold text-zinc-300 hover:text-white text-center"
-                  >
-                    {mult.label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center justify-between text-[10px] text-zinc-400">
-                <span className="font-mono">Tier: Gros (Wholesale)</span>
-                <span className="font-mono text-zinc-300">BL / Facture TVA</span>
-              </div>
-            </div>
-          )}
-
-          {/* GROCERY / ALIMENTATION GENERALE */}
-          {storeType === "grocery" && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[9px] text-zinc-500 font-bold uppercase">
-                <span>{locale === "ar" ? "مقضيات سريعة (بدون باركود)" : "Express Sans Barcode"}</span>
-                {onOpenIndustryTools && (
-                  <button
-                    type="button"
-                    onClick={onOpenIndustryTools}
-                    className="text-zinc-300 hover:text-white underline lowercase font-normal cursor-pointer"
-                  >
-                    {locale === "ar" ? "وزن / consigne" : "balance / consigne"}
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-5 gap-1">
-                {[
-                  { id: "exp-pain", name: "Pain Rond / خبز", sku: "EXP-PAIN", price: 1.2 },
-                  { id: "exp-lait", name: "Lait Pasteurisé / حليب", sku: "EXP-LAIT", price: 3.5 },
-                  { id: "exp-eau", name: "Eau Minérale 1.5L / ماء", sku: "EXP-EAU", price: 6.0 },
-                  { id: "exp-oeuf", name: "Œuf Frais / بيض", sku: "EXP-OEUF", price: 1.5 },
-                  { id: "exp-sac", name: "Sac Plastique / كيس", sku: "EXP-SAC", price: 0.1 },
-                ].map((exp) => (
-                  <button
-                    key={exp.id}
-                    type="button"
-                    onClick={() =>
-                      handleQuickExpressAdd({
-                        id: exp.id,
-                        name: exp.name,
-                        sku: exp.sku,
-                        salePrice: exp.price,
-                      })
-                    }
-                    className="keycap-3d py-1 px-0.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-center"
-                  >
-                    <div className="text-[9px] font-bold text-white truncate">
-                      {exp.name.split("/")[0].trim()}
-                    </div>
-                    <div className="text-[8px] font-mono text-zinc-400">{exp.price.toFixed(2)}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Cart Items List */}
@@ -602,21 +289,9 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpe
           <div className="h-full flex flex-col items-center justify-center p-6 text-center select-none relative overflow-hidden bg-dot-matrix rounded-2xl border border-dashed border-white/5">
             {/* Interactive Supermarket Trolley SVG Scene */}
             <div className="relative group w-32 h-32 flex items-center justify-center mb-2 cursor-pointer">
-              {/* Soft radial monochrome glow */}
               <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08)_0%,transparent_70%)] group-hover:bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.18)_0%,transparent_75%)] transition-all duration-500" />
-              
               <div className="relative w-24 h-24 rounded-2xl bg-zinc-900/80 border border-white/10 group-hover:border-white/30 transition-all duration-500 shadow-2xl backdrop-blur-xs flex items-center justify-center overflow-hidden animate-float">
-                {/* Laser scan line */}
                 <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white/40 to-transparent top-0 animate-laser pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                {/* Cascading falling product boxes */}
-                <div className="absolute top-2.5 left-5 w-3 h-3 rounded-xs bg-white text-zinc-950 font-black text-[6px] flex items-center justify-center -translate-y-4 opacity-0 group-hover:translate-y-2 group-hover:opacity-100 transition-all duration-500 delay-75 shadow-md rotate-12 pointer-events-none">
-                  1
-                </div>
-                <div className="absolute top-1.5 right-5 w-2.5 h-3.5 rounded-xs bg-zinc-300 border border-white/20 -translate-y-4 opacity-0 group-hover:translate-y-2.5 group-hover:opacity-100 transition-all duration-500 delay-150 shadow-md -rotate-6 pointer-events-none" />
-                <div className="absolute top-1 left-10 w-2 h-2 rounded-full bg-zinc-400 -translate-y-4 opacity-0 group-hover:translate-y-3.5 group-hover:opacity-100 transition-all duration-500 delay-200 shadow-md pointer-events-none" />
-
-                {/* Supermarket Trolley SVG */}
                 <svg
                   className="w-12 h-12 text-white transition-all duration-500 ease-out transform group-hover:translate-x-1.5 group-hover:-rotate-2"
                   viewBox="0 0 64 64"
@@ -643,16 +318,8 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpe
                     strokeWidth="2.5"
                     strokeLinecap="round"
                   />
-                  <g className="origin-[22px_51px] transition-transform duration-700 ease-out group-hover:rotate-180">
-                    <circle cx="22" cy="51" r="4.5" stroke="currentColor" strokeWidth="2" fill="#18181b" />
-                    <line x1="22" y1="46.5" x2="22" y2="55.5" stroke="currentColor" strokeWidth="1" />
-                    <line x1="17.5" y1="51" x2="26.5" y2="51" stroke="currentColor" strokeWidth="1" />
-                  </g>
-                  <g className="origin-[44px_51px] transition-transform duration-700 ease-out group-hover:rotate-180">
-                    <circle cx="44" cy="51" r="4.5" stroke="currentColor" strokeWidth="2" fill="#18181b" />
-                    <line x1="44" y1="46.5" x2="44" y2="55.5" stroke="currentColor" strokeWidth="1" />
-                    <line x1="39.5" y1="51" x2="48.5" y2="51" stroke="currentColor" strokeWidth="1" />
-                  </g>
+                  <circle cx="22" cy="51" r="4.5" stroke="currentColor" strokeWidth="2" fill="#18181b" />
+                  <circle cx="44" cy="51" r="4.5" stroke="currentColor" strokeWidth="2" fill="#18181b" />
                 </svg>
               </div>
             </div>
@@ -695,6 +362,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpe
               {/* Quantity Stepper */}
               <div className="flex items-center gap-1 bg-zinc-950 border border-zinc-800 rounded-lg p-0.5">
                 <button
+                  type="button"
                   onClick={() => updateItemQuantity(item.productId, -1)}
                   className="keycap-3d w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-700/60 rounded active:scale-95 transition cursor-pointer"
                 >
@@ -704,6 +372,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpe
                   {item.quantity}
                 </span>
                 <button
+                  type="button"
                   onClick={() => updateItemQuantity(item.productId, 1)}
                   className="keycap-3d w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-700/60 rounded active:scale-95 transition cursor-pointer"
                 >
@@ -717,6 +386,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpe
                   {item.lineTotal.toFixed(2)}
                 </span>
                 <button
+                  type="button"
                   onClick={() => removeItem(item.productId)}
                   className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition cursor-pointer"
                   title="Supprimer"
@@ -846,6 +516,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpe
         {/* Buttons Row */}
         <div className="grid grid-cols-4 gap-2 pt-1">
           <button
+            type="button"
             onClick={() => holdCurrentCart()}
             disabled={cart.length === 0}
             className="group col-span-1 h-12 flex flex-col items-center justify-center rounded-xl bg-zinc-900 hover:bg-zinc-850 hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer"
@@ -856,6 +527,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpe
           </button>
 
           <button
+            type="button"
             onClick={clearCart}
             disabled={cart.length === 0}
             className="group col-span-1 h-12 flex flex-col items-center justify-center rounded-xl bg-zinc-900 hover:bg-zinc-850 hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer"
@@ -866,6 +538,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpe
           </button>
 
           <button
+            type="button"
             onClick={openPaymentModal}
             disabled={cart.length === 0}
             className="group sheen-btn col-span-2 h-12 flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-zinc-200 hover:-translate-y-0.5 hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none text-zinc-950 font-bold text-base shadow-sm transition-all duration-200 cursor-pointer"

@@ -18,6 +18,11 @@ export interface PosProduct {
   stockQuantity?: number;
   categoryId?: string | null;
   categoryName?: string | null;
+  image?: string | null;
+  isScaleItem?: boolean;
+  scaleBarcodePrefix?: string | null;
+  weightUnit?: string | null;
+  tareWeightGrams?: number | null;
 }
 
 export interface PosCustomer {

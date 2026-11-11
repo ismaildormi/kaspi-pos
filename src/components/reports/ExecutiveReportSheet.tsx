@@ -15,6 +15,7 @@ import {
   Sparkles,
   Loader2,
   Save,
+  Lock,
 } from "lucide-react";
 
 interface ExecutiveReportSheetProps {
@@ -241,36 +242,36 @@ export function ExecutiveReportSheet({
           </div>
         )}
 
-        <form onSubmit={handleSavePhone} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-semibold text-zinc-400">
-                {t.phoneLabel}
-              </label>
-              {phone && phone.length > 6 && (
-                <span className="text-[10px] font-mono text-zinc-500">
-                  {locale === "ar" ? "مشفر عن الموظفين ✓" : "Masqué aux employés ✓"}
-                </span>
-              )}
+        <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-amber-400">
+              <Lock className="w-5 h-5" />
             </div>
-            <input
-              type="text"
-              required
-              placeholder={t.phonePlaceholder}
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs sm:text-sm font-mono text-white focus:outline-none focus:border-white transition"
-            />
+            <div>
+              <div className="text-xs text-zinc-400 font-medium">
+                {t.phoneLabel}
+              </div>
+              <div className="text-sm font-mono font-bold text-white tracking-wider mt-0.5">
+                {phone ? phone.replace(/(\+?\d{3,4}\s?\d{1,2})\d+(\d{2})/, "$1•• ••• •$2") : "+212 6•• ••• •00"}
+              </div>
+            </div>
           </div>
+
           <button
-            type="submit"
-            disabled={isSaving || !phone.trim()}
-            className="sm:self-end h-11 px-6 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition duration-200 disabled:opacity-40 flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(16,185,129,0.3)] shrink-0"
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("open-owner-vault"))}
+            className="sheen-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs transition cursor-pointer shadow-sm shrink-0"
           >
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin text-zinc-950" /> : <Save className="w-4 h-4 text-zinc-950" />}
-            <span>{t.saveAndActivateBtn}</span>
+            <Lock className="w-3.5 h-3.5" />
+            <span>
+              {locale === "ar"
+                ? "تعديل عبر خزنة المالك"
+                : locale === "en"
+                ? "Edit via Owner Vault"
+                : "Modifier via Coffre Propriétaire"}
+            </span>
           </button>
-        </form>
+        </div>
 
         {/* Live Automatic Dispatch Status Badges */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">

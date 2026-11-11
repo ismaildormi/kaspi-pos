@@ -330,7 +330,11 @@ export function AIChatWidget() {
   }
 
   const statusBadgeText = isAdminView
-    ? "Full DB Access"
+    ? locale === "ar"
+      ? "وصول كامل للبيانات"
+      : locale === "en"
+      ? "Full DB Access"
+      : "Accès Total Base"
     : locale === "ar"
     ? "مساعد فوري نشط"
     : locale === "en"
@@ -360,7 +364,13 @@ export function AIChatWidget() {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-sm tracking-wide text-white">
-                    {isAdminView ? "Master AI • Chief Data Officer" : t("title")}
+                    {isAdminView
+                      ? locale === "ar"
+                        ? "المساعد الرئيسي • مسؤول البيانات"
+                        : locale === "en"
+                        ? "Master AI • Chief Data Officer"
+                        : "Master AI • Directeur des Données"
+                      : t("title")}
                   </h3>
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white text-black">
                     <Zap className="w-2.5 h-2.5" />
