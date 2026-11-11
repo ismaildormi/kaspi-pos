@@ -294,19 +294,9 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                 {/* Laser scan */}
                 <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white/50 to-transparent top-0 animate-laser pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                {/* 3 Dropping Item Packages on Hover */}
-                <div className="absolute inset-0 pointer-events-none">
-                  {/* Package 1: Milk carton / cube */}
-                  <div className="absolute top-2.5 left-6 w-3 h-3 rounded-xs bg-zinc-300 border border-white/40 shadow-sm opacity-0 group-hover:opacity-100 group-hover:translate-y-6 transition-all duration-500 ease-out delay-75 transform -rotate-12" />
-                  {/* Package 2: Bag / bar */}
-                  <div className="absolute top-1.5 right-6 w-2.5 h-3.5 rounded-xs bg-white/90 border border-white shadow-sm opacity-0 group-hover:opacity-100 group-hover:translate-y-7 transition-all duration-500 ease-out delay-150 transform rotate-12" />
-                  {/* Package 3: Small snack box */}
-                  <div className="absolute top-1 left-10 w-2 h-2 rounded-xs bg-zinc-400 border border-white/30 shadow-sm opacity-0 group-hover:opacity-100 group-hover:translate-y-8 transition-all duration-500 ease-out delay-200 transform rotate-45" />
-                </div>
-
-                {/* Supermarket Trolley SVG with rotating wheels */}
+                {/* 1. Empty Wire Supermarket Trolley (Default Visible -> Fades & Scales Down on Hover) */}
                 <svg
-                  className="w-12 h-12 text-white transition-all duration-500 ease-out transform group-hover:scale-105 group-hover:translate-x-1"
+                  className="w-12 h-12 text-white transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] transform opacity-100 scale-100 group-hover:opacity-0 group-hover:scale-75 pointer-events-none"
                   viewBox="0 0 64 64"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -331,18 +321,100 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                     strokeWidth="2.5"
                     strokeLinecap="round"
                   />
-                  {/* Rotating Wheels on Hover */}
-                  <g className="origin-[22px_51px] group-hover:rotate-180 transition-transform duration-700">
-                    <circle cx="22" cy="51" r="4.5" stroke="currentColor" strokeWidth="2" fill="#18181b" />
-                    <line x1="22" y1="47" x2="22" y2="55" stroke="currentColor" strokeWidth="1" strokeOpacity="0.6" />
-                    <line x1="18" y1="51" x2="26" y2="51" stroke="currentColor" strokeWidth="1" strokeOpacity="0.6" />
-                  </g>
-                  <g className="origin-[44px_51px] group-hover:rotate-180 transition-transform duration-700">
-                    <circle cx="44" cy="51" r="4.5" stroke="currentColor" strokeWidth="2" fill="#18181b" />
-                    <line x1="44" y1="47" x2="44" y2="55" stroke="currentColor" strokeWidth="1" strokeOpacity="0.6" />
-                    <line x1="40" y1="51" x2="48" y2="51" stroke="currentColor" strokeWidth="1" strokeOpacity="0.6" />
-                  </g>
+                  <circle cx="22" cy="51" r="4.5" stroke="currentColor" strokeWidth="2" fill="#18181b" />
+                  <circle cx="44" cy="51" r="4.5" stroke="currentColor" strokeWidth="2" fill="#18181b" />
                 </svg>
+
+                {/* 2. Physical Product Packages (Hidden Above -> Smoothly Drops & Settles in Center on Hover) */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] opacity-0 -translate-y-6 scale-90 group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100">
+                  <div className="relative w-16 h-16 flex items-center justify-center">
+                    {/* Ambient Glow */}
+                    <div className="absolute inset-1 rounded-full bg-white/10 blur-sm -z-10" />
+
+                    {/* Vector Items Composite */}
+                    <svg
+                      className="w-14 h-14 text-white filter drop-shadow-[0_4px_12px_rgba(255,255,255,0.15)]"
+                      viewBox="0 0 64 64"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      {/* Left Item: Milk / Beverage Bottle with Cap (-6 deg tilt) */}
+                      <g transform="translate(4, 14) rotate(-6, 12, 22)">
+                        {/* Bottle body */}
+                        <path
+                          d="M6 14C6 11 8 9 10 7L10 3C10 2 11 1 12 1L14 1C15 1 16 2 16 3L16 7C18 9 20 11 20 14L20 32C20 34 18 36 16 36L10 36C8 36 6 34 6 32Z"
+                          fill="#18181b"
+                          stroke="#ffffff"
+                          strokeWidth="1.8"
+                          strokeLinejoin="round"
+                        />
+                        {/* Cap */}
+                        <rect x="9.5" y="0.5" width="7" height="3" rx="1" fill="#ffffff" />
+                        {/* Bottle label */}
+                        <rect x="8.5" y="16" width="9" height="12" rx="1" fill="rgba(255,255,255,0.18)" stroke="#ffffff" strokeWidth="0.8" />
+                        <line x1="10.5" y1="20" x2="15.5" y2="20" stroke="#ffffff" strokeWidth="0.8" strokeLinecap="round" />
+                        <line x1="10.5" y1="23" x2="14" y2="23" stroke="#ffffff" strokeWidth="0.8" strokeLinecap="round" />
+                      </g>
+
+                      {/* Right Item: Shopping Bag with Handles (+8 deg tilt) */}
+                      <g transform="translate(36, 16) rotate(8, 12, 20)">
+                        {/* Bag Body */}
+                        <path
+                          d="M3 10L21 10L23 34C23 35.5 21.5 36.5 20 36.5L4 36.5C2.5 36.5 1 35.5 1 34Z"
+                          fill="#27272a"
+                          stroke="#ffffff"
+                          strokeWidth="1.8"
+                          strokeLinejoin="round"
+                        />
+                        {/* Handles */}
+                        <path
+                          d="M7 10C7 5 9 3 12 3C15 3 17 5 17 10"
+                          stroke="#ffffff"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                        />
+                        {/* Bag Brand Tag */}
+                        <circle cx="12" cy="22" r="3.5" fill="none" stroke="#ffffff" strokeWidth="0.8" />
+                        <path d="M10.5 22L13.5 22M12 20.5L12 23.5" stroke="#ffffff" strokeWidth="0.8" strokeLinecap="round" />
+                      </g>
+
+                      {/* Center Item: Packaged Merchandise Box (Prominent in Foreground) */}
+                      <g transform="translate(18, 20)">
+                        {/* Box Front Face */}
+                        <rect
+                          x="0"
+                          y="6"
+                          width="28"
+                          height="24"
+                          rx="3"
+                          fill="#09090b"
+                          stroke="#ffffff"
+                          strokeWidth="2"
+                          strokeLinejoin="round"
+                        />
+                        {/* Sealing Tape Stripe */}
+                        <rect x="11.5" y="6" width="5" height="24" fill="#ffffff" fillOpacity="0.25" />
+                        {/* Barcode on Box */}
+                        <g transform="translate(4, 18)">
+                          <rect x="0" y="0" width="12" height="8" rx="1" fill="#ffffff" />
+                          <line x1="2" y1="2" x2="2" y2="6" stroke="#09090b" strokeWidth="1" />
+                          <line x1="4" y1="2" x2="4" y2="6" stroke="#09090b" strokeWidth="0.6" />
+                          <line x1="6" y1="2" x2="6" y2="6" stroke="#09090b" strokeWidth="1.2" />
+                          <line x1="8.5" y1="2" x2="8.5" y2="6" stroke="#09090b" strokeWidth="0.8" />
+                          <line x1="10" y1="2" x2="10" y2="6" stroke="#09090b" strokeWidth="1" />
+                        </g>
+                        {/* Mini Kaspi POS check icon */}
+                        <path
+                          d="M19 22L21 24L24 19"
+                          stroke="#ffffff"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </g>
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
 

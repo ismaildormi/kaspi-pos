@@ -21,6 +21,7 @@ import { useAppDictionary } from "@/i18n/schema";
 interface PosHeaderProps {
   storeName?: string;
   cashierName?: string;
+  ownerAvatarUrl?: string;
   onOpenHeldCarts?: () => void;
   onOpenCashShift?: () => void;
   onOpenIndustryTools?: () => void;
@@ -31,6 +32,7 @@ interface PosHeaderProps {
 export const PosHeader: React.FC<PosHeaderProps> = ({
   storeName = "Magasin Principal",
   cashierName = "Caissier",
+  ownerAvatarUrl,
   onOpenHeldCarts,
   onOpenCashShift,
   onOpenIndustryTools,
@@ -76,18 +78,18 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         <div className="h-4 w-px bg-zinc-800 hidden sm:block" />
 
         <div className="flex items-center gap-2 min-w-0">
-          <img
-            src="/logo.png"
-            alt="KASPI POS"
-            className="w-5 h-5 object-contain rounded shrink-0 transition-transform hover:scale-105"
-          />
-          <span className="font-bold text-xs tracking-tight text-white hidden md:inline truncate max-w-[140px]">
-            {storeName}
+          <div className="w-8 h-8 rounded-lg overflow-hidden p-0 border border-white/15 bg-zinc-900 shrink-0 shadow-sm">
+            <img
+              src="/logo.png"
+              alt="KASPI POS"
+              className="w-full h-full object-cover rounded-lg transition-transform hover:scale-105"
+            />
+          </div>
+          <span className="font-extrabold text-xs tracking-tight text-white hidden md:inline shrink-0">
+            KASPI POS
           </span>
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.05] border border-white/10 text-zinc-400 hidden lg:inline">
-            {cashierName === "Caissier" || cashierName === "Cashier" || cashierName === "كاشير"
-              ? (locale === "ar" ? "كاشير" : locale === "en" ? "Cashier" : "Caissier")
-              : cashierName}
+          <span className="text-[11px] font-mono text-zinc-300 font-bold px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/10 truncate max-w-[150px]">
+            {storeName}
           </span>
         </div>
       </div>
@@ -182,6 +184,31 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
 
         {/* Language Switcher */}
         <LanguageSwitcher />
+
+        {/* Owner Profile Button with Crisp Circular Avatar */}
+        <button
+          type="button"
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent("open-owner-vault"));
+          }}
+          className="inline-flex items-center gap-1.5 h-8 px-2 rounded-lg border border-white/10 hover:border-white/25 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-zinc-200 transition-all cursor-pointer"
+          title={locale === "ar" ? "خزنة المالك والملف الشخصي" : "Profil Propriétaire & Coffre-Fort"}
+        >
+          <div className="w-5 h-5 rounded-full overflow-hidden border border-white/25 bg-zinc-800 shrink-0 flex items-center justify-center text-[9px] font-bold text-white shadow-inner">
+            {ownerAvatarUrl ? (
+              <img
+                src={ownerAvatarUrl}
+                alt={cashierName || "Owner"}
+                className="w-full h-full object-cover rounded-full"
+              />
+            ) : (
+              <span>{(cashierName || "A").slice(0, 1).toUpperCase()}</span>
+            )}
+          </div>
+          <span className="hidden sm:inline truncate max-w-[80px] font-bold">
+            {cashierName}
+          </span>
+        </button>
 
         {/* Fullscreen Kiosk Toggle */}
         <button

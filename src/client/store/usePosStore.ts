@@ -84,6 +84,7 @@ interface PosState {
   tenantInfo?: {
     shopName?: string;
     legalName?: string;
+    logoUrl?: string;
     ice?: string;
     taxId?: string;
     rcNumber?: string;

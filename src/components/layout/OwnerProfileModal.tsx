@@ -246,8 +246,16 @@ export function OwnerProfileModal({
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-white shadow-inner">
-              <ShieldCheck className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-white/25 bg-zinc-900 flex items-center justify-center text-white shadow-inner shrink-0">
+              {vaultData.logoUrl ? (
+                <img
+                  src={vaultData.logoUrl}
+                  alt="Profile"
+                  className="w-full h-full object-cover rounded-full"
+                />
+              ) : (
+                <ShieldCheck className="w-5 h-5 text-white" />
+              )}
             </div>
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">

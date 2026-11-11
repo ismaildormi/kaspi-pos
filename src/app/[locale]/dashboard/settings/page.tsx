@@ -78,6 +78,7 @@ export default function SettingsPage() {
 
   // General & Legal State
   const [shopName, setShopName] = useState("");
+  const [storeLogoUrl, setStoreLogoUrl] = useState("");
   const [address, setAddress] = useState("");
   const [ice, setIce] = useState("");
   const [taxId, setTaxId] = useState("");
@@ -182,6 +183,13 @@ export default function SettingsPage() {
     setShopifyStoreUrl(savedShopifyUrl);
     setShopifySecret(savedShopifySecret);
     setIsSyncActive(savedSyncActive);
+
+    const handleProfileUpdate = (e: any) => {
+      if (e.detail?.shopName) setShopName(e.detail.shopName);
+      if (e.detail?.logoUrl !== undefined) setStoreLogoUrl(e.detail.logoUrl);
+    };
+    window.addEventListener("kaspi_store_profile_updated", handleProfileUpdate);
+    return () => window.removeEventListener("kaspi_store_profile_updated", handleProfileUpdate);
   }, []);
 
   const fetchMeProfile = async () => {
@@ -213,6 +221,7 @@ export default function SettingsPage() {
         const s = data.settings;
         if (s) {
           setShopName(s.shopName || "");
+          if (s.logoUrl) setStoreLogoUrl(s.logoUrl);
           setAddress(s.address || "");
           setIce(s.ice || "");
           setTaxId(s.taxId || "");
@@ -412,6 +421,7 @@ export default function SettingsPage() {
         receiptHeader,
         receiptFooter,
         shopName: shopName || "KASPI POS GLOBAL",
+        logoUrl: storeLogoUrl || undefined,
         address: address || "Casablanca, Maroc",
         ice: ice || "001234567000089",
         taxId: taxId || "12345678",
@@ -1596,18 +1606,33 @@ export default function SettingsPage() {
                     <div className="text-center space-y-1 pb-2 border-b border-dashed border-current/40">
                       {showStoreLogo && (
                         <img
-                          src="/logo.png"
-                          alt="KASPI"
-                          className="w-6 h-6 object-contain mx-auto mb-1"
+                          src={storeLogoUrl || "/logo.png"}
+                          alt="Store Logo"
+                          className="w-10 h-10 object-contain mx-auto mb-1 grayscale contrast-200"
+                          onError={(e) => (e.currentTarget.style.display = "none")}
                         />
                       )}
-                      <h4 className="font-extrabold text-sm">
+                      <h4 className="font-black text-sm uppercase tracking-tight">
                         {shopName || "KASPI POS STORE"}
                       </h4>
                       <p className="text-[10px] opacity-80">{address || "Casablanca, Maroc"}</p>
-                      <p className="text-[9px] opacity-60" dir="ltr">
-                        ICE: {toWesternNumerals(ice || "001234567000089")}
-                      </p>
+                      {phone && (
+                        <p className="text-[9px] opacity-75 font-mono" dir="ltr">
+                          Tel: {toWesternNumerals(phone)}
+                        </p>
+                      )}
+                      <div className="text-[9px] opacity-75 font-bold space-y-0.5" dir="ltr">
+                        {ice && <p>ICE: {toWesternNumerals(ice)}</p>}
+                        {(taxId || rcNumber) && (
+                          <p>
+                            {taxId ? `IF: ${toWesternNumerals(taxId)}` : ""}{" "}
+                            {rcNumber ? `| RC: ${toWesternNumerals(rcNumber)}` : ""}
+                          </p>
+                        )}
+                      </div>
+                      {receiptHeader && (
+                        <p className="text-[10px] italic pt-0.5">{receiptHeader}</p>
+                      )}
                     </div>
 
                     <div className="py-2 space-y-1 text-[10px] border-b border-dashed border-current/40">

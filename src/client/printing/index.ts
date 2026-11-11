@@ -18,6 +18,7 @@ export interface PrintReceiptPayload {
   storeName?: string;
   shopName?: string;
   legalName?: string;
+  logoUrl?: string;
   ice?: string;
   taxId?: string;
   rcNumber?: string;
@@ -69,11 +70,16 @@ export interface PrinterSettings {
   openDrawer?: boolean;
   autoPrintReceipt?: boolean;
   showStoreLogo?: boolean;
+  logoUrl?: string;
   receiptHeader?: string;
   receiptFooter?: string;
+  shopName?: string;
+  address?: string;
+  ice?: string;
+  taxId?: string;
 }
 
-export const DEFAULT_PRINTER_SETTINGS: Required<PrinterSettings> = {
+export const DEFAULT_PRINTER_SETTINGS: PrinterSettings = {
   receiptLanguage: "fr",
   printerConnectionMode: "auto",
   printer: "",
@@ -203,6 +209,7 @@ export async function printTestReceipt(
     receiptNumber: toWesternNumerals(`TEST-${Date.now().toString().slice(-6)}`),
     shopName: overrides?.shopName || "KASPI POS GLOBAL",
     storeName: overrides?.shopName || "KASPI POS GLOBAL",
+    logoUrl: overrides?.logoUrl || stored.logoUrl,
     address: overrides?.address || "Casablanca • Paris • Istanbul",
     ice: toWesternNumerals(overrides?.ice || "001234567000089"),
     taxId: toWesternNumerals(overrides?.taxId || "12345678"),

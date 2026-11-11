@@ -114,23 +114,18 @@ export default function DashboardLayout({
             href={localizeHref("/dashboard")}
             className="flex items-center gap-2.5 min-w-0"
           >
-            {storeLogoUrl ? (
-              <img
-                src={storeLogoUrl}
-                alt="Store Logo"
-                className="w-7 h-7 object-contain rounded-md shrink-0 border border-white/10 bg-zinc-900"
-              />
-            ) : (
+            {/* Always Official Full-Bleed KASPI POS App Logo */}
+            <div className="w-8 h-8 rounded-lg overflow-hidden p-0 border border-white/15 bg-zinc-900 shrink-0 shadow-sm">
               <img
                 src="/logo.png"
                 alt="KASPI POS"
-                className="w-6 h-6 object-contain rounded-md shrink-0"
+                className="w-full h-full object-cover rounded-lg"
               />
-            )}
+            </div>
             <span className="font-extrabold text-sm tracking-tight text-white shrink-0">
               KASPI POS
             </span>
-            <span className="hidden sm:inline-block text-[11px] font-mono text-zinc-400 px-2 py-0.5 rounded-md bg-white/[0.03] border border-white/10 truncate max-w-[160px]">
+            <span className="hidden sm:inline-block text-[11px] font-mono text-zinc-300 font-bold px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/10 truncate max-w-[160px]">
               {shopName}
             </span>
           </Link>
@@ -164,14 +159,25 @@ export default function DashboardLayout({
             <Settings className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-500 ease-out" />
           </Link>
 
+          {/* Top-Right Owner Profile Button with Crisp Circular Avatar */}
           <button
             type="button"
             onClick={() => setIsOwnerModalOpen(true)}
-            className="hidden md:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 hover:border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-medium text-zinc-200 transition-all cursor-pointer"
+            className="hidden md:inline-flex items-center gap-2 h-9 px-2 rounded-xl border border-white/10 hover:border-white/25 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-zinc-200 transition-all cursor-pointer"
             title={locale === "ar" ? "خزنة المالك والملف الشخصي" : "Profil Propriétaire & Coffre-Fort"}
           >
-            <UserIcon className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="truncate max-w-[110px]">
+            <div className="w-7 h-7 rounded-full overflow-hidden border border-white/25 bg-zinc-800 shrink-0 flex items-center justify-center text-[10px] font-bold text-white shadow-inner">
+              {storeLogoUrl ? (
+                <img
+                  src={storeLogoUrl}
+                  alt={userName || "Owner"}
+                  className="w-full h-full object-cover rounded-full"
+                />
+              ) : (
+                <span>{(userName || "A").slice(0, 2).toUpperCase()}</span>
+              )}
+            </div>
+            <span className="truncate max-w-[110px] font-bold">
               {userName || t.topbar.activeAccount}
             </span>
           </button>

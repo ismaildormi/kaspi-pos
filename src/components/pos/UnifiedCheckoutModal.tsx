@@ -188,6 +188,7 @@ export function UnifiedCheckoutModal() {
     const receiptSnapshot: ReceiptData = {
       shopName: tenantInfo?.shopName || "Kasbi Retail (كسب)",
       legalName: tenantInfo?.legalName || tenantInfo?.shopName || "Ste Kasbi SARL",
+      logoUrl: tenantInfo?.logoUrl || undefined,
       ice: toWesternNumerals(tenantInfo?.ice || "002345678000045"),
       taxId: toWesternNumerals(tenantInfo?.taxId || "45892134"),
       rcNumber: toWesternNumerals(tenantInfo?.rcNumber || "98765 Casablanca"),

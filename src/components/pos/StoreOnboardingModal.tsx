@@ -165,9 +165,14 @@ export function StoreOnboardingModal({
         <div className="p-6 md:p-8">
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-xs font-bold mb-2">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{t.onboarding.businessSectorBtn}</span>
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <div className="w-8 h-8 rounded-xl overflow-hidden p-0 border border-white/20 bg-zinc-900 shrink-0 shadow-sm">
+                  <img src="/logo.png" alt="KASPI POS" className="w-full h-full object-cover rounded-xl" />
+                </div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-xs font-bold">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{t.onboarding.businessSectorBtn}</span>
+                </div>
               </div>
               <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
                 {t.onboarding.modalTitle}

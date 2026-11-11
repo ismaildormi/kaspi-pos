@@ -41,6 +41,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
   const { t, locale } = useAppDictionary();
   const { storeType } = usePosStore();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [ownerAvatarUrl, setOwnerAvatarUrl] = useState<string>("");
 
   const localizeHref = (path: string) => {
     return `/${locale}${path}`;
@@ -55,6 +56,19 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
         }
       })
       .catch(() => {});
+
+    fetch("/api/v1/settings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.settings?.logoUrl) setOwnerAvatarUrl(data.settings.logoUrl);
+      })
+      .catch(() => {});
+
+    const handleProfileUpdate = (e: any) => {
+      if (e.detail?.logoUrl !== undefined) setOwnerAvatarUrl(e.detail.logoUrl);
+    };
+    window.addEventListener("kaspi_store_profile_updated", handleProfileUpdate);
+    return () => window.removeEventListener("kaspi_store_profile_updated", handleProfileUpdate);
   }, []);
 
   const sectorBadgeInfo = React.useMemo(() => {
@@ -242,7 +256,13 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           title={locale === "ar" ? "خزنة المالك المحمية" : locale === "en" ? "Protected Owner Vault" : "Coffre-Fort Propriétaire"}
         >
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-3.5 h-3.5 text-zinc-400 group-hover:text-emerald-400 group-hover:scale-110 transition-all" />
+            <div className="w-5 h-5 rounded-full overflow-hidden border border-white/20 bg-zinc-800 shrink-0 flex items-center justify-center">
+              {ownerAvatarUrl ? (
+                <img src={ownerAvatarUrl} alt="Vault" className="w-full h-full object-cover rounded-full" />
+              ) : (
+                <ShieldCheck className="w-3.5 h-3.5 text-zinc-400 group-hover:text-emerald-400 transition-all" />
+              )}
+            </div>
             <span>{locale === "ar" ? "خزنة المالك" : locale === "en" ? "Owner Vault" : "Coffre Propriétaire"}</span>
           </div>
           <Lock className="w-3 h-3 text-zinc-500 group-hover:text-white transition-colors" />

@@ -322,8 +322,11 @@ export default function RegisterPage() {
       </form>
 
       {/* Sign-In Footer Link */}
-      <div className="mt-4 text-center text-xs text-zinc-400">
-        <span>{t.hasAccountText} </span>
+      <div
+        dir="auto"
+        className="mt-4 flex items-center justify-center gap-1.5 text-xs text-zinc-400"
+      >
+        <span>{t.hasAccountText}</span>
         <Link
           href={`/${locale}/login`}
           onClick={() => playTapSound()}

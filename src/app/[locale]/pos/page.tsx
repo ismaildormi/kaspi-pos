@@ -13,6 +13,7 @@ import { CustomerModal } from "@/components/pos/CustomerModal";
 import { CashShiftModal } from "@/components/pos/CashShiftModal";
 import { StoreOnboardingModal } from "@/components/pos/StoreOnboardingModal";
 import { IndustryWorkspaceModal } from "@/components/pos/IndustryWorkspaceModal";
+import { OwnerProfileModal } from "@/components/layout/OwnerProfileModal";
 import type { ShiftFinancialSummary } from "@/server/cash-shift/engine";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { offlineDb } from "@/client/db";
@@ -29,6 +30,8 @@ export default function PosPage() {
   const [isCashShiftModalOpen, setIsCashShiftModalOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isIndustryToolsOpen, setIsIndustryToolsOpen] = useState(false);
+  const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
+  const [userName, setUserName] = useState("AYMANE");
   const [activeShift, setActiveShift] = useState<ShiftFinancialSummary | null>(null);
   const [recentShifts, setRecentShifts] = useState<ShiftFinancialSummary[]>([]);
 
@@ -63,10 +66,23 @@ export default function PosPage() {
     if (navigator.onLine) {
       processSyncQueue().catch(() => {});
       fetchCashShift();
+      fetch(getApiUrl("/api/v1/me"))
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d?.data?.user?.fullName || d?.data?.user?.email) {
+            setUserName(d.data.user.fullName || d.data.user.email.split("@")[0]);
+          }
+        })
+        .catch(() => {});
     }
     const handleOpenIndustry = () => setIsIndustryToolsOpen(true);
+    const handleOpenVault = () => setIsOwnerModalOpen(true);
     window.addEventListener("open-industry-modal", handleOpenIndustry);
-    return () => window.removeEventListener("open-industry-modal", handleOpenIndustry);
+    window.addEventListener("open-owner-vault", handleOpenVault);
+    return () => {
+      window.removeEventListener("open-industry-modal", handleOpenIndustry);
+      window.removeEventListener("open-owner-vault", handleOpenVault);
+    };
   }, [fetchCashShift]);
 
   // Refresh active cash shift summary when payment modal closes (e.g. after a completed sale)
@@ -258,6 +274,8 @@ export default function PosPage() {
       {/* Top Header */}
       <PosHeader
         storeName={tenantInfo?.shopName || "Magasin Principal"}
+        cashierName={userName}
+        ownerAvatarUrl={tenantInfo?.logoUrl}
         onOpenHeldCarts={() => setIsHeldModalOpen(true)}
         onOpenIndustryTools={() => setIsIndustryToolsOpen(true)}
         onOpenCashShift={() => {
@@ -351,6 +369,15 @@ export default function PosPage() {
               setCategories(cData.data?.categories || []);
             }
           } catch {}
+        }}
+      />
+      {/* Owner Profile & Security Vault Modal */}
+      <OwnerProfileModal
+        isOpen={isOwnerModalOpen}
+        onClose={() => setIsOwnerModalOpen(false)}
+        onProfileUpdated={({ shopName, logoUrl }) => {
+          if (shopName) setTenantInfo({ ...tenantInfo, shopName });
+          if (logoUrl !== undefined) setTenantInfo({ ...tenantInfo, logoUrl });
         }}
       />
     </div>

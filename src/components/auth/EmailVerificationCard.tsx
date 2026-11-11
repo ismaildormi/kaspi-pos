@@ -211,8 +211,8 @@ export const EmailVerificationCard: React.FC<EmailVerificationCardProps> = ({
       <div className="relative z-10 my-7 flex items-center justify-center gap-4">
         <span className="h-px w-16 bg-gradient-to-r from-transparent to-zinc-300 dark:to-zinc-700" />
         <div className="rounded-full border border-zinc-200 dark:border-zinc-800 bg-gradient-to-b from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 p-2 shadow-[inset_0_1px_2px_rgba(16,24,40,0.06)]">
-          <div className="rounded-full border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-1.5">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#09090b] dark:bg-zinc-900 shadow-[0_8px_20px_-6px_rgba(9,9,11,0.55),inset_0_1px_0_rgba(255,255,255,0.18)]">
+          <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-0 overflow-hidden">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#09090b] dark:bg-zinc-900 shadow-[0_8px_20px_-6px_rgba(9,9,11,0.55),inset_0_1px_0_rgba(255,255,255,0.18)] overflow-hidden p-0">
               {logoFailed ? (
                 <KaspiMonogram />
               ) : (
@@ -220,7 +220,7 @@ export const EmailVerificationCard: React.FC<EmailVerificationCardProps> = ({
                 <img
                   src="/logo.png"
                   alt="KASPI POS"
-                  className="h-10 w-10 object-contain"
+                  className="w-full h-full object-cover rounded-2xl"
                   onError={() => setLogoFailed(true)}
                 />
               )}

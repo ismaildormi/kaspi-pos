@@ -831,8 +831,11 @@ function LoginForm() {
       )}
 
       {/* Subtle Horizontal Divider & Registration Footer Link */}
-      <div className="mt-5 pt-4 border-t border-white/10 text-center text-xs text-zinc-400">
-        <span>{t.noAccountText} </span>
+      <div
+        dir="auto"
+        className="mt-5 pt-4 border-t border-white/10 flex items-center justify-center gap-1.5 text-xs text-zinc-400"
+      >
+        <span>{t.noAccountText}</span>
         <Link
           href={`/${locale}/register`}
           onClick={() => playTapSound()}

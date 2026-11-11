@@ -100,13 +100,18 @@ function LaunchDesktopContent() {
         </svg>
 
         {/* Brand Header */}
-        <div dir="ltr" className="flex items-center justify-center gap-2 mb-6">
-          <span className="text-[28px] font-black tracking-[-0.03em] text-zinc-950 dark:text-white leading-none">
-            KASPI
-          </span>
-          <span className="rounded-lg bg-[#09090b] dark:bg-white px-2.5 py-1 text-[22px] font-black tracking-[-0.02em] text-white dark:text-zinc-950 leading-none">
-            POS
-          </span>
+        <div dir="ltr" className="flex items-center justify-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl overflow-hidden p-0 border border-zinc-200 dark:border-white/20 bg-zinc-950 shrink-0 shadow-md">
+            <img src="/logo.png" alt="KASPI POS" className="w-full h-full object-cover rounded-xl" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[28px] font-black tracking-[-0.03em] text-zinc-950 dark:text-white leading-none">
+              KASPI
+            </span>
+            <span className="rounded-lg bg-[#09090b] dark:bg-white px-2.5 py-1 text-[22px] font-black tracking-[-0.02em] text-white dark:text-zinc-950 leading-none">
+              POS
+            </span>
+          </div>
         </div>
 
         {/* Center Desktop Icon in Double-Ring Badge */}

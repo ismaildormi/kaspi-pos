@@ -21,6 +21,7 @@ export interface ReceiptItem {
 export interface ReceiptData {
   shopName: string;
   legalName?: string;
+  logoUrl?: string;
   ice?: string;
   taxId?: string;
   rcNumber?: string;
@@ -108,9 +109,9 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
         <div className="text-center pb-2 border-b border-dashed border-black">
           {showLogo && (
             <img
-              src="/logo.png"
+              src={data.logoUrl || "/logo.png"}
               alt="Logo"
-              className="w-8 h-8 object-contain mx-auto mb-1 grayscale contrast-200"
+              className="w-10 h-10 object-contain mx-auto mb-1 grayscale contrast-200"
               onError={(e) => (e.currentTarget.style.display = "none")}
             />
           )}
@@ -126,10 +127,12 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
           )}
           <div className="text-[9px] mt-1 space-y-0.5 font-bold" dir="ltr">
             {data.ice && <p>ICE: {toWesternNumerals(data.ice)}</p>}
-            <p>
-              {data.taxId ? `IF: ${toWesternNumerals(data.taxId)}` : ""}{" "}
-              {data.rcNumber ? `| RC: ${toWesternNumerals(data.rcNumber)}` : ""}
-            </p>
+            {(data.taxId || data.rcNumber) && (
+              <p>
+                {data.taxId ? `IF: ${toWesternNumerals(data.taxId)}` : ""}{" "}
+                {data.rcNumber ? `| RC: ${toWesternNumerals(data.rcNumber)}` : ""}
+              </p>
+            )}
           </div>
           {data.receiptHeader && (
             <p className="text-[10px] italic pt-1">{data.receiptHeader}</p>
