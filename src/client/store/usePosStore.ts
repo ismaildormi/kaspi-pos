@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { offlineDb, type OfflineSale, type OfflineSaleItem } from "../db";
 import { enqueueSyncItem, processSyncQueue, getSyncQueueCounts } from "../sync-engine";
 import { toDecimal, roundMoney } from "@/domain/money";
+import { getCachedData, setCachedData } from "@/lib/cache/client-cache";
 
 export interface PosProduct {
   id: string;
@@ -650,6 +651,37 @@ export const usePosStore = create<PosState>()(
                   stockQuantity: updatedStock,
                 });
               }
+            }
+
+            // Real-Time 0ms Client Cache Deduction (products_catalog)
+            try {
+              const cached = getCachedData<any[]>("products_catalog", []);
+              if (Array.isArray(cached.data) && cached.data.length > 0) {
+                const updated = cached.data.map((p) => {
+                  const sold = cart.find((i) => i.productId === p.id);
+                  if (sold && p.trackStock) {
+                    return {
+                      ...p,
+                      stockQuantity: Math.max(0, (p.stockQuantity ?? 0) - sold.quantity),
+                    };
+                  }
+                  return p;
+                });
+                setCachedData("products_catalog", updated);
+              }
+            } catch (cacheErr) {
+              console.warn("Could not update products_catalog in client-cache:", cacheErr);
+            }
+
+            // Broadcast real-time stock deduction event to all open tabs and POS canvas
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(
+                new CustomEvent("kaspi_stock_updated", {
+                  detail: {
+                    items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+                  },
+                })
+              );
             }
 
             // Update local customer credit balance if credit sale

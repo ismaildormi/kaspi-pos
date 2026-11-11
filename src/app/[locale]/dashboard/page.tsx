@@ -109,19 +109,20 @@ export default async function DashboardOverviewPage({
             </h1>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-white/10 text-white border border-white/20">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              {currentStoreType === "restaurant"
-                ? locale === "ar" ? "مطعم ومقهى • KDS" : "Restaurant & Café • KDS"
-                : currentStoreType === "butchery"
-                ? locale === "ar" ? "مجزرة ولحوم • ميزان" : "Boucherie & Viandes"
-                : currentStoreType === "bakery"
-                ? locale === "ar" ? "مخبزة وحلويات" : "Boulangerie & Pâtisserie"
-                : currentStoreType === "fashion"
-                ? locale === "ar" ? "أزياء وملابس • مقاسات" : "Mode & Prêt-à-Porter"
-                : currentStoreType === "electronics" || currentStoreType === "tech"
-                ? locale === "ar" ? "إلكترونيات • IMEI" : "Tech & IMEI"
-                : currentStoreType === "wholesale"
-                ? locale === "ar" ? "جملة وتوزيع • B2B" : "Grossiste & B2B"
-                : locale === "ar" ? "بقالة وسوبرماركت • EAN" : "Supermarché & Épicerie"}
+              {(() => {
+                const map: Record<string, { ar: string; en: string; fr: string }> = {
+                  restaurant: { ar: "مطعم ومقهى • KDS", en: "Restaurant & Café • KDS", fr: "Restaurant & Café • KDS" },
+                  butchery: { ar: "مجزرة ولحوم • ميزان", en: "Butchery & Meats • Scale", fr: "Boucherie & Viandes • Balance" },
+                  bakery: { ar: "مخبزة وحلويات", en: "Bakery & Pastry", fr: "Boulangerie & Pâtisserie" },
+                  fashion: { ar: "أزياء وملابس • مقاسات", en: "Fashion & Apparel • Sizes", fr: "Mode & Prêt-à-Porter • Tailles" },
+                  electronics: { ar: "إلكترونيات • IMEI", en: "Tech & Electronics • IMEI", fr: "Tech & Électronique • IMEI" },
+                  tech: { ar: "إلكترونيات • IMEI", en: "Tech & Electronics • IMEI", fr: "Tech & Électronique • IMEI" },
+                  wholesale: { ar: "جملة وتوزيع • B2B", en: "Wholesale & Distribution • B2B", fr: "Grossiste & Distribution • B2B" },
+                  grocery: { ar: "بقالة وسوبرماركت • EAN", en: "Supermarket & Grocery • EAN", fr: "Supermarché & Épicerie • EAN" },
+                };
+                const s = map[currentStoreType] || map.grocery;
+                return locale === "ar" ? s.ar : locale === "en" ? s.en : s.fr;
+              })()}
             </span>
           </div>
           <p className="text-xs text-zinc-400 mt-1 font-mono">

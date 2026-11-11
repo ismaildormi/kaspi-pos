@@ -39,7 +39,7 @@ interface SidebarProps {
 export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const { t, locale } = useAppDictionary();
-  const { storeType } = usePosStore();
+  const { storeType, tenantInfo } = usePosStore();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [ownerAvatarUrl, setOwnerAvatarUrl] = useState<string>("");
 
@@ -263,7 +263,9 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
                 <ShieldCheck className="w-3.5 h-3.5 text-zinc-400 group-hover:text-emerald-400 transition-all" />
               )}
             </div>
-            <span>{locale === "ar" ? "خزنة المالك" : locale === "en" ? "Owner Vault" : "Coffre Propriétaire"}</span>
+            <span className="truncate max-w-[140px] font-bold">
+              {tenantInfo?.shopName || (locale === "ar" ? "خزنة المالك" : locale === "en" ? "Owner Vault" : "Coffre Propriétaire")}
+            </span>
           </div>
           <Lock className="w-3 h-3 text-zinc-500 group-hover:text-white transition-colors" />
         </button>

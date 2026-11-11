@@ -78,18 +78,15 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         <div className="h-4 w-px bg-zinc-800 hidden sm:block" />
 
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-8 h-8 rounded-lg overflow-hidden p-0 border border-white/15 bg-zinc-900 shrink-0 shadow-sm">
+          <div className="w-8 h-8 shrink-0 flex items-center justify-center p-0 bg-transparent border-0 shadow-none">
             <img
               src="/logo.png"
               alt="KASPI POS"
-              className="w-full h-full object-cover rounded-lg transition-transform hover:scale-105"
+              className="w-8 h-8 object-contain drop-shadow-[0_2px_8px_rgba(255,255,255,0.15)] transition-transform hover:scale-105"
             />
           </div>
           <span className="font-extrabold text-xs tracking-tight text-white hidden md:inline shrink-0">
             KASPI POS
-          </span>
-          <span className="text-[11px] font-mono text-zinc-300 font-bold px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/10 truncate max-w-[150px]">
-            {storeName}
           </span>
         </div>
       </div>
@@ -185,28 +182,28 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         {/* Language Switcher */}
         <LanguageSwitcher />
 
-        {/* Owner Profile Button with Crisp Circular Avatar */}
+        {/* Store Profile Button with Crisp Circular Avatar & Store Name */}
         <button
           type="button"
           onClick={() => {
             window.dispatchEvent(new CustomEvent("open-owner-vault"));
           }}
-          className="inline-flex items-center gap-1.5 h-8 px-2 rounded-lg border border-white/10 hover:border-white/25 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-zinc-200 transition-all cursor-pointer"
+          className="inline-flex items-center gap-2 h-8 px-2.5 rounded-lg border border-white/10 hover:border-white/25 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-zinc-200 transition-all cursor-pointer"
           title={locale === "ar" ? "خزنة المالك والملف الشخصي" : "Profil Propriétaire & Coffre-Fort"}
         >
           <div className="w-5 h-5 rounded-full overflow-hidden border border-white/25 bg-zinc-800 shrink-0 flex items-center justify-center text-[9px] font-bold text-white shadow-inner">
             {ownerAvatarUrl ? (
               <img
                 src={ownerAvatarUrl}
-                alt={cashierName || "Owner"}
+                alt={storeName || cashierName || "Store"}
                 className="w-full h-full object-cover rounded-full"
               />
             ) : (
-              <span>{(cashierName || "A").slice(0, 1).toUpperCase()}</span>
+              <span>{(storeName || cashierName || "K").slice(0, 1).toUpperCase()}</span>
             )}
           </div>
-          <span className="hidden sm:inline truncate max-w-[80px] font-bold">
-            {cashierName}
+          <span className="hidden sm:inline truncate max-w-[120px] font-bold text-white">
+            {storeName || cashierName}
           </span>
         </button>
 

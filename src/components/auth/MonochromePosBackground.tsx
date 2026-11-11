@@ -576,13 +576,13 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
           })}
         </div>
 
-        {/* Brand Identity Header: Full-Bleed 3D App Icon + KASPI POS */}
+        {/* Brand Identity Header: Frameless Standalone KASPI POS Logo */}
         <div className="text-center mb-4">
-          <div className="relative w-14 h-14 mx-auto mb-2 rounded-2xl bg-gradient-to-b from-zinc-800/90 via-zinc-900 to-zinc-950 border border-white/20 shadow-[0_10px_28px_rgba(0,0,0,0.85),0_0_24px_rgba(255,255,255,0.08),inset_0_1px_0_rgba(255,255,255,0.25)] overflow-hidden p-0 flex items-center justify-center">
+          <div className="relative mx-auto mb-2.5 flex items-center justify-center p-0 bg-transparent border-0 shadow-none">
             <img
               src="/logo.png"
               alt="KASPI POS"
-              className="w-full h-full object-cover rounded-2xl drop-shadow-[0_2px_10px_rgba(255,255,255,0.45)]"
+              className="w-16 h-16 object-contain drop-shadow-[0_4px_20px_rgba(255,255,255,0.15)] select-none"
               onError={(e) => {
                 e.currentTarget.style.display = "none";
               }}

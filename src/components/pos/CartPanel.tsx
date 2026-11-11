@@ -51,6 +51,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
     discountFixed,
     setDiscount,
     updateItemQuantity,
+    setItemQuantity,
     removeItem,
     clearCart,
     holdCurrentCart,
@@ -435,11 +436,15 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             >
               {/* Product Info */}
               <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-white text-sm truncate leading-snug">
+                <h4 className="font-bold text-white text-sm truncate leading-snug">
                   {item.name}
                 </h4>
                 <div className="flex items-center gap-2 mt-0.5 text-xs text-zinc-400 font-mono">
-                  <span>{item.unitPrice.toFixed(2)} {tCommon("currency")}</span>
+                  <span>
+                    {item.unitPrice.toFixed(2)} × {item.quantity} ={" "}
+                    <strong className="text-white font-bold">{item.lineTotal.toFixed(2)}</strong>{" "}
+                    {tCommon("currency")}
+                  </span>
                   {item.taxRate > 0 && (
                     <span className="text-[10px] px-1 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
                       TVA {item.taxRate}%
@@ -453,22 +458,36 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                 )}
               </div>
 
-              {/* Quantity Stepper */}
+              {/* Quantity Stepper: Clickable/Direct-Editable Input + Rapid Keycap Buttons */}
               <div className="flex items-center gap-1 bg-zinc-950 border border-zinc-800 rounded-lg p-0.5">
                 <button
                   type="button"
                   onClick={() => updateItemQuantity(item.productId, -1)}
                   className="keycap-3d w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-700/60 rounded active:scale-95 transition cursor-pointer"
+                  title="-1"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
-                <span className="w-7 text-center text-xs font-bold font-mono text-white">
-                  {item.quantity}
-                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={item.quantity}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    if (!isNaN(val)) {
+                      setItemQuantity(item.productId, val);
+                    }
+                  }}
+                  onFocus={(e) => e.target.select()}
+                  className="w-10 h-7 text-center text-xs font-bold font-mono text-white bg-transparent focus:bg-zinc-850 focus:outline-none focus:ring-1 focus:ring-white rounded border-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text select-all"
+                  title={locale === "ar" ? "انقر لتعديل الكمية مباشرة" : "Cliquer pour modifier la quantité"}
+                />
                 <button
                   type="button"
                   onClick={() => updateItemQuantity(item.productId, 1)}
                   className="keycap-3d w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-700/60 rounded active:scale-95 transition cursor-pointer"
+                  title="+1"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>

@@ -14,6 +14,8 @@ import { CashShiftModal } from "@/components/pos/CashShiftModal";
 import { StoreOnboardingModal } from "@/components/pos/StoreOnboardingModal";
 import { IndustryWorkspaceModal } from "@/components/pos/IndustryWorkspaceModal";
 import { OwnerProfileModal } from "@/components/layout/OwnerProfileModal";
+import { QuickProductModal } from "@/components/pos/QuickProductModal";
+import { Plus } from "lucide-react";
 import type { ShiftFinancialSummary } from "@/server/cash-shift/engine";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { offlineDb } from "@/client/db";
@@ -21,7 +23,7 @@ import { processSyncQueue, getApiUrl } from "@/client/sync-engine";
 import { useAppDictionary } from "@/i18n/schema";
 
 export default function PosPage() {
-  const { t } = useAppDictionary();
+  const { t, locale } = useAppDictionary();
   const [products, setProducts] = useState<PosProduct[]>([]);
   const [categories, setCategories] = useState<PosCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,6 +33,7 @@ export default function PosPage() {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isIndustryToolsOpen, setIsIndustryToolsOpen] = useState(false);
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
+  const [isQuickProductModalOpen, setIsQuickProductModalOpen] = useState(false);
   const [userName, setUserName] = useState("AYMANE");
   const [activeShift, setActiveShift] = useState<ShiftFinancialSummary | null>(null);
   const [recentShifts, setRecentShifts] = useState<ShiftFinancialSummary[]>([]);
@@ -40,6 +43,7 @@ export default function PosPage() {
     closePaymentModal,
     isPaymentModalOpen,
     cart,
+    addToCart,
     setDeviceCount,
     setTenantInfo,
     setPrinterSettings,
@@ -77,11 +81,30 @@ export default function PosPage() {
     }
     const handleOpenIndustry = () => setIsIndustryToolsOpen(true);
     const handleOpenVault = () => setIsOwnerModalOpen(true);
+    const handleStockUpdate = (e: any) => {
+      const soldItems: Array<{ productId: string; quantity: number }> = e.detail?.items;
+      if (Array.isArray(soldItems)) {
+        setProducts((prev) =>
+          prev.map((p) => {
+            const sold = soldItems.find((s) => s.productId === p.id);
+            if (sold && p.trackStock) {
+              return {
+                ...p,
+                stockQuantity: Math.max(0, (p.stockQuantity ?? 0) - sold.quantity),
+              };
+            }
+            return p;
+          })
+        );
+      }
+    };
     window.addEventListener("open-industry-modal", handleOpenIndustry);
     window.addEventListener("open-owner-vault", handleOpenVault);
+    window.addEventListener("kaspi_stock_updated", handleStockUpdate as EventListener);
     return () => {
       window.removeEventListener("open-industry-modal", handleOpenIndustry);
       window.removeEventListener("open-owner-vault", handleOpenVault);
+      window.removeEventListener("kaspi_stock_updated", handleStockUpdate as EventListener);
     };
   }, [fetchCashShift]);
 
@@ -156,10 +179,11 @@ export default function PosPage() {
           setProducts(items);
 
           // Cache in Dexie for offline lookup
-          if (offlineDb) {
-            await offlineDb.products.bulkPut(
+          if (offlineDb?.offlineProducts) {
+            await offlineDb.offlineProducts.bulkPut(
               items.map((p) => ({
                 id: p.id,
+                tenantId: "current",
                 name: p.name,
                 sku: p.sku,
                 barcode: p.barcode,
@@ -168,17 +192,13 @@ export default function PosPage() {
                 stockQuantity: p.stockQuantity ?? 0,
                 trackStock: p.trackStock ?? true,
                 categoryId: p.categoryId,
-                image: p.image,
-                isScaleItem: p.isScaleItem ?? false,
-                scaleBarcodePrefix: p.scaleBarcodePrefix,
-                weightUnit: p.weightUnit,
-                tareWeightGrams: p.tareWeightGrams,
+                imageUrl: p.image,
                 syncedAt: Date.now(),
               }))
             );
           }
-        } else if (offlineDb) {
-          const cached = await offlineDb.products.toArray();
+        } else if (offlineDb?.offlineProducts) {
+          const cached = await offlineDb.offlineProducts.toArray();
           setProducts(
             cached.map((p: any) => ({
               id: p.id,
@@ -190,11 +210,7 @@ export default function PosPage() {
               stockQuantity: p.stockQuantity,
               trackStock: p.trackStock,
               categoryId: p.categoryId,
-              image: p.image,
-              isScaleItem: p.isScaleItem,
-              scaleBarcodePrefix: p.scaleBarcodePrefix,
-              weightUnit: p.weightUnit,
-              tareWeightGrams: p.tareWeightGrams,
+              image: p.imageUrl || p.image,
             }))
           );
         }
@@ -205,8 +221,8 @@ export default function PosPage() {
         }
       } catch (err) {
         console.warn("PosPage: Network fetch failed, falling back to offline DB", err);
-        if (offlineDb) {
-          const cached = await offlineDb.products.toArray();
+        if (offlineDb?.offlineProducts) {
+          const cached = await offlineDb.offlineProducts.toArray();
           setProducts(
             cached.map((p: any) => ({
               id: p.id,
@@ -218,11 +234,7 @@ export default function PosPage() {
               stockQuantity: p.stockQuantity,
               trackStock: p.trackStock,
               categoryId: p.categoryId,
-              image: p.image,
-              isScaleItem: p.isScaleItem,
-              scaleBarcodePrefix: p.scaleBarcodePrefix,
-              weightUnit: p.weightUnit,
-              tareWeightGrams: p.tareWeightGrams,
+              image: p.imageUrl || p.image,
             }))
           );
         }
@@ -290,8 +302,23 @@ export default function PosPage() {
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left Side: Clean Catalog & Search Area */}
         <div className="flex-1 flex flex-col min-w-0 p-3 sm:p-4 overflow-hidden space-y-3">
-          {/* Top Bar: Barcode / Search Input */}
-          <ProductSearch products={products} />
+          {/* Top Bar: Barcode / Search Input + Quick Add */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <ProductSearch products={products} />
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsQuickProductModalOpen(true)}
+              className="sheen-btn h-11 px-3.5 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 active:scale-[0.98] text-xs font-black flex items-center gap-1.5 shrink-0 transition-all cursor-pointer shadow-[0_2px_12px_rgba(255,255,255,0.15)]"
+              title={locale === "ar" ? "إضافة منتج جديد" : "Ajouter un produit"}
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span className="hidden sm:inline font-bold">
+                {locale === "ar" ? "+ منتج جديد" : locale === "en" ? "+ New Product" : "+ Nouveau"}
+              </span>
+            </button>
+          </div>
 
           {/* Categories Pill Selector */}
           <CategoryFilter categories={categories} />
@@ -303,7 +330,10 @@ export default function PosPage() {
                 {t.pos.loadingCatalog}
               </div>
             ) : (
-              <ProductGrid products={products} />
+              <ProductGrid
+                products={products}
+                onOpenQuickAdd={() => setIsQuickProductModalOpen(true)}
+              />
             )}
           </div>
         </div>
@@ -378,6 +408,16 @@ export default function PosPage() {
         onProfileUpdated={({ shopName, logoUrl }) => {
           if (shopName) setTenantInfo({ ...tenantInfo, shopName });
           if (logoUrl !== undefined) setTenantInfo({ ...tenantInfo, logoUrl });
+        }}
+      />
+
+      {/* Quick Add Product Modal */}
+      <QuickProductModal
+        isOpen={isQuickProductModalOpen}
+        onClose={() => setIsQuickProductModalOpen(false)}
+        onProductCreated={(newProduct) => {
+          setProducts((prev) => [newProduct, ...prev]);
+          addToCart(newProduct);
         }}
       />
     </div>

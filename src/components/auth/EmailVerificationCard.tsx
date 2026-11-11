@@ -207,25 +207,21 @@ export const EmailVerificationCard: React.FC<EmailVerificationCardProps> = ({
         </div>
       </div>
 
-      {/* 2. Brand mark in a double-ring badge */}
+      {/* 2. Brand mark */}
       <div className="relative z-10 my-7 flex items-center justify-center gap-4">
         <span className="h-px w-16 bg-gradient-to-r from-transparent to-zinc-300 dark:to-zinc-700" />
-        <div className="rounded-full border border-zinc-200 dark:border-zinc-800 bg-gradient-to-b from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 p-2 shadow-[inset_0_1px_2px_rgba(16,24,40,0.06)]">
-          <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-0 overflow-hidden">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#09090b] dark:bg-zinc-900 shadow-[0_8px_20px_-6px_rgba(9,9,11,0.55),inset_0_1px_0_rgba(255,255,255,0.18)] overflow-hidden p-0">
-              {logoFailed ? (
-                <KaspiMonogram />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src="/logo.png"
-                  alt="KASPI POS"
-                  className="w-full h-full object-cover rounded-2xl"
-                  onError={() => setLogoFailed(true)}
-                />
-              )}
-            </div>
-          </div>
+        <div className="flex h-16 w-16 items-center justify-center p-0 bg-transparent border-0 shadow-none">
+          {logoFailed ? (
+            <KaspiMonogram />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src="/logo.png"
+              alt="KASPI POS"
+              className="w-16 h-16 object-contain drop-shadow-[0_4px_20px_rgba(255,255,255,0.15)]"
+              onError={() => setLogoFailed(true)}
+            />
+          )}
         </div>
         <span className="h-px w-16 bg-gradient-to-l from-transparent to-zinc-300 dark:to-zinc-700" />
       </div>
