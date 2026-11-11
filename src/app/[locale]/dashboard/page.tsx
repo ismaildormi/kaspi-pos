@@ -155,7 +155,7 @@ export default async function DashboardOverviewPage({
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Sales */}
-        <div className="group relative rounded-3xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden">
+        <div className="group relative rounded-3xl border border-white/10 surface-obsidian hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden">
           <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
           <div className="relative">
             <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
@@ -163,7 +163,7 @@ export default async function DashboardOverviewPage({
               <TrendingUp className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
             </div>
             <div className="mt-4">
-              <div className="text-2xl font-black text-white font-mono">
+              <div className="text-2xl font-black text-titanium-gradient font-mono tracking-tight">
                 {totalSalesMad} {t.common.currency}
               </div>
               <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiRevenueSub}</p>
@@ -172,7 +172,7 @@ export default async function DashboardOverviewPage({
         </div>
 
         {/* Total Transactions */}
-        <div className="group relative rounded-3xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden">
+        <div className="group relative rounded-3xl border border-white/10 surface-obsidian hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden">
           <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
           <div className="relative">
             <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
@@ -180,14 +180,14 @@ export default async function DashboardOverviewPage({
               <ShoppingBag className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
             </div>
             <div className="mt-4">
-              <div className="text-2xl font-black text-white font-mono">{salesCount}</div>
+              <div className="text-2xl font-black text-titanium-gradient font-mono tracking-tight">{salesCount}</div>
               <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiTransactionsSub}</p>
             </div>
           </div>
         </div>
 
         {/* Total Products */}
-        <div className="group relative rounded-3xl border border-white/10 bg-zinc-900/60 hover:bg-zinc-900/80 hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden">
+        <div className="group relative rounded-3xl border border-white/10 surface-obsidian hover:border-white/20 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg overflow-hidden">
           <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
           <div className="relative">
             <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
@@ -195,7 +195,7 @@ export default async function DashboardOverviewPage({
               <Package className="h-4 w-4 text-white group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
             </div>
             <div className="mt-4">
-              <div className="text-2xl font-black text-white font-mono">{productsCount}</div>
+              <div className="text-2xl font-black text-titanium-gradient font-mono tracking-tight">{productsCount}</div>
               <p className="text-[11px] text-zinc-400 mt-1">{t.dashboard.kpiProductsSub}</p>
             </div>
           </div>

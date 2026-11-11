@@ -17,12 +17,35 @@ export async function POST(req: NextRequest) {
 
 async function handleDailyReport(req: NextRequest) {
   try {
-    const ctx = await getRequestContext();
+    const authHeader = req.headers.get("authorization");
+    const isCron = Boolean(
+      process.env.CRON_SECRET && authHeader === `Bearer ${process.env.CRON_SECRET}`
+    );
+
+    let tenantId: string;
+    let activeTenant: any = null;
+
+    if (isCron) {
+      const targetTenantId = req.nextUrl.searchParams.get("tenantId");
+      const tenant = await prisma.tenant.findFirst({
+        where: targetTenantId ? { id: targetTenantId } : {},
+      });
+      if (!tenant) {
+        return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+      }
+      tenantId = tenant.id;
+      activeTenant = tenant;
+    } else {
+      const ctx = await getRequestContext();
+      tenantId = ctx.tenantId;
+      activeTenant = ctx.activeTenant;
+    }
+
     const { searchParams } = new URL(req.url);
 
     // 1. Check TenantSettings for recipient phone and preferences
     const settings = await prisma.tenantSettings.findUnique({
-      where: { tenantId: ctx.tenantId },
+      where: { tenantId },
     });
 
     const targetPhone =
@@ -31,7 +54,7 @@ async function handleDailyReport(req: NextRequest) {
       settings?.phone ||
       "";
 
-    const locale = (searchParams.get("locale") || ctx.activeTenant?.currency === "MAD" ? searchParams.get("locale") || "fr" : "fr") as "ar" | "fr" | "en";
+    const locale = (searchParams.get("locale") || (activeTenant?.currency === "MAD" ? searchParams.get("locale") || "fr" : "fr")) as "ar" | "fr" | "en";
     const deliveryTime = (searchParams.get("deliveryTime") || "21:00") as "21:00" | "22:00";
     const autoSend = searchParams.get("autoSend") === "true";
     const shouldRedirect = searchParams.get("redirect") === "true";
@@ -42,7 +65,7 @@ async function handleDailyReport(req: NextRequest) {
     // 2. Fetch completed sales for today (last 24 hours)
     const sales = await prisma.sale.findMany({
       where: {
-        tenantId: ctx.tenantId,
+        tenantId,
         status: "completed",
         completedAt: { gte: startOfDay },
       },
@@ -92,7 +115,7 @@ async function handleDailyReport(req: NextRequest) {
     // 4. Low stock & reorder directives
     const lowStockLevels = await prisma.stockLevel.findMany({
       where: {
-        tenantId: ctx.tenantId,
+        tenantId,
         quantity: { lt: 8 },
       },
       take: 6,
@@ -126,10 +149,10 @@ async function handleDailyReport(req: NextRequest) {
 
     // 6. Resolve Store Name
     const store = await prisma.store.findFirst({
-      where: { tenantId: ctx.tenantId },
+      where: { tenantId },
     });
     const storeName =
-      settings?.shopName || store?.name || ctx.activeTenant?.legalName || "Mon Magasin";
+      settings?.shopName || store?.name || activeTenant?.legalName || "Mon Magasin";
 
     const reportDateStr = startOfDay.toISOString().split("T")[0];
 
@@ -156,13 +179,13 @@ async function handleDailyReport(req: NextRequest) {
       await prisma.zReport.upsert({
         where: {
           tenantId_storeId_reportDate: {
-            tenantId: ctx.tenantId,
+            tenantId,
             storeId: store.id,
             reportDate: startOfDay,
           },
         },
         create: {
-          tenantId: ctx.tenantId,
+          tenantId,
           storeId: store.id,
           reportNumber: `Z-${Date.now().toString().slice(-6)}`,
           reportDate: startOfDay,

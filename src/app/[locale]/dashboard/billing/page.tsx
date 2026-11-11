@@ -407,7 +407,7 @@ export default function BillingDashboardPage() {
             </div>
 
             <div className="text-right">
-              <div className="text-2xl font-black text-white font-mono">
+              <div className="text-2xl font-black text-titanium-gradient font-mono tracking-tight">
                 {subscription?.priceMAD ?? 200} <span className="text-sm font-bold text-zinc-400">MAD / {t.perMonth}</span>
               </div>
               <span className="text-xs text-zinc-500 font-mono">(${subscription?.priceUSD ?? 20} USD / {t.perMonth})</span>
