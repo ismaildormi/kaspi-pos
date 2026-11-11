@@ -1,37 +1,51 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 
 interface CatalogProgressLoaderProps {
-  onComplete?: () => void;
+  isLoading?: boolean;
+  onReady?: () => void;
 }
 
-export function CatalogProgressLoader({ onComplete }: CatalogProgressLoaderProps) {
+export function CatalogProgressLoader({ isLoading = true, onReady }: CatalogProgressLoaderProps) {
   const params = useParams();
   const locale = (params?.locale as string) || "ar";
   const [progress, setProgress] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasFinishedRef = useRef(false);
 
   useEffect(() => {
-    // Smooth progress simulation 0% -> 100%
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 98) {
-          clearInterval(interval);
-          return 100;
-        }
-        // Accelerate initially, ease towards 95%
-        const increment = Math.max(1, Math.floor((100 - prev) / 4) + Math.floor(Math.random() * 5));
-        const next = Math.min(100, prev + increment);
-        if (next === 100 && onComplete) {
-          setTimeout(onComplete, 120);
-        }
-        return next;
-      });
-    }, 60);
+    // Phase 1: Asymptotic smooth climb up to 88% while isLoading is true
+    if (isLoading) {
+      hasFinishedRef.current = false;
+      intervalRef.current = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 88) return 88;
+          // Dynamic acceleration easing smoothly towards 88%
+          const step = Math.max(1, Math.round((88 - prev) * 0.18));
+          return Math.min(88, prev + step);
+        });
+      }, 50);
 
-    return () => clearInterval(interval);
-  }, [onComplete]);
+      return () => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+      };
+    }
+  }, [isLoading]);
+
+  useEffect(() => {
+    // Phase 2: The exact millisecond isLoading becomes false, snap to 100% and unmount within <60ms
+    if (!isLoading && !hasFinishedRef.current) {
+      hasFinishedRef.current = true;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      setProgress(100);
+      const timer = setTimeout(() => {
+        onReady?.();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, onReady]);
 
   const subtitle =
     locale === "ar"

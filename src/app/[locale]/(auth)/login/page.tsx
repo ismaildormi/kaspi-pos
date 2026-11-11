@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useEffect, useRef, useTransition, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { getApiUrl } from "@/client/sync-engine";
@@ -173,23 +173,33 @@ function LoginForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
 
+  const router = useRouter();
+  const [isNavigating, startTransition] = useTransition();
+
   const [loading, setLoading] = useState(false);
   const [loginProgress, setLoginProgress] = useState(0);
   const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasNavigatedRef = useRef(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const startLoginProgress = () => {
-    setLoginProgress(15);
+  // Prefetch target routes on mount
+  useEffect(() => {
+    try {
+      router.prefetch(`/${locale}/dashboard`);
+      router.prefetch(`/${locale}/pos`);
+    } catch {}
+  }, [locale, router]);
+
+  const startAuthProgress = () => {
+    setLoginProgress(12);
     if (progressTimerRef.current) clearInterval(progressTimerRef.current);
     progressTimerRef.current = setInterval(() => {
       setLoginProgress((prev) => {
-        if (prev < 35) return prev + 10;
-        if (prev < 75) return prev + 8;
-        if (prev < 92) return prev + 2;
+        if (prev < 65) return prev + 6;
         return prev;
       });
-    }, 100);
+    }, 70);
   };
 
   const stopLoginProgress = () => {
@@ -197,8 +207,35 @@ function LoginForm() {
       clearInterval(progressTimerRef.current);
       progressTimerRef.current = null;
     }
+    hasNavigatedRef.current = false;
     setLoginProgress(0);
   };
+
+  const executeInstantNavigation = (targetUrl: string) => {
+    hasNavigatedRef.current = true;
+    if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+
+    // Smoothly step 65% -> 96% while transition commits
+    progressTimerRef.current = setInterval(() => {
+      setLoginProgress((prev) => {
+        if (prev < 96) return Math.min(96, prev + 8);
+        return prev;
+      });
+    }, 35);
+
+    startTransition(() => {
+      router.replace(targetUrl);
+    });
+  };
+
+  // Instant snap to 100% and chime the exact millisecond route transition commits
+  useEffect(() => {
+    if (hasNavigatedRef.current && !isNavigating && loginProgress >= 60) {
+      if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+      setLoginProgress(100);
+      playSystemEntryChime();
+    }
+  }, [isNavigating, loginProgress]);
 
   useEffect(() => {
     return () => {
@@ -249,31 +286,28 @@ function LoginForm() {
     }
   }, [searchParams]);
 
-  const handleRedirect = () => {
-    if (progressTimerRef.current) {
-      clearInterval(progressTimerRef.current);
-      progressTimerRef.current = null;
-    }
-    setLoginProgress(100);
-    playSystemEntryChime();
-    window.location.href = `/${locale}/dashboard`;
-  };
-
-  // 1. Password Login
+  // 1. Password Login (Parallel execution: zero redundant sequential delays)
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     playTapSound();
     setLoading(true);
-    startLoginProgress();
+    startAuthProgress();
     setError("");
     setSuccess("");
 
     try {
-      const apiRes = await fetch(getApiUrl("/api/v1/auth/login"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, locale }),
-      });
+      const [apiRes, nextAuthRes] = await Promise.all([
+        fetch(getApiUrl("/api/v1/auth/login"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, locale }),
+        }),
+        signIn("credentials", {
+          redirect: false,
+          email,
+          password,
+        }),
+      ]);
 
       const apiData = await apiRes.json().catch(() => null);
 
@@ -291,20 +325,15 @@ function LoginForm() {
         return;
       }
 
-      const res = await signIn("credentials", {
-        redirect: false,
-        email,
-        password,
-      });
-
-      if (res?.error) {
+      if (nextAuthRes?.error) {
         stopLoginProgress();
         setLoading(false);
         playErrorSound();
-        setError(getLocalizedAuthError(res.error, locale));
+        setError(getLocalizedAuthError(nextAuthRes.error, locale));
         return;
       }
 
+      // Non-blocking credential store
       if (
         typeof window !== "undefined" &&
         "PasswordCredential" in window &&
@@ -316,11 +345,11 @@ function LoginForm() {
             password,
             name: email,
           });
-          await navigator.credentials.store(cred);
+          navigator.credentials.store(cred).catch(() => {});
         } catch {}
       }
 
-      handleRedirect();
+      executeInstantNavigation(`/${locale}/dashboard`);
     } catch {
       stopLoginProgress();
       setLoading(false);
@@ -371,24 +400,31 @@ function LoginForm() {
     }
   };
 
-  // 3. Verify OTP & Log In
+  // 3. Verify OTP & Log In (Parallel validation + instant transition)
   const executeOtpLogin = async (targetEmail: string, codeToVerify: string) => {
     setLoading(true);
-    startLoginProgress();
+    startAuthProgress();
     setError("");
     setSuccess("");
 
     try {
-      const res = await fetch(getApiUrl("/api/v1/auth/email-otp/verify"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: targetEmail,
-          code: codeToVerify,
-          purpose: "login",
-          locale,
+      const [res, nextAuthRes] = await Promise.all([
+        fetch(getApiUrl("/api/v1/auth/email-otp/verify"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: targetEmail,
+            code: codeToVerify,
+            purpose: "login",
+            locale,
+          }),
         }),
-      });
+        signIn("credentials", {
+          redirect: false,
+          email: targetEmail,
+          otpCode: codeToVerify,
+        }).catch(() => null),
+      ]);
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -400,14 +436,8 @@ function LoginForm() {
         return;
       }
 
-      await signIn("credentials", {
-        redirect: false,
-        email: targetEmail,
-        otpCode: codeToVerify,
-      }).catch(() => {});
-
       setSuccess(t.msgVerified);
-      handleRedirect();
+      executeInstantNavigation(`/${locale}/dashboard`);
     } catch {
       stopLoginProgress();
       setLoading(false);
@@ -520,7 +550,7 @@ function LoginForm() {
       });
 
       setSuccess(t.msgVerified);
-      handleRedirect();
+      executeInstantNavigation(`/${locale}/dashboard`);
     } catch {
       playErrorSound();
       setError(t.errNetwork);

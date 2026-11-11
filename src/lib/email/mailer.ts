@@ -506,7 +506,7 @@ export async function sendAdminSupportTicketEmail(ticket: {
 
     const html = `
       <div style="background-color: #09090b; color: #ffffff; padding: 24px; font-family: sans-serif; border-radius: 16px;">
-        <h2 style="color: #34d399; margin-top: 0;">🚨 NOUVEAU TICKET SUPPORT REÇU</h2>
+        <h2 style="color: #34d399; margin-top: 0;">NOUVEAU TICKET SUPPORT REÇU</h2>
         <p><strong>Établissement :</strong> ${ticket.storeName}</p>
         <p><strong>Commerçant :</strong> ${ticket.senderName} (${ticket.senderPhone || "Sans téléphone"})</p>
         <p><strong>Sujet :</strong> ${ticket.subject}</p>

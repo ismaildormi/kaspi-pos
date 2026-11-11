@@ -29,6 +29,7 @@ export default function PosPage() {
   const [products, setProducts] = useState<PosProduct[]>([]);
   const [categories, setCategories] = useState<PosCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loaderDone, setLoaderDone] = useState(false);
   const [isHeldModalOpen, setIsHeldModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isCashShiftModalOpen, setIsCashShiftModalOpen] = useState(false);
@@ -117,10 +118,43 @@ export default function PosPage() {
     }
   }, [isPaymentModalOpen, fetchCashShift]);
 
-  // Load products, categories, and tenant profile (with Dexie caching)
+  // Load products, categories, and tenant profile (with instant local-first hydration)
   useEffect(() => {
+    let isMounted = true;
+
+    // Phase 1: Instant Local-First Hydration (0ms wait if cached in Dexie)
+    const hydrateLocal = async () => {
+      try {
+        if (offlineDb?.offlineProducts) {
+          const cachedProds = await offlineDb.offlineProducts.toArray();
+          if (isMounted && cachedProds && cachedProds.length > 0) {
+            setProducts(
+              cachedProds.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                sku: p.sku,
+                barcode: p.barcode,
+                salePrice: Number(p.salePrice) || 0,
+                taxRate: Number(p.taxRate) || 0,
+                stockQuantity: p.stockQuantity ?? 0,
+                trackStock: p.trackStock ?? true,
+                categoryId: p.categoryId,
+                image: p.imageUrl || p.image,
+              }))
+            );
+            setIsLoading(false);
+            setLoaderDone(true);
+          }
+        }
+      } catch (err) {
+        console.warn("PosPage: Local cache hydration warning", err);
+      }
+    };
+
+    hydrateLocal();
+
+    // Phase 2: Live Network Revalidation
     async function loadData() {
-      setIsLoading(true);
       try {
         const [prodRes, catRes, meRes, settingsRes] = await Promise.all([
           fetch(getApiUrl("/api/v1/products")),
@@ -258,11 +292,16 @@ export default function PosPage() {
           );
         }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     }
 
     loadData();
+    return () => {
+      isMounted = false;
+    };
   }, [setDeviceCount, setTenantInfo, setPrinterSettings, setStoreProfile]);
 
   // Global Keyboard Shortcuts (F10 checkout, F4 search, F8 hold, ESC close)
@@ -344,8 +383,11 @@ export default function PosPage() {
 
           {/* Products Grid */}
           <div className="flex-1 overflow-y-auto">
-            {isLoading ? (
-              <CatalogProgressLoader />
+            {!loaderDone ? (
+              <CatalogProgressLoader
+                isLoading={isLoading}
+                onReady={() => setLoaderDone(true)}
+              />
             ) : (
               <ProductGrid
                 products={products}

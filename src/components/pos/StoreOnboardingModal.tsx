@@ -15,6 +15,7 @@ import {
   Coins,
   PackagePlus,
   ArrowRight,
+  AlertTriangle,
   X,
 } from "lucide-react";
 import { StoreBusinessType, usePosStore } from "@/client/store/usePosStore";
@@ -260,7 +261,7 @@ export function StoreOnboardingModal({
                 className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs sm:text-sm leading-relaxed space-y-3"
               >
                 <div className="font-semibold flex items-start gap-2">
-                  <span className="shrink-0 text-base">⚠️</span>
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                   <span>
                     {locale === "ar"
                       ? "تنبيه هام: تغيير وضع النشاط للمتجر الحالي قد لا يتوافق مع المنتجات والبيانات التي قمت بجمعها مسبقاً. إذا كان لديك محل آخر بنشاط مختلف، ننصحك بإضافة فرع جديد (+150 د.م/شهر) وتحديد نشاطه المستقل، أو اضغط تأكيد للمتابعة."

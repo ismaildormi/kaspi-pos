@@ -170,8 +170,9 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
               <span className="text-[11px] font-bold text-white truncate tracking-tight">
                 {sectorBadgeInfo.label}
               </span>
-              <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider">
-                {locale === "ar" ? "تغيير النشاط ⚡" : locale === "en" ? "Change Sector ⚡" : "Changer Secteur ⚡"}
+              <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                <span>{locale === "ar" ? "تغيير النشاط" : locale === "en" ? "Change Sector" : "Changer Secteur"}</span>
+                <Sparkles className="w-2.5 h-2.5 text-zinc-400 group-hover:text-white" />
               </span>
             </div>
           </div>

@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   ShieldCheck,
   Lock,
+  Unlock,
   Eye,
   EyeOff,
   Building2,
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 import { compressImage } from "@/lib/storage/compression-engine";
 import { useAppDictionary } from "@/i18n/schema";
+import { usePosStore } from "@/client/store/usePosStore";
 
 interface OwnerVaultData {
   email: string;
@@ -80,12 +82,66 @@ export function OwnerProfileModal({
   const [isVerifying, setIsVerifying] = useState(false);
   const [gateError, setGateError] = useState<string | null>(null);
   const [storeLogoUrl, setStoreLogoUrl] = useState<string>("");
+  const passwordInputRef = useRef<HTMLInputElement | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const fetchLogo = async () => {
+      // 1. Memory / Store
+      try {
+        const posTenantLogo = usePosStore.getState().tenantInfo?.logoUrl;
+        if (posTenantLogo) {
+          setStoreLogoUrl(posTenantLogo);
+          return;
+        }
+      } catch {}
+
+      // 2. localStorage
+      if (typeof window !== "undefined") {
+        const saved =
+          localStorage.getItem("kaspi_store_logo") ||
+          localStorage.getItem("kaspi_store_profile_logo") ||
+          "";
+        if (saved) {
+          setStoreLogoUrl(saved);
+          return;
+        }
+      }
+
+      // 3. API
+      try {
+        const res = await fetch("/api/v1/settings");
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.settings?.logoUrl) {
+            setStoreLogoUrl(data.settings.logoUrl);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("kaspi_store_logo", data.settings.logoUrl);
+            }
+          }
+        }
+      } catch {}
+    };
+
+    fetchLogo();
+
+    const handleProfileUpdate = (e: any) => {
+      const url = e.detail?.logoUrl;
+      if (url) setStoreLogoUrl(url);
+    };
+
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("kaspi_store_logo") || "";
-      if (saved) setStoreLogoUrl(saved);
+      window.addEventListener("kaspi_store_profile_updated", handleProfileUpdate);
+      window.addEventListener("kaspi-Head-Profile-Updated", handleProfileUpdate);
+      window.addEventListener("storage", fetchLogo);
     }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("kaspi_store_profile_updated", handleProfileUpdate);
+        window.removeEventListener("kaspi-Head-Profile-Updated", handleProfileUpdate);
+        window.removeEventListener("storage", fetchLogo);
+      }
+    };
   }, [isOpen]);
 
   // Vault form state
@@ -270,9 +326,9 @@ export function OwnerProfileModal({
                 )}
               </div>
               <span
-                className={`absolute -bottom-0.5 -end-0.5 w-3.5 h-3.5 rounded-full border-2 border-zinc-950 ${
-                  isUnlocked ? "bg-emerald-400" : "bg-amber-400"
-                } shadow-sm`}
+                className={`absolute -bottom-0.5 -end-0.5 w-3 h-3 rounded-full border-2 border-zinc-950 ${
+                  isUnlocked ? "bg-emerald-400" : "bg-white/40"
+                } shadow-xs`}
               />
             </div>
 
@@ -285,18 +341,25 @@ export function OwnerProfileModal({
                     ? "Owner Profile & Secure Vault"
                     : "Profil Propriétaire & Coffre-Fort"}
                 </span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-white/10 text-zinc-200 border border-white/15">
-                  {locale === "ar"
-                    ? isUnlocked
-                      ? "مفتوحة 🔓"
-                      : "مقفلة 🔒"
-                    : locale === "fr"
-                    ? isUnlocked
-                      ? "DÉVERROUILLÉ 🔓"
-                      : "VERROUILLÉ 🔒"
-                    : isUnlocked
-                    ? "UNLOCKED 🔓"
-                    : "LOCKED 🔒"}
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-white/10 text-zinc-200 border border-white/15 inline-flex items-center gap-1.5">
+                  {isUnlocked ? (
+                    <Unlock className="w-3 h-3 text-emerald-400" />
+                  ) : (
+                    <Lock className="w-3 h-3 text-zinc-400" />
+                  )}
+                  <span>
+                    {locale === "ar"
+                      ? isUnlocked
+                        ? "مفتوحة"
+                        : "مقفلة"
+                      : locale === "fr"
+                      ? isUnlocked
+                        ? "DÉVERROUILLÉ"
+                        : "VERROUILLÉ"
+                      : isUnlocked
+                      ? "UNLOCKED"
+                      : "LOCKED"}
+                  </span>
                 </span>
               </h3>
               <p
@@ -319,17 +382,18 @@ export function OwnerProfileModal({
                 type="button"
                 onClick={() => setIsUnlocked(false)}
                 title={locale === "ar" ? "قفل الخزنة" : locale === "en" ? "Lock Vault" : "Verrouiller"}
-                className="keycap-3d text-[11px] font-bold px-2.5 py-1 rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white transition flex items-center gap-1 cursor-pointer"
+                className="keycap-3d text-[11px] font-bold px-2.5 py-1.5 rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white transition flex items-center gap-1 cursor-pointer"
               >
+                <Lock className="w-3 h-3 text-zinc-400" />
                 <span>{locale === "ar" ? "← قفل" : locale === "en" ? "← Lock" : "← Verrouiller"}</span>
               </button>
             )}
             <button
               type="button"
               onClick={handleModalClose}
-              className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+              className="keycap-3d px-3 py-1.5 rounded-xl border border-white/10 bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-zinc-200 hover:text-white flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98]"
             >
-              <X className="w-5 h-5" />
+              <span>{locale === "ar" ? "← رجوع" : locale === "en" ? "← Back" : "← Retour"}</span>
             </button>
           </div>
         </div>
@@ -366,6 +430,7 @@ export function OwnerProfileModal({
               </label>
               <div className="relative">
                 <input
+                  ref={passwordInputRef}
                   type={showPassword ? "text" : "password"}
                   required
                   autoFocus
@@ -384,18 +449,17 @@ export function OwnerProfileModal({
               </div>
             </div>
 
-            <div className="pt-2 flex items-center justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={handleModalClose}
-                className="keycap-3d px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-300 hover:text-white transition cursor-pointer flex items-center gap-1.5"
-              >
-                <span>{locale === "ar" ? "← رجوع" : locale === "en" ? "← Back" : "← Retour"}</span>
-              </button>
+            <div className="pt-2">
               <button
                 type="submit"
-                disabled={isVerifying || !password.trim()}
-                className="sheen-btn keycap-3d inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-black transition disabled:opacity-50 cursor-pointer shadow-md active:scale-[0.98]"
+                disabled={isVerifying}
+                onClick={(e) => {
+                  if (!password.trim()) {
+                    e.preventDefault();
+                    passwordInputRef.current?.focus();
+                  }
+                }}
+                className="sheen-btn keycap-3d w-full h-12 inline-flex items-center justify-center gap-2 px-6 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs sm:text-sm font-black transition cursor-pointer shadow-md active:scale-[0.98]"
               >
                 {isVerifying ? (
                   <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
@@ -442,9 +506,9 @@ export function OwnerProfileModal({
               {/* Logo Uploader with WebP <40KB */}
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-2xl bg-zinc-950 border border-zinc-700 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
-                  {vaultData.logoUrl ? (
+                  {vaultData.logoUrl || storeLogoUrl ? (
                     <img
-                      src={vaultData.logoUrl}
+                      src={vaultData.logoUrl || storeLogoUrl}
                       alt="Logo"
                       className="w-full h-full object-contain p-1"
                     />

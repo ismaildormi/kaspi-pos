@@ -32,3 +32,10 @@
 - **No Cluttered Toolbars:** Never invent cluttered toolbars, fake grocery shelf buttons (`خبز 1.20`, `حليب 3.50`), or duplicate mock buttons on the main screen.
 - **Real Merchant Data:** Merchants manage their own catalog through the real Product Catalog and `QuickProductModal.tsx`.
 - **Monochrome Obsidian Craftsmanship:** Adhere strictly to the V-OMEGA Obsidian Titanium Monochrome visual identity (`#09090B` base, `#18181B` borders, titanium accents, `#FFFFFF` primary action buttons).
+
+---
+
+## 5. Zero Emojis Anywhere (Strict Monochrome & Lucide Vector Discipline)
+- **Zero Unicode Emojis:** Never render or inject Unicode emojis (`🔒`, `🔓`, `⚡`, `✨`, `🚀`, `🔥`, `🎉`, `⚠️`, `✅`, `❌`, `📦`, `🛒`, `💰`, etc.) into UI components, status badges, modal titles, buttons, toasts, push alerts, or email templates.
+- **Monochrome Lucide Vector Icons Only:** Use clean, scalable Lucide icons (e.g. `<Lock />`, `<Unlock />`, `<Sparkles />`, `<AlertTriangle />`, `<Check />`) styled in high-contrast monochrome (`text-white`, `text-zinc-400`, `text-emerald-400` where semantic status is required).
+- **Subtle Status Rings:** Do NOT use garish yellow or orange dot badges on avatars; use subtle, elegant monochrome white or emerald rings and clean borders.
