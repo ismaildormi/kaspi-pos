@@ -27,6 +27,9 @@ import {
   Users,
   ShieldCheck,
   RefreshCw,
+  X,
+  Sparkles,
+  Lock,
 } from "lucide-react";
 import {
   SUPPORTED_RECEIPT_LANGUAGES,
@@ -270,6 +273,7 @@ export default function SettingsPage() {
           name: newStoreName.trim(),
           code: newStoreCode.trim().toUpperCase(),
           address: newStoreAddress.trim() || undefined,
+          recordPayment: true,
         }),
       });
 
@@ -282,6 +286,8 @@ export default function SettingsPage() {
       setNewStoreCode("");
       setNewStoreAddress("");
       setIsAddingStore(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
       await fetchStores();
     } catch (err: any) {
       setStoreCreateError(err.message || "Erreur de création du magasin");
@@ -464,6 +470,11 @@ export default function SettingsPage() {
       branchNamePlaceholder: "الاسم (مثال: فرع المعاريف)",
       branchCodePlaceholder: "الرمز (مثال: MAARIF-01)",
       branchAddressPlaceholder: "المدينة / العنوان",
+      branchModalTitle: "إضافة فرع جديد ونقطة بيع متصلة",
+      branchModalDesc: "توسيع شبكة متاجرك ومزامنة المخزون والمبيعات لحظياً عبر سحابة KASPI POS.",
+      branchModalBadge: "+150 MAD / شهر (اشتراك الفرع الإضافي ومحطة الكاشير)",
+      branchConfirmBtn: "تأكيد إضافة الفرع والاشتراك (+150 د.م/شهر)",
+      branchSuccessMsg: "تم تفعيل الفرع الإضافي وتسجيل الفاتورة في سجل الاشتراكات بنجاح",
       cancel: "إلغاء",
       create: "إنشاء",
       creating: "جاري الإنشاء...",
@@ -547,6 +558,11 @@ export default function SettingsPage() {
       branchNamePlaceholder: "Nom (ex: Succursale Maarif)",
       branchCodePlaceholder: "Code (ex: MAARIF-01)",
       branchAddressPlaceholder: "Ville / Adresse",
+      branchModalTitle: "Ajouter une Succursale & Caisse Connectée",
+      branchModalDesc: "Étendez votre réseau de magasins et synchronisez vos stocks en temps réel via KASPI Cloud.",
+      branchModalBadge: "+150 MAD / mois (Ajout Succursale & Caisse)",
+      branchConfirmBtn: "Confirmer la succursale (+150 MAD/mois)",
+      branchSuccessMsg: "Succursale activée et enregistrée dans votre historique de facturation",
       cancel: "Annuler",
       create: "Créer",
       creating: "Création...",
@@ -630,6 +646,11 @@ export default function SettingsPage() {
       branchNamePlaceholder: "Name (e.g., Maarif Branch)",
       branchCodePlaceholder: "Code (e.g., MAARIF-01)",
       branchAddressPlaceholder: "City / Address",
+      branchModalTitle: "Add New Branch & Connected POS Terminal",
+      branchModalDesc: "Expand your store network and sync inventory in real time via KASPI Cloud.",
+      branchModalBadge: "+150 MAD / month (Additional Branch & Register)",
+      branchConfirmBtn: "Confirm Branch & Subscribe (+150 MAD/mo)",
+      branchSuccessMsg: "Branch activated and recorded in your billing payment history",
       cancel: "Cancel",
       create: "Create",
       creating: "Creating...",
@@ -713,6 +734,11 @@ export default function SettingsPage() {
     branchNamePlaceholder: "Name",
     branchCodePlaceholder: "Code",
     branchAddressPlaceholder: "City / Address",
+    branchModalTitle: "Add New Branch & Connected POS Terminal",
+    branchModalDesc: "Expand your store network and sync inventory in real time via KASPI Cloud.",
+    branchModalBadge: "+150 MAD / month (Additional Branch & Register)",
+    branchConfirmBtn: "Confirm Branch & Subscribe (+150 MAD/mo)",
+    branchSuccessMsg: "Branch activated and recorded in your billing payment history",
     cancel: "Cancel",
     create: "Create",
     creating: "Creating...",
@@ -969,49 +995,107 @@ export default function SettingsPage() {
             </div>
 
             {isAddingStore && (
-              <div className="p-4 rounded-xl bg-zinc-950 border border-white/10 space-y-3">
-                {storeCreateError && (
-                  <p className="text-xs text-red-400 font-mono">{storeCreateError}</p>
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <input
-                    type="text"
-                    placeholder={st.branchNamePlaceholder}
-                    value={newStoreName}
-                    onChange={(e) => setNewStoreName(e.target.value)}
-                    className="h-9 px-3 bg-zinc-900 border border-white/10 rounded-lg text-xs text-white"
-                  />
-                  <input
-                    type="text"
-                    placeholder={st.branchCodePlaceholder}
-                    value={newStoreCode}
-                    onChange={(e) => setNewStoreCode(e.target.value)}
-                    className="h-9 px-3 bg-zinc-900 border border-white/10 rounded-lg text-xs text-white uppercase font-mono"
-                  />
-                  <input
-                    type="text"
-                    placeholder={st.branchAddressPlaceholder}
-                    value={newStoreAddress}
-                    onChange={(e) => setNewStoreAddress(e.target.value)}
-                    className="h-9 px-3 bg-zinc-900 border border-white/10 rounded-lg text-xs text-white"
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingStore(false)}
-                    className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white"
-                  >
-                    {st.cancel}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCreateStore}
-                    disabled={isCreatingStore}
-                    className="px-4 py-1.5 bg-white text-black font-bold text-xs rounded-lg hover:bg-zinc-200 cursor-pointer"
-                  >
-                    {isCreatingStore ? st.creating : st.create}
-                  </button>
+              <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+                <div className="w-full max-w-lg bg-zinc-950 border border-white/10 rounded-2xl p-6 shadow-2xl relative space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center">
+                        <Store className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-white">{st.branchModalTitle}</h3>
+                        <p className="text-xs text-zinc-400 mt-0.5">{st.branchModalDesc}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingStore(false)}
+                      className="text-zinc-500 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Add-on Pricing Badge */}
+                  <div className="p-3.5 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/20 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-emerald-400" />
+                      <span className="text-xs font-semibold text-emerald-300">
+                        {st.branchModalBadge}
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20">
+                      +150 MAD
+                    </span>
+                  </div>
+
+                  {storeCreateError && (
+                    <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400 font-mono">
+                      {storeCreateError}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleCreateStore} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-300 mb-1.5">{st.branchNamePlaceholder}</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder={st.branchNamePlaceholder}
+                        value={newStoreName}
+                        onChange={(e) => setNewStoreName(e.target.value)}
+                        className="w-full h-10 px-3.5 bg-zinc-900 border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/30"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-zinc-300 mb-1.5">{st.branchCodePlaceholder}</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="MAARIF-01"
+                          value={newStoreCode}
+                          onChange={(e) => setNewStoreCode(e.target.value)}
+                          className="w-full h-10 px-3.5 bg-zinc-900 border border-white/10 rounded-xl text-xs text-white uppercase font-mono placeholder-zinc-500 focus:outline-none focus:border-white/30"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-zinc-300 mb-1.5">{st.branchAddressPlaceholder}</label>
+                        <input
+                          type="text"
+                          placeholder={st.branchAddressPlaceholder}
+                          value={newStoreAddress}
+                          onChange={(e) => setNewStoreAddress(e.target.value)}
+                          className="w-full h-10 px-3.5 bg-zinc-900 border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/30"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex justify-end gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingStore(false)}
+                        className="px-4 py-2.5 text-xs text-zinc-400 hover:text-white rounded-xl border border-white/10 transition-colors cursor-pointer"
+                      >
+                        {st.cancel}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isCreatingStore}
+                        className="px-5 py-2.5 bg-white text-zinc-950 font-bold text-xs rounded-xl hover:bg-zinc-200 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                      >
+                        {isCreatingStore ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>{st.creating}</span>
+                          </>
+                        ) : (
+                          <span>{st.branchConfirmBtn}</span>
+                        )}
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             )}
@@ -1098,37 +1182,50 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* Owner Payout Settlement Details */}
+              {/* Protected Owner Payout & Bank Settlement Vault */}
               <div className="pt-3 border-t border-white/10 space-y-3">
-                <div className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{t.settings.bankRibLabel}</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] text-zinc-400 mb-1">
-                      {t.settings.bankNameLabel}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Attijariwafa / BCP / CIH / BMCE"
-                      value={bankName}
-                      onChange={(e) => setBankName(e.target.value)}
-                      className="w-full h-9 px-3 bg-zinc-950 border border-white/10 rounded-lg text-xs text-white"
-                    />
+                <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold text-white">
+                      <Lock className="w-3.5 h-3.5 text-amber-400" />
+                      <span>
+                        {locale === "ar"
+                          ? "الحساب البنكي والـ RIB محمي بخزنة المالك"
+                          : "Coordonnées Bancaires (Protégées par Coffre-Fort)"}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                      SECURED
+                    </span>
                   </div>
-                  <div>
-                    <label className="block text-[11px] text-zinc-400 mb-1">
-                      {t.settings.bankRibNumberLabel}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="24 chiffres (RIB Maroc)"
-                      maxLength={30}
-                      value={bankRib}
-                      onChange={(e) => setBankRib(e.target.value)}
-                      className="w-full h-9 px-3 bg-zinc-950 border border-white/10 rounded-lg text-xs text-white font-mono"
-                    />
+
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800 font-mono text-xs">
+                    <span className="text-zinc-400">RIB Maroc :</span>
+                    <span className="text-white font-bold tracking-widest">
+                      •••• •••• •••• {bankRib ? bankRib.slice(-4) : "7014"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <p className="text-[11px] text-zinc-500 max-w-xs">
+                      {locale === "ar"
+                        ? "هذه البيانات الحساسة مخفية عن موظفي الصندوق وتتطلب كلمة مرور المالك لتعديلها."
+                        : "Données masquées aux caissiers. Mot de passe propriétaire requis."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => window.dispatchEvent(new CustomEvent("open-owner-vault"))}
+                      className="sheen-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition cursor-pointer shadow-xs"
+                    >
+                      <Lock className="w-3 h-3" />
+                      <span>
+                        {locale === "ar"
+                          ? "فتح خزنة المالك"
+                          : locale === "en"
+                          ? "Unlock Owner Vault"
+                          : "Ouvrir le Coffre"}
+                      </span>
+                    </button>
                   </div>
                 </div>
               </div>

@@ -27,6 +27,7 @@ import { useAppDictionary } from "@/i18n/schema";
 import { getCachedData, setCachedData } from "@/lib/cache/client-cache";
 import { usePosStore } from "@/client/store/usePosStore";
 import { KineticProductCubeBarcodeEmpty } from "@/components/ui/KineticEmptyState";
+import { FloatingCommerceCanvas } from "@/components/ui/FloatingCommerceCanvas";
 import {
   Scale,
   Shirt,
@@ -559,11 +560,14 @@ export default function ProductsListPage() {
           </span>
         </div>
       ) : filteredProducts.length === 0 ? (
-        <div className="py-12 rounded-2xl border border-white/10 bg-zinc-900/40 text-center select-none">
-          <KineticProductCubeBarcodeEmpty
-            title={t.products.noProductsFound}
-            subtitle={t.products.noProductsSub}
-          />
+        <div className="relative py-14 rounded-3xl border border-white/10 bg-zinc-900/40 text-center select-none overflow-hidden">
+          <FloatingCommerceCanvas opacity="opacity-10" />
+          <div className="relative z-10">
+            <KineticProductCubeBarcodeEmpty
+              title={t.products.noProductsFound}
+              subtitle={t.products.noProductsSub}
+            />
+          </div>
         </div>
       ) : viewMode === "grid" ? (
         /* ====================================================================

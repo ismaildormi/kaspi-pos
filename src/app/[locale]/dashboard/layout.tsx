@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { OwnerProfileModal } from "@/components/layout/OwnerProfileModal";
 import { usePosStore, type StoreBusinessType } from "@/client/store/usePosStore";
 import { getApiUrl } from "@/client/sync-engine";
 import { useAppDictionary } from "@/i18n/schema";
@@ -29,9 +30,26 @@ export default function DashboardLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userName, setUserName] = useState<string>("");
   const [shopName, setShopName] = useState<string>("KASPI POS");
+  const [storeLogoUrl, setStoreLogoUrl] = useState<string>("");
+  const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
   const { storeType, setStoreProfile } = usePosStore();
 
   const localizeHref = (path: string) => `/${locale}${path}`;
+
+  useEffect(() => {
+    const handleVaultEvent = () => setIsOwnerModalOpen(true);
+    const handleProfileUpdate = (e: any) => {
+      if (e.detail?.shopName) setShopName(e.detail.shopName);
+      if (e.detail?.logoUrl !== undefined) setStoreLogoUrl(e.detail.logoUrl);
+    };
+
+    window.addEventListener("open-owner-vault", handleVaultEvent);
+    window.addEventListener("kaspi_store_profile_updated", handleProfileUpdate);
+    return () => {
+      window.removeEventListener("open-owner-vault", handleVaultEvent);
+      window.removeEventListener("kaspi_store_profile_updated", handleProfileUpdate);
+    };
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -58,6 +76,9 @@ export default function DashboardLayout({
             settingsData?.settings?.shopName ||
               meData?.data?.currentTenant?.displayName
           );
+        }
+        if (settingsData?.settings?.logoUrl) {
+          setStoreLogoUrl(settingsData.settings.logoUrl);
         }
         if (settingsData?.settings?.storeType) {
           setStoreProfile(
@@ -88,11 +109,19 @@ export default function DashboardLayout({
             href={localizeHref("/dashboard")}
             className="flex items-center gap-2.5 min-w-0"
           >
-            <img
-              src="/logo.png"
-              alt="KASPI POS"
-              className="w-6 h-6 object-contain rounded-md shrink-0"
-            />
+            {storeLogoUrl ? (
+              <img
+                src={storeLogoUrl}
+                alt="Store Logo"
+                className="w-7 h-7 object-contain rounded-md shrink-0 border border-white/10 bg-zinc-900"
+              />
+            ) : (
+              <img
+                src="/logo.png"
+                alt="KASPI POS"
+                className="w-6 h-6 object-contain rounded-md shrink-0"
+              />
+            )}
             <span className="font-extrabold text-sm tracking-tight text-white shrink-0">
               KASPI POS
             </span>
@@ -130,15 +159,17 @@ export default function DashboardLayout({
             <Settings className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-500 ease-out" />
           </Link>
 
-          <Link
-            href={localizeHref("/dashboard/settings")}
-            className="hidden md:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 hover:border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-medium text-zinc-200 transition-all"
+          <button
+            type="button"
+            onClick={() => setIsOwnerModalOpen(true)}
+            className="hidden md:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 hover:border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-xs font-medium text-zinc-200 transition-all cursor-pointer"
+            title={locale === "ar" ? "خزنة المالك والملف الشخصي" : "Profil Propriétaire & Coffre-Fort"}
           >
             <UserIcon className="w-3.5 h-3.5 text-emerald-400" />
             <span className="truncate max-w-[110px]">
               {userName || t.topbar.activeAccount}
             </span>
-          </Link>
+          </button>
         </div>
       </header>
 
@@ -152,6 +183,16 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+
+      {/* Owner Profile & Security Vault Modal */}
+      <OwnerProfileModal
+        isOpen={isOwnerModalOpen}
+        onClose={() => setIsOwnerModalOpen(false)}
+        onProfileUpdated={({ shopName: updatedShop, logoUrl: updatedLogo }) => {
+          if (updatedShop) setShopName(updatedShop);
+          if (updatedLogo) setStoreLogoUrl(updatedLogo);
+        }}
+      />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAppDictionary } from "@/i18n/schema";
 import { getCachedData, setCachedData } from "@/lib/cache/client-cache";
-import { KineticVipCustomerCardEmpty } from "@/components/ui/KineticEmptyState";
+import { ObsidianMetalVipCardWhiteCanvas } from "@/components/ui/KineticEmptyState";
 import {
   Users,
   Search,
@@ -313,8 +313,11 @@ export default function CustomersPage() {
                   </tr>
                 ) : customers.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-zinc-500">
-                      <KineticVipCustomerCardEmpty title={t.customers.noCustomersRegistered} />
+                    <td colSpan={7} className="p-4 sm:p-6">
+                      <ObsidianMetalVipCardWhiteCanvas
+                        title={t.customers.noCustomersRegistered}
+                        subtitle={t.customers.subtitle}
+                      />
                     </td>
                   </tr>
                 ) : (

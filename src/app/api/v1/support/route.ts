@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db/prisma";
 import { getRequestContext } from "@/server/auth/context";
 import { sendAdminWhatsAppAlert } from "@/lib/whatsapp";
+import { sendAdminSupportTicketEmail } from "@/lib/email/mailer";
 
 export async function GET() {
   try {
@@ -49,7 +50,15 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Notify Super Admin via WhatsApp adapter (non-blocking)
+    // Notify Super Admin via Email and WhatsApp alert (non-blocking)
+    sendAdminSupportTicketEmail({
+      storeName: ctx.activeTenant?.displayName || ctx.activeTenant?.legalName || "Commerce",
+      senderName: created.senderName,
+      senderPhone: created.senderPhone,
+      subject: created.subject || "Support",
+      message: created.message,
+    }).catch(() => {});
+
     sendAdminWhatsAppAlert(
       `*NOUVEAU TICKET SUPPORT KASPI POS*\nDe : ${created.senderName}\nSujet : ${created.subject}\nMessage : ${created.message}`
     ).catch(() => {});

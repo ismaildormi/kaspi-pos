@@ -210,7 +210,7 @@ export default function TenantSupportPage() {
                 {t.common.loading}
               </div>
             ) : tickets.length === 0 ? (
-              <div className="py-12">
+              <div className="py-16 flex flex-col items-center justify-center text-center w-full mx-auto my-auto min-h-[340px]">
                 <KineticSupportShieldPulseEmpty
                   title={t.support.noTickets}
                   subtitle={

@@ -16,6 +16,7 @@ import {
 import { StockAuditClient } from "@/components/dashboard/StockAuditClient";
 import { getDictionary, type Locale } from "@/i18n/schema";
 import { KineticWarehouseRadarEmpty } from "@/components/ui/KineticEmptyState";
+import { FloatingCommerceCanvas } from "@/components/ui/FloatingCommerceCanvas";
 
 export const dynamic = "force-dynamic";
 
@@ -291,11 +292,14 @@ export default async function InventoryPage({
             <tbody className="divide-y divide-zinc-800/60 font-medium">
               {products.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-zinc-500">
-                    <KineticWarehouseRadarEmpty
-                      title={t.products.noProducts}
-                      subtitle={t.inventory.optimalStockBanner}
-                    />
+                  <td colSpan={5} className="relative py-14 text-center text-zinc-500 overflow-hidden">
+                    <FloatingCommerceCanvas opacity="opacity-10" />
+                    <div className="relative z-10">
+                      <KineticWarehouseRadarEmpty
+                        title={t.products.noProducts}
+                        subtitle={t.inventory.optimalStockBanner}
+                      />
+                    </div>
                   </td>
                 </tr>
               ) : (

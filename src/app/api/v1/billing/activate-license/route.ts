@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRequestContext } from "@/server/auth/context";
 import { activateLicenseKey } from "@/server/billing/license";
+import { prisma } from "@/server/db/prisma";
+import { sendSubscriptionConfirmationEmail } from "@/lib/email/mailer";
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,6 +29,27 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Send official 3D Confirmation Email to Merchant Gmail
+    prisma.user
+      .findUnique({
+        where: { id: ctx.userId },
+        select: { email: true, fullName: true },
+      })
+      .then((user) => {
+        if (user?.email) {
+          sendSubscriptionConfirmationEmail({
+            userName: user.fullName || ctx.activeTenant?.displayName || "Commerçant",
+            userEmail: user.email,
+            storeName: ctx.activeTenant?.displayName || ctx.activeTenant?.legalName || "Mon Commerce",
+            planName: `KASPI Pro (${result.durationDays} Jours)`,
+            amountMAD: result.durationDays >= 365 ? 2000 : 200,
+            paymentMethod: "Virement Bancaire (Licence Officielle)",
+            licenseKey,
+          }).catch(() => {});
+        }
+      })
+      .catch(() => {});
 
     return NextResponse.json({
       success: true,

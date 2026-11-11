@@ -8,6 +8,7 @@ const CreateStoreSchema = z.object({
   code: z.string().min(1, "Store code is required"),
   address: z.string().optional(),
   phone: z.string().optional(),
+  recordPayment: z.boolean().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -94,9 +95,35 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Automatically record +150 MAD expansion add-on in Billing History
+    let paymentRecord = null;
+    try {
+      paymentRecord = await prisma.payment.create({
+        data: {
+          tenantId: ctx.tenantId,
+          provider: "manual",
+          providerTransactionId: `BRANCH-ADDON-${newStore.id.slice(0, 8)}-${Date.now()}`,
+          amount: 150.0,
+          currency: "MAD",
+          status: "paid",
+          paidAt: new Date(),
+          providerPayload: {
+            type: "branch_addon",
+            storeId: newStore.id,
+            storeName: newStore.name,
+            storeCode: newStore.code,
+            description: "Ajout Succursale & Caisse (+150 MAD/mois)",
+          },
+        },
+      });
+    } catch (payErr) {
+      console.warn("[Store Add-On Payment Log Warning]:", payErr);
+    }
+
     return NextResponse.json({
       success: true,
       store: newStore,
+      payment: paymentRecord,
     });
   } catch (err: any) {
     console.error("[POST /api/v1/stores Error]:", err);

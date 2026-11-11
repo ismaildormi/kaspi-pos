@@ -70,6 +70,86 @@ export function KineticVipCustomerCardEmpty({
 }
 
 /**
+ * High-Contrast Pure White Canvas with Ultra-Realistic 3D Obsidian Metal VIP Card
+ * Designed specifically for /dashboard/customers empty state to break up dark screens
+ */
+export function ObsidianMetalVipCardWhiteCanvas({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <div className="group relative rounded-3xl bg-white border border-zinc-200 shadow-2xl p-8 sm:p-10 my-4 flex flex-col items-center justify-center text-center select-none overflow-hidden transition-all duration-300 hover:shadow-[0_25px_60px_rgba(0,0,0,0.15)]">
+      {/* Subtle Micro-Grid on White */}
+      <div className="absolute inset-0 bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] [background-size:16px_16px] opacity-60 pointer-events-none" />
+
+      {/* 3D Realistic Obsidian Metal VIP Card with Real Perspective Tilt */}
+      <div className="relative w-56 h-36 flex items-center justify-center mb-6 perspective-1000">
+        {/* Deep drop shadow on pure white surface */}
+        <div className="absolute w-48 h-28 rounded-2xl bg-black/35 blur-xl transform translate-y-6 group-hover:translate-y-8 group-hover:scale-105 group-hover:bg-black/45 transition-all duration-500" />
+
+        {/* Realistic Obsidian Metallic Card */}
+        <div className="relative w-52 h-32 rounded-2xl bg-gradient-to-tr from-[#0a0a0c] via-[#16161a] to-[#0d0d10] border border-zinc-700/80 shadow-[0_15px_35px_rgba(0,0,0,0.6),0_1px_0_rgba(255,255,255,0.25)_inset] p-4 flex flex-col justify-between transform -rotate-3 group-hover:rotate-0 group-hover:scale-105 group-hover:-translate-y-2 transition-all duration-500 ease-out overflow-hidden cursor-pointer">
+          {/* Real Metallic Sheen Angle Sweep */}
+          <div className="absolute -inset-full bg-gradient-to-r from-transparent via-white/15 to-transparent rotate-45 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
+
+          {/* Top Row: Chip & Brand */}
+          <div className="flex items-center justify-between relative z-10">
+            {/* Embossed Metallic Chip */}
+            <div className="w-8 h-6 rounded-md bg-gradient-to-br from-amber-200 via-amber-400 to-amber-600 border border-amber-300/60 shadow-xs flex items-center justify-center p-0.5">
+              <div className="w-full h-full border border-black/30 rounded-xs flex flex-col justify-between p-0.5">
+                <div className="h-0.5 w-full bg-black/25" />
+                <div className="h-0.5 w-full bg-black/25" />
+              </div>
+            </div>
+
+            <div className="text-end">
+              <span className="text-[9px] font-mono font-black text-white/90 tracking-widest block">
+                KASPI VIP
+              </span>
+              <span className="text-[7px] font-mono text-zinc-400 uppercase tracking-wider block">
+                FIDÉLITÉ & CRÉDIT
+              </span>
+            </div>
+          </div>
+
+          {/* Middle Row: Card Number */}
+          <div className="relative z-10 my-1">
+            <span className="text-xs font-mono font-black text-zinc-200 tracking-[0.22em] drop-shadow-md">
+              •••• •••• •••• 8890
+            </span>
+          </div>
+
+          {/* Bottom Row: Name & Balance */}
+          <div className="flex items-center justify-between relative z-10 pt-1 border-t border-white/10 text-[8px] font-mono">
+            <div className="text-start">
+              <span className="text-zinc-500 block uppercase">TITULAIRE</span>
+              <span className="text-white font-bold tracking-wider">CLIENT PRIVILÈGE</span>
+            </div>
+            <div className="text-end">
+              <span className="text-zinc-500 block uppercase">SOLDE KARNÉ</span>
+              <span className="text-emerald-400 font-bold">0.00 MAD</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Deep Black Text on Crisp White Canvas */}
+      <h3 className="text-base font-extrabold text-zinc-950 tracking-tight relative z-10 mb-1">
+        {title}
+      </h3>
+      {subtitle && (
+        <p className="text-xs text-zinc-600 max-w-sm text-center leading-relaxed relative z-10">
+          {subtitle}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
  * 2. Supply Chain Invoice & Laser Scanner (for /dashboard/suppliers)
  * The B2B invoice levitates and a monochrome scan beam sweeps across on group-hover.
  */

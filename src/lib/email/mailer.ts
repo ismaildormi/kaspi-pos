@@ -1,6 +1,7 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { renderVerificationEmailHtml } from "./verification-email";
 import { renderWelcomeEmailHtml } from "./welcome-email";
+import { renderSubscriptionEmailHtml, type SubscriptionEmailData } from "./subscription-email";
 import { createHandoffToken } from "@/server/auth/handoff";
 import {
   WELCOME_COPY,
@@ -462,3 +463,76 @@ export async function sendWelcomeEmail(params: {
     }
   }
 }
+
+/**
+ * Send official 3D subscription confirmation & license activation email
+ */
+export async function sendSubscriptionConfirmationEmail(data: SubscriptionEmailData) {
+  try {
+    const html = renderSubscriptionEmailHtml(data);
+    const transport = getTransporter();
+    const from = `"KASPI POS Billing" <${process.env.GMAIL_USER || OFFICIAL_GMAIL_USER}>`;
+
+    const res = await transport.sendMail({
+      from,
+      to: data.userEmail,
+      subject: `Confirmation d'Abonnement KASPI POS • ${data.storeName}`,
+      html,
+    });
+
+    console.log(`[KASPI Mailer] Subscription email delivered to ${data.userEmail} | ${res.messageId}`);
+    return { success: true, messageId: res.messageId };
+  } catch (err: any) {
+    console.error("[KASPI Mailer] Failed to send subscription confirmation email:", err?.message);
+    return { success: false, error: err?.message };
+  }
+}
+
+/**
+ * Send instant alert to Platform Owner Gmail when merchant submits support ticket
+ */
+export async function sendAdminSupportTicketEmail(ticket: {
+  storeName: string;
+  senderName: string;
+  senderPhone?: string | null;
+  subject: string;
+  message: string;
+}) {
+  try {
+    const ownerEmail = process.env.GMAIL_USER || OFFICIAL_GMAIL_USER;
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://kaspi.ma";
+    const transport = getTransporter();
+    const from = `"KASPI POS Support Bot" <${ownerEmail}>`;
+
+    const html = `
+      <div style="background-color: #09090b; color: #ffffff; padding: 24px; font-family: sans-serif; border-radius: 16px;">
+        <h2 style="color: #34d399; margin-top: 0;">🚨 NOUVEAU TICKET SUPPORT REÇU</h2>
+        <p><strong>Établissement :</strong> ${ticket.storeName}</p>
+        <p><strong>Commerçant :</strong> ${ticket.senderName} (${ticket.senderPhone || "Sans téléphone"})</p>
+        <p><strong>Sujet :</strong> ${ticket.subject}</p>
+        <div style="background: #18181b; border: 1px solid #27272a; padding: 16px; border-radius: 12px; margin-top: 12px;">
+          <p style="white-space: pre-wrap; margin: 0;">${ticket.message}</p>
+        </div>
+        <p style="margin-top: 20px;">
+          <a href="${baseUrl}/admin/messages" style="background: #ffffff; color: #000; padding: 10px 20px; border-radius: 8px; font-weight: bold; text-decoration: none;">
+            Accéder à la Boîte de Réception Admin &rarr;
+          </a>
+        </p>
+      </div>
+    `;
+
+    const res = await transport.sendMail({
+      from,
+      to: ownerEmail,
+      subject: `[SUPPORT ALERT] Nouveau Ticket: ${ticket.subject} (${ticket.storeName})`,
+      html,
+    });
+
+    console.log(`[KASPI Mailer] Admin support ticket email sent to ${ownerEmail} | ${res.messageId}`);
+    return { success: true, messageId: res.messageId };
+  } catch (err: any) {
+    console.error("[KASPI Mailer] Failed to send admin ticket alert email:", err?.message);
+    return { success: false, error: err?.message };
+  }
+}
+

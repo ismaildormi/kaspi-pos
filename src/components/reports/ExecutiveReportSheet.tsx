@@ -165,6 +165,7 @@ export function ExecutiveReportSheet({
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(Boolean(initialWhatsappPhone || storePhone));
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [isStampDismissed, setIsStampDismissed] = useState(false);
 
   const handleSavePhone = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,12 +207,19 @@ export function ExecutiveReportSheet({
       <div className="rounded-3xl border border-zinc-800 bg-zinc-900/80 p-5 sm:p-6 space-y-4 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-white text-black flex items-center justify-center font-bold">
-              <Phone className="w-4 h-4" />
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold shadow-xs">
+              {/* Authentic Vector WhatsApp Logo */}
+              <svg className="w-5 h-5 fill-current text-emerald-400" viewBox="0 0 24 24">
+                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.587 1.838.884 2.791.884 3.18 0 5.766-2.586 5.767-5.766.001-3.18-2.585-5.77-5.767-5.77zm0 10.455c-.868 0-1.716-.233-2.454-.672l-.176-.104-1.821.477.486-1.774-.115-.183c-.482-.767-.737-1.657-.736-2.569 0-2.617 2.13-4.747 4.748-4.747 1.268.001 2.46.495 3.356 1.392.896.897 1.389 2.089 1.388 3.357-.001 2.617-2.13 4.747-4.89 4.45zm2.604-3.559c-.143-.071-.845-.417-.976-.465-.131-.048-.226-.071-.321.071-.095.143-.369.465-.453.56-.083.095-.167.107-.31.036-.143-.071-.603-.222-1.149-.708-.424-.378-.711-.845-.794-.988-.083-.143-.009-.22.063-.291.064-.064.143-.167.214-.25.071-.083.095-.143.143-.238.048-.095.024-.179-.012-.25-.036-.071-.321-.774-.44-1.06-.116-.278-.235-.24-.321-.244h-.274c-.095 0-.25.036-.381.179-.131.143-.5 4.89-.5 1.192 0 .703.512 1.381.584 1.476.071.095 1.008 1.539 2.441 2.158 1.433.619 1.433.413 1.691.389.258-.024.845-.345.965-.679.119-.333.119-.619.083-.679-.036-.06-.131-.095-.274-.167z" />
+                <path d="M12 2C6.477 2 2 6.477 2 12c0 1.891.524 3.662 1.435 5.178L2 22l4.981-1.399C8.423 21.492 10.153 22 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.25c-1.636 0-3.17-.468-4.472-1.278l-.321-.197-2.964.832.842-2.89-.214-.341C6.012 15.027 5.5 13.559 5.5 12c0-3.584 2.916-6.5 6.5-6.5s6.5 2.916 6.5 6.5-2.916 6.5-6.5 6.5z" />
+              </svg>
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">
-                {t.dispatchSectionTitle}
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <span>{t.dispatchSectionTitle}</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  OFFICIAL
+                </span>
               </h3>
               <p className="text-[11px] text-zinc-400">
                 {t.autoNotice}
@@ -235,9 +243,16 @@ export function ExecutiveReportSheet({
 
         <form onSubmit={handleSavePhone} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <div className="flex-1">
-            <label className="block text-xs font-semibold text-zinc-400 mb-1">
-              {t.phoneLabel}
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold text-zinc-400">
+                {t.phoneLabel}
+              </label>
+              {phone && phone.length > 6 && (
+                <span className="text-[10px] font-mono text-zinc-500">
+                  {locale === "ar" ? "مشفر عن الموظفين ✓" : "Masqué aux employés ✓"}
+                </span>
+              )}
+            </div>
             <input
               type="text"
               required
@@ -250,9 +265,9 @@ export function ExecutiveReportSheet({
           <button
             type="submit"
             disabled={isSaving || !phone.trim()}
-            className="sm:self-end h-11 px-5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition disabled:opacity-40 flex items-center justify-center gap-2 cursor-pointer shadow-sm shrink-0"
+            className="sm:self-end h-11 px-6 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition duration-200 disabled:opacity-40 flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(16,185,129,0.3)] shrink-0"
           >
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin text-zinc-950" /> : <Save className="w-4 h-4 text-zinc-950" />}
             <span>{t.saveAndActivateBtn}</span>
           </button>
         </form>
@@ -272,11 +287,28 @@ export function ExecutiveReportSheet({
 
       {/* 2. 3D ELEVATED TACTILE EXECUTIVE DOCUMENT SHEET */}
       <div className="relative rounded-3xl bg-zinc-950 border border-zinc-700/80 p-6 sm:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.9),0_1px_0_rgba(255,255,255,0.1)_inset] space-y-8 overflow-hidden font-sans">
-        {/* Subtle Watermark Stamp */}
-        <div className="pointer-events-none absolute -right-10 -bottom-10 w-72 h-72 border-8 border-white/[0.03] rounded-full flex items-center justify-center select-none rotate-12">
-          <span className="font-mono font-black text-xs uppercase tracking-widest text-white/[0.05] text-center">
-            {t.storeSeal}
-          </span>
+        {/* Official Dismissible Crimson Stamp */}
+        <div
+          onClick={() => setIsStampDismissed(true)}
+          title={locale === "ar" ? "انقر لإخفاء الختم وتسهيل القراءة" : "Cliquer pour masquer le cachet officiel"}
+          className={`absolute -end-6 -bottom-6 w-64 h-64 border-4 border-red-600/40 text-red-600/40 bg-red-500/[0.03] rounded-full flex flex-col items-center justify-center select-none rotate-12 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 z-20 ${
+            isStampDismissed ? "opacity-0 scale-90 pointer-events-none" : "opacity-100"
+          }`}
+        >
+          <div className="w-52 h-52 rounded-full border border-dashed border-red-600/30 flex flex-col items-center justify-center p-4 text-center">
+            <span className="font-mono font-black text-[9px] uppercase tracking-widest text-red-600/60 block">
+              ★ ROYAUME DU MAROC ★
+            </span>
+            <span className="font-mono font-black text-xs uppercase tracking-wider text-red-600/70 my-1 block">
+              {t.storeSeal}
+            </span>
+            <span className="font-mono font-bold text-[8px] uppercase tracking-widest text-red-600/50 block">
+              CERTIFIÉ CONFORME • {reportDate}
+            </span>
+            <span className="text-[7px] text-red-600/40 mt-1 block">
+              (Cliquer pour masquer)
+            </span>
+          </div>
         </div>
 
         {/* Document Header with Official Seal */}
@@ -459,7 +491,18 @@ export function ExecutiveReportSheet({
         {/* Official Document Footer */}
         <div className="pt-6 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] font-mono text-zinc-500">
           <span>{t.officialFootnote}</span>
-          <span>SHA-256 VERIFIED RECORD</span>
+          <div className="flex items-center gap-3">
+            {isStampDismissed && (
+              <button
+                type="button"
+                onClick={() => setIsStampDismissed(false)}
+                className="text-[10px] text-zinc-400 hover:text-white underline cursor-pointer"
+              >
+                {locale === "ar" ? "إظهار الختم الرسمي" : "Afficher le cachet"}
+              </button>
+            )}
+            <span>SHA-256 VERIFIED RECORD</span>
+          </div>
         </div>
       </div>
     </div>

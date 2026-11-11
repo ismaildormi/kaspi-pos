@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   try {
     const ctx = await getRequestContext();
 
-    const [sub, tenant, activeDevicesCount] = await Promise.all([
+    const [sub, tenant, activeDevicesCount, directPayments] = await Promise.all([
       prisma.subscription.findFirst({
         where: { tenantId: ctx.tenantId },
         orderBy: { createdAt: "desc" },
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
           plan: true,
           payments: {
             orderBy: { createdAt: "desc" },
-            take: 5,
+            take: 10,
           },
         },
       }),
@@ -24,6 +24,11 @@ export async function GET(req: NextRequest) {
       }),
       prisma.device.count({
         where: { tenantId: ctx.tenantId, revokedAt: null },
+      }),
+      prisma.payment.findMany({
+        where: { tenantId: ctx.tenantId },
+        orderBy: { createdAt: "desc" },
+        take: 10,
       }),
     ]);
 
@@ -58,15 +63,17 @@ export async function GET(req: NextRequest) {
         maxDevices,
         activeDevicesCount,
       },
-      recentPayments:
-        sub?.payments.map((p) => ({
+      recentPayments: (() => {
+        const list = directPayments.length > 0 ? directPayments : (sub?.payments || []);
+        return list.map((p) => ({
           id: p.id,
           amount: Number(p.amount),
           currency: p.currency,
           status: p.status,
           date: p.createdAt.toISOString(),
           provider: p.provider,
-        })) || [],
+        }));
+      })(),
     });
   } catch (err: any) {
     console.error("[Get Subscription Error]:", err);

@@ -11,6 +11,7 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import { DashboardOnboardingTrigger } from "@/components/dashboard/DashboardOnboardingTrigger";
+import { FloatingCommerceCanvas } from "@/components/ui/FloatingCommerceCanvas";
 import type { StoreBusinessType } from "@/client/store/usePosStore";
 import { getDictionary, type Locale } from "@/i18n/schema";
 
@@ -97,7 +98,8 @@ export default async function DashboardOverviewPage({
   const safeLegalName = String(ctx.activeTenant?.legalName || safeDisplayName);
 
   return (
-    <div dir="ltr" className="space-y-8 select-none">
+    <div dir="ltr" className="relative space-y-8 select-none">
+      <FloatingCommerceCanvas opacity="opacity-[0.04]" className="top-0 h-96 -z-10" />
       {/* Welcome & Actions Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-900 pb-6">
         <div>

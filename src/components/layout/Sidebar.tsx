@@ -25,6 +25,8 @@ import {
   Beef,
   Croissant,
   Boxes,
+  ShieldCheck,
+  Lock,
 } from "lucide-react";
 import { useAppDictionary } from "@/i18n/schema";
 import { usePosStore } from "@/client/store/usePosStore";
@@ -131,14 +133,22 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
     >
       <nav className="space-y-1">
         {/* Active Sector Mode Indicator Badge */}
-        <div className="mb-2 px-2.5 py-1.5 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-between shadow-xs">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <SectorIcon className="w-3.5 h-3.5 text-zinc-300 shrink-0" />
-            <span className="text-[11px] font-bold text-white truncate">
-              {sectorBadgeInfo.label}
-            </span>
+        <div className="mb-3 p-2.5 rounded-2xl bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 border border-white/15 flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.6),0_0_15px_rgba(255,255,255,0.04)] group hover:border-white/30 transition-all duration-300">
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <div className="relative w-7 h-7 rounded-xl bg-zinc-800 border border-white/20 flex items-center justify-center text-white shrink-0 shadow-sm group-hover:scale-105 group-hover:border-white/40 transition-all duration-300">
+              <SectorIcon className="w-4 h-4 text-white" />
+              <div className="absolute -inset-0.5 rounded-xl bg-white/10 blur-xs -z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[11px] font-bold text-white truncate tracking-tight">
+                {sectorBadgeInfo.label}
+              </span>
+              <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider">
+                {locale === "ar" ? "نشط ومهيأ" : "Mode Actif"}
+              </span>
+            </div>
           </div>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />
         </div>
         {isSuperAdmin && (
           <Link
@@ -209,7 +219,22 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
         })}
       </nav>
 
-      <div className="mt-auto pt-4 border-t border-white/10 px-1">
+      <div className="mt-auto pt-3 border-t border-white/10 px-1 space-y-2">
+        <button
+          type="button"
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent("open-owner-vault"));
+          }}
+          className="group w-full flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-850 border border-white/10 hover:border-white/25 text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer"
+          title={locale === "ar" ? "خزنة المالك المحمية" : "Coffre-Fort Propriétaire"}
+        >
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-3.5 h-3.5 text-zinc-400 group-hover:text-emerald-400 group-hover:scale-110 transition-all" />
+            <span>{locale === "ar" ? "خزنة المالك" : "Coffre Propriétaire"}</span>
+          </div>
+          <Lock className="w-3 h-3 text-zinc-500 group-hover:text-white transition-colors" />
+        </button>
+
         <button
           type="button"
           onClick={() => {
