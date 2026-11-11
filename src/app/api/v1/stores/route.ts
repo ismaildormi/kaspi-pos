@@ -8,6 +8,7 @@ const CreateStoreSchema = z.object({
   code: z.string().min(1, "Store code is required"),
   address: z.string().optional(),
   phone: z.string().optional(),
+  storeType: z.string().optional(),
   recordPayment: z.boolean().optional(),
 });
 
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, code, address, phone } = parsed.data;
+    const { name, code, address, phone, storeType } = parsed.data;
 
     // Check if code already exists for this tenant
     const existing = await prisma.store.findFirst({
@@ -94,6 +95,32 @@ export async function POST(req: NextRequest) {
         isActive: true,
       },
     });
+
+    if (storeType) {
+      await prisma.idempotencyRecord
+        .upsert({
+          where: {
+            tenantId_scope_key: {
+              tenantId: ctx.tenantId,
+              scope: "branch_settings",
+              key: `store_${newStore.id}`,
+            },
+          },
+          create: {
+            tenantId: ctx.tenantId,
+            scope: "branch_settings",
+            key: `store_${newStore.id}`,
+            requestHash: "branch_store_type",
+            responseStatus: 200,
+            expiresAt: new Date(Date.now() + 365 * 24 * 3600 * 1000 * 10),
+            responseBody: { storeType, storeName: name.trim() },
+          },
+          update: {
+            responseBody: { storeType, storeName: name.trim() },
+          },
+        })
+        .catch(() => null);
+    }
 
     // Automatically record +150 MAD expansion add-on in Billing History
     let paymentRecord = null;

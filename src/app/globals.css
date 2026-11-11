@@ -71,7 +71,12 @@ table,
   transition: all 0.1s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.keycap-3d:hover {
+.keycap-3d.bg-white {
+  background: #ffffff !important;
+  color: #09090b !important;
+}
+
+.keycap-3d:hover:not(.bg-white) {
   background: linear-gradient(180deg, #22222a 0%, #121218 100%);
   border-color: rgba(255, 255, 255, 0.2);
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.24), 0 6px 14px rgba(0, 0, 0, 0.7);

@@ -44,6 +44,7 @@ export function StoreOnboardingModal({
   const [currency, setCurrency] = useState("MAD");
   const [receiptLanguage, setReceiptLanguage] = useState("fr");
   const [seedCatalog, setSeedCatalog] = useState(false);
+  const [hasConfirmedSectorChange, setHasConfirmedSectorChange] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,6 +110,17 @@ export function StoreOnboardingModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedType !== initialStoreType && !hasConfirmedSectorChange) {
+      setError(
+        locale === "ar"
+          ? "يرجى وضع علامة تأكيد تغيير وضع النشاط للمتابعة"
+          : locale === "en"
+          ? "Please confirm the sector change to proceed"
+          : "Veuillez cocher la confirmation du changement de secteur pour continuer"
+      );
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
@@ -236,6 +248,43 @@ export function StoreOnboardingModal({
                 );
               })}
             </div>
+
+            {/* Smart Warning Banner when switching sectors */}
+            {selectedType !== initialStoreType && (
+              <div
+                dir="auto"
+                style={{ unicodeBidi: "plaintext" }}
+                className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs sm:text-sm leading-relaxed space-y-3"
+              >
+                <div className="font-semibold flex items-start gap-2">
+                  <span className="shrink-0 text-base">⚠️</span>
+                  <span>
+                    {locale === "ar"
+                      ? "تنبيه هام: تغيير وضع النشاط للمتجر الحالي قد لا يتوافق مع المنتجات والبيانات التي قمت بجمعها مسبقاً. إذا كان لديك محل آخر بنشاط مختلف، ننصحك بإضافة فرع جديد (+150 د.م/شهر) وتحديد نشاطه المستقل، أو اضغط تأكيد للمتابعة."
+                      : locale === "en"
+                      ? "Warning: Changing the sector of an existing store may not match your previously collected products and categories. If you own another shop with a different activity, we recommend adding a new branch (+150 MAD/mo) with its own dedicated sector."
+                      : "Attention : Changer le secteur d'un magasin existant peut affecter l'organisation de vos produits actuels. Si vous avez un autre commerce, créez plutôt une nouvelle succursale (+150 MAD/mois) avec son propre secteur."}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 pt-2 border-t border-amber-500/20">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-white">
+                    <input
+                      type="checkbox"
+                      checked={hasConfirmedSectorChange}
+                      onChange={(e) => setHasConfirmedSectorChange(e.target.checked)}
+                      className="rounded border-amber-500/50 text-amber-500 focus:ring-0"
+                    />
+                    <span>
+                      {locale === "ar"
+                        ? "فهمت، تأكيد تغيير وضع المتجر الحالي"
+                        : locale === "en"
+                        ? "Confirm Sector Change"
+                        : "Confirmer le changement"}
+                    </span>
+                  </label>
+                </div>
+              </div>
+            )}
 
             {/* Quick Configuration Bar */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/10">

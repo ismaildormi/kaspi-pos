@@ -132,8 +132,21 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
       } md:flex w-full md:w-60 border-r border-white/10 bg-zinc-950/60 p-3 shrink-0 flex-col justify-between select-none`}
     >
       <nav className="space-y-1">
-        {/* Active Sector Mode Indicator Badge */}
-        <div className="mb-3 p-2.5 rounded-2xl bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 border border-white/15 flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.6),0_0_15px_rgba(255,255,255,0.04)] group hover:border-white/30 transition-all duration-300">
+        {/* Active Sector Mode Indicator Badge - Interactive */}
+        <button
+          type="button"
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent("open-industry-modal"));
+          }}
+          className="w-full text-left mb-3 p-2.5 rounded-2xl bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 border border-white/15 flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.6),0_0_15px_rgba(255,255,255,0.04)] group hover:border-white/40 hover:bg-zinc-850 transition-all duration-300 cursor-pointer"
+          title={
+            locale === "ar"
+              ? "تغيير قطاع ونشاط المتجر"
+              : locale === "en"
+              ? "Change store sector / industry"
+              : "Modifier le secteur du magasin"
+          }
+        >
           <div className="flex items-center gap-2.5 overflow-hidden">
             <div className="relative w-7 h-7 rounded-xl bg-zinc-800 border border-white/20 flex items-center justify-center text-white shrink-0 shadow-sm group-hover:scale-105 group-hover:border-white/40 transition-all duration-300">
               <SectorIcon className="w-4 h-4 text-white" />
@@ -144,12 +157,12 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
                 {sectorBadgeInfo.label}
               </span>
               <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider">
-                {locale === "ar" ? "نشط ومهيأ" : locale === "en" ? "Active Mode" : "Mode Actif"}
+                {locale === "ar" ? "تغيير النشاط ⚡" : locale === "en" ? "Change Sector ⚡" : "Changer Secteur ⚡"}
               </span>
             </div>
           </div>
           <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />
-        </div>
+        </button>
         {isSuperAdmin && (
           <Link
             href={localizeHref("/admin")}

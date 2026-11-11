@@ -118,6 +118,7 @@ export default function SettingsPage() {
   const [newStoreName, setNewStoreName] = useState("");
   const [newStoreCode, setNewStoreCode] = useState("");
   const [newStoreAddress, setNewStoreAddress] = useState("");
+  const [newStoreSector, setNewStoreSector] = useState("grocery");
   const [isCreatingStore, setIsCreatingStore] = useState(false);
   const [storeCreateError, setStoreCreateError] = useState<string | null>(null);
 
@@ -273,6 +274,7 @@ export default function SettingsPage() {
           name: newStoreName.trim(),
           code: newStoreCode.trim().toUpperCase(),
           address: newStoreAddress.trim() || undefined,
+          storeType: newStoreSector,
           recordPayment: true,
         }),
       });
@@ -1070,6 +1072,25 @@ export default function SettingsPage() {
                           className="w-full h-10 px-3.5 bg-zinc-900 border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/30"
                         />
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                        {locale === "ar" ? "قطاع ونشاط الفرع" : locale === "en" ? "Branch Sector / Activity" : "Secteur d'activité du magasin"}
+                      </label>
+                      <select
+                        value={newStoreSector}
+                        onChange={(e) => setNewStoreSector(e.target.value)}
+                        className="w-full h-10 px-3.5 bg-zinc-900 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-white/30 cursor-pointer"
+                      >
+                        <option value="grocery">{locale === "ar" ? "بقالة وسوبرماركت (Grocery)" : "Épicerie & Supermarché"}</option>
+                        <option value="butchery">{locale === "ar" ? "مجزرة ولحوم (Butchery)" : "Boucherie & Viandes"}</option>
+                        <option value="restaurant">{locale === "ar" ? "مطعم ومقهى (Restaurant)" : "Restaurant & Café"}</option>
+                        <option value="bakery">{locale === "ar" ? "مخبزة وحلويات (Bakery)" : "Boulangerie & Pâtisserie"}</option>
+                        <option value="fashion">{locale === "ar" ? "ملابس وأزياء (Fashion)" : "Mode & Prêt-à-Porter"}</option>
+                        <option value="tech">{locale === "ar" ? "إلكترونيات وهواتف (Tech)" : "Électronique & Tech"}</option>
+                        <option value="wholesale">{locale === "ar" ? "تجارة الجملة والدروكري (Wholesale)" : "Grossiste & Droguerie"}</option>
+                      </select>
                     </div>
 
                     <div className="pt-2 flex justify-end gap-2.5">

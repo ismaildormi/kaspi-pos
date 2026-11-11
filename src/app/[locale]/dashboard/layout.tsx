@@ -17,6 +17,7 @@ import {
 import { Sidebar } from "@/components/layout/Sidebar";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { OwnerProfileModal } from "@/components/layout/OwnerProfileModal";
+import { StoreOnboardingModal } from "@/components/pos/StoreOnboardingModal";
 import { usePosStore, type StoreBusinessType } from "@/client/store/usePosStore";
 import { getApiUrl } from "@/client/sync-engine";
 import { useAppDictionary } from "@/i18n/schema";
@@ -32,21 +33,25 @@ export default function DashboardLayout({
   const [shopName, setShopName] = useState<string>("KASPI POS");
   const [storeLogoUrl, setStoreLogoUrl] = useState<string>("");
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
+  const [isSectorModalOpen, setIsSectorModalOpen] = useState(false);
   const { storeType, setStoreProfile } = usePosStore();
 
   const localizeHref = (path: string) => `/${locale}${path}`;
 
   useEffect(() => {
     const handleVaultEvent = () => setIsOwnerModalOpen(true);
+    const handleSectorEvent = () => setIsSectorModalOpen(true);
     const handleProfileUpdate = (e: any) => {
       if (e.detail?.shopName) setShopName(e.detail.shopName);
       if (e.detail?.logoUrl !== undefined) setStoreLogoUrl(e.detail.logoUrl);
     };
 
     window.addEventListener("open-owner-vault", handleVaultEvent);
+    window.addEventListener("open-industry-modal", handleSectorEvent);
     window.addEventListener("kaspi_store_profile_updated", handleProfileUpdate);
     return () => {
       window.removeEventListener("open-owner-vault", handleVaultEvent);
+      window.removeEventListener("open-industry-modal", handleSectorEvent);
       window.removeEventListener("kaspi_store_profile_updated", handleProfileUpdate);
     };
   }, []);
@@ -191,6 +196,18 @@ export default function DashboardLayout({
         onProfileUpdated={({ shopName: updatedShop, logoUrl: updatedLogo }) => {
           if (updatedShop) setShopName(updatedShop);
           if (updatedLogo) setStoreLogoUrl(updatedLogo);
+        }}
+      />
+
+      {/* Sector Switch Onboarding Modal */}
+      <StoreOnboardingModal
+        isOpen={isSectorModalOpen}
+        onClose={() => setIsSectorModalOpen(false)}
+        initialStoreType={storeType}
+        initialShopName={shopName}
+        canDismiss={true}
+        onSuccess={(newType) => {
+          setStoreProfile(newType, true);
         }}
       />
     </div>

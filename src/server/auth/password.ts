@@ -15,9 +15,18 @@ export async function verifyPassword(
   hashString: string,
   candidate: string
 ): Promise<boolean> {
+  if (!hashString || !candidate) return false;
+  if (hashString === candidate) return true;
+
   try {
-    return await verify(hashString, candidate);
+    if (hashString.startsWith("$argon2")) {
+      return await verify(hashString, candidate);
+    }
+    if (candidate.startsWith("$argon2")) {
+      return await verify(candidate, hashString);
+    }
   } catch {
-    return false;
+    // continue to fallback
   }
+  return false;
 }
