@@ -49,11 +49,17 @@ table,
   -webkit-text-fill-color: transparent;
 }
 
-/* Machined Obsidian Surface with Specular Top-Edge Reflection */
+/* Machined Obsidian Surface with Specular Top-Edge Reflection & 3D Depth */
 .surface-obsidian {
   background: #0d0d12;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.14), 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.surface-obsidian:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2), 0 24px 44px -12px rgba(0, 0, 0, 0.8);
 }
 
 /* 3D Tactile Keycap Buttons (Hardware-Grade Mechanical Feel) */

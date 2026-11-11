@@ -170,3 +170,20 @@
 | `held_cart_item_card` | Card Box | بطاقة السلة المعلقة (توقيت التعليق، عدد المواد، الإجمالي) | `font-mono text-xs font-bold text-white` | `p-3.5 rounded-xl bg-zinc-900 border border-zinc-800 flex justify-between items-center` | يعرض بيانات السلة المحفوظة مؤقتاً في الذاكرة |
 | `held_cart_btn_restore` | Button | استرجاع السلة لمواصلة البيع • Restaurer | `font-bold text-xs text-zinc-950` | `keycap-3d px-3 py-1.5 bg-white text-zinc-950 rounded-lg shadow-xs` | يعيد تحميل العناصر إلى السلة النشطة |
 | `held_cart_btn_discard` | Button | إلغاء السلة المعلقة • Supprimer | `text-xs text-red-400 hover:text-red-300` | `p-1.5 rounded-lg hover:bg-red-500/10 cursor-pointer` | يحذف السلة المعلقة نهائياً |
+
+
+---
+
+## 9. منصة الأجهزة القطاعية المباشرة المدمجة (`PosSectorLiveDock.tsx`)
+
+| معرّف العنصر (Element ID) | نوع العنصر | القطاع والملف | التسمية والرمز (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `live_dock_view_menu` | View Switcher | `restaurant` • `PosSectorLiveDock.tsx` | القائمة / Menu | `font-bold text-xs` | `keycap-3d py-1.5 px-3 rounded-lg` | يبدل الواجهة المركزية لشاشة المنتجات مع شريط ملاحظات الطهي السريعة |
+| `live_dock_view_tables` | View Switcher | `restaurant` • `PosSectorLiveDock.tsx` | خريطة الطاولات 3D • Plan de Salle | `font-bold text-xs` | `keycap-3d py-1.5 px-3 rounded-lg` | يعرض شبكة الطاولات الحية T-01..T-12 مع عدادات الجلوس ومبالغ الحسابات |
+| `live_dock_view_kds` | View Switcher | `restaurant` • `PosSectorLiveDock.tsx` | شاشة المطبخ (KDS) • Écran Cuisine | `font-bold text-xs` | `keycap-3d py-1.5 px-3 rounded-lg` | يعرض تذاكر المطبخ النشطة وزر الإرسال المباشر وتجزيء الحساب |
+| `live_dock_butchery_lcd` | LCD Screen | `butchery` • `PosSectorLiveDock.tsx` | شاشة الميزان المدمجة (الوزن × السعر = الإجمالي) | `font-mono font-black text-xl text-white tabular-nums` | `p-2.5 px-4 rounded-xl bg-zinc-950 border border-zinc-800` | حساب فوري ومباشر لوزن اللحوم مع التقطيع والـ Tare في شاشة الـ POS مباشرة |
+| `live_dock_bakery_box_btns` | Button Grid | `bakery` • `PosSectorLiveDock.tsx` | علب حلويات سريعة (250g, 500g, 1kg, Plateau) | `font-bold text-xs` + `font-mono text-zinc-400` | `keycap-3d p-2 rounded-xl bg-zinc-900 border border-zinc-800` | إضافة بلاطو مشكل بنقرة واحدة مباشرة من الشاشة الرئيسية |
+| `live_dock_fashion_size_pills` | Pill Group | `fashion` • `PosSectorLiveDock.tsx` | مقاسات الملابس والأحذية (XS-XXL / 38-44) | `font-mono font-bold text-[10px]` | `keycap-3d px-2 py-1 rounded-md bg-zinc-900 border` | ربط مقاس القطعة فورياً بالسلعة النشطة بالسلة دون فتح نوافذ إضافية |
+| `live_dock_tech_imei_input` | Recessed Input | `tech` • `PosSectorLiveDock.tsx` | إدخال ومسح 15-digit IMEI | `font-mono text-xs text-white` | `h-8 px-3 rounded-xl bg-zinc-950 border border-zinc-800` | كتابة أو مسح الرقم التسلسلي وربطه فورياً بالهاتف المباع |
+| `live_dock_wholesale_colisage` | Multipliers | `wholesale` • `PosSectorLiveDock.tsx` | معاملات الطرود (x1, x6, x12, x24, x50) | `font-mono font-bold text-[10px]` | `keycap-3d flex-1 py-1 rounded-lg bg-zinc-900 border` | تحويل الكمية وحساب سعر الجملة ووضع وصل التسليم BL بنقرة واحدة |
+| `live_dock_grocery_staples` | Express Shelf | `grocery` • `PosSectorLiveDock.tsx` | سلع بدون باركود (خبز، حليب، ماء، بيض، كيس، سكر) | `font-bold text-[11px]` + `font-mono text-[10px]` | `keycap-3d py-1.5 px-2 rounded-xl bg-zinc-900 border` | أزرار إدخال فوري للسلع اليومية دون مسح الباركود |

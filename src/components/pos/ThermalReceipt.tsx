@@ -48,6 +48,10 @@ export interface ReceiptData {
   receiptHeader?: string;
   receiptFooter?: string;
   showStoreLogo?: boolean;
+  sectorBadge?: string;
+  sectorMetadata?: string[];
+  isGiftVoucher?: boolean;
+  isDeliveryNote?: boolean;
 }
 
 interface ThermalReceiptProps {
@@ -130,6 +134,18 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
           {data.receiptHeader && (
             <p className="text-[10px] italic pt-1">{data.receiptHeader}</p>
           )}
+
+          {data.isDeliveryNote && (
+            <div className="mt-1.5 py-1 px-2 border-y border-black font-black text-xs uppercase bg-black text-white">
+              *** BON DE LIVRAISON (BL) ***
+            </div>
+          )}
+
+          {data.isGiftVoucher && (
+            <div className="mt-1.5 py-1 px-2 border-y border-black font-black text-[10px] uppercase bg-black text-white">
+              *** TICKET CADEAU / ÉCHANGE (15J) ***
+            </div>
+          )}
         </div>
 
         {/* Receipt Meta */}
@@ -160,6 +176,18 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
               <span className="font-mono" dir="ltr">
                 {toWesternNumerals(data.customerIce)}
               </span>
+            </div>
+          )}
+
+          {/* Sector-Specific Metadata Details */}
+          {data.sectorMetadata && data.sectorMetadata.length > 0 && (
+            <div className="border-t border-dotted border-gray-400 pt-1 mt-1 space-y-0.5 text-[9px]">
+              {data.sectorMetadata.map((meta, i) => (
+                <div key={i} className="flex justify-between font-bold">
+                  <span>{meta.split(":")[0]}:</span>
+                  <span className="font-mono">{meta.split(":")[1] || ""}</span>
+                </div>
+              ))}
             </div>
           )}
         </div>
