@@ -20,21 +20,33 @@ import {
   ChevronUp,
   Sparkles,
   Check,
+  Scale,
+  Beef,
+  Croissant,
+  Shirt,
+  Smartphone,
+  Flame,
+  Gift,
+  Wrench,
+  Package,
 } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
 
 interface CartPanelProps {
   onOpenCustomerModal?: () => void;
+  onOpenIndustryTools?: () => void;
 }
 
-export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => {
+export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal, onOpenIndustryTools }) => {
   const t = useTranslations("Pos");
   const tCommon = useTranslations("Common");
   const { t: tDict, locale } = useAppDictionary();
   const [isCouponOpen, setIsCouponOpen] = React.useState(false);
   const [couponCode, setCouponCode] = React.useState("");
   const [couponMsg, setCouponMsg] = React.useState<{ text: string; error?: boolean } | null>(null);
+  const [orderMode, setOrderMode] = React.useState<"dine_in" | "takeaway" | "delivery">("dine_in");
+  const [quickImei, setQuickImei] = React.useState("");
 
   const {
     cart,
@@ -50,7 +62,10 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
     discountPercent,
     discountFixed,
     setDiscount,
+    addToCart,
     updateItemQuantity,
+    setItemQuantity,
+    updateItemNotes,
     removeItem,
     clearCart,
     holdCurrentCart,
@@ -60,6 +75,33 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
     getGrandTotal,
     openPaymentModal,
   } = usePosStore();
+
+  const lastCartItem = cart.length > 0 ? cart[cart.length - 1] : null;
+
+  const handleApplyNoteToLastItem = (noteText: string) => {
+    if (!lastCartItem) return;
+    const existing = lastCartItem.notes ? `${lastCartItem.notes} • ` : "";
+    updateItemNotes(lastCartItem.productId, `${existing}${noteText}`);
+  };
+
+  const handleQuickExpressAdd = (item: {
+    id: string;
+    name: string;
+    sku: string;
+    salePrice: number;
+    wholesalePrice?: number;
+    taxRate?: number;
+  }) => {
+    addToCart({
+      id: item.id,
+      name: item.name,
+      sku: item.sku,
+      salePrice: item.salePrice,
+      wholesalePrice: item.wholesalePrice || item.salePrice,
+      taxRate: item.taxRate ?? 0,
+      trackStock: false,
+    });
+  };
 
   const handleApplyCoupon = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -196,9 +238,9 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
           <button
             type="button"
             onClick={() => setPricingTier("retail")}
-            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`keycap-3d flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
               pricingTier === "retail"
-                ? "bg-white text-zinc-950 shadow-xs scale-[1.02]"
+                ? "bg-white text-zinc-950 shadow-xs"
                 : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
             }`}
           >
@@ -208,15 +250,349 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
           <button
             type="button"
             onClick={() => setPricingTier("wholesale")}
-            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`keycap-3d flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
               pricingTier === "wholesale"
-                ? "bg-white text-zinc-950 shadow-xs scale-[1.02]"
+                ? "bg-white text-zinc-950 shadow-xs"
                 : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
             }`}
           >
             <Boxes className="w-3.5 h-3.5 shrink-0" />
             <span>{wholesaleLabel}</span>
           </button>
+        </div>
+
+        {/* Chameleon Sector-Morphing Quick Bar (7 Niches) */}
+        <div className="pt-2 border-t border-zinc-800/80">
+          {/* RESTAURANT */}
+          {storeType === "restaurant" && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1">
+                {[
+                  { id: "dine_in", labelAr: "محلي", labelFr: "Sur Place", labelEn: "Dine In" },
+                  { id: "takeaway", labelAr: "سفري", labelFr: "À Emporter", labelEn: "Takeaway" },
+                  { id: "delivery", labelAr: "توصيل", labelFr: "Livraison", labelEn: "Delivery" },
+                ].map((mode) => (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    onClick={() => setOrderMode(mode.id as any)}
+                    className={`keycap-3d flex-1 py-1 px-1.5 rounded-lg text-[10px] font-bold border transition ${
+                      orderMode === mode.id
+                        ? "bg-white text-zinc-950 border-white"
+                        : "bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-white"
+                    }`}
+                  >
+                    {locale === "ar" ? mode.labelAr : locale === "en" ? mode.labelEn : mode.labelFr}
+                  </button>
+                ))}
+                {onOpenIndustryTools && (
+                  <button
+                    type="button"
+                    onClick={onOpenIndustryTools}
+                    className="keycap-3d py-1 px-2 rounded-lg bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-700 text-[10px] font-bold flex items-center gap-1"
+                    title="Tables & KDS"
+                  >
+                    <UtensilsCrossed className="w-3 h-3 text-white" />
+                    <span>{selectedTableName || (locale === "ar" ? "طاولات" : "Tables")}</span>
+                  </button>
+                )}
+              </div>
+              {lastCartItem && (
+                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+                  <span className="text-[9px] text-zinc-500 uppercase font-bold shrink-0">Note:</span>
+                  {[
+                    { ar: "بدون بصل", fr: "Sans oignon" },
+                    { ar: "طهي جيد", fr: "Bien cuit" },
+                    { ar: "صلصة جانبية", fr: "Sauce à part" },
+                    { ar: "زبون VIP", fr: "VIP" },
+                  ].map((chip) => (
+                    <button
+                      key={chip.fr}
+                      type="button"
+                      onClick={() => handleApplyNoteToLastItem(locale === "ar" ? chip.ar : chip.fr)}
+                      className="keycap-3d px-1.5 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[9px] font-semibold text-zinc-300 hover:text-white shrink-0"
+                    >
+                      +{locale === "ar" ? chip.ar : chip.fr}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* BUTCHERY */}
+          {storeType === "butchery" && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-1 bg-zinc-900/70 border border-zinc-800 p-1.5 rounded-lg">
+                <div className="flex items-center gap-1 text-[10px] text-zinc-400">
+                  <Scale className="w-3.5 h-3.5 text-white" />
+                  <span className="font-mono font-bold text-white">
+                    {lastCartItem ? `${lastCartItem.quantity} kg` : "0.000 kg"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {[
+                    { label: "-15g Sac", val: "-15g" },
+                    { label: "-30g Barq.", val: "-30g" },
+                    { label: "-50g Plat.", val: "-50g" },
+                  ].map((tare) => (
+                    <button
+                      key={tare.val}
+                      type="button"
+                      onClick={() => handleApplyNoteToLastItem(`Tare: ${tare.val}`)}
+                      className="keycap-3d px-1.5 py-0.5 rounded text-[9px] font-mono bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white"
+                    >
+                      {tare.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+                {[
+                  { ar: "كفتة مفرومة", fr: "Haché" },
+                  { ar: "ستيك", fr: "Steak" },
+                  { ar: "طاجين", fr: "Tagine" },
+                  { ar: "متبل", fr: "Mariné" },
+                ].map((cut) => (
+                  <button
+                    key={cut.fr}
+                    type="button"
+                    onClick={() => handleApplyNoteToLastItem(locale === "ar" ? cut.ar : cut.fr)}
+                    className="keycap-3d flex-1 py-1 px-1 rounded-md bg-zinc-900 border border-zinc-800 text-[9px] font-bold text-zinc-300 hover:text-white text-center"
+                  >
+                    {locale === "ar" ? cut.ar : cut.fr}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* BAKERY */}
+          {storeType === "bakery" && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="flex items-center gap-1 text-zinc-400 font-mono">
+                  <Flame className="w-3 h-3 text-white" />
+                  <span>{locale === "ar" ? "دفعة الفرن القادمة: 14د" : "Fournée dans 14 min"}</span>
+                </span>
+                {onOpenIndustryTools && (
+                  <button
+                    type="button"
+                    onClick={onOpenIndustryTools}
+                    className="text-[10px] text-zinc-300 hover:text-white underline cursor-pointer"
+                  >
+                    {locale === "ar" ? "حجز حلوى" : "Réservation Gâteau"}
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-4 gap-1">
+                {[
+                  { label: "250g", price: 35 },
+                  { label: "500g", price: 65 },
+                  { label: "1 kg", price: 120 },
+                  { label: "Plateau", price: 160 },
+                ].map((box) => (
+                  <button
+                    key={box.label}
+                    type="button"
+                    onClick={() =>
+                      handleQuickExpressAdd({
+                        id: `box-${box.label.toLowerCase().replace(/\s/g, "-")}`,
+                        name: `Plateau Pâtisserie Assortie (${box.label})`,
+                        sku: `BOX-${box.label.toUpperCase()}`,
+                        salePrice: box.price,
+                      })
+                    }
+                    className="keycap-3d py-1 px-1 rounded-lg bg-zinc-900 border border-zinc-800 text-center hover:border-zinc-700"
+                  >
+                    <div className="text-[10px] font-bold text-white">{box.label}</div>
+                    <div className="text-[8px] font-mono text-zinc-400">{box.price} MAD</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* FASHION */}
+          {storeType === "fashion" && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-1 overflow-x-auto no-scrollbar">
+                <span className="text-[9px] text-zinc-500 uppercase font-bold shrink-0">Taille:</span>
+                {["S", "M", "L", "XL", "XXL", "40", "42"].map((sz) => (
+                  <button
+                    key={sz}
+                    type="button"
+                    onClick={() => handleApplyNoteToLastItem(`Taille: ${sz}`)}
+                    className="keycap-3d px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[9px] font-mono font-bold text-zinc-300 hover:text-white"
+                  >
+                    {sz}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] text-zinc-500 uppercase font-bold shrink-0">Couleur:</span>
+                  {[
+                    { name: "Noir", bg: "#000000" },
+                    { name: "Blanc", bg: "#ffffff" },
+                    { name: "Gris", bg: "#6b7280" },
+                    { name: "Bleu", bg: "#1e3a8a" },
+                    { name: "Rouge", bg: "#dc2626" },
+                  ].map((c) => (
+                    <button
+                      key={c.name}
+                      type="button"
+                      onClick={() => handleApplyNoteToLastItem(`Couleur: ${c.name}`)}
+                      className="w-4 h-4 rounded-full border border-white/20 active:scale-95 transition"
+                      style={{ backgroundColor: c.bg }}
+                      title={c.name}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleApplyNoteToLastItem("Ticket Cadeau / Échange 15j")}
+                  className="keycap-3d px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[9px] font-bold text-zinc-300 hover:text-white flex items-center gap-1"
+                >
+                  <Gift className="w-2.5 h-2.5" />
+                  <span>{locale === "ar" ? "تذكرة تبديل" : "Échange 15j"}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* TECH / ELECTRONICS */}
+          {(storeType === "tech" || (storeType as string) === "electronics") && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={quickImei}
+                  onChange={(e) => setQuickImei(e.target.value)}
+                  placeholder="IMEI / SN (15 chiffres)..."
+                  className="flex-1 h-6 px-2 rounded bg-zinc-950 border border-zinc-800 text-[10px] font-mono text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (quickImei.trim()) {
+                      handleApplyNoteToLastItem(`IMEI: ${quickImei.trim()}`);
+                      setQuickImei("");
+                    }
+                  }}
+                  className="keycap-3d h-6 px-2 rounded bg-zinc-900 border border-zinc-700 text-[9px] font-bold text-white"
+                >
+                  OK
+                </button>
+              </div>
+              <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] text-zinc-500 uppercase font-bold shrink-0">Garantie:</span>
+                  {["Sans", "3M", "6M", "1 An", "2 Ans"].map((w) => (
+                    <button
+                      key={w}
+                      type="button"
+                      onClick={() => handleApplyNoteToLastItem(`Garantie: ${w}`)}
+                      className="keycap-3d px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[9px] font-mono text-zinc-300 hover:text-white"
+                    >
+                      {w}
+                    </button>
+                  ))}
+                </div>
+                {onOpenIndustryTools && (
+                  <button
+                    type="button"
+                    onClick={onOpenIndustryTools}
+                    className="keycap-3d px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[9px] font-bold text-zinc-300 hover:text-white flex items-center gap-1"
+                  >
+                    <Wrench className="w-2.5 h-2.5" />
+                    <span>{locale === "ar" ? "صيانة" : "SAV"}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* WHOLESALE */}
+          {storeType === "wholesale" && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] text-zinc-500 uppercase font-bold shrink-0">Colisage:</span>
+                {[
+                  { factor: 1, label: "x1" },
+                  { factor: 6, label: "x6 Pack" },
+                  { factor: 12, label: "x12 Ctn" },
+                  { factor: 24, label: "x24 Colis" },
+                  { factor: 50, label: "x50 Pal." },
+                ].map((mult) => (
+                  <button
+                    key={mult.label}
+                    type="button"
+                    onClick={() => {
+                      if (lastCartItem) {
+                        setItemQuantity(lastCartItem.productId, mult.factor);
+                        setPricingTier("wholesale");
+                        handleApplyNoteToLastItem(`Colisage ${mult.label}`);
+                      }
+                    }}
+                    className="keycap-3d flex-1 py-1 rounded bg-zinc-900 border border-zinc-800 text-[9px] font-mono font-bold text-zinc-300 hover:text-white text-center"
+                  >
+                    {mult.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                <span className="font-mono">Tier: Gros (Wholesale)</span>
+                <span className="font-mono text-zinc-300">BL / Facture TVA</span>
+              </div>
+            </div>
+          )}
+
+          {/* GROCERY / ALIMENTATION GENERALE */}
+          {storeType === "grocery" && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[9px] text-zinc-500 font-bold uppercase">
+                <span>{locale === "ar" ? "مقضيات سريعة (بدون باركود)" : "Express Sans Barcode"}</span>
+                {onOpenIndustryTools && (
+                  <button
+                    type="button"
+                    onClick={onOpenIndustryTools}
+                    className="text-zinc-300 hover:text-white underline lowercase font-normal cursor-pointer"
+                  >
+                    {locale === "ar" ? "وزن / consigne" : "balance / consigne"}
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-5 gap-1">
+                {[
+                  { id: "exp-pain", name: "Pain Rond / خبز", sku: "EXP-PAIN", price: 1.2 },
+                  { id: "exp-lait", name: "Lait Pasteurisé / حليب", sku: "EXP-LAIT", price: 3.5 },
+                  { id: "exp-eau", name: "Eau Minérale 1.5L / ماء", sku: "EXP-EAU", price: 6.0 },
+                  { id: "exp-oeuf", name: "Œuf Frais / بيض", sku: "EXP-OEUF", price: 1.5 },
+                  { id: "exp-sac", name: "Sac Plastique / كيس", sku: "EXP-SAC", price: 0.1 },
+                ].map((exp) => (
+                  <button
+                    key={exp.id}
+                    type="button"
+                    onClick={() =>
+                      handleQuickExpressAdd({
+                        id: exp.id,
+                        name: exp.name,
+                        sku: exp.sku,
+                        salePrice: exp.price,
+                      })
+                    }
+                    className="keycap-3d py-1 px-0.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-center"
+                  >
+                    <div className="text-[9px] font-bold text-white truncate">
+                      {exp.name.split("/")[0].trim()}
+                    </div>
+                    <div className="text-[8px] font-mono text-zinc-400">{exp.price.toFixed(2)}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -320,7 +696,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
               <div className="flex items-center gap-1 bg-zinc-950 border border-zinc-800 rounded-lg p-0.5">
                 <button
                   onClick={() => updateItemQuantity(item.productId, -1)}
-                  className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 rounded active:scale-95 transition cursor-pointer"
+                  className="keycap-3d w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-700/60 rounded active:scale-95 transition cursor-pointer"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
@@ -329,7 +705,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                 </span>
                 <button
                   onClick={() => updateItemQuantity(item.productId, 1)}
-                  className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 rounded active:scale-95 transition cursor-pointer"
+                  className="keycap-3d w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-700/60 rounded active:scale-95 transition cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>

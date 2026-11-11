@@ -56,6 +56,41 @@ table,
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 20px 40px -15px rgba(0, 0, 0, 0.7);
 }
 
+/* 3D Tactile Keycap Buttons (Hardware-Grade Mechanical Feel) */
+.keycap-3d {
+  background: linear-gradient(180deg, #1a1a20 0%, #0e0e12 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 3px solid #000000;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.16), 0 4px 10px rgba(0, 0, 0, 0.6);
+  transition: all 0.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.keycap-3d:hover {
+  background: linear-gradient(180deg, #22222a 0%, #121218 100%);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.24), 0 6px 14px rgba(0, 0, 0, 0.7);
+}
+
+.keycap-3d:active:not(:disabled) {
+  transform: translateY(2px);
+  border-bottom-width: 1px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8), 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* 3D Ambient Card Depth & Glass Bevels */
+.surface-obsidian-3d {
+  background: #0d0d12;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.14), 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.surface-obsidian-3d:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.22), 0 24px 48px -12px rgba(0, 0, 0, 0.85);
+}
+
 /* Machined Recessed Inputs (Linear / Raycast Craftsmanship) */
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 select,

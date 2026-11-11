@@ -53,6 +53,9 @@ export default function PosPage() {
       processSyncQueue().catch(() => {});
       fetchCashShift();
     }
+    const handleOpenIndustry = () => setIsIndustryToolsOpen(true);
+    window.addEventListener("open-industry-modal", handleOpenIndustry);
+    return () => window.removeEventListener("open-industry-modal", handleOpenIndustry);
   }, [fetchCashShift]);
 
   // Refresh active cash shift summary when payment modal closes (e.g. after a completed sale)
@@ -238,7 +241,10 @@ export default function PosPage() {
 
         {/* Right Side (or Left in RTL): Cart & Checkout Panel */}
         <div className="w-full md:w-96 lg:w-[420px] shrink-0 h-full border-t md:border-t-0 md:border-s border-zinc-800">
-          <CartPanel onOpenCustomerModal={() => setIsCustomerModalOpen(true)} />
+          <CartPanel
+            onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
+            onOpenIndustryTools={() => setIsIndustryToolsOpen(true)}
+          />
         </div>
       </div>
 

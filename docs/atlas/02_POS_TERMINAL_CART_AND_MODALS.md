@@ -82,3 +82,91 @@
 | `transfer_select_target_store` | Select | `StockTransferModal.tsx` [80–95] | متجر الاستلام (الوجهة) • Magasin Destinataire | `font-mono text-xs text-white` | `w-full h-10 px-3.5 bg-[#0B0B0E] border border-white/[0.12] rounded-xl focus:border-white/40` | يحدد الفرع المستقبل للبضاعة |
 | `transfer_input_quantity` | Input (Number) | `StockTransferModal.tsx` [100–115] | الكمية المحولة • Quantité Transférée | `font-mono font-bold text-xs text-white` | `w-full h-10 px-3.5 bg-[#0B0B0E] border border-white/[0.12] rounded-xl focus:border-white/40` | يربط بكمية التحويل المنفذة عبر `/api/v1/inventory/transfers` |
 | `transfer_btn_confirm_submit` | Button (Submit) | `StockTransferModal.tsx` [130–145] | تأكيد نقل البضاعة بين الفروع • Transférer | `font-bold text-xs text-zinc-950 font-sans` | `sheen-btn px-6 py-2.5 bg-white hover:bg-zinc-200 rounded-xl active:scale-95 cursor-pointer shadow-md` | يخصم الكمية من المصدر ويضيفها للوجهة لحظياً |
+
+
+---
+
+## 6. مساحات العمل الحية للقطاعات السبعة (`IndustryWorkspaceModal.tsx` & Chameleon POS)
+
+### جدول 6.1: قطاع المطاعم والمقاهي (Restaurant Workspace & KDS)
+
+| معرّف العنصر (Element ID) | نوع العنصر | التسمية والوظيفة (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `rest_mode_dine_in` | Mode Pill | محلي (بالصالة) • Sur Place • Dine In | `font-bold text-xs` | `keycap-3d py-1.5 px-3 rounded-xl border` | يضبط نمط الطلب على التناول داخل المطعم |
+| `rest_mode_takeaway` | Mode Pill | سفري • À Emporter • Takeaway | `font-bold text-xs` | `keycap-3d py-1.5 px-3 rounded-xl border` | يضبط نمط الطلب على الاستلام والمغادرة |
+| `rest_mode_delivery` | Mode Pill | توصيل • Livraison • Delivery | `font-bold text-xs` | `keycap-3d py-1.5 px-3 rounded-xl border` | يضبط نمط الطلب على التوصيل الخارجي |
+| `rest_guest_stepper` | Stepper | عدد الزبائن (1-10) • Couverts | `font-mono font-bold text-xs` | `keycap-3d w-7 h-7 rounded-lg border` | يحدد عدد الضيوف في تذكرة الطاولة والمطبخ |
+| `rest_table_grid_btn` | Table Card | طاولات T-01 إلى T-12 وتراس 1-4 | `font-mono font-black text-xs` | `keycap-3d p-3 rounded-2xl border h-24 flex flex-col justify-between` | يربط الفاتورة بـ `selectedTableId` ويعرض وقت الجلوس والمبلغ |
+| `rest_btn_kds_dispatch` | Button (Action) | إرسال للمطبخ (KDS) • Envoyer Cuisine | `font-black text-xs text-zinc-950 font-sans` | `keycap-3d px-4 py-2 bg-white text-zinc-950 rounded-xl shadow-xs` | يرسل تذكرة الطلبات إلى `/api/v1/kds` |
+| `rest_btn_split_bill` | Button | تقسيم الحساب (Split Bill) | `font-bold text-xs text-white` | `keycap-3d px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700` | يفتح حاسبة تجزيء المبلغ على 2 إلى 6 أشخاص |
+
+### جدول 6.2: قطاع المجازر واللحوم (Butchery & Digital LCD Scale)
+
+| معرّف العنصر (Element ID) | نوع العنصر | التسمية والوظيفة (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `butchery_lcd_display` | LCD Screen | شاشة الميزان الرقمية (الوزن × السعر = الإجمالي) | `font-mono font-black text-4xl text-white tabular-nums` | `p-5 rounded-2xl bg-zinc-950 border border-zinc-800` | يحسب المجموع الفوري بدقة 3 أرقام عشرية |
+| `butchery_tare_pills` | Pill Group | معايرة الوزن الفارغ (-15g sac, -30g barquette, -50g) | `font-mono text-xs font-bold` | `keycap-3d px-3 py-1.5 rounded-xl border` | يخصم وزن الكيس أو الصحن من الوزن الإجمالي |
+| `butchery_weight_presets` | Pill Grid | أوزان سريعة (250g, 500g, 750g, 1kg, 1.5kg, 2kg) | `font-mono font-bold text-xs` | `keycap-3d py-2 rounded-xl border` | يملأ الوزن المحدد فورياً |
+| `butchery_cut_tags` | Tag Grid | طريقة التقطيع (كفتة، ستيك، طاجين، متبل، كوطليط) | `font-bold text-xs` | `keycap-3d py-2 rounded-xl border` | يرفق نوع التقطيع في ملاحظات السطر بالفاتورة |
+
+### جدول 6.3: قطاع المخابز والحلويات (Bakery & Custom Cake Reservation)
+
+| معرّف العنصر (Element ID) | نوع العنصر | التسمية والوظيفة (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `bakery_oven_batch_badge` | Badge | دفعة الخبز الساخنة (في غضون 14 دقيقة) | `font-mono font-bold text-xs text-white` | `p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800` | يعرض توقيت خروج الخبز الطازج القادم للزبائن |
+| `bakery_box_builder_cards` | Card Group | علب حلويات مشكلة (250g, 500g, 1kg, Plateau) | `font-black text-xs` | `keycap-3d p-3 rounded-2xl border text-center` | يضيف بلاطو مشكل بسعره المحدد مباشرة إلى السلة |
+| `bakery_cake_res_form` | Form Box | استمارة حجز طورطة المناسبات والعبارة والعربون | `font-sans text-xs` | `p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800` | يسجل اسم الزبون، العبارة، ويضيف العربون للسلة |
+
+### جدول 6.4: قطاع الملابس والأحذية (Fashion & Size Matrix)
+
+| معرّف العنصر (Element ID) | نوع العنصر | التسمية والوظيفة (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `fashion_size_matrix_btn` | Button Group | مقاسات الملابس (XS-XXL) والأحذية (36-45) | `font-mono font-black text-xs` | `keycap-3d w-12 h-11 rounded-xl border` | يربط المقاس بالعنصر المختار بالسلة |
+| `fashion_color_swatches` | Color Swatches | عينات الألوان (أسود، أبيض، رمادي، بيج، أزرق، أحمر) | `font-bold text-xs` | `keycap-3d p-2.5 rounded-xl border flex items-center gap-2` | يربط اللون المختار بملاحظة الصنف |
+| `fashion_gift_voucher_btn` | Toggle | تذكرة تبديل بدون سعر (صالحة 15 يوماً) | `font-bold text-xs` | `keycap-3d px-3 py-1.5 rounded-xl border` | يطبع إيصال هدية خالي من الأسعار للاستبدال |
+
+### جدول 6.5: قطاع التكنولوجيا والصيانة (Tech, IMEI & Repair Intake)
+
+| معرّف العنصر (Element ID) | نوع العنصر | التسمية والوظيفة (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `tech_input_imei_sn` | Input (Text) | الرقم التسلسلي IMEI (15 خانة) | `font-mono text-sm text-white` | `w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800` | يدقق ويربط الـ IMEI بالمنتج لتتبع الكفالة |
+| `tech_warranty_pills` | Pill Group | مدة الضمان (بدون، 3 شهور، 6 شهور، سنة، سنتين) | `font-mono font-black text-xs` | `keycap-3d py-2.5 rounded-xl border` | يثبت مدة الكفالة القانونية على إيصال الشراء |
+| `tech_repair_intake_form` | Form Box | بون صيانة واستلام جهاز (SAV) وعربون الإصلاح | `font-sans text-xs` | `p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800` | يسجل العطل وتكلفة الإصلاح التقديرية ويضيف العربون |
+
+### جدول 6.6: قطاع تجارة الجملة (Wholesale Multipliers & BL)
+
+| معرّف العنصر (Element ID) | نوع العنصر | التسمية والوظيفة (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `wholesale_multiplier_btns` | Button Grid | معاملات التعبئة (x1, x6 Demi-Pack, x12 Carton, x24 Colis, x50) | `font-mono font-black text-base` | `keycap-3d p-3 rounded-2xl bg-zinc-950 border border-zinc-800 text-center` | يضاعف الكمية ويحول التسعير لـ Wholesale فورياً |
+| `wholesale_bl_mode_toggle` | Toggle | وصل تسليم (Bon de Livraison) vs تذكرة | `font-bold text-xs` | `keycap-3d px-3 py-1 rounded-lg border` | يبدل صيغة الإيصال إلى BL تجاري رسمي |
+| `wholesale_input_buyer_ice` | Input (Text) | رقم التعريف الموحد للمشتري ICE (15 خانة) | `font-mono text-xs text-white` | `w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800` | يطبع ترويسة الشركة المشترية ورقم ICE في الفاتورة |
+
+### جدول 6.7: قطاع البقالة والسوبرماركت (Grocery Express & Consigne)
+
+| معرّف العنصر (Element ID) | نوع العنصر | التسمية والوظيفة (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `grocery_express_shelf_btns` | Button Grid | سلع يومية سريعة (خبز 1.20، حليب 3.50، ماء 6.00، بيض 1.50، كيس 0.10) | `font-bold text-xs` + `font-mono text-zinc-300` | `keycap-3d p-3 rounded-2xl bg-zinc-950 border border-zinc-800 text-center` | إضافة بنقرة واحدة للسلة دون الحاجة للباركود |
+| `grocery_consigne_gaz_btns` | Button Pair | رهن قنينة الغاز (+100 MAD) وإرجاع الرهن (-100 MAD) | `font-bold text-xs` | `keycap-3d py-2 rounded-lg bg-zinc-900 border border-zinc-700` | يضيف أو يخصم قيمة رهن البوطا من المجموع |
+| `grocery_consigne_caisse_btns` | Button Pair | رهن صندوق المشروبات (+15 MAD) وإرجاعه (-15 MAD) | `font-bold text-xs` | `keycap-3d py-2 rounded-lg bg-zinc-900 border border-zinc-700` | يضيف أو يخصم قيمة رهن الصندوق والصناديق |
+| `grocery_label_studio_print` | Button (Action) | طباعة ملصق الباركود الحراري 40x30mm | `font-black text-xs text-zinc-950` | `keycap-3d py-2.5 rounded-xl bg-white text-zinc-950 shadow-xs` | يفتح نافذة الطباعة المباشرة لملصقات الرفوف والميزان |
+
+---
+
+## 7. إدارة ورديات الصندوق والتقارير (`CashShiftModal.tsx`)
+
+| معرّف العنصر (Element ID) | نوع العنصر | التسمية والوظيفة (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `cash_shift_input_float` | Input (Money) | رصيد بداية الصندوق (Fond de Caisse) | `font-mono font-black text-lg text-white` | `w-full h-11 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl` | يسجل المبلغ النقدي الافتتاحي في الوردية |
+| `cash_shift_btn_open` | Button | فتح الوردية • Ouvrir le Shift | `font-bold text-xs text-zinc-950` | `sheen-btn px-5 py-2.5 bg-white hover:bg-zinc-200 rounded-xl keycap-3d` | ينشئ وردية جديدة عبر `/api/v1/shifts/open` |
+| `cash_shift_btn_x_report` | Button | تقرير مؤقت X-Report (طباعة وعرض المبيعات) | `font-bold text-xs text-white` | `keycap-3d px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700` | يولد تقرير منتصف الوردية دون إغلاق الصندوق |
+| `cash_shift_btn_z_report` | Button | إغلاق الصندوق النهائي Z-Report | `font-bold text-xs text-white` | `keycap-3d px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700` | يغلق الوردية ويحسب الفارق بين المسجل والمعدود |
+
+---
+
+## 8. السلات المعلقة وقائمة الانتظار (`HeldCartsModal.tsx`)
+
+| معrّف العنصر (Element ID) | نوع العنصر | التسمية والوظيفة (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والفيزياء (Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `held_cart_item_card` | Card Box | بطاقة السلة المعلقة (توقيت التعليق، عدد المواد، الإجمالي) | `font-mono text-xs font-bold text-white` | `p-3.5 rounded-xl bg-zinc-900 border border-zinc-800 flex justify-between items-center` | يعرض بيانات السلة المحفوظة مؤقتاً في الذاكرة |
+| `held_cart_btn_restore` | Button | استرجاع السلة لمواصلة البيع • Restaurer | `font-bold text-xs text-zinc-950` | `keycap-3d px-3 py-1.5 bg-white text-zinc-950 rounded-lg shadow-xs` | يعيد تحميل العناصر إلى السلة النشطة |
+| `held_cart_btn_discard` | Button | إلغاء السلة المعلقة • Supprimer | `text-xs text-red-400 hover:text-red-300` | `p-1.5 rounded-lg hover:bg-red-500/10 cursor-pointer` | يحذف السلة المعلقة نهائياً |

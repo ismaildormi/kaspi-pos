@@ -100,3 +100,49 @@
 | `email_otp_badge` | `mailer.ts` [L180–220] | رمز التحقق السري: `[XXXXXX]` | `font-family: monospace; font-size: 28px; font-weight: 900; letter-spacing: 6px; color: #ffffff;` | بطاقة سوداء `background: #09090b; border: 1px solid #27272a; padding: 24px; border-radius: 16px; text-align: center;` | يُرسل عبر `sendVerificationEmail()` لتأكيد البريد الإلكتروني |
 | `email_welcome_pass` | `welcome-email.ts` [L40–80] | بطاقة التاجر الرقمية ورمز الدخول الأول | `font-family: sans-serif; font-size: 14px; color: #e4e4e7;` | حاوية مونوكرومية عريضة `background: #09090b; border: 1px solid #ffffff15; border-radius: 20px; padding: 32px;` | يُرسل عبر `sendWelcomeEmail()` مع بيانات الربط بسحابة كسب |
 | `email_sub_receipt_3d` | `subscription-email.ts` [L30–120] | إيصال تفعيل الترخيص والاشتراك الشهري 3D | `font-family: monospace; font-size: 13px; color: #34d399; font-weight: bold;` | تصميم بطاقة ثلاثية الأبعاد بظلال فحمية `box-shadow: 0 20px 40px rgba(0,0,0,0.8); border: 1px solid #34d39940;` | يُرسل عبر `sendSubscriptionConfirmationEmail()` عند تفعيل الكود |
+
+
+---
+
+## 6. التحقق من البريد الإلكتروني والرمز السري (`(auth)/verify-code`)
+
+| معرّف العنصر (Element ID) | نوع العنصر | الصفحة والملف | التسمية والرمز (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والحاوية (Surfaces & Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `verify_code_card` | Modal/Card | `verify-code/page.tsx` | صندوق تأكيد الرمز المكون من 6 أرقام | غير نصي | `w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl p-6 surface-obsidian-3d shadow-2xl` | حاوية نموذج إدخال رمز التحقق OTP |
+| `verify_code_digit_inputs` | Input (OTP) | `verify-code/page.tsx` | خانات الأرقام الستة (OTP Digits 1-6) | `font-mono text-2xl font-black text-center text-white tabular-nums` | `w-12 h-14 bg-zinc-900 border border-zinc-700 rounded-xl focus:border-white focus:bg-zinc-850 keycap-3d text-center` | يربط بحالة الرمز السري `otp` المكون من 6 أرقام |
+| `verify_code_btn_submit` | Button (Submit) | `verify-code/page.tsx` | تأكيد الرمز وتفعيل الحساب • Vérifier le Code | `font-bold text-xs text-zinc-950 font-sans` | `sheen-btn w-full h-11 bg-white hover:bg-zinc-200 rounded-xl active:scale-[0.98] keycap-3d cursor-pointer shadow-md` | يرسل الرمز إلى `/api/v1/auth/verify-code` ويفعل حساب التاجر |
+| `verify_code_btn_resend` | Button | `verify-code/page.tsx` | إعادة إرسال الرمز • Renvoyer le Code | `font-medium text-xs text-zinc-400 hover:text-white` | `text-center underline hover:opacity-90 cursor-pointer pt-2` | يعيد توليد وإرسال رمز التحقق عبر البريد |
+
+---
+
+## 7. معالج التهيئة الأولية للمتجر (`/onboarding`)
+
+| معرّف العنصر (Element ID) | نوع العنصر | الصفحة والملف | التسمية والرمز (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والحاوية (Surfaces & Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `onboarding_wizard_card` | Container | `onboarding/page.tsx` | حاوية معالج البدء السريع ثلاثية الأبعاد | غير نصي | `w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-3xl p-8 surface-obsidian-3d shadow-2xl` | تدير خطوات إعداد المتجر الأولى |
+| `onboarding_sector_grid` | Grid (Radio) | `onboarding/page.tsx` | شبكة اختيار قطاع النشاط (7 قطاعات) | `font-bold text-xs text-white` | `grid grid-cols-2 sm:grid-cols-3 gap-3` | يحدد القطاع: بقالة، مجزرة، مطعم، مخبزة، أزياء، إلكترونيات، جملة |
+| `onboarding_input_currency` | Select | `onboarding/page.tsx` | العملة الرئيسية (MAD / USD / EUR) | `font-mono text-xs text-white` | `w-full h-11 px-3.5 bg-zinc-900 border border-zinc-700 rounded-xl` | يربط بـ `currency` في إعدادات المتجر |
+| `onboarding_starter_catalog_toggle` | Toggle | `onboarding/page.tsx` | توليد المنتجات الأولية المناسبة لقطاعك | `font-semibold text-xs text-zinc-300` | `flex items-center gap-2 p-3 bg-zinc-900/60 rounded-xl border border-zinc-800` | يستدعي بذور الكتالوج التلقائية لكل قطاع |
+| `onboarding_btn_launch` | Button (Submit) | `onboarding/page.tsx` | إطلاق نقطة البيع الآن • Lancer le POS | `font-black text-sm text-zinc-950 font-sans` | `sheen-btn w-full h-12 bg-white hover:bg-zinc-200 rounded-2xl active:scale-[0.98] keycap-3d cursor-pointer shadow-lg` | يحفظ إعدادات المتجر الأولية ويوجه إلى `/[locale]/pos` |
+
+---
+
+## 8. صفحة الإطلاق والربط المكتبي (`/launch-desktop` & `/download`)
+
+| معرّف العنصر (Element ID) | نوع العنصر | الصفحة والملف | التسمية والرمز (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والحاوية (Surfaces & Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `launch_desktop_hero_card` | Container | `launch-desktop/page.tsx` | بطاقة الربط المباشر ببروتوكول `kaspi://` | `font-extrabold text-2xl text-white` | `p-8 rounded-3xl bg-zinc-950 border border-zinc-800 surface-obsidian-3d shadow-2xl text-center space-y-4` | حاوية الربط بين الويب وتطبيق ويندوز المكتبي |
+| `launch_desktop_btn_open_app` | Button (Link) | `launch-desktop/page.tsx` | فتح تطبيق كسب المكتبي • Ouvrir l'App Desktop | `font-black text-sm text-zinc-950 font-sans` | `sheen-btn inline-flex items-center gap-2 px-8 py-3.5 bg-white hover:bg-zinc-200 text-zinc-950 rounded-2xl active:scale-[0.98] keycap-3d shadow-lg` | ينشط بروتوكول `kaspi://auth?token=...` لفتح التطبيق المكتبي فورياً |
+| `download_page_win_installer_btn` | Button (Link) | `download/page.tsx` | تحميل مثبت ويندوز (.exe) — Windows 10/11 | `font-black text-sm text-zinc-950` + `font-mono text-[10px] text-zinc-600` | `sheen-btn inline-flex items-center gap-3 px-6 py-4 bg-white hover:bg-zinc-200 rounded-2xl keycap-3d cursor-pointer shadow-xl` | يبدأ تحميل حزمة التثبيت المستقلة لتطبيق كسب المكتبي |
+| `download_page_hardware_pill` | Badge | `download/page.tsx` | دعم الطابعات الحرارية والباركود والميزان | `font-mono text-xs text-zinc-400` | `px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800` | يوضح توافق الأجهزة المحلية USB / Serial / ESC-POS |
+
+---
+
+## 9. مساعد الذكاء الاصطناعي الذكي (`AIChatWidget.tsx`)
+
+| معرّف العنصر (Element ID) | نوع العنصر | الملف والأسطر | التسمية والرمز (AR / FR / EN) | أنماط التيبوغرافيا (Typography) | أنماط السطح والحاوية (Surfaces & Micro-Physics) | الترابط الوظيفي ومسار البيانات (State & API) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `ai_chat_floating_fab` | Button (FAB) | `AIChatWidget.tsx` [45–65] | زر المستشار الذكي العائم (AI Smart Advisor) | أيقونة `Sparkles w-5 h-5 text-zinc-950` | `fixed bottom-5 end-5 w-13 h-13 rounded-2xl bg-white text-zinc-950 hover:bg-zinc-200 active:scale-95 keycap-3d shadow-2xl flex items-center justify-center z-40 cursor-pointer` | يبدل حالة ظهور نافذة الدردشة الذكية `isOpen` |
+| `ai_chat_modal_panel` | Container | `AIChatWidget.tsx` [70–110] | نافذة الدردشة وتحليل بيانات المتجر | `font-sans text-xs` | `fixed bottom-20 end-5 w-96 max-w-[calc(100vw-2.5rem)] h-[520px] rounded-3xl bg-zinc-950/95 border border-zinc-800 surface-obsidian-3d shadow-2xl backdrop-blur-xl flex flex-col z-50 overflow-hidden` | إطار الشات الذكي مع نموذج تحليل المبيعات والقرارات |
+| `ai_chat_input_message` | Input (Text) | `AIChatWidget.tsx` [180–195] | اسأل المستشار الذكي عن مبيعاتك وأرباحك... | `font-sans text-xs text-white` | `w-full h-10 px-3.5 bg-zinc-900 border border-zinc-700 rounded-xl focus:border-white focus:outline-none` | يربط بـ `messageInput` |
+| `ai_chat_btn_send` | Button | `AIChatWidget.tsx` [196–205] | إرسال • Envoyer • Send | أيقونة `Send w-4 h-4 text-zinc-950` | `h-10 px-3 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 active:scale-95 keycap-3d flex items-center justify-center cursor-pointer` | يرسل الاستفسار إلى `/api/v1/ai/advisor` ويولد إجابة مدعومة بالبيانات الحية |

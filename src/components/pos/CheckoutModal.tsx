@@ -344,7 +344,7 @@ export const CheckoutModal: React.FC = () => {
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     onClick={handleExactCash}
-                    className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-xs font-semibold text-zinc-300 border border-zinc-800 transition cursor-pointer"
+                    className="keycap-3d px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-xs font-semibold text-zinc-300 border border-zinc-700 transition cursor-pointer"
                   >
                     {t("exactAmount")}
                   </button>
@@ -352,7 +352,7 @@ export const CheckoutModal: React.FC = () => {
                     <button
                       key={val}
                       onClick={() => handleQuickCash(val)}
-                      className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-xs font-mono font-bold text-white border border-zinc-800 transition cursor-pointer"
+                      className="keycap-3d px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-xs font-mono font-bold text-white border border-zinc-700 transition cursor-pointer"
                     >
                       +{val} {tCommon("currency")}
                     </button>
