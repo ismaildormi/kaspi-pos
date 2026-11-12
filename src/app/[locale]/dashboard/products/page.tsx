@@ -119,6 +119,52 @@ export default function ProductsListPage() {
   const [createPrepStation, setCreatePrepStation] = useState("cuisine");
   const [createCartonPackQty, setCreateCartonPackQty] = useState("");
 
+  // Auto PNG Cutout Studio States
+  const [createImageUrl, setCreateImageUrl] = useState("");
+  const [createImageSizeKb, setCreateImageSizeKb] = useState(28);
+  const [createUploadProgress, setCreateUploadProgress] = useState(0);
+  const [isCreateProcessingImage, setIsCreateProcessingImage] = useState(false);
+  const [isCreateDragging, setIsCreateDragging] = useState(false);
+  const createFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleCreateProcessFile = async (file: File) => {
+    setIsCreateProcessingImage(true);
+    setCreateUploadProgress(15);
+    const progressTimer = setInterval(() => {
+      setCreateUploadProgress((prev) => (prev < 85 ? prev + 15 : prev));
+    }, 80);
+
+    try {
+      const res = await compressImage(file, {
+        autoRemoveBackground: true,
+        generateDataUrl: true,
+        maxDimension: 800,
+        quality: 0.85,
+      });
+
+      clearInterval(progressTimer);
+      setCreateUploadProgress(100);
+
+      if (res.dataUrl) {
+        setCreateImageUrl(res.dataUrl);
+        const kb = Math.max(12, Math.round(res.compressedSizeBytes / 1024));
+        setCreateImageSizeKb(kb);
+        toast.success(
+          locale === "ar"
+            ? `تم تفريغ خلفية الصورة تلقائياً (${kb} KB)`
+            : `Arrière-plan détouré avec succès (${kb} KB)`
+        );
+      }
+    } catch (err: any) {
+      clearInterval(progressTimer);
+      setCreateUploadProgress(0);
+      toast.error(err.message || "Failed to process image");
+    } finally {
+      setIsCreateProcessingImage(false);
+      if (createFileInputRef.current) createFileInputRef.current.value = "";
+    }
+  };
+
   const handlePrintProductBarcode = (product: CatalogProduct) => {
     setOpenMenuProductId(null);
     const code = product.barcode || product.sku || "6111000010017";
@@ -204,6 +250,7 @@ export default function ProductsListPage() {
           warrantyMonths: createWarrantyMonths ? parseInt(createWarrantyMonths) : undefined,
           prepStation: createPrepStation,
           cartonPackQty: createCartonPackQty ? parseInt(createCartonPackQty) : undefined,
+          imageUrl: createImageUrl.trim() || undefined,
         }),
       });
       if (!res.ok) {
@@ -240,6 +287,8 @@ export default function ProductsListPage() {
       setCreateWarrantyMonths("12");
       setCreatePrepStation("cuisine");
       setCreateCartonPackQty("");
+      setCreateImageUrl("");
+      setCreateUploadProgress(0);
       await fetchProducts(true);
     } catch (err: any) {
       toast.error(
@@ -1225,460 +1274,288 @@ export default function ProductsListPage() {
         };
 
         return (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-            <div className="w-full max-w-lg rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-5 shadow-2xl my-auto">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
-                <div>
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <Plus className="w-4 h-4 text-white" />
-                    <span>{modalI18n.title}</span>
-                  </h3>
-                  <p className="text-xs text-zinc-400 mt-0.5">
-                    {modalI18n.subtitle}
-                  </p>
-                </div>
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-2xl flex items-center justify-center p-3 sm:p-5 overflow-y-auto select-none animate-fadeIn">
+            <div className="max-w-3xl w-full rounded-3xl bg-[#0B0F13]/95 backdrop-blur-2xl border border-white/[0.12] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.85)] flex flex-col my-auto transition-all">
+              {/* Header Row */}
+              <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+                <h3 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                  <span>
+                    {locale === "ar"
+                      ? "إضافة منتج سريع — استوديو تفريغ الصور PNG"
+                      : locale === "fr"
+                      ? "Ajout Rapide — Studio Détourage PNG"
+                      : "Quick Add Product — Auto PNG Cutout Studio"}
+                  </span>
+                </h3>
+
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.10] border border-white/[0.10] text-xs font-semibold text-zinc-200 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <X className="w-4 h-4" />
+                  <span>{locale === "ar" ? "← رجوع" : locale === "en" ? "← Back" : "← Retour"}</span>
                 </button>
               </div>
 
-              <form onSubmit={handleCreateProductSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    {modalI18n.name}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={createName}
-                    onChange={(e) => setCreateName(e.target.value)}
-                    placeholder={modalI18n.namePlaceholder}
-                    className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-white focus:outline-none"
-                  />
-                </div>
+              {/* Hidden File Input */}
+              <input
+                ref={createFileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleCreateProcessFile(f);
+                }}
+              />
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                      {modalI18n.category}
-                    </label>
-                    <input
-                      type="text"
-                      value={createCategory}
-                      onChange={(e) => setCreateCategory(e.target.value)}
-                      placeholder={modalI18n.categoryPlaceholder}
-                      className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-white focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                      {modalI18n.sku}
-                    </label>
-                    <input
-                      type="text"
-                      value={createSku}
-                      onChange={(e) => setCreateSku(e.target.value)}
-                      placeholder={modalI18n.skuPlaceholder}
-                      className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:border-white focus:outline-none"
-                    />
-                  </div>
-                </div>
+              <form onSubmit={handleCreateProductSubmit}>
+                {/* 2-Column Split Body */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-5 items-stretch">
+                  {/* LEFT COLUMN: Drag & Drop Image Studio (5 Cols) */}
+                  <div className="md:col-span-5 rounded-2xl border border-white/[0.12] bg-[#0E1318] p-4 flex flex-col justify-between">
+                    <div>
+                      <h4 className="text-center text-xs font-bold text-zinc-200">
+                        {locale === "ar" ? "استوديو رفع وتفريغ الصورة" : "Drag & Drop Image Studio"}
+                      </h4>
 
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      {modalI18n.barcode}
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setCreateBarcode(
-                          `6111${Math.floor(100000000 + Math.random() * 899999999)}`
-                        )
-                      }
-                      className="text-[11px] font-bold text-zinc-300 hover:text-white hover:underline cursor-pointer"
-                    >
-                      {modalI18n.generateBarcode}
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={createBarcode}
-                    onChange={(e) => setCreateBarcode(e.target.value)}
-                    placeholder={modalI18n.barcodePlaceholder}
-                    className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:border-white focus:outline-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                      {modalI18n.salePrice}
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={createSalePrice}
-                      onChange={(e) => setCreateSalePrice(e.target.value)}
-                      placeholder="85.00"
-                      className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono font-bold text-white focus:border-white focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                      {modalI18n.wholesalePrice}
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={createWholesalePrice}
-                      onChange={(e) => setCreateWholesalePrice(e.target.value)}
-                      placeholder="70.00"
-                      className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-white focus:border-white focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                      {modalI18n.costPrice}
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={createCostPrice}
-                      onChange={(e) => setCreateCostPrice(e.target.value)}
-                      placeholder="65.00"
-                      className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-white focus:border-white focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                      {modalI18n.initialStock}
-                    </label>
-                    <input
-                      type="number"
-                      step="1"
-                      value={createInitialStock}
-                      onChange={(e) => setCreateInitialStock(e.target.value)}
-                      placeholder="25"
-                      className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono font-bold text-white focus:border-white focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* ====================================================================
-                   SECTOR-SPECIFIC SPECIALIZED FIELDS
-                   ==================================================================== */}
-                {(storeType === "butchery" || storeType === "grocery" || storeType === "bakery") && (
-                  <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
-                    <div className="flex items-center gap-2 text-xs font-bold text-white">
-                      <Scale className="w-3.5 h-3.5 text-white" />
-                      <span>
-                        {locale === "ar"
-                          ? "إعدادات السوبرماركت والميزان والصلاحية"
-                          : locale === "en"
-                          ? "Supermarket, Scale PLU & Expiry Settings"
-                          : "Paramètres Supermarché, PLU & DLC"}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                          {locale === "ar" ? "وحدة البيع" : locale === "en" ? "Sale Unit" : "Unité de Vente"}
-                        </label>
-                        <select
-                          value={createUnit}
-                          onChange={(e) => setCreateUnit(e.target.value as any)}
-                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white focus:border-white focus:outline-none"
-                        >
-                          <option value="piece">{locale === "ar" ? "قطعة (Pièce)" : "Pièce"}</option>
-                          <option value="kg">{locale === "ar" ? "كيلوغرام (KG)" : "KG"}</option>
-                          <option value="g">{locale === "ar" ? "غرام (Gram)" : "Gramme"}</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                          {locale === "ar" ? "رمز الميزان (PLU)" : locale === "en" ? "Scale PLU" : "Code PLU Balance"}
-                        </label>
-                        <input
-                          type="text"
-                          value={createScalePlu}
-                          onChange={(e) => setCreateScalePlu(e.target.value)}
-                          placeholder="Ex: 4011"
-                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white font-mono focus:border-white focus:outline-none"
+                      {/* Horizontal Progress Track */}
+                      <div className="h-1.5 w-full rounded-full bg-white/[0.08] overflow-hidden my-2.5">
+                        <div
+                          className="h-full bg-[#14B8A6] rounded-full transition-all duration-300"
+                          style={{
+                            width: `${createUploadProgress > 0 ? createUploadProgress : createImageUrl ? 100 : 0}%`,
+                          }}
                         />
                       </div>
 
-                      <div>
-                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                          {locale === "ar" ? "تاريخ الصلاحية (DLC)" : locale === "en" ? "Expiry Date" : "Date DLC"}
-                        </label>
-                        <input
-                          type="date"
-                          value={createExpiryDate}
-                          onChange={(e) => setCreateExpiryDate(e.target.value)}
-                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white font-mono focus:border-white focus:outline-none"
-                        />
+                      {/* Center Canvas with Dark Studio Checkerboard */}
+                      <div
+                        onClick={() => createFileInputRef.current?.click()}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setIsCreateDragging(true);
+                        }}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          setIsCreateDragging(false);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setIsCreateDragging(false);
+                          const f = e.dataTransfer.files?.[0];
+                          if (f) handleCreateProcessFile(f);
+                        }}
+                        className={`relative h-56 w-full rounded-xl overflow-hidden border transition-all flex items-center justify-center cursor-pointer ${
+                          isCreateDragging
+                            ? "border-[#14B8A6] ring-2 ring-[#14B8A6]/40"
+                            : "border-white/[0.08] hover:border-white/[0.20]"
+                        }`}
+                        style={{
+                          backgroundImage: `
+                            radial-gradient(circle at center, rgba(255,255,255,0.10) 0%, transparent 70%),
+                            linear-gradient(45deg, #14191F 25%, transparent 25%),
+                            linear-gradient(-45deg, #14191F 25%, transparent 25%),
+                            linear-gradient(45deg, transparent 75%, #14191F 75%),
+                            linear-gradient(-45deg, transparent 75%, #14191F 75%)
+                          `,
+                          backgroundSize: "100% 100%, 20px 20px, 20px 20px, 20px 20px, 20px 20px",
+                          backgroundPosition: "0 0, 0 0, 0 10px, 10px -10px, -10px 0px",
+                          backgroundColor: "#0B0E12",
+                        }}
+                      >
+                        {isCreateProcessingImage ? (
+                          <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
+                            <Loader2 className="w-8 h-8 animate-spin text-[#14B8A6]" />
+                            <span className="font-mono text-xs font-bold text-white">
+                              {createUploadProgress}%
+                            </span>
+                            <span className="text-[11px] text-zinc-400">
+                              {locale === "ar" ? "جاري إزالة الخلفية..." : "Suppression de l'arrière-plan..."}
+                            </span>
+                          </div>
+                        ) : createImageUrl ? (
+                          <div className="relative w-full h-full p-3 flex items-center justify-center group">
+                            <img
+                              src={createImageUrl}
+                              alt="Cutout Preview"
+                              className="max-h-48 w-auto object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.75)] transition-transform duration-200 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                              <span className="px-3 py-1.5 rounded-lg bg-black/80 border border-white/20 text-[11px] font-semibold text-white">
+                                {locale === "ar" ? "تغيير الصورة" : "Changer la photo"}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center gap-2.5 p-4 text-center">
+                            <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-400">
+                              <Upload className="w-5 h-5 text-zinc-400 stroke-[1.75]" />
+                            </div>
+                            <p className="text-xs font-medium text-zinc-300">
+                              {locale === "ar"
+                                ? "انقر أو اسحب صورة المنتج هنا"
+                                : "Cliquez ou glissez la photo du produit ici"}
+                            </p>
+                            <span className="text-[10px] text-zinc-500 font-mono">
+                              JPG, PNG, WEBP • Auto-Cutout 0ms
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    {storeType === "grocery" && (
-                      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-zinc-900">
-                        <div>
-                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                            {locale === "ar" ? "جناح الرف (Rayon)" : "Rayon / Aisle"}
-                          </label>
+                    {/* Bottom Status Pill */}
+                    <div className="mt-3 py-1.5 px-3 rounded-full bg-[#14B8A6]/15 border border-[#14B8A6]/40 text-[#2DD4BF] font-mono text-[11px] font-semibold text-center shadow-[0_0_15px_rgba(20,184,166,0.2)]">
+                      {locale === "ar"
+                        ? `تمت إزالة الخلفية تلقائياً • صورة PNG شفافة (${createImageSizeKb} KB)`
+                        : locale === "fr"
+                        ? `Arrière-plan supprimé automatiquement • PNG transparent (${createImageSizeKb} KB)`
+                        : `Background Removed Automatically • Transparent PNG (${createImageSizeKb} KB)`}
+                    </div>
+                  </div>
+
+                  {/* RIGHT COLUMN: Stacked Product Inputs (7 Cols) */}
+                  <div className="md:col-span-7 flex flex-col justify-between space-y-3.5">
+                    {/* 1. Product Name */}
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                        {modalI18n.name}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={createName}
+                        onChange={(e) => setCreateName(e.target.value)}
+                        placeholder={modalI18n.namePlaceholder}
+                        className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6] transition-colors"
+                      />
+                    </div>
+
+                    {/* 2. Barcode EAN-13 + Auto-Generate */}
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                        {modalI18n.barcode}
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
                           <input
                             type="text"
-                            value={createAisle}
-                            onChange={(e) => setCreateAisle(e.target.value)}
-                            placeholder={locale === "ar" ? "ألبان، مشروبات..." : "Boissons, Frais..."}
-                            className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white focus:border-white focus:outline-none"
+                            value={createBarcode}
+                            onChange={(e) => setCreateBarcode(e.target.value)}
+                            placeholder={modalI18n.barcodePlaceholder}
+                            className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3.5 font-mono text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6] transition-colors"
                           />
+                          <Barcode className="w-4 h-4 text-zinc-500 absolute end-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                            {locale === "ar" ? "سعر الباك (Pack MAD)" : "Prix Pack (MAD)"}
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={createPackPrice}
-                            onChange={(e) => setCreatePackPrice(e.target.value)}
-                            placeholder="Ex: 24.00"
-                            className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-mono text-white focus:border-white focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                            {locale === "ar" ? "قطع بالباك (Unités/Pack)" : "Unités / Pack"}
-                          </label>
-                          <input
-                            type="number"
-                            step="1"
-                            value={createCartonPackQty}
-                            onChange={(e) => setCreateCartonPackQty(e.target.value)}
-                            placeholder="Ex: 6"
-                            className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-mono text-white focus:border-white focus:outline-none"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {storeType === "fashion" && (
-                  <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
-                    <div className="flex items-center gap-2 text-xs font-bold text-white">
-                      <Shirt className="w-3.5 h-3.5 text-white" />
-                      <span>
-                        {locale === "ar"
-                          ? "المقاس واللون (الملابس والأزياء)"
-                          : locale === "en"
-                          ? "Size & Color (Fashion & Apparel)"
-                          : "Taille & Coloris (Prêt-à-Porter)"}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                          {locale === "ar" ? "المقاس" : locale === "en" ? "Size" : "Taille"}
-                        </label>
-                        <div className="flex flex-wrap gap-1 mb-1.5">
-                          {["S", "M", "L", "XL", "XXL", "38", "40", "42"].map((sz) => (
-                            <button
-                              key={sz}
-                              type="button"
-                              onClick={() => setCreateFashionSize(sz)}
-                              className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition ${
-                                createFashionSize === sz
-                                  ? "bg-white text-black"
-                                  : "bg-zinc-900 text-zinc-300 hover:bg-zinc-800"
-                              }`}
-                            >
-                              {sz}
-                            </button>
-                          ))}
-                        </div>
-                        <input
-                          type="text"
-                          value={createFashionSize}
-                          onChange={(e) => setCreateFashionSize(e.target.value)}
-                          placeholder="Autre taille..."
-                          className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white focus:border-white focus:outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                          {locale === "ar" ? "اللون / الموسم" : locale === "en" ? "Color / Season" : "Couleur / Saison"}
-                        </label>
-                        <input
-                          type="text"
-                          value={createFashionColor}
-                          onChange={(e) => setCreateFashionColor(e.target.value)}
-                          placeholder={locale === "ar" ? "أسود، أبيض، كحلي..." : "Noir, Blanc, Bleu Ciel..."}
-                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white focus:border-white focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {(storeType === "electronics" || storeType === "tech") && (
-                  <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
-                    <div className="flex items-center gap-2 text-xs font-bold text-white">
-                      <Smartphone className="w-3.5 h-3.5 text-white" />
-                      <span>
-                        {locale === "ar"
-                          ? "الرقم التسلسلي IMEI والضمان"
-                          : locale === "en"
-                          ? "Serial Number IMEI & Warranty"
-                          : "Numéro de Série IMEI & Garantie"}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                          {locale === "ar" ? "رقم IMEI / Serial" : "Numéro IMEI / Serial"}
-                        </label>
-                        <input
-                          type="text"
-                          value={createSerialImei}
-                          onChange={(e) => setCreateSerialImei(e.target.value)}
-                          placeholder="35894109..."
-                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white font-mono focus:border-white focus:outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                          {locale === "ar" ? "مدة الضمان (أشهر)" : locale === "en" ? "Warranty (Months)" : "Garantie (Mois)"}
-                        </label>
-                        <select
-                          value={createWarrantyMonths}
-                          onChange={(e) => setCreateWarrantyMonths(e.target.value)}
-                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white focus:border-white focus:outline-none"
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCreateBarcode(
+                              `6111${Math.floor(100000000 + Math.random() * 899999999)}`
+                            )
+                          }
+                          className="h-10 px-3.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.12] text-xs font-semibold text-zinc-200 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
                         >
-                          <option value="3">3 {locale === "ar" ? "أشهر" : "Mois"}</option>
-                          <option value="6">6 {locale === "ar" ? "أشهر" : "Mois"}</option>
-                          <option value="12">12 {locale === "ar" ? "شهراً" : "Mois"}</option>
-                          <option value="24">24 {locale === "ar" ? "شهراً" : "Mois"}</option>
-                        </select>
+                          <Sparkles className="w-3.5 h-3.5 text-[#2DD4BF]" />
+                          <span>{locale === "ar" ? "توليد تلقائي" : "Auto-Generate"}</span>
+                        </button>
                       </div>
                     </div>
-                  </div>
-                )}
 
-                {storeType === "restaurant" && (
-                  <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
-                    <div className="flex items-center gap-2 text-xs font-bold text-white">
-                      <UtensilsCrossed className="w-3.5 h-3.5 text-white" />
-                      <span>
-                        {locale === "ar"
-                          ? "شاشة المطبخ KDS ومحطة التحضير"
-                          : locale === "en"
-                          ? "KDS Kitchen Station & Routing"
-                          : "Poste de Préparation KDS"}
-                      </span>
+                    {/* 3. Retail Price (MAD) */}
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                        {modalI18n.salePrice}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        required
+                        value={createSalePrice}
+                        onChange={(e) => setCreateSalePrice(e.target.value)}
+                        placeholder="85.00"
+                        className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3.5 font-mono text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6] transition-colors"
+                      />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                          {locale === "ar" ? "محطة التحضير" : locale === "en" ? "Preparation Station" : "Poste KDS"}
+                    {/* 4. Pack / Wholesale Price (MAD) */}
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                        {modalI18n.wholesalePrice}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={createWholesalePrice}
+                        onChange={(e) => setCreateWholesalePrice(e.target.value)}
+                        placeholder="70.00"
+                        className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3.5 font-mono text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6] transition-colors"
+                      />
+                    </div>
+
+                    {/* 5. Category + Stock + Cancel */}
+                    <div className="grid grid-cols-12 gap-2.5 items-end">
+                      <div className="col-span-6">
+                        <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                          {modalI18n.category}
                         </label>
-                        <select
-                          value={createPrepStation}
-                          onChange={(e) => setCreatePrepStation(e.target.value)}
-                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white focus:border-white focus:outline-none"
-                        >
-                          <option value="cuisine">{locale === "ar" ? "المطبخ الرئيسي (Cuisine)" : "Cuisine Principale"}</option>
-                          <option value="bar">{locale === "ar" ? "البار والمشروبات (Bar)" : "Bar & Boissons"}</option>
-                          <option value="patisserie">{locale === "ar" ? "الحلويات (Pâtisserie)" : "Pâtisserie & Desserts"}</option>
-                          <option value="grill">{locale === "ar" ? "الشواية (Grill)" : "Grillade"}</option>
-                        </select>
+                        <input
+                          type="text"
+                          value={createCategory}
+                          onChange={(e) => setCreateCategory(e.target.value)}
+                          placeholder={modalI18n.categoryPlaceholder}
+                          className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3 text-xs text-white focus:outline-none focus:border-[#14B8A6]"
+                        />
                       </div>
 
-                      <div>
-                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                          {locale === "ar" ? "توجيه الطابعة" : locale === "en" ? "Ticket Routing" : "Routage Ticket"}
-                        </label>
-                        <div className="text-[11px] font-mono text-zinc-400 p-2 bg-zinc-900 border border-zinc-800 rounded-lg">
-                          POS &rarr; KDS {createPrepStation.toUpperCase()}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {storeType === "wholesale" && (
-                  <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
-                    <div className="flex items-center gap-2 text-xs font-bold text-white">
-                      <Boxes className="w-3.5 h-3.5 text-white" />
-                      <span>
-                        {locale === "ar"
-                          ? "بيانات الجملة والكرتون (B2B)"
-                          : locale === "en"
-                          ? "Wholesale & Carton Pack (B2B)"
-                          : "Colisage & Grossiste (B2B)"}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
-                          {locale === "ar" ? "كمية الصندوق / الكرتون" : locale === "en" ? "Box/Carton Qty" : "Unités par Carton"}
+                      <div className="col-span-3">
+                        <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                          {modalI18n.initialStock}
                         </label>
                         <input
                           type="number"
-                          value={createCartonPackQty}
-                          onChange={(e) => setCreateCartonPackQty(e.target.value)}
-                          placeholder="Ex: 12, 24, 48"
-                          className="w-full px-2.5 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white font-mono focus:border-white focus:outline-none"
+                          step="1"
+                          min="0"
+                          value={createInitialStock}
+                          onChange={(e) => setCreateInitialStock(e.target.value)}
+                          className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-2.5 font-mono text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6]"
                         />
                       </div>
 
-                      <div className="flex flex-col justify-end">
-                        <p className="text-[10px] text-zinc-500 leading-tight">
-                          {locale === "ar"
-                            ? "يتم تطبيق سعر الجملة آلياً عند بيع الكرتون الكامل في نقطة البيع."
-                            : "Le prix de gros s'applique automatiquement au colisage complet."}
-                        </p>
+                      <div className="col-span-3">
+                        <button
+                          type="button"
+                          onClick={() => setIsCreateModalOpen(false)}
+                          className="w-full h-10 rounded-xl bg-[#090C10] hover:bg-white/[0.08] border border-white/[0.10] text-xs font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                        >
+                          {modalI18n.cancel}
+                        </button>
                       </div>
                     </div>
                   </div>
-                )}
-
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsCreateModalOpen(false)}
-                    className="px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-950 text-xs font-bold text-zinc-300 hover:text-white transition cursor-pointer"
-                  >
-                    {modalI18n.cancel}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isCreatingProduct}
-                    className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-bold transition inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    {isCreatingProduct ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Check className="w-3.5 h-3.5" />
-                    )}
-                    <span>{isCreatingProduct ? modalI18n.submitting : modalI18n.submit}</span>
-                  </button>
                 </div>
+
+                {/* Full-Width Bottom Submit CTA Button */}
+                <button
+                  type="submit"
+                  disabled={isCreatingProduct}
+                  className="mt-6 w-full h-12 rounded-xl bg-gradient-to-r from-[#14B8A6] to-[#2DD4BF] hover:opacity-95 text-[#041E1B] font-extrabold text-sm shadow-[0_8px_28px_-6px_rgba(20,184,166,0.55)] flex items-center justify-center cursor-pointer transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCreatingProduct ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <span>
+                      {locale === "ar"
+                        ? "حفظ وإضافة بطاقة PNG الشفافة للكاشير (0ms)"
+                        : locale === "fr"
+                        ? "Enregistrer & Ajouter Carte PNG au POS (0ms)"
+                        : "Save & Add Transparent PNG Card to POS (0ms)"}
+                    </span>
+                  )}
+                </button>
               </form>
             </div>
           </div>

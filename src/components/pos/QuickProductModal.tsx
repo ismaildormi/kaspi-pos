@@ -1,12 +1,22 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { X, Plus, Package, Barcode, Sparkles, Loader2, Check, Upload } from "lucide-react";
+import {
+  X,
+  Upload,
+  Sparkles,
+  Barcode,
+  Package,
+  Check,
+  Loader2,
+  ArrowLeft,
+  ChevronDown,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useAppDictionary } from "@/i18n/schema";
 import { offlineDb } from "@/client/db";
 import { setCachedData, getCachedData } from "@/lib/cache/client-cache";
-import { playBarcodeScanSound, playTapSound } from "@/lib/audio";
+import { playBarcodeScanSound, playTapSound, playSuccessSound } from "@/lib/audio";
 import { compressImage } from "@/lib/image-compression";
 import type { PosProduct } from "@/client/store/usePosStore";
 
@@ -23,55 +33,87 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
 }) => {
   const { locale } = useAppDictionary();
   const [name, setName] = useState("");
-  const [salePrice, setSalePrice] = useState("");
-  const [stockQuantity, setStockQuantity] = useState("50");
   const [barcode, setBarcode] = useState("");
-  const [categoryName, setCategoryName] = useState("");
+  const [salePrice, setSalePrice] = useState("");
+  const [wholesalePrice, setWholesalePrice] = useState("");
+  const [categoryName, setCategoryName] = useState("grocery");
+  const [stockQuantity, setStockQuantity] = useState("50");
+  const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageSizeKb, setImageSizeKb] = useState<number>(28);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCompressingImage, setIsCompressingImage] = useState(false);
-  const quickFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   if (!isOpen) return null;
 
-  const handleQuickFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleProcessFile = async (file: File) => {
+    setIsProcessingImage(true);
+    setUploadProgress(15);
 
-    setIsCompressingImage(true);
-    const toastId = toast.loading(
-      locale === "ar"
-        ? "معالجة الصورة وإزالة الخلفية تلقائياً..."
-        : "Traitement et détourage automatique..."
-    );
+    const progressTimer = setInterval(() => {
+      setUploadProgress((prev) => (prev < 85 ? prev + 15 : prev));
+    }, 80);
 
     try {
       const res = await compressImage(file, {
         autoRemoveBackground: true,
         generateDataUrl: true,
         maxDimension: 800,
+        quality: 0.85,
       });
+
+      clearInterval(progressTimer);
+      setUploadProgress(100);
 
       if (res.dataUrl) {
         setImageUrl(res.dataUrl);
+        const kb = Math.max(12, Math.round(res.compressedSizeBytes / 1024));
+        setImageSizeKb(kb);
+        playSuccessSound();
         toast.success(
           locale === "ar"
-            ? "تم تحسين الصورة وإزالة الخلفية بنجاح !"
-            : "Photo traitée et détourée avec succès !",
-          { id: toastId }
+            ? `تم تفريغ خلفية الصورة تلقائياً (${kb} KB)`
+            : `Arrière-plan détouré avec succès (${kb} KB)`
         );
       }
     } catch (err: any) {
+      clearInterval(progressTimer);
+      setUploadProgress(0);
       console.error("[Quick Image Process Error]:", err);
-      toast.error(err.message || "Failed to process image", { id: toastId });
+      toast.error(err.message || "Failed to process image");
     } finally {
-      setIsCompressingImage(false);
-      if (quickFileInputRef.current) quickFileInputRef.current.value = "";
+      setIsProcessingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleProcessFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleProcessFile(file);
+  };
+
   const generateBarcode = () => {
-    // Generate valid 13-digit EAN with Moroccan prefix 611
     const randomDigits = Math.floor(100000000 + Math.random() * 900000000).toString();
     const ean = `611${randomDigits.slice(0, 9)}`;
     setBarcode(ean);
@@ -82,6 +124,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
     e.preventDefault();
     const cleanName = name.trim();
     const priceNum = parseFloat(salePrice);
+    const wholesaleNum = parseFloat(wholesalePrice) || undefined;
     const stockNum = parseFloat(stockQuantity) || 0;
 
     if (!cleanName) {
@@ -99,7 +142,6 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
     try {
       let createdProduct: any = null;
 
-      // 1. Try sending to backend API if online
       if (typeof navigator !== "undefined" && navigator.onLine) {
         try {
           const res = await fetch("/api/v1/products", {
@@ -108,11 +150,13 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
             body: JSON.stringify({
               name: cleanName,
               salePrice: priceNum,
+              wholesalePrice: wholesaleNum,
               initialStock: stockNum,
               stockQuantity: stockNum,
               barcode: barcode.trim() || undefined,
               categoryName: categoryName.trim() || undefined,
               imageUrl: imageUrl.trim() || undefined,
+              description: description.trim() || undefined,
             }),
           });
           if (res.ok) {
@@ -124,7 +168,6 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
         }
       }
 
-      // 2. Build canonical PosProduct
       const finalId = createdProduct?.id || `prod_${Date.now()}`;
       const finalSku = createdProduct?.sku || `SKU-${Date.now().toString(36).toUpperCase()}`;
       const finalBarcode = createdProduct?.barcode || (barcode.trim() ? barcode.trim() : null);
@@ -135,6 +178,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
         sku: finalSku,
         barcode: finalBarcode,
         salePrice: priceNum,
+        wholesalePrice: wholesaleNum,
         taxRate: 20,
         stockQuantity: stockNum,
         trackStock: true,
@@ -142,7 +186,6 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
         categoryName: categoryName.trim() || createdProduct?.category?.name || null,
       };
 
-      // 3. Cache immediately in Dexie offline database
       if (offlineDb?.offlineProducts) {
         try {
           await offlineDb.offlineProducts.put({
@@ -151,8 +194,9 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
             sku: newPosProduct.sku,
             barcode: newPosProduct.barcode,
             name: newPosProduct.name,
-            imageUrl: newPosProduct.image,
+            imageUrl: newPosProduct.image || null,
             salePrice: newPosProduct.salePrice,
+            wholesalePrice: newPosProduct.wholesalePrice,
             taxRate: newPosProduct.taxRate,
             trackStock: true,
             stockQuantity: newPosProduct.stockQuantity,
@@ -163,14 +207,12 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
         }
       }
 
-      // 4. Update client-cache for instant dashboard/products sync
       try {
         const cached = getCachedData<any[]>("products_catalog", []);
         const list = Array.isArray(cached.data) ? cached.data : [];
         setCachedData("products_catalog", [newPosProduct, ...list]);
       } catch {}
 
-      // 5. Fire instant 0ms callback to POS page & sound
       playBarcodeScanSound();
       onProductCreated(newPosProduct);
 
@@ -180,13 +222,15 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
           : `Article "${cleanName}" ajouté avec succès!`
       );
 
-      // Reset form & close
       setName("");
       setSalePrice("");
+      setWholesalePrice("");
       setStockQuantity("50");
       setBarcode("");
-      setCategoryName("");
+      setCategoryName("grocery");
+      setDescription("");
       setImageUrl("");
+      setUploadProgress(0);
       onClose();
     } catch (err: any) {
       toast.error(err.message || "Failed to create product");
@@ -198,208 +242,293 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
   return (
     <div
       dir="ltr"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md select-none overflow-y-auto animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-2xl select-none overflow-y-auto animate-fadeIn"
     >
-      <div className="w-full max-w-lg rounded-3xl bg-[#09090b] border border-zinc-800 shadow-2xl surface-obsidian-3d overflow-hidden flex flex-col my-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 px-6 border-b border-zinc-800 bg-zinc-900/60">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-white text-zinc-950 flex items-center justify-center font-bold">
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-            </div>
-            <div>
-              <h3 className="text-sm font-extrabold text-white">
-                {locale === "ar"
-                  ? "إضافة منتج سريع في نقطة البيع"
-                  : locale === "en"
-                  ? "Quick Add Product to POS"
-                  : "Ajout Rapide d'Article POS"}
-              </h3>
-              <p className="text-[11px] text-zinc-400">
-                {locale === "ar"
-                  ? "يظهر المنتج فوراً في الكتالوج وشاشة البيع في 0ms"
-                  : "Disponible immédiatement dans le catalogue POS en 0ms"}
-              </p>
-            </div>
-          </div>
+      <div className="w-full max-w-3xl rounded-3xl bg-[#0B0F13]/95 backdrop-blur-2xl border border-white/[0.12] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.85)] flex flex-col my-auto transition-all">
+        {/* Header Row */}
+        <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+          <h2 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+            <span>
+              {locale === "ar"
+                ? "إضافة منتج سريع — استوديو تفريغ الصور PNG"
+                : locale === "fr"
+                ? "Ajout Rapide — Studio Détourage PNG"
+                : "Quick Add Product — Auto PNG Cutout Studio"}
+            </span>
+          </h2>
+
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+            className="px-3.5 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.10] border border-white/[0.10] text-xs font-semibold text-zinc-200 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <span>{locale === "ar" ? "← رجوع" : locale === "en" ? "← Back" : "← Retour"}</span>
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
-          {/* Product Name */}
-          <div>
-            <label className="block text-xs font-bold text-zinc-300 mb-1.5">
-              {locale === "ar" ? "اسم المنتج *" : "Nom du Produit *"}
-            </label>
-            <input
-              type="text"
-              required
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={
-                locale === "ar"
-                  ? "مثال: زيت زيتون 1 لتر، قهوة، قميص..."
-                  : "Ex: Huile d'olive 1L, Café Express, T-shirt..."
-              }
-              className="w-full h-11 px-3.5 bg-zinc-900/90 border border-zinc-800 focus:border-white focus:ring-1 focus:ring-white rounded-xl text-sm font-medium text-white placeholder-zinc-500 transition-colors"
-            />
-          </div>
+        {/* Hidden File Input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
 
-          {/* Price & Stock Grid */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1.5">
-                {locale === "ar" ? "سعر البيع (MAD) *" : "Prix de Vente (MAD) *"}
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                required
-                value={salePrice}
-                onChange={(e) => setSalePrice(e.target.value)}
-                placeholder="0.00"
-                className="w-full h-11 px-3.5 bg-zinc-900/90 border border-zinc-800 focus:border-white focus:ring-1 focus:ring-white rounded-xl text-sm font-mono font-bold text-white placeholder-zinc-500 transition-colors"
-              />
-            </div>
+        {/* 2-Column Split Body */}
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-5 items-stretch">
+            {/* LEFT COLUMN: Drag & Drop Image Studio (5 Cols) */}
+            <div className="md:col-span-5 rounded-2xl border border-white/[0.12] bg-[#0E1318] p-4 flex flex-col justify-between">
+              <div>
+                <h3 className="text-center text-xs font-bold text-zinc-200">
+                  {locale === "ar" ? "استوديو رفع وتفريغ الصورة" : "Drag & Drop Image Studio"}
+                </h3>
 
-            <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1.5">
-                {locale === "ar" ? "الكمية في المخزون" : "Quantité en Stock"}
-              </label>
-              <input
-                type="number"
-                step="1"
-                min="0"
-                value={stockQuantity}
-                onChange={(e) => setStockQuantity(e.target.value)}
-                className="w-full h-11 px-3.5 bg-zinc-900/90 border border-zinc-800 focus:border-white focus:ring-1 focus:ring-white rounded-xl text-sm font-mono font-bold text-white transition-colors"
-              />
-            </div>
-          </div>
+                {/* Horizontal Progress Track */}
+                <div className="h-1.5 w-full rounded-full bg-white/[0.08] overflow-hidden my-2.5">
+                  <div
+                    className="h-full bg-[#14B8A6] rounded-full transition-all duration-300"
+                    style={{
+                      width: `${uploadProgress > 0 ? uploadProgress : imageUrl ? 100 : 0}%`,
+                    }}
+                  />
+                </div>
 
-          {/* Barcode with Auto-Generate */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-bold text-zinc-300">
-                {locale === "ar" ? "الباركود (EAN-13)" : "Code-barres (EAN-13)"}
-              </label>
-              <button
-                type="button"
-                onClick={generateBarcode}
-                className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer transition-colors"
-              >
-                <Sparkles className="w-3 h-3" />
-                <span>{locale === "ar" ? "توليد EAN مغربي" : "Générer EAN (611)"}</span>
-              </button>
-            </div>
-            <div className="relative">
-              <input
-                type="text"
-                value={barcode}
-                onChange={(e) => setBarcode(e.target.value)}
-                placeholder="611XXXXXXXXXX"
-                className="w-full h-11 ps-3.5 pe-10 bg-zinc-900/90 border border-zinc-800 focus:border-white focus:ring-1 focus:ring-white rounded-xl text-sm font-mono text-white placeholder-zinc-500 transition-colors"
-              />
-              <Barcode className="w-4 h-4 text-zinc-500 absolute end-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Category & Image URL */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1.5">
-                {locale === "ar" ? "التصنيف (اختياري)" : "Catégorie (optionnel)"}
-              </label>
-              <input
-                type="text"
-                value={categoryName}
-                onChange={(e) => setCategoryName(e.target.value)}
-                placeholder={locale === "ar" ? "عام، مشروبات..." : "Boissons, Snack..."}
-                className="w-full h-10 px-3 bg-zinc-900/90 border border-zinc-800 focus:border-white rounded-xl text-xs text-white placeholder-zinc-500"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-zinc-300">
-                  {locale === "ar" ? "صورة المنتج" : "Photo du Produit"}
-                </label>
-                <button
-                  type="button"
-                  onClick={() => quickFileInputRef.current?.click()}
-                  disabled={isCompressingImage}
-                  className="text-[11px] font-bold text-teal-400 hover:text-teal-300 flex items-center gap-1 cursor-pointer transition-colors"
+                {/* Center Canvas with Dark Studio Checkerboard */}
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`relative h-56 w-full rounded-xl overflow-hidden border transition-all flex items-center justify-center cursor-pointer ${
+                    isDragging
+                      ? "border-[#14B8A6] ring-2 ring-[#14B8A6]/40"
+                      : "border-white/[0.08] hover:border-white/[0.20]"
+                  }`}
+                  style={{
+                    backgroundImage: `
+                      radial-gradient(circle at center, rgba(255,255,255,0.10) 0%, transparent 70%),
+                      linear-gradient(45deg, #14191F 25%, transparent 25%),
+                      linear-gradient(-45deg, #14191F 25%, transparent 25%),
+                      linear-gradient(45deg, transparent 75%, #14191F 75%),
+                      linear-gradient(-45deg, transparent 75%, #14191F 75%)
+                    `,
+                    backgroundSize: "100% 100%, 20px 20px, 20px 20px, 20px 20px, 20px 20px",
+                    backgroundPosition: "0 0, 0 0, 0 10px, 10px -10px, -10px 0px",
+                    backgroundColor: "#0B0E12",
+                  }}
                 >
-                  <Upload className="w-3 h-3" />
-                  <span>
-                    {isCompressingImage
-                      ? locale === "ar"
-                        ? "جاري المعالجة..."
-                        : "Traitement..."
-                      : locale === "ar"
-                      ? "رفع صورة (Auto-Cutout)"
-                      : "Upload (Auto-Cutout)"}
-                  </span>
-                </button>
+                  {isProcessingImage ? (
+                    <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-[#14B8A6]" />
+                      <span className="font-mono text-xs font-bold text-white">
+                        {uploadProgress}%
+                      </span>
+                      <span className="text-[11px] text-zinc-400">
+                        {locale === "ar" ? "جاري إزالة الخلفية..." : "Suppression de l'arrière-plan..."}
+                      </span>
+                    </div>
+                  ) : imageUrl ? (
+                    <div className="relative w-full h-full p-3 flex items-center justify-center group">
+                      <img
+                        src={imageUrl}
+                        alt="Cutout Preview"
+                        className="max-h-48 w-auto object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.75)] transition-transform duration-200 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                        <span className="px-3 py-1.5 rounded-lg bg-black/80 border border-white/20 text-[11px] font-semibold text-white">
+                          {locale === "ar" ? "تغيير الصورة" : "Changer la photo"}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-2.5 p-4 text-center">
+                      <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-400">
+                        <Upload className="w-5 h-5 text-zinc-400 stroke-[1.75]" />
+                      </div>
+                      <p className="text-xs font-medium text-zinc-300">
+                        {locale === "ar"
+                          ? "انقر أو اسحب صورة المنتج هنا"
+                          : "Cliquez ou glissez la photo du produit ici"}
+                      </p>
+                      <span className="text-[10px] text-zinc-500 font-mono">
+                        JPG, PNG, WEBP • Auto-Cutout 0ms
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Bottom Status Pill */}
+              <div className="mt-3 py-1.5 px-3 rounded-full bg-[#14B8A6]/15 border border-[#14B8A6]/40 text-[#2DD4BF] font-mono text-[11px] font-semibold text-center shadow-[0_0_15px_rgba(20,184,166,0.2)]">
+                {locale === "ar"
+                  ? `تمت إزالة الخلفية تلقائياً • صورة PNG شفافة (${imageSizeKb} KB)`
+                  : locale === "fr"
+                  ? `Arrière-plan supprimé automatiquement • PNG transparent (${imageSizeKb} KB)`
+                  : `Background Removed Automatically • Transparent PNG (${imageSizeKb} KB)`}
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: Stacked Product Inputs (7 Cols) */}
+            <div className="md:col-span-7 flex flex-col justify-between space-y-3.5">
+              {/* 1. Product Name */}
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                  {locale === "ar" ? "اسم المنتج (مع الوزن/السعة):" : "Product Name :"}
+                </label>
                 <input
-                  type="file"
-                  ref={quickFileInputRef}
-                  onChange={handleQuickFileUpload}
-                  accept="image/png,image/jpeg,image/webp"
-                  className="hidden"
+                  type="text"
+                  required
+                  autoFocus
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={
+                    locale === "ar"
+                      ? "مثال: Huile d'Olive 1L أو أتاي سلطان 200g"
+                      : "Ex: Sultan Habka Tea 200g, Huile d'Olive 1L..."
+                  }
+                  className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6] transition-colors"
                 />
               </div>
-              <input
-                type="text"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder={
-                  locale === "ar"
-                    ? "رابط الصورة أو ارفع صورة..."
-                    : "URL image ou cliquez sur Upload..."
-                }
-                className="w-full h-10 px-3 bg-zinc-900/90 border border-zinc-800 focus:border-white rounded-xl text-xs text-white placeholder-zinc-500 font-mono"
-              />
+
+              {/* 2. Barcode EAN-13 + Auto-Generate */}
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                  {locale === "ar" ? "الباركود (EAN-13):" : "Barcode EAN-13 :"}
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={barcode}
+                      onChange={(e) => setBarcode(e.target.value)}
+                      placeholder="611XXXXXXXXXX"
+                      className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3.5 font-mono text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6] transition-colors"
+                    />
+                    <Barcode className="w-4 h-4 text-zinc-500 absolute end-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={generateBarcode}
+                    className="h-10 px-3.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.12] text-xs font-semibold text-zinc-200 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#2DD4BF]" />
+                    <span>{locale === "ar" ? "توليد تلقائي" : "Auto-Generate"}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. Retail Price (MAD) */}
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                  {locale === "ar" ? "سعر البيع بالتقسيط (MAD):" : "Retail Price (MAD) :"}
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  value={salePrice}
+                  onChange={(e) => setSalePrice(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3.5 font-mono text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6] transition-colors"
+                />
+              </div>
+
+              {/* 4. Pack / Wholesale Price (MAD) */}
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                  {locale === "ar" ? "سعر الباك / الجملة (MAD):" : "Pack/Wholesale Price (MAD) :"}
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={wholesalePrice}
+                  onChange={(e) => setWholesalePrice(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3.5 font-mono text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6] transition-colors"
+                />
+              </div>
+
+              {/* 5. Category + Stock + Cancel */}
+              <div className="grid grid-cols-12 gap-2.5 items-end">
+                <div className="col-span-6">
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                    {locale === "ar" ? "الجناح / التصنيف:" : "Category :"}
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={categoryName}
+                      onChange={(e) => setCategoryName(e.target.value)}
+                      className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3 text-xs text-white appearance-none focus:outline-none focus:border-[#14B8A6] cursor-pointer"
+                    >
+                      <option value="grocery">
+                        {locale === "ar" ? "البقالة والمواد الغذائية" : "Épicerie Générale"}
+                      </option>
+                      <option value="drinks">
+                        {locale === "ar" ? "المشروبات والمياه" : "Boissons & Eaux"}
+                      </option>
+                      <option value="dairy">
+                        {locale === "ar" ? "الحليب ومشتقاته" : "Produits Laitiers"}
+                      </option>
+                      <option value="cleaning">
+                        {locale === "ar" ? "المنظفات والورقيات" : "Entretien & Droguerie"}
+                      </option>
+                      <option value="produce">
+                        {locale === "ar" ? "الخضر والفواكه (ميزان)" : "Fruits & Légumes"}
+                      </option>
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute end-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+
+                <div className="col-span-3">
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                    {locale === "ar" ? "المخزون:" : "Stock :"}
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={stockQuantity}
+                    onChange={(e) => setStockQuantity(e.target.value)}
+                    className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-2.5 font-mono text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6]"
+                  />
+                </div>
+
+                <div className="col-span-3">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="w-full h-10 rounded-xl bg-[#090C10] hover:bg-white/[0.08] border border-white/[0.10] text-xs font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                  >
+                    {locale === "ar" ? "إلغاء" : "Cancel"}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="pt-3 flex items-center justify-end gap-3 border-t border-zinc-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-zinc-800 hover:border-zinc-700 bg-zinc-900 text-xs font-bold text-zinc-400 hover:text-white transition cursor-pointer"
-            >
-              {locale === "ar" ? "إلغاء" : "Annuler"}
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="sheen-btn px-5 py-2.5 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 active:scale-[0.98] text-xs font-black flex items-center gap-2 transition cursor-pointer shadow-[0_2px_12px_rgba(255,255,255,0.2)] disabled:opacity-50"
-            >
-              {isSubmitting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Check className="w-4 h-4 stroke-[2.5]" />
-              )}
+          {/* Full-Width Bottom Submit CTA Button */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="mt-6 w-full h-12 rounded-xl bg-gradient-to-r from-[#14B8A6] to-[#2DD4BF] hover:opacity-95 text-[#041E1B] font-extrabold text-sm shadow-[0_8px_28px_-6px_rgba(20,184,166,0.55)] flex items-center justify-center cursor-pointer transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
               <span>
                 {locale === "ar"
-                  ? "إضافة للمتجر ونقطة البيع"
-                  : locale === "en"
-                  ? "Create & Add to POS"
-                  : "Créer et Ajouter au POS"}
+                  ? "حفظ وإضافة بطاقة PNG الشفافة للكاشير (0ms)"
+                  : locale === "fr"
+                  ? "Enregistrer & Ajouter Carte PNG au POS (0ms)"
+                  : "Save & Add Transparent PNG Card to POS (0ms)"}
               </span>
-            </button>
-          </div>
+            )}
+          </button>
         </form>
       </div>
     </div>

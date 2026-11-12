@@ -107,7 +107,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
       case "grocery":
       default:
         return {
-          label: locale === "ar" ? "وضع البقالة والسوبرماركت" : locale === "en" ? "Grocery & Supermarket Mode" : "Mode Épicerie & Supermarché",
+          label: "Supermarket Mode (495nm)",
           icon: ShoppingBasket,
         };
     }
@@ -141,18 +141,24 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
   return (
     <aside
       dir="ltr"
+      style={{
+        background:
+          "linear-gradient(165deg, rgba(255, 255, 255, 0.07) 0%, rgba(20, 26, 33, 0.78) 45%, rgba(10, 14, 18, 0.92) 100%)",
+        backdropFilter: "blur(28px) saturate(180%)",
+        WebkitBackdropFilter: "blur(28px) saturate(180%)",
+      }}
       className={`${
         mobileMenuOpen ? "block" : "hidden"
-      } md:flex w-full md:w-60 border-r border-white/10 bg-zinc-950/60 p-3 shrink-0 flex-col justify-between select-none`}
+      } md:flex w-full md:w-60 border-r border-white/[0.08] p-3 shrink-0 flex-col justify-between select-none shadow-[inset_-1px_0_0_rgba(255,255,255,0.06)]`}
     >
       <nav className="space-y-1">
-        {/* Active Sector Mode Indicator Badge - Interactive */}
+        {/* Supermarket Mode (495nm) Frosted Teal Pill - Interactive */}
         <button
           type="button"
           onClick={() => {
             window.dispatchEvent(new CustomEvent("open-industry-modal"));
           }}
-          className="w-full text-left mb-3 p-2.5 rounded-2xl bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 border border-white/15 flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.6),0_0_15px_rgba(255,255,255,0.04)] group hover:border-white/40 hover:bg-zinc-850 transition-all duration-300 cursor-pointer"
+          className="w-full text-left mb-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-[#14B8A6]/25 to-[#2DD4BF]/15 border border-[#2DD4BF]/40 flex items-center justify-between shadow-[0_0_20px_rgba(20,184,166,0.2)] group hover:border-[#2DD4BF]/70 hover:from-[#14B8A6]/35 transition-all duration-300 cursor-pointer"
           title={
             locale === "ar"
               ? "تغيير قطاع ونشاط المتجر"
@@ -161,22 +167,12 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
               : "Modifier le secteur du magasin"
           }
         >
-          <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="relative w-7 h-7 rounded-xl bg-zinc-800 border border-white/20 flex items-center justify-center text-white shrink-0 shadow-sm group-hover:scale-105 group-hover:border-white/40 transition-all duration-300">
-              <SectorIcon className="w-4 h-4 text-white" />
-              <div className="absolute -inset-0.5 rounded-xl bg-white/10 blur-xs -z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-[11px] font-bold text-white truncate tracking-tight">
-                {sectorBadgeInfo.label}
-              </span>
-              <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-                <span>{locale === "ar" ? "تغيير النشاط" : locale === "en" ? "Change Sector" : "Changer Secteur"}</span>
-                <Sparkles className="w-2.5 h-2.5 text-zinc-400 group-hover:text-white" />
-              </span>
-            </div>
+          <div className="flex items-center gap-2 overflow-hidden">
+            <span className="text-xs font-semibold text-[#5EEAD4] truncate tracking-tight">
+              {sectorBadgeInfo.label}
+            </span>
           </div>
-          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-[#2DD4BF] shrink-0 shadow-[0_0_8px_rgba(45,212,191,0.85)] animate-pulse" />
         </button>
         {isSuperAdmin && (
           <Link
@@ -221,21 +217,25 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
               href={targetHref}
               prefetch={true}
               onClick={onNavigate}
-              className={`group flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition ${
+              className={`group relative flex items-center justify-between rounded-xl px-3 py-2 text-xs transition duration-200 ${
                 isActive
-                  ? "bg-white text-zinc-950 font-semibold shadow-xs"
-                  : "text-zinc-400 hover:bg-white/[0.05] hover:text-white"
+                  ? "bg-white/[0.08] text-[#2DD4BF] font-bold before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r-full before:bg-[#2DD4BF] before:shadow-[0_0_10px_#2DD4BF]"
+                  : "text-zinc-400 hover:bg-white/[0.04] hover:text-white font-medium"
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <Icon className={`h-3.5 w-3.5 shrink-0 ${iconAnimationClass}`} />
+                <Icon
+                  className={`h-4 w-4 shrink-0 transition-transform ${iconAnimationClass} ${
+                    isActive ? "text-[#2DD4BF]" : "text-zinc-400 group-hover:text-white"
+                  }`}
+                />
                 <span>{item.name}</span>
               </div>
               {item.badge && (
                 <span
                   className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
                     isActive
-                      ? "bg-zinc-950 text-white"
+                      ? "bg-[#2DD4BF]/20 text-[#2DD4BF] border border-[#2DD4BF]/40"
                       : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                   }`}
                 >

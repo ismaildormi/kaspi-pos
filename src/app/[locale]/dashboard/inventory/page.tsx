@@ -203,7 +203,13 @@ export default async function InventoryPage({
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
             <Layers className="h-6 w-6 text-white" />
-            <span>{t.inventory.title}</span>
+            <span>
+              {locale === "ar"
+                ? "إدارة المخزون والصلاحية DLC"
+                : locale === "fr"
+                ? "Gestion des Stocks & DLC"
+                : "Inventory & DLC Management"}
+            </span>
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
             {t.inventory.subtitle}
