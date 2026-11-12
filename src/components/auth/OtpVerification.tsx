@@ -129,7 +129,7 @@ export const OtpVerification: React.FC<OtpVerificationProps> = ({
   };
 
   return (
-    <div dir="ltr" className="grid grid-cols-6 gap-2 sm:gap-2.5 select-none">
+    <div dir="ltr" className="grid grid-cols-6 gap-2 sm:gap-2.5 select-none p-1 rounded-2xl kaspi-polar-aurora-orbit">
       {Array.from({ length }).map((_, idx) => {
         const digit = cleanValue[idx] || "";
         return (
@@ -151,8 +151,8 @@ export const OtpVerification: React.FC<OtpVerificationProps> = ({
             aria-label={`Digit ${idx + 1}`}
             className={`w-full h-13 sm:h-14 rounded-2xl backdrop-blur-xl text-center text-xl sm:text-2xl font-mono font-extrabold text-white transition-all focus:outline-none ${
               digit
-                ? "bg-white/[0.1] border-2 border-white shadow-[0_0_20px_rgba(255,255,255,0.28)]"
-                : "bg-zinc-900/80 border border-white/15 hover:border-white/35 focus:border-white focus:bg-white/[0.07] focus:shadow-[0_0_18px_rgba(255,255,255,0.22)]"
+                ? "bg-white/[0.15] border-2 border-white shadow-[0_0_20px_rgba(255,255,255,0.28)]"
+                : "kaspi-translucent-input hover:border-white/35 focus:border-white focus:bg-white/[0.07] focus:shadow-[0_0_18px_rgba(255,255,255,0.22)]"
             } disabled:opacity-50`}
           />
         );

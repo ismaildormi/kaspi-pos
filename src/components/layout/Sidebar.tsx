@@ -248,7 +248,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
                 onClick={onNavigate}
                 className={`group transition-all duration-200 ${
                   isActive
-                    ? "relative rounded-xl px-3.5 py-2.5 bg-gradient-to-r from-[#2DD4BF]/25 via-white/[0.12] to-white/[0.03] border border-white/[0.16] text-[#2DD4BF] font-bold text-xs flex items-center justify-between shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r-full before:bg-[#2DD4BF] before:shadow-[0_0_12px_#2DD4BF]"
+                    ? "relative rounded-xl px-3.5 py-2.5 bg-gradient-to-r from-[#2DD4BF]/25 via-white/[0.12] to-white/[0.03] border border-white/[0.16] text-[#2DD4BF] font-bold text-xs flex items-center justify-between shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] kaspi-polar-aurora-orbit kaspi-orbit-active"
                     : "flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-zinc-400 hover:bg-white/[0.06] hover:text-white font-medium"
                 }`}
               >
@@ -272,7 +272,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           onClick={() => {
             window.dispatchEvent(new CustomEvent("open-owner-vault"));
           }}
-          className="group w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.10] border border-white/10 hover:border-white/25 text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+          className="group w-full flex items-center justify-between px-3 py-2 rounded-xl kaspi-polar-aurora-orbit bg-white/[0.06] hover:bg-white/[0.10] border border-white/10 hover:border-white/25 text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
           title={locale === "ar" ? "خزنة المالك المحمية" : locale === "en" ? "Protected Owner Vault" : "Coffre-Fort Propriétaire"}
         >
           <div className="flex items-center gap-2">
@@ -295,7 +295,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           onClick={() => {
             window.dispatchEvent(new CustomEvent("open-ai-chat"));
           }}
-          className="group w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.10] border border-white/10 hover:border-white/25 text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+          className="group w-full flex items-center justify-between px-3 py-2 rounded-xl kaspi-polar-aurora-orbit bg-white/[0.06] hover:bg-white/[0.10] border border-white/10 hover:border-white/25 text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
           title="KASPI AI Assistant"
         >
           <div className="flex items-center gap-2">

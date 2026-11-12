@@ -469,37 +469,37 @@ export default function BillingDashboardPage() {
               </span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-              <div className={`p-3 rounded-xl border text-center ${
+              <div className={`p-3 rounded-xl border text-center transition-all ${
                 (subscription?.maxDevices ?? 1) === 1
-                  ? "bg-zinc-800 border-white text-white font-bold ring-1 ring-white/20"
-                  : "bg-zinc-900/60 border-zinc-800/80 text-zinc-400"
+                  ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-white font-bold"
+                  : "kaspi-smoky-glass text-zinc-400 hover:text-white"
               }`}>
                 <span className="block text-[11px] mb-0.5">{t.tier1Title}</span>
                 <span className="font-mono text-sm font-black text-white">200 MAD</span>
                 <span className="block text-[9.5px] font-semibold text-emerald-400 mt-0.5 leading-tight">{t.tier1Desc}</span>
               </div>
-              <div className={`p-3 rounded-xl border text-center ${
+              <div className={`p-3 rounded-xl border text-center transition-all ${
                 (subscription?.maxDevices ?? 1) === 2
-                  ? "bg-zinc-800 border-white text-white font-bold ring-1 ring-white/20"
-                  : "bg-zinc-900/60 border-zinc-800/80 text-zinc-400"
+                  ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-white font-bold"
+                  : "kaspi-smoky-glass text-zinc-400 hover:text-white"
               }`}>
                 <span className="block text-[11px] mb-0.5">{t.tier2Title}</span>
                 <span className="font-mono text-sm font-black text-white">350 MAD</span>
                 <span className="block text-[9px] text-zinc-500">{t.tier2Desc}</span>
               </div>
-              <div className={`p-3 rounded-xl border text-center ${
+              <div className={`p-3 rounded-xl border text-center transition-all ${
                 (subscription?.maxDevices ?? 1) === 3
-                  ? "bg-zinc-800 border-white text-white font-bold ring-1 ring-white/20"
-                  : "bg-zinc-900/60 border-zinc-800/80 text-zinc-400"
+                  ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-white font-bold"
+                  : "kaspi-smoky-glass text-zinc-400 hover:text-white"
               }`}>
                 <span className="block text-[11px] mb-0.5">{t.tier3Title}</span>
                 <span className="font-mono text-sm font-black text-white">500 MAD</span>
                 <span className="block text-[9px] text-zinc-500">{t.tier3Desc}</span>
               </div>
-              <div className={`p-3 rounded-xl border text-center ${
+              <div className={`p-3 rounded-xl border text-center transition-all ${
                 (subscription?.maxDevices ?? 1) >= 4
-                  ? "bg-zinc-800 border-white text-white font-bold ring-1 ring-white/20"
-                  : "bg-zinc-900/60 border-zinc-800/80 text-zinc-400"
+                  ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-white font-bold"
+                  : "kaspi-smoky-glass text-zinc-400 hover:text-white"
               }`}>
                 <span className="block text-[11px] mb-0.5">{t.tier4Title}</span>
                 <span className="font-mono text-sm font-black text-white">650 MAD</span>

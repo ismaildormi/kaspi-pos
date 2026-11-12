@@ -738,10 +738,10 @@ export default function ProductsListPage() {
             return (
               <div
                 key={product.id}
-                className="kaspi-frosted-card kaspi-frosted-card-hover group relative rounded-2xl p-4 transition-all flex flex-col overflow-visible"
+                className="kaspi-product-orbit-card group relative rounded-2xl p-3.5 transition-all flex flex-col overflow-visible"
               >
                 {/* Product Image Container */}
-                <div className="kaspi-studio-product-box relative h-44 w-full mb-3 flex items-center justify-center overflow-hidden">
+                <div className="kaspi-product-white-box relative h-36 w-full mb-3 flex items-center justify-center overflow-hidden">
                   {product.imageUrl ? (
                     <img
                       src={product.imageUrl}

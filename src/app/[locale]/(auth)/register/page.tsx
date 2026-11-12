@@ -10,7 +10,7 @@ import { AuthGlassShell, AuthLocale } from "@/components/auth/MonochromePosBackg
 import { playTapSound, playSuccessSound, playErrorSound } from "@/lib/audio";
 import { getLocalizedAuthError } from "@/lib/auth-errors";
 
-type StoreVertical = "grocery" | "restaurant" | "fashion" | "electronics";
+type StoreVertical = "grocery" | "butchery" | "produce" | "restaurant" | "fashion" | "electronics";
 
 const REGISTER_I18N: Record<
   AuthLocale,
@@ -32,7 +32,9 @@ const REGISTER_I18N: Record<
     title: "إنشاء حساب جديد",
     verticals: {
       grocery: "سوبرماركت وبقالة",
-      restaurant: "مطعم ومقهى",
+      butchery: "جزارة ولحوم",
+      produce: "خضر وفواكه وتمور",
+      restaurant: "مقهى ومطعم ومأكولات",
       fashion: "ملابس وأزياء",
       electronics: "إلكترونيات وتجارة",
     },
@@ -50,7 +52,9 @@ const REGISTER_I18N: Record<
     title: "Créer un compte",
     verticals: {
       grocery: "Supermarché & Épicerie",
-      restaurant: "Restaurant & Café",
+      butchery: "Boucherie & Viandes",
+      produce: "Fruits, Légumes & Dattes",
+      restaurant: "Café, Snack & Restaurant",
       fashion: "Mode & Vêtements",
       electronics: "Électronique & Commerce",
     },
@@ -68,7 +72,9 @@ const REGISTER_I18N: Record<
     title: "Create New Account",
     verticals: {
       grocery: "Supermarket & Grocery",
-      restaurant: "Restaurant & Cafe",
+      butchery: "Butchery & Meats",
+      produce: "Fruits, Vegetables & Dates",
+      restaurant: "Cafe, Snack & Restaurant",
       fashion: "Fashion & Apparel",
       electronics: "Electronics & Retail",
     },
@@ -91,6 +97,8 @@ function normalizeLocale(raw?: string): AuthLocale {
 
 const VERTICAL_ORDER: StoreVertical[] = [
   "grocery",
+  "butchery",
+  "produce",
   "restaurant",
   "fashion",
   "electronics",
@@ -207,8 +215,8 @@ export default function RegisterPage() {
       onLocaleChange={handleLocaleChange}
       title={t.title}
     >
-      {/* 4 Clean, Emoji-Free Business Vertical Selector Tiles (2x2 Grid) */}
-      <div dir="ltr" className="grid grid-cols-2 gap-2.5 mb-4">
+      {/* 6 Clean, Emoji-Free Business Vertical Selector Tiles (2-Column Grid) */}
+      <div dir="ltr" className="grid grid-cols-2 gap-2 mb-3.5">
         {VERTICAL_ORDER.map((vertical) => {
           const selected = storeType === vertical;
           return (
@@ -219,10 +227,10 @@ export default function RegisterPage() {
                 playTapSound();
                 setStoreType(vertical);
               }}
-              className={`h-11 px-3 rounded-2xl text-xs sm:text-[13px] font-bold transition-all cursor-pointer flex items-center justify-center text-center ${
+              className={`h-10 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center text-center ${
                 selected
-                  ? "border border-white bg-zinc-900/95 text-white shadow-[0_0_20px_rgba(255,255,255,0.3)]"
-                  : "border border-white/12 bg-zinc-900/70 text-zinc-200 hover:border-white/30 hover:bg-zinc-900/90"
+                  ? "kaspi-polar-aurora-orbit kaspi-orbit-active border-transparent text-white"
+                  : "border border-white/12 bg-zinc-900/70 text-zinc-300 hover:border-white/30 hover:bg-zinc-900/90"
               }`}
             >
               {t.verticals[vertical]}
@@ -240,47 +248,53 @@ export default function RegisterPage() {
 
       {/* Compact Registration Form (Zero Vertical Scrolling) */}
       <form onSubmit={handleSubmit} className="space-y-2.5">
-        <input
-          type="text"
-          name="name"
-          autoComplete="name"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          placeholder={t.fullNamePlaceholder}
-          required
-          className={`w-full h-11 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all ${
-            isRtl ? "text-right" : "text-left"
-          }`}
-        />
+        <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+          <input
+            type="text"
+            name="name"
+            autoComplete="name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder={t.fullNamePlaceholder}
+            required
+            className={`w-full h-11 px-4 kaspi-translucent-input rounded-2xl text-sm placeholder-zinc-400 focus:outline-none transition-all ${
+              isRtl ? "text-right" : "text-left"
+            }`}
+          />
+        </div>
 
-        <input
-          type="text"
-          name="organization"
-          autoComplete="organization"
-          value={shopName}
-          onChange={(e) => setShopName(e.target.value)}
-          placeholder={t.shopNamePlaceholder}
-          minLength={2}
-          required
-          className={`w-full h-11 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all ${
-            isRtl ? "text-right" : "text-left"
-          }`}
-        />
+        <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+          <input
+            type="text"
+            name="organization"
+            autoComplete="organization"
+            value={shopName}
+            onChange={(e) => setShopName(e.target.value)}
+            placeholder={t.shopNamePlaceholder}
+            minLength={2}
+            required
+            className={`w-full h-11 px-4 kaspi-translucent-input rounded-2xl text-sm placeholder-zinc-400 focus:outline-none transition-all ${
+              isRtl ? "text-right" : "text-left"
+            }`}
+          />
+        </div>
 
-        <input
-          type="email"
-          name="email"
-          autoComplete="username"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder={t.emailPlaceholder}
-          required
-          className={`w-full h-11 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all ${
-            isRtl ? "text-right" : "text-left"
-          }`}
-        />
+        <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+          <input
+            type="email"
+            name="email"
+            autoComplete="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t.emailPlaceholder}
+            required
+            className={`w-full h-11 px-4 kaspi-translucent-input rounded-2xl text-sm placeholder-zinc-400 focus:outline-none transition-all ${
+              isRtl ? "text-right" : "text-left"
+            }`}
+          />
+        </div>
 
-        <div className="relative">
+        <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
           <input
             type={showPassword ? "text" : "password"}
             name="password"
@@ -290,7 +304,7 @@ export default function RegisterPage() {
             placeholder={t.passwordPlaceholder}
             minLength={6}
             required
-            className={`w-full h-11 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all ${
+            className={`w-full h-11 kaspi-translucent-input rounded-2xl text-sm placeholder-zinc-400 focus:outline-none transition-all ${
               isRtl ? "pl-11 pr-4 text-right" : "pl-4 pr-11 text-left"
             }`}
           />

@@ -120,9 +120,9 @@ export function StockTransferModal({
   return (
     <div
       dir="ltr"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xl animate-in fade-in"
     >
-      <div className="kaspi-frosted-glass relative w-full max-w-lg overflow-hidden rounded-2xl text-white shadow-2xl p-6 sm:p-7">
+      <div className="kaspi-frosted-glass kaspi-polar-aurora-orbit relative w-full max-w-lg overflow-hidden rounded-2xl text-white shadow-2xl p-6 sm:p-7">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
           <div className="flex items-center gap-3">
@@ -165,10 +165,10 @@ export function StockTransferModal({
               <select
                 value={sourceStoreId}
                 onChange={(e) => setSourceStoreId(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-600"
+                className="w-full kaspi-translucent-input rounded-xl px-3 py-2 text-xs focus:outline-none"
               >
                 {stores.map((s) => (
-                  <option key={s.id} value={s.id}>
+                  <option key={s.id} value={s.id} className="bg-zinc-950 text-white">
                     {s.name} ({s.code})
                   </option>
                 ))}
@@ -182,10 +182,10 @@ export function StockTransferModal({
               <select
                 value={destStoreId}
                 onChange={(e) => setDestStoreId(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-600"
+                className="w-full kaspi-translucent-input rounded-xl px-3 py-2 text-xs focus:outline-none"
               >
                 {stores.map((s) => (
-                  <option key={s.id} value={s.id}>
+                  <option key={s.id} value={s.id} className="bg-zinc-950 text-white">
                     {s.name} ({s.code})
                   </option>
                 ))}
@@ -201,10 +201,10 @@ export function StockTransferModal({
             <select
               value={selectedProductId}
               onChange={(e) => setSelectedProductId(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-600"
+              className="w-full kaspi-translucent-input rounded-xl px-3 py-2 text-xs focus:outline-none"
             >
               {products.map((p) => (
-                <option key={p.id} value={p.id}>
+                <option key={p.id} value={p.id} className="bg-zinc-950 text-white">
                   {p.name} — SKU: {p.sku}
                 </option>
               ))}
@@ -222,7 +222,7 @@ export function StockTransferModal({
               min="0.001"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-600 font-mono"
+              className="w-full kaspi-translucent-input rounded-xl px-3 py-2 text-xs focus:outline-none font-mono"
               placeholder="1"
               required
             />
@@ -237,7 +237,7 @@ export function StockTransferModal({
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-600"
+              className="w-full kaspi-translucent-input rounded-xl px-3 py-2 text-xs focus:outline-none"
               placeholder={locale === "ar" ? "مثلاً: شحنة تموين طارئة" : locale === "en" ? "e.g., Weekly replenishment" : "ex: Réapprovisionnement hebdomadaire"}
             />
           </div>

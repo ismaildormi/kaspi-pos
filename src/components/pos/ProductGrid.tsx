@@ -69,11 +69,14 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
     });
   }, [baseProducts, activeCategoryId, searchQuery]);
 
-  // Deduplicate identical product cards by normalized name, keeping the one with an image
+  // Deduplicate identical product cards by normalized name + price or barcode
   const deduplicatedProducts = useMemo(() => {
     const map = new Map<string, PosProduct>();
     filteredProducts.forEach((p) => {
-      const key = p.name ? p.name.trim().toLowerCase() : p.id;
+      const normName = p.name ? p.name.trim().toLowerCase() : "";
+      const priceKey = (p.salePrice || p.price || 0).toFixed(2);
+      const barcodeKey = p.barcode ? p.barcode.trim().toLowerCase() : "";
+      const key = barcodeKey || `${normName}_${priceKey}` || p.id;
       const existing = map.get(key);
       if (!existing) {
         map.set(key, p);
@@ -81,8 +84,6 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
         const pImg = (p as any).imageUrl || p.image;
         const existingImg = (existing as any).imageUrl || existing.image;
         if (!existingImg && pImg) {
-          map.set(key, p);
-        } else if (Boolean(pImg) === Boolean(existingImg)) {
           map.set(key, p);
         }
       }
@@ -236,11 +237,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
                 updateItemQuantity(product.id, -1);
               }
             }}
-            className={`group relative min-h-[245px] rounded-2xl ${
-              inCartQty > 0
-                ? "border border-[#2DD4BF]/80 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_0_24px_rgba(45,212,191,0.25)] bg-[linear-gradient(135deg,rgba(45,212,191,0.12)_0%,rgba(255,255,255,0.03)_48%,rgba(14,19,24,0.95)_100%)]"
-                : "kaspi-frosted-card kaspi-frosted-card-hover"
-            } p-4 flex flex-col items-center justify-between text-center overflow-hidden cursor-pointer select-none transition-all duration-150 active:scale-[0.98] backdrop-blur-2xl focus:outline-none`}
+            className={`group relative min-h-[225px] p-3.5 rounded-2xl kaspi-product-orbit-card ${
+              inCartQty > 0 || lastInteractedProductId === product.id
+                ? "kaspi-orbit-active"
+                : ""
+            } flex flex-col items-center justify-between text-center overflow-hidden cursor-pointer select-none transition-all duration-150 active:scale-[0.98] backdrop-blur-2xl focus:outline-none`}
           >
             {/* Top 3px Glowing Teal Accent Strip */}
             <div className="absolute top-0 inset-x-6 h-[2.5px] rounded-b-full bg-gradient-to-r from-transparent via-[#2DD4BF] to-transparent opacity-80" />
@@ -404,7 +405,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
             )}
 
             {/* Center Floating Pure White Studio Box */}
-            <div className="kaspi-studio-product-box w-full h-36 mb-3 shadow-[0_8px_20px_rgba(0,0,0,0.55)] group-hover:scale-[1.02] transition-transform duration-200">
+            <div className="kaspi-product-white-box w-full h-32 mb-2 shadow-[0_8px_20px_rgba(0,0,0,0.55)] group-hover:scale-[1.02] transition-transform duration-200">
               {imgSource ? (
                 <img
                   src={imgSource}

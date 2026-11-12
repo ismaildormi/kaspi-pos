@@ -312,16 +312,16 @@ export default async function DashboardOverviewPage({
                 : "Solde Consignes Gaz & Casiers"}
             </span>
           </div>
-          <div className="mt-4 flex items-end justify-between">
-            <div className="flex items-baseline">
+          <div className="mt-4 flex items-end justify-between gap-2">
+            <div className="flex items-baseline whitespace-nowrap">
               <span className="text-2xl font-black text-white font-mono tracking-tight">
                 +45
               </span>
-              <span className="text-xs font-semibold text-zinc-400 mx-1.5">Units /</span>
+              <span className="text-xs font-semibold text-zinc-400 mx-1.5 whitespace-nowrap">Units ·</span>
               <span className="text-sm font-bold text-[#F87171] font-mono">
                 -12
               </span>
-              <span className="text-xs font-semibold text-zinc-400 ml-1.5">Empty</span>
+              <span className="text-xs font-semibold text-zinc-400 ms-1 whitespace-nowrap">Empty</span>
             </div>
             <IsometricCratesIllustration className="w-16 h-12 shrink-0 drop-shadow-md" />
           </div>
@@ -331,7 +331,7 @@ export default async function DashboardOverviewPage({
       {/* Quick Launch Cards (Frosted Glass Translucent Surface) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Fast POS CTA */}
-        <div className="kaspi-frosted-card kaspi-frosted-card-hover rounded-3xl p-6 flex flex-col justify-between">
+        <div className="kaspi-frosted-card kaspi-frosted-card-hover kaspi-polar-aurora-orbit rounded-3xl p-6 flex flex-col justify-between">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 rounded-lg bg-white/10 border border-white/15 px-2.5 py-1 text-[11px] font-semibold text-white">
               {t.dashboard.offlineModeActive}
@@ -353,7 +353,7 @@ export default async function DashboardOverviewPage({
         </div>
 
         {/* WhatsApp Reports CTA */}
-        <div className="kaspi-frosted-card kaspi-frosted-card-hover rounded-3xl p-6 flex flex-col justify-between">
+        <div className="kaspi-frosted-card kaspi-frosted-card-hover kaspi-polar-aurora-orbit rounded-3xl p-6 flex flex-col justify-between">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 rounded-lg bg-white/10 border border-white/15 px-2.5 py-1 text-[11px] font-semibold text-white">
               {t.dashboard.automationBadge}

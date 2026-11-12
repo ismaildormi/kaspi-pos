@@ -415,7 +415,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 rounded-xl bg-zinc-950/60 border border-white/10 space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold text-white">
-                  <span>{locale === "ar" ? "قنينات الغاز" : locale === "fr" ? "Bouteilles de Gaz" : "Gas Bottles"}</span>
+                  <span>{locale === "ar" ? "قنينات الغاز (بوطاغاز)" : locale === "en" ? "Gas Bottles (Butagaz)" : "Bouteilles de Gaz (Butagaz)"}</span>
                   <span className="text-[#5EEAD4] font-mono">{locale === "ar" ? "100 درهم / رهن" : locale === "fr" ? "100 DH / consigne" : "100 MAD / deposit"}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-zinc-400">
@@ -442,7 +442,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
 
               <div className="p-4 rounded-xl bg-zinc-950/60 border border-white/10 space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold text-white">
-                  <span>{locale === "ar" ? "صناديق المشروبات" : locale === "fr" ? "Casiers Bouteilles" : "Bottle Crates"}</span>
+                  <span>{locale === "ar" ? "صناديق المشروبات الغازية" : locale === "en" ? "Bottle & Soda Crates" : "Casiers Bouteilles / Sodas"}</span>
                   <span className="text-[#5EEAD4] font-mono">{locale === "ar" ? "15 درهم / رهن" : locale === "fr" ? "15 DH / consigne" : "15 MAD / deposit"}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-zinc-400">

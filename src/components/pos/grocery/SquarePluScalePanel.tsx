@@ -126,7 +126,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
   const [newNameFr, setNewNameFr] = useState("");
   const [newPriceKg, setNewPriceKg] = useState("");
 
-  const weightPresets = [0.1, 0.25, 0.5, 1.0];
+  const weightPresets = [0.25, 0.5, 1.0, 2.0];
   const amountPresets = [10, 15, 20, 50];
 
   const handleKeypadPress = (val: string) => {
@@ -547,7 +547,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
               )}
 
               {/* Quick Presets Bar */}
-              <div className="grid grid-cols-5 gap-1 shrink-0">
+              <div className="grid grid-cols-4 gap-1 shrink-0">
                 {calcMode === "weight"
                   ? weightPresets.map((w) => (
                       <button

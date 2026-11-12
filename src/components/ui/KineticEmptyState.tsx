@@ -81,7 +81,7 @@ export function ObsidianMetalVipCardWhiteCanvas({
   subtitle?: string;
 }) {
   return (
-    <div className="kaspi-frosted-card group relative rounded-3xl border border-white/10 shadow-2xl p-8 sm:p-10 my-4 flex flex-col items-center justify-center text-center select-none overflow-hidden text-white transition-all duration-300">
+    <div className="kaspi-smoky-glass group relative rounded-3xl border border-white/10 shadow-2xl p-8 sm:p-10 my-4 flex flex-col items-center justify-center text-center select-none overflow-hidden text-white transition-all duration-300">
       {/* Subtle Micro-Grid */}
       <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:16px_16px] opacity-40 pointer-events-none" />
 
@@ -90,8 +90,8 @@ export function ObsidianMetalVipCardWhiteCanvas({
         {/* Deep drop shadow */}
         <div className="absolute w-48 h-28 rounded-2xl bg-black/60 blur-xl transform translate-y-6 group-hover:translate-y-8 group-hover:scale-105 transition-all duration-500" />
 
-        {/* Realistic Obsidian Metallic Card */}
-        <div className="relative w-52 h-32 rounded-2xl bg-gradient-to-tr from-[#0a0a0c] via-[#16161a] to-[#0d0d10] border border-zinc-700/80 shadow-[0_15px_35px_rgba(0,0,0,0.6),0_1px_0_rgba(255,255,255,0.25)_inset] p-4 flex flex-col justify-between transform -rotate-3 group-hover:rotate-0 group-hover:scale-105 group-hover:-translate-y-2 transition-all duration-500 ease-out overflow-hidden cursor-pointer">
+        {/* Realistic Obsidian Metallic Card with Living Polar Aurora Orbit */}
+        <div className="kaspi-polar-aurora-orbit relative w-52 h-32 rounded-2xl bg-gradient-to-tr from-[#0a0a0c] via-[#16161a] to-[#0d0d10] border border-zinc-700/80 shadow-[0_15px_35px_rgba(0,0,0,0.6),0_1px_0_rgba(255,255,255,0.25)_inset] p-4 flex flex-col justify-between transform -rotate-3 group-hover:rotate-0 group-hover:scale-105 group-hover:-translate-y-2 transition-all duration-500 ease-out overflow-hidden cursor-pointer">
           {/* Real Metallic Sheen Angle Sweep */}
           <div className="absolute -inset-full bg-gradient-to-r from-transparent via-white/15 to-transparent rotate-45 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
 

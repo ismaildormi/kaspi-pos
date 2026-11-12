@@ -295,11 +295,11 @@ export function UnifiedCheckoutModal() {
   return (
     <div
       dir="ltr"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md select-none overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/45 backdrop-blur-xl select-none overflow-y-auto"
     >
-      <div className="kaspi-frosted-glass w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto">
+      <div className="kaspi-frosted-glass kaspi-polar-aurora-orbit w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto">
         {/* Modal Top Header */}
-        <div className="flex items-center justify-between p-4 px-6 border-b border-zinc-800 bg-zinc-900/60">
+        <div className="flex items-center justify-between p-4 px-6 border-b border-zinc-800 kaspi-frosted-card">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-white text-zinc-950 flex items-center justify-center font-bold">
               <CheckCircle2 className="w-4 h-4" />

@@ -623,24 +623,26 @@ function LoginForm() {
             <label className="block text-xs font-bold text-zinc-200 mb-2">
               {t.emailLabel}
             </label>
-            <input
-              type="email"
-              name="email"
-              dir="ltr"
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t.emailPlaceholder}
-              required
-              className="w-full h-12 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all"
-            />
+            <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+              <input
+                type="email"
+                name="email"
+                dir="ltr"
+                autoComplete="username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t.emailPlaceholder}
+                required
+                className="w-full h-12 px-4 kaspi-translucent-input rounded-2xl text-sm placeholder-zinc-400 focus:outline-none transition-all"
+              />
+            </div>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-zinc-200 mb-2">
               {t.passwordLabel}
             </label>
-            <div className="relative">
+            <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -650,7 +652,7 @@ function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t.passwordPlaceholder}
                 required
-                className={`w-full h-12 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all ${
+                className={`w-full h-12 kaspi-translucent-input rounded-2xl text-sm placeholder-zinc-400 focus:outline-none transition-all ${
                   isRtl ? "pl-11 pr-4 text-right" : "pl-4 pr-11 text-left"
                 }`}
               />
@@ -732,15 +734,17 @@ function LoginForm() {
                 <label className="block text-xs font-bold text-zinc-200 mb-2">
                   {t.emailLabel}
                 </label>
-                <input
-                  type="email"
-                  dir="ltr"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t.emailPlaceholder}
-                  required
-                  className="w-full h-12 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all"
-                />
+                <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+                  <input
+                    type="email"
+                    dir="ltr"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t.emailPlaceholder}
+                    required
+                    className="w-full h-12 px-4 kaspi-translucent-input rounded-2xl text-sm placeholder-zinc-400 focus:outline-none transition-all"
+                  />
+                </div>
               </div>
 
               <button
@@ -837,15 +841,17 @@ function LoginForm() {
                 <label className="block text-xs font-bold text-zinc-200 mb-2">
                   {t.emailLabel}
                 </label>
-                <input
-                  type="email"
-                  dir="ltr"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t.emailPlaceholder}
-                  required
-                  className="w-full h-12 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 focus:shadow-[0_0_16px_rgba(255,255,255,0.14)] transition-all"
-                />
+                <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+                  <input
+                    type="email"
+                    dir="ltr"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t.emailPlaceholder}
+                    required
+                    className="w-full h-12 px-4 kaspi-translucent-input rounded-2xl text-sm placeholder-zinc-400 focus:outline-none transition-all"
+                  />
+                </div>
               </div>
 
               <button
@@ -876,7 +882,7 @@ function LoginForm() {
                 autoFocus
               />
 
-              <div className="relative">
+              <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
                 <input
                   type={showNewPassword ? "text" : "password"}
                   dir="ltr"
@@ -885,7 +891,7 @@ function LoginForm() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder={t.newPasswordLabel}
                   required
-                  className={`w-full h-11 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 transition-all ${
+                  className={`w-full h-11 kaspi-translucent-input rounded-2xl text-sm placeholder-zinc-400 focus:outline-none transition-all ${
                     isRtl ? "pl-11 pr-4 text-right" : "pl-4 pr-11 text-left"
                   }`}
                 />
@@ -905,18 +911,20 @@ function LoginForm() {
                 </button>
               </div>
 
-              <input
-                type={showNewPassword ? "text" : "password"}
-                dir="ltr"
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder={t.confirmPasswordLabel}
-                required
-                className={`w-full h-11 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 transition-all ${
-                  isRtl ? "text-right" : "text-left"
-                }`}
-              />
+              <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  dir="ltr"
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder={t.confirmPasswordLabel}
+                  required
+                  className={`w-full h-11 px-4 kaspi-translucent-input rounded-2xl text-sm placeholder-zinc-400 focus:outline-none transition-all ${
+                    isRtl ? "text-right" : "text-left"
+                  }`}
+                />
+              </div>
 
               <button
                 type="submit"

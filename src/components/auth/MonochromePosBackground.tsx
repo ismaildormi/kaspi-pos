@@ -542,8 +542,8 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
       {/* Ambient White Backlight Behind the Frosted Glass Card */}
       <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] rounded-full bg-white/[0.045] blur-[90px]" />
 
-      {/* Central Apple / Linear-Grade Glassmorphic Authentication Card */}
-      <div className="relative z-10 w-full max-w-[430px] mx-auto backdrop-blur-2xl bg-zinc-950/80 border border-white/15 rounded-[32px] px-6 py-6 sm:px-8 sm:py-7 shadow-[0_28px_90px_rgba(0,0,0,0.95),0_0_45px_rgba(255,255,255,0.05),inset_0_1px_0_rgba(255,255,255,0.18)] transition-all">
+      {/* Central Translucent Frosted Glass Authentication Card with Living Polar Aurora Orbit */}
+      <div className="kaspi-polar-aurora-orbit relative z-10 w-full max-w-[430px] mx-auto rounded-[32px] px-6 py-6 sm:px-8 sm:py-7 shadow-[0_28px_90px_rgba(0,0,0,0.65),0_0_45px_rgba(255,255,255,0.08),inset_0_1px_0_rgba(255,255,255,0.22)] transition-all">
         {/* Top Ambient Edge Highlight */}
         <div className="pointer-events-none absolute -top-px left-10 right-10 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 

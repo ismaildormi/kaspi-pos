@@ -301,9 +301,9 @@ export function OwnerProfileModal({
   return (
     <div
       dir="ltr"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md select-none animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xl select-none animate-in fade-in duration-200"
     >
-      <div className="kaspi-frosted-glass relative w-full max-w-xl rounded-3xl p-6 sm:p-7 space-y-6 overflow-hidden shadow-2xl">
+      <div className="kaspi-frosted-glass kaspi-polar-aurora-orbit relative w-full max-w-xl rounded-3xl p-6 sm:p-7 space-y-6 overflow-hidden shadow-2xl">
         {/* Ambient Top Glow */}
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
 
@@ -428,7 +428,7 @@ export function OwnerProfileModal({
               <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
                 {locale === "ar" ? "كلمة مرور الحساب" : locale === "en" ? "Account Password" : "Mot de passe du compte"}
               </label>
-              <div className="relative">
+              <div className="relative rounded-xl kaspi-polar-aurora-orbit">
                 <input
                   ref={passwordInputRef}
                   type={showPassword ? "text" : "password"}
@@ -437,12 +437,12 @@ export function OwnerProfileModal({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full h-11 ps-4 pe-11 bg-zinc-900 border border-zinc-800 focus:border-white rounded-xl text-xs sm:text-sm text-white focus:outline-none font-mono"
+                  className="w-full h-11 ps-4 pe-11 kaspi-translucent-input rounded-xl text-xs sm:text-sm text-white focus:outline-none font-mono"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute end-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white z-10"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -563,7 +563,7 @@ export function OwnerProfileModal({
                     required
                     value={vaultData.shopName}
                     onChange={(e) => setVaultData({ ...vaultData, shopName: e.target.value })}
-                    className="w-full h-10 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-white focus:outline-none"
+                    className="w-full h-10 px-3.5 kaspi-translucent-input rounded-xl text-xs text-white focus:outline-none"
                   />
                 </div>
 
@@ -575,7 +575,7 @@ export function OwnerProfileModal({
                     type="text"
                     value={vaultData.fullName}
                     onChange={(e) => setVaultData({ ...vaultData, fullName: e.target.value })}
-                    className="w-full h-10 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-white focus:outline-none"
+                    className="w-full h-10 px-3.5 kaspi-translucent-input rounded-xl text-xs text-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -590,7 +590,7 @@ export function OwnerProfileModal({
                     type="email"
                     disabled
                     value={vaultData.email}
-                    className="w-full h-10 px-3.5 bg-zinc-900/60 border border-zinc-800/80 rounded-xl text-xs text-zinc-400 cursor-not-allowed font-mono"
+                    className="w-full h-10 px-3.5 kaspi-translucent-input opacity-70 rounded-xl text-xs text-zinc-400 cursor-not-allowed font-mono"
                   />
                 </div>
 
@@ -605,14 +605,14 @@ export function OwnerProfileModal({
                     placeholder="••••••••••••"
                     value={vaultData.newPassword || ""}
                     onChange={(e) => setVaultData({ ...vaultData, newPassword: e.target.value })}
-                    className="w-full h-10 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white font-mono focus:border-white focus:outline-none"
+                    className="w-full h-10 px-3.5 kaspi-translucent-input rounded-xl text-xs text-white font-mono focus:outline-none"
                   />
                 </div>
               </div>
             </div>
 
             {/* SECTION 2: Bank Account & Settlement RIB */}
-            <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-4">
+            <div className="p-4 rounded-2xl kaspi-frosted-card space-y-4">
               <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
                 <Landmark className="w-4 h-4 text-emerald-400" />
                 <span>
@@ -632,10 +632,10 @@ export function OwnerProfileModal({
                   <select
                     value={vaultData.bankName}
                     onChange={(e) => setVaultData({ ...vaultData, bankName: e.target.value })}
-                    className="w-full h-10 px-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-white focus:outline-none cursor-pointer"
+                    className="w-full h-10 px-3 kaspi-translucent-input rounded-xl text-xs text-white focus:outline-none cursor-pointer"
                   >
                     {MOROCCAN_BANKS.map((b) => (
-                      <option key={b.id} value={b.id}>
+                      <option key={b.id} value={b.id} className="bg-zinc-950 text-white">
                         {b.label}
                       </option>
                     ))}
@@ -651,7 +651,7 @@ export function OwnerProfileModal({
                     value={vaultData.beneficiaryName}
                     onChange={(e) => setVaultData({ ...vaultData, beneficiaryName: e.target.value })}
                     placeholder="Ex: SARL KASPI RETAIL"
-                    className="w-full h-10 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-white focus:outline-none"
+                    className="w-full h-10 px-3.5 kaspi-translucent-input rounded-xl text-xs text-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -666,7 +666,7 @@ export function OwnerProfileModal({
                   value={vaultData.bankRib}
                   onChange={(e) => setVaultData({ ...vaultData, bankRib: e.target.value.replace(/\s+/g, "") })}
                   placeholder="230780000000000000000000"
-                  className="w-full h-10 px-3.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono font-bold text-white focus:border-white focus:outline-none tracking-wider"
+                  className="w-full h-10 px-3.5 kaspi-translucent-input rounded-xl text-xs font-mono font-bold text-white focus:outline-none tracking-wider"
                 />
               </div>
             </div>

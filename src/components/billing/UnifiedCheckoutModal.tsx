@@ -286,10 +286,10 @@ export function UnifiedCheckoutModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xl animate-in fade-in duration-200">
       <div
         dir="ltr"
-        className="kaspi-frosted-glass rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden"
+        className="kaspi-frosted-glass kaspi-polar-aurora-orbit rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden"
       >
         {/* Subtle monochrome ambient light */}
         <div className="absolute top-0 right-1/4 w-36 h-36 bg-white/[0.04] rounded-full blur-3xl pointer-events-none" />
@@ -438,7 +438,7 @@ export function UnifiedCheckoutModal({
                       placeholder="4152 •••• •••• ••••"
                       value={cardNumber}
                       onChange={(e) => setCardNumber(formatCardNumberInput(e.target.value))}
-                      className="w-full h-10 px-3.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm font-mono text-white focus:outline-none focus:border-white transition"
+                      className="w-full h-10 px-3.5 kaspi-translucent-input rounded-xl text-sm font-mono text-white focus:outline-none transition"
                     />
                   </div>
 
@@ -452,7 +452,7 @@ export function UnifiedCheckoutModal({
                       placeholder="Yassine Chraibi"
                       value={cardHolder}
                       onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
-                      className="w-full h-10 px-3.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm font-medium text-white focus:outline-none focus:border-white transition"
+                      className="w-full h-10 px-3.5 kaspi-translucent-input rounded-xl text-sm font-medium text-white focus:outline-none transition"
                     />
                   </div>
 
@@ -467,7 +467,7 @@ export function UnifiedCheckoutModal({
                         placeholder="MM/YY"
                         value={expiry}
                         onChange={(e) => setExpiry(formatExpiryInput(e.target.value))}
-                        className="w-full h-10 px-3.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm font-mono text-white focus:outline-none focus:border-white transition"
+                        className="w-full h-10 px-3.5 kaspi-translucent-input rounded-xl text-sm font-mono text-white focus:outline-none transition"
                       />
                     </div>
                     <div>
@@ -481,7 +481,7 @@ export function UnifiedCheckoutModal({
                         placeholder="•••"
                         value={cvc}
                         onChange={(e) => setCvc(e.target.value.replace(/\D/g, ""))}
-                        className="w-full h-10 px-3.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm font-mono text-white focus:outline-none focus:border-white transition"
+                        className="w-full h-10 px-3.5 kaspi-translucent-input rounded-xl text-sm font-mono text-white focus:outline-none transition"
                       />
                     </div>
                   </div>

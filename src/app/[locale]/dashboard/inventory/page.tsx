@@ -376,7 +376,7 @@ export default async function InventoryPage({
                     <tr key={p.id} className="hover:bg-zinc-950/40 transition">
                       <td className="py-3 px-4 font-bold text-white">
                         <div className="flex items-center gap-3">
-                          <div className="w-11 h-11 kaspi-studio-product-box rounded-xl shrink-0 flex items-center justify-center overflow-hidden">
+                          <div className="w-10 h-10 kaspi-product-white-box rounded-xl shrink-0 flex items-center justify-center overflow-hidden">
                             {imgUrl ? (
                               <img
                                 src={imgUrl}

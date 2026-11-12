@@ -295,9 +295,9 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
   return (
     <div
       dir="ltr"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-2xl select-none overflow-y-auto animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/45 backdrop-blur-xl select-none overflow-y-auto animate-fadeIn"
     >
-      <div className="kaspi-frosted-glass w-full max-w-3xl rounded-3xl p-6 shadow-[0_24px_80px_rgba(0,0,0,0.85)] flex flex-col my-auto transition-all">
+      <div className="kaspi-frosted-glass kaspi-polar-aurora-orbit w-full max-w-3xl rounded-3xl p-6 shadow-[0_24px_80px_rgba(0,0,0,0.65)] flex flex-col my-auto transition-all">
         {/* Header Row */}
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
           <h2 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
@@ -332,7 +332,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-5 items-stretch">
             {/* LEFT COLUMN: Drag & Drop Image Studio (5 Cols) */}
-            <div className="md:col-span-5 rounded-2xl border border-white/[0.12] bg-[#0E1318] p-4 flex flex-col justify-between">
+            <div className="md:col-span-5 rounded-2xl border border-white/[0.12] kaspi-frosted-card p-4 flex flex-col justify-between">
               <div>
                 <h3 className="text-center text-xs font-bold text-zinc-200">
                   {locale === "ar" ? "استوديو رفع وتفريغ الصورة" : "Drag & Drop Image Studio"}
@@ -374,7 +374,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                       </span>
                     </div>
                   ) : imageUrl ? (
-                    <div className="kaspi-studio-product-box relative w-full h-full flex items-center justify-center group overflow-hidden">
+                    <div className="kaspi-product-white-box relative w-full h-full flex items-center justify-center group overflow-hidden bg-white">
                       <img
                         src={imageUrl}
                         alt="Preview"
@@ -433,21 +433,23 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                 <label className="block text-xs font-semibold text-zinc-300 mb-1">
                   {locale === "ar" ? "اسم المنتج:" : "Product Name :"}
                 </label>
-                <input
-                  type="text"
-                  required
-                  autoFocus
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={
-                    locale === "ar"
-                      ? "أدخل اسم المنتج..."
-                      : locale === "fr"
-                      ? "Nom de l'article..."
-                      : "Enter product name..."
-                  }
-                  className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6] transition-colors"
-                />
+                <div className="relative rounded-xl kaspi-polar-aurora-orbit">
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={
+                      locale === "ar"
+                        ? "أدخل اسم المنتج..."
+                        : locale === "fr"
+                        ? "Nom de l'article..."
+                        : "Enter product name..."
+                    }
+                    className="w-full h-10 rounded-xl kaspi-translucent-input px-3.5 text-sm placeholder-zinc-500 focus:outline-none transition-colors"
+                  />
+                </div>
               </div>
 
               {/* 2. Barcode EAN-13 + Auto-Generate */}
@@ -456,15 +458,17 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                   {locale === "ar" ? "الباركود (EAN-13):" : "Barcode EAN-13 :"}
                 </label>
                 <div className="flex gap-2">
-                  <div className="relative flex-1">
+                  <div className="relative flex-1 rounded-xl kaspi-polar-aurora-orbit">
                     <input
                       ref={barcodeInputRef}
                       type="text"
                       value={barcode}
                       onChange={(e) => setBarcode(e.target.value)}
                       placeholder="611XXXXXXXXXX"
-                      className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3.5 font-mono text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6] transition-colors"
+                      dir="ltr"
+                      className="w-full h-10 rounded-xl kaspi-translucent-input ps-4 pe-10 dir-ltr text-left font-mono text-sm placeholder-zinc-500 focus:outline-none transition-colors"
                     />
+                    <Barcode className="w-4 h-4 text-zinc-400 absolute end-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
                   <button
                     type="button"
@@ -502,7 +506,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                   value={salePrice}
                   onChange={(e) => setSalePrice(e.target.value)}
                   placeholder="0.00"
-                  className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3.5 font-mono text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6] transition-colors"
+                  className="w-full h-10 rounded-xl kaspi-translucent-input px-3.5 font-mono text-sm placeholder-zinc-500 focus:outline-none transition-colors"
                 />
               </div>
 
@@ -518,7 +522,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                   value={wholesalePrice}
                   onChange={(e) => setWholesalePrice(e.target.value)}
                   placeholder="0.00"
-                  className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3.5 font-mono text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6] transition-colors"
+                  className="w-full h-10 rounded-xl kaspi-translucent-input px-3.5 font-mono text-sm placeholder-zinc-500 focus:outline-none transition-colors"
                 />
               </div>
 
@@ -532,7 +536,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                     <select
                       value={categoryName}
                       onChange={(e) => handleCategoryChange(e.target.value)}
-                      className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3 text-xs text-white appearance-none focus:outline-none focus:border-[#14B8A6] cursor-pointer"
+                      className="w-full h-10 rounded-xl kaspi-translucent-input px-3 text-xs appearance-none focus:outline-none cursor-pointer"
                     >
                       <option value="grocery">
                         {locale === "ar" ? "البقالة والمواد الغذائية" : locale === "en" ? "Grocery & Pantry" : "Épicerie & Alimentation"}

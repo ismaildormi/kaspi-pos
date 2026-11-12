@@ -461,10 +461,12 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             </p>
           </div>
         ) : (
-          displayedCart.map((item) => (
+          displayedCart.map((item, idx) => (
             <div
               key={item.productId}
-              className="py-3 flex flex-col justify-between group transition-colors"
+              className={`py-2.5 px-2 rounded-xl flex flex-col justify-between group transition-all ${
+                idx === 0 ? "kaspi-polar-aurora-orbit kaspi-orbit-active" : ""
+              }`}
             >
               {/* Top Row: Product Name + Accumulated Line Price (Auto-doubles live) */}
               <div className="flex items-center justify-between gap-2.5">
@@ -554,7 +556,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             }`}
           >
             <Percent className="w-3 h-3" />
-            <span>{locale === "ar" ? "تخفيض" : locale === "en" ? "Discount" : "Remise"}</span>
+            <span>{locale === "ar" ? "تخفيض %" : locale === "en" ? "% Discount" : "% Remise"}</span>
           </button>
 
           <button

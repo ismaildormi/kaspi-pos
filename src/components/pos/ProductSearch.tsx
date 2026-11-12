@@ -321,7 +321,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
   };
 
   return (
-    <div dir="ltr" className="relative w-full group">
+    <div dir="ltr" className="relative w-full group rounded-xl kaspi-polar-aurora-orbit">
       <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none text-zinc-400">
         {isScanning ? (
           <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -352,7 +352,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
           }, 80);
         }}
         placeholder={`${t("searchPlaceholder")}  •  /pay  /hold  /clear`}
-        className="w-full h-11 ps-10 pe-32 rounded-xl bg-zinc-900/90 border border-white/10 hover:border-white/20 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/15 transition-all shadow-inner"
+        className="w-full h-11 ps-10 pe-32 rounded-xl kaspi-translucent-input text-sm text-white placeholder:text-zinc-400 focus:outline-none transition-all shadow-inner"
       />
 
       <div className="absolute inset-y-0 end-0 flex items-center pe-2.5 gap-1.5">
