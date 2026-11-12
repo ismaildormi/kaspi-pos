@@ -1171,8 +1171,8 @@ export default function SettingsPage() {
           <div className="bg-zinc-900/80 border border-white/10 rounded-3xl p-6 sm:p-7 space-y-6 shadow-xl relative overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-zinc-950 border border-zinc-800 text-amber-400 flex items-center justify-center shadow-inner">
-                  <Lock className="w-5 h-5 text-amber-400" />
+                <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] text-zinc-400 flex items-center justify-center">
+                  <Lock className="w-5 h-5 text-zinc-400" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -1183,7 +1183,7 @@ export default function SettingsPage() {
                         ? "Owner Vault & Sensitive Financial Gateways"
                         : "Coffre Propriétaire & Données Financières Sensibles"}
                     </h2>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-bold">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/[0.06] text-zinc-300 border border-white/[0.10] font-bold">
                       SECURED & MASKED
                     </span>
                   </div>
@@ -1229,7 +1229,7 @@ export default function SettingsPage() {
               {/* WhatsApp Preview */}
               <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1">
                 <span className="text-[11px] font-medium text-zinc-400 flex items-center gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                  <MessageSquare className="w-3.5 h-3.5 text-zinc-400" />
                   <span>{locale === "ar" ? "رقم WhatsApp المالك :" : "WhatsApp Propriétaire :"}</span>
                 </span>
                 <p className="text-xs font-mono font-bold text-white tracking-wider pt-0.5">

@@ -611,11 +611,25 @@ export default function ProductsListPage() {
       ) : filteredProducts.length === 0 ? (
         <div className="relative py-14 rounded-3xl border border-white/10 bg-zinc-900/40 text-center select-none overflow-hidden">
           <FloatingCommerceCanvas opacity="opacity-10" />
-          <div className="relative z-10">
+          <div className="relative z-10 flex flex-col items-center">
             <KineticProductCubeBarcodeEmpty
               title={t.products.noProductsFound}
               subtitle={t.products.noProductsSub}
             />
+            <button
+              type="button"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-bold shadow-xs transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>
+                {locale === "ar"
+                  ? "+ إضافة منتج جديد"
+                  : locale === "fr"
+                  ? "+ Nouveau Produit"
+                  : "+ New Product"}
+              </span>
+            </button>
           </div>
         </div>
       ) : viewMode === "grid" ? (
@@ -727,10 +741,10 @@ export default function ProductsListPage() {
                         <button
                           type="button"
                           onClick={() => handlePrintProductBarcode(product)}
-                          className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-amber-300 hover:bg-zinc-900 flex items-center justify-between gap-2 transition cursor-pointer"
+                          className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-zinc-300 hover:bg-zinc-900 hover:text-white flex items-center justify-between gap-2 transition cursor-pointer"
                         >
                           <span className="flex items-center gap-2">
-                            <Printer className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <Printer className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
                             <span>{t.products.printBarcodeLabel}</span>
                           </span>
                         </button>
@@ -755,7 +769,7 @@ export default function ProductsListPage() {
                     </div>
                     {storeType === "grocery" && (
                       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-teal-500/15 text-teal-300 border border-teal-500/30 text-[10px] font-mono font-bold">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/[0.06] text-zinc-300 border border-white/[0.08] text-[10px] font-mono font-bold">
                           {locale === "ar" ? "هامش ~24%" : "Marge ~24%"}
                         </span>
                         <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-zinc-800 text-zinc-400 text-[10px] font-mono">
@@ -783,15 +797,15 @@ export default function ProductsListPage() {
                         type="button"
                         onClick={() => handlePrintProductBarcode(product)}
                         title={locale === "ar" ? "طباعة ملصق الرف 40×30mm" : "Imprimer Étiquette Rayon 40×30mm"}
-                        className="h-9 px-2.5 rounded-lg bg-[#0D1116] hover:bg-[#14B8A6] text-zinc-300 hover:text-[#041E1B] border border-white/[0.08] hover:border-[#14B8A6] flex items-center justify-center gap-1.5 text-xs font-semibold transition cursor-pointer"
+                        className="h-8 px-2.5 rounded-lg bg-[#111113] hover:bg-[#18181B] text-zinc-300 hover:text-white border border-white/[0.08] flex items-center justify-center gap-1.5 text-xs font-semibold transition cursor-pointer"
                       >
-                        <Printer className="w-3.5 h-3.5" />
+                        <Printer className="w-3.5 h-3.5 text-zinc-400" />
                         <span className="text-[11px] font-mono">40×30mm</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => openPriceModal(product)}
-                        className="h-9 px-3 rounded-lg bg-[#0D1116] hover:bg-white text-zinc-300 hover:text-black border border-white/[0.08] text-xs font-bold transition cursor-pointer"
+                        className="h-8 px-3 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 border border-white text-xs font-bold transition cursor-pointer shadow-xs"
                       >
                         {locale === "ar" ? "تعديل الثمن" : "Prix"}
                       </button>
@@ -854,9 +868,7 @@ export default function ProductsListPage() {
                                 className="h-full w-full object-cover"
                               />
                             ) : (
-                              <span className="text-xs font-black text-white">
-                                {initial}
-                              </span>
+                              <Package className="w-5 h-5 text-zinc-500" />
                             )}
                           </div>
                           <span className="font-bold text-white">{p.name}</span>
@@ -878,9 +890,9 @@ export default function ProductsListPage() {
                             type="button"
                             onClick={() => handlePrintProductBarcode(p)}
                             title={locale === "ar" ? "طباعة ملصق الرف 40×30mm" : "Imprimer Étiquette Rayon 40×30mm"}
-                            className="h-9 px-2.5 rounded-lg bg-[#0D1116] hover:bg-[#14B8A6] text-zinc-300 hover:text-[#041E1B] border border-white/[0.08] hover:border-[#14B8A6] inline-flex items-center justify-center gap-1.5 transition cursor-pointer text-xs font-semibold"
+                            className="h-8 px-2.5 rounded-lg bg-[#111113] hover:bg-[#18181B] text-zinc-300 hover:text-white border border-white/[0.08] inline-flex items-center justify-center gap-1.5 transition cursor-pointer text-xs font-semibold"
                           >
-                            <Printer className="w-3.5 h-3.5" />
+                            <Printer className="w-3.5 h-3.5 text-zinc-400" />
                             <span className="hidden sm:inline text-[11px] font-mono">40×30mm</span>
                           </button>
                           <button
@@ -889,7 +901,7 @@ export default function ProductsListPage() {
                               setOpenMenuProductId(isMenuOpen ? null : p.id)
                             }
                             disabled={isUpdating}
-                            className="h-9 w-9 rounded-lg bg-[#0D1116] hover:bg-white text-zinc-300 hover:text-black border border-white/[0.08] inline-flex items-center justify-center transition cursor-pointer"
+                            className="h-8 w-8 rounded-lg bg-[#111113] hover:bg-[#18181B] text-zinc-300 hover:text-white border border-white/[0.08] inline-flex items-center justify-center transition cursor-pointer"
                           >
                             <MoreVertical className="w-4 h-4" />
                           </button>
@@ -900,9 +912,9 @@ export default function ProductsListPage() {
                             <button
                               type="button"
                               onClick={() => handlePrintProductBarcode(p)}
-                              className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-teal-300 hover:bg-zinc-900 flex items-center gap-2 transition cursor-pointer"
+                              className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-zinc-300 hover:bg-zinc-900 hover:text-white flex items-center gap-2 transition cursor-pointer"
                             >
-                              <Printer className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                              <Printer className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
                               <span>{locale === "ar" ? "طباعة ملصق الرف 40×30mm" : "Imprimer Étiquette Rayon 40×30mm"}</span>
                             </button>
                             <button
@@ -983,7 +995,7 @@ export default function ProductsListPage() {
                 >
                   <div className="h-10 w-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-white group-hover:border-zinc-600 transition">
                     {isUploadingToSupabase ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+                      <Loader2 className="w-5 h-5 animate-spin text-white" />
                     ) : (
                       <Upload className="w-5 h-5" />
                     )}

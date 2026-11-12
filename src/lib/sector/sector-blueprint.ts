@@ -63,119 +63,30 @@ export interface SectorBlueprint {
   }>;
 }
 
+const VERCEL_MONOCHROME_PALETTE: SectorPalette = {
+  name: "Vercel Geist Monochrome",
+  canvas: "#09090B",
+  surface: "#111113",
+  border: "rgba(255, 255, 255, 0.08)",
+  primary: "#FFFFFF",
+  primaryHover: "#E4E4E7",
+  secondary: "#A1A1AA",
+  textAccent: "#FFFFFF",
+  softAccent: "rgba(255, 255, 255, 0.06)",
+  badgeClass: "bg-white/[0.06] text-white border border-white/[0.12]",
+  buttonClass: "bg-white hover:bg-zinc-200 text-zinc-950 font-bold shadow-xs",
+  glowClass: "shadow-[0_0_20px_rgba(255,255,255,0.12)]",
+};
+
 export const SECTOR_PALETTES: Record<StoreBusinessType, SectorPalette> = {
-  grocery: {
-    name: "Nordic Glacier Slate & Cool Mineral Teal",
-    canvas: "#070B0E",
-    surface: "#0D1419",
-    border: "#1A2830",
-    primary: "#14B8A6", // teal-500
-    primaryHover: "#2DD4BF", // teal-400
-    secondary: "#38BDF8", // sky-400
-    textAccent: "#2DD4BF",
-    softAccent: "rgba(20, 184, 166, 0.12)",
-    badgeClass: "bg-teal-500/10 text-teal-400 border border-teal-500/30",
-    buttonClass: "bg-teal-400 hover:bg-teal-300 text-zinc-950 font-black",
-    glowClass: "shadow-[0_0_24px_rgba(45,212,191,0.22)]",
-  },
-  restaurant: {
-    name: "Midnight Fjord & Arctic Ice Blue",
-    canvas: "#080C14",
-    surface: "#0F1622",
-    border: "#1E293B",
-    primary: "#0EA5E9", // sky-500
-    primaryHover: "#38BDF8", // sky-400
-    secondary: "#38BDF8",
-    textAccent: "#38BDF8",
-    softAccent: "rgba(14, 165, 233, 0.12)",
-    badgeClass: "bg-sky-500/10 text-sky-400 border border-sky-500/30",
-    buttonClass: "bg-sky-400 hover:bg-sky-300 text-zinc-950 font-black",
-    glowClass: "shadow-[0_0_24px_rgba(56,189,248,0.22)]",
-  },
-  bakery: {
-    name: "Midnight Fjord & Warm Amber Crust",
-    canvas: "#080C14",
-    surface: "#0F1622",
-    border: "#1E293B",
-    primary: "#0EA5E9",
-    primaryHover: "#38BDF8",
-    secondary: "#F59E0B",
-    textAccent: "#38BDF8",
-    softAccent: "rgba(14, 165, 233, 0.12)",
-    badgeClass: "bg-sky-500/10 text-sky-400 border border-sky-500/30",
-    buttonClass: "bg-sky-400 hover:bg-sky-300 text-zinc-950 font-black",
-    glowClass: "shadow-[0_0_24px_rgba(56,189,248,0.22)]",
-  },
-  fashion: {
-    name: "Obsidian Velvet & Arctic Periwinkle Indigo",
-    canvas: "#090A12",
-    surface: "#11131F",
-    border: "#23273E",
-    primary: "#6366F1", // indigo-500
-    primaryHover: "#818CF8", // indigo-400
-    secondary: "#818CF8",
-    textAccent: "#818CF8",
-    softAccent: "rgba(99, 102, 241, 0.12)",
-    badgeClass: "bg-indigo-500/10 text-indigo-400 border border-indigo-500/30",
-    buttonClass: "bg-indigo-400 hover:bg-indigo-300 text-zinc-950 font-black",
-    glowClass: "shadow-[0_0_24px_rgba(129,140,248,0.22)]",
-  },
-  butchery: {
-    name: "Titanium Slate & Frosted Emerald LCD",
-    canvas: "#080D0B",
-    surface: "#0E1612",
-    border: "#1A2C22",
-    primary: "#10B981", // emerald-500
-    primaryHover: "#34D399", // emerald-400
-    secondary: "#34D399",
-    textAccent: "#34D399",
-    softAccent: "rgba(16, 185, 129, 0.12)",
-    badgeClass: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30",
-    buttonClass: "bg-emerald-400 hover:bg-emerald-300 text-zinc-950 font-black",
-    glowClass: "shadow-[0_0_24px_rgba(52,211,153,0.22)]",
-  },
-  tech: {
-    name: "Deep Cyber Slate & Electric Ice Cyan",
-    canvas: "#070C12",
-    surface: "#0D1520",
-    border: "#18273A",
-    primary: "#06B6D4", // cyan-500
-    primaryHover: "#22D3EE", // cyan-400
-    secondary: "#22D3EE",
-    textAccent: "#22D3EE",
-    softAccent: "rgba(6, 182, 212, 0.12)",
-    badgeClass: "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30",
-    buttonClass: "bg-cyan-400 hover:bg-cyan-300 text-zinc-950 font-black",
-    glowClass: "shadow-[0_0_24px_rgba(34,211,238,0.22)]",
-  },
-  electronics: {
-    name: "Deep Cyber Slate & Electric Ice Cyan",
-    canvas: "#070C12",
-    surface: "#0D1520",
-    border: "#18273A",
-    primary: "#06B6D4",
-    primaryHover: "#22D3EE",
-    secondary: "#22D3EE",
-    textAccent: "#22D3EE",
-    softAccent: "rgba(6, 182, 212, 0.12)",
-    badgeClass: "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30",
-    buttonClass: "bg-cyan-400 hover:bg-cyan-300 text-zinc-950 font-black",
-    glowClass: "shadow-[0_0_24px_rgba(34,211,238,0.22)]",
-  },
-  wholesale: {
-    name: "Deep Steel Slate & Cool Baltic Azure",
-    canvas: "#080B12",
-    surface: "#0F1420",
-    border: "#1C253B",
-    primary: "#3B82F6", // blue-500
-    primaryHover: "#60A5FA", // blue-400
-    secondary: "#60A5FA",
-    textAccent: "#60A5FA",
-    softAccent: "rgba(59, 130, 246, 0.12)",
-    badgeClass: "bg-blue-500/10 text-blue-400 border border-blue-500/30",
-    buttonClass: "bg-blue-400 hover:bg-blue-300 text-zinc-950 font-black",
-    glowClass: "shadow-[0_0_24px_rgba(96,165,250,0.22)]",
-  },
+  grocery: VERCEL_MONOCHROME_PALETTE,
+  restaurant: VERCEL_MONOCHROME_PALETTE,
+  bakery: VERCEL_MONOCHROME_PALETTE,
+  fashion: VERCEL_MONOCHROME_PALETTE,
+  butchery: VERCEL_MONOCHROME_PALETTE,
+  tech: VERCEL_MONOCHROME_PALETTE,
+  electronics: VERCEL_MONOCHROME_PALETTE,
+  wholesale: VERCEL_MONOCHROME_PALETTE,
 };
 
 export const SECTOR_BLUEPRINTS: Record<StoreBusinessType, SectorBlueprint> = {

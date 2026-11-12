@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { ScanBarcode, Search, X, Package, CheckCircle2, Clock, Plus } from "lucide-react";
+import { ScanBarcode, Search, Package, CheckCircle2, Plus } from "lucide-react";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
-import { playTapSound, playSuccessSound } from "@/lib/audio";
+import { playSuccessSound } from "@/lib/audio";
 
 interface SquarePriceDlcModalProps {
   isOpen: boolean;
@@ -52,11 +52,11 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
       dir="ltr"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn select-none"
     >
-      <div className="w-full max-w-lg rounded-3xl bg-[#090D11] border border-white/[0.10] shadow-2xl p-6 space-y-5">
+      <div className="w-full max-w-lg rounded-3xl bg-[#09090B] border border-white/[0.08] shadow-2xl p-6 space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#14B8A6]/10 border border-[#14B8A6]/30 flex items-center justify-center text-[#14B8A6]">
+            <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/[0.10] flex items-center justify-center text-white">
               <ScanBarcode className="w-4 h-4" />
             </div>
             <div>
@@ -77,7 +77,7 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
           <button
             type="button"
             onClick={onClose}
-            className="h-8 px-3 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-xs font-bold text-zinc-300 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="h-8 px-3 rounded-lg bg-[#111113] hover:bg-[#18181B] border border-white/[0.08] text-xs font-bold text-zinc-300 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <span>{locale === "ar" ? "← رجوع" : locale === "en" ? "← Back" : "← Retour"}</span>
           </button>
@@ -96,16 +96,16 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
                 ? "امسح الباركود أو ابحث بالاسم..."
                 : "Scannez code-barres ou recherchez par nom..."
             }
-            className="w-full h-11 ps-10 pe-4 bg-[#05080A] border border-white/[0.10] focus:border-[#14B8A6] rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none font-mono"
+            className="w-full h-11 ps-10 pe-4 bg-[#111113] border border-white/[0.08] focus:border-white rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none font-mono transition-colors"
           />
         </div>
 
         {/* Result Card */}
         {matchedProduct ? (
-          <div className="p-4 rounded-2xl bg-[#0D1116] border border-[#14B8A6]/30 space-y-4 animate-scale-in">
+          <div className="p-4 rounded-2xl bg-[#111113] border border-white/[0.08] space-y-4 animate-scale-in">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <span className="text-[10px] font-mono font-bold text-[#14B8A6] uppercase tracking-wider block">
+                <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider block">
                   {matchedProduct.categoryName || (locale === "ar" ? "جناح عام" : "Rayon Général")}
                 </span>
                 <h4 className="text-base font-bold text-white mt-0.5">{matchedProduct.name}</h4>
@@ -125,7 +125,7 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
             </div>
 
             <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/[0.08] text-xs font-mono">
-              <div className="p-2 rounded-xl bg-zinc-900 border border-white/[0.06]">
+              <div className="p-2 rounded-xl bg-[#09090B] border border-white/[0.06]">
                 <span className="text-[10px] text-zinc-400 block">
                   {locale === "ar" ? "سعر الباك:" : "Prix Pack :"}
                 </span>
@@ -135,21 +135,21 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
                     : "—"}
                 </span>
               </div>
-              <div className="p-2 rounded-xl bg-zinc-900 border border-white/[0.06]">
+              <div className="p-2 rounded-xl bg-[#09090B] border border-white/[0.06]">
                 <span className="text-[10px] text-zinc-400 block">
                   {locale === "ar" ? "الرصيد بالرف:" : "Stock Rayon :"}
                 </span>
-                <span className="text-xs font-bold text-teal-300">
-                  {matchedProduct.stockQuantity ?? 12} {locale === "ar" ? "قطعة" : "unités"}
+                <span className="text-xs font-bold text-white">
+                  {matchedProduct.stockQuantity ?? 0} {locale === "ar" ? "قطعة" : "unités"}
                 </span>
               </div>
-              <div className="p-2 rounded-xl bg-zinc-900 border border-white/[0.06]">
+              <div className="p-2 rounded-xl bg-[#09090B] border border-white/[0.06]">
                 <span className="text-[10px] text-zinc-400 block">
                   {locale === "ar" ? "الصلاحية DLC:" : "Date DLC :"}
                 </span>
-                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" />
-                  <span>28 Nov 2026</span>
+                <span className="text-xs font-bold text-zinc-300 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-zinc-400" />
+                  <span>{locale === "ar" ? "صالحة" : "Valide"}</span>
                 </span>
               </div>
             </div>
@@ -157,14 +157,14 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
             <button
               type="button"
               onClick={handleAddToCart}
-              className="w-full h-11 rounded-xl bg-[#14B8A6] hover:bg-[#2DD4BF] text-[#041E1B] font-black text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
+              className="w-full h-11 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-black text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
               <span>{locale === "ar" ? "إضافة السلعة للسلة فوراً" : "Ajouter cet article au Panier"}</span>
             </button>
           </div>
         ) : (
-          <div className="p-8 text-center border border-dashed border-white/[0.08] rounded-2xl bg-[#05080A] space-y-2">
+          <div className="p-8 text-center border border-dashed border-white/[0.08] rounded-2xl bg-[#111113] space-y-2">
             <Package className="w-8 h-8 text-zinc-600 mx-auto" />
             <p className="text-xs text-zinc-400">
               {locale === "ar"

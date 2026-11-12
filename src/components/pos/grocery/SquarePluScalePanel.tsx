@@ -31,17 +31,6 @@ export interface PluItem {
   isCustom?: boolean;
 }
 
-const DEFAULT_PLU_ITEMS: PluItem[] = [
-  { plu: "4011", nameAr: "موز مستورد ممتاز", nameFr: "Bananes Importées", pricePerKg: 14.0 },
-  { plu: "4012", nameAr: "برتقال عصير نافيل", nameFr: "Oranges à Jus", pricePerKg: 6.0 },
-  { plu: "4065", nameAr: "طماطم سوس سلطة", nameFr: "Tomates Rondes", pricePerKg: 7.0 },
-  { plu: "4080", nameAr: "بطاطس بيضاء للقلي", nameFr: "Pommes de Terre", pricePerKg: 6.5 },
-  { plu: "4090", nameAr: "بصل جاف بلدي", nameFr: "Oignons Jaunes", pricePerKg: 5.5 },
-  { plu: "4129", nameAr: "تفاح أطلس أحمر (غالا)", nameFr: "Pommes Gala Atlas", pricePerKg: 12.5 },
-  { plu: "4135", nameAr: "زيتون أسود بلدي", nameFr: "Olives Noires Beldi", pricePerKg: 28.0 },
-  { plu: "4150", nameAr: "تمور المجهول مغربية", nameFr: "Dattes Majhoul Maroc", pricePerKg: 75.0 },
-];
-
 export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePluScalePanelProps) {
   const { locale } = useAppDictionary();
   const { addToCart } = usePosStore();
@@ -68,11 +57,10 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
     return [];
   }, [propProducts]);
 
-  // Merge real catalog items that are weighted / produce with custom & default PLUs
-  const allPluItems = useMemo(() => {
-    const list: PluItem[] = [...DEFAULT_PLU_ITEMS, ...customPlus];
+  // Read weighted items dynamically from merchant catalog + custom PLU items (No hardcoded demo items)
+  const allPluItems = useMemo<PluItem[]>(() => {
+    const list: PluItem[] = [...customPlus];
 
-    // Add any catalog products marked as scale items or kg
     catalogProducts.forEach((p: PosProduct) => {
       if (p.isScaleItem || p.weightUnit === "kg" || p.categoryId === "produce") {
         const skuNumber = p.sku?.replace(/\D/g, "").slice(-4) || "4099";
@@ -92,7 +80,15 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
     return list;
   }, [customPlus, catalogProducts]);
 
-  const [selectedPlu, setSelectedPlu] = useState<PluItem>(allPluItems[0]);
+  const [selectedPlu, setSelectedPlu] = useState<PluItem | null>(() => allPluItems[0] || null);
+
+  useEffect(() => {
+    if (!selectedPlu && allPluItems.length > 0) {
+      setSelectedPlu(allPluItems[0]);
+    } else if (selectedPlu && !allPluItems.some((item) => item.plu === selectedPlu.plu)) {
+      setSelectedPlu(allPluItems[0] || null);
+    }
+  }, [allPluItems, selectedPlu]);
 
   // Dual Calculation Mode: "weight" (kg/g) or "amount" (customer wants X MAD)
   const [calcMode, setCalcMode] = useState<"weight" | "amount">("weight");
@@ -149,19 +145,24 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
     setAmountInput(amt.toFixed(2));
   };
 
-  // Math Calculations: Real zero-math for the cashier
+  // Math Calculations: Real zero-math for the worker
+  const activePricePerKg = selectedPlu ? selectedPlu.pricePerKg : 0;
   const currentWeightKg = parseFloat(weightInput) || 0;
   const currentTargetAmount = parseFloat(amountInput) || 0;
 
   // In Weight Mode: Total = Weight × Price/kg
-  const computedTotalFromWeight = Math.round(selectedPlu.pricePerKg * currentWeightKg * 100) / 100;
+  const computedTotalFromWeight = Math.round(activePricePerKg * currentWeightKg * 100) / 100;
 
   // In Amount Mode: Weight = Amount ÷ Price/kg
-  const computedWeightFromAmountKg =
-    selectedPlu.pricePerKg > 0 ? currentTargetAmount / selectedPlu.pricePerKg : 0;
+  const computedWeightFromAmountKg = activePricePerKg > 0 ? currentTargetAmount / activePricePerKg : 0;
   const computedWeightGrams = Math.round(computedWeightFromAmountKg * 1000);
 
   const handleAddToCart = () => {
+    if (!selectedPlu) {
+      toast.error(locale === "ar" ? "يرجى اختيار سلعة أولاً" : "Veuillez sélectionner un article");
+      return;
+    }
+
     playSuccessSound();
 
     if (calcMode === "weight") {
@@ -252,8 +253,8 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
     if (typeof window !== "undefined") {
       localStorage.setItem("kaspi_custom_plu_items", JSON.stringify(updated));
     }
-    if (selectedPlu.plu === plu) {
-      setSelectedPlu(allPluItems[0]);
+    if (selectedPlu?.plu === plu) {
+      setSelectedPlu(updated[0] || null);
     }
     toast.info(locale === "ar" ? "تم حذف السلعة من قائمة الميزان" : "Article retiré");
   };
@@ -266,14 +267,14 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
           <button
             type="button"
             onClick={onBack}
-            className="h-8 px-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-xs font-bold text-zinc-200 hover:text-white flex items-center gap-1.5 cursor-pointer transition-colors"
+            className="h-8 px-2.5 rounded-lg bg-[#111113] hover:bg-[#18181B] border border-white/[0.08] text-xs font-bold text-zinc-300 hover:text-white flex items-center gap-1.5 cursor-pointer transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{locale === "ar" ? "العودة للشبكة" : "Grille Articles"}</span>
           </button>
 
-          <div className="flex items-center gap-1.5 text-xs font-bold text-[#14B8A6]">
-            <Scale className="w-4 h-4" />
+          <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+            <Scale className="w-4 h-4 text-zinc-400" />
             <span>{locale === "ar" ? "ميزان وخضر وفواكه (PLU)" : "Balance & Fruits/Légumes (PLU)"}</span>
           </div>
         </div>
@@ -282,15 +283,17 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}
-            className="h-8 px-2.5 rounded-lg bg-[#14B8A6]/15 hover:bg-[#14B8A6]/25 border border-[#14B8A6]/40 text-[#14B8A6] hover:text-[#2DD4BF] text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+            className="h-8 px-3 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>{locale === "ar" ? "+ إضافة سلعة للميزان (PLU)" : "+ Nouvel Article Pesé"}</span>
+            <span>{locale === "ar" ? "+ إضافة سلعة للميزان" : "+ Nouvel Article Pesé"}</span>
           </button>
 
-          <span className="hidden sm:inline font-mono text-[11px] text-zinc-400 bg-white/[0.04] px-2 py-1 rounded-md border border-white/[0.06]">
-            PLU #{selectedPlu.plu} • {selectedPlu.pricePerKg.toFixed(2)} MAD/kg
-          </span>
+          {selectedPlu && (
+            <span className="hidden sm:inline font-mono text-[11px] text-zinc-400 bg-white/[0.04] px-2.5 py-1 rounded-md border border-white/[0.08]">
+              PLU #{selectedPlu.plu} • {selectedPlu.pricePerKg.toFixed(2)} MAD/kg
+            </span>
+          )}
         </div>
       </div>
 
@@ -298,241 +301,278 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2.5 min-h-0 overflow-hidden items-start">
         {/* Left Side (7 Cols): PLU Produce Cards Matrix */}
         <div className="lg:col-span-7 h-full overflow-y-auto pr-1">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-2">
-            {allPluItems.map((item) => {
-              const isSelected = selectedPlu.plu === item.plu;
-              return (
-                <div
-                  key={item.plu}
-                  onClick={() => {
-                    playTapSound();
-                    setSelectedPlu(item);
-                  }}
-                  className={`relative p-2.5 rounded-xl border text-start transition-all cursor-pointer flex flex-col justify-between h-[92px] ${
-                    isSelected
-                      ? "bg-[#14B8A6]/15 border-[#14B8A6] shadow-[0_0_12px_rgba(20,184,166,0.25)] ring-1 ring-[#14B8A6]"
-                      : "bg-[#0D1116] hover:bg-[#11171E] border-white/[0.08] text-zinc-300 hover:border-white/[0.2]"
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <span className="text-[10px] font-mono font-black text-[#14B8A6]">
-                      #{item.plu}
+          {allPluItems.length === 0 ? (
+            <div className="h-64 flex flex-col items-center justify-center text-center p-6 rounded-2xl bg-[#0D0D10] border border-dashed border-white/10 space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-400">
+                <Scale className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-bold text-white">
+                {locale === "ar" ? "لا توجد سلع ميزان مضافة" : "Aucun article pesé"}
+              </p>
+              <p className="text-xs text-zinc-400 max-w-xs">
+                {locale === "ar"
+                  ? "أضف سلعة بالوزن (خضر، فواكه، توابل، زيتون) للبدء في الحساب التلقائي"
+                  : "Ajoutez un article au poids (fruits, légumes, vrac) pour démarrer"}
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-white text-zinc-950 font-bold text-xs hover:bg-zinc-200 transition-colors shadow-xs cursor-pointer"
+              >
+                {locale === "ar" ? "+ إضافة أول سلعة للميزان" : "+ Ajouter un premier article"}
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-2">
+              {allPluItems.map((item) => {
+                const isSelected = selectedPlu?.plu === item.plu;
+                return (
+                  <div
+                    key={item.plu}
+                    onClick={() => {
+                      playTapSound();
+                      setSelectedPlu(item);
+                    }}
+                    className={`relative p-2.5 rounded-xl border text-start transition-all cursor-pointer flex flex-col justify-between h-[92px] ${
+                      isSelected
+                        ? "bg-white text-zinc-950 border-white shadow-xs"
+                        : "bg-[#0D0D10] hover:bg-[#121216] border-white/[0.08] text-zinc-300 hover:border-white/[0.20]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className={`text-[10px] font-mono font-black ${isSelected ? "text-zinc-950" : "text-zinc-400"}`}>
+                        #{item.plu}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {item.isCustom && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeletePlu(item.plu);
+                            }}
+                            className={`p-0.5 transition-colors ${isSelected ? "text-zinc-600 hover:text-rose-600" : "text-zinc-500 hover:text-rose-400"}`}
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                        {isSelected && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
+                      </div>
+                    </div>
+
+                    <span className={`font-sans font-semibold text-xs leading-snug line-clamp-2 ${isSelected ? "text-zinc-950 font-bold" : "text-white"}`}>
+                      {locale === "ar" ? item.nameAr : item.nameFr}
                     </span>
-                    <div className="flex items-center gap-1">
-                      {item.isCustom && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeletePlu(item.plu);
-                          }}
-                          className="text-zinc-500 hover:text-rose-400 p-0.5"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      )}
-                      {isSelected && <Check className="w-3.5 h-3.5 text-[#14B8A6]" />}
+
+                    <div className={`flex items-baseline justify-between border-t pt-1 ${isSelected ? "border-zinc-200" : "border-white/[0.06]"}`}>
+                      <span className={`font-mono font-black text-xs ${isSelected ? "text-zinc-950" : "text-white"}`}>
+                        {item.pricePerKg.toFixed(2)}
+                      </span>
+                      <span className={`text-[9.5px] font-semibold ${isSelected ? "text-zinc-700" : "text-zinc-400"}`}>MAD/kg</span>
                     </div>
                   </div>
-
-                  <span className="font-sans font-semibold text-xs leading-snug line-clamp-2 text-white">
-                    {locale === "ar" ? item.nameAr : item.nameFr}
-                  </span>
-
-                  <div className="flex items-baseline justify-between border-t border-white/[0.06] pt-1">
-                    <span className="font-mono font-black text-xs text-white">
-                      {item.pricePerKg.toFixed(2)}
-                    </span>
-                    <span className="text-[9.5px] font-semibold text-zinc-400">MAD/kg</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Right Side (5 Cols): Compact Dual Mode Calculator (Fits 100% in viewport) */}
-        <div className="lg:col-span-5 h-full max-h-[calc(100vh-140px)] flex flex-col justify-between p-2.5 rounded-2xl bg-[#0D1116] border border-white/[0.08] space-y-2 overflow-y-auto">
-          {/* Active Item Title & Price */}
-          <div className="pb-1.5 border-b border-white/[0.08] flex items-center justify-between shrink-0">
-            <div>
-              <span className="text-[9.5px] font-mono text-[#14B8A6] font-bold">PLU #{selectedPlu.plu}</span>
-              <h4 className="font-bold text-xs text-white line-clamp-1">
-                {locale === "ar" ? selectedPlu.nameAr : selectedPlu.nameFr}
-              </h4>
-            </div>
-            <span className="text-xs font-mono font-black text-white">
-              {selectedPlu.pricePerKg.toFixed(2)} <span className="text-[9.5px] text-zinc-400 font-normal">MAD/kg</span>
-            </span>
-          </div>
-
-          {/* Dual Mode Switcher: By Weight (kg) vs. By Target Amount (MAD) */}
-          <div className="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-[#080B0E] border border-white/[0.06] shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                playTapSound();
-                setCalcMode("weight");
-              }}
-              className={`h-7 rounded-md text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
-                calcMode === "weight"
-                  ? "bg-[#14B8A6] text-[#041E1B] shadow-xs"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              <Weight className="w-3 h-3" />
-              <span>{locale === "ar" ? "حساب بالوزن (كغ)" : "Par Poids (kg)"}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                playTapSound();
-                setCalcMode("amount");
-              }}
-              className={`h-7 rounded-md text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
-                calcMode === "amount"
-                  ? "bg-[#14B8A6] text-[#041E1B] shadow-xs"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              <Coins className="w-3 h-3" />
-              <span>{locale === "ar" ? "حساب بالدرهم (X DH)" : "Par Montant (DH)"}</span>
-            </button>
-          </div>
-
-          {/* Primary Calculation Display */}
-          {calcMode === "weight" ? (
-            <div className="p-2 rounded-xl bg-[#080B0E] border border-white/[0.08] flex items-baseline justify-between shrink-0">
-              <span className="text-[11px] font-semibold text-zinc-400">
-                {locale === "ar" ? "الوزن المقاس:" : "Poids mesuré :"}
-              </span>
-              <div className="flex items-baseline gap-1 font-mono">
-                <span className="text-xl font-black text-white tabular-nums tracking-tight">
-                  {weightInput}
-                </span>
-                <span className="text-[11px] font-bold text-zinc-400">kg</span>
-              </div>
-            </div>
-          ) : (
-            <div className="p-2 rounded-xl bg-[#080B0E] border border-teal-500/30 space-y-1 shrink-0">
-              <div className="flex items-baseline justify-between">
-                <span className="text-[11px] font-semibold text-zinc-400">
-                  {locale === "ar" ? "مبلغ الزبون:" : "Montant demandé :"}
-                </span>
-                <div className="flex items-baseline gap-1 font-mono">
-                  <span className="text-xl font-black text-white tabular-nums">
-                    {amountInput}
-                  </span>
-                  <span className="text-[11px] font-bold text-teal-400">MAD</span>
+        <div className="lg:col-span-5 h-full max-h-[calc(100vh-140px)] flex flex-col justify-between p-2.5 rounded-2xl bg-[#0D0D10] border border-white/[0.08] space-y-2 overflow-y-auto">
+          {selectedPlu ? (
+            <>
+              {/* Active Item Title & Price */}
+              <div className="pb-1.5 border-b border-white/[0.08] flex items-center justify-between shrink-0">
+                <div>
+                  <span className="text-[9.5px] font-mono text-zinc-400 font-bold">PLU #{selectedPlu.plu}</span>
+                  <h4 className="font-bold text-xs text-white line-clamp-1">
+                    {locale === "ar" ? selectedPlu.nameAr : selectedPlu.nameFr}
+                  </h4>
                 </div>
-              </div>
-
-              {/* Exact Weight To Put on Scale */}
-              <div className="pt-1 border-t border-white/[0.06] flex items-center justify-between text-[11.5px] font-mono">
-                <span className="font-bold text-teal-300">
-                  {locale === "ar" ? "الوزن الواجب وضعه:" : "Poids à servir :"}
-                </span>
-                <span className="font-black text-teal-300 text-sm">
-                  {computedWeightGrams}g ({computedWeightFromAmountKg.toFixed(3)}kg)
+                <span className="text-xs font-mono font-black text-white">
+                  {selectedPlu.pricePerKg.toFixed(2)} <span className="text-[9.5px] text-zinc-400 font-normal">MAD/kg</span>
                 </span>
               </div>
-            </div>
-          )}
 
-          {/* Quick Presets Bar */}
-          <div className="grid grid-cols-5 gap-1 shrink-0">
-            {calcMode === "weight"
-              ? weightPresets.map((w) => (
+              {/* Dual Mode Switcher: By Weight (kg) vs. By Target Amount (MAD) */}
+              <div className="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-[#111113] border border-white/[0.08] shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playTapSound();
+                    setCalcMode("weight");
+                  }}
+                  className={`h-7 rounded-md text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                    calcMode === "weight"
+                      ? "bg-white text-zinc-950 shadow-xs"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <Weight className="w-3 h-3" />
+                  <span>{locale === "ar" ? "حساب بالوزن (كغ)" : "Par Poids (kg)"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    playTapSound();
+                    setCalcMode("amount");
+                  }}
+                  className={`h-7 rounded-md text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                    calcMode === "amount"
+                      ? "bg-white text-zinc-950 shadow-xs"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <Coins className="w-3 h-3" />
+                  <span>{locale === "ar" ? "حساب بالدرهم (X DH)" : "Par Montant (DH)"}</span>
+                </button>
+              </div>
+
+              {/* Primary Calculation Display */}
+              {calcMode === "weight" ? (
+                <div className="p-2.5 rounded-xl bg-[#111113] border border-white/[0.08] flex items-baseline justify-between shrink-0">
+                  <span className="text-[11px] font-semibold text-zinc-400">
+                    {locale === "ar" ? "الوزن المقاس:" : "Poids mesuré :"}
+                  </span>
+                  <div className="flex items-baseline gap-1 font-mono">
+                    <span className="text-xl font-black text-white tabular-nums tracking-tight">
+                      {weightInput}
+                    </span>
+                    <span className="text-[11px] font-bold text-zinc-400">kg</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-xl bg-[#111113] border border-white/[0.12] space-y-1.5 shrink-0">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[11px] font-semibold text-zinc-400">
+                      {locale === "ar" ? "مبلغ الزبون:" : "Montant demandé :"}
+                    </span>
+                    <div className="flex items-baseline gap-1 font-mono">
+                      <span className="text-xl font-black text-white tabular-nums">
+                        {amountInput}
+                      </span>
+                      <span className="text-[11px] font-bold text-zinc-400">MAD</span>
+                    </div>
+                  </div>
+
+                  {/* Exact Weight To Put on Scale */}
+                  <div className="pt-1.5 border-t border-white/[0.06] flex items-center justify-between text-[11.5px] font-mono">
+                    <span className="font-bold text-zinc-400">
+                      {locale === "ar" ? "الوزن الواجب وضعه:" : "Poids à servir :"}
+                    </span>
+                    <span className="font-black text-white text-sm">
+                      {computedWeightGrams}g ({computedWeightFromAmountKg.toFixed(3)}kg)
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Presets Bar */}
+              <div className="grid grid-cols-5 gap-1 shrink-0">
+                {calcMode === "weight"
+                  ? weightPresets.map((w) => (
+                      <button
+                        key={w}
+                        type="button"
+                        onClick={() => handleSelectWeightPreset(w)}
+                        className={`h-7 rounded-md text-[10px] font-mono font-bold border transition-colors cursor-pointer ${
+                          currentWeightKg === w
+                            ? "bg-white text-zinc-950 border-white shadow-xs"
+                            : "bg-[#111113] border-white/[0.08] text-zinc-300 hover:text-white"
+                        }`}
+                      >
+                        {w >= 1 ? `${w}kg` : `${w * 1000}g`}
+                      </button>
+                    ))
+                  : amountPresets.map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => handleSelectAmountPreset(amt)}
+                        className={`h-7 rounded-md text-[10px] font-mono font-bold border transition-colors cursor-pointer ${
+                          currentTargetAmount === amt
+                            ? "bg-white text-zinc-950 border-white shadow-xs"
+                            : "bg-[#111113] border-white/[0.08] text-zinc-300 hover:text-white"
+                        }`}
+                      >
+                        {amt} DH
+                      </button>
+                    ))}
+              </div>
+
+              {/* 3×4 Compact Touch Keypad */}
+              <div className="grid grid-cols-3 gap-1 shrink-0">
+                {["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "C"].map((key) => (
                   <button
-                    key={w}
+                    key={key}
                     type="button"
-                    onClick={() => handleSelectWeightPreset(w)}
-                    className={`h-6.5 rounded-md text-[10px] font-mono font-bold border transition-colors cursor-pointer ${
-                      currentWeightKg === w
-                        ? "bg-[#14B8A6] text-[#041E1B] border-[#14B8A6]"
-                        : "bg-[#131920] border-white/[0.08] text-zinc-300 hover:text-white"
-                    }`}
+                    onClick={() => handleKeypadPress(key)}
+                    className="h-10 rounded-xl bg-[#111113] hover:bg-[#18181B] active:scale-[0.98] border border-white/[0.08] text-white font-mono font-bold text-sm flex items-center justify-center transition-colors cursor-pointer"
                   >
-                    {w >= 1 ? `${w}kg` : `${w * 1000}g`}
-                  </button>
-                ))
-              : amountPresets.map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => handleSelectAmountPreset(amt)}
-                    className={`h-6.5 rounded-md text-[10px] font-mono font-bold border transition-colors cursor-pointer ${
-                      currentTargetAmount === amt
-                        ? "bg-[#14B8A6] text-[#041E1B] border-[#14B8A6]"
-                        : "bg-[#131920] border-white/[0.08] text-zinc-300 hover:text-white"
-                    }`}
-                  >
-                    {amt} DH
+                    {key}
                   </button>
                 ))}
-          </div>
+              </div>
 
-          {/* 3×4 Compact Touch Keypad */}
-          <div className="grid grid-cols-3 gap-1 shrink-0">
-            {["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "C"].map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => handleKeypadPress(key)}
-                className="h-8 rounded-lg bg-[#131920] hover:bg-[#1A222B] active:scale-[0.98] border border-white/[0.07] text-white font-mono font-black text-sm flex items-center justify-center transition-colors cursor-pointer"
-              >
-                {key}
-              </button>
-            ))}
-          </div>
+              {/* Real Zero-Math Footer & Add CTA */}
+              <div className="pt-2 border-t border-white/[0.08] space-y-2 shrink-0">
+                <div className="flex items-baseline justify-between font-mono text-xs">
+                  <span className="font-bold text-zinc-400">
+                    {locale === "ar" ? "المجموع المحسوب:" : "Total à ajouter :"}
+                  </span>
+                  <span className="text-lg font-black text-white tabular-nums">
+                    {calcMode === "weight" ? computedTotalFromWeight.toFixed(2) : currentTargetAmount.toFixed(2)}{" "}
+                    <span className="text-[10px] text-zinc-400">MAD</span>
+                  </span>
+                </div>
 
-          {/* Real Zero-Math Footer & Add CTA */}
-          <div className="pt-1.5 border-t border-white/[0.08] space-y-1.5 shrink-0">
-            <div className="flex items-baseline justify-between font-mono text-xs">
-              <span className="font-bold text-zinc-400">
-                {locale === "ar" ? "المجموع المحسوب:" : "Total à ajouter :"}
-              </span>
-              <span className="text-lg font-black text-[#14B8A6] tabular-nums">
-                {calcMode === "weight" ? computedTotalFromWeight.toFixed(2) : currentTargetAmount.toFixed(2)}{" "}
-                <span className="text-[10px] text-zinc-400">MAD</span>
-              </span>
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="h-10 w-full rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-black text-xs shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99] transition-all"
+                >
+                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                  <span>
+                    {calcMode === "weight"
+                      ? locale === "ar"
+                        ? `إضافة للسلة (${computedTotalFromWeight.toFixed(2)} MAD)`
+                        : `Ajouter au Panier (${computedTotalFromWeight.toFixed(2)} MAD)`
+                      : locale === "ar"
+                      ? `إضافة للسلة (${currentTargetAmount.toFixed(2)} MAD • ${computedWeightGrams}g)`
+                      : `Ajouter au Panier (${currentTargetAmount.toFixed(2)} MAD • ${computedWeightGrams}g)`}
+                  </span>
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2 text-zinc-400">
+              <Scale className="w-8 h-8 text-zinc-600 mb-1" />
+              <p className="text-xs font-bold text-white">
+                {locale === "ar" ? "اختر أو أضف سلعة ميزان" : "Sélectionnez un article pesé"}
+              </p>
+              <p className="text-[11px] text-zinc-500">
+                {locale === "ar" ? "اضغط على + إضافة سلعة للبدء" : "Cliquez sur + Nouvel Article"}
+              </p>
             </div>
-
-            <button
-              type="button"
-              onClick={handleAddToCart}
-              className="h-9.5 w-full rounded-xl bg-[#14B8A6] hover:bg-[#2DD4BF] text-[#041E1B] font-black text-xs shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99] transition-all"
-            >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>
-                {calcMode === "weight"
-                  ? locale === "ar"
-                    ? `إضافة للسلة (${computedTotalFromWeight.toFixed(2)} MAD)`
-                    : `Ajouter au Panier (${computedTotalFromWeight.toFixed(2)} MAD)`
-                  : locale === "ar"
-                  ? `إضافة للسلة (${currentTargetAmount.toFixed(2)} MAD • ${computedWeightGrams}g)`
-                  : `Ajouter au Panier (${currentTargetAmount.toFixed(2)} MAD • ${computedWeightGrams}g)`}
-              </span>
-            </button>
-          </div>
+          )}
         </div>
       </div>
 
       {/* Modal: Add Custom PLU Weighted Item */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fadeIn">
-          <div className="w-full max-w-sm rounded-2xl bg-[#0D1116] border border-white/[0.12] p-5 space-y-4 shadow-2xl">
+          <div className="w-full max-w-sm rounded-2xl bg-[#0D0D10] border border-white/[0.12] p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Scale className="w-4 h-4 text-[#14B8A6]" />
+                <Scale className="w-4 h-4 text-zinc-400" />
                 <span>{locale === "ar" ? "إضافة سلعة جديدة للميزان (PLU)" : "Nouvel Article Pesé (PLU)"}</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="text-zinc-400 hover:text-white p-1"
+                className="text-zinc-400 hover:text-white p-1 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -548,65 +588,64 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                   value={newPluCode}
                   onChange={(e) => setNewPluCode(e.target.value)}
                   placeholder="4020"
-                  maxLength={6}
+                  className="w-full h-9 px-3 bg-[#111113] border border-white/[0.08] focus:border-white rounded-lg text-white font-mono"
                   required
-                  className="w-full h-8 px-2.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono font-bold focus:outline-none focus:border-[#14B8A6]"
                 />
               </div>
 
               <div>
                 <label className="block text-zinc-400 font-semibold mb-1">
-                  {locale === "ar" ? "اسم السلعة (عربي):" : "Nom de l'article (Arabe) :"}
+                  {locale === "ar" ? "اسم السلعة بالعربية:" : "Nom en Arabe :"}
                 </label>
                 <input
                   type="text"
                   value={newNameAr}
                   onChange={(e) => setNewNameAr(e.target.value)}
-                  placeholder="مثال: تمر بلدي، زيتون، لوز..."
-                  className="w-full h-8 px-2.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white focus:outline-none focus:border-[#14B8A6]"
+                  placeholder="مثال: زيتون أحمر مشرمل"
+                  className="w-full h-9 px-3 bg-[#111113] border border-white/[0.08] focus:border-white rounded-lg text-white"
                 />
               </div>
 
               <div>
                 <label className="block text-zinc-400 font-semibold mb-1">
-                  {locale === "ar" ? "اسم السلعة (فرنسي أو عام):" : "Nom de l'article (Français) :"}
+                  {locale === "ar" ? "اسم السلعة بالفرنسية (أو اللاتينية):" : "Nom en Français :"}
                 </label>
                 <input
                   type="text"
                   value={newNameFr}
                   onChange={(e) => setNewNameFr(e.target.value)}
-                  placeholder="Ex: Olives Beldi, Amandes..."
+                  placeholder="Ex: Olives Rouges"
+                  className="w-full h-9 px-3 bg-[#111113] border border-white/[0.08] focus:border-white rounded-lg text-white"
                   required
-                  className="w-full h-8 px-2.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white focus:outline-none focus:border-[#14B8A6]"
                 />
               </div>
 
               <div>
                 <label className="block text-zinc-400 font-semibold mb-1">
-                  {locale === "ar" ? "الثمن لكل كيلوغرام (MAD / kg):" : "Prix au Kilogramme (MAD / kg) :"}
+                  {locale === "ar" ? "السعر للكيلوغرام (MAD / kg):" : "Prix au kilo (MAD / kg) :"}
                 </label>
                 <input
                   type="number"
-                  step="0.1"
+                  step="0.01"
                   value={newPriceKg}
                   onChange={(e) => setNewPriceKg(e.target.value)}
-                  placeholder="24.50"
+                  placeholder="25.00"
+                  className="w-full h-9 px-3 bg-[#111113] border border-white/[0.08] focus:border-white rounded-lg text-white font-mono"
                   required
-                  className="w-full h-8 px-2.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono font-black focus:outline-none focus:border-[#14B8A6]"
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-white/[0.08]">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="h-8 px-3 rounded-lg bg-zinc-800 text-zinc-300 font-bold hover:bg-zinc-700"
+                  className="px-3 py-1.5 rounded-lg border border-white/[0.08] text-zinc-400 hover:text-white text-xs cursor-pointer"
                 >
                   {locale === "ar" ? "إلغاء" : "Annuler"}
                 </button>
                 <button
                   type="submit"
-                  className="h-8 px-4 rounded-lg bg-[#14B8A6] hover:bg-[#2DD4BF] text-[#041E1B] font-bold"
+                  className="px-4 py-1.5 rounded-lg bg-white text-zinc-950 font-bold text-xs hover:bg-zinc-200 transition-colors shadow-xs cursor-pointer"
                 >
                   {locale === "ar" ? "حفظ وإضافة" : "Enregistrer"}
                 </button>

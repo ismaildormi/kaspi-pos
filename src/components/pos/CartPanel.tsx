@@ -169,7 +169,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
           {customer ? (
             <div className="h-9 w-full px-3 rounded-lg bg-[#0D1116] border border-white/[0.08] hover:border-white/[0.16] flex items-center justify-between text-xs font-semibold text-zinc-200">
               <div className="flex items-center gap-2 truncate">
-                <UserCheck className="w-3.5 h-3.5 text-[#14B8A6] shrink-0" />
+                <UserCheck className="w-3.5 h-3.5 text-white shrink-0" />
                 <div className="truncate">
                   <span className="text-xs font-bold text-white block truncate">
                     {customer.name}
@@ -224,7 +224,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             onClick={() => setPricingTier("wholesale")}
             className={`flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
               pricingTier === "wholesale"
-                ? "bg-[#14B8A6] text-[#041E1B] font-bold text-xs rounded-md shadow-xs"
+                ? "bg-white text-zinc-950 font-bold text-xs rounded-md shadow-xs"
                 : "text-zinc-400 hover:text-white font-semibold text-xs rounded-md"
             }`}
           >
@@ -244,7 +244,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             }
             className={`w-full py-1 px-2 rounded text-[11px] font-bold border transition cursor-pointer ${
               loyaltyPointsToRedeem > 0
-                ? "bg-[#14B8A6]/20 border-[#14B8A6] text-[#2DD4BF]"
+                ? "bg-white text-zinc-950 border-white font-bold"
                 : "bg-zinc-900 border-white/10 text-zinc-300 hover:bg-zinc-850 hover:text-white"
             }`}
           >
@@ -563,8 +563,8 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             }}
             className={`h-8 rounded-lg border text-[11px] font-semibold flex items-center justify-center gap-1 cursor-pointer transition-colors ${
               isConsigneDrawerOpen
-                ? "bg-[#14B8A6] text-[#041E1B] font-bold border-[#2DD4BF]"
-                : "bg-[#11161D] hover:bg-[#171E27] border-white/[0.08] text-zinc-300 hover:text-white"
+                ? "bg-white text-zinc-950 font-bold border-white"
+                : "bg-[#111113] hover:bg-[#18181B] border-white/[0.08] text-zinc-300 hover:text-white"
             }`}
           >
             <RefreshCw className="w-3 h-3" />
@@ -575,7 +575,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             type="button"
             onClick={() => holdCurrentCart()}
             disabled={cart.length === 0}
-            className="h-8 rounded-lg bg-[#11161D] hover:bg-[#171E27] disabled:opacity-30 disabled:cursor-not-allowed border border-white/[0.08] text-[11px] font-semibold text-zinc-300 hover:text-white flex items-center justify-center gap-1 cursor-pointer transition-colors"
+            className="h-8 rounded-lg bg-[#111113] hover:bg-[#18181B] disabled:opacity-30 disabled:cursor-not-allowed border border-white/[0.08] text-[11px] font-semibold text-zinc-300 hover:text-white flex items-center justify-center gap-1 cursor-pointer transition-colors"
           >
             <PauseCircle className="w-3 h-3" />
             <span>{locale === "ar" ? "تعليق" : "Attente"}</span>
@@ -585,7 +585,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             type="button"
             onClick={clearCart}
             disabled={cart.length === 0}
-            className="h-8 rounded-lg bg-[#11161D] hover:bg-rose-950/40 hover:border-rose-500/40 disabled:opacity-30 disabled:cursor-not-allowed border border-white/[0.08] text-[11px] font-semibold text-zinc-300 hover:text-rose-300 flex items-center justify-center gap-1 cursor-pointer transition-colors"
+            className="h-8 rounded-lg bg-[#111113] hover:bg-[#18181B] disabled:opacity-30 disabled:cursor-not-allowed border border-white/[0.08] text-[11px] font-semibold text-zinc-300 hover:text-white flex items-center justify-center gap-1 cursor-pointer transition-colors"
           >
             <Trash2 className="w-3 h-3" />
             <span>{locale === "ar" ? "إفراغ" : "Vider"}</span>
@@ -594,11 +594,11 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
       </div>
 
       {/* Zone R4: Square Register Totals & Full-Width Charge CTA Button */}
-      <div className="p-3.5 border-t border-white/[0.08] bg-[#070A0D] space-y-2.5">
+      <div className="p-3.5 border-t border-white/[0.08] bg-[#09090B] space-y-2.5">
         {/* Consigne Drawer Popover */}
         {isConsigneDrawerOpen && (
-          <div className="p-2.5 rounded-xl bg-[#0D1116] border border-teal-500/30 space-y-1.5 animate-fadeIn">
-            <div className="flex items-center justify-between text-[10px] font-mono font-bold text-teal-400">
+          <div className="p-2.5 rounded-xl bg-[#111113] border border-white/[0.12] space-y-1.5 animate-fadeIn">
+            <div className="flex items-center justify-between text-[10px] font-mono font-bold text-zinc-300">
               <span>{locale === "ar" ? "رهن القنينات والصناديق (Consigne)" : "Consignes Bouteilles & Casiers"}</span>
               <button
                 type="button"
@@ -612,7 +612,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
               <button
                 type="button"
                 onClick={() => handleConsigneDeposit("gas_deposit", 100)}
-                className="py-1 px-2 rounded-lg bg-zinc-900 border border-teal-500/30 hover:border-teal-400 text-teal-300 flex items-center justify-between cursor-pointer"
+                className="py-1 px-2 rounded-lg bg-[#18181B] border border-white/[0.08] hover:border-white/20 text-white flex items-center justify-between cursor-pointer"
               >
                 <span>{locale === "ar" ? "+ الغاز" : "+ Gaz"}</span>
                 <span className="font-mono font-black">+100 DH</span>
@@ -620,7 +620,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
               <button
                 type="button"
                 onClick={() => handleConsigneDeposit("gas_return", -100)}
-                className="py-1 px-2 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-zinc-500 text-zinc-300 flex items-center justify-between cursor-pointer"
+                className="py-1 px-2 rounded-lg bg-[#18181B] border border-white/[0.08] hover:border-white/20 text-zinc-300 flex items-center justify-between cursor-pointer"
               >
                 <span>{locale === "ar" ? "- إرجاع الغاز" : "- Retour Gaz"}</span>
                 <span className="font-mono font-black">-100 DH</span>
@@ -628,7 +628,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
               <button
                 type="button"
                 onClick={() => handleConsigneDeposit("crate_deposit", 15)}
-                className="py-1 px-2 rounded-lg bg-zinc-900 border border-teal-500/30 hover:border-teal-400 text-teal-300 flex items-center justify-between cursor-pointer"
+                className="py-1 px-2 rounded-lg bg-[#18181B] border border-white/[0.08] hover:border-white/20 text-white flex items-center justify-between cursor-pointer"
               >
                 <span>{locale === "ar" ? "+ الصندوق" : "+ Casier"}</span>
                 <span className="font-mono font-black">+15 DH</span>
@@ -636,7 +636,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
               <button
                 type="button"
                 onClick={() => handleConsigneDeposit("crate_return", -15)}
-                className="py-1 px-2 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-zinc-500 text-zinc-300 flex items-center justify-between cursor-pointer"
+                className="py-1 px-2 rounded-lg bg-[#18181B] border border-white/[0.08] hover:border-white/20 text-zinc-300 flex items-center justify-between cursor-pointer"
               >
                 <span>{locale === "ar" ? "- إرجاع الصندوق" : "- Retour Casier"}</span>
                 <span className="font-mono font-black">-15 DH</span>
@@ -706,7 +706,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             <span className="text-zinc-300">{taxTotal.toFixed(2)} MAD</span>
           </div>
           {discountTotal > 0 && (
-            <div className="flex justify-between text-teal-400 font-mono font-bold">
+            <div className="flex justify-between text-zinc-300 font-mono font-bold">
               <span>{t("discount")}</span>
               <span>-{discountTotal.toFixed(2)} MAD</span>
             </div>
@@ -718,7 +718,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
           type="button"
           onClick={openPaymentModal}
           disabled={cart.length === 0}
-          className="h-12 w-full rounded-xl bg-[#14B8A6] hover:bg-[#2DD4BF] text-[#041E1B] font-black text-sm shadow-[0_8px_24px_-6px_rgba(20,184,166,0.45)] flex items-center justify-between px-4 cursor-pointer active:scale-[0.99] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:pointer-events-none"
+          className="h-12 w-full rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-black text-sm shadow-xs flex items-center justify-between px-4 cursor-pointer active:scale-[0.99] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:pointer-events-none"
         >
           <span className="flex items-center gap-2 font-sans font-extrabold text-sm">
             <CreditCard className="w-4 h-4 stroke-[2.5]" />

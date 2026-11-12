@@ -31,18 +31,24 @@ export default function DashboardLayout({
   const { t, locale } = useAppDictionary();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userName, setUserName] = useState<string>("");
-  const [shopName, setShopName] = useState<string>("KASPI POS");
-  const [storeLogoUrl, setStoreLogoUrl] = useState<string>("");
-  const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
-  const [isSectorModalOpen, setIsSectorModalOpen] = useState(false);
-  const { storeType, setStoreProfile } = usePosStore();
-
   const isPlaceholderName = (n?: string | null) =>
     !n ||
     n.trim() === "" ||
     n.trim().toUpperCase() === "KASPI POS" ||
     n.trim() === "كسب POS" ||
     n.trim() === "Magasin Principal";
+
+  const [shopName, setShopName] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("kaspi_store_name");
+      if (saved && !isPlaceholderName(saved)) return saved.trim();
+    }
+    return "ASIMA";
+  });
+  const [storeLogoUrl, setStoreLogoUrl] = useState<string>("");
+  const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
+  const [isSectorModalOpen, setIsSectorModalOpen] = useState(false);
+  const { storeType, setStoreProfile } = usePosStore();
 
   const localizeHref = (path: string) => `/${locale}${path}`;
 

@@ -388,14 +388,14 @@ export default function PosPage() {
 
             {/* Middle: Square Register Segmented View Switcher */}
             {storeType === "grocery" && (
-              <div className="h-11 p-1 rounded-xl bg-[#0D1014] border border-white/[0.08] flex items-center gap-1 shrink-0">
+              <div className="h-11 p-1 rounded-xl bg-[#111113] border border-white/[0.08] flex items-center gap-1 shrink-0">
                 <button
                   type="button"
                   onClick={() => setGroceryView("grid")}
-                  className={`h-9 px-3 rounded-lg font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all cursor-pointer ${
+                  className={`h-9 px-3 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                     groceryView === "grid"
-                      ? "bg-[#14B8A6] text-[#041E1B]"
-                      : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
+                      ? "bg-white text-zinc-950"
+                      : "text-zinc-400 hover:text-white hover:bg-[#18181B]"
                   }`}
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
@@ -407,10 +407,10 @@ export default function PosPage() {
                 <button
                   type="button"
                   onClick={() => setGroceryView("plu")}
-                  className={`h-9 px-3 rounded-lg font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all cursor-pointer ${
+                  className={`h-9 px-3 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                     groceryView === "plu"
-                      ? "bg-[#14B8A6] text-[#041E1B]"
-                      : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
+                      ? "bg-white text-zinc-950"
+                      : "text-zinc-400 hover:text-white hover:bg-[#18181B]"
                   }`}
                 >
                   <Scale className="w-3.5 h-3.5" />
@@ -422,10 +422,10 @@ export default function PosPage() {
                 <button
                   type="button"
                   onClick={() => setGroceryView("price_check")}
-                  className={`h-9 px-3 rounded-lg font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all cursor-pointer ${
+                  className={`h-9 px-3 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                     groceryView === "price_check"
-                      ? "bg-[#14B8A6] text-[#041E1B]"
-                      : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
+                      ? "bg-white text-zinc-950"
+                      : "text-zinc-400 hover:text-white hover:bg-[#18181B]"
                   }`}
                 >
                   <ScanBarcode className="w-3.5 h-3.5" />
@@ -457,7 +457,7 @@ export default function PosPage() {
             </div>
 
             {storeType === "grocery" && (
-              <div className="h-8 p-0.5 rounded-lg bg-[#0D1014] border border-white/[0.08] flex items-center gap-0.5 shrink-0">
+              <div className="h-8 p-0.5 rounded-lg bg-[#111113] border border-white/[0.08] flex items-center gap-0.5 shrink-0">
                 <span className="font-mono text-[10px] font-bold text-zinc-500 px-2">
                   {locale === "ar" ? "الكمية:" : locale === "fr" ? "QTÉ:" : "QTY:"}
                 </span>
@@ -474,7 +474,7 @@ export default function PosPage() {
                     onClick={() => handleSetScanMultiplier(item.m)}
                     className={`h-7 px-2 rounded-md font-mono text-[11px] transition-colors cursor-pointer ${
                       scanMultiplier === item.m
-                        ? "bg-[#14B8A6] text-[#041E1B] font-black"
+                        ? "bg-white text-zinc-950 font-black shadow-xs"
                         : "text-zinc-400 hover:text-white font-bold"
                     }`}
                   >
