@@ -43,13 +43,27 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
   const { heldCarts } = usePosStore();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  const isPlaceholderName = (n?: string | null) =>
+    !n ||
+    n.trim() === "" ||
+    n.trim().toUpperCase() === "KASPI POS" ||
+    n.trim() === "كسب POS" ||
+    n.trim() === "Magasin Principal";
+
+  const resolveCleanStoreName = (candidate?: string | null): string => {
+    if (!isPlaceholderName(candidate)) return candidate!.trim();
+    if (!isPlaceholderName(storeName)) return storeName.trim();
+    if (!isPlaceholderName(cashierName)) return cashierName.trim();
+    return "ASIMA";
+  };
+
   // Store identity resolution matching dashboard/layout.tsx
   const [displayShopName, setDisplayShopName] = useState<string>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("kaspi_store_name");
-      if (saved && saved !== "KASPI POS" && saved !== "Magasin Principal") return saved;
+      if (!isPlaceholderName(saved)) return saved!.trim();
     }
-    return storeName && storeName !== "Magasin Principal" && storeName !== "KASPI POS" ? storeName : "ASIMA";
+    return resolveCleanStoreName(storeName);
   });
 
   const [displayLogo, setDisplayLogo] = useState<string>(() => {
@@ -65,7 +79,11 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
     const syncStoreIdentity = () => {
       const savedName = localStorage.getItem("kaspi_store_name");
       const savedLogo = localStorage.getItem("kaspi_store_logo");
-      if (savedName) setDisplayShopName(savedName);
+      if (!isPlaceholderName(savedName)) {
+        setDisplayShopName(savedName!.trim());
+      } else {
+        setDisplayShopName(resolveCleanStoreName());
+      }
       if (savedLogo) setDisplayLogo(savedLogo);
     };
     syncStoreIdentity();
@@ -73,9 +91,11 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
     fetch("/api/v1/settings")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (data?.settings?.shopName) {
-          setDisplayShopName(data.settings.shopName);
-          localStorage.setItem("kaspi_store_name", data.settings.shopName);
+        if (!isPlaceholderName(data?.settings?.shopName)) {
+          setDisplayShopName(data.settings.shopName.trim());
+          localStorage.setItem("kaspi_store_name", data.settings.shopName.trim());
+        } else {
+          setDisplayShopName(resolveCleanStoreName());
         }
         if (data?.settings?.logoUrl) {
           setDisplayLogo(data.settings.logoUrl);
@@ -85,7 +105,9 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
       .catch(() => {});
 
     const handleProfileUpdate = (e: any) => {
-      if (e.detail?.shopName) setDisplayShopName(e.detail.shopName);
+      if (!isPlaceholderName(e.detail?.shopName)) {
+        setDisplayShopName(e.detail.shopName.trim());
+      }
       if (e.detail?.logoUrl !== undefined) setDisplayLogo(e.detail.logoUrl);
     };
 

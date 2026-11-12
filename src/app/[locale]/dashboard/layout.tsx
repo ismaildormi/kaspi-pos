@@ -37,13 +37,22 @@ export default function DashboardLayout({
   const [isSectorModalOpen, setIsSectorModalOpen] = useState(false);
   const { storeType, setStoreProfile } = usePosStore();
 
+  const isPlaceholderName = (n?: string | null) =>
+    !n ||
+    n.trim() === "" ||
+    n.trim().toUpperCase() === "KASPI POS" ||
+    n.trim() === "كسب POS" ||
+    n.trim() === "Magasin Principal";
+
   const localizeHref = (path: string) => `/${locale}${path}`;
 
   useEffect(() => {
     const handleVaultEvent = () => setIsOwnerModalOpen(true);
     const handleSectorEvent = () => setIsSectorModalOpen(true);
     const handleProfileUpdate = (e: any) => {
-      if (e.detail?.shopName) setShopName(e.detail.shopName);
+      if (e.detail?.shopName && !isPlaceholderName(e.detail.shopName)) {
+        setShopName(e.detail.shopName.trim());
+      }
       if (e.detail?.logoUrl !== undefined) setStoreLogoUrl(e.detail.logoUrl);
     };
 
@@ -74,14 +83,14 @@ export default function DashboardLayout({
               meData.data.user.email.split("@")[0]
           );
         }
-        if (
-          settingsData?.settings?.shopName ||
-          meData?.data?.currentTenant?.displayName
-        ) {
-          setShopName(
-            settingsData?.settings?.shopName ||
-              meData?.data?.currentTenant?.displayName
-          );
+        const tenantDisplayName = meData?.data?.currentTenant?.displayName;
+        const candidateShop = settingsData?.settings?.shopName;
+        if (!isPlaceholderName(candidateShop)) {
+          setShopName(candidateShop!.trim());
+        } else if (!isPlaceholderName(tenantDisplayName)) {
+          setShopName(tenantDisplayName!.trim());
+        } else {
+          setShopName("ASIMA");
         }
         if (settingsData?.settings?.logoUrl) {
           setStoreLogoUrl(settingsData.settings.logoUrl);

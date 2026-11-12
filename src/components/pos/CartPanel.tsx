@@ -722,7 +722,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
         >
           <span className="flex items-center gap-2 font-sans font-extrabold text-sm">
             <CreditCard className="w-4 h-4 stroke-[2.5]" />
-            <span>{t("checkout")} (F10)</span>
+            <span>{t("checkout")}</span>
           </span>
           <span className="font-mono font-black text-base tabular-nums">
             {grandTotal.toFixed(2)} MAD

@@ -128,8 +128,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
 
   const baseProducts = useMemo(() => {
     if (storeType === "grocery") {
-      const nonGrocerySkus = ["DEMO-RES-", "DEMO-FAS-", "DEMO-ELC-", "DEMO-BUT-", "DEMO-BAK-"];
-      const filtered = products.filter(
+      const nonGrocerySkus = ["DEMO-RES-", "DEMO-FAS-", "DEMO-ELC-", "DEMO-BUT-", "DEMO-BAK-", "DEMO-GRO-"];
+      return products.filter(
         (p) =>
           !nonGrocerySkus.some(
             (prefix) =>
@@ -137,14 +137,6 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
               p.barcode?.toUpperCase().startsWith(prefix)
           )
       );
-
-      const hasDemo = filtered.some((p) => p.sku?.startsWith("DEMO-GRO-"));
-      if (hasDemo || filtered.length === 0) {
-        const existingSkus = new Set(filtered.map((p) => p.sku));
-        const missingDemos = MOROCCAN_GROCERY_DEMO_ITEMS.filter((d) => !existingSkus.has(d.sku));
-        return [...filtered, ...missingDemos];
-      }
-      return filtered;
     }
     return products;
   }, [products, storeType]);
@@ -286,13 +278,15 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
               </div>
 
               {inCartQty > 0 ? (
-                <span className="px-2.5 py-0.5 rounded-md bg-[#14B8A6] text-[#041E1B] font-mono font-black text-[11px] shadow-sm">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#14B8A6] text-[#041E1B] font-mono font-black text-[11px] shadow-[0_0_12px_rgba(20,184,166,0.45)] border border-[#2DD4BF]">
                   ×{inCartQty}
                 </span>
               ) : (
                 product.trackStock && (
                   <span className="px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.07] font-mono text-[10.5px] font-semibold text-zinc-300">
-                    Stock: {product.stockQuantity ?? 0}
+                    {locale === "ar"
+                      ? `المخزون: ${product.stockQuantity ?? 0}`
+                      : `Stock: ${product.stockQuantity ?? 0}`}
                   </span>
                 )
               )}

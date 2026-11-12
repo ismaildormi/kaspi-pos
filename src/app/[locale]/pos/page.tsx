@@ -458,13 +458,15 @@ export default function PosPage() {
 
             {storeType === "grocery" && (
               <div className="h-8 p-0.5 rounded-lg bg-[#0D1014] border border-white/[0.08] flex items-center gap-0.5 shrink-0">
-                <span className="font-mono text-[10px] font-bold text-zinc-500 px-2">QTY</span>
+                <span className="font-mono text-[10px] font-bold text-zinc-500 px-2">
+                  {locale === "ar" ? "الكمية:" : locale === "fr" ? "QTÉ:" : "QTY:"}
+                </span>
                 {[
-                  { m: 1, label: "×1" },
-                  { m: 2, label: "×2" },
-                  { m: 6, label: "×6 Pack" },
-                  { m: 12, label: "×12 Carton" },
-                  { m: 24, label: "×24 Caisse" },
+                  { m: 1, labelAr: "×1", labelFr: "×1", labelEn: "×1" },
+                  { m: 2, labelAr: "×2", labelFr: "×2", labelEn: "×2" },
+                  { m: 6, labelAr: "×6 باك", labelFr: "×6 Pack", labelEn: "×6 Pack" },
+                  { m: 12, labelAr: "×12 كرتونة", labelFr: "×12 Carton", labelEn: "×12 Carton" },
+                  { m: 24, labelAr: "×24 صندوق", labelFr: "×24 Caisse", labelEn: "×24 Crate" },
                 ].map((item) => (
                   <button
                     key={item.m}
@@ -476,7 +478,7 @@ export default function PosPage() {
                         : "text-zinc-400 hover:text-white font-bold"
                     }`}
                   >
-                    {item.label}
+                    {locale === "ar" ? item.labelAr : locale === "en" ? item.labelEn : item.labelFr}
                   </button>
                 ))}
               </div>
@@ -491,7 +493,10 @@ export default function PosPage() {
                 onReady={() => setLoaderDone(true)}
               />
             ) : groceryView === "plu" && storeType === "grocery" ? (
-              <SquarePluScalePanel onBack={() => setGroceryView("grid")} />
+              <SquarePluScalePanel
+                onBack={() => setGroceryView("grid")}
+                products={products}
+              />
             ) : (
               <ProductGrid
                 products={products}

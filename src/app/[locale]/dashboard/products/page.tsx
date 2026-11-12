@@ -23,12 +23,12 @@ import {
 } from "lucide-react";
 import { generateProductImageUrl } from "@/lib/pollinations";
 import { uploadProductImage } from "@/lib/supabase-storage";
+import { compressImage } from "@/lib/image-compression";
 import { useAppDictionary } from "@/i18n/schema";
 import { getCachedData, setCachedData } from "@/lib/cache/client-cache";
 import { usePosStore } from "@/client/store/usePosStore";
 import { KineticProductCubeBarcodeEmpty } from "@/components/ui/KineticEmptyState";
 import { FloatingCommerceCanvas } from "@/components/ui/FloatingCommerceCanvas";
-import { MOROCCAN_GROCERY_DEMO_ITEMS } from "@/components/pos/ProductGrid";
 import {
   Scale,
   Shirt,
@@ -375,14 +375,51 @@ export default function ProductsListPage() {
     if (!file || !imageModalProduct) return;
 
     setIsUploadingToSupabase(true);
-    const toastId = toast.loading("Téléversement vers Supabase Storage...");
+    const toastId = toast.loading(
+      locale === "ar"
+        ? "معالجة الصورة وإزالة الخلفية تلقائياً..."
+        : "Traitement et détourage automatique de l'image..."
+    );
     try {
-      const publicUrl = await uploadProductImage(file, "tenant-default");
-      setNewImageUrl(publicUrl);
-      toast.success("Image uploadée sur Supabase Storage avec succès !", { id: toastId });
+      // 100% Client-side compression & auto-cutout (<40KB WebP)
+      const compressed = await compressImage(file, {
+        autoRemoveBackground: true,
+        generateDataUrl: true,
+        maxDimension: 800,
+      });
+
+      const optimizedFile = new File(
+        [compressed.blob],
+        file.name.replace(/\.[^/.]+$/, ".webp"),
+        { type: compressed.mimeType || "image/webp" }
+      );
+
+      try {
+        const publicUrl = await uploadProductImage(optimizedFile, "tenant-default");
+        setNewImageUrl(publicUrl);
+        toast.success(
+          locale === "ar"
+            ? "تم تحسين ورفع الصورة بنجاح !"
+            : "Image détourée et uploadée avec succès !",
+          { id: toastId }
+        );
+      } catch (uploadErr) {
+        // Fallback to optimized dataUrl if upload server is unreachable
+        if (compressed.dataUrl) {
+          setNewImageUrl(compressed.dataUrl);
+          toast.success(
+            locale === "ar"
+              ? "تم تحسين الصورة محلياً وحفظها !"
+              : "Image détourée et enregistrée localement !",
+            { id: toastId }
+          );
+        } else {
+          throw uploadErr;
+        }
+      }
     } catch (err: any) {
-      console.error("[Supabase Storage Error]:", err);
-      toast.error(err.message || "Échec de l'upload vers Supabase", { id: toastId });
+      console.error("[Storage / Compression Error]:", err);
+      toast.error(err.message || "Échec du traitement de l'image", { id: toastId });
     } finally {
       setIsUploadingToSupabase(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -439,28 +476,11 @@ export default function ProductsListPage() {
   const filteredProducts = useMemo(() => {
     let list = products;
     if (storeType === "grocery") {
-      const nonGrocerySkus = ["DEMO-RES-", "DEMO-FAS-", "DEMO-ELC-", "DEMO-BUT-", "DEMO-BAK-"];
+      const nonGrocerySkus = ["DEMO-RES-", "DEMO-FAS-", "DEMO-ELC-", "DEMO-BUT-", "DEMO-BAK-", "DEMO-GRO-"];
       list = list.filter((p) => {
         const code = ((p.sku || "") + (p.barcode || "")).toUpperCase();
         return !nonGrocerySkus.some((prefix) => code.includes(prefix));
       });
-      const hasDemo = list.some((p) => p.sku?.startsWith("DEMO-GRO-"));
-      if (hasDemo || list.length === 0) {
-        const existingSkus = new Set(list.map((p) => p.sku));
-        const missing = MOROCCAN_GROCERY_DEMO_ITEMS.filter((d) => !existingSkus.has(d.sku)).map((d) => ({
-          id: d.id,
-          name: d.name,
-          sku: d.sku,
-          barcode: d.barcode,
-          salePrice: d.salePrice,
-          wholesalePrice: d.wholesalePrice,
-          taxRate: d.taxRate || 20,
-          trackStock: true,
-          stockQuantity: d.stockQuantity,
-          categoryName: d.categoryName,
-        }));
-        list = [...list, ...missing];
-      }
     }
     const q = searchQuery.trim().toLowerCase();
     if (!q) return list;
@@ -627,8 +647,8 @@ export default function ProductsListPage() {
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center gap-2 text-zinc-600">
-                      <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xl font-black text-white">
-                        {initial}
+                      <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
+                        <Package className="w-6 h-6 stroke-[1.8] text-zinc-400" />
                       </div>
                       <span className="text-[11px] font-mono text-zinc-500">
                         {t.products.noPhoto}
@@ -745,8 +765,8 @@ export default function ProductsListPage() {
                     )}
                   </div>
 
-                  <div className="pt-3 border-t border-zinc-800/80 flex items-center justify-between">
-                    <div>
+                  <div className="pt-3 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
                       <span className="text-[10px] uppercase tracking-wider text-zinc-500 block">
                         {t.products.priceTtc}
                       </span>
@@ -758,7 +778,7 @@ export default function ProductsListPage() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         type="button"
                         onClick={() => handlePrintProductBarcode(product)}

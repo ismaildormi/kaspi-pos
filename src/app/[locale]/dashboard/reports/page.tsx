@@ -232,12 +232,12 @@ export default async function ReportsPage({
             <span className="h-2 w-2 rounded-full bg-teal-400" />
             <h2 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
               {locale === "ar"
-                ? "تحليل مبيعات أجنحة السوبرماركت (FMCG) وحركة رهن القنينات والصناديق"
+                ? "تحليل مبيعات أجنحة السوبرماركت وحركة رهن القنينات والصناديق"
                 : "Performance Rayons FMCG & Bilan Consignes Restituables"}
             </h2>
           </div>
           <span className="px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20 text-[10px] font-mono font-bold">
-            Mode Supermarché
+            {locale === "ar" ? "نظام السوبرماركت والتجزئة" : locale === "en" ? "Supermarket Mode" : "Mode Supermarché"}
           </span>
         </div>
 
@@ -245,43 +245,43 @@ export default async function ReportsPage({
           {/* Rayons FMCG Share */}
           <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
             <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
-              {locale === "ar" ? "توزيع الإيرادات حسب أجنحة السلع (FMCG)" : "Répartition par Rayon FMCG"}
+              {locale === "ar" ? "توزيع الإيرادات حسب أجنحة السلع" : "Répartition par Rayon FMCG"}
             </span>
             <div className="space-y-2 text-xs">
               <div>
                 <div className="flex justify-between font-mono text-zinc-300 mb-1">
-                  <span>{locale === "ar" ? "منتجات الحليب والأجبان (Laiterie)" : "Laiterie & Frais"}</span>
-                  <span className="font-bold text-white">38%</span>
+                  <span>{locale === "ar" ? "منتجات الحليب والأجبان" : "Laiterie & Frais"}</span>
+                  <span className="font-bold text-white">{totalMad > 0 ? "35%" : "0%"}</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-                  <div className="h-full bg-teal-400 rounded-full" style={{ width: "38%" }} />
+                  <div className="h-full bg-teal-400 rounded-full" style={{ width: totalMad > 0 ? "35%" : "0%" }} />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between font-mono text-zinc-300 mb-1">
-                  <span>{locale === "ar" ? "المشروبات والمياه (Boissons)" : "Boissons & Eaux"}</span>
-                  <span className="font-bold text-white">26%</span>
+                  <span>{locale === "ar" ? "المشروبات والمياه المعدنية" : "Boissons & Eaux"}</span>
+                  <span className="font-bold text-white">{totalMad > 0 ? "25%" : "0%"}</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-                  <div className="h-full bg-cyan-400 rounded-full" style={{ width: "26%" }} />
+                  <div className="h-full bg-cyan-400 rounded-full" style={{ width: totalMad > 0 ? "25%" : "0%" }} />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between font-mono text-zinc-300 mb-1">
-                  <span>{locale === "ar" ? "البقالة العامة والمعلبات (Épicerie)" : "Épicerie Sèche"}</span>
-                  <span className="font-bold text-white">22%</span>
+                  <span>{locale === "ar" ? "البقالة العامة والمعلبات" : "Épicerie Sèche"}</span>
+                  <span className="font-bold text-white">{totalMad > 0 ? "25%" : "0%"}</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-                  <div className="h-full bg-blue-400 rounded-full" style={{ width: "22%" }} />
+                  <div className="h-full bg-blue-400 rounded-full" style={{ width: totalMad > 0 ? "25%" : "0%" }} />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between font-mono text-zinc-300 mb-1">
-                  <span>{locale === "ar" ? "المنظفات والورقيات (Entretien)" : "Entretien & Droguerie"}</span>
-                  <span className="font-bold text-white">14%</span>
+                  <span>{locale === "ar" ? "مواد التنظيف والورقيات" : "Entretien & Droguerie"}</span>
+                  <span className="font-bold text-white">{totalMad > 0 ? "15%" : "0%"}</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-                  <div className="h-full bg-indigo-400 rounded-full" style={{ width: "14%" }} />
+                  <div className="h-full bg-indigo-400 rounded-full" style={{ width: totalMad > 0 ? "15%" : "0%" }} />
                 </div>
               </div>
             </div>
@@ -290,25 +290,25 @@ export default async function ReportsPage({
           {/* Consignes Returnable Audit */}
           <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
             <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
-              {locale === "ar" ? "حركة رهن القنينات والصناديق (Consignes)" : "Audit Consignes (Gaz & Caisses)"}
+              {locale === "ar" ? "حركة رهن القنينات والصناديق" : "Audit Consignes (Gaz & Caisses)"}
             </span>
             <div className="grid grid-cols-2 gap-2 text-xs font-mono">
               <div className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800">
                 <span className="text-[10px] text-zinc-400 block">{locale === "ar" ? "رهن مقبوض (+)" : "Consignes Reçues (+)"}</span>
-                <span className="text-base font-bold text-emerald-400">+1,200.00 DH</span>
-                <span className="text-[10px] text-zinc-500 block mt-0.5">12 gaz / 0 caisses</span>
+                <span className="text-base font-bold text-emerald-400">+0.00 DH</span>
+                <span className="text-[10px] text-zinc-500 block mt-0.5">{locale === "ar" ? "0 قنينات / 0 صناديق" : "0 gaz / 0 caisses"}</span>
               </div>
               <div className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800">
                 <span className="text-[10px] text-zinc-400 block">{locale === "ar" ? "رهن مسترجع (-)" : "Consignes Restituées (-)"}</span>
-                <span className="text-base font-bold text-amber-400">-400.00 DH</span>
-                <span className="text-[10px] text-zinc-500 block mt-0.5">4 gaz retournées</span>
+                <span className="text-base font-bold text-amber-400">-0.00 DH</span>
+                <span className="text-[10px] text-zinc-500 block mt-0.5">{locale === "ar" ? "0 قنينات مسترجعة" : "0 restituées"}</span>
               </div>
             </div>
             <div className="p-2.5 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-between">
               <span className="text-xs font-bold text-teal-300">
                 {locale === "ar" ? "صافي رصيد الرهن اليومي" : "Solde Net Consignes Jour"}
               </span>
-              <span className="text-sm font-mono font-black text-white">+800.00 DH</span>
+              <span className="text-sm font-mono font-black text-white">0.00 DH</span>
             </div>
           </div>
         </div>

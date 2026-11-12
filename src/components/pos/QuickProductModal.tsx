@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
-import { X, Plus, Package, Barcode, Sparkles, Loader2, Check } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { X, Plus, Package, Barcode, Sparkles, Loader2, Check, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDictionary } from "@/i18n/schema";
 import { offlineDb } from "@/client/db";
 import { setCachedData, getCachedData } from "@/lib/cache/client-cache";
 import { playBarcodeScanSound, playTapSound } from "@/lib/audio";
+import { compressImage } from "@/lib/image-compression";
 import type { PosProduct } from "@/client/store/usePosStore";
 
 interface QuickProductModalProps {
@@ -28,8 +29,46 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
   const [categoryName, setCategoryName] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompressingImage, setIsCompressingImage] = useState(false);
+  const quickFileInputRef = useRef<HTMLInputElement | null>(null);
 
   if (!isOpen) return null;
+
+  const handleQuickFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsCompressingImage(true);
+    const toastId = toast.loading(
+      locale === "ar"
+        ? "معالجة الصورة وإزالة الخلفية تلقائياً..."
+        : "Traitement et détourage automatique..."
+    );
+
+    try {
+      const res = await compressImage(file, {
+        autoRemoveBackground: true,
+        generateDataUrl: true,
+        maxDimension: 800,
+      });
+
+      if (res.dataUrl) {
+        setImageUrl(res.dataUrl);
+        toast.success(
+          locale === "ar"
+            ? "تم تحسين الصورة وإزالة الخلفية بنجاح !"
+            : "Photo traitée et détourée avec succès !",
+          { id: toastId }
+        );
+      }
+    } catch (err: any) {
+      console.error("[Quick Image Process Error]:", err);
+      toast.error(err.message || "Failed to process image", { id: toastId });
+    } finally {
+      setIsCompressingImage(false);
+      if (quickFileInputRef.current) quickFileInputRef.current.value = "";
+    }
+  };
 
   const generateBarcode = () => {
     // Generate valid 13-digit EAN with Moroccan prefix 611
@@ -290,15 +329,45 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-zinc-300 mb-1.5">
-                {locale === "ar" ? "رابط الصورة (اختياري)" : "URL Image (optionnel)"}
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-zinc-300">
+                  {locale === "ar" ? "صورة المنتج" : "Photo du Produit"}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => quickFileInputRef.current?.click()}
+                  disabled={isCompressingImage}
+                  className="text-[11px] font-bold text-teal-400 hover:text-teal-300 flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Upload className="w-3 h-3" />
+                  <span>
+                    {isCompressingImage
+                      ? locale === "ar"
+                        ? "جاري المعالجة..."
+                        : "Traitement..."
+                      : locale === "ar"
+                      ? "رفع صورة (Auto-Cutout)"
+                      : "Upload (Auto-Cutout)"}
+                  </span>
+                </button>
+                <input
+                  type="file"
+                  ref={quickFileInputRef}
+                  onChange={handleQuickFileUpload}
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                />
+              </div>
               <input
-                type="url"
+                type="text"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://..."
-                className="w-full h-10 px-3 bg-zinc-900/90 border border-zinc-800 focus:border-white rounded-xl text-xs text-white placeholder-zinc-500"
+                placeholder={
+                  locale === "ar"
+                    ? "رابط الصورة أو ارفع صورة..."
+                    : "URL image ou cliquez sur Upload..."
+                }
+                className="w-full h-10 px-3 bg-zinc-900/90 border border-zinc-800 focus:border-white rounded-xl text-xs text-white placeholder-zinc-500 font-mono"
               />
             </div>
           </div>

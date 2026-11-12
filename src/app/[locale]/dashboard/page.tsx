@@ -40,18 +40,22 @@ export default async function DashboardOverviewPage({
   let productsCount = 0;
   let salesCount = 0;
   let customersCount = 0;
+  let outOfStockCount = 0;
   let workspaceRecord: { responseBody: unknown } | null = null;
   let salesAgg: { _sum: { grandTotal: unknown } } = { _sum: { grandTotal: null } };
 
   if (!isFallbackTenant) {
     try {
-      [productsCount, salesCount, customersCount, workspaceRecord, salesAgg] =
+      [productsCount, salesCount, customersCount, outOfStockCount, workspaceRecord, salesAgg] =
         await Promise.all([
           prisma.product.count({ where: { tenantId } }).catch(() => 0),
           prisma.sale
             .count({ where: { tenantId, status: "completed" } })
             .catch(() => 0),
           prisma.customer.count({ where: { tenantId } }).catch(() => 0),
+          prisma.stockLevel
+            .count({ where: { tenantId, quantity: { lte: 0 } } })
+            .catch(() => 0),
           prisma.idempotencyRecord
             .findUnique({
               where: {
@@ -101,6 +105,10 @@ export default async function DashboardOverviewPage({
   );
 
   const totalSalesMad = Number(salesAgg?._sum?.grandTotal || 0).toFixed(2);
+  const avgBasketMad = salesCount > 0 ? (Number(totalSalesMad) / salesCount).toFixed(2) : "0.00";
+  const shelfHealthPercent = productsCount > 0
+    ? Math.max(0, Math.min(100, Math.round(((productsCount - outOfStockCount) / productsCount) * 100)))
+    : 100;
   const safeDisplayName = String(ctx.activeTenant?.displayName || t.dashboard.title);
   const safeLegalName = String(ctx.activeTenant?.legalName || safeDisplayName);
 
@@ -185,10 +193,10 @@ export default async function DashboardOverviewPage({
               <p className="text-[11px] text-zinc-400 mt-1">
                 {currentStoreType === "grocery"
                   ? locale === "ar"
-                    ? "متوسط سلة المشتريات (Panier Moyen): 84.50 MAD"
+                    ? `متوسط سلة المشتريات: ${avgBasketMad} MAD`
                     : locale === "en"
-                    ? "Average Basket: 84.50 MAD"
-                    : "Panier Moyen: 84.50 MAD"
+                    ? `Average Basket: ${avgBasketMad} MAD`
+                    : `Panier Moyen : ${avgBasketMad} MAD`
                   : t.dashboard.kpiRevenueSub}
               </p>
             </div>
@@ -203,7 +211,7 @@ export default async function DashboardOverviewPage({
               <span>
                 {currentStoreType === "grocery"
                   ? locale === "ar"
-                    ? "حركة السلع الممسوحة (FMCG)"
+                    ? "حركة السلع الممسوحة"
                     : locale === "en"
                     ? "Scanned Items & FMCG Velocity"
                     : "Articles Scannés & Rotation"
@@ -234,25 +242,25 @@ export default async function DashboardOverviewPage({
               <span>
                 {currentStoreType === "grocery"
                   ? locale === "ar"
-                    ? "تنبيهات الصلاحية (DLC) والرفوف"
+                    ? "تنبيهات الصلاحية والرفوف"
                     : locale === "en"
-                    ? "Expiry (DLC) & Shelf Alerts"
-                    : "Alertes Péremption (DLC) & Rupture"
+                    ? "Expiry & Shelf Alerts"
+                    : "Alertes Péremption & Rupture"
                   : t.dashboard.kpiProducts}
               </span>
               <AlertTriangle className="h-4 w-4 text-teal-400 group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300" />
             </div>
             <div className="mt-4">
               <div className="text-2xl font-black text-titanium-gradient font-mono tracking-tight">
-                {currentStoreType === "grocery" ? "3" : productsCount}
+                {currentStoreType === "grocery" ? outOfStockCount : productsCount}
               </div>
               <p className="text-[11px] text-zinc-400 mt-1">
                 {currentStoreType === "grocery"
                   ? locale === "ar"
-                    ? "3 مواد قريبة الانتهاء (< 15 يوم) • 2 نفدت من الرف"
+                    ? `${outOfStockCount} نفدت من الرف • 0 قريبة الانتهاء`
                     : locale === "en"
-                    ? "3 Expiring soon (<15d) • 2 Low Shelf Stock"
-                    : "3 Proches péremption (<15j) • 2 En rupture"
+                    ? `${outOfStockCount} Out of stock • 0 Expiring soon`
+                    : `${outOfStockCount} En rupture • 0 Proches péremption`
                   : t.dashboard.kpiProductsSub}
               </p>
             </div>
@@ -303,13 +311,13 @@ export default async function DashboardOverviewPage({
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <span>
                     {locale === "ar"
-                      ? "رادار رفوف السوبرماركت وتواريخ الصلاحية (DLC Radar)"
+                      ? "رادار رفوف السوبرماركت وتواريخ الصلاحية"
                       : locale === "en"
-                      ? "Supermarket Shelf & DLC Expiry Radar"
+                      ? "Supermarket Shelf & Expiry Radar"
                       : "Radar Rayons & Dates de Péremption (DLC)"}
                   </span>
                   <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20">
-                    Square Retail & Clover Duo Standard
+                    {locale === "ar" ? "معيار المتاجر العصرية" : "Square Retail Standard"}
                   </span>
                 </h3>
                 <p className="text-xs text-zinc-400 mt-0.5">
@@ -333,7 +341,7 @@ export default async function DashboardOverviewPage({
               <span className="text-[10px] font-bold text-zinc-400 block mb-1">
                 {locale === "ar" ? "سلامة الرفوف العامة" : "Santé Rayons"}
               </span>
-              <span className="text-xl font-mono font-black text-emerald-400">96.4%</span>
+              <span className="text-xl font-mono font-black text-emerald-400">{shelfHealthPercent}%</span>
               <span className="text-[10px] text-zinc-500 block mt-0.5">
                 {locale === "ar" ? "سلع سليمة ووفيرة" : "Stock conforme"}
               </span>
@@ -341,21 +349,27 @@ export default async function DashboardOverviewPage({
 
             <div className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800">
               <span className="text-[10px] font-bold text-zinc-400 block mb-1">
-                {locale === "ar" ? "أقل من 15 يوم (DLC)" : "Péremption < 15j"}
+                {locale === "ar" ? "أقل من 15 يوم صلاحية" : "Péremption < 15j"}
               </span>
-              <span className="text-xl font-mono font-black text-amber-400">3 مواد</span>
+              <span className="text-xl font-mono font-black text-amber-400">0 {locale === "ar" ? "مواد" : "articles"}</span>
               <span className="text-[10px] text-zinc-500 block mt-0.5">
-                {locale === "ar" ? "تتطلب تخفيض تصفية" : "À brader (-30%)"}
+                {locale === "ar" ? "لا توجد مواد منتهية" : "Aucun périmé"}
               </span>
             </div>
 
             <div className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800">
               <span className="text-[10px] font-bold text-zinc-400 block mb-1">
-                {locale === "ar" ? "نفاد الرف (Rupture)" : "Rupture Rayon"}
+                {locale === "ar" ? "نفاد المخزون من الرف" : "Rupture Rayon"}
               </span>
-              <span className="text-xl font-mono font-black text-red-400">2 مواد</span>
+              <span className="text-xl font-mono font-black text-red-400">{outOfStockCount} {locale === "ar" ? "مواد" : "articles"}</span>
               <span className="text-[10px] text-zinc-500 block mt-0.5">
-                {locale === "ar" ? "تحتاج طلبية موزع" : "À commander"}
+                {locale === "ar"
+                  ? outOfStockCount > 0
+                    ? "تحتاج طلبية موزع"
+                    : "المخزون متوفر بالكامل"
+                  : outOfStockCount > 0
+                  ? "À commander"
+                  : "Rayons approvisionnés"}
               </span>
             </div>
 
@@ -363,9 +377,11 @@ export default async function DashboardOverviewPage({
               <span className="text-[10px] font-bold text-zinc-400 block mb-1">
                 {locale === "ar" ? "رهن الغاز والصناديق" : "Consignes Gaz/Casiers"}
               </span>
-              <span className="text-xl font-mono font-black text-teal-300">18 مليئة • 6 فوارغ</span>
+              <span className="text-xl font-mono font-black text-teal-300">
+                {locale === "ar" ? "0 قنينات • 0 صناديق" : "0 bouteilles • 0 casiers"}
+              </span>
               <span className="text-[10px] text-zinc-500 block mt-0.5">
-                {locale === "ar" ? "رصيد الرهن النشط" : "Solde consigne"}
+                {locale === "ar" ? "رصيد الرهن الصافي" : "Solde consigne"}
               </span>
             </div>
           </div>

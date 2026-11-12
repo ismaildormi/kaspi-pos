@@ -62,8 +62,10 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
             <div>
               <h3 className="text-sm font-bold text-white">
                 {locale === "ar"
-                  ? "فاحص الثمن والصلاحية (Price & DLC Check)"
-                  : "Vérificateur de Prix & DLC"}
+                  ? "فاحص الثمن والصلاحية"
+                  : locale === "en"
+                  ? "Price & DLC Verifier"
+                  : "Vérificateur Prix & DLC"}
               </h3>
               <p className="text-[11px] text-zinc-400">
                 {locale === "ar"
@@ -75,9 +77,9 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+            className="h-8 px-3 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-xs font-bold text-zinc-300 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <span>{locale === "ar" ? "← رجوع" : locale === "en" ? "← Back" : "← Retour"}</span>
           </button>
         </div>
 
