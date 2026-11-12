@@ -91,57 +91,8 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
   const { locale } = useAppDictionary();
   const [activeTab, setActiveTab] = useState<"shelf" | "dlc" | "shrinkage">("dlc");
 
-  // Exact Reference Grocery Items matching Blueprint
-  const defaultItems = [
-    {
-      id: "prod-1",
-      name: "Sultan Habka Tea 200g",
-      aisle: "Rayon A2",
-      packInfo: "36 Pack / 12 Unit",
-      dlc: "2023-11-20",
-      dlcLabel: "Yellow",
-      dlcVariant: "yellow",
-      salePrice: 16.0,
-      stockQuantity: 12,
-      imageUrl: null,
-    },
-    {
-      id: "prod-2",
-      name: "Atlas Olive Oil 1L",
-      aisle: "Rayon B3",
-      packInfo: "36 Pack / 12 Unit",
-      dlc: "2023-11-25",
-      dlcLabel: "Orange",
-      dlcVariant: "orange",
-      salePrice: 85.0,
-      stockQuantity: 12,
-      imageUrl: null,
-    },
-    {
-      id: "prod-3",
-      name: "Couscous Royal 1kg",
-      aisle: "Rayon D1",
-      packInfo: "36 Pack / 12 Unit",
-      dlc: "2024-01-15",
-      dlcLabel: "Green",
-      dlcVariant: "green",
-      salePrice: 18.0,
-      stockQuantity: 24,
-      imageUrl: null,
-    },
-    {
-      id: "prod-4",
-      name: "Atlalus Olive Oil 1kg",
-      aisle: "Rayon A2",
-      packInfo: "36 Pack / 12 Unit",
-      dlc: "2024-01-15",
-      dlcLabel: "Green",
-      dlcVariant: "green",
-      salePrice: 78.0,
-      stockQuantity: 18,
-      imageUrl: null,
-    },
-  ];
+  // Clean universal inventory state (zero fake demo items)
+  const defaultItems: any[] = [];
 
   const [productsList, setProductsList] = useState(() => {
     if (initialProducts && initialProducts.length > 0) {
@@ -317,20 +268,39 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.05]">
-              {productsList.map((item) => {
-                const isYellow = item.dlcVariant === "yellow";
-                const isOrange = item.dlcVariant === "orange";
-                const badgeClass = isYellow
-                  ? "bg-[#F59E0B]/15 border-[#F59E0B]/30 text-[#FBBF24]"
-                  : isOrange
-                  ? "bg-[#EA580C]/15 border-[#EA580C]/30 text-[#FB923C]"
-                  : "bg-[#10B981]/15 border-[#10B981]/30 text-[#34D399]";
+              {productsList.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-14 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2.5 text-zinc-400">
+                      <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-zinc-500">
+                        <Package className="w-6 h-6 stroke-[1.8]" />
+                      </div>
+                      <p className="font-bold text-sm text-white">
+                        {locale === "ar" ? "لا توجد منتجات مسجلة في المخزون" : "Aucun article dans l'inventaire"}
+                      </p>
+                      <p className="text-xs text-zinc-500 max-w-sm">
+                        {locale === "ar"
+                          ? "أضف منتجاتك من الكتالوج أو من شاشة البيع السريع لتتبع الرفوف وتواريخ الصلاحية"
+                          : "Ajoutez vos articles depuis le catalogue ou l'écran POS pour suivre les rayons et DLC"}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                productsList.map((item) => {
+                  const isYellow = item.dlcVariant === "yellow";
+                  const isOrange = item.dlcVariant === "orange";
+                  const badgeClass = isYellow
+                    ? "bg-[#F59E0B]/15 border-[#F59E0B]/30 text-[#FBBF24]"
+                    : isOrange
+                    ? "bg-[#EA580C]/15 border-[#EA580C]/30 text-[#FB923C]"
+                    : "bg-[#10B981]/15 border-[#10B981]/30 text-[#34D399]";
 
-                return (
-                  <tr
-                    key={item.id}
-                    className="hover:bg-white/[0.03] transition-colors"
-                  >
+                  return (
+                    <tr
+                      key={item.id}
+                      className="hover:bg-white/[0.03] transition-colors"
+                    >
                     {/* Product Name + White-Background Product PNG Thumbnail */}
                     <td className="py-3.5 px-5">
                       <div className="flex items-center gap-3">
@@ -403,8 +373,9 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
                     </td>
                   </tr>
                 );
-              })}
-            </tbody>
+              })
+            )}
+          </tbody>
           </table>
         </div>
       ) : (

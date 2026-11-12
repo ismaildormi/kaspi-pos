@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Package, Plus, ArrowRight, ShoppingBag } from "lucide-react";
+import { Package, Plus, ArrowRight, ShoppingBag, MoreHorizontal, X } from "lucide-react";
 import Link from "next/link";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { playBarcodeScanSound } from "@/lib/audio";
@@ -17,6 +17,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
   const t = useTranslations("Pos");
   const { locale } = useAppDictionary();
   const { searchQuery, activeCategoryId, addToCart, updateItemQuantity, storeType, cart, pricingTier } = usePosStore();
+  const [openMenuProductId, setOpenMenuProductId] = useState<string | null>(null);
 
   const baseProducts = useMemo(() => {
     if (storeType === "grocery") {
@@ -141,12 +142,20 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
         const accumulatedTotal = effectiveUnitPrice * inCartQty;
 
         return (
-          <button
+          <div
             key={product.id}
-            type="button"
+            role="button"
+            tabIndex={0}
             onClick={() => {
               playBarcodeScanSound();
               addToCart(product);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                playBarcodeScanSound();
+                addToCart(product);
+              }
             }}
             onContextMenu={(e) => {
               e.preventDefault();
@@ -159,16 +168,167 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
               inCartQty > 0
                 ? "border border-[#2DD4BF]/80 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_0_24px_rgba(45,212,191,0.25)] bg-[linear-gradient(135deg,rgba(45,212,191,0.12)_0%,rgba(255,255,255,0.03)_48%,rgba(14,19,24,0.95)_100%)]"
                 : "kaspi-frosted-card kaspi-frosted-card-hover"
-            } p-3 flex flex-col items-center justify-between text-center overflow-hidden cursor-pointer select-none transition-all duration-150 active:scale-[0.98] backdrop-blur-2xl`}
+            } p-3 flex flex-col items-center justify-between text-center overflow-hidden cursor-pointer select-none transition-all duration-150 active:scale-[0.98] backdrop-blur-2xl focus:outline-none`}
           >
             {/* Top 3px Glowing Teal Accent Strip */}
             <div className="absolute top-0 inset-x-6 h-[2.5px] rounded-b-full bg-gradient-to-r from-transparent via-[#2DD4BF] to-transparent opacity-80" />
+
+            {/* Subtle Top-Left 3-Dot (•••) Quick Action Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenMenuProductId(openMenuProductId === product.id ? null : product.id);
+              }}
+              className="absolute top-2.5 left-2.5 z-20 w-6 h-6 rounded-lg bg-black/40 hover:bg-black/70 border border-white/15 flex items-center justify-center text-zinc-300 hover:text-white transition-colors cursor-pointer shadow-xs"
+              title={locale === "ar" ? "خيارات وأوزان سريعة" : "Options & Poids"}
+            >
+              <MoreHorizontal className="w-3.5 h-3.5" />
+            </button>
 
             {/* Top-Right Live Quantity Circle Badge (ONLY visible when inCartQty > 0) */}
             {inCartQty > 0 && (
               <span className="absolute top-3 right-3 z-10 w-7 h-7 rounded-full bg-[#2DD4BF] text-[#042F2E] font-mono font-black text-xs flex items-center justify-center shadow-[0_0_16px_rgba(45,212,191,0.7)] animate-in zoom-in-75">
                 {inCartQty}
               </span>
+            )}
+
+            {/* 3-Dot Options Popover */}
+            {openMenuProductId === product.id && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="absolute inset-x-2 top-2 bottom-2 z-30 p-2.5 rounded-xl kaspi-frosted-glass border border-white/20 shadow-[0_12px_36px_rgba(0,0,0,0.85)] flex flex-col justify-between animate-in zoom-in-95 duration-150 backdrop-blur-3xl overflow-y-auto"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between pb-1 border-b border-white/10 shrink-0">
+                  <span className="text-[10px] font-bold text-white truncate max-w-[120px]">
+                    {product.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuProductId(null);
+                    }}
+                    className="w-5 h-5 rounded-md flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* 1. Weighed / Kg Presets */}
+                <div className="my-1">
+                  <span className="text-[9px] font-mono font-bold text-zinc-300 block mb-1">
+                    {locale === "ar" ? "البيع بالوزن (Kg):" : "Vente au Poids (Kg) :"}
+                  </span>
+                  <div className="grid grid-cols-2 gap-1 font-mono text-[10px]">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playBarcodeScanSound();
+                        addToCart(product, 0.25, locale === "ar" ? "250g (ربع كيلو)" : "250g (1/4 Kg)");
+                        setOpenMenuProductId(null);
+                      }}
+                      className="h-6 px-1 rounded-md bg-white/10 hover:bg-white/20 text-white font-bold transition-colors cursor-pointer border border-white/10"
+                    >
+                      {locale === "ar" ? "250g (ربع)" : "250g (1/4)"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playBarcodeScanSound();
+                        addToCart(product, 0.5, locale === "ar" ? "500g (نصف كيلو)" : "500g (1/2 Kg)");
+                        setOpenMenuProductId(null);
+                      }}
+                      className="h-6 px-1 rounded-md bg-white/10 hover:bg-white/20 text-white font-bold transition-colors cursor-pointer border border-white/10"
+                    >
+                      {locale === "ar" ? "500g (نصف)" : "500g (1/2)"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playBarcodeScanSound();
+                        addToCart(product, 1, locale === "ar" ? "1 كيلو" : "1 Kg");
+                        setOpenMenuProductId(null);
+                      }}
+                      className="h-6 px-1 rounded-md bg-white/10 hover:bg-white/20 text-white font-bold transition-colors cursor-pointer border border-white/10"
+                    >
+                      {locale === "ar" ? "1 كيلو" : "1 Kg"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playBarcodeScanSound();
+                        addToCart(product, 2, locale === "ar" ? "2 كيلو" : "2 Kg");
+                        setOpenMenuProductId(null);
+                      }}
+                      className="h-6 px-1 rounded-md bg-white/10 hover:bg-white/20 text-white font-bold transition-colors cursor-pointer border border-white/10"
+                    >
+                      {locale === "ar" ? "2 كيلو" : "2 Kg"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Fashion Mode Sizes */}
+                {storeType === "fashion" && (
+                  <div className="mb-1">
+                    <span className="text-[9px] font-mono font-bold text-zinc-300 block mb-1">
+                      {locale === "ar" ? "المقاس (Taille):" : "Taille (Size) :"}
+                    </span>
+                    <div className="flex gap-1 justify-between font-mono text-[10px]">
+                      {["S", "M", "L", "XL", "XXL"].map((sz) => (
+                        <button
+                          key={sz}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playBarcodeScanSound();
+                            addToCart(product, 1, `Taille: ${sz}`);
+                            setOpenMenuProductId(null);
+                          }}
+                          className="flex-1 h-5 rounded bg-white/10 hover:bg-white/20 text-white font-bold transition-colors cursor-pointer border border-white/10"
+                        >
+                          {sz}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Electronics Mode Warranty */}
+                {(storeType === "electronics" || storeType === "tech") && (
+                  <div>
+                    <span className="text-[9px] font-mono font-bold text-zinc-300 block mb-1">
+                      {locale === "ar" ? "الضمان (Garantie):" : "Garantie :"}
+                    </span>
+                    <div className="flex gap-1 font-mono text-[9px]">
+                      {[
+                        { label: locale === "ar" ? "6 أشهر" : "6m", note: "Garantie 6m" },
+                        { label: locale === "ar" ? "12 شهر" : "12m", note: "Garantie 12m" },
+                        { label: locale === "ar" ? "بدون" : "Sans", note: "Sans Garantie" },
+                      ].map((w) => (
+                        <button
+                          key={w.note}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playBarcodeScanSound();
+                            addToCart(product, 1, w.note);
+                            setOpenMenuProductId(null);
+                          }}
+                          className="flex-1 h-5 px-1 rounded bg-white/10 hover:bg-white/20 text-white font-bold transition-colors cursor-pointer border border-white/10"
+                        >
+                          {w.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Center Floating Pure White Studio Box */}
@@ -220,7 +380,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
                 </div>
               )}
             </div>
-          </button>
+          </div>
         );
       })}
     </div>

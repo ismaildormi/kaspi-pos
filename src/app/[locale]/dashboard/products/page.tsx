@@ -20,6 +20,7 @@ import {
   Upload,
   Plus,
   Printer,
+  ChevronDown,
 } from "lucide-react";
 import { generateProductImageUrl } from "@/lib/pollinations";
 import { uploadProductImage } from "@/lib/supabase-storage";
@@ -1196,9 +1197,9 @@ export default function ProductsListPage() {
             title: "إضافة منتج جديد",
             subtitle: "إنشاء مباشر مع رمز SKU، الباركود الدولي EAN-13 والمخزون الأولي",
             name: "اسم وتعيين المنتج *",
-            namePlaceholder: "مثال: زيت زيتون بكر ممتاز 1 لتر",
+            namePlaceholder: "أدخل اسم المنتج...",
             category: "القسم / التصنيف",
-            categoryPlaceholder: "مثال: بقالة / مشروبات",
+            categoryPlaceholder: "اختر القسم أو التصنيف",
             sku: "رمز SKU (اختياري)",
             skuPlaceholder: "توليد تلقائي في حال تركه فارغاً",
             barcode: "رمز الباركود EAN-13",
@@ -1216,9 +1217,9 @@ export default function ProductsListPage() {
             title: "Nouveau Produit",
             subtitle: "Création directe avec SKU, Code-barres EAN-13 et stock initial",
             name: "Désignation du Produit *",
-            namePlaceholder: "Ex: Huile d'Olive Extra Vierge 1L",
+            namePlaceholder: "Nom de l'article...",
             category: "Catégorie / Rayon",
-            categoryPlaceholder: "Ex: Épicerie / Boissons",
+            categoryPlaceholder: "Choisissez une catégorie",
             sku: "Code SKU (Optionnel)",
             skuPlaceholder: "Auto-généré si vide",
             barcode: "Code-barres EAN-13",
@@ -1236,9 +1237,9 @@ export default function ProductsListPage() {
             title: "New Product",
             subtitle: "Direct product creation with SKU, EAN-13 barcode, and initial stock",
             name: "Product Name *",
-            namePlaceholder: "e.g., Extra Virgin Olive Oil 1L",
+            namePlaceholder: "Enter product name...",
             category: "Category / Department",
-            categoryPlaceholder: "e.g., Grocery / Beverages",
+            categoryPlaceholder: "Select category",
             sku: "SKU Code (Optional)",
             skuPlaceholder: "Auto-generated if blank",
             barcode: "EAN-13 Barcode",
@@ -1256,9 +1257,9 @@ export default function ProductsListPage() {
           title: "New Product",
           subtitle: "Direct product creation with SKU, EAN-13 barcode, and initial stock",
           name: "Product Name *",
-          namePlaceholder: "e.g., Extra Virgin Olive Oil 1L",
+          namePlaceholder: "Enter product name...",
           category: "Category / Department",
-          categoryPlaceholder: "e.g., Grocery / Beverages",
+          categoryPlaceholder: "Select category",
           sku: "SKU Code (Optional)",
           skuPlaceholder: "Auto-generated if blank",
           barcode: "EAN-13 Barcode",
@@ -1329,7 +1330,7 @@ export default function ProductsListPage() {
                         />
                       </div>
 
-                      {/* Center Canvas with Dark Studio Checkerboard */}
+                      {/* Center Canvas with Pure Studio White Container or Upload Area */}
                       <div
                         onClick={() => createFileInputRef.current?.click()}
                         onDragOver={(e) => {
@@ -1352,16 +1353,7 @@ export default function ProductsListPage() {
                             : "border-white/[0.08] hover:border-white/[0.20]"
                         }`}
                         style={{
-                          backgroundImage: `
-                            radial-gradient(circle at center, rgba(255,255,255,0.10) 0%, transparent 70%),
-                            linear-gradient(45deg, #14191F 25%, transparent 25%),
-                            linear-gradient(-45deg, #14191F 25%, transparent 25%),
-                            linear-gradient(45deg, transparent 75%, #14191F 75%),
-                            linear-gradient(-45deg, transparent 75%, #14191F 75%)
-                          `,
-                          backgroundSize: "100% 100%, 20px 20px, 20px 20px, 20px 20px, 20px 20px",
-                          backgroundPosition: "0 0, 0 0, 0 10px, 10px -10px, -10px 0px",
-                          backgroundColor: "#0B0E12",
+                          backgroundColor: createImageUrl ? "#FFFFFF" : "#0B0E12",
                         }}
                       >
                         {isCreateProcessingImage ? (
@@ -1371,15 +1363,15 @@ export default function ProductsListPage() {
                               {createUploadProgress}%
                             </span>
                             <span className="text-[11px] text-zinc-400">
-                              {locale === "ar" ? "جاري إزالة الخلفية..." : "Suppression de l'arrière-plan..."}
+                              {locale === "ar" ? "جاري إزالة الخلفية والتوسيط على خلفية بيضاء..." : "Traitement fond blanc studio 92%..."}
                             </span>
                           </div>
                         ) : createImageUrl ? (
-                          <div className="relative w-full h-full p-3 flex items-center justify-center group">
+                          <div className="relative w-full h-full bg-white p-2 flex items-center justify-center shadow-inner group">
                             <img
                               src={createImageUrl}
                               alt="Cutout Preview"
-                              className="max-h-48 w-auto object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.75)] transition-transform duration-200 group-hover:scale-105"
+                              className="w-[92%] h-[92%] object-contain mx-auto drop-shadow-sm transition-transform duration-200 group-hover:scale-105"
                             />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
                               <span className="px-3 py-1.5 rounded-lg bg-black/80 border border-white/20 text-[11px] font-semibold text-white">
@@ -1394,11 +1386,13 @@ export default function ProductsListPage() {
                             </div>
                             <p className="text-xs font-medium text-zinc-300">
                               {locale === "ar"
-                                ? "انقر أو اسحب صورة المنتج هنا"
-                                : "Cliquez ou glissez la photo du produit ici"}
+                                ? "ارفع صورة المنتج لتفريغ الخلفية تلقائياً على خلفية بيضاء"
+                                : locale === "fr"
+                                ? "Téléversez une photo pour le détourage automatique sur fond blanc studio"
+                                : "Upload photo for auto white-studio cutout"}
                             </p>
                             <span className="text-[10px] text-zinc-500 font-mono">
-                              JPG, PNG, WEBP • Auto-Cutout 0ms
+                              JPG, PNG, WEBP • Auto 92% Studio White
                             </span>
                           </div>
                         )}
@@ -1406,13 +1400,23 @@ export default function ProductsListPage() {
                     </div>
 
                     {/* Bottom Status Pill */}
-                    <div className="mt-3 py-1.5 px-3 rounded-full bg-[#14B8A6]/15 border border-[#14B8A6]/40 text-[#2DD4BF] font-mono text-[11px] font-semibold text-center shadow-[0_0_15px_rgba(20,184,166,0.2)]">
-                      {locale === "ar"
-                        ? `تمت إزالة الخلفية تلقائياً • صورة PNG شفافة (${createImageSizeKb} KB)`
-                        : locale === "fr"
-                        ? `Arrière-plan supprimé automatiquement • PNG transparent (${createImageSizeKb} KB)`
-                        : `Background Removed Automatically • Transparent PNG (${createImageSizeKb} KB)`}
-                    </div>
+                    {createImageUrl ? (
+                      <div className="mt-3 py-1.5 px-3 rounded-full bg-[#14B8A6]/15 border border-[#14B8A6]/40 text-[#2DD4BF] font-mono text-[11px] font-semibold text-center shadow-[0_0_15px_rgba(20,184,166,0.2)]">
+                        {locale === "ar"
+                          ? `تم تفريغ الخلفية وتطبيق الخلفية البيضاء • (${createImageSizeKb} KB)`
+                          : locale === "fr"
+                          ? `Arrière-plan détouré sur fond blanc studio • (${createImageSizeKb} KB)`
+                          : `Auto White Studio Cutout Applied • (${createImageSizeKb} KB)`}
+                      </div>
+                    ) : (
+                      <div className="mt-3 py-1.5 px-3 rounded-full bg-white/[0.04] border border-white/[0.08] text-zinc-400 font-mono text-[11px] text-center">
+                        {locale === "ar"
+                          ? "استوديو تفريغ وتوسيط تلقائي 92%"
+                          : locale === "fr"
+                          ? "Studio détourage et centrage 92%"
+                          : "Auto 92% White Studio Cutout"}
+                      </div>
+                    )}
                   </div>
 
                   {/* RIGHT COLUMN: Stacked Product Inputs (7 Cols) */}
@@ -1496,22 +1500,91 @@ export default function ProductsListPage() {
                       />
                     </div>
 
-                    {/* 5. Category + Stock + Cancel */}
+                    {/* 5. Category + Selling Unit */}
                     <div className="grid grid-cols-12 gap-2.5 items-end">
-                      <div className="col-span-6">
+                      <div className="col-span-7">
                         <label className="block text-xs font-semibold text-zinc-300 mb-1">
                           {modalI18n.category}
                         </label>
-                        <input
-                          type="text"
-                          value={createCategory}
-                          onChange={(e) => setCreateCategory(e.target.value)}
-                          placeholder={modalI18n.categoryPlaceholder}
-                          className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3 text-xs text-white focus:outline-none focus:border-[#14B8A6]"
-                        />
+                        <div className="relative">
+                          <select
+                            value={createCategory || "grocery"}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setCreateCategory(val);
+                              if (val === "produce" || val === "butchery") {
+                                setCreateUnit("kg");
+                              }
+                            }}
+                            className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3 text-xs text-white appearance-none focus:outline-none focus:border-[#14B8A6] cursor-pointer"
+                          >
+                            <option value="grocery">
+                              {locale === "ar" ? "البقالة والمواد الغذائية" : locale === "en" ? "Grocery & Pantry" : "Épicerie & Alimentation"}
+                            </option>
+                            <option value="produce">
+                              {locale === "ar" ? "الخضر والفواكه (بيع بالعبار / الميزان)" : locale === "en" ? "Produce & Vegetables (Weighed Kg)" : "Fruits & Légumes (Pesée Kg)"}
+                            </option>
+                            <option value="butchery">
+                              {locale === "ar" ? "المجزرة واللحوم والدواجن" : locale === "en" ? "Butchery, Meats & Poultry" : "Boucherie, Viandes & Volailles"}
+                            </option>
+                            <option value="drinks_dairy">
+                              {locale === "ar" ? "المشروبات والحليب ومشتقاته" : locale === "en" ? "Drinks & Dairy" : "Boissons & Produits Laitiers"}
+                            </option>
+                            <option value="bakery_cafe">
+                              {locale === "ar" ? "المخبزة والحلويات والمقهى" : locale === "en" ? "Bakery, Pastry & Café" : "Boulangerie, Pâtisserie & Café"}
+                            </option>
+                            <option value="fashion">
+                              {locale === "ar" ? "الملابس والأزياء والأحذية" : locale === "en" ? "Fashion, Apparel & Footwear" : "Prêt-à-Porter, Mode & Chaussures"}
+                            </option>
+                            <option value="electronics">
+                              {locale === "ar" ? "الهواتف والإلكترونيات والإكسسوارات" : locale === "en" ? "Phones, Electronics & Accessories" : "Téléphonie, Électronique & Accessoires"}
+                            </option>
+                            <option value="cleaning">
+                              {locale === "ar" ? "المنظفات والورقيات والعناية" : locale === "en" ? "Cleaning & Personal Care" : "Hygiène, Entretien & Cosmétiques"}
+                            </option>
+                            <option value="wholesale">
+                              {locale === "ar" ? "البيع بالجملة والكرتون" : locale === "en" ? "Wholesale & Bulk Cartons" : "Vente en Gros & Cartons"}
+                            </option>
+                          </select>
+                          <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute end-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                       </div>
 
-                      <div className="col-span-3">
+                      {/* Selling Unit Toggle */}
+                      <div className="col-span-5">
+                        <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                          {locale === "ar" ? "وحدة البيع:" : "Unit :"}
+                        </label>
+                        <div className="h-10 p-1 rounded-xl bg-[#090C10] border border-white/[0.10] flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setCreateUnit("piece")}
+                            className={`flex-1 h-8 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                              createUnit === "piece"
+                                ? "bg-white text-zinc-950 font-black shadow-xs"
+                                : "text-zinc-400 hover:text-white"
+                            }`}
+                          >
+                            {locale === "ar" ? "بالحبة" : locale === "en" ? "Unit" : "Unité"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCreateUnit("kg")}
+                            className={`flex-1 h-8 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                              createUnit === "kg"
+                                ? "bg-white text-zinc-950 font-black shadow-xs"
+                                : "text-zinc-400 hover:text-white"
+                            }`}
+                          >
+                            {locale === "ar" ? "بالكيلو" : locale === "en" ? "Kg" : "Au Kilo"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stock & Cancel */}
+                    <div className="grid grid-cols-12 gap-2.5 items-end">
+                      <div className="col-span-6">
                         <label className="block text-xs font-semibold text-zinc-300 mb-1">
                           {modalI18n.initialStock}
                         </label>
@@ -1521,11 +1594,11 @@ export default function ProductsListPage() {
                           min="0"
                           value={createInitialStock}
                           onChange={(e) => setCreateInitialStock(e.target.value)}
-                          className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-2.5 font-mono text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6]"
+                          className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3 font-mono text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6]"
                         />
                       </div>
 
-                      <div className="col-span-3">
+                      <div className="col-span-6">
                         <button
                           type="button"
                           onClick={() => setIsCreateModalOpen(false)}

@@ -18,7 +18,6 @@ import {
   Scale,
   Layers,
 } from "lucide-react";
-import { DashboardOnboardingTrigger } from "@/components/dashboard/DashboardOnboardingTrigger";
 import { FloatingCommerceCanvas } from "@/components/ui/FloatingCommerceCanvas";
 import type { StoreBusinessType } from "@/client/store/usePosStore";
 import { getDictionary, type Locale } from "@/i18n/schema";
@@ -207,11 +206,6 @@ export default async function DashboardOverviewPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <DashboardOnboardingTrigger
-            initialShopName={safeDisplayName}
-            autoOpen={shouldAutoOpenOnboarding}
-            currentStoreType={currentStoreType}
-          />
           <Link
             href={`/${locale}/dashboard/products/import`}
             className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition"

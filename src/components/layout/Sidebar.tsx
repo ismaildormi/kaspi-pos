@@ -181,19 +181,17 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           </span>
         </Link>
 
-        {/* Supermarket Mode (495nm) Luminous Frosted Mint-Teal Glass Pill */}
-        <button
-          type="button"
-          onClick={() => {
-            window.dispatchEvent(new CustomEvent("open-industry-modal"));
-          }}
+        {/* Sector Status Indicator Link (Quiet Settings-Only Navigation) */}
+        <Link
+          href={localizeHref("/dashboard/settings#store-sector")}
+          onClick={onNavigate}
           className="w-full rounded-xl px-3.5 py-2.5 bg-gradient-to-r from-[#5EEAD4]/90 via-[#2DD4BF]/85 to-[#14B8A6]/90 text-[#042F2E] font-extrabold text-xs border border-white/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.7),0_0_24px_rgba(45,212,191,0.35)] flex items-center justify-between cursor-pointer transition-all hover:brightness-105 mb-3"
           title={
             locale === "ar"
-              ? "تغيير قطاع ونشاط المتجر"
+              ? "إعدادات قطاع ونشاط المتجر"
               : locale === "en"
-              ? "Change store sector / industry"
-              : "Modifier le secteur du magasin"
+              ? "Store activity / sector settings"
+              : "Paramètres secteur du magasin"
           }
         >
           <div className="flex items-center gap-2 overflow-hidden">
@@ -202,7 +200,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
             </span>
           </div>
           <span className="w-2 h-2 rounded-full bg-[#042F2E] shrink-0 shadow-[0_0_6px_rgba(4,47,46,0.6)] animate-pulse" />
-        </button>
+        </Link>
 
         <nav className="space-y-1 overflow-y-auto flex-1 pr-0.5">
           {isSuperAdmin && (

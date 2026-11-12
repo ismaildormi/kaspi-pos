@@ -170,25 +170,26 @@ export async function compressImage(
       width = Math.max(width, 1);
       height = Math.max(height, 1);
 
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
+      // 1. Offscreen source canvas for cutout pass
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = width;
+      tempCanvas.height = height;
 
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) {
-        reject(new Error("Failed to get 2D canvas context"));
+      const tempCtx = tempCanvas.getContext("2d", { willReadFrequently: true });
+      if (!tempCtx) {
+        reject(new Error("Failed to get offscreen 2D canvas context"));
         return;
       }
 
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(img, 0, 0, width, height);
+      tempCtx.imageSmoothingEnabled = true;
+      tempCtx.imageSmoothingQuality = "high";
+      tempCtx.drawImage(img, 0, 0, width, height);
 
       let didRemoveBackground = false;
 
       if (autoCutout && width > 4 && height > 4) {
         try {
-          const imgData = ctx.getImageData(0, 0, width, height);
+          const imgData = tempCtx.getImageData(0, 0, width, height);
           const data = imgData.data;
 
           // Sample 4 corners
@@ -231,7 +232,7 @@ export async function compressImage(
               tolerance
             );
             if (didRemoveBackground) {
-              ctx.putImageData(imgData, 0, 0);
+              tempCtx.putImageData(imgData, 0, 0);
             }
           }
         } catch (e) {
@@ -239,8 +240,37 @@ export async function compressImage(
         }
       }
 
-      // Export format: WebP supports lossy + alpha, fallback to PNG if transparent
-      const exportMime = didRemoveBackground ? "image/webp" : "image/webp";
+      // 2. Final Studio Pure White (#FFFFFF) Canvas at 92% Scale Factor
+      const finalWidth = 600;
+      const finalHeight = 600;
+      const canvas = document.createElement("canvas");
+      canvas.width = finalWidth;
+      canvas.height = finalHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Failed to get 2D canvas context"));
+        return;
+      }
+
+      // Fill canvas background with Pure Studio White (#FFFFFF)
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, finalWidth, finalHeight);
+
+      // Compute scaled dimensions within 92% (leaving 4% studio margin, zero cropping)
+      const maxTargetW = finalWidth * 0.92;
+      const maxTargetH = finalHeight * 0.92;
+      const scale = Math.min(maxTargetW / width, maxTargetH / height);
+      const drawW = Math.round(width * scale);
+      const drawH = Math.round(height * scale);
+      const offsetX = Math.round((finalWidth - drawW) / 2);
+      const offsetY = Math.round((finalHeight - drawH) / 2);
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(tempCanvas, 0, 0, width, height, offsetX, offsetY, drawW, drawH);
+
+      // Export format: WebP supports high compression with pristine white background
+      const exportMime = "image/webp";
 
       canvas.toBlob(
         (blob) => {

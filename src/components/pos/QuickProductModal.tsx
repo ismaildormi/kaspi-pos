@@ -37,6 +37,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
   const [salePrice, setSalePrice] = useState("");
   const [wholesalePrice, setWholesalePrice] = useState("");
   const [categoryName, setCategoryName] = useState("grocery");
+  const [unitType, setUnitType] = useState<"piece" | "kg">("piece");
   const [stockQuantity, setStockQuantity] = useState("50");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -49,6 +50,13 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   if (!isOpen) return null;
+
+  const handleCategoryChange = (val: string) => {
+    setCategoryName(val);
+    if (val === "produce" || val === "butchery") {
+      setUnitType("kg");
+    }
+  };
 
   const handleProcessFile = async (file: File) => {
     setIsProcessingImage(true);
@@ -157,6 +165,8 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
               categoryName: categoryName.trim() || undefined,
               imageUrl: imageUrl.trim() || undefined,
               description: description.trim() || undefined,
+              unit: unitType,
+              isScaleItem: unitType === "kg",
             }),
           });
           if (res.ok) {
@@ -185,6 +195,8 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
         image: imageUrl.trim() || createdProduct?.imageUrl || null,
         categoryName: categoryName.trim() || createdProduct?.category?.name || null,
       };
+      (newPosProduct as any).unit = unitType;
+      (newPosProduct as any).isScaleItem = unitType === "kg";
 
       if (offlineDb?.offlineProducts) {
         try {
@@ -201,6 +213,8 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
             trackStock: true,
             stockQuantity: newPosProduct.stockQuantity,
             categoryName: newPosProduct.categoryName,
+            unit: unitType,
+            isScaleItem: unitType === "kg",
           });
         } catch (dexieErr) {
           console.warn("Could not cache product in Dexie:", dexieErr);
@@ -295,7 +309,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                   />
                 </div>
 
-                {/* Center Canvas with Dark Studio Checkerboard */}
+                {/* Center Canvas with Pure Studio White Container or Upload Area */}
                 <div
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={handleDragOver}
@@ -307,16 +321,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                       : "border-white/[0.08] hover:border-white/[0.20]"
                   }`}
                   style={{
-                    backgroundImage: `
-                      radial-gradient(circle at center, rgba(255,255,255,0.10) 0%, transparent 70%),
-                      linear-gradient(45deg, #14191F 25%, transparent 25%),
-                      linear-gradient(-45deg, #14191F 25%, transparent 25%),
-                      linear-gradient(45deg, transparent 75%, #14191F 75%),
-                      linear-gradient(-45deg, transparent 75%, #14191F 75%)
-                    `,
-                    backgroundSize: "100% 100%, 20px 20px, 20px 20px, 20px 20px, 20px 20px",
-                    backgroundPosition: "0 0, 0 0, 0 10px, 10px -10px, -10px 0px",
-                    backgroundColor: "#0B0E12",
+                    backgroundColor: imageUrl ? "#FFFFFF" : "#0B0E12",
                   }}
                 >
                   {isProcessingImage ? (
@@ -326,15 +331,15 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                         {uploadProgress}%
                       </span>
                       <span className="text-[11px] text-zinc-400">
-                        {locale === "ar" ? "جاري إزالة الخلفية..." : "Suppression de l'arrière-plan..."}
+                        {locale === "ar" ? "جاري إزالة الخلفية والتوسيط على خلفية بيضاء..." : "Traitement fond blanc studio 92%..."}
                       </span>
                     </div>
                   ) : imageUrl ? (
-                    <div className="relative w-full h-full p-3 flex items-center justify-center group">
+                    <div className="relative w-full h-full bg-white p-2 flex items-center justify-center shadow-inner group">
                       <img
                         src={imageUrl}
-                        alt="Cutout Preview"
-                        className="max-h-48 w-auto object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.75)] transition-transform duration-200 group-hover:scale-105"
+                        alt="Preview"
+                        className="w-[92%] h-[92%] object-contain mx-auto drop-shadow-sm transition-transform duration-200 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
                         <span className="px-3 py-1.5 rounded-lg bg-black/80 border border-white/20 text-[11px] font-semibold text-white">
@@ -349,11 +354,13 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                       </div>
                       <p className="text-xs font-medium text-zinc-300">
                         {locale === "ar"
-                          ? "انقر أو اسحب صورة المنتج هنا"
-                          : "Cliquez ou glissez la photo du produit ici"}
+                          ? "ارفع صورة المنتج لتفريغ الخلفية تلقائياً على خلفية بيضاء"
+                          : locale === "fr"
+                          ? "Téléversez une photo pour le détourage automatique sur fond blanc studio"
+                          : "Upload photo for auto white-studio cutout"}
                       </p>
                       <span className="text-[10px] text-zinc-500 font-mono">
-                        JPG, PNG, WEBP • Auto-Cutout 0ms
+                        JPG, PNG, WEBP • Auto 92% Studio White
                       </span>
                     </div>
                   )}
@@ -361,21 +368,31 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
               </div>
 
               {/* Bottom Status Pill */}
-              <div className="mt-3 py-1.5 px-3 rounded-full bg-[#14B8A6]/15 border border-[#14B8A6]/40 text-[#2DD4BF] font-mono text-[11px] font-semibold text-center shadow-[0_0_15px_rgba(20,184,166,0.2)]">
-                {locale === "ar"
-                  ? `تمت إزالة الخلفية تلقائياً • صورة PNG شفافة (${imageSizeKb} KB)`
-                  : locale === "fr"
-                  ? `Arrière-plan supprimé automatiquement • PNG transparent (${imageSizeKb} KB)`
-                  : `Background Removed Automatically • Transparent PNG (${imageSizeKb} KB)`}
-              </div>
+              {imageUrl ? (
+                <div className="mt-3 py-1.5 px-3 rounded-full bg-[#14B8A6]/15 border border-[#14B8A6]/40 text-[#2DD4BF] font-mono text-[11px] font-semibold text-center shadow-[0_0_15px_rgba(20,184,166,0.2)]">
+                  {locale === "ar"
+                    ? `تم تفريغ الخلفية وتطبيق الخلفية البيضاء • (${imageSizeKb} KB)`
+                    : locale === "fr"
+                    ? `Arrière-plan détouré sur fond blanc studio • (${imageSizeKb} KB)`
+                    : `Auto White Studio Cutout Applied • (${imageSizeKb} KB)`}
+                </div>
+              ) : (
+                <div className="mt-3 py-1.5 px-3 rounded-full bg-white/[0.04] border border-white/[0.08] text-zinc-400 font-mono text-[11px] text-center">
+                  {locale === "ar"
+                    ? "استوديو تفريغ وتوسيط تلقائي 92%"
+                    : locale === "fr"
+                    ? "Studio détourage et centrage 92%"
+                    : "Auto 92% White Studio Cutout"}
+                </div>
+              )}
             </div>
 
             {/* RIGHT COLUMN: Stacked Product Inputs (7 Cols) */}
             <div className="md:col-span-7 flex flex-col justify-between space-y-3.5">
-              {/* 1. Product Name */}
+              {/* 1. Product Name (Neutral Clean Placeholder) */}
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                  {locale === "ar" ? "اسم المنتج (مع الوزن/السعة):" : "Product Name :"}
+                  {locale === "ar" ? "اسم المنتج:" : "Product Name :"}
                 </label>
                 <input
                   type="text"
@@ -385,8 +402,10 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                   onChange={(e) => setName(e.target.value)}
                   placeholder={
                     locale === "ar"
-                      ? "مثال: Huile d'Olive 1L أو أتاي سلطان 200g"
-                      : "Ex: Sultan Habka Tea 200g, Huile d'Olive 1L..."
+                      ? "أدخل اسم المنتج..."
+                      : locale === "fr"
+                      ? "Nom de l'article..."
+                      : "Enter product name..."
                   }
                   className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6] transition-colors"
                 />
@@ -452,39 +471,85 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                 />
               </div>
 
-              {/* 5. Category + Stock + Cancel */}
+              {/* 5. Category + Selling Unit Toggle */}
               <div className="grid grid-cols-12 gap-2.5 items-end">
-                <div className="col-span-6">
+                <div className="col-span-7">
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">
                     {locale === "ar" ? "الجناح / التصنيف:" : "Category :"}
                   </label>
                   <div className="relative">
                     <select
                       value={categoryName}
-                      onChange={(e) => setCategoryName(e.target.value)}
+                      onChange={(e) => handleCategoryChange(e.target.value)}
                       className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3 text-xs text-white appearance-none focus:outline-none focus:border-[#14B8A6] cursor-pointer"
                     >
                       <option value="grocery">
-                        {locale === "ar" ? "البقالة والمواد الغذائية" : "Épicerie Générale"}
-                      </option>
-                      <option value="drinks">
-                        {locale === "ar" ? "المشروبات والمياه" : "Boissons & Eaux"}
-                      </option>
-                      <option value="dairy">
-                        {locale === "ar" ? "الحليب ومشتقاته" : "Produits Laitiers"}
-                      </option>
-                      <option value="cleaning">
-                        {locale === "ar" ? "المنظفات والورقيات" : "Entretien & Droguerie"}
+                        {locale === "ar" ? "البقالة والمواد الغذائية" : locale === "en" ? "Grocery & Pantry" : "Épicerie & Alimentation"}
                       </option>
                       <option value="produce">
-                        {locale === "ar" ? "الخضر والفواكه (ميزان)" : "Fruits & Légumes"}
+                        {locale === "ar" ? "الخضر والفواكه (بيع بالعبار / الميزان)" : locale === "en" ? "Produce & Vegetables (Weighed Kg)" : "Fruits & Légumes (Pesée Kg)"}
+                      </option>
+                      <option value="butchery">
+                        {locale === "ar" ? "المجزرة واللحوم والدواجن" : locale === "en" ? "Butchery, Meats & Poultry" : "Boucherie, Viandes & Volailles"}
+                      </option>
+                      <option value="drinks_dairy">
+                        {locale === "ar" ? "المشروبات والحليب ومشتقاته" : locale === "en" ? "Drinks & Dairy" : "Boissons & Produits Laitiers"}
+                      </option>
+                      <option value="bakery_cafe">
+                        {locale === "ar" ? "المخبزة والحلويات والمقهى" : locale === "en" ? "Bakery, Pastry & Café" : "Boulangerie, Pâtisserie & Café"}
+                      </option>
+                      <option value="fashion">
+                        {locale === "ar" ? "الملابس والأزياء والأحذية" : locale === "en" ? "Fashion, Apparel & Footwear" : "Prêt-à-Porter, Mode & Chaussures"}
+                      </option>
+                      <option value="electronics">
+                        {locale === "ar" ? "الهواتف والإلكترونيات والإكسسوارات" : locale === "en" ? "Phones, Electronics & Accessories" : "Téléphonie, Électronique & Accessoires"}
+                      </option>
+                      <option value="cleaning">
+                        {locale === "ar" ? "المنظفات والورقيات والعناية" : locale === "en" ? "Cleaning & Personal Care" : "Hygiène, Entretien & Cosmétiques"}
+                      </option>
+                      <option value="wholesale">
+                        {locale === "ar" ? "البيع بالجملة والكرتون" : locale === "en" ? "Wholesale & Bulk Cartons" : "Vente en Gros & Cartons"}
                       </option>
                     </select>
                     <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute end-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
                 </div>
 
-                <div className="col-span-3">
+                {/* Selling Unit Toggle (Unité vs Kg) */}
+                <div className="col-span-5">
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                    {locale === "ar" ? "وحدة البيع:" : "Unit :"}
+                  </label>
+                  <div className="h-10 p-1 rounded-xl bg-[#090C10] border border-white/[0.10] flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setUnitType("piece")}
+                      className={`flex-1 h-8 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                        unitType === "piece"
+                          ? "bg-white text-zinc-950 font-black shadow-xs"
+                          : "text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      {locale === "ar" ? "بالحبة" : locale === "en" ? "Unit" : "Unité"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUnitType("kg")}
+                      className={`flex-1 h-8 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                        unitType === "kg"
+                          ? "bg-white text-zinc-950 font-black shadow-xs"
+                          : "text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      {locale === "ar" ? "بالكيلو" : locale === "en" ? "Kg" : "Au Kilo"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 6. Stock & Cancel */}
+              <div className="grid grid-cols-12 gap-2.5 items-end">
+                <div className="col-span-6">
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">
                     {locale === "ar" ? "المخزون:" : "Stock :"}
                   </label>
@@ -494,11 +559,11 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                     min="0"
                     value={stockQuantity}
                     onChange={(e) => setStockQuantity(e.target.value)}
-                    className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-2.5 font-mono text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6]"
+                    className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3 font-mono text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6]"
                   />
                 </div>
 
-                <div className="col-span-3">
+                <div className="col-span-6">
                   <button
                     type="button"
                     onClick={onClose}
@@ -522,10 +587,10 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
             ) : (
               <span>
                 {locale === "ar"
-                  ? "حفظ وإضافة بطاقة PNG الشفافة للكاشير (0ms)"
+                  ? "حفظ وإضافة بطاقة المنتج البيضاء للكاشير (0ms)"
                   : locale === "fr"
-                  ? "Enregistrer & Ajouter Carte PNG au POS (0ms)"
-                  : "Save & Add Transparent PNG Card to POS (0ms)"}
+                  ? "Enregistrer & Ajouter Carte Studio au POS (0ms)"
+                  : "Save & Add White Studio Card to POS (0ms)"}
               </span>
             )}
           </button>

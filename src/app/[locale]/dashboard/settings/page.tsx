@@ -30,6 +30,7 @@ import {
   X,
   Sparkles,
   Lock,
+  ChevronDown,
 } from "lucide-react";
 import {
   SUPPORTED_RECEIPT_LANGUAGES,
@@ -104,6 +105,7 @@ export default function SettingsPage() {
 
   // Thermal Printing State
   const { setPrinterSettings, setTenantInfo, storeType, setStoreProfile } = usePosStore();
+  const [selectedSector, setSelectedSector] = useState<StoreBusinessType>(storeType || "grocery");
   const [receiptLanguage, setReceiptLanguage] = useState<ReceiptLanguage>("fr");
   const [paperWidthMm, setPaperWidthMm] = useState<58 | 80>(80);
   const [printerConnectionMode, setPrinterConnectionMode] =
@@ -255,6 +257,10 @@ export default function SettingsPage() {
             setAutoPrintReceipt(Boolean(s.autoPrintReceipt));
           if (s.openDrawer !== undefined) setOpenDrawer(Boolean(s.openDrawer));
           if (s.showStoreLogo !== undefined) setShowStoreLogo(Boolean(s.showStoreLogo));
+          if (s.storeType) {
+            setSelectedSector(s.storeType);
+            setStoreProfile(s.storeType, true);
+          }
         }
       }
     } catch (err) {
@@ -385,6 +391,7 @@ export default function SettingsPage() {
           taxId,
           rcNumber,
           phone,
+          storeType: selectedSector,
           whatsappReportNumber,
           whatsappReportHour: nightlyReportHour,
           storeTimezone,
@@ -939,6 +946,51 @@ export default function SettingsPage() {
                   placeholder="KASPI Store"
                   className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-white/40"
                 />
+              </div>
+
+              {/* Store Activity / Sector Selector for Stats & Control */}
+              <div id="store-sector">
+                <label className="block text-xs font-medium text-zinc-400 mb-1">
+                  {locale === "ar"
+                    ? "نوع نشاط المتجر — للإحصائيات والضبط:"
+                    : locale === "fr"
+                    ? "Secteur d'activité du magasin :"
+                    : "Store Business Sector :"}
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedSector}
+                    onChange={(e) => {
+                      const newSec = e.target.value as StoreBusinessType;
+                      setSelectedSector(newSec);
+                      setStoreProfile(newSec, true);
+                    }}
+                    className="w-full h-10 px-3 bg-zinc-950 border border-white/10 rounded-xl text-xs text-white appearance-none focus:outline-none focus:border-white/40 cursor-pointer"
+                  >
+                    <option value="grocery">
+                      {locale === "ar" ? "بقالة وسوبرماركت (Supermarket & Grocery)" : locale === "en" ? "Supermarket & Grocery" : "Supermarché & Épicerie"}
+                    </option>
+                    <option value="butchery">
+                      {locale === "ar" ? "مجزرة ولحوم (Butchery & Meats)" : locale === "en" ? "Butchery & Meats" : "Boucherie & Viandes"}
+                    </option>
+                    <option value="bakery">
+                      {locale === "ar" ? "مخبزة وحلويات (Bakery & Pastry)" : locale === "en" ? "Bakery & Pastry" : "Boulangerie & Pâtisserie"}
+                    </option>
+                    <option value="restaurant">
+                      {locale === "ar" ? "مطعم ومقهى (Restaurant & Café)" : locale === "en" ? "Restaurant & Café" : "Restaurant & Café"}
+                    </option>
+                    <option value="fashion">
+                      {locale === "ar" ? "أزياء وملابس (Fashion & Apparel)" : locale === "en" ? "Fashion & Apparel" : "Prêt-à-Porter & Mode"}
+                    </option>
+                    <option value="electronics">
+                      {locale === "ar" ? "هواتف وإلكترونيات (Phones & Electronics)" : locale === "en" ? "Phones & Electronics" : "Téléphonie & Électronique"}
+                    </option>
+                    <option value="wholesale">
+                      {locale === "ar" ? "تجارة جملة وتوزيع (Wholesale & Distribution)" : locale === "en" ? "Wholesale & Distribution" : "Grossiste & Distribution"}
+                    </option>
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute end-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
 
               <div>

@@ -163,21 +163,6 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         </div>
       </div>
 
-      {/* CENTER: Minimal Industry Tools Action if Available */}
-      <div className="flex items-center gap-2">
-        {onOpenIndustryTools && (
-          <button
-            type="button"
-            onClick={onOpenIndustryTools}
-            className="group h-8 px-3 rounded-lg kaspi-frosted-glass border border-white/10 hover:border-white/20 text-zinc-200 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
-            title="KDS / Tables / Tailles / Balance / IMEI"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white group-hover:scale-110 group-hover:rotate-6 transition-all duration-300" />
-            <span>{t.topbar.tools}</span>
-          </button>
-        )}
-      </div>
-
       {/* RIGHT: Clean Action Pills */}
       <div className="flex items-center gap-2 shrink-0">
         {/* Cash Drawer Shift Pill */}
