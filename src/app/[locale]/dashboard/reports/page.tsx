@@ -181,8 +181,8 @@ export default async function ReportsPage({
       </div>
 
       {/* Today's Z-Report Card */}
-      <div className="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-6 space-y-6">
-        <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+      <div className="kaspi-frosted-card rounded-3xl p-6 space-y-6 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full bg-white animate-pulse" />
             <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
@@ -196,28 +196,28 @@ export default async function ReportsPage({
 
         {/* Multi-Layered Frosted Glass KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+          <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
             <span className="text-xs text-zinc-300 font-semibold">{t.reports.dailySales}</span>
             <div className="text-2xl font-black text-white font-mono tracking-tight mt-3">
               {totalMad.toFixed(2)} <span className="text-sm font-semibold text-zinc-400">{t.common.currency}</span>
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+          <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
             <span className="text-xs text-zinc-300 font-semibold">{t.reports.todayCash}</span>
             <div className="text-2xl font-black text-white font-mono tracking-tight mt-3">
               {cashMad.toFixed(2)} <span className="text-sm font-semibold text-zinc-400">{t.common.currency}</span>
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+          <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
             <span className="text-xs text-zinc-300 font-semibold">{t.reports.todayCard}</span>
             <div className="text-2xl font-black text-white font-mono tracking-tight mt-3">
               {cardMad.toFixed(2)} <span className="text-sm font-semibold text-zinc-400">{t.common.currency}</span>
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+          <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
             <span className="text-xs text-zinc-300 font-semibold">{t.reports.todayCredit}</span>
             <div className="text-2xl font-black text-[#5EEAD4] font-mono tracking-tight mt-3">
               {creditMad.toFixed(2)} <span className="text-sm font-semibold text-zinc-400">{t.common.currency}</span>
@@ -251,7 +251,7 @@ export default async function ReportsPage({
       />
 
       {/* Today's Transactions Table */}
-      <div className="rounded-3xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
+      <div className="kaspi-frosted-card rounded-3xl overflow-hidden shadow-2xl">
         <div className="p-5 border-b border-zinc-800 flex items-center justify-between">
           <h2 className="text-sm font-bold text-white">{t.reports.dailySales}</h2>
           <span className="text-xs text-zinc-400 font-mono">

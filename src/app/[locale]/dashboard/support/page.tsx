@@ -117,7 +117,7 @@ export default function TenantSupportPage() {
         <div className="lg:col-span-5">
           <form
             onSubmit={handleSubmit}
-            className="rounded-3xl border border-white/[0.14] bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.02)_48%,rgba(14,19,24,0.92)_100%)] p-6 space-y-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.18)] backdrop-blur-2xl"
+            className="kaspi-frosted-card rounded-3xl p-6 space-y-4 shadow-2xl"
           >
             <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
               {t.support.newTicket}
@@ -197,7 +197,7 @@ export default function TenantSupportPage() {
 
         {/* Right: Ticket History & Replies */}
         <div className="lg:col-span-7">
-          <div className="rounded-3xl border border-white/[0.14] bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.02)_48%,rgba(14,19,24,0.92)_100%)] overflow-hidden shadow-[inset_0_1px_0_0_rgba(255,255,255,0.18)] backdrop-blur-2xl">
+          <div className="kaspi-frosted-card rounded-3xl overflow-hidden shadow-2xl">
             <div className="p-5 border-b border-white/10 flex items-center justify-between">
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
@@ -278,8 +278,8 @@ export default function TenantSupportPage() {
       </div>
 
       {/* SUPERMARKET HARDWARE INTERACTIVE QUICK GUIDES */}
-      <div className="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+      <div className="kaspi-frosted-card rounded-3xl p-6 space-y-4 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-teal-400" />
             <h2 className="text-xs font-bold text-white uppercase tracking-wider font-mono">

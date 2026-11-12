@@ -148,10 +148,10 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
               playBarcodeScanSound();
               addToCart(product);
             }}
-            className={`group relative h-[210px] rounded-2xl border ${
+            className={`group relative h-[210px] rounded-2xl ${
               inCartQty > 0
-                ? "border-[#2DD4BF]/80 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_0_24px_rgba(45,212,191,0.25)] bg-[linear-gradient(135deg,rgba(45,212,191,0.12)_0%,rgba(255,255,255,0.03)_48%,rgba(14,19,24,0.95)_100%)]"
-                : "border-white/[0.14] hover:border-[#2DD4BF]/50 bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.02)_48%,rgba(14,19,24,0.92)_100%)] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.18),0_10px_28px_-10px_rgba(0,0,0,0.65)]"
+                ? "border border-[#2DD4BF]/80 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_0_24px_rgba(45,212,191,0.25)] bg-[linear-gradient(135deg,rgba(45,212,191,0.12)_0%,rgba(255,255,255,0.03)_48%,rgba(14,19,24,0.95)_100%)]"
+                : "kaspi-frosted-card kaspi-frosted-card-hover"
             } p-4 flex flex-col items-center justify-between text-center overflow-hidden cursor-pointer select-none transition-all duration-150 active:scale-[0.98] backdrop-blur-2xl`}
           >
             {/* Top 3px Glowing Teal Accent Strip */}

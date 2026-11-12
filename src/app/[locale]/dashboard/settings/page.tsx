@@ -914,7 +914,7 @@ export default function SettingsPage() {
       {activeTab === "general" && (
         <form onSubmit={handleSaveSettings} className="space-y-6">
           {/* Legal & Tax Identifiers */}
-          <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 space-y-4">
+          <div className="kaspi-frosted-card rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <Store className="w-4 h-4 text-white" />
@@ -996,7 +996,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Multi-Store Branch Network */}
-          <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 space-y-4">
+          <div className="kaspi-frosted-card rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-emerald-400" />
@@ -1168,7 +1168,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Locked Sensitive Owner Vault Security Card */}
-          <div className="bg-zinc-900/80 border border-white/10 rounded-3xl p-6 sm:p-7 space-y-6 shadow-xl relative overflow-hidden">
+          <div className="kaspi-frosted-card rounded-3xl p-6 sm:p-7 space-y-6 shadow-2xl relative overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] text-zinc-400 flex items-center justify-center">
@@ -1367,7 +1367,7 @@ export default function SettingsPage() {
       {/* TAB 2: THERMAL RECEIPT & HARDWARE                                   */}
       {/* =================================================================== */}
       {activeTab === "hardware" && (
-        <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 sm:p-6 space-y-6">
+        <div className="kaspi-frosted-card rounded-2xl p-5 sm:p-6 space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
             <div className="flex items-center gap-2">
               <Printer className="w-4 h-4 text-sky-400" />
@@ -1756,7 +1756,7 @@ export default function SettingsPage() {
       {/* =================================================================== */}
       {activeTab === "users" && (
         <div className="space-y-6">
-          <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 sm:p-6 space-y-4">
+          <div className="kaspi-frosted-card rounded-2xl p-5 sm:p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -1814,7 +1814,7 @@ export default function SettingsPage() {
       {/* =================================================================== */}
       {activeTab === "ecommerce" && (
         <div className="space-y-6">
-          <div className="p-6 rounded-3xl bg-zinc-900/60 border border-white/10 space-y-6">
+          <div className="kaspi-frosted-card rounded-3xl p-6 space-y-6 shadow-2xl">
             <div className="flex items-start justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-white text-zinc-950 flex items-center justify-center font-bold shadow-xs">

@@ -388,7 +388,7 @@ export default function SuppliersPage() {
         {/* KPI Summary Cards (Multi-Layered Frosted Glass) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Total Suppliers */}
-          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+          <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold mb-2">
               <span>{t.suppliers.title}</span>
               <Truck className="w-4 h-4 text-[#2DD4BF]" />
@@ -402,7 +402,7 @@ export default function SuppliersPage() {
           </div>
 
           {/* Total Debt Owed */}
-          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+          <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold mb-2">
               <span>{t.suppliers.totalDebtOwed}</span>
               <Wallet className="w-4 h-4 text-[#2DD4BF]" />
@@ -416,7 +416,7 @@ export default function SuppliersPage() {
           </div>
 
           {/* Upcoming Maturities */}
-          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+          <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold mb-2">
               <span>{t.suppliers.upcomingMaturities}</span>
               <Clock className="w-4 h-4 text-amber-400" />
@@ -435,7 +435,7 @@ export default function SuppliersPage() {
 
         {/* Supplier Debt & Checks Ledger */}
         {ledgerItems.length > 0 && (
-          <div className="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden shadow-xs">
+          <div className="kaspi-frosted-card rounded-3xl overflow-hidden shadow-2xl">
             <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-zinc-400" />
@@ -499,7 +499,7 @@ export default function SuppliersPage() {
         )}
 
         {/* Suppliers Directory Table */}
-        <div className="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden shadow-xs">
+        <div className="kaspi-frosted-card rounded-3xl overflow-hidden shadow-2xl">
           <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Truck className="w-4 h-4 text-zinc-400" />

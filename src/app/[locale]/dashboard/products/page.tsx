@@ -697,7 +697,7 @@ export default function ProductsListPage() {
             return (
               <div
                 key={product.id}
-                className="group relative rounded-2xl border border-white/[0.14] bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.02)_48%,rgba(14,19,24,0.92)_100%)] hover:border-white/[0.25] transition-all flex flex-col overflow-visible shadow-[inset_0_1px_0_0_rgba(255,255,255,0.18)] backdrop-blur-2xl"
+                className="kaspi-frosted-card kaspi-frosted-card-hover group relative rounded-2xl transition-all flex flex-col overflow-visible"
               >
                 {/* Product Image Container */}
                 <div className="relative h-44 w-full bg-white rounded-t-2xl overflow-hidden border-b border-white/[0.10] flex items-center justify-center p-2">
@@ -871,7 +871,7 @@ export default function ProductsListPage() {
            ==================================================================== */
         <div
           ref={menuContainerRef}
-          className="rounded-2xl border border-zinc-800 bg-zinc-900/60 overflow-visible"
+          className="kaspi-frosted-card rounded-2xl overflow-visible shadow-2xl"
         >
           <div className="overflow-x-auto">
             <table className="w-full text-start text-xs text-zinc-300">

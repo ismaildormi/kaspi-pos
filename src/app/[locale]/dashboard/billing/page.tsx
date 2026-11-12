@@ -392,8 +392,8 @@ export default function BillingDashboardPage() {
         </div>
 
         {/* Current Plan Card & Status */}
-        <div className="bg-zinc-900 rounded-3xl border border-zinc-800 p-6 sm:p-8 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-6 mb-6">
+        <div className="kaspi-frosted-card rounded-3xl p-6 sm:p-8 shadow-2xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6 mb-6">
             <div>
               <div className="flex items-center gap-3 mb-1">
                 <h3 className="text-lg font-bold text-white">
@@ -415,7 +415,7 @@ export default function BillingDashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-            <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl">
+            <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-4 flex flex-col justify-between">
               <span className="text-xs text-zinc-300 font-semibold block mb-1">
                 {t.registerCapacity}
               </span>
@@ -425,7 +425,7 @@ export default function BillingDashboardPage() {
               </span>
             </div>
 
-            <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl">
+            <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-4 flex flex-col justify-between">
               <span className="text-xs text-zinc-300 font-semibold block mb-1">
                 {t.currentPeriod}
               </span>
@@ -436,7 +436,7 @@ export default function BillingDashboardPage() {
               </span>
             </div>
 
-            <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl">
+            <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-4 flex flex-col justify-between">
               <span className="text-xs text-zinc-300 font-semibold block mb-1">
                 {t.daysRemaining}
               </span>
@@ -445,7 +445,7 @@ export default function BillingDashboardPage() {
               </span>
             </div>
 
-            <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl">
+            <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-4 flex flex-col justify-between">
               <span className="text-xs text-zinc-300 font-semibold block mb-1">
                 {t.billingStatus}
               </span>
@@ -458,7 +458,7 @@ export default function BillingDashboardPage() {
           </div>
 
           {/* Tiered Device Pricing Grid */}
-          <div className="mb-6 p-4 rounded-2xl bg-zinc-950/70 border border-zinc-800">
+          <div className="mb-6 p-4 rounded-2xl bg-black/40 border border-white/10">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
                 <Monitor className="w-3.5 h-3.5 text-emerald-400" />
@@ -508,7 +508,7 @@ export default function BillingDashboardPage() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-zinc-800">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-white/10">
             <button
               onClick={() => {
                 setCheckoutMode("add_device");
@@ -533,8 +533,8 @@ export default function BillingDashboardPage() {
         </div>
 
         {/* Zero-Fee Bank Transfer & License Key Activation (Path B) */}
-        <div className="bg-zinc-900 rounded-3xl border border-zinc-800 p-6 sm:p-8 space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
+        <div className="kaspi-frosted-card rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
             <div>
               <div className="flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-amber-400" />
@@ -553,7 +553,7 @@ export default function BillingDashboardPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
             {/* Bank Coordinates */}
-            <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2">
+            <div className="bg-black/40 p-4 rounded-2xl border border-white/10 space-y-2">
               <span className="text-[11px] font-bold text-zinc-300 block uppercase tracking-wider">
                 {t.bankCoordsTitle}
               </span>
@@ -568,7 +568,7 @@ export default function BillingDashboardPage() {
             </div>
 
             {/* License Activation Input */}
-            <form onSubmit={handleActivateLicense} className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-3 flex flex-col justify-between">
+            <form onSubmit={handleActivateLicense} className="bg-black/40 p-4 rounded-2xl border border-white/10 space-y-3 flex flex-col justify-between">
               <div>
                 <label className="block text-[11px] font-bold text-zinc-300 mb-1.5 uppercase tracking-wider">
                   {t.enterLicenseLabel}

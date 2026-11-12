@@ -279,14 +279,14 @@ export default function CustomersPage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 space-y-6">
         {/* KPI Cards (Multi-Layered Frosted Glass) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+          <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
             <span className="text-xs font-semibold text-zinc-300 block mb-1">{t.customers.totalCustomers}</span>
             <div className="mt-3">
               <span className="text-2xl font-black text-white font-mono tracking-tight">{customers.length}</span>
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+          <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
             <span className="text-xs font-semibold text-zinc-300 block mb-1">{t.customers.totalActiveCredits}</span>
             <div className="mt-3">
               <span className="text-2xl font-black text-white font-mono tracking-tight">
@@ -295,7 +295,7 @@ export default function CustomersPage() {
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+          <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
             <span className="text-xs font-semibold text-zinc-300 block mb-1">{t.customers.loyaltyPointsAccumulated}</span>
             <div className="mt-3">
               <span className="text-2xl font-black text-[#5EEAD4] font-mono tracking-tight">{totalPoints} <span className="text-sm font-semibold text-zinc-400">pts</span></span>
@@ -316,7 +316,7 @@ export default function CustomersPage() {
         </div>
 
         {/* Customer Data Table */}
-        <div className="bg-zinc-900 rounded-3xl border border-zinc-800 overflow-hidden shadow-xs">
+        <div className="kaspi-frosted-card rounded-3xl overflow-hidden shadow-2xl">
           <div className="overflow-x-auto">
             <table className="w-full text-start text-xs">
               <thead className="bg-zinc-950 text-zinc-400 border-b border-zinc-800 font-mono">

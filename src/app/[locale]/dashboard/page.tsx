@@ -171,7 +171,7 @@ export default async function DashboardOverviewPage({
       {/* KPI Cards (Multi-Layered Frosted Glass matching Blueprint) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Revenue / Daily Register Sales */}
-        <div className="group relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl transition-all duration-200">
+        <div className="kaspi-frosted-card kaspi-frosted-card-hover group relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold">
             <span>
               {currentStoreType === "grocery"
@@ -201,7 +201,7 @@ export default async function DashboardOverviewPage({
         </div>
 
         {/* KPI 2: FMCG Velocity / Transactions */}
-        <div className="group relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl transition-all duration-200">
+        <div className="kaspi-frosted-card kaspi-frosted-card-hover group relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold">
             <span>
               {currentStoreType === "grocery"
@@ -229,7 +229,7 @@ export default async function DashboardOverviewPage({
         </div>
 
         {/* KPI 3: Shelf Low-Stock & Expiry Alerts (with Red Alert Icon) */}
-        <div className="group relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl transition-all duration-200">
+        <div className="kaspi-frosted-card kaspi-frosted-card-hover group relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold">
             <span>
               {currentStoreType === "grocery"
@@ -259,7 +259,7 @@ export default async function DashboardOverviewPage({
         </div>
 
         {/* KPI 4: Household Credit & Loyalty */}
-        <div className="group relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl transition-all duration-200">
+        <div className="kaspi-frosted-card kaspi-frosted-card-hover group relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold">
             <span>
               {currentStoreType === "grocery"
@@ -287,16 +287,16 @@ export default async function DashboardOverviewPage({
         </div>
       </div>
 
-      {/* Quick Launch Cards */}
+      {/* Quick Launch Cards (Frosted Glass Translucent Surface) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Fast POS CTA */}
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-6 flex flex-col justify-between">
+        <div className="kaspi-frosted-card kaspi-frosted-card-hover rounded-3xl p-6 flex flex-col justify-between">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-lg bg-zinc-800 px-2.5 py-1 text-[11px] font-semibold text-white">
+            <div className="inline-flex items-center gap-2 rounded-lg bg-white/10 border border-white/15 px-2.5 py-1 text-[11px] font-semibold text-white">
               {t.dashboard.offlineModeActive}
             </div>
             <h2 className="text-lg font-bold text-white">{t.dashboard.fastPosTitle}</h2>
-            <p className="text-xs text-zinc-400 leading-relaxed">
+            <p className="text-xs text-zinc-300 leading-relaxed">
               {t.dashboard.fastPosDesc}
             </p>
           </div>
@@ -312,20 +312,20 @@ export default async function DashboardOverviewPage({
         </div>
 
         {/* WhatsApp Reports CTA */}
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-6 flex flex-col justify-between">
+        <div className="kaspi-frosted-card kaspi-frosted-card-hover rounded-3xl p-6 flex flex-col justify-between">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-lg bg-zinc-800 px-2.5 py-1 text-[11px] font-semibold text-white">
+            <div className="inline-flex items-center gap-2 rounded-lg bg-white/10 border border-white/15 px-2.5 py-1 text-[11px] font-semibold text-white">
               {t.dashboard.automationBadge}
             </div>
             <h2 className="text-lg font-bold text-white">{t.dashboard.zReportTitle}</h2>
-            <p className="text-xs text-zinc-400 leading-relaxed">
+            <p className="text-xs text-zinc-300 leading-relaxed">
               {t.dashboard.zReportDesc}
             </p>
           </div>
           <div className="mt-6">
             <Link
               href={`/${locale}/dashboard/reports`}
-              className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-zinc-800"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-zinc-900/80 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-zinc-800"
             >
               <span>{t.dashboard.viewReportsBtn}</span>
               <ArrowRight className="h-3.5 w-3.5" />
