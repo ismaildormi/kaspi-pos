@@ -10,10 +10,6 @@ import {
   Package,
   Printer,
   Percent,
-  Search,
-  RefreshCw,
-  Plus,
-  Minus,
 } from "lucide-react";
 import { useAppDictionary } from "@/i18n/schema";
 import { toast } from "sonner";
@@ -27,14 +23,14 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
   const { locale } = useAppDictionary();
   const [activeTab, setActiveTab] = useState<"shelf" | "dlc" | "shrinkage">("dlc");
 
-  // Reference Grocery Items matching Blueprint (Image 3)
+  // Exact Reference Grocery Items matching Blueprint (Image image_41e20e56.png)
   const defaultItems = [
     {
       id: "prod-1",
       name: "Sultan Habka Tea 200g",
       aisle: "Rayon A2",
       packInfo: "36 Pack / 12 Unit",
-      dlc: "2026-11-20",
+      dlc: "2023-11-20",
       dlcLabel: "Yellow",
       dlcVariant: "yellow",
       salePrice: 16.0,
@@ -46,7 +42,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
       name: "Atlas Olive Oil 1L",
       aisle: "Rayon B3",
       packInfo: "36 Pack / 12 Unit",
-      dlc: "2026-11-25",
+      dlc: "2023-11-25",
       dlcLabel: "Orange",
       dlcVariant: "orange",
       salePrice: 85.0,
@@ -58,7 +54,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
       name: "Couscous Royal 1kg",
       aisle: "Rayon D1",
       packInfo: "36 Pack / 12 Unit",
-      dlc: "2027-01-15",
+      dlc: "2024-01-15",
       dlcLabel: "Green",
       dlcVariant: "green",
       salePrice: 18.0,
@@ -70,7 +66,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
       name: "Atlalus Olive Oil 1kg",
       aisle: "Rayon A2",
       packInfo: "36 Pack / 12 Unit",
-      dlc: "2027-01-15",
+      dlc: "2024-01-15",
       dlcLabel: "Green",
       dlcVariant: "green",
       salePrice: 78.0,
@@ -83,9 +79,9 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
     if (initialProducts && initialProducts.length > 0) {
       return initialProducts.map((p, idx) => ({
         ...p,
-        aisle: p.aisle || `Rayon ${["A2", "B3", "D1", "C4"][idx % 4]}`,
+        aisle: p.aisle || `Rayon ${["A2", "B3", "D1", "A2"][idx % 4]}`,
         packInfo: "36 Pack / 12 Unit",
-        dlc: p.dlc || (idx % 2 === 0 ? "2026-11-20" : "2027-01-15"),
+        dlc: p.dlc || (idx % 3 === 0 ? "2023-11-20" : idx % 3 === 1 ? "2023-11-25" : "2024-01-15"),
         dlcLabel: idx % 3 === 0 ? "Yellow" : idx % 3 === 1 ? "Orange" : "Green",
         dlcVariant: idx % 3 === 0 ? "yellow" : idx % 3 === 1 ? "orange" : "green",
       }));
@@ -98,24 +94,6 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
   const [gasEmpty, setGasEmpty] = useState(12);
   const [cratesFull, setCratesFull] = useState(30);
   const [cratesEmpty, setCratesEmpty] = useState(8);
-
-  // Shrinkage Log state
-  const [shrinkageLogs, setShrinkageLogs] = useState<Array<{ id: string; name: string; qty: number; reason: string; date: string }>>([
-    {
-      id: "1",
-      name: "Lait UHT 1L",
-      qty: 2,
-      reason: locale === "ar" ? "قنينة مثقوبة أثناء التفريغ" : "Emballage percé à la réception",
-      date: "09:30",
-    },
-    {
-      id: "2",
-      name: "Yaourt Fraise 110g",
-      qty: 4,
-      reason: locale === "ar" ? "تجاوز تاريخ الصلاحية DLC" : "Périmé",
-      date: "Hier",
-    },
-  ]);
 
   const handleApplyClearanceMarkdown = (productId: string) => {
     playSuccessSound();
@@ -151,15 +129,15 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
 
   return (
     <div dir="ltr" className="space-y-6">
-      {/* 4 Frosted Liquid Glass KPI Cards matching Image 3 */}
+      {/* 4 Multi-Layered Frosted Glass KPI Cards matching Blueprint */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Total Cost Value MAD */}
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-transparent backdrop-blur-xl border border-white/[0.12] shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_12px_30px_-10px_rgba(0,0,0,0.5)] flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs font-semibold text-zinc-400">
+        <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs font-semibold text-zinc-300">
             <span>Total Cost Value MAD</span>
             <ArrowUpRight className="w-4 h-4 text-[#2DD4BF]" />
           </div>
-          <div className="mt-3">
+          <div className="mt-4">
             <span className="text-2xl font-black text-white font-mono tracking-tight">
               2,450,000{" "}
               <span className="text-sm font-semibold text-zinc-400">MAD</span>
@@ -168,11 +146,11 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
         </div>
 
         {/* Card 2: Retail Shelf Value MAD */}
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-transparent backdrop-blur-xl border border-white/[0.12] shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_12px_30px_-10px_rgba(0,0,0,0.5)] flex flex-col justify-between">
-          <div className="text-xs font-semibold text-zinc-400">
+        <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+          <div className="text-xs font-semibold text-zinc-300">
             <span>Retail Shelf Value MAD</span>
           </div>
-          <div className="mt-3">
+          <div className="mt-4">
             <span className="text-2xl font-black text-white font-mono tracking-tight">
               3,980,000{" "}
               <span className="text-sm font-semibold text-zinc-400">MAD</span>
@@ -180,13 +158,13 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
           </div>
         </div>
 
-        {/* Card 3: DLC Expiry Alerts */}
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-transparent backdrop-blur-xl border border-white/[0.12] shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_12px_30px_-10px_rgba(0,0,0,0.5)] flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs font-semibold text-zinc-400">
+        {/* Card 3: DLC Expiry Alerts (with Red Alert Icon) */}
+        <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs font-semibold text-zinc-300">
             <span>DLC Expiry Alerts</span>
-            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <AlertTriangle className="w-4 h-4 text-[#F87171]" />
           </div>
-          <div className="mt-3">
+          <div className="mt-4">
             <span className="text-2xl font-black text-white font-mono tracking-tight">
               38{" "}
               <span className="text-sm font-semibold text-zinc-400">items</span>
@@ -195,17 +173,19 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
         </div>
 
         {/* Card 4: Gas & Crate Consigne Balance */}
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-transparent backdrop-blur-xl border border-white/[0.12] shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_12px_30px_-10px_rgba(0,0,0,0.5)] flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs font-semibold text-zinc-400">
+        <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs font-semibold text-zinc-300">
             <span>Gas & Crate Consigne Balance</span>
-            <Package className="w-4 h-4 text-[#2DD4BF]" />
+            <div className="w-6 h-6 rounded-md bg-[#2DD4BF]/20 border border-[#2DD4BF]/40 flex items-center justify-center">
+              <Package className="w-3.5 h-3.5 text-[#2DD4BF]" />
+            </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-[#5EEAD4] font-mono tracking-tight">
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-2xl font-black text-white font-mono tracking-tight">
               +{gasFull}
             </span>
             <span className="text-xs font-semibold text-zinc-400">Units /</span>
-            <span className="text-sm font-bold text-rose-400 font-mono">
+            <span className="text-sm font-bold text-[#F87171] font-mono">
               -{gasEmpty}
             </span>
             <span className="text-xs font-semibold text-zinc-400">Empty</span>
@@ -213,7 +193,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
         </div>
       </div>
 
-      {/* Horizontal Underlined Tabs matching Image 3 */}
+      {/* Horizontal Underlined Tabs matching Image Blueprint */}
       <div className="flex items-center gap-6 border-b border-white/[0.08] text-sm font-semibold select-none pt-2">
         <button
           type="button"
@@ -253,19 +233,19 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
       </div>
 
       {/* =======================================================================
-         TAB 1 & 2: DATA TABLE (Matching Image 3 Blueprint)
+         TAB 1 & 2: DATA TABLE (Matching Image Blueprint)
          ======================================================================= */}
       {activeTab !== "shrinkage" ? (
-        <div className="rounded-2xl border border-white/[0.08] bg-[#0E1318]/90 backdrop-blur-xl overflow-hidden shadow-xl">
+        <div className="rounded-2xl border border-white/[0.12] bg-[#0E1318]/90 backdrop-blur-2xl overflow-hidden shadow-2xl">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#121820] text-zinc-400 font-semibold border-b border-white/[0.08]">
+            <thead className="bg-[#141A22] text-zinc-400 font-semibold border-b border-white/[0.08]">
               <tr>
                 <th className="py-3.5 px-5">Product</th>
                 <th className="py-3.5 px-4">Aisle</th>
                 <th className="py-3.5 px-4">Pack vs Unit</th>
                 <th className="py-3.5 px-4">DLC</th>
                 <th className="py-3.5 px-4">-30% Promo</th>
-                <th className="py-3.5 px-5 text-right">Actions</th>
+                <th className="py-3.5 px-5 text-right"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.05]">
@@ -273,20 +253,20 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
                 const isYellow = item.dlcVariant === "yellow";
                 const isOrange = item.dlcVariant === "orange";
                 const badgeClass = isYellow
-                  ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                  ? "bg-[#F59E0B]/15 border-[#F59E0B]/30 text-[#FBBF24]"
                   : isOrange
-                  ? "bg-orange-500/10 border-orange-500/30 text-orange-300"
-                  : "bg-emerald-500/10 border-emerald-500/30 text-emerald-300";
+                  ? "bg-[#EA580C]/15 border-[#EA580C]/30 text-[#FB923C]"
+                  : "bg-[#10B981]/15 border-[#10B981]/30 text-[#34D399]";
 
                 return (
                   <tr
                     key={item.id}
-                    className="hover:bg-white/[0.02] transition-colors"
+                    className="hover:bg-white/[0.03] transition-colors"
                   >
-                    {/* Product Name + Transparent Cutout on Checkerboard */}
+                    {/* Product Name + White-Background Product PNG Thumbnail */}
                     <td className="py-3.5 px-5">
                       <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-xl bg-[linear-gradient(45deg,#18181b_25%,transparent_25%),linear-gradient(-45deg,#18181b_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#18181b_75%),linear-gradient(-45deg,transparent_75%,#18181b_75%)] bg-[size:8px_8px] bg-[#0A0D10] border border-white/10 p-1 flex items-center justify-center shrink-0">
+                        <div className="w-12 h-12 rounded-xl bg-white p-1.5 flex items-center justify-center shrink-0 shadow-md border border-white/20">
                           {item.imageUrl ? (
                             <img
                               src={item.imageUrl}
@@ -294,8 +274,8 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
                               className="w-full h-full object-contain filter drop-shadow"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-xs font-bold font-mono text-zinc-300 bg-zinc-900 rounded-lg">
-                              PNG
+                            <div className="w-full h-full rounded-lg bg-zinc-100 flex items-center justify-center">
+                              <Package className="w-6 h-6 text-zinc-700" />
                             </div>
                           )}
                         </div>
@@ -310,33 +290,33 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
                       </div>
                     </td>
 
-                    {/* Aisle Badge */}
+                    {/* Aisle Pill (Slate/Teal Frosted Pill) */}
                     <td className="py-3.5 px-4">
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-[#131920] border border-white/10 text-zinc-300">
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#1E293B]/80 text-[#94A3B8] border border-white/[0.08]">
                         {item.aisle}
                       </span>
                     </td>
 
                     {/* Pack vs Unit */}
-                    <td className="py-3.5 px-4 font-mono text-zinc-300">
+                    <td className="py-3.5 px-4 font-mono font-medium text-zinc-300">
                       {item.packInfo}
                     </td>
 
                     {/* DLC Badge */}
                     <td className="py-3.5 px-4">
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold border font-mono ${badgeClass}`}
+                        className={`px-3 py-1 rounded-full text-xs font-mono font-bold border ${badgeClass}`}
                       >
                         {item.dlc} ({item.dlcLabel})
                       </span>
                     </td>
 
-                    {/* -30% Promo Pill Button */}
+                    {/* -30% Promo Luminous Teal Pill Button */}
                     <td className="py-3.5 px-4">
                       <button
                         type="button"
                         onClick={() => handleApplyClearanceMarkdown(item.id)}
-                        className="px-3.5 py-1 rounded-full bg-[#14B8A6] hover:bg-[#2DD4BF] text-[#041E1B] font-extrabold text-xs shadow-sm transition active:scale-95 cursor-pointer"
+                        className="px-4 py-1.5 rounded-full bg-[#2DD4BF] hover:bg-[#5EEAD4] text-[#042F2E] font-black text-xs shadow-[0_0_15px_rgba(45,212,191,0.4)] transition-all active:scale-95 cursor-pointer"
                       >
                         -30% Promo
                       </button>
@@ -347,7 +327,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
                       <button
                         type="button"
                         onClick={() => handlePrintShelfLabel(item)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#151B22] hover:bg-[#1C242E] border border-white/10 text-xs font-semibold text-zinc-200 hover:text-white transition cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#181C22] hover:bg-[#222832] border border-white/10 text-white text-xs font-medium transition cursor-pointer"
                       >
                         <Printer className="w-3.5 h-3.5 text-zinc-400" />
                         <span>Print 40x30mm Shelf Label</span>
@@ -364,7 +344,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
            TAB 3: CONSIGNE & SHRINKAGE AUDIT
            ======================================================================= */
         <div className="space-y-4 animate-fadeIn">
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-transparent backdrop-blur-xl border border-white/[0.12] space-y-4">
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl space-y-4">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <Package className="w-4 h-4 text-[#2DD4BF]" />
               <span>Consigne Gas & Crate Tracking</span>

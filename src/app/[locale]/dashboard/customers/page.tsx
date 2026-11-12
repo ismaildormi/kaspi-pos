@@ -277,31 +277,28 @@ export default function CustomersPage() {
 
       {/* Main Container */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 space-y-6">
-        {/* KPI Cards */}
+        {/* KPI Cards (Multi-Layered Frosted Glass) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="group relative p-5 rounded-3xl bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-white/20 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
-            <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
-            <div className="relative">
-              <span className="text-xs text-zinc-500 block mb-1 group-hover:text-zinc-400 transition-colors">{t.customers.totalCustomers}</span>
-              <span className="text-2xl font-black text-white font-mono">{customers.length}</span>
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+            <span className="text-xs font-semibold text-zinc-300 block mb-1">{t.customers.totalCustomers}</span>
+            <div className="mt-3">
+              <span className="text-2xl font-black text-white font-mono tracking-tight">{customers.length}</span>
             </div>
           </div>
 
-          <div className="group relative p-5 rounded-3xl bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-white/20 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
-            <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
-            <div className="relative">
-              <span className="text-xs text-zinc-500 block mb-1 group-hover:text-zinc-400 transition-colors">{t.customers.totalActiveCredits}</span>
-              <span className="text-2xl font-black text-white font-mono">
-                {totalCredit.toFixed(2)} MAD
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+            <span className="text-xs font-semibold text-zinc-300 block mb-1">{t.customers.totalActiveCredits}</span>
+            <div className="mt-3">
+              <span className="text-2xl font-black text-white font-mono tracking-tight">
+                {totalCredit.toFixed(2)} <span className="text-sm font-semibold text-zinc-400">MAD</span>
               </span>
             </div>
           </div>
 
-          <div className="group relative p-5 rounded-3xl bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-white/20 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
-            <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
-            <div className="relative">
-              <span className="text-xs text-zinc-500 block mb-1 group-hover:text-zinc-400 transition-colors">{t.customers.loyaltyPointsAccumulated}</span>
-              <span className="text-2xl font-black text-white font-mono">{totalPoints} pts</span>
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+            <span className="text-xs font-semibold text-zinc-300 block mb-1">{t.customers.loyaltyPointsAccumulated}</span>
+            <div className="mt-3">
+              <span className="text-2xl font-black text-[#5EEAD4] font-mono tracking-tight">{totalPoints} <span className="text-sm font-semibold text-zinc-400">pts</span></span>
             </div>
           </div>
         </div>
@@ -557,13 +554,14 @@ export default function CustomersPage() {
                 <button
                   type="button"
                   onClick={() => setCreditActionType("payment")}
-                  className={`py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  className={`py-2 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1 ${
                     creditActionType === "payment"
                       ? "bg-emerald-500 text-black"
                       : "text-zinc-400 hover:text-white"
                   }`}
                 >
-                  ✓ {t.customers.paymentCollect}
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{t.customers.paymentCollect}</span>
                 </button>
                 <button
                   type="button"

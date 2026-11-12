@@ -415,41 +415,41 @@ export default function BillingDashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80">
-              <span className="text-xs text-zinc-500 block mb-1">
+            <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl">
+              <span className="text-xs text-zinc-300 font-semibold block mb-1">
                 {t.registerCapacity}
               </span>
-              <span className="text-sm font-bold text-white font-mono flex items-center gap-1.5">
-                <Monitor className="w-3.5 h-3.5 text-zinc-400" />
+              <span className="text-sm font-bold text-white font-mono flex items-center gap-1.5 mt-2">
+                <Monitor className="w-3.5 h-3.5 text-[#2DD4BF]" />
                 {subscription?.maxDevices ?? 1} {t.licensedDevices}
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80">
-              <span className="text-xs text-zinc-500 block mb-1">
+            <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl">
+              <span className="text-xs text-zinc-300 font-semibold block mb-1">
                 {t.currentPeriod}
               </span>
-              <span className="text-sm font-bold text-white font-mono">
+              <span className="text-sm font-bold text-white font-mono mt-2 block">
                 {subscription?.currentPeriodEnd
                   ? new Date(subscription.currentPeriodEnd).toLocaleDateString()
                   : t.noExpiration}
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80">
-              <span className="text-xs text-zinc-500 block mb-1">
+            <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl">
+              <span className="text-xs text-zinc-300 font-semibold block mb-1">
                 {t.daysRemaining}
               </span>
-              <span className="text-sm font-bold text-white font-mono">
+              <span className="text-sm font-bold text-[#5EEAD4] font-mono mt-2 block">
                 {subscription?.daysRemaining ?? 14} {t.days}
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80">
-              <span className="text-xs text-zinc-500 block mb-1">
+            <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl">
+              <span className="text-xs text-zinc-300 font-semibold block mb-1">
                 {t.billingStatus}
               </span>
-              <span className="text-sm font-bold text-white">
+              <span className="text-sm font-bold text-white mt-2 block">
                 {subscription?.status === "active"
                   ? t.statusAuto
                   : t.statusActionRequired}

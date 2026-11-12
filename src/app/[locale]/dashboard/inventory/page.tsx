@@ -243,7 +243,7 @@ export default async function InventoryPage({
       )}
 
       {/* AI PREDICTIVE STOCKOUT ANTICIPATION MODULE */}
-      <div className="rounded-2xl border border-white/10 bg-[#111113] p-5 space-y-4 relative overflow-hidden">
+      <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 text-white flex items-center justify-center">

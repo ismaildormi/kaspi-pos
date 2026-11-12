@@ -148,16 +148,18 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
               playBarcodeScanSound();
               addToCart(product);
             }}
-            className={`group relative h-[210px] rounded-2xl bg-[#0E1317] hover:bg-[#12191F] border ${
-              inCartQty > 0 ? "border-[#14B8A6]/70 shadow-[0_0_20px_rgba(20,184,166,0.18)]" : "border-white/[0.08]"
-            } hover:border-[#14B8A6]/50 p-4 flex flex-col items-center justify-between text-center overflow-hidden cursor-pointer select-none transition-all duration-150 active:scale-[0.98] shadow-[0_10px_28px_-10px_rgba(0,0,0,0.65)]`}
+            className={`group relative h-[210px] rounded-2xl border ${
+              inCartQty > 0
+                ? "border-[#2DD4BF]/80 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_0_24px_rgba(45,212,191,0.25)] bg-[linear-gradient(135deg,rgba(45,212,191,0.12)_0%,rgba(255,255,255,0.03)_48%,rgba(14,19,24,0.95)_100%)]"
+                : "border-white/[0.14] hover:border-[#2DD4BF]/50 bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.02)_48%,rgba(14,19,24,0.92)_100%)] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.18),0_10px_28px_-10px_rgba(0,0,0,0.65)]"
+            } p-4 flex flex-col items-center justify-between text-center overflow-hidden cursor-pointer select-none transition-all duration-150 active:scale-[0.98] backdrop-blur-2xl`}
           >
             {/* Top 3px Glowing Teal Accent Strip */}
-            <div className="absolute top-0 inset-x-6 h-[2.5px] rounded-b-full bg-gradient-to-r from-transparent via-[#14B8A6] to-transparent opacity-80" />
+            <div className="absolute top-0 inset-x-6 h-[2.5px] rounded-b-full bg-gradient-to-r from-transparent via-[#2DD4BF] to-transparent opacity-80" />
 
             {/* Top-Right Live Quantity Circle Badge (ONLY visible when inCartQty > 0) */}
             {inCartQty > 0 && (
-              <span className="absolute top-3 right-3 z-10 w-7 h-7 rounded-full bg-[#14B8A6] text-[#041E1B] font-mono font-black text-xs flex items-center justify-center shadow-[0_0_16px_rgba(20,184,166,0.65)] animate-in zoom-in-75">
+              <span className="absolute top-3 right-3 z-10 w-7 h-7 rounded-full bg-[#2DD4BF] text-[#042F2E] font-mono font-black text-xs flex items-center justify-center shadow-[0_0_16px_rgba(45,212,191,0.7)] animate-in zoom-in-75">
                 {inCartQty}
               </span>
             )}

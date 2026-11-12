@@ -385,59 +385,50 @@ export default function SuppliersPage() {
 
       {/* Main Container */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 space-y-6">
-        {/* KPI Summary Cards */}
+        {/* KPI Summary Cards (Multi-Layered Frosted Glass) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Total Suppliers */}
-          <div className="group relative bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-white/20 hover:-translate-y-0.5 transition-all duration-300 rounded-3xl p-5 shadow-xs overflow-hidden">
-            <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
-            <div className="relative">
-              <div className="flex items-center justify-between text-zinc-400 mb-2">
-                <span className="text-xs font-semibold group-hover:text-zinc-300 transition-colors">{t.suppliers.title}</span>
-                <Truck className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:scale-110 transition-all" />
-              </div>
-              <div className="text-2xl font-black text-white font-mono">
-                {summary.totalSuppliers || suppliers.length}
-              </div>
-              <div className="text-[11px] text-zinc-500 mt-1">
-                {t.suppliers.registeredPartners}
-              </div>
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+            <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold mb-2">
+              <span>{t.suppliers.title}</span>
+              <Truck className="w-4 h-4 text-[#2DD4BF]" />
+            </div>
+            <div className="text-2xl font-black text-white font-mono tracking-tight mt-2">
+              {summary.totalSuppliers || suppliers.length}
+            </div>
+            <div className="text-[11px] text-zinc-400 mt-1">
+              {t.suppliers.registeredPartners}
             </div>
           </div>
 
           {/* Total Debt Owed */}
-          <div className="group relative bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-white/20 hover:-translate-y-0.5 transition-all duration-300 rounded-3xl p-5 shadow-xs overflow-hidden">
-            <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
-            <div className="relative">
-              <div className="flex items-center justify-between text-zinc-400 mb-2">
-                <span className="text-xs font-semibold group-hover:text-zinc-300 transition-colors">{t.suppliers.totalDebtOwed}</span>
-                <Wallet className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:scale-110 transition-all" />
-              </div>
-              <div className="text-2xl font-black text-white font-mono">
-                {summary.totalDebtOwedMAD.toLocaleString()} <span className="text-sm font-normal text-zinc-400">MAD</span>
-              </div>
-              <div className="text-[11px] text-zinc-500 mt-1">
-                {t.suppliers.totalDebtDesc}
-              </div>
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+            <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold mb-2">
+              <span>{t.suppliers.totalDebtOwed}</span>
+              <Wallet className="w-4 h-4 text-[#2DD4BF]" />
+            </div>
+            <div className="text-2xl font-black text-white font-mono tracking-tight mt-2">
+              {summary.totalDebtOwedMAD.toLocaleString()} <span className="text-sm font-semibold text-zinc-400">MAD</span>
+            </div>
+            <div className="text-[11px] text-zinc-400 mt-1">
+              {t.suppliers.totalDebtDesc}
             </div>
           </div>
 
           {/* Upcoming Maturities */}
-          <div className="group relative bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-white/20 hover:-translate-y-0.5 transition-all duration-300 rounded-3xl p-5 shadow-xs overflow-hidden">
-            <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
-            <div className="relative">
-              <div className="flex items-center justify-between text-zinc-400 mb-2">
-                <span className="text-xs font-semibold group-hover:text-zinc-300 transition-colors">{t.suppliers.upcomingMaturities}</span>
-                <Clock className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:scale-110 transition-all" />
-              </div>
-              <div className="text-2xl font-black text-white font-mono flex items-baseline gap-2">
-                <span>{summary.upcomingMaturitiesCount}</span>
-                <span className="text-sm font-normal text-zinc-400">
-                  ({summary.upcomingMaturitiesAmountMAD.toLocaleString()} MAD)
-                </span>
-              </div>
-              <div className="text-[11px] text-zinc-500 mt-1">
-                {t.suppliers.maturitiesDesc}
-              </div>
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+            <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold mb-2">
+              <span>{t.suppliers.upcomingMaturities}</span>
+              <Clock className="w-4 h-4 text-amber-400" />
+            </div>
+            <div className="text-2xl font-black text-white font-mono tracking-tight mt-2 flex items-baseline gap-2">
+              <span>{summary.upcomingMaturitiesCount}</span>
+              <span className="text-sm font-semibold text-zinc-400">
+                ({summary.upcomingMaturitiesAmountMAD.toLocaleString()} MAD)
+              </span>
+            </div>
+            <div className="text-[11px] text-zinc-400 mt-1">
+              {t.suppliers.maturitiesDesc}
             </div>
           </div>
         </div>

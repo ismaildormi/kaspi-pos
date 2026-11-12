@@ -168,11 +168,11 @@ export default async function DashboardOverviewPage({
         </div>
       </div>
 
-      {/* KPI Cards (Clean Vercel Geist Monochrome) */}
+      {/* KPI Cards (Multi-Layered Frosted Glass matching Blueprint) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Revenue / Daily Register Sales */}
-        <div className="group relative rounded-2xl bg-[#0D0D10] border border-white/[0.08] hover:border-white/[0.20] p-5 transition-all duration-200 overflow-hidden">
-          <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
+        <div className="group relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl transition-all duration-200">
+          <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold">
             <span>
               {currentStoreType === "grocery"
                 ? locale === "ar"
@@ -182,7 +182,7 @@ export default async function DashboardOverviewPage({
                   : "Chiffre d'Affaires Caisse"
                 : t.dashboard.kpiRevenue}
             </span>
-            <TrendingUp className="h-4 w-4 text-zinc-400 group-hover:text-white transition-colors" />
+            <TrendingUp className="h-4 w-4 text-[#2DD4BF]" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-black text-white font-mono tracking-tight">
@@ -201,8 +201,8 @@ export default async function DashboardOverviewPage({
         </div>
 
         {/* KPI 2: FMCG Velocity / Transactions */}
-        <div className="group relative rounded-2xl bg-[#0D0D10] border border-white/[0.08] hover:border-white/[0.20] p-5 transition-all duration-200 overflow-hidden">
-          <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
+        <div className="group relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl transition-all duration-200">
+          <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold">
             <span>
               {currentStoreType === "grocery"
                 ? locale === "ar"
@@ -228,9 +228,9 @@ export default async function DashboardOverviewPage({
           </div>
         </div>
 
-        {/* KPI 3: Shelf Low-Stock & Expiry Alerts */}
-        <div className="group relative rounded-2xl bg-[#0D0D10] border border-white/[0.08] hover:border-white/[0.20] p-5 transition-all duration-200 overflow-hidden">
-          <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
+        {/* KPI 3: Shelf Low-Stock & Expiry Alerts (with Red Alert Icon) */}
+        <div className="group relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl transition-all duration-200">
+          <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold">
             <span>
               {currentStoreType === "grocery"
                 ? locale === "ar"
@@ -240,7 +240,7 @@ export default async function DashboardOverviewPage({
                   : "Alertes Péremption & Rupture"
                 : t.dashboard.kpiProducts}
             </span>
-            <AlertTriangle className="h-4 w-4 text-zinc-400 group-hover:text-white transition-colors" />
+            <AlertTriangle className="h-4 w-4 text-[#F87171]" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-black text-white font-mono tracking-tight">
@@ -259,8 +259,8 @@ export default async function DashboardOverviewPage({
         </div>
 
         {/* KPI 4: Household Credit & Loyalty */}
-        <div className="group relative rounded-2xl bg-[#0D0D10] border border-white/[0.08] hover:border-white/[0.20] p-5 transition-all duration-200 overflow-hidden">
-          <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
+        <div className="group relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl transition-all duration-200">
+          <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold">
             <span>
               {currentStoreType === "grocery"
                 ? locale === "ar"

@@ -194,32 +194,33 @@ export default async function ReportsPage({
           </span>
         </div>
 
+        {/* Multi-Layered Frosted Glass KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-            <span className="text-[11px] text-zinc-400 font-medium">{t.reports.dailySales}</span>
-            <div className="text-2xl font-black text-white font-mono mt-1">
-              {totalMad.toFixed(2)} {t.common.currency}
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+            <span className="text-xs text-zinc-300 font-semibold">{t.reports.dailySales}</span>
+            <div className="text-2xl font-black text-white font-mono tracking-tight mt-3">
+              {totalMad.toFixed(2)} <span className="text-sm font-semibold text-zinc-400">{t.common.currency}</span>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-            <span className="text-[11px] text-zinc-400 font-medium">{t.reports.todayCash}</span>
-            <div className="text-2xl font-black text-white font-mono mt-1">
-              {cashMad.toFixed(2)} {t.common.currency}
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+            <span className="text-xs text-zinc-300 font-semibold">{t.reports.todayCash}</span>
+            <div className="text-2xl font-black text-white font-mono tracking-tight mt-3">
+              {cashMad.toFixed(2)} <span className="text-sm font-semibold text-zinc-400">{t.common.currency}</span>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-            <span className="text-[11px] text-zinc-400 font-medium">{t.reports.todayCard}</span>
-            <div className="text-2xl font-black text-white font-mono mt-1">
-              {cardMad.toFixed(2)} {t.common.currency}
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+            <span className="text-xs text-zinc-300 font-semibold">{t.reports.todayCard}</span>
+            <div className="text-2xl font-black text-white font-mono tracking-tight mt-3">
+              {cardMad.toFixed(2)} <span className="text-sm font-semibold text-zinc-400">{t.common.currency}</span>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-            <span className="text-[11px] text-zinc-400 font-medium">{t.reports.todayCredit}</span>
-            <div className="text-2xl font-black text-white font-mono mt-1">
-              {creditMad.toFixed(2)} {t.common.currency}
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.16] bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_48%,rgba(14,19,24,0.92)_100%)] p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_14px_32px_-10px_rgba(0,0,0,0.65)] backdrop-blur-2xl flex flex-col justify-between">
+            <span className="text-xs text-zinc-300 font-semibold">{t.reports.todayCredit}</span>
+            <div className="text-2xl font-black text-[#5EEAD4] font-mono tracking-tight mt-3">
+              {creditMad.toFixed(2)} <span className="text-sm font-semibold text-zinc-400">{t.common.currency}</span>
             </div>
           </div>
         </div>

@@ -697,23 +697,23 @@ export default function ProductsListPage() {
             return (
               <div
                 key={product.id}
-                className="group relative rounded-2xl border border-zinc-800 bg-zinc-900/80 hover:border-zinc-700 transition-all flex flex-col overflow- visible"
+                className="group relative rounded-2xl border border-white/[0.14] bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.02)_48%,rgba(14,19,24,0.92)_100%)] hover:border-white/[0.25] transition-all flex flex-col overflow-visible shadow-[inset_0_1px_0_0_rgba(255,255,255,0.18)] backdrop-blur-2xl"
               >
                 {/* Product Image Container */}
-                <div className="relative h-44 w-full bg-zinc-950 rounded-t-2xl overflow-hidden border-b border-zinc-800 flex items-center justify-center">
+                <div className="relative h-44 w-full bg-white rounded-t-2xl overflow-hidden border-b border-white/[0.10] flex items-center justify-center p-2">
                   {product.imageUrl ? (
                     <img
                       src={product.imageUrl}
                       alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 filter drop-shadow-sm"
                       loading="lazy"
                     />
                   ) : (
-                    <div className="flex flex-col items-center justify-center gap-2 text-zinc-600">
-                      <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
-                        <Package className="w-6 h-6 stroke-[1.8] text-zinc-400" />
+                    <div className="flex flex-col items-center justify-center gap-2 text-zinc-500">
+                      <div className="w-12 h-12 rounded-2xl bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-700">
+                        <Package className="w-6 h-6 stroke-[1.8]" />
                       </div>
-                      <span className="text-[11px] font-mono text-zinc-500">
+                      <span className="text-[11px] font-mono text-zinc-600 font-semibold">
                         {t.products.noPhoto}
                       </span>
                     </div>
