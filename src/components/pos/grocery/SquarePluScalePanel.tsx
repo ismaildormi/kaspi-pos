@@ -80,15 +80,37 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
     return list;
   }, [customPlus, catalogProducts]);
 
-  const [selectedPlu, setSelectedPlu] = useState<PluItem | null>(() => allPluItems[0] || null);
+  const fallbackPlu: PluItem = useMemo(() => {
+    if (catalogProducts.length > 0) {
+      const p = catalogProducts[0];
+      return {
+        plu: p.sku?.replace(/\D/g, "").slice(-4) || "1001",
+        nameAr: p.name,
+        nameFr: p.name,
+        pricePerKg: Number(p.salePrice || p.price || 10),
+        isCustom: false,
+      };
+    }
+    return {
+      plu: "1001",
+      nameAr: locale === "ar" ? "منتج بالوزن" : locale === "en" ? "Weighed Product" : "Article Pesé",
+      nameFr: locale === "en" ? "Weighed Product" : locale === "ar" ? "منتج بالوزن" : "Article Pesé",
+      pricePerKg: 10,
+      isCustom: false,
+    };
+  }, [catalogProducts, locale]);
+
+  const [selectedPlu, setSelectedPlu] = useState<PluItem | null>(() => allPluItems[0] || fallbackPlu);
 
   useEffect(() => {
-    if (!selectedPlu && allPluItems.length > 0) {
-      setSelectedPlu(allPluItems[0]);
-    } else if (selectedPlu && !allPluItems.some((item) => item.plu === selectedPlu.plu)) {
-      setSelectedPlu(allPluItems[0] || null);
+    if (!selectedPlu) {
+      setSelectedPlu(allPluItems[0] || fallbackPlu);
+    } else if (allPluItems.length > 0 && !allPluItems.some((item) => item.plu === selectedPlu.plu)) {
+      setSelectedPlu(allPluItems[0] || fallbackPlu);
     }
-  }, [allPluItems, selectedPlu]);
+  }, [allPluItems, fallbackPlu, selectedPlu]);
+
+  const effectiveSelectedPlu = selectedPlu || allPluItems[0] || fallbackPlu;
 
   // Dual Calculation Mode: "weight" (kg/g) or "amount" (customer wants X MAD)
   const [calcMode, setCalcMode] = useState<"weight" | "amount">("weight");
@@ -104,8 +126,8 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
   const [newNameFr, setNewNameFr] = useState("");
   const [newPriceKg, setNewPriceKg] = useState("");
 
-  const weightPresets = [0.25, 0.5, 1.0, 2.0, 5.0];
-  const amountPresets = [5, 10, 15, 20, 50];
+  const weightPresets = [0.1, 0.25, 0.5, 1.0];
+  const amountPresets = [10, 15, 20, 50];
 
   const handleKeypadPress = (val: string) => {
     playTapSound();
@@ -146,7 +168,8 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
   };
 
   // Math Calculations: Real zero-math for the worker
-  const activePricePerKg = selectedPlu ? selectedPlu.pricePerKg : 0;
+  const activePlu = effectiveSelectedPlu;
+  const activePricePerKg = activePlu ? activePlu.pricePerKg : 0;
   const currentWeightKg = parseFloat(weightInput) || 0;
   const currentTargetAmount = parseFloat(amountInput) || 0;
 
@@ -158,8 +181,14 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
   const computedWeightGrams = Math.round(computedWeightFromAmountKg * 1000);
 
   const handleAddToCart = () => {
-    if (!selectedPlu) {
-      toast.error(locale === "ar" ? "يرجى اختيار سلعة أولاً" : "Veuillez sélectionner un article");
+    if (!activePlu) {
+      toast.error(
+        locale === "ar"
+          ? "يرجى اختيار سلعة أولاً"
+          : locale === "en"
+          ? "Please select an item first"
+          : "Veuillez sélectionner un article"
+      );
       return;
     }
 
@@ -170,14 +199,16 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
       const lineTotal = computedTotalFromWeight;
       const displayName =
         locale === "ar"
-          ? `${selectedPlu.nameAr} (${currentWeightKg.toFixed(3)} كغ)`
-          : `${selectedPlu.nameFr} (${currentWeightKg.toFixed(3)} kg)`;
+          ? `${activePlu.nameAr} (${currentWeightKg.toFixed(3)} كغ)`
+          : locale === "en"
+          ? `${activePlu.nameFr || activePlu.nameAr} (${currentWeightKg.toFixed(3)} kg)`
+          : `${activePlu.nameFr} (${currentWeightKg.toFixed(3)} kg)`;
 
       const pluProduct: PosProduct = {
-        id: `plu_${selectedPlu.plu}_${Date.now()}`,
+        id: `plu_${activePlu.plu}_${Date.now()}`,
         name: displayName,
-        sku: `PLU-${selectedPlu.plu}`,
-        barcode: `20${selectedPlu.plu}00000`,
+        sku: `PLU-${activePlu.plu}`,
+        barcode: `20${activePlu.plu}00000`,
         salePrice: lineTotal,
         taxRate: 0,
         trackStock: true,
@@ -190,14 +221,16 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
       if (currentTargetAmount <= 0) return;
       const displayName =
         locale === "ar"
-          ? `${selectedPlu.nameAr} (${computedWeightGrams} غرام - ${computedWeightFromAmountKg.toFixed(3)} كغ)`
-          : `${selectedPlu.nameFr} (${computedWeightGrams}g - ${computedWeightFromAmountKg.toFixed(3)}kg)`;
+          ? `${activePlu.nameAr} (${computedWeightGrams} غرام - ${computedWeightFromAmountKg.toFixed(3)} كغ)`
+          : locale === "en"
+          ? `${activePlu.nameFr || activePlu.nameAr} (${computedWeightGrams}g - ${computedWeightFromAmountKg.toFixed(3)}kg)`
+          : `${activePlu.nameFr} (${computedWeightGrams}g - ${computedWeightFromAmountKg.toFixed(3)}kg)`;
 
       const pluProduct: PosProduct = {
-        id: `plu_${selectedPlu.plu}_${Date.now()}`,
+        id: `plu_${activePlu.plu}_${Date.now()}`,
         name: displayName,
-        sku: `PLU-${selectedPlu.plu}`,
-        barcode: `20${selectedPlu.plu}00000`,
+        sku: `PLU-${activePlu.plu}`,
+        barcode: `20${activePlu.plu}00000`,
         salePrice: currentTargetAmount,
         taxRate: 0,
         trackStock: true,
@@ -214,13 +247,25 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
   const handleSaveCustomPlu = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPluCode.trim() || !newNameFr.trim() || !newPriceKg.trim()) {
-      toast.error(locale === "ar" ? "يرجى ملء جميع الحقول" : "Veuillez remplir tous les champs");
+      toast.error(
+        locale === "ar"
+          ? "يرجى ملء جميع الحقول"
+          : locale === "en"
+          ? "Please fill all required fields"
+          : "Veuillez remplir tous les champs"
+      );
       return;
     }
 
     const price = parseFloat(newPriceKg);
     if (isNaN(price) || price <= 0) {
-      toast.error(locale === "ar" ? "يرجى إدخال سعر صحيح لكل كغ" : "Prix au kg invalide");
+      toast.error(
+        locale === "ar"
+          ? "يرجى إدخال سعر صحيح لكل كغ"
+          : locale === "en"
+          ? "Invalid price per kg"
+          : "Prix au kg invalide"
+      );
       return;
     }
 
@@ -244,7 +289,13 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
     setNewNameAr("");
     setNewNameFr("");
     setNewPriceKg("");
-    toast.success(locale === "ar" ? "تمت إضافة السلعة للميزان بنجاح" : "Article pesé ajouté avec succès");
+    toast.success(
+      locale === "ar"
+        ? "تمت إضافة السلعة للميزان بنجاح"
+        : locale === "en"
+        ? "Scale item added successfully"
+        : "Article pesé ajouté avec succès"
+    );
   };
 
   const handleDeletePlu = (plu: string) => {
@@ -254,9 +305,15 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
       localStorage.setItem("kaspi_custom_plu_items", JSON.stringify(updated));
     }
     if (selectedPlu?.plu === plu) {
-      setSelectedPlu(updated[0] || null);
+      setSelectedPlu(updated[0] || fallbackPlu);
     }
-    toast.info(locale === "ar" ? "تم حذف السلعة من قائمة الميزان" : "Article retiré");
+    toast.info(
+      locale === "ar"
+        ? "تم حذف السلعة من قائمة الميزان"
+        : locale === "en"
+        ? "Item removed from scale list"
+        : "Article retiré"
+    );
   };
 
   return (
@@ -270,12 +327,20 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
             className="h-8 px-2.5 rounded-lg bg-[#111113] hover:bg-[#18181B] border border-white/[0.08] text-xs font-bold text-zinc-300 hover:text-white flex items-center gap-1.5 cursor-pointer transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>{locale === "ar" ? "العودة للشبكة" : "Grille Articles"}</span>
+            <span>
+              {locale === "ar" ? "العودة للشبكة" : locale === "en" ? "Product Grid" : "Grille Articles"}
+            </span>
           </button>
 
           <div className="flex items-center gap-1.5 text-xs font-bold text-white">
             <Scale className="w-4 h-4 text-zinc-400" />
-            <span>{locale === "ar" ? "ميزان وخضر وفواكه (PLU)" : "Balance & Fruits/Légumes (PLU)"}</span>
+            <span>
+              {locale === "ar"
+                ? "الميزان والخضر/اللحوم (PLU)"
+                : locale === "en"
+                ? "Scale & Produce/Meat (PLU)"
+                : "Balance & Fruits/Légumes (PLU)"}
+            </span>
           </div>
         </div>
 
@@ -286,12 +351,18 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
             className="h-8 px-3 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>{locale === "ar" ? "+ إضافة سلعة للميزان" : "+ Nouvel Article Pesé"}</span>
+            <span>
+              {locale === "ar"
+                ? "+ إضافة سلعة للميزان"
+                : locale === "en"
+                ? "+ New Weighed Item"
+                : "+ Nouvel Article Pesé"}
+            </span>
           </button>
 
-          {selectedPlu && (
+          {activePlu && (
             <span className="hidden sm:inline font-mono text-[11px] text-zinc-400 bg-white/[0.04] px-2.5 py-1 rounded-md border border-white/[0.08]">
-              PLU #{selectedPlu.plu} • {selectedPlu.pricePerKg.toFixed(2)} MAD/kg
+              PLU #{activePlu.plu} • {activePlu.pricePerKg.toFixed(2)} MAD/kg
             </span>
           )}
         </div>
@@ -307,11 +378,13 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                 <Scale className="w-6 h-6" />
               </div>
               <p className="text-sm font-bold text-white">
-                {locale === "ar" ? "لا توجد سلع ميزان مضافة" : "Aucun article pesé"}
+                {locale === "ar" ? "لا توجد سلع ميزان مضافة" : locale === "en" ? "No weighed items" : "Aucun article pesé"}
               </p>
               <p className="text-xs text-zinc-400 max-w-xs">
                 {locale === "ar"
                   ? "أضف سلعة بالوزن (خضر، فواكه، توابل، زيتون) للبدء في الحساب التلقائي"
+                  : locale === "en"
+                  ? "Add a weighed item (produce, meat, spices, bulk) to start automatic calculation"
                   : "Ajoutez un article au poids (fruits, légumes, vrac) pour démarrer"}
               </p>
               <button
@@ -319,13 +392,13 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                 onClick={() => setIsAddModalOpen(true)}
                 className="px-4 py-2 rounded-xl bg-white text-zinc-950 font-bold text-xs hover:bg-zinc-200 transition-colors shadow-xs cursor-pointer"
               >
-                {locale === "ar" ? "+ إضافة أول سلعة للميزان" : "+ Ajouter un premier article"}
+                {locale === "ar" ? "+ إضافة أول سلعة للميزان" : locale === "en" ? "+ Add First Item" : "+ Ajouter un premier article"}
               </button>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-2">
               {allPluItems.map((item) => {
-                const isSelected = selectedPlu?.plu === item.plu;
+                const isSelected = activePlu?.plu === item.plu;
                 return (
                   <div
                     key={item.plu}
@@ -380,18 +453,18 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
 
         {/* Right Side (5 Cols): Compact Dual Mode Calculator (Fits 100% in viewport) */}
         <div className="lg:col-span-5 h-full max-h-[calc(100vh-140px)] flex flex-col justify-between p-2.5 rounded-2xl bg-[#0D0D10] border border-white/[0.08] space-y-2 overflow-y-auto">
-          {selectedPlu ? (
+          {activePlu ? (
             <>
               {/* Active Item Title & Price */}
               <div className="pb-1.5 border-b border-white/[0.08] flex items-center justify-between shrink-0">
                 <div>
-                  <span className="text-[9.5px] font-mono text-zinc-400 font-bold">PLU #{selectedPlu.plu}</span>
+                  <span className="text-[9.5px] font-mono text-zinc-400 font-bold">PLU #{activePlu.plu}</span>
                   <h4 className="font-bold text-xs text-white line-clamp-1">
-                    {locale === "ar" ? selectedPlu.nameAr : selectedPlu.nameFr}
+                    {locale === "ar" ? activePlu.nameAr : activePlu.nameFr}
                   </h4>
                 </div>
                 <span className="text-xs font-mono font-black text-white">
-                  {selectedPlu.pricePerKg.toFixed(2)} <span className="text-[9.5px] text-zinc-400 font-normal">MAD/kg</span>
+                  {activePlu.pricePerKg.toFixed(2)} <span className="text-[9.5px] text-zinc-400 font-normal">MAD/kg</span>
                 </span>
               </div>
 
@@ -410,7 +483,9 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                   }`}
                 >
                   <Weight className="w-3 h-3" />
-                  <span>{locale === "ar" ? "حساب بالوزن (كغ)" : "Par Poids (kg)"}</span>
+                  <span>
+                    {locale === "ar" ? "حساب بالوزن (كغ)" : locale === "en" ? "By Weight (kg)" : "Par Poids (kg)"}
+                  </span>
                 </button>
 
                 <button
@@ -426,7 +501,9 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                   }`}
                 >
                   <Coins className="w-3 h-3" />
-                  <span>{locale === "ar" ? "حساب بالدرهم (X DH)" : "Par Montant (DH)"}</span>
+                  <span>
+                    {locale === "ar" ? "حساب بالدرهم (MAD)" : locale === "en" ? "By Amount (MAD)" : "Par Montant (DH)"}
+                  </span>
                 </button>
               </div>
 
@@ -434,7 +511,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
               {calcMode === "weight" ? (
                 <div className="p-2.5 rounded-xl bg-[#111113] border border-white/[0.08] flex items-baseline justify-between shrink-0">
                   <span className="text-[11px] font-semibold text-zinc-400">
-                    {locale === "ar" ? "الوزن المقاس:" : "Poids mesuré :"}
+                    {locale === "ar" ? "الوزن المقاس:" : locale === "en" ? "Measured Weight:" : "Poids mesuré :"}
                   </span>
                   <div className="flex items-baseline gap-1 font-mono">
                     <span className="text-xl font-black text-white tabular-nums tracking-tight">
@@ -447,7 +524,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                 <div className="p-2.5 rounded-xl bg-[#111113] border border-white/[0.12] space-y-1.5 shrink-0">
                   <div className="flex items-baseline justify-between">
                     <span className="text-[11px] font-semibold text-zinc-400">
-                      {locale === "ar" ? "مبلغ الزبون:" : "Montant demandé :"}
+                      {locale === "ar" ? "مبلغ الزبون:" : locale === "en" ? "Target Amount:" : "Montant demandé :"}
                     </span>
                     <div className="flex items-baseline gap-1 font-mono">
                       <span className="text-xl font-black text-white tabular-nums">
@@ -460,7 +537,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                   {/* Exact Weight To Put on Scale */}
                   <div className="pt-1.5 border-t border-white/[0.06] flex items-center justify-between text-[11.5px] font-mono">
                     <span className="font-bold text-zinc-400">
-                      {locale === "ar" ? "الوزن الواجب وضعه:" : "Poids à servir :"}
+                      {locale === "ar" ? "الوزن الواجب وضعه:" : locale === "en" ? "Target Weight to Serve:" : "Poids à servir :"}
                     </span>
                     <span className="font-black text-white text-sm">
                       {computedWeightGrams}g ({computedWeightFromAmountKg.toFixed(3)}kg)
@@ -520,7 +597,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
               <div className="pt-2 border-t border-white/[0.08] space-y-2 shrink-0">
                 <div className="flex items-baseline justify-between font-mono text-xs">
                   <span className="font-bold text-zinc-400">
-                    {locale === "ar" ? "المجموع المحسوب:" : "Total à ajouter :"}
+                    {locale === "ar" ? "المجموع المحسوب:" : locale === "en" ? "Calculated Total:" : "Total à ajouter :"}
                   </span>
                   <span className="text-lg font-black text-white tabular-nums">
                     {calcMode === "weight" ? computedTotalFromWeight.toFixed(2) : currentTargetAmount.toFixed(2)}{" "}
@@ -538,9 +615,13 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                     {calcMode === "weight"
                       ? locale === "ar"
                         ? `إضافة للسلة (${computedTotalFromWeight.toFixed(2)} MAD)`
+                        : locale === "en"
+                        ? `Add to Cart (${computedTotalFromWeight.toFixed(2)} MAD)`
                         : `Ajouter au Panier (${computedTotalFromWeight.toFixed(2)} MAD)`
                       : locale === "ar"
                       ? `إضافة للسلة (${currentTargetAmount.toFixed(2)} MAD • ${computedWeightGrams}g)`
+                      : locale === "en"
+                      ? `Add to Cart (${currentTargetAmount.toFixed(2)} MAD • ${computedWeightGrams}g)`
                       : `Ajouter au Panier (${currentTargetAmount.toFixed(2)} MAD • ${computedWeightGrams}g)`}
                   </span>
                 </button>
@@ -550,10 +631,10 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
             <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2 text-zinc-400">
               <Scale className="w-8 h-8 text-zinc-600 mb-1" />
               <p className="text-xs font-bold text-white">
-                {locale === "ar" ? "اختر أو أضف سلعة ميزان" : "Sélectionnez un article pesé"}
+                {locale === "ar" ? "اختر أو أضف سلعة ميزان" : locale === "en" ? "Select a weighed item" : "Sélectionnez un article pesé"}
               </p>
               <p className="text-[11px] text-zinc-500">
-                {locale === "ar" ? "اضغط على + إضافة سلعة للبدء" : "Cliquez sur + Nouvel Article"}
+                {locale === "ar" ? "اضغط على + إضافة سلعة للبدء" : locale === "en" ? "Click + New Item to start" : "Cliquez sur + Nouvel Article"}
               </p>
             </div>
           )}
@@ -567,7 +648,13 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Scale className="w-4 h-4 text-zinc-400" />
-                <span>{locale === "ar" ? "إضافة سلعة جديدة للميزان (PLU)" : "Nouvel Article Pesé (PLU)"}</span>
+                <span>
+                  {locale === "ar"
+                    ? "إضافة سلعة جديدة للميزان (PLU)"
+                    : locale === "en"
+                    ? "New Weighed Item (PLU)"
+                    : "Nouvel Article Pesé (PLU)"}
+                </span>
               </h3>
               <button
                 type="button"
@@ -581,7 +668,11 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
             <form onSubmit={handleSaveCustomPlu} className="space-y-3 text-xs">
               <div>
                 <label className="block text-zinc-400 font-semibold mb-1">
-                  {locale === "ar" ? "كود PLU (4 أرقام مثل 4020):" : "Code PLU (4 chiffres, ex: 4020) :"}
+                  {locale === "ar"
+                    ? "كود PLU (4 أرقام مثل 4020):"
+                    : locale === "en"
+                    ? "PLU Code (4 digits, e.g. 4020):"
+                    : "Code PLU (4 chiffres, ex: 4020) :"}
                 </label>
                 <input
                   type="text"
@@ -595,20 +686,24 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
 
               <div>
                 <label className="block text-zinc-400 font-semibold mb-1">
-                  {locale === "ar" ? "اسم السلعة بالعربية:" : "Nom en Arabe :"}
+                  {locale === "ar" ? "اسم السلعة بالعربية:" : locale === "en" ? "Item Name (Arabic):" : "Nom en Arabe :"}
                 </label>
                 <input
                   type="text"
                   value={newNameAr}
                   onChange={(e) => setNewNameAr(e.target.value)}
-                  placeholder="مثال: زيتون أحمر مشرمل"
+                  placeholder={locale === "ar" ? "مثال: زيتون أحمر مشرمل" : "Ex: Red Olives"}
                   className="w-full h-9 px-3 bg-[#111113] border border-white/[0.08] focus:border-white rounded-lg text-white"
                 />
               </div>
 
               <div>
                 <label className="block text-zinc-400 font-semibold mb-1">
-                  {locale === "ar" ? "اسم السلعة بالفرنسية (أو اللاتينية):" : "Nom en Français :"}
+                  {locale === "ar"
+                    ? "اسم السلعة بالفرنسية (أو اللاتينية):"
+                    : locale === "en"
+                    ? "Item Name (Latin / English):"
+                    : "Nom en Français :"}
                 </label>
                 <input
                   type="text"
@@ -622,7 +717,11 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
 
               <div>
                 <label className="block text-zinc-400 font-semibold mb-1">
-                  {locale === "ar" ? "السعر للكيلوغرام (MAD / kg):" : "Prix au kilo (MAD / kg) :"}
+                  {locale === "ar"
+                    ? "السعر للكيلوغرام (MAD / kg):"
+                    : locale === "en"
+                    ? "Price per kg (MAD / kg):"
+                    : "Prix au kilo (MAD / kg) :"}
                 </label>
                 <input
                   type="number"
@@ -641,13 +740,13 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                   onClick={() => setIsAddModalOpen(false)}
                   className="px-3 py-1.5 rounded-lg border border-white/[0.08] text-zinc-400 hover:text-white text-xs cursor-pointer"
                 >
-                  {locale === "ar" ? "إلغاء" : "Annuler"}
+                  {locale === "ar" ? "إلغاء" : locale === "en" ? "Cancel" : "Annuler"}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-1.5 rounded-lg bg-white text-zinc-950 font-bold text-xs hover:bg-zinc-200 transition-colors shadow-xs cursor-pointer"
                 >
-                  {locale === "ar" ? "حفظ وإضافة" : "Enregistrer"}
+                  {locale === "ar" ? "حفظ وإضافة" : locale === "en" ? "Save & Add" : "Enregistrer"}
                 </button>
               </div>
             </form>

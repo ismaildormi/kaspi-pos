@@ -618,14 +618,16 @@ export function OwnerProfileModal({
                 <span>
                   {locale === "ar"
                     ? "2. الحساب البنكي وتسوية المستحقات (RIB)"
-                    : "2. Bank Account & Settlement RIB"}
+                    : locale === "en"
+                    ? "2. Bank Account & Settlement RIB"
+                    : "2. Compte Bancaire & RIB de Virement"}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    {locale === "ar" ? "البنك المغربي" : "Banque Marocaine"}
+                    {locale === "ar" ? "البنك المغربي" : locale === "en" ? "Moroccan Bank" : "Banque Marocaine"}
                   </label>
                   <select
                     value={vaultData.bankName}
@@ -642,7 +644,7 @@ export function OwnerProfileModal({
 
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    {locale === "ar" ? "اسم صاحب الحساب (المستفيد)" : "Nom du Bénéficiaire"}
+                    {locale === "ar" ? "اسم صاحب الحساب (المستفيد)" : locale === "en" ? "Beneficiary Name" : "Nom du Bénéficiaire"}
                   </label>
                   <input
                     type="text"
@@ -656,7 +658,7 @@ export function OwnerProfileModal({
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                  {locale === "ar" ? "رقم الحساب البنكي (RIB 24 رقماً)" : "RIB Bancaire (24 chiffres)"}
+                  {locale === "ar" ? "رقم الحساب البنكي (RIB 24 رقماً)" : locale === "en" ? "Bank RIB Number (24 Digits)" : "RIB Bancaire (24 chiffres)"}
                 </label>
                 <input
                   type="text"
@@ -676,13 +678,15 @@ export function OwnerProfileModal({
                 <span>
                   {locale === "ar"
                     ? "3. بوابات الدفع الإلكتروني وأجهزة TPE"
-                    : "3. Payment Gateways & TPE Terminal"}
+                    : locale === "en"
+                    ? "3. Payment Gateways & TPE Terminal"
+                    : "3. Passerelles de Paiement & Terminal TPE"}
                 </span>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 mb-2">
-                  {locale === "ar" ? "بوابة الدفع المعتمدة" : "Passerelle de Paiement"}
+                  {locale === "ar" ? "بوابة الدفع المعتمدة" : locale === "en" ? "Selected Payment Gateway" : "Passerelle de Paiement"}
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {GATEWAYS.map((gw) => {
@@ -715,7 +719,7 @@ export function OwnerProfileModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    {locale === "ar" ? "عنوان IP جهاز TPE المحلي" : "Adresse IP TPE Local"}
+                    {locale === "ar" ? "عنوان IP جهاز TPE المحلي" : locale === "en" ? "Local TPE IP Address" : "Adresse IP TPE Local"}
                   </label>
                   <input
                     type="text"
@@ -728,7 +732,7 @@ export function OwnerProfileModal({
 
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    {locale === "ar" ? "رقم جهاز TPE الإلكتروني" : "Identifiant TPE Terminal"}
+                    {locale === "ar" ? "رقم جهاز TPE الإلكتروني" : locale === "en" ? "TPE Terminal ID" : "Identifiant TPE Terminal"}
                   </label>
                   <input
                     type="text"
@@ -748,7 +752,9 @@ export function OwnerProfileModal({
                 <span>
                   {locale === "ar"
                     ? "4. أتمتة التقارير الليلية عبر WhatsApp"
-                    : "4. WhatsApp Nightly Report Automation"}
+                    : locale === "en"
+                    ? "4. WhatsApp Nightly Report Automation"
+                    : "4. Automatisation des Rapports WhatsApp"}
                 </span>
               </div>
 
@@ -756,6 +762,8 @@ export function OwnerProfileModal({
                 <label className="block text-xs font-semibold text-zinc-300 mb-1">
                   {locale === "ar"
                     ? "رقم WhatsApp الشخصي للمالك (مشفر ومخفي عن الموظفين)"
+                    : locale === "en"
+                    ? "Owner Private WhatsApp Number (Encrypted)"
                     : "Numéro WhatsApp Privé Propriétaire"}
                 </label>
                 <input
@@ -770,7 +778,7 @@ export function OwnerProfileModal({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    {locale === "ar" ? "وقت إرسال التقرير" : "Heure d'envoi"}
+                    {locale === "ar" ? "وقت إرسال التقرير" : locale === "en" ? "Dispatch Time" : "Heure d'envoi"}
                   </label>
                   <select
                     value={vaultData.nightlyReportHour || "22:00"}
@@ -795,7 +803,7 @@ export function OwnerProfileModal({
                       }
                       className="rounded border-zinc-700 text-white focus:ring-0"
                     />
-                    <span>{locale === "ar" ? "تقرير يومي تلقائي" : "Rapport quotidien"}</span>
+                    <span>{locale === "ar" ? "تقرير يومي تلقائي" : locale === "en" ? "Daily automatic report" : "Rapport quotidien"}</span>
                   </label>
 
                   <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-zinc-300">
@@ -807,7 +815,7 @@ export function OwnerProfileModal({
                       }
                       className="rounded border-zinc-700 text-white focus:ring-0"
                     />
-                    <span>{locale === "ar" ? "تقرير شهري شامل" : "Rapport mensuel"}</span>
+                    <span>{locale === "ar" ? "تقرير شهري شامل" : locale === "en" ? "Monthly summary report" : "Rapport mensuel"}</span>
                   </label>
                 </div>
               </div>

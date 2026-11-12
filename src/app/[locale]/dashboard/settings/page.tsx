@@ -1271,7 +1271,9 @@ export default function SettingsPage() {
               <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1">
                 <span className="text-[11px] font-medium text-zinc-400 flex items-center gap-1.5">
                   <CreditCard className="w-3.5 h-3.5 text-zinc-500" />
-                  <span>{locale === "ar" ? "الحساب البنكي (RIB) :" : "RIB Bancaire :"}</span>
+                  <span>
+                    {locale === "ar" ? "الحساب البنكي (RIB) :" : locale === "en" ? "Bank RIB Number:" : "RIB Bancaire :"}
+                  </span>
                 </span>
                 <p className="text-xs font-mono font-bold text-white tracking-wider pt-0.5">
                   •••• •••• •••• {bankRib ? bankRib.slice(-4) : "7014"}
@@ -1282,7 +1284,9 @@ export default function SettingsPage() {
               <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1">
                 <span className="text-[11px] font-medium text-zinc-400 flex items-center gap-1.5">
                   <MessageSquare className="w-3.5 h-3.5 text-zinc-400" />
-                  <span>{locale === "ar" ? "رقم WhatsApp المالك :" : "WhatsApp Propriétaire :"}</span>
+                  <span>
+                    {locale === "ar" ? "رقم WhatsApp المالك :" : locale === "en" ? "Owner WhatsApp:" : "WhatsApp Propriétaire :"}
+                  </span>
                 </span>
                 <p className="text-xs font-mono font-bold text-white tracking-wider pt-0.5">
                   {whatsappReportNumber && whatsappReportNumber.length > 5
@@ -1295,7 +1299,9 @@ export default function SettingsPage() {
               <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1">
                 <span className="text-[11px] font-medium text-zinc-400 flex items-center gap-1.5">
                   <Check className="w-3.5 h-3.5 text-zinc-400" />
-                  <span>{locale === "ar" ? "بوابة الدفع المسجلة :" : "Passerelle Active :"}</span>
+                  <span>
+                    {locale === "ar" ? "بوابة الدفع المسجلة :" : locale === "en" ? "Active Payment Gateway:" : "Passerelle Active :"}
+                  </span>
                 </span>
                 <p className="text-xs font-mono font-bold text-white uppercase pt-0.5">
                   {selectedGateway === "cmi_tpe"
@@ -1312,7 +1318,9 @@ export default function SettingsPage() {
               <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1">
                 <span className="text-[11px] font-medium text-zinc-400 flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-zinc-400" />
-                  <span>{locale === "ar" ? "عنوان IP المحلي TPE :" : "IP Terminal TPE :"}</span>
+                  <span>
+                    {locale === "ar" ? "عنوان IP المحلي TPE :" : locale === "en" ? "Local TPE Terminal IP:" : "IP Terminal TPE :"}
+                  </span>
                 </span>
                 <p className="text-xs font-mono font-bold text-white pt-0.5">
                   192.168.1.•••
@@ -1326,7 +1334,9 @@ export default function SettingsPage() {
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span>
                   {locale === "ar"
-                    ? `التقرير الليلي التلقائي مجدول عند ${nightlyReportHour} (بتوقيت الدار البيضاء)`
+                    ? `التقرير الليلي التلقائي مجدول عند ${nightlyReportHour} (${storeTimezone})`
+                    : locale === "en"
+                    ? `Automatic nightly report scheduled at ${nightlyReportHour} (${storeTimezone})`
                     : `Rapport nocturne automatique planifié à ${nightlyReportHour} (${storeTimezone})`}
                 </span>
               </div>
@@ -1650,7 +1660,9 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
                   <span className="text-xs font-bold text-teal-300">
                     {locale === "ar"
-                      ? "إعدادات عتاد السوبرماركت والميزان (Mode Supermarché)"
+                      ? "إعدادات عتاد السوبرماركت والميزان الإلكتروني"
+                      : locale === "en"
+                      ? "Supermarket Hardware & Electronic Scale Settings"
                       : "Paramètres Matériel Supermarché & Balance"}
                   </span>
                   <span className="text-[10px] font-mono text-zinc-400">Mode 1</span>
@@ -1661,6 +1673,8 @@ export default function SettingsPage() {
                     <span>
                       {locale === "ar"
                         ? "الماسح الضوئي USB: إدخال تلقائي (Enter) وإضافة سريعة للسلة"
+                        : locale === "en"
+                        ? "USB Barcode Scanner: Auto-Enter (Instant Add to Cart)"
                         : "Scanner USB : Auto-Enter (Ajout instantané au panier)"}
                     </span>
                     <input
@@ -1674,7 +1688,11 @@ export default function SettingsPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                     <div>
                       <label className="block text-[11px] text-zinc-400 mb-1 font-mono">
-                        {locale === "ar" ? "بادئة باركود الميزان (EAN-13)" : "Préfixe Balance EAN-13"}
+                        {locale === "ar"
+                          ? "بادئة باركود الميزان (EAN-13)"
+                          : locale === "en"
+                          ? "Scale Barcode Prefix (EAN-13)"
+                          : "Préfixe Balance EAN-13"}
                       </label>
                       <input
                         type="text"
@@ -1686,7 +1704,11 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <label className="block text-[11px] text-zinc-400 mb-1 font-mono">
-                        {locale === "ar" ? "سعر رهن قنينة الغاز (MAD)" : "Consigne Bouteille Gaz"}
+                        {locale === "ar"
+                          ? "سعر رهن قنينة الغاز (درهم)"
+                          : locale === "en"
+                          ? "Gas Bottle Deposit (MAD)"
+                          : "Consigne Bouteille Gaz (DH)"}
                       </label>
                       <input
                         type="number"
@@ -1698,7 +1720,11 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <label className="block text-[11px] text-zinc-400 mb-1 font-mono">
-                        {locale === "ar" ? "سعر رهن الصندوق (MAD)" : "Consigne Caisse Plastique"}
+                        {locale === "ar"
+                          ? "سعر رهن الصندوق (درهم)"
+                          : locale === "en"
+                          ? "Plastic Crate Deposit (MAD)"
+                          : "Consigne Caisse Plastique (DH)"}
                       </label>
                       <input
                         type="number"

@@ -68,7 +68,7 @@ const BILLING_DICT = {
     tierGridTitle: "جدول تسعير نقاط البيع الإضافية :",
     tierGridSubtitle: "+150 درهم لكل نقطة بيع إضافية",
     tier1Title: "1 جهاز كاشير",
-    tier1Desc: "محل فردي",
+    tier1Desc: "جميع الميزات مفتوحة 100% من أول نقطة بيع",
     tier2Title: "2 أجهزة كاشير",
     tier2Desc: "سوبرماركت / مطعم",
     tier3Title: "3 أجهزة كاشير",
@@ -124,7 +124,7 @@ const BILLING_DICT = {
     tierGridTitle: "Grille Tarifaire par Nombre de Caisses :",
     tierGridSubtitle: "+150 MAD par caisse additionnelle",
     tier1Title: "1 Caisse",
-    tier1Desc: "Boutique Solo",
+    tier1Desc: "Toutes les fonctionnalités incluses dès le 1er poste",
     tier2Title: "2 Caisses",
     tier2Desc: "Supérette / Restaurant",
     tier3Title: "3 Caisses",
@@ -180,7 +180,7 @@ const BILLING_DICT = {
     tierGridTitle: "Register Tier Pricing Grid:",
     tierGridSubtitle: "+150 MAD per extra register",
     tier1Title: "1 Register",
-    tier1Desc: "Solo Store",
+    tier1Desc: "All Features 100% Included from 1st Register",
     tier2Title: "2 Registers",
     tier2Desc: "Supermarket / Restaurant",
     tier3Title: "3 Registers",
@@ -476,7 +476,7 @@ export default function BillingDashboardPage() {
               }`}>
                 <span className="block text-[11px] mb-0.5">{t.tier1Title}</span>
                 <span className="font-mono text-sm font-black text-white">200 MAD</span>
-                <span className="block text-[9px] text-zinc-500">{t.tier1Desc}</span>
+                <span className="block text-[9.5px] font-semibold text-emerald-400 mt-0.5 leading-tight">{t.tier1Desc}</span>
               </div>
               <div className={`p-3 rounded-xl border text-center ${
                 (subscription?.maxDevices ?? 1) === 2

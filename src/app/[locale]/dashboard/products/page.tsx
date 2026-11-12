@@ -738,10 +738,10 @@ export default function ProductsListPage() {
             return (
               <div
                 key={product.id}
-                className="kaspi-frosted-card kaspi-frosted-card-hover group relative rounded-2xl transition-all flex flex-col overflow-visible"
+                className="kaspi-frosted-card kaspi-frosted-card-hover group relative rounded-2xl p-4 transition-all flex flex-col overflow-visible"
               >
                 {/* Product Image Container */}
-                <div className="relative h-44 w-full bg-white rounded-t-2xl overflow-hidden border-b border-white/[0.10] flex items-center justify-center p-2">
+                <div className="kaspi-studio-product-box relative h-44 w-full mb-3 flex items-center justify-center overflow-hidden">
                   {product.imageUrl ? (
                     <img
                       src={product.imageUrl}
@@ -762,7 +762,7 @@ export default function ProductsListPage() {
 
                   {/* Loading Overlay when AI Image or Price is updating */}
                   {isUpdating && (
-                    <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10">
+                    <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10 rounded-xl">
                       <Loader2 className="w-6 h-6 animate-spin text-white" />
                       <span className="text-[11px] font-bold text-white">
                         {t.products.updating}
@@ -772,7 +772,7 @@ export default function ProductsListPage() {
 
                   {/* Category Badge */}
                   {product.categoryName && (
-                    <span className="absolute top-3 start-3 px-2.5 py-1 rounded-lg bg-zinc-950/90 border border-zinc-800 text-[10px] font-bold text-zinc-300">
+                    <span className="absolute top-2.5 start-2.5 px-2.5 py-1 rounded-lg bg-zinc-950/90 border border-zinc-800 text-[10px] font-bold text-zinc-300 z-10">
                       {product.categoryName}
                     </span>
                   )}
@@ -844,7 +844,7 @@ export default function ProductsListPage() {
                 </div>
 
                 {/* Product Details Footer */}
-                <div className="p-4 flex-1 flex flex-col justify-between gap-3">
+                <div className="flex-1 flex flex-col justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-bold text-white line-clamp-1">
                       {product.name}
@@ -897,7 +897,7 @@ export default function ProductsListPage() {
                         onClick={() => openPriceModal(product)}
                         className="h-8 px-3 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 border border-white text-xs font-bold transition cursor-pointer shadow-xs"
                       >
-                        {locale === "ar" ? "تعديل الثمن" : "Prix"}
+                        {locale === "ar" ? "تعديل السعر" : locale === "en" ? "Edit Price" : "Prix"}
                       </button>
                     </div>
                   </div>

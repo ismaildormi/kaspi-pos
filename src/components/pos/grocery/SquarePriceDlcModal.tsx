@@ -70,6 +70,8 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
               <p className="text-[11px] text-zinc-400">
                 {locale === "ar"
                   ? "امسح الباركود للتحقق الفوري من سعر الحبة، سعر الباك، الجناح وتاريخ الصلاحية"
+                  : locale === "en"
+                  ? "Scan a barcode to check unit price, pack price, aisle, and expiry date"
                   : "Scannez un code-barres pour vérifier prix unitaire, prix pack, rayon et DLC"}
               </p>
             </div>
@@ -94,6 +96,8 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
             placeholder={
               locale === "ar"
                 ? "امسح الباركود أو ابحث بالاسم..."
+                : locale === "en"
+                ? "Scan barcode or search by name..."
                 : "Scannez code-barres ou recherchez par nom..."
             }
             className="w-full h-11 ps-10 pe-4 bg-[#111113] border border-white/[0.08] focus:border-white rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none font-mono transition-colors"
@@ -160,7 +164,13 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
               className="w-full h-11 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-black text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>{locale === "ar" ? "إضافة السلعة للسلة فوراً" : "Ajouter cet article au Panier"}</span>
+              <span>
+                {locale === "ar"
+                  ? "إضافة السلعة للسلة فوراً"
+                  : locale === "en"
+                  ? "Add Item to Cart Immediately"
+                  : "Ajouter cet article au Panier"}
+              </span>
             </button>
           </div>
         ) : (
@@ -169,6 +179,8 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
             <p className="text-xs text-zinc-400">
               {locale === "ar"
                 ? "قم بتوجيه الماسح الضوئي نحو الباركود لعرض السعر والمخزون في أجزاء من الثانية"
+                : locale === "en"
+                ? "Scan an item to inspect its live price, pack, aisle, and DLC details"
                 : "Scannez un article pour inspecter ses informations en direct"}
             </p>
           </div>

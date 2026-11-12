@@ -646,19 +646,35 @@ export default function SuppliersPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                  {locale === "ar" ? "نوع موزع السلع الاستهلاكية (FMCG)" : "Catégorie Distributeur FMCG"}
+                  {locale === "ar"
+                    ? "فئة موزع السلع الاستهلاكية"
+                    : locale === "en"
+                    ? "FMCG Distributor Category"
+                    : "Catégorie Distributeur FMCG"}
                 </label>
                 <select
                   value={supplierCategory}
                   onChange={(e) => setSupplierCategory(e.target.value)}
                   className="w-full h-11 px-3.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-white font-medium"
                 >
-                  <option value="fmcg_dairy">{locale === "ar" ? "منتجات الحليب والأجبان (Laiterie & Frais)" : "Laiterie & Frais"}</option>
-                  <option value="fmcg_drinks">{locale === "ar" ? "المشروبات والمياه (Boissons & Eaux)" : "Boissons & Eaux"}</option>
-                  <option value="fmcg_dry">{locale === "ar" ? "البقالة الجافة والمعلبات (Épicerie Sèche)" : "Épicerie Sèche"}</option>
-                  <option value="fmcg_cleaning">{locale === "ar" ? "مواد التنظيف والورقيات (Entretien & Droguerie)" : "Entretien & Droguerie"}</option>
-                  <option value="fmcg_gas">{locale === "ar" ? "قنينات الغاز والصناديق (Gaz & Consignes)" : "Gaz & Consignes"}</option>
-                  <option value="general">{locale === "ar" ? "موزع عام (Distributeur Général)" : "Distributeur Général"}</option>
+                  <option value="fmcg_dairy">
+                    {locale === "ar" ? "منتجات الحليب والأجبان والمأكولات الطازجة" : locale === "en" ? "Dairy & Fresh Foods" : "Laiterie & Produits Frais"}
+                  </option>
+                  <option value="fmcg_drinks">
+                    {locale === "ar" ? "المشروبات والمياه المعدنية" : locale === "en" ? "Beverages & Mineral Waters" : "Boissons & Eaux"}
+                  </option>
+                  <option value="fmcg_dry">
+                    {locale === "ar" ? "البقالة الجافة والمعلبات" : locale === "en" ? "Dry Grocery & Canned Goods" : "Épicerie Sèche & Conserves"}
+                  </option>
+                  <option value="fmcg_cleaning">
+                    {locale === "ar" ? "مواد التنظيف والعناية المنزلية" : locale === "en" ? "Household Cleaning & Detergents" : "Entretien & Droguerie"}
+                  </option>
+                  <option value="fmcg_gas">
+                    {locale === "ar" ? "قنينات الغاز والصناديق المرتجعة" : locale === "en" ? "Gas Bottles & Crate Deposits" : "Bouteilles de Gaz & Consignes"}
+                  </option>
+                  <option value="general">
+                    {locale === "ar" ? "موزع عام للمواد الغذائية" : locale === "en" ? "General Distributor" : "Distributeur Général"}
+                  </option>
                 </select>
               </div>
 
@@ -792,7 +808,11 @@ export default function SuppliersPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                    {locale === "ar" ? "تاريخ صلاحية الشحنة (DLC)" : "Date DLC Livraison"}
+                    {locale === "ar"
+                      ? "تاريخ صلاحية الشحنة (DLC)"
+                      : locale === "en"
+                      ? "Delivery Expiry Date (DLC)"
+                      : "Date DLC Livraison"}
                   </label>
                   <input
                     type="date"

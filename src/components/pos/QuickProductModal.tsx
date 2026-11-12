@@ -374,7 +374,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                       </span>
                     </div>
                   ) : imageUrl ? (
-                    <div className="relative w-full h-full bg-white p-2 flex items-center justify-center shadow-inner group">
+                    <div className="kaspi-studio-product-box relative w-full h-full flex items-center justify-center group overflow-hidden">
                       <img
                         src={imageUrl}
                         alt="Preview"
@@ -382,7 +382,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
                         <span className="px-3 py-1.5 rounded-lg bg-black/80 border border-white/20 text-[11px] font-semibold text-white">
-                          {locale === "ar" ? "تغيير الصورة" : "Changer la photo"}
+                          {locale === "ar" ? "تغيير الصورة" : locale === "en" ? "Change Photo" : "Changer la photo"}
                         </span>
                       </div>
                     </div>
@@ -465,7 +465,6 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                       placeholder="611XXXXXXXXXX"
                       className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3.5 font-mono text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6] transition-colors"
                     />
-                    <Barcode className="w-4 h-4 text-zinc-500 absolute end-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
                   <button
                     type="button"

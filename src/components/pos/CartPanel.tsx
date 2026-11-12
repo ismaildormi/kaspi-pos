@@ -554,7 +554,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             }`}
           >
             <Percent className="w-3 h-3" />
-            <span>{locale === "ar" ? "تخفيض" : "% Remise"}</span>
+            <span>{locale === "ar" ? "تخفيض" : locale === "en" ? "Discount" : "Remise"}</span>
           </button>
 
           <button
@@ -570,7 +570,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             }`}
           >
             <RefreshCw className="w-3 h-3" />
-            <span>{locale === "ar" ? "رهن" : "Consigne"}</span>
+            <span>{locale === "ar" ? "رهن" : locale === "en" ? "Deposit" : "Consigne"}</span>
           </button>
 
           <button
@@ -580,7 +580,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             className="h-9 hover:bg-white/[0.06] disabled:opacity-30 disabled:cursor-not-allowed text-[11px] font-semibold text-zinc-300 hover:text-white flex items-center justify-center gap-1 cursor-pointer transition-colors"
           >
             <PauseCircle className="w-3 h-3" />
-            <span>{locale === "ar" ? "تعليق" : "Attente"}</span>
+            <span>{locale === "ar" ? "تعليق" : locale === "en" ? "Hold" : "Attente"}</span>
           </button>
 
           <button
@@ -590,7 +590,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             className="h-9 hover:bg-white/[0.06] disabled:opacity-30 disabled:cursor-not-allowed text-[11px] font-semibold text-zinc-300 hover:text-white flex items-center justify-center gap-1 cursor-pointer transition-colors"
           >
             <Trash2 className="w-3 h-3" />
-            <span>{locale === "ar" ? "إفراغ" : "Vider"}</span>
+            <span>{locale === "ar" ? "إفراغ" : locale === "en" ? "Clear" : "Vider"}</span>
           </button>
         </div>
       </div>
@@ -601,7 +601,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
         {isConsigneDrawerOpen && (
           <div className="p-2.5 rounded-xl bg-[#111113] border border-white/[0.12] space-y-1.5 animate-fadeIn">
             <div className="flex items-center justify-between text-[10px] font-mono font-bold text-zinc-300">
-              <span>{locale === "ar" ? "رهن القنينات والصناديق (Consigne)" : "Consignes Bouteilles & Casiers"}</span>
+              <span>{locale === "ar" ? "رهن القنينات والصناديق (Consigne)" : locale === "en" ? "Gas & Crate Deposits" : "Consignes Bouteilles & Casiers"}</span>
               <button
                 type="button"
                 onClick={() => setIsConsigneDrawerOpen(false)}
@@ -616,7 +616,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                 onClick={() => handleConsigneDeposit("gas_deposit", 100)}
                 className="py-1 px-2 rounded-lg bg-[#18181B] border border-white/[0.08] hover:border-white/20 text-white flex items-center justify-between cursor-pointer"
               >
-                <span>{locale === "ar" ? "+ الغاز" : "+ Gaz"}</span>
+                <span>{locale === "ar" ? "+ الغاز" : locale === "en" ? "+ Gas" : "+ Gaz"}</span>
                 <span className="font-mono font-black">+100 DH</span>
               </button>
               <button
@@ -624,7 +624,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                 onClick={() => handleConsigneDeposit("gas_return", -100)}
                 className="py-1 px-2 rounded-lg bg-[#18181B] border border-white/[0.08] hover:border-white/20 text-zinc-300 flex items-center justify-between cursor-pointer"
               >
-                <span>{locale === "ar" ? "- إرجاع الغاز" : "- Retour Gaz"}</span>
+                <span>{locale === "ar" ? "- إرجاع الغاز" : locale === "en" ? "- Gas Return" : "- Retour Gaz"}</span>
                 <span className="font-mono font-black">-100 DH</span>
               </button>
               <button
@@ -632,7 +632,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                 onClick={() => handleConsigneDeposit("crate_deposit", 15)}
                 className="py-1 px-2 rounded-lg bg-[#18181B] border border-white/[0.08] hover:border-white/20 text-white flex items-center justify-between cursor-pointer"
               >
-                <span>{locale === "ar" ? "+ الصندوق" : "+ Casier"}</span>
+                <span>{locale === "ar" ? "+ الصندوق" : locale === "en" ? "+ Crate" : "+ Casier"}</span>
                 <span className="font-mono font-black">+15 DH</span>
               </button>
               <button
@@ -640,7 +640,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                 onClick={() => handleConsigneDeposit("crate_return", -15)}
                 className="py-1 px-2 rounded-lg bg-[#18181B] border border-white/[0.08] hover:border-white/20 text-zinc-300 flex items-center justify-between cursor-pointer"
               >
-                <span>{locale === "ar" ? "- إرجاع الصندوق" : "- Retour Casier"}</span>
+                <span>{locale === "ar" ? "- إرجاع الصندوق" : locale === "en" ? "- Crate Return" : "- Retour Casier"}</span>
                 <span className="font-mono font-black">-15 DH</span>
               </button>
             </div>

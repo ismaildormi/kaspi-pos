@@ -114,6 +114,16 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
   const [cratesFull, setCratesFull] = useState(30);
   const [cratesEmpty, setCratesEmpty] = useState(8);
 
+  const getDlcColorText = (variant: string, label: string) => {
+    if (variant === "yellow" || label.toLowerCase() === "yellow") {
+      return locale === "ar" ? "أصفر" : locale === "fr" ? "Jaune" : "Yellow";
+    }
+    if (variant === "orange" || label.toLowerCase() === "orange" || variant === "red" || label.toLowerCase() === "red") {
+      return locale === "ar" ? "برتقالي" : locale === "fr" ? "Orange" : "Orange";
+    }
+    return locale === "ar" ? "أخضر" : locale === "fr" ? "Vert" : "Green";
+  };
+
   const handleApplyClearanceMarkdown = (productId: string) => {
     playSuccessSound();
     setProductsList((prev) =>
@@ -133,6 +143,8 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
     toast.success(
       locale === "ar"
         ? "تم تطبيق تخفيض تصفية سريع -30% وتحديث سعر الرف فورا!"
+        : locale === "en"
+        ? "Applied -30% clearance markdown successfully!"
         : "Promo déstockage -30% appliquée avec succès !"
     );
   };
@@ -142,6 +154,8 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
     toast.info(
       locale === "ar"
         ? `جاري طباعة بطاقة الرف 40x30mm لمنتج: ${product.name}`
+        : locale === "en"
+        ? `Printing 40x30mm shelf label for: ${product.name}`
         : `Impression étiquette rayon 40x30mm pour: ${product.name}`
     );
   };
@@ -153,7 +167,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
         {/* Card 1: Total Cost Value MAD */}
         <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between text-xs font-semibold text-zinc-300">
-            <span>Total Cost Value MAD</span>
+            <span>{locale === "ar" ? "إجمالي قيمة الشراء (MAD)" : locale === "fr" ? "Valeur d'Achat Stock (MAD)" : "Total Cost Value MAD"}</span>
             <ArrowUpRight className="w-4 h-4 text-[#2DD4BF]" />
           </div>
           <div className="mt-4">
@@ -167,7 +181,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
         {/* Card 2: Retail Shelf Value MAD */}
         <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
           <div className="text-xs font-semibold text-zinc-300">
-            <span>Retail Shelf Value MAD</span>
+            <span>{locale === "ar" ? "إجمالي قيمة بيع الرفوف (MAD)" : locale === "fr" ? "Valeur Marchande Rayon (MAD)" : "Retail Shelf Value MAD"}</span>
           </div>
           <div className="mt-4">
             <span className="text-2xl font-black text-white font-mono tracking-tight">
@@ -180,13 +194,15 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
         {/* Card 3: DLC Expiry Alerts (with Red Alert Icon) */}
         <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between text-xs font-semibold text-zinc-300">
-            <span>DLC Expiry Alerts</span>
+            <span>{locale === "ar" ? "تنبيهات اقتراب انتهاء الصلاحية" : locale === "fr" ? "Alertes DLC Proches" : "DLC Expiry Alerts"}</span>
             <AlertTriangle className="w-4 h-4 text-[#F87171]" />
           </div>
           <div className="mt-4">
             <span className="text-2xl font-black text-white font-mono tracking-tight">
               38{" "}
-              <span className="text-sm font-semibold text-zinc-400">items</span>
+              <span className="text-sm font-semibold text-zinc-400">
+                {locale === "ar" ? "سلعة" : locale === "fr" ? "articles" : "items"}
+              </span>
             </span>
           </div>
         </div>
@@ -194,18 +210,23 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
         {/* Card 4: Gas & Crate Consigne Balance (Exact Zoomed-In Blueprint) */}
         <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
           <div className="text-xs font-semibold text-zinc-300">
-            <span>Gas & Crate Consigne Balance</span>
+            <span>{locale === "ar" ? "رصيد الرهن: قنينات الغاز والصناديق" : locale === "fr" ? "Solde Consignes Gaz & Casiers" : "Gas & Crate Consigne Balance"}</span>
           </div>
           <div className="mt-4 flex items-end justify-between">
-            <div className="flex items-baseline">
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
               <span className="text-2xl font-black text-white font-mono tracking-tight">
                 +{gasFull}
               </span>
-              <span className="text-xs font-semibold text-zinc-400 mx-1.5">Units /</span>
+              <span className="text-xs font-semibold text-zinc-400">
+                {locale === "ar" ? "وحدة" : "Units"}
+              </span>
+              <span className="text-xs font-semibold text-zinc-500 mx-1">/</span>
               <span className="text-sm font-bold text-[#F87171] font-mono">
                 -{gasEmpty}
               </span>
-              <span className="text-xs font-semibold text-zinc-400 ml-1.5">Empty</span>
+              <span className="text-xs font-semibold text-[#F87171]/80">
+                {locale === "ar" ? "فارغة" : locale === "fr" ? "Vides" : "Empty"}
+              </span>
             </div>
             <IsometricCratesIllustration className="w-16 h-12 shrink-0 drop-shadow-md" />
           </div>
@@ -223,7 +244,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
               : "text-zinc-400 hover:text-white"
           }`}
         >
-          [Shelf & Warehouse Stock]
+          {locale === "ar" ? "[مخزون الرفوف والمستودع]" : locale === "fr" ? "[Stock Rayon & Entrepôt]" : "[Shelf & Warehouse Stock]"}
         </button>
         <span className="text-zinc-600 pb-3">|</span>
         <button
@@ -235,7 +256,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
               : "text-zinc-400 hover:text-white"
           }`}
         >
-          [DLC Expiry & -30% Clearance]
+          {locale === "ar" ? "[تواريخ الصلاحية وتخفيض -30%]" : locale === "fr" ? "[DLC & Déstockage -30%]" : "[DLC Expiry & -30% Clearance]"}
         </button>
         <span className="text-zinc-600 pb-3">|</span>
         <button
@@ -247,7 +268,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
               : "text-zinc-400 hover:text-white"
           }`}
         >
-          [Consigne & Shrinkage Audit]
+          {locale === "ar" ? "[تدقيق الرهن والهالك]" : locale === "fr" ? "[Audit Consignes & Démarque]" : "[Consigne & Shrinkage Audit]"}
         </button>
       </div>
 
@@ -259,11 +280,11 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
           <table className="w-full text-left text-xs">
             <thead className="bg-[#141A22]/90 text-zinc-400 font-semibold border-b border-white/[0.08]">
               <tr>
-                <th className="py-3.5 px-5">Product</th>
-                <th className="py-3.5 px-4">Aisle</th>
-                <th className="py-3.5 px-4">Pack vs Unit</th>
-                <th className="py-3.5 px-4">DLC</th>
-                <th className="py-3.5 px-4">-30% Promo</th>
+                <th className="py-3.5 px-5">{locale === "ar" ? "المنتج" : locale === "fr" ? "Article" : "Product"}</th>
+                <th className="py-3.5 px-4">{locale === "ar" ? "الجناح / الرف" : locale === "fr" ? "Rayon" : "Aisle"}</th>
+                <th className="py-3.5 px-4">{locale === "ar" ? "الصندوق مقابل الوحدة" : locale === "fr" ? "Colis vs Unité" : "Pack vs Unit"}</th>
+                <th className="py-3.5 px-4">{locale === "ar" ? "تاريخ الصلاحية (DLC)" : "DLC"}</th>
+                <th className="py-3.5 px-4">{locale === "ar" ? "تخفيض -30%" : "-30% Promo"}</th>
                 <th className="py-3.5 px-5 text-right"></th>
               </tr>
             </thead>
@@ -276,11 +297,13 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
                         <Package className="w-6 h-6 stroke-[1.8]" />
                       </div>
                       <p className="font-bold text-sm text-white">
-                        {locale === "ar" ? "لا توجد منتجات مسجلة في المخزون" : "Aucun article dans l'inventaire"}
+                        {locale === "ar" ? "لا توجد منتجات مسجلة في المخزون" : locale === "en" ? "No items in inventory" : "Aucun article dans l'inventaire"}
                       </p>
                       <p className="text-xs text-zinc-500 max-w-sm">
                         {locale === "ar"
                           ? "أضف منتجاتك من الكتالوج أو من شاشة البيع السريع لتتبع الرفوف وتواريخ الصلاحية"
+                          : locale === "en"
+                          ? "Add items from catalog or POS to track aisles and expiry dates"
                           : "Ajoutez vos articles depuis le catalogue ou l'écran POS pour suivre les rayons et DLC"}
                       </p>
                     </div>
@@ -343,9 +366,9 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
                     {/* DLC Badge */}
                     <td className="py-3.5 px-4">
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-mono font-bold border ${badgeClass}`}
+                        className={`px-3 py-1 rounded-full text-xs font-mono font-bold border whitespace-nowrap ${badgeClass}`}
                       >
-                        {item.dlc} ({item.dlcLabel})
+                        {item.dlc} ({getDlcColorText(item.dlcVariant, item.dlcLabel)})
                       </span>
                     </td>
 
@@ -368,7 +391,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
                         className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#181C22] hover:bg-[#222832] border border-white/10 text-white text-xs font-medium transition cursor-pointer"
                       >
                         <Printer className="w-3.5 h-3.5 text-zinc-400" />
-                        <span>Print 40x30mm Shelf Label</span>
+                        <span>{locale === "ar" ? "طباعة لاصقة 40×30 مم" : locale === "fr" ? "Imprimer Étiquette 40×30mm" : "Print 40x30mm Shelf Label"}</span>
                       </button>
                     </td>
                   </tr>
@@ -386,18 +409,18 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
           <div className="kaspi-frosted-card rounded-2xl p-5 space-y-4">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <Package className="w-4 h-4 text-[#2DD4BF]" />
-              <span>Consigne Gas & Crate Tracking</span>
+              <span>{locale === "ar" ? "تتبع رهن القنينات والصناديق والهالك" : locale === "fr" ? "Suivi Consignes Gaz & Casiers" : "Consigne Gas & Crate Tracking"}</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 rounded-xl bg-zinc-950/60 border border-white/10 space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold text-white">
-                  <span>Bouteilles de Gaz</span>
-                  <span className="text-[#5EEAD4] font-mono">100 DH / consigne</span>
+                  <span>{locale === "ar" ? "قنينات الغاز" : locale === "fr" ? "Bouteilles de Gaz" : "Gas Bottles"}</span>
+                  <span className="text-[#5EEAD4] font-mono">{locale === "ar" ? "100 درهم / رهن" : locale === "fr" ? "100 DH / consigne" : "100 MAD / deposit"}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-zinc-400">
-                  <span>Pleines: <strong className="text-white font-mono">{gasFull}</strong></span>
-                  <span>Vides: <strong className="text-white font-mono">{gasEmpty}</strong></span>
+                  <span>{locale === "ar" ? "ممتلئة:" : locale === "fr" ? "Pleines :" : "Full:"} <strong className="text-white font-mono">{gasFull}</strong></span>
+                  <span>{locale === "ar" ? "فارغة:" : locale === "fr" ? "Vides :" : "Empty:"} <strong className="text-white font-mono">{gasEmpty}</strong></span>
                 </div>
                 <div className="flex gap-2 pt-2">
                   <button
@@ -405,26 +428,26 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
                     onClick={() => { playTapSound(); setGasFull((v) => v + 1); }}
                     className="flex-1 py-1 rounded bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition cursor-pointer"
                   >
-                    + Pleine
+                    {locale === "ar" ? "+ ممتلئة" : locale === "fr" ? "+ Pleine" : "+ Full"}
                   </button>
                   <button
                     type="button"
                     onClick={() => { playTapSound(); setGasEmpty((v) => Math.max(0, v - 1)); }}
                     className="flex-1 py-1 rounded bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition cursor-pointer"
                   >
-                    - Vide
+                    {locale === "ar" ? "- فارغة" : locale === "fr" ? "- Vide" : "- Empty"}
                   </button>
                 </div>
               </div>
 
               <div className="p-4 rounded-xl bg-zinc-950/60 border border-white/10 space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold text-white">
-                  <span>Casiers Bouteilles</span>
-                  <span className="text-[#5EEAD4] font-mono">15 DH / consigne</span>
+                  <span>{locale === "ar" ? "صناديق المشروبات" : locale === "fr" ? "Casiers Bouteilles" : "Bottle Crates"}</span>
+                  <span className="text-[#5EEAD4] font-mono">{locale === "ar" ? "15 درهم / رهن" : locale === "fr" ? "15 DH / consigne" : "15 MAD / deposit"}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-zinc-400">
-                  <span>Pleins: <strong className="text-white font-mono">{cratesFull}</strong></span>
-                  <span>Vides: <strong className="text-white font-mono">{cratesEmpty}</strong></span>
+                  <span>{locale === "ar" ? "ممتلئة:" : locale === "fr" ? "Pleins :" : "Full:"} <strong className="text-white font-mono">{cratesFull}</strong></span>
+                  <span>{locale === "ar" ? "فارغة:" : locale === "fr" ? "Vides :" : "Empty:"} <strong className="text-white font-mono">{cratesEmpty}</strong></span>
                 </div>
                 <div className="flex gap-2 pt-2">
                   <button
@@ -432,14 +455,14 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
                     onClick={() => { playTapSound(); setCratesFull((v) => v + 1); }}
                     className="flex-1 py-1 rounded bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition cursor-pointer"
                   >
-                    + Plein
+                    {locale === "ar" ? "+ ممتلئ" : locale === "fr" ? "+ Plein" : "+ Full"}
                   </button>
                   <button
                     type="button"
                     onClick={() => { playTapSound(); setCratesEmpty((v) => Math.max(0, v - 1)); }}
                     className="flex-1 py-1 rounded bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition cursor-pointer"
                   >
-                    - Vide
+                    {locale === "ar" ? "- فارغ" : locale === "fr" ? "- Vide" : "- Empty"}
                   </button>
                 </div>
               </div>

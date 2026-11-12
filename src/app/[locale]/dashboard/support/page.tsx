@@ -248,12 +248,12 @@ export default function TenantSupportPage() {
                         }`}
                       >
                         {t.status === "unread"
-                          ? "Envoyé"
+                          ? locale === "ar" ? "تم الإرسال" : locale === "en" ? "Sent" : "Envoyé"
                           : t.status === "read"
-                          ? "Lu par l'Admin"
+                          ? locale === "ar" ? "قيد المراجعة" : locale === "en" ? "Under Review" : "Lu par l'Admin"
                           : t.status === "replied"
-                          ? "Répondu"
-                          : "Résolu"}
+                          ? locale === "ar" ? "تم الرد" : locale === "en" ? "Replied" : "Répondu"
+                          : locale === "ar" ? "تم الحل" : locale === "en" ? "Resolved" : "Résolu"}
                       </span>
                     </div>
 
@@ -284,7 +284,9 @@ export default function TenantSupportPage() {
             <span className="h-2 w-2 rounded-full bg-teal-400" />
             <h2 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
               {locale === "ar"
-                ? "دليل تشغيل عتاد السوبرماركت ونقاط البيع (Mode Supermarché)"
+                ? "دليل تشغيل عتاد السوبرماركت ونقاط البيع"
+                : locale === "en"
+                ? "Supermarket Hardware & Register Installation Guides"
                 : "Guides d'Installation Matériel Supermarché & Caisse"}
             </h2>
           </div>
@@ -297,11 +299,15 @@ export default function TenantSupportPage() {
           <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
             <div className="flex items-center gap-2 text-white text-xs font-bold">
               <Barcode className="w-4 h-4 text-teal-400" />
-              <span>{locale === "ar" ? "قارئ الباركود USB" : "Lecteur Code-barres USB"}</span>
+              <span>
+                {locale === "ar" ? "قارئ الباركود USB" : locale === "en" ? "USB Barcode Scanner" : "Lecteur Code-barres USB"}
+              </span>
             </div>
             <p className="text-[11px] text-zinc-400 leading-relaxed">
               {locale === "ar"
                 ? "يدعم التوصيل الفوري Plug & Play. قم بمسح باركود السلعة مباشرة دون الحاجة للضغط على الفأرة؛ يرسل تلقائياً مفتاح Enter لإضافة المنتج للسلة فوراً."
+                : locale === "en"
+                ? "Direct Plug & Play USB connection. Scan any EAN-13 barcode; sends an automatic Enter suffix to immediately add items to cart."
                 : "Connexion Plug & Play directe. Scannez n'importe quel code EAN-13; le lecteur transmet un suffixe Entrée pour l'ajout immédiat au panier."}
             </p>
           </div>
@@ -309,11 +315,15 @@ export default function TenantSupportPage() {
           <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
             <div className="flex items-center gap-2 text-white text-xs font-bold">
               <Scale className="w-4 h-4 text-teal-400" />
-              <span>{locale === "ar" ? "ميزان الأوزان EAN-13" : "Balance Poids-Prix EAN-13"}</span>
+              <span>
+                {locale === "ar" ? "ميزان الأوزان والأسعار EAN-13" : locale === "en" ? "Weight-Price Scale (EAN-13)" : "Balance Poids-Prix EAN-13"}
+              </span>
             </div>
             <p className="text-[11px] text-zinc-400 leading-relaxed">
               {locale === "ar"
                 ? "فك تشفير تلقائي لباركود الميزان المطبوع (بادئة 20 أو 21) وحساب الوزن الإجمالي والسعر بالدرهم بدقة مئوية في أجزاء من الثانية."
+                : locale === "en"
+                ? "Automatic decoding of scale barcodes (prefix 20 or 21) instantly extracting the PLU code and weight in kilograms."
                 : "Décodage automatique du code balance (préfixe 20 ou 21) extrayant instantanément le code PLU et le poids en kilogrammes."}
             </p>
           </div>
@@ -321,11 +331,15 @@ export default function TenantSupportPage() {
           <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
             <div className="flex items-center gap-2 text-white text-xs font-bold">
               <Printer className="w-4 h-4 text-teal-400" />
-              <span>{locale === "ar" ? "طابعة ملصقات الرف 40×30mm" : "Étiqueteuse Rayon 40×30mm"}</span>
+              <span>
+                {locale === "ar" ? "طابعة ملصقات الرف 40×30 مم" : locale === "en" ? "40×30mm Shelf Label Printer" : "Étiqueteuse Rayon 40×30mm"}
+              </span>
             </div>
             <p className="text-[11px] text-zinc-400 leading-relaxed">
               {locale === "ar"
                 ? "طباعة بنقرة واحدة من صفحة المنتجات والمخزون لملصقات الرفوف بالمقاس القياسي 40×30 مم متضمنة اسم السلعة، السعر والباركود."
+                : locale === "en"
+                ? "1-click printing of standard 40×30mm shelf tags with product name, retail price, and barcode ready for supermarket shelves."
                 : "Impression 1-clic au format standard 40×30 mm avec nom de l'article, prix TTC et code-barres net prêt pour les rayons."}
             </p>
           </div>

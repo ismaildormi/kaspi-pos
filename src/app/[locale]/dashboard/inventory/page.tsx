@@ -315,7 +315,7 @@ export default async function InventoryPage({
       </div>
 
       {/* Stock Summary Table */}
-      <div className="rounded-3xl border border-zinc-800 bg-zinc-900/60 overflow-hidden">
+      <div className="kaspi-frosted-card rounded-3xl overflow-hidden">
         <div className="p-5 border-b border-zinc-800 flex items-center justify-between">
           <h2 className="text-sm font-bold text-white">{t.inventory.realtimeLevels}</h2>
           <span className="text-xs text-zinc-400 font-mono bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-800">
@@ -370,10 +370,26 @@ export default async function InventoryPage({
                 products.map((p) => {
                   const qty = Number(p.stockLevels[0]?.quantity || 0);
                   const isLow = qty <= 5;
+                  const imgUrl = (p as any).imageUrl;
 
                   return (
                     <tr key={p.id} className="hover:bg-zinc-950/40 transition">
-                      <td className="py-3 px-4 font-bold text-white">{p.name}</td>
+                      <td className="py-3 px-4 font-bold text-white">
+                        <div className="flex items-center gap-3">
+                          <div className="w-11 h-11 kaspi-studio-product-box rounded-xl shrink-0 flex items-center justify-center overflow-hidden">
+                            {imgUrl ? (
+                              <img
+                                src={imgUrl}
+                                alt={p.name}
+                                className="w-[92%] h-[92%] object-contain"
+                              />
+                            ) : (
+                              <Package className="w-5 h-5 text-zinc-500" />
+                            )}
+                          </div>
+                          <span>{p.name}</span>
+                        </div>
+                      </td>
                       <td className="py-3 px-4 font-mono text-zinc-400">{p.sku || p.barcode || "—"}</td>
                       <td className="py-3 px-4 text-zinc-400">{p.category?.name || "—"}</td>
                       <td className="py-3 px-4 font-mono text-white">{Number(p.salePrice).toFixed(2)} MAD</td>
@@ -399,7 +415,7 @@ export default async function InventoryPage({
       </div>
 
       {/* Recent Movements Log */}
-      <div className="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-6">
+      <div className="kaspi-frosted-card rounded-3xl p-6">
         <h2 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
           <ArrowDownUp className="h-4 w-4 text-white" />
           {t.inventory.auditLog}
@@ -435,7 +451,7 @@ export default async function InventoryPage({
       </div>
 
       {/* Inter-Store Stock Transfers Table */}
-      <div className="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-6">
+      <div className="kaspi-frosted-card rounded-3xl p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-bold text-white flex items-center gap-2">
             <ArrowRightLeft className="h-4 w-4 text-white" />
@@ -448,7 +464,14 @@ export default async function InventoryPage({
             </span>
           </h2>
           <span className="text-xs text-zinc-400 font-mono">
-            {recentTransfers.length} {locale === "ar" ? "عملية" : "transferts"}
+            {recentTransfers.length}{" "}
+            {locale === "ar"
+              ? "تحويلات"
+              : locale === "en"
+              ? recentTransfers.length === 1
+                ? "transfer"
+                : "transfers"
+              : "transferts"}
           </span>
         </div>
 

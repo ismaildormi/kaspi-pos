@@ -69,6 +69,27 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
     });
   }, [baseProducts, activeCategoryId, searchQuery]);
 
+  // Deduplicate identical product cards by normalized name, keeping the one with an image
+  const deduplicatedProducts = useMemo(() => {
+    const map = new Map<string, PosProduct>();
+    filteredProducts.forEach((p) => {
+      const key = p.name ? p.name.trim().toLowerCase() : p.id;
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, p);
+      } else {
+        const pImg = (p as any).imageUrl || p.image;
+        const existingImg = (existing as any).imageUrl || existing.image;
+        if (!existingImg && pImg) {
+          map.set(key, p);
+        } else if (Boolean(pImg) === Boolean(existingImg)) {
+          map.set(key, p);
+        }
+      }
+    });
+    return Array.from(map.values());
+  }, [filteredProducts]);
+
   // Marjane / Asima auto-pin scanned & active cart products to #1 top of grid
   const sortedProducts = useMemo(() => {
     const cartItemMap = new Map<string, (typeof cart)[0]>();
@@ -76,7 +97,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
       cartItemMap.set(item.productId, item);
     });
 
-    return [...filteredProducts].sort((a, b) => {
+    return [...deduplicatedProducts].sort((a, b) => {
       const aInCart = cartItemMap.get(a.id);
       const bInCart = cartItemMap.get(b.id);
 
@@ -98,7 +119,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
       // Neither in cart: preserve original catalog order
       return 0;
     });
-  }, [filteredProducts, cart]);
+  }, [deduplicatedProducts, cart]);
 
   if (filteredProducts.length === 0) {
     const emptyI18n = {
@@ -215,11 +236,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
                 updateItemQuantity(product.id, -1);
               }
             }}
-            className={`group relative h-[210px] rounded-2xl ${
+            className={`group relative min-h-[245px] rounded-2xl ${
               inCartQty > 0
                 ? "border border-[#2DD4BF]/80 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_0_24px_rgba(45,212,191,0.25)] bg-[linear-gradient(135deg,rgba(45,212,191,0.12)_0%,rgba(255,255,255,0.03)_48%,rgba(14,19,24,0.95)_100%)]"
                 : "kaspi-frosted-card kaspi-frosted-card-hover"
-            } p-3 flex flex-col items-center justify-between text-center overflow-hidden cursor-pointer select-none transition-all duration-150 active:scale-[0.98] backdrop-blur-2xl focus:outline-none`}
+            } p-4 flex flex-col items-center justify-between text-center overflow-hidden cursor-pointer select-none transition-all duration-150 active:scale-[0.98] backdrop-blur-2xl focus:outline-none`}
           >
             {/* Top 3px Glowing Teal Accent Strip */}
             <div className="absolute top-0 inset-x-6 h-[2.5px] rounded-b-full bg-gradient-to-r from-transparent via-[#2DD4BF] to-transparent opacity-80" />
@@ -383,22 +404,20 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
             )}
 
             {/* Center Floating Pure White Studio Box */}
-            <div className="flex-1 flex items-center justify-center w-full py-1">
+            <div className="kaspi-studio-product-box w-full h-36 mb-3 shadow-[0_8px_20px_rgba(0,0,0,0.55)] group-hover:scale-[1.02] transition-transform duration-200">
               {imgSource ? (
-                <div className="w-[126px] h-[98px] rounded-xl bg-white p-1.5 flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.55)] border border-white/90 overflow-hidden group-hover:scale-[1.03] transition-transform duration-200">
-                  <img
-                    src={imgSource}
-                    alt={product.name}
-                    className="w-[92%] h-[92%] object-contain mx-auto drop-shadow-sm"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
-                </div>
+                <img
+                  src={imgSource}
+                  alt={product.name}
+                  className="w-[92%] h-[92%] object-contain mx-auto drop-shadow-sm"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
               ) : (
-                <div className="w-[126px] h-[98px] rounded-xl bg-white p-1.5 flex flex-col items-center justify-center border border-white/90 shadow-md">
-                  <div className="w-10 h-10 rounded-xl bg-zinc-100 flex items-center justify-center text-zinc-600">
-                    <ShoppingBag className="w-5 h-5 stroke-[1.75]" />
+                <div className="w-full h-full flex flex-col items-center justify-center bg-white">
+                  <div className="w-12 h-12 rounded-xl bg-zinc-100 flex items-center justify-center text-zinc-600">
+                    <ShoppingBag className="w-6 h-6 stroke-[1.75]" />
                   </div>
                 </div>
               )}

@@ -81,14 +81,14 @@ export function ObsidianMetalVipCardWhiteCanvas({
   subtitle?: string;
 }) {
   return (
-    <div className="group relative rounded-3xl bg-white border border-zinc-200 shadow-2xl p-8 sm:p-10 my-4 flex flex-col items-center justify-center text-center select-none overflow-hidden transition-all duration-300 hover:shadow-[0_25px_60px_rgba(0,0,0,0.15)]">
-      {/* Subtle Micro-Grid on White */}
-      <div className="absolute inset-0 bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] [background-size:16px_16px] opacity-60 pointer-events-none" />
+    <div className="kaspi-frosted-card group relative rounded-3xl border border-white/10 shadow-2xl p-8 sm:p-10 my-4 flex flex-col items-center justify-center text-center select-none overflow-hidden text-white transition-all duration-300">
+      {/* Subtle Micro-Grid */}
+      <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:16px_16px] opacity-40 pointer-events-none" />
 
       {/* 3D Realistic Obsidian Metal VIP Card with Real Perspective Tilt */}
       <div className="relative w-56 h-36 flex items-center justify-center mb-6 perspective-1000">
-        {/* Deep drop shadow on pure white surface */}
-        <div className="absolute w-48 h-28 rounded-2xl bg-black/35 blur-xl transform translate-y-6 group-hover:translate-y-8 group-hover:scale-105 group-hover:bg-black/45 transition-all duration-500" />
+        {/* Deep drop shadow */}
+        <div className="absolute w-48 h-28 rounded-2xl bg-black/60 blur-xl transform translate-y-6 group-hover:translate-y-8 group-hover:scale-105 transition-all duration-500" />
 
         {/* Realistic Obsidian Metallic Card */}
         <div className="relative w-52 h-32 rounded-2xl bg-gradient-to-tr from-[#0a0a0c] via-[#16161a] to-[#0d0d10] border border-zinc-700/80 shadow-[0_15px_35px_rgba(0,0,0,0.6),0_1px_0_rgba(255,255,255,0.25)_inset] p-4 flex flex-col justify-between transform -rotate-3 group-hover:rotate-0 group-hover:scale-105 group-hover:-translate-y-2 transition-all duration-500 ease-out overflow-hidden cursor-pointer">
@@ -136,12 +136,12 @@ export function ObsidianMetalVipCardWhiteCanvas({
         </div>
       </div>
 
-      {/* Deep Black Text on Crisp White Canvas */}
-      <h3 className="text-base font-extrabold text-zinc-950 tracking-tight relative z-10 mb-1">
+      {/* Crisp White Text on Frosted Canvas */}
+      <h3 className="text-base font-extrabold text-white tracking-tight relative z-10 mb-1">
         {title}
       </h3>
       {subtitle && (
-        <p className="text-xs text-zinc-600 max-w-sm text-center leading-relaxed relative z-10">
+        <p className="text-xs text-zinc-400 max-w-sm text-center leading-relaxed relative z-10">
           {subtitle}
         </p>
       )}
