@@ -28,6 +28,40 @@ import { offlineDb } from "@/client/db";
 import { processSyncQueue, getApiUrl } from "@/client/sync-engine";
 import { useAppDictionary } from "@/i18n/schema";
 
+const SEEDED_DEMO_NAMES = new Set([
+  "Huile d'Olive Extra Vierge Atlas 1L",
+  "Thé Vert Sultan Habka 200g",
+  "Amlou Beldi aux Amandes & Argan 500g",
+  "Lait UHT Centrale Entier 1L",
+  "Farine Finot Supérieure 5kg",
+  "Eau Minérale Sidi Ali 1.5L",
+  "Sucre Morceaux Tigre 1kg",
+  "Café Moulu Dubois Gold 250g",
+  "Espresso Noir Italien / Nous-Nous",
+  "Écouteurs Sans Fil ANC Pro (Garantie 12m)",
+  "Couscous Royal Vendredi (Tfaya)",
+  "Tajine Poulet Citron Confit & Olives",
+  "Chemise Lin Premium Casablanca (Taille L)",
+  "Sultan Habka Tea 200g",
+  "Atlas Olive Oil 1L",
+  "Couscous Royal 1kg",
+  "Atlalus Olive Oil 1kg",
+]);
+
+const SEEDED_DEMO_SKUS = new Set([
+  "SKU-OIL-001", "SKU-TEA-002", "SKU-AML-003", "SKU-MLK-004",
+  "SKU-FAR-005", "SKU-EAU-006", "SKU-SUC-007", "SKU-CAF-008",
+  "DEMO-001", "DEMO-002", "DEMO-003", "DEMO-004", "DEMO-005", "DEMO-006", "DEMO-007", "DEMO-008"
+]);
+
+function isDemoProduct(p: { name?: string | null; sku?: string | null }) {
+  if (!p) return false;
+  if (p.name && SEEDED_DEMO_NAMES.has(p.name)) return true;
+  if (p.sku && SEEDED_DEMO_SKUS.has(p.sku)) return true;
+  if (p.sku && p.sku.startsWith("DEMO-")) return true;
+  return false;
+}
+
 export default function PosPage() {
   const { t, locale } = useAppDictionary();
   const [products, setProducts] = useState<PosProduct[]>([]);
@@ -142,9 +176,15 @@ export default function PosPage() {
       try {
         if (offlineDb?.offlineProducts) {
           const cachedProds = await offlineDb.offlineProducts.toArray();
-          if (isMounted && cachedProds && cachedProds.length > 0) {
+          const cleanProds = (cachedProds || []).filter((p: any) => !isDemoProduct(p));
+          // Purge demo products from local offline database if any exist
+          const demoIds = (cachedProds || []).filter((p: any) => isDemoProduct(p)).map((p: any) => p.id);
+          if (demoIds.length > 0) {
+            offlineDb.offlineProducts.bulkDelete(demoIds).catch(() => {});
+          }
+          if (isMounted && cleanProds.length > 0) {
             setProducts(
-              cachedProds.map((p: any) => ({
+              cleanProds.map((p: any) => ({
                 id: p.id,
                 name: p.name,
                 sku: p.sku,
@@ -243,7 +283,8 @@ export default function PosPage() {
 
         if (prodRes.ok) {
           const prodData = await prodRes.json();
-          const items: PosProduct[] = prodData.data?.products || [];
+          const rawItems: PosProduct[] = prodData.data?.products || [];
+          const items = rawItems.filter((p) => !isDemoProduct(p));
           setProducts(items);
 
           // Cache in Dexie for offline lookup
@@ -267,8 +308,9 @@ export default function PosPage() {
           }
         } else if (offlineDb?.offlineProducts) {
           const cached = await offlineDb.offlineProducts.toArray();
+          const cleanCached = (cached || []).filter((p: any) => !isDemoProduct(p));
           setProducts(
-            cached.map((p: any) => ({
+            cleanCached.map((p: any) => ({
               id: p.id,
               name: p.name,
               sku: p.sku,
@@ -291,8 +333,9 @@ export default function PosPage() {
         console.warn("PosPage: Network fetch failed, falling back to offline DB", err);
         if (offlineDb?.offlineProducts) {
           const cached = await offlineDb.offlineProducts.toArray();
+          const cleanCached = (cached || []).filter((p: any) => !isDemoProduct(p));
           setProducts(
-            cached.map((p: any) => ({
+            cleanCached.map((p: any) => ({
               id: p.id,
               name: p.name,
               sku: p.sku,
@@ -386,55 +429,53 @@ export default function PosPage() {
               <ProductSearch products={products} />
             </div>
 
-            {/* Middle: Square Register Segmented View Switcher */}
-            {storeType === "grocery" && (
-              <div className="h-11 p-1 rounded-xl bg-[#111113] border border-white/[0.08] flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setGroceryView("grid")}
-                  className={`h-9 px-3 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
-                    groceryView === "grid"
-                      ? "bg-white text-zinc-950"
-                      : "text-zinc-400 hover:text-white hover:bg-[#18181B]"
-                  }`}
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  <span className="hidden xl:inline">
-                    {locale === "ar" ? "الشبكة الذكية" : locale === "en" ? "Smart Grid" : "Grille Articles"}
-                  </span>
-                </button>
+            {/* Middle: Square Register Segmented View Switcher (Always Active) */}
+            <div className="h-11 p-1 rounded-xl kaspi-frosted-glass border border-white/[0.08] flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setGroceryView("grid")}
+                className={`h-9 px-3 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                  groceryView === "grid"
+                    ? "bg-white text-zinc-950 font-black"
+                    : "text-zinc-400 hover:text-white hover:bg-white/[0.06]"
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">
+                  {locale === "ar" ? "الشبكة الذكية" : locale === "en" ? "Smart Grid" : "Grille Articles"}
+                </span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => setGroceryView("plu")}
-                  className={`h-9 px-3 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
-                    groceryView === "plu"
-                      ? "bg-white text-zinc-950"
-                      : "text-zinc-400 hover:text-white hover:bg-[#18181B]"
-                  }`}
-                >
-                  <Scale className="w-3.5 h-3.5" />
-                  <span className="hidden xl:inline">
-                    {locale === "ar" ? "ميزان وخضر PLU" : locale === "en" ? "PLU & Scale" : "Balance & PLU"}
-                  </span>
-                </button>
+              <button
+                type="button"
+                onClick={() => setGroceryView("plu")}
+                className={`h-9 px-3 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                  groceryView === "plu"
+                    ? "bg-white text-zinc-950 font-black"
+                    : "text-zinc-400 hover:text-white hover:bg-white/[0.06]"
+                }`}
+              >
+                <Scale className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">
+                  {locale === "ar" ? "ميزان وخضر PLU" : locale === "en" ? "PLU & Scale" : "Balance & PLU"}
+                </span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => setGroceryView("price_check")}
-                  className={`h-9 px-3 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
-                    groceryView === "price_check"
-                      ? "bg-white text-zinc-950"
-                      : "text-zinc-400 hover:text-white hover:bg-[#18181B]"
-                  }`}
-                >
-                  <ScanBarcode className="w-3.5 h-3.5" />
-                  <span className="hidden xl:inline">
-                    {locale === "ar" ? "فاحص الثمن والصلاحية" : locale === "en" ? "Price & DLC" : "Vérif. Prix & DLC"}
-                  </span>
-                </button>
-              </div>
-            )}
+              <button
+                type="button"
+                onClick={() => setGroceryView("price_check")}
+                className={`h-9 px-3 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                  groceryView === "price_check"
+                    ? "bg-white text-zinc-950 font-black"
+                    : "text-zinc-400 hover:text-white hover:bg-white/[0.06]"
+                }`}
+              >
+                <ScanBarcode className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">
+                  {locale === "ar" ? "فاحص الثمن والصلاحية" : locale === "en" ? "Price & DLC" : "Vérif. Prix & DLC"}
+                </span>
+              </button>
+            </div>
 
             {/* Right: + New Product */}
             <button
@@ -456,33 +497,32 @@ export default function PosPage() {
               <CategoryFilter categories={categories} />
             </div>
 
-            {storeType === "grocery" && (
-              <div className="h-8 p-0.5 rounded-lg bg-[#111113] border border-white/[0.08] flex items-center gap-0.5 shrink-0">
-                <span className="font-mono text-[10px] font-bold text-zinc-500 px-2">
-                  {locale === "ar" ? "الكمية:" : locale === "fr" ? "QTÉ:" : "QTY:"}
-                </span>
-                {[
-                  { m: 1, labelAr: "×1", labelFr: "×1", labelEn: "×1" },
-                  { m: 2, labelAr: "×2", labelFr: "×2", labelEn: "×2" },
-                  { m: 6, labelAr: "×6 باك", labelFr: "×6 Pack", labelEn: "×6 Pack" },
-                  { m: 12, labelAr: "×12 كرتونة", labelFr: "×12 Carton", labelEn: "×12 Carton" },
-                  { m: 24, labelAr: "×24 صندوق", labelFr: "×24 Caisse", labelEn: "×24 Crate" },
-                ].map((item) => (
-                  <button
-                    key={item.m}
-                    type="button"
-                    onClick={() => handleSetScanMultiplier(item.m)}
-                    className={`h-7 px-2 rounded-md font-mono text-[11px] transition-colors cursor-pointer ${
-                      scanMultiplier === item.m
-                        ? "bg-white text-zinc-950 font-black shadow-xs"
-                        : "text-zinc-400 hover:text-white font-bold"
-                    }`}
-                  >
-                    {locale === "ar" ? item.labelAr : locale === "en" ? item.labelEn : item.labelFr}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Scan Multiplier Bar (Always Active) */}
+            <div className="h-8 p-0.5 rounded-lg kaspi-frosted-glass border border-white/[0.08] flex items-center gap-0.5 shrink-0">
+              <span className="font-mono text-[10px] font-bold text-zinc-400 px-2">
+                {locale === "ar" ? "الكمية:" : locale === "fr" ? "QTÉ:" : "QTY:"}
+              </span>
+              {[
+                { m: 1, labelAr: "×1", labelFr: "×1", labelEn: "×1" },
+                { m: 2, labelAr: "×2", labelFr: "×2", labelEn: "×2" },
+                { m: 6, labelAr: "×6 باك", labelFr: "×6 Pack", labelEn: "×6 Pack" },
+                { m: 12, labelAr: "×12 كرتونة", labelFr: "×12 Carton", labelEn: "×12 Carton" },
+                { m: 24, labelAr: "×24 صندوق", labelFr: "×24 Caisse", labelEn: "×24 Crate" },
+              ].map((item) => (
+                <button
+                  key={item.m}
+                  type="button"
+                  onClick={() => handleSetScanMultiplier(item.m)}
+                  className={`h-7 px-2 rounded-md font-mono text-[11px] transition-colors cursor-pointer ${
+                    scanMultiplier === item.m
+                      ? "bg-white text-zinc-950 font-black shadow-xs"
+                      : "text-zinc-400 hover:text-white font-bold hover:bg-white/[0.06]"
+                  }`}
+                >
+                  {locale === "ar" ? item.labelAr : locale === "en" ? item.labelEn : item.labelFr}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Main Workspace (Smart Grid or PLU Scale Touch Keypad) */}
@@ -492,7 +532,7 @@ export default function PosPage() {
                 isLoading={isLoading}
                 onReady={() => setLoaderDone(true)}
               />
-            ) : groceryView === "plu" && storeType === "grocery" ? (
+            ) : groceryView === "plu" ? (
               <SquarePluScalePanel
                 onBack={() => setGroceryView("grid")}
                 products={products}
@@ -507,7 +547,7 @@ export default function PosPage() {
 
           {/* Price & DLC Check Modal */}
           <SquarePriceDlcModal
-            isOpen={groceryView === "price_check" && storeType === "grocery"}
+            isOpen={groceryView === "price_check"}
             onClose={() => setGroceryView("grid")}
             products={products}
           />

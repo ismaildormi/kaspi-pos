@@ -16,7 +16,7 @@ interface ProductGridProps {
 export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickAdd }) => {
   const t = useTranslations("Pos");
   const { locale } = useAppDictionary();
-  const { searchQuery, activeCategoryId, addToCart, storeType, cart, pricingTier } = usePosStore();
+  const { searchQuery, activeCategoryId, addToCart, updateItemQuantity, storeType, cart, pricingTier } = usePosStore();
 
   const baseProducts = useMemo(() => {
     if (storeType === "grocery") {
@@ -148,11 +148,18 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
               playBarcodeScanSound();
               addToCart(product);
             }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              if (inCartQty > 0) {
+                playBarcodeScanSound();
+                updateItemQuantity(product.id, -1);
+              }
+            }}
             className={`group relative h-[210px] rounded-2xl ${
               inCartQty > 0
                 ? "border border-[#2DD4BF]/80 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.24),0_0_24px_rgba(45,212,191,0.25)] bg-[linear-gradient(135deg,rgba(45,212,191,0.12)_0%,rgba(255,255,255,0.03)_48%,rgba(14,19,24,0.95)_100%)]"
                 : "kaspi-frosted-card kaspi-frosted-card-hover"
-            } p-4 flex flex-col items-center justify-between text-center overflow-hidden cursor-pointer select-none transition-all duration-150 active:scale-[0.98] backdrop-blur-2xl`}
+            } p-3 flex flex-col items-center justify-between text-center overflow-hidden cursor-pointer select-none transition-all duration-150 active:scale-[0.98] backdrop-blur-2xl`}
           >
             {/* Top 3px Glowing Teal Accent Strip */}
             <div className="absolute top-0 inset-x-6 h-[2.5px] rounded-b-full bg-gradient-to-r from-transparent via-[#2DD4BF] to-transparent opacity-80" />
@@ -164,20 +171,24 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
               </span>
             )}
 
-            {/* Center Floating Transparent PNG Cutout */}
+            {/* Center Floating Pure White Studio Box */}
             <div className="flex-1 flex items-center justify-center w-full py-1">
               {imgSource ? (
-                <img
-                  src={imgSource}
-                  alt={product.name}
-                  className="max-h-[96px] max-w-[120px] w-auto h-auto object-contain mx-auto drop-shadow-[0_10px_20px_rgba(0,0,0,0.75)] group-hover:scale-105 transition-transform duration-200"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
+                <div className="w-[126px] h-[98px] rounded-xl bg-white p-1.5 flex items-center justify-center shadow-[0_8px_20px_rgba(0,0,0,0.55)] border border-white/90 overflow-hidden group-hover:scale-[1.03] transition-transform duration-200">
+                  <img
+                    src={imgSource}
+                    alt={product.name}
+                    className="w-[92%] h-[92%] object-contain mx-auto drop-shadow-sm"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                </div>
               ) : (
-                <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.07] flex items-center justify-center text-[#2DD4BF]/70 shadow-inner group-hover:scale-105 transition-transform duration-200">
-                  <ShoppingBag className="w-7 h-7 stroke-[1.75]" />
+                <div className="w-[126px] h-[98px] rounded-xl bg-white p-1.5 flex flex-col items-center justify-center border border-white/90 shadow-md">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-100 flex items-center justify-center text-zinc-600">
+                    <ShoppingBag className="w-5 h-5 stroke-[1.75]" />
+                  </div>
                 </div>
               )}
             </div>

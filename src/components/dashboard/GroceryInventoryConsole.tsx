@@ -334,12 +334,12 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
                     {/* Product Name + White-Background Product PNG Thumbnail */}
                     <td className="py-3.5 px-5">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-white p-1.5 flex items-center justify-center shrink-0 shadow-md border border-white/20">
+                        <div className="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shadow-md border border-white/90 shrink-0 overflow-hidden">
                           {item.imageUrl ? (
                             <img
                               src={item.imageUrl}
                               alt={item.name}
-                              className="w-full h-full object-contain filter drop-shadow"
+                              className="w-[92%] h-[92%] object-contain"
                             />
                           ) : (
                             <div className="w-full h-full rounded-lg bg-zinc-100 flex items-center justify-center">

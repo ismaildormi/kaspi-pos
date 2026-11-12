@@ -4,6 +4,7 @@ import { prisma } from "@/server/db/prisma";
 import { getSafeServerContext } from "@/server/auth/context";
 import {
   TrendingUp,
+  ArrowUpRight,
   ShoppingBag,
   Package,
   Users,
@@ -23,6 +24,66 @@ import type { StoreBusinessType } from "@/client/store/usePosStore";
 import { getDictionary, type Locale } from "@/i18n/schema";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * 3D Isometric Stacked Crates Illustration matching Zoomed-In Card
+ * (1 Vibrant Emerald/Teal Crate stacked on 2 Dark Slate Crates with lattice cutouts)
+ */
+function IsometricCratesIllustration({ className = "w-16 h-12" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 100 75"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      {/* Bottom Left Slate Crate */}
+      <g opacity="0.95">
+        <path d="M12 48 L38 61 L38 72 L12 59 Z" fill="#242C37" stroke="#3A4657" strokeWidth="0.8" />
+        <rect x="18" y="52" width="6" height="3" rx="0.5" fill="#14181F" transform="skewY(26)" />
+        <rect x="27" y="48" width="6" height="3" rx="0.5" fill="#14181F" transform="skewY(26)" />
+        
+        <path d="M38 61 L64 48 L64 59 L38 72 Z" fill="#1C232C" stroke="#3A4657" strokeWidth="0.8" />
+        <rect x="42" y="58" width="6" height="3" rx="0.5" fill="#14181F" transform="skewY(-26)" />
+        <rect x="51" y="62" width="6" height="3" rx="0.5" fill="#14181F" transform="skewY(-26)" />
+
+        <path d="M38 43 L64 30 L38 18 L12 30 Z" fill="#2E3744" stroke="#48566A" strokeWidth="0.8" />
+        <path d="M38 41 L59 30 L38 21 L17 30 Z" fill="#181D24" />
+      </g>
+
+      {/* Bottom Right Slate Crate */}
+      <g opacity="0.95">
+        <path d="M46 51 L68 62 L68 73 L46 62 Z" fill="#242C37" stroke="#3A4657" strokeWidth="0.8" />
+        <rect x="50" y="54" width="5" height="3" rx="0.5" fill="#14181F" transform="skewY(26)" />
+        <rect x="58" y="50" width="5" height="3" rx="0.5" fill="#14181F" transform="skewY(26)" />
+
+        <path d="M68 62 L94 49 L94 60 L68 73 Z" fill="#1A2028" stroke="#3A4657" strokeWidth="0.8" />
+        <rect x="72" y="60" width="5" height="3" rx="0.5" fill="#14181F" transform="skewY(-26)" />
+        <rect x="81" y="65" width="5" height="3" rx="0.5" fill="#14181F" transform="skewY(-26)" />
+
+        <path d="M68 47 L94 34 L68 22 L42 34 Z" fill="#2B3441" stroke="#48566A" strokeWidth="0.8" />
+        <path d="M68 45 L89 34 L68 25 L47 34 Z" fill="#161B22" />
+      </g>
+
+      {/* Top Stacked Teal/Green Crate */}
+      <g>
+        <path d="M22 28 L48 41 L48 53 L22 40 Z" fill="#0D9488" stroke="#2DD4BF" strokeWidth="1" />
+        <rect x="28" y="31" width="7" height="3.5" rx="0.75" fill="#042F2E" transform="skewY(26)" />
+        <rect x="37" y="27" width="7" height="3.5" rx="0.75" fill="#042F2E" transform="skewY(26)" />
+
+        <path d="M48 41 L74 28 L74 40 L48 53 Z" fill="#0F766E" stroke="#2DD4BF" strokeWidth="1" />
+        <rect x="52" y="38" width="7" height="3.5" rx="0.75" fill="#042F2E" transform="skewY(-26)" />
+        <rect x="61" y="43" width="7" height="3.5" rx="0.75" fill="#042F2E" transform="skewY(-26)" />
+
+        <path d="M48 23 L74 10 L48 0 L22 10 Z" fill="#14B8A6" stroke="#5EEAD4" strokeWidth="1" />
+        <path d="M48 20 L68 10 L48 2 L28 10 Z" fill="#042F2E" />
+        <line x1="48" y1="2" x2="48" y2="20" stroke="#2DD4BF" strokeWidth="0.8" opacity="0.6" />
+        <line x1="38" y1="6" x2="38" y2="24" stroke="#2DD4BF" strokeWidth="0.8" opacity="0.6" />
+        <line x1="58" y1="6" x2="58" y2="24" stroke="#2DD4BF" strokeWidth="0.8" opacity="0.6" />
+      </g>
+    </svg>
+  );
+}
 
 export default async function DashboardOverviewPage({
   params,
@@ -174,28 +235,24 @@ export default async function DashboardOverviewPage({
         <div className="kaspi-frosted-card kaspi-frosted-card-hover group relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold">
             <span>
-              {currentStoreType === "grocery"
-                ? locale === "ar"
-                  ? "مبيعات الصندوق اليومية"
-                  : locale === "en"
-                  ? "Daily Register Sales"
-                  : "Chiffre d'Affaires Caisse"
-                : t.dashboard.kpiRevenue}
+              {locale === "ar"
+                ? "مبيعات الصندوق اليومية"
+                : locale === "en"
+                ? "Daily Register Sales"
+                : "Chiffre d'Affaires Caisse"}
             </span>
-            <TrendingUp className="h-4 w-4 text-[#2DD4BF]" />
+            <ArrowUpRight className="h-4 w-4 text-[#2DD4BF]" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-black text-white font-mono tracking-tight">
               {totalSalesMad} {t.common.currency}
             </div>
             <p className="text-[11px] text-zinc-400 mt-1">
-              {currentStoreType === "grocery"
-                ? locale === "ar"
-                  ? `متوسط سلة المشتريات: ${avgBasketMad} MAD`
-                  : locale === "en"
-                  ? `Average Basket: ${avgBasketMad} MAD`
-                  : `Panier Moyen : ${avgBasketMad} MAD`
-                : t.dashboard.kpiRevenueSub}
+              {locale === "ar"
+                ? `متوسط سلة المشتريات: ${avgBasketMad} MAD`
+                : locale === "en"
+                ? `Average Basket: ${avgBasketMad} MAD`
+                : `Panier Moyen : ${avgBasketMad} MAD`}
             </p>
           </div>
         </div>
@@ -204,26 +261,22 @@ export default async function DashboardOverviewPage({
         <div className="kaspi-frosted-card kaspi-frosted-card-hover group relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold">
             <span>
-              {currentStoreType === "grocery"
-                ? locale === "ar"
-                  ? "حركة السلع الممسوحة"
-                  : locale === "en"
-                  ? "Scanned Items & FMCG Velocity"
-                  : "Articles Scannés & Rotation"
-                : t.dashboard.kpiTransactions}
+              {locale === "ar"
+                ? "حركة السلع الممسوحة"
+                : locale === "en"
+                ? "Scanned Items & FMCG Velocity"
+                : "Articles Scannés & Rotation"}
             </span>
             <Barcode className="h-4 w-4 text-zinc-400 group-hover:text-white transition-colors" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-black text-white font-mono tracking-tight">{salesCount}</div>
             <p className="text-[11px] text-zinc-400 mt-1">
-              {currentStoreType === "grocery"
-                ? locale === "ar"
-                  ? "دوران السلع الاستهلاكية السريعة اليوم"
-                  : locale === "en"
-                  ? "Fast-moving goods turnover today"
-                  : "Rotation active des produits du jour"
-                : t.dashboard.kpiTransactionsSub}
+              {locale === "ar"
+                ? "دوران السلع الاستهلاكية السريعة اليوم"
+                : locale === "en"
+                ? "Fast-moving goods turnover today"
+                : "Rotation active des produits du jour"}
             </p>
           </div>
         </div>
@@ -232,57 +285,51 @@ export default async function DashboardOverviewPage({
         <div className="kaspi-frosted-card kaspi-frosted-card-hover group relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold">
             <span>
-              {currentStoreType === "grocery"
-                ? locale === "ar"
-                  ? "تنبيهات الصلاحية والرفوف"
-                  : locale === "en"
-                  ? "Expiry & Shelf Alerts"
-                  : "Alertes Péremption & Rupture"
-                : t.dashboard.kpiProducts}
+              {locale === "ar"
+                ? "تنبيهات الصلاحية والرفوف"
+                : locale === "en"
+                ? "DLC Expiry Alerts"
+                : "Alertes Péremption & Rupture"}
             </span>
             <AlertTriangle className="h-4 w-4 text-[#F87171]" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-black text-white font-mono tracking-tight">
-              {currentStoreType === "grocery" ? outOfStockCount : productsCount}
+              {outOfStockCount || productsCount} <span className="text-sm font-semibold text-zinc-400">items</span>
             </div>
             <p className="text-[11px] text-zinc-400 mt-1">
-              {currentStoreType === "grocery"
-                ? locale === "ar"
-                  ? `${outOfStockCount} نفدت من الرف • 0 قريبة الانتهاء`
-                  : locale === "en"
-                  ? `${outOfStockCount} Out of stock • 0 Expiring soon`
-                  : `${outOfStockCount} En rupture • 0 Proches péremption`
-                : t.dashboard.kpiProductsSub}
+              {locale === "ar"
+                ? `${outOfStockCount} نفدت من الرف • 0 قريبة الانتهاء`
+                : locale === "en"
+                ? `${outOfStockCount} Out of stock • 0 Expiring soon`
+                : `${outOfStockCount} En rupture • 0 Proches péremption`}
             </p>
           </div>
         </div>
 
-        {/* KPI 4: Household Credit & Loyalty */}
-        <div className="kaspi-frosted-card kaspi-frosted-card-hover group relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold">
+        {/* KPI 4: Gas & Crate Consigne Balance with 3D Stacked Crates (Matching Blueprint 1:1 Across All Modes) */}
+        <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
+          <div className="text-xs font-semibold text-zinc-300">
             <span>
-              {currentStoreType === "grocery"
-                ? locale === "ar"
-                  ? "ديون كناش العائلات ونقاط الولاء"
-                  : locale === "en"
-                  ? "Household Credit & Loyalty"
-                  : "Encours Carnet Ménages & Fidélité"
-                : t.dashboard.kpiCustomers}
+              {locale === "ar"
+                ? "رصيد الرهن: الغاز والصناديق"
+                : locale === "en"
+                ? "Gas & Crate Consigne Balance"
+                : "Solde Consignes Gaz & Casiers"}
             </span>
-            <Users className="h-4 w-4 text-zinc-400 group-hover:text-white transition-colors" />
           </div>
-          <div className="mt-4">
-            <div className="text-2xl font-black text-white font-mono tracking-tight">{customersCount}</div>
-            <p className="text-[11px] text-zinc-400 mt-1">
-              {currentStoreType === "grocery"
-                ? locale === "ar"
-                  ? "كناش كريدي العائلات النشطة بنظام المكافآت"
-                  : locale === "en"
-                  ? "Active household tabs & reward points"
-                  : "Carnets ménages actifs avec points fidélité"
-                : t.dashboard.kpiCustomersSub}
-            </p>
+          <div className="mt-4 flex items-end justify-between">
+            <div className="flex items-baseline">
+              <span className="text-2xl font-black text-white font-mono tracking-tight">
+                +45
+              </span>
+              <span className="text-xs font-semibold text-zinc-400 mx-1.5">Units /</span>
+              <span className="text-sm font-bold text-[#F87171] font-mono">
+                -12
+              </span>
+              <span className="text-xs font-semibold text-zinc-400 ml-1.5">Empty</span>
+            </div>
+            <IsometricCratesIllustration className="w-16 h-12 shrink-0 drop-shadow-md" />
           </div>
         </div>
       </div>

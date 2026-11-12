@@ -30,6 +30,54 @@ async function resolveTenantId(): Promise<string> {
 export async function GET(req: NextRequest) {
   try {
     const tenantId = await resolveTenantId();
+
+    const SEEDED_DEMO_NAMES = [
+      "Huile d'Olive Extra Vierge Atlas 1L",
+      "Thé Vert Sultan Habka 200g",
+      "Amlou Beldi aux Amandes & Argan 500g",
+      "Lait UHT Centrale Entier 1L",
+      "Farine Finot Supérieure 5kg",
+      "Eau Minérale Sidi Ali 1.5L",
+      "Sucre Morceaux Tigre 1kg",
+      "Café Moulu Dubois Gold 250g",
+      "Espresso Noir Italien / Nous-Nous",
+      "Écouteurs Sans Fil ANC Pro (Garantie 12m)",
+      "Couscous Royal Vendredi (Tfaya)",
+      "Tajine Poulet Citron Confit & Olives",
+      "Chemise Lin Premium Casablanca (Taille L)",
+      "Sultan Habka Tea 200g",
+      "Atlas Olive Oil 1L",
+      "Couscous Royal 1kg",
+      "Atlalus Olive Oil 1kg",
+    ];
+    const SEEDED_DEMO_SKUS = [
+      "SKU-OIL-001", "SKU-TEA-002", "SKU-AML-003", "SKU-MLK-004",
+      "SKU-FAR-005", "SKU-EAU-006", "SKU-SUC-007", "SKU-CAF-008",
+      "DEMO-001", "DEMO-002", "DEMO-003", "DEMO-004", "DEMO-005", "DEMO-006", "DEMO-007", "DEMO-008"
+    ];
+    try {
+      await prisma.product.deleteMany({
+        where: {
+          tenantId,
+          OR: [
+            { name: { in: SEEDED_DEMO_NAMES } },
+            { sku: { in: SEEDED_DEMO_SKUS } },
+          ],
+        },
+      });
+    } catch {
+      await prisma.product.updateMany({
+        where: {
+          tenantId,
+          OR: [
+            { name: { in: SEEDED_DEMO_NAMES } },
+            { sku: { in: SEEDED_DEMO_SKUS } },
+          ],
+        },
+        data: { isActive: false },
+      }).catch(() => {});
+    }
+
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search")?.trim();
     const categoryId = searchParams.get("categoryId");

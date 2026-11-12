@@ -462,10 +462,21 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
               className="py-3 flex flex-col justify-between group transition-colors"
             >
               {/* Top Row: Product Name + Accumulated Line Price (Auto-doubles live) */}
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="font-sans font-semibold text-[13.5px] text-zinc-100 truncate flex-1">
-                  {item.name}
-                </span>
+              <div className="flex items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  {Boolean((item as any).imageUrl || (item as any).image) && (
+                    <div className="w-8 h-8 rounded-lg bg-white p-0.5 flex items-center justify-center shrink-0 overflow-hidden shadow-xs border border-white/80">
+                      <img
+                        src={(item as any).imageUrl || (item as any).image}
+                        alt={item.name}
+                        className="w-[92%] h-[92%] object-contain"
+                      />
+                    </div>
+                  )}
+                  <span className="font-sans font-semibold text-[13.5px] text-zinc-100 truncate">
+                    {item.name}
+                  </span>
+                </div>
                 <span className="font-mono font-extrabold text-[14.5px] text-white tabular-nums shrink-0">
                   {item.lineTotal.toFixed(2)}{" "}
                   <span className="text-[10.5px] text-zinc-400 font-normal">MAD</span>

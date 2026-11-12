@@ -705,7 +705,7 @@ export default function ProductsListPage() {
                     <img
                       src={product.imageUrl}
                       alt={product.name}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 filter drop-shadow-sm"
+                      className="w-[92%] h-[92%] object-contain group-hover:scale-105 transition-transform duration-300 filter drop-shadow-sm"
                       loading="lazy"
                     />
                   ) : (
@@ -907,17 +907,17 @@ export default function ProductsListPage() {
                     >
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-xl bg-zinc-950 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                          <div className="h-10 w-10 rounded-xl bg-white border border-white/80 p-0.5 overflow-hidden shrink-0 flex items-center justify-center shadow-xs">
                             {isUpdating ? (
-                              <Loader2 className="w-4 h-4 animate-spin text-white" />
+                              <Loader2 className="w-4 h-4 animate-spin text-zinc-900" />
                             ) : p.imageUrl ? (
                               <img
                                 src={p.imageUrl}
                                 alt={p.name}
-                                className="h-full w-full object-cover"
+                                className="h-[92%] w-[92%] object-contain"
                               />
                             ) : (
-                              <Package className="w-5 h-5 text-zinc-500" />
+                              <Package className="w-5 h-5 text-zinc-400" />
                             )}
                           </div>
                           <span className="font-bold text-white">{p.name}</span>
