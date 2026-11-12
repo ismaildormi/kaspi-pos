@@ -563,7 +563,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
       {/* Modal: Add Custom PLU Weighted Item */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fadeIn">
-          <div className="w-full max-w-sm rounded-2xl bg-[#0D0D10] border border-white/[0.12] p-5 space-y-4 shadow-2xl">
+          <div className="kaspi-frosted-glass w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Scale className="w-4 h-4 text-zinc-400" />

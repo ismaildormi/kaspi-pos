@@ -52,7 +52,7 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
       dir="ltr"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn select-none"
     >
-      <div className="w-full max-w-lg rounded-3xl bg-[#09090B] border border-white/[0.08] shadow-2xl p-6 space-y-5">
+      <div className="kaspi-frosted-glass w-full max-w-lg rounded-3xl shadow-2xl p-6 space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
           <div className="flex items-center gap-2.5">

@@ -163,12 +163,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
   return (
     <div
       dir="ltr"
-      style={{
-        background: "linear-gradient(165deg, #1E252D 0%, #141920 40%, #0B0E12 100%)",
-        borderLeft: "1px solid rgba(255, 255, 255, 0.14)",
-        boxShadow: "inset 1px 0 0 0 rgba(255, 255, 255, 0.08)",
-      }}
-      className="flex flex-col h-full select-none backdrop-blur-2xl"
+      className="kaspi-frosted-glass flex flex-col h-full select-none !border-y-0 !border-r-0 !rounded-none"
     >
       {/* Zone R1: Top Customer & Unit/Pack Switcher */}
       <div className="p-3 border-b border-white/[0.08] bg-white/[0.02] space-y-2">

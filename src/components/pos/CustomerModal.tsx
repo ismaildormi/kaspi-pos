@@ -233,7 +233,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
 
   return (
     <div dir="ltr" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs select-none">
-      <div className="relative w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      <div className="kaspi-frosted-glass relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
         {/* Header */}
         <div className="p-4 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between">
           <div className="flex items-center gap-2">

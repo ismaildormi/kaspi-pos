@@ -199,7 +199,7 @@ export function GroceryScannerUtilityBar({
           dir="ltr"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn select-none"
         >
-          <div className="w-full max-w-lg rounded-3xl bg-zinc-950 border border-zinc-800 shadow-2xl p-6 space-y-5">
+          <div className="kaspi-frosted-glass w-full max-w-lg rounded-3xl shadow-2xl p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
@@ -341,7 +341,7 @@ export function GroceryScannerUtilityBar({
           dir="ltr"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn select-none"
         >
-          <div className="w-full max-w-lg rounded-3xl bg-zinc-950 border border-zinc-800 shadow-2xl p-6 space-y-5">
+          <div className="kaspi-frosted-glass w-full max-w-lg rounded-3xl shadow-2xl p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">

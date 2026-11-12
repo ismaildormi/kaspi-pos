@@ -223,7 +223,7 @@ export const InAppPaywallModal: React.FC<InAppPaywallModalProps> = ({
       dir={isRtl ? "rtl" : "ltr"}
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
     >
-      <div className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-zinc-800 bg-[#09090B] p-6 sm:p-8 shadow-[0_24px_80px_rgba(0,0,0,0.85)] text-white">
+      <div className="kaspi-frosted-glass relative w-full max-w-xl overflow-hidden rounded-3xl p-6 sm:p-8 shadow-[0_24px_80px_rgba(0,0,0,0.85)] text-white">
         {/* Subtle Titanium Radial Glow */}
         <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full bg-white/5 blur-3xl" />
 

@@ -97,7 +97,7 @@ const MODAL_DICT = {
     routingIntl: "توجيه تلقائي عبر البوابة الدولية المرخصة (Paddle MoR)",
     payAndActivateBtn: "تأكيد الدفع والتفعيل الفوري",
     processingPayment: "جاري التحقق والربط المشفر...",
-    successTitle: "تم قبول الدفع وتفعيل الاشتراك بنجاح ✓",
+    successTitle: "تم قبول الدفع وتفعيل الاشتراك بنجاح",
     successSubtitle: "تم تحديث ترخيص متجرك وفتح نقطة البيع فورا بدون أي انتظار.",
     bankTransferTitle: "التحويل البنكي الوطني المباشر :",
     ribLabel: "رقم الحساب البنكي (RIB) :",
@@ -125,7 +125,7 @@ const MODAL_DICT = {
     routingIntl: "Routage international sécurisé (Paddle Merchant of Record)",
     payAndActivateBtn: "Payer et Activer Immédiatement",
     processingPayment: "Vérification et chiffrement bancaire...",
-    successTitle: "Paiement validé & Licence activée avec succès ✓",
+    successTitle: "Paiement validé & Licence activée avec succès",
     successSubtitle: "Votre espace a été mis à jour immédiatement sans aucune interruption.",
     bankTransferTitle: "Coordonnées Bancaires Nationales :",
     ribLabel: "RIB (24 chiffres) :",
@@ -153,7 +153,7 @@ const MODAL_DICT = {
     routingIntl: "Auto-routed via Global Merchant of Record (Paddle MoR)",
     payAndActivateBtn: "Pay & Activate Instantly",
     processingPayment: "Secure bank tokenization in progress...",
-    successTitle: "Payment Approved & Subscription Active ✓",
+    successTitle: "Payment Approved & Subscription Active",
     successSubtitle: "Your store capacity has been immediately updated without waiting.",
     bankTransferTitle: "National Bank Coordinates:",
     ribLabel: "RIB (24 digits):",
@@ -289,7 +289,7 @@ export function UnifiedCheckoutModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
       <div
         dir="ltr"
-        className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden"
+        className="kaspi-frosted-glass rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden"
       >
         {/* Subtle monochrome ambient light */}
         <div className="absolute top-0 right-1/4 w-36 h-36 bg-white/[0.04] rounded-full blur-3xl pointer-events-none" />

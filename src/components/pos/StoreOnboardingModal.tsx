@@ -159,7 +159,7 @@ export function StoreOnboardingModal({
       dir="ltr"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto"
     >
-      <div className="relative w-full max-w-4xl rounded-3xl bg-[#0e1017] border border-white/10 shadow-2xl overflow-hidden my-auto">
+      <div className="kaspi-frosted-glass relative w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden my-auto">
         {/* Top Accent Banner (Strict Monochrome) */}
         <div className="h-1 w-full bg-white/20" />
 

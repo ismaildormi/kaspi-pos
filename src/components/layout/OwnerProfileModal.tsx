@@ -303,7 +303,7 @@ export function OwnerProfileModal({
       dir="ltr"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md select-none animate-in fade-in duration-200"
     >
-      <div className="relative w-full max-w-xl rounded-3xl bg-zinc-950 border border-zinc-800 shadow-2xl p-6 sm:p-7 space-y-6 overflow-hidden">
+      <div className="kaspi-frosted-glass relative w-full max-w-xl rounded-3xl p-6 sm:p-7 space-y-6 overflow-hidden shadow-2xl">
         {/* Ambient Top Glow */}
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
 

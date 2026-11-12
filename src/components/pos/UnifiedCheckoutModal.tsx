@@ -267,7 +267,7 @@ export function UnifiedCheckoutModal() {
       dir="ltr"
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md select-none overflow-y-auto"
     >
-      <div className="w-full max-w-xl rounded-3xl bg-[#09090b] border border-zinc-800 shadow-2xl surface-obsidian-3d overflow-hidden flex flex-col max-h-[92vh] my-auto">
+      <div className="kaspi-frosted-glass w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto">
         {/* Modal Top Header */}
         <div className="flex items-center justify-between p-4 px-6 border-b border-zinc-800 bg-zinc-900/60">
           <div className="flex items-center gap-2.5">

@@ -244,7 +244,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
       dir="ltr"
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-2xl select-none overflow-y-auto animate-fadeIn"
     >
-      <div className="w-full max-w-3xl rounded-3xl bg-[#0B0F13]/95 backdrop-blur-2xl border border-white/[0.12] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.85)] flex flex-col my-auto transition-all">
+      <div className="kaspi-frosted-glass w-full max-w-3xl rounded-3xl p-6 shadow-[0_24px_80px_rgba(0,0,0,0.85)] flex flex-col my-auto transition-all">
         {/* Header Row */}
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
           <h2 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
