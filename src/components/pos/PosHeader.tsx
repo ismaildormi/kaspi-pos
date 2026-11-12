@@ -24,7 +24,6 @@ interface PosHeaderProps {
   ownerAvatarUrl?: string;
   onOpenHeldCarts?: () => void;
   onOpenCashShift?: () => void;
-  onOpenIndustryTools?: () => void;
   isShiftOpen?: boolean;
   expectedCash?: number;
 }
@@ -35,7 +34,6 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
   ownerAvatarUrl,
   onOpenHeldCarts,
   onOpenCashShift,
-  onOpenIndustryTools,
   isShiftOpen = false,
   expectedCash = 0,
 }) => {

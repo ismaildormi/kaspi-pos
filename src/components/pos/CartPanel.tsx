@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import {
   ShoppingCart,
@@ -63,6 +63,11 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
     getGrandTotal,
     openPaymentModal,
   } = usePosStore();
+
+  // Ensure most recently scanned/updated cart item is pinned to the top of CartPanel
+  const displayedCart = useMemo(() => {
+    return [...cart].sort((a, b) => (b.lastUpdatedAt ?? 0) - (a.lastUpdatedAt ?? 0));
+  }, [cart]);
 
   const handleApplyCoupon = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -456,7 +461,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             </p>
           </div>
         ) : (
-          cart.map((item) => (
+          displayedCart.map((item) => (
             <div
               key={item.productId}
               className="py-3 flex flex-col justify-between group transition-colors"

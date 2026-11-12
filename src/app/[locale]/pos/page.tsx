@@ -409,7 +409,6 @@ export default function PosPage() {
         cashierName={userName}
         ownerAvatarUrl={tenantInfo?.logoUrl}
         onOpenHeldCarts={() => setIsHeldModalOpen(true)}
-        onOpenIndustryTools={() => setIsIndustryToolsOpen(true)}
         onOpenCashShift={() => {
           fetchCashShift();
           setIsCashShiftModalOpen(true);

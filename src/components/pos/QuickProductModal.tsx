@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   X,
   Upload,
@@ -48,6 +48,45 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const barcodeInputRef = useRef<HTMLInputElement | null>(null);
+
+  // High-speed hardware barcode gun (USB / Bluetooth HID) auto-capture
+  useEffect(() => {
+    if (!isOpen) return;
+    let scanBuffer = "";
+    let lastKeyTime = 0;
+
+    const handleModalScannerKeyDown = (e: KeyboardEvent) => {
+      const now = Date.now();
+      if (now - lastKeyTime > 80) {
+        scanBuffer = "";
+      }
+      lastKeyTime = now;
+
+      if (e.key === "Enter" && scanBuffer.length >= 4) {
+        e.preventDefault();
+        e.stopPropagation();
+        setBarcode(scanBuffer.trim());
+        playBarcodeScanSound();
+        toast.success(
+          locale === "ar"
+            ? `تم التقاط الباركود بالماسح: ${scanBuffer.trim()}`
+            : locale === "en"
+            ? `Barcode captured: ${scanBuffer.trim()}`
+            : `Code-barres scanné : ${scanBuffer.trim()}`
+        );
+        scanBuffer = "";
+        return;
+      }
+
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        scanBuffer += e.key;
+      }
+    };
+
+    window.addEventListener("keydown", handleModalScannerKeyDown, true);
+    return () => window.removeEventListener("keydown", handleModalScannerKeyDown, true);
+  }, [isOpen, locale]);
 
   if (!isOpen) return null;
 
@@ -419,6 +458,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <input
+                      ref={barcodeInputRef}
                       type="text"
                       value={barcode}
                       onChange={(e) => setBarcode(e.target.value)}
@@ -429,11 +469,23 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                   </div>
                   <button
                     type="button"
+                    onClick={() => {
+                      barcodeInputRef.current?.focus();
+                      barcodeInputRef.current?.select();
+                    }}
+                    className="h-10 px-3 rounded-xl bg-[#14B8A6]/10 hover:bg-[#14B8A6]/20 border border-[#14B8A6]/30 text-xs font-semibold text-[#2DD4BF] flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                    title={locale === "ar" ? "اضغط هنا ووجّه قارئ الباركود نحو المنتج" : "Scanner au lecteur code-barres"}
+                  >
+                    <Barcode className="w-3.5 h-3.5 text-[#2DD4BF]" />
+                    <span>{locale === "ar" ? "مسح بالكود بار" : locale === "fr" ? "Scanner" : "Scan Barcode"}</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={generateBarcode}
                     className="h-10 px-3.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.12] text-xs font-semibold text-zinc-200 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-[#2DD4BF]" />
-                    <span>{locale === "ar" ? "توليد تلقائي" : "Auto-Generate"}</span>
+                    <span>{locale === "ar" ? "توليد تلقائي" : locale === "fr" ? "Auto-générer" : "Auto-Generate"}</span>
                   </button>
                 </div>
               </div>

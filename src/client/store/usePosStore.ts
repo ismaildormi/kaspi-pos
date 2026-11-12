@@ -49,6 +49,7 @@ export interface CartItem {
   discountAmount: number;
   lineTotal: number;
   notes?: string;
+  lastUpdatedAt?: number;
 }
 
 export interface HeldCart {
@@ -119,6 +120,7 @@ interface PosState {
   // Navigation & Filtering
   searchQuery: string;
   activeCategoryId: string | null;
+  lastInteractedProductId: string | null;
 
   // Checkout & Payment State
   isPaymentModalOpen: boolean;
@@ -212,6 +214,7 @@ export const usePosStore = create<PosState>()(
 
       searchQuery: "",
       activeCategoryId: null,
+      lastInteractedProductId: null,
 
       isPaymentModalOpen: false,
       selectedPaymentMethod: "cash",
@@ -339,6 +342,7 @@ export const usePosStore = create<PosState>()(
         }
 
         set((state) => {
+          const now = Date.now();
           const existingIndex = state.cart.findIndex((i) => i.productId === product.id);
           const retailPrice = Number(product.salePrice ?? product.price ?? 0);
           const wholesalePrice = product.wholesalePrice ? Number(product.wholesalePrice) : null;
@@ -349,20 +353,25 @@ export const usePosStore = create<PosState>()(
           const resolvedTaxRate = Number(product.taxRate ?? 20);
 
           if (existingIndex > -1) {
-            const updated = [...state.cart];
-            const current = updated[existingIndex];
+            const current = state.cart[existingIndex];
             const newQty = roundMoney(toDecimal(current.quantity).plus(quantity)).toNumber();
             const netAmount = (current.unitPrice * newQty) - current.discountAmount;
             const taxAmount = (netAmount * current.taxRate) / 100;
             const lineTotal = roundMoney(toDecimal(netAmount).plus(taxAmount)).toNumber();
 
-            updated[existingIndex] = {
+            const updatedItem: CartItem = {
               ...current,
               quantity: newQty,
               lineTotal,
               notes: notes || current.notes,
+              lastUpdatedAt: now,
             };
-            return { cart: updated };
+
+            const otherItems = state.cart.filter((_, idx) => idx !== existingIndex);
+            return {
+              cart: [updatedItem, ...otherItems],
+              lastInteractedProductId: product.id,
+            };
           }
 
           const unitPrice = resolvedUnitPrice;
@@ -383,9 +392,13 @@ export const usePosStore = create<PosState>()(
             discountAmount: 0,
             lineTotal,
             notes,
+            lastUpdatedAt: now,
           };
 
-          return { cart: [...state.cart, newItem] };
+          return {
+            cart: [newItem, ...state.cart],
+            lastInteractedProductId: product.id,
+          };
         });
       },
 
@@ -419,6 +432,7 @@ export const usePosStore = create<PosState>()(
 
         // 2. Add or increment item in cart & recalculate line and cart totals (including tax)
         set((state) => {
+          const now = Date.now();
           const existingIndex = state.cart.findIndex((i) => i.productId === product.id);
           const retailPrice = Number(product.salePrice ?? product.price ?? 0);
           const wholesalePrice = product.wholesalePrice ? Number(product.wholesalePrice) : null;
@@ -429,19 +443,24 @@ export const usePosStore = create<PosState>()(
           const resolvedTaxRate = Number(product.taxRate ?? 20);
 
           if (existingIndex > -1) {
-            const updated = [...state.cart];
-            const current = updated[existingIndex];
+            const current = state.cart[existingIndex];
             const newQty = roundMoney(toDecimal(current.quantity).plus(quantity)).toNumber();
             const netAmount = (current.unitPrice * newQty) - current.discountAmount;
             const taxAmount = (netAmount * current.taxRate) / 100;
             const lineTotal = roundMoney(toDecimal(netAmount).plus(taxAmount)).toNumber();
 
-            updated[existingIndex] = {
+            const updatedItem: CartItem = {
               ...current,
               quantity: newQty,
               lineTotal,
+              lastUpdatedAt: now,
             };
-            return { cart: updated };
+
+            const otherItems = state.cart.filter((_, idx) => idx !== existingIndex);
+            return {
+              cart: [updatedItem, ...otherItems],
+              lastInteractedProductId: product.id,
+            };
           }
 
           const net = resolvedUnitPrice * quantity;
@@ -460,30 +479,46 @@ export const usePosStore = create<PosState>()(
             taxRate: resolvedTaxRate,
             discountAmount: 0,
             lineTotal,
+            lastUpdatedAt: now,
           };
 
-          return { cart: [...state.cart, newItem] };
+          return {
+            cart: [newItem, ...state.cart],
+            lastInteractedProductId: product.id,
+          };
         });
       },
 
       updateItemQuantity: (productId, delta) => {
         set((state) => {
+          const now = Date.now();
           const item = state.cart.find((i) => i.productId === productId);
           if (!item) return state;
 
           const newQty = item.quantity + delta;
           if (newQty <= 0) {
-            return { cart: state.cart.filter((i) => i.productId !== productId) };
+            return {
+              cart: state.cart.filter((i) => i.productId !== productId),
+              lastInteractedProductId: state.lastInteractedProductId === productId ? null : state.lastInteractedProductId,
+            };
           }
 
           const net = (item.unitPrice * newQty) - item.discountAmount;
           const tax = (net * item.taxRate) / 100;
           const lineTotal = roundMoney(toDecimal(net).plus(tax)).toNumber();
 
-          const updated = state.cart.map((i) =>
-            i.productId === productId ? { ...i, quantity: newQty, lineTotal } : i
-          );
-          return { cart: updated };
+          const updatedItem: CartItem = {
+            ...item,
+            quantity: newQty,
+            lineTotal,
+            lastUpdatedAt: now,
+          };
+
+          const otherItems = state.cart.filter((i) => i.productId !== productId);
+          return {
+            cart: [updatedItem, ...otherItems],
+            lastInteractedProductId: productId,
+          };
         });
       },
 
@@ -494,19 +529,34 @@ export const usePosStore = create<PosState>()(
         }
 
         set((state) => {
-          const updated = state.cart.map((item) => {
-            if (item.productId !== productId) return item;
-            const net = (item.unitPrice * quantity) - item.discountAmount;
-            const tax = (net * item.taxRate) / 100;
-            const lineTotal = roundMoney(toDecimal(net).plus(tax)).toNumber();
-            return { ...item, quantity, lineTotal };
-          });
-          return { cart: updated };
+          const now = Date.now();
+          const item = state.cart.find((i) => i.productId === productId);
+          if (!item) return state;
+
+          const net = (item.unitPrice * quantity) - item.discountAmount;
+          const tax = (net * item.taxRate) / 100;
+          const lineTotal = roundMoney(toDecimal(net).plus(tax)).toNumber();
+
+          const updatedItem: CartItem = {
+            ...item,
+            quantity,
+            lineTotal,
+            lastUpdatedAt: now,
+          };
+
+          const otherItems = state.cart.filter((i) => i.productId !== productId);
+          return {
+            cart: [updatedItem, ...otherItems],
+            lastInteractedProductId: productId,
+          };
         });
       },
 
       removeItem: (productId) => {
-        set((state) => ({ cart: state.cart.filter((i) => i.productId !== productId) }));
+        set((state) => ({
+          cart: state.cart.filter((i) => i.productId !== productId),
+          lastInteractedProductId: state.lastInteractedProductId === productId ? null : state.lastInteractedProductId,
+        }));
       },
 
       clearCart: () => {
@@ -518,6 +568,7 @@ export const usePosStore = create<PosState>()(
           loyaltyPointsToRedeem: 0,
           amountTendered: "",
           isPaymentModalOpen: false,
+          lastInteractedProductId: null,
         });
       },
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Package, Plus, ArrowRight, ShoppingBag, MoreHorizontal, X } from "lucide-react";
 import Link from "next/link";
@@ -16,8 +16,25 @@ interface ProductGridProps {
 export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickAdd }) => {
   const t = useTranslations("Pos");
   const { locale } = useAppDictionary();
-  const { searchQuery, activeCategoryId, addToCart, updateItemQuantity, storeType, cart, pricingTier } = usePosStore();
+  const {
+    searchQuery,
+    activeCategoryId,
+    addToCart,
+    updateItemQuantity,
+    storeType,
+    cart,
+    pricingTier,
+    lastInteractedProductId,
+  } = usePosStore();
   const [openMenuProductId, setOpenMenuProductId] = useState<string | null>(null);
+  const gridContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Smooth scroll to top-left when a product is scanned or added to cart
+  useEffect(() => {
+    if (lastInteractedProductId && gridContainerRef.current) {
+      gridContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [lastInteractedProductId, cart]);
 
   const baseProducts = useMemo(() => {
     if (storeType === "grocery") {
@@ -51,6 +68,37 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
       return true;
     });
   }, [baseProducts, activeCategoryId, searchQuery]);
+
+  // Marjane / Asima auto-pin scanned & active cart products to #1 top of grid
+  const sortedProducts = useMemo(() => {
+    const cartItemMap = new Map<string, (typeof cart)[0]>();
+    cart.forEach((item) => {
+      cartItemMap.set(item.productId, item);
+    });
+
+    return [...filteredProducts].sort((a, b) => {
+      const aInCart = cartItemMap.get(a.id);
+      const bInCart = cartItemMap.get(b.id);
+
+      const aQty = aInCart ? aInCart.quantity : 0;
+      const bQty = bInCart ? bInCart.quantity : 0;
+
+      // Both in cart: sort by lastUpdatedAt descending (most recently scanned/tapped first)
+      if (aQty > 0 && bQty > 0) {
+        const aTime = aInCart?.lastUpdatedAt ?? 0;
+        const bTime = bInCart?.lastUpdatedAt ?? 0;
+        return bTime - aTime;
+      }
+
+      // Only a in cart -> a comes first
+      if (aQty > 0 && bQty === 0) return -1;
+      // Only b in cart -> b comes first
+      if (aQty === 0 && bQty > 0) return 1;
+
+      // Neither in cart: preserve original catalog order
+      return 0;
+    });
+  }, [filteredProducts, cart]);
 
   if (filteredProducts.length === 0) {
     const emptyI18n = {
@@ -127,8 +175,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 overflow-y-auto pb-4 select-none">
-      {filteredProducts.map((product) => {
+    <div
+      ref={gridContainerRef}
+      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 overflow-y-auto pb-4 select-none scroll-smooth"
+    >
+      {sortedProducts.map((product) => {
         const inCartItem = cart.find((i) => i.productId === product.id);
         const inCartQty = inCartItem ? inCartItem.quantity : 0;
         const imgSource = (product as any).imageUrl || product.image;

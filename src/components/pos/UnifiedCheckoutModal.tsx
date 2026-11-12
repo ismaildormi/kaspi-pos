@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import {
   X,
@@ -20,6 +20,7 @@ import {
   Boxes,
   Gift,
   Building2,
+  ChevronDown,
 } from "lucide-react";
 import { usePosStore, type PaymentMethodType } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
@@ -81,6 +82,7 @@ export function UnifiedCheckoutModal() {
 
   const [showReceiptPreview, setShowReceiptPreview] = useState(false);
   const [cardBinInput, setCardBinInput] = useState("");
+  const [showCardRefInput, setShowCardRefInput] = useState(false);
   const [splitCashAmount, setSplitCashAmount] = useState<string>("");
   const [isGiftVoucherRequested, setIsGiftVoucherRequested] = useState(false);
   const [isBlRequested, setIsBlRequested] = useState(false);
@@ -179,8 +181,36 @@ export function UnifiedCheckoutModal() {
       }
     }
 
+    // Direct TPE Standalone details
+    if (selectedPaymentMethod === "card") {
+      list.push("Paiement Direct : TPE Bancaire");
+      if (cardBinInput || detectedBank) {
+        list.push(`Réf TPE : ${detectedBank || cardBinInput}`);
+      }
+    }
+
     return list;
-  }, [storeType, selectedTableName, cart, isGiftVoucherRequested, isBlRequested, buyerIceInput, customer]);
+  }, [storeType, selectedTableName, cart, isGiftVoucherRequested, isBlRequested, buyerIceInput, customer, selectedPaymentMethod, cardBinInput, detectedBank]);
+
+  // 1-Click Instant Checkout Keyboard Listener (Enter triggers completion)
+  useEffect(() => {
+    if (!isPaymentModalOpen || saleResult) return;
+
+    const handleCheckoutKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !isProcessingPayment) {
+        if (selectedPaymentMethod === "credit" && !customer) return;
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag === "input" || tag === "textarea") {
+          return;
+        }
+        e.preventDefault();
+        handleConfirmCheckout();
+      }
+    };
+
+    window.addEventListener("keydown", handleCheckoutKeyDown);
+    return () => window.removeEventListener("keydown", handleCheckoutKeyDown);
+  }, [isPaymentModalOpen, saleResult, isProcessingPayment, selectedPaymentMethod, customer, grandTotal, amountTendered]);
 
   const handleConfirmCheckout = async () => {
     const receiptLang = printerSettings?.receiptLanguage || "fr";
@@ -242,7 +272,7 @@ export function UnifiedCheckoutModal() {
         receiptData: receiptSnapshot,
       });
 
-      if (res.isOffline || printerSettings?.autoPrintReceipt) {
+      if (res.isOffline || printerSettings?.autoPrintReceipt || selectedPaymentMethod === "cash" || selectedPaymentMethod === "card") {
         printReceipt({
           ...receiptSnapshot,
           createdAt: receiptSnapshot.date,
@@ -526,39 +556,72 @@ export function UnifiedCheckoutModal() {
               </div>
             )}
 
-            {/* 2. CARD / TPE VIEW WITH MOROCCAN BIN DETECTOR */}
+            {/* 2. DIRECT STANDALONE TPE MODE */}
             {selectedPaymentMethod === "card" && (
-              <div className="space-y-3 p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800">
+              <div className="kaspi-frosted-card rounded-2xl p-4 border border-white/10 space-y-3">
                 <div className="flex items-center justify-between text-xs font-bold text-white">
-                  <span>Paiement Terminal CMI / TPE</span>
-                  <span className="font-mono text-xs text-zinc-400">
-                    {deviceCount || 1} Appareil(s) • Commission: {feeInfo.customerPercentage}%
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-[#2DD4BF]" />
+                    <span>
+                      {locale === "ar"
+                        ? "جهاز البطاقة البنكية (TPE)"
+                        : locale === "fr"
+                        ? "Terminal Bancaire TPE"
+                        : "Standalone TPE Terminal"}
+                    </span>
+                  </div>
+                  <span className="font-mono text-[11px] text-[#2DD4BF] font-semibold bg-[#2DD4BF]/10 px-2.5 py-0.5 rounded-full border border-[#2DD4BF]/20">
+                    {locale === "ar" ? "ربط مباشر" : locale === "fr" ? "Paiement Direct" : "Direct Settlement"}
                   </span>
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold text-zinc-400 mb-1">
-                    {locale === "ar" ? "كاشف البنك المغربي (أدخل أول 4 أرقام من البطاقة):" : "Détecteur de Banque Marocaine (4 premiers chiffres) :"}
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    value={cardBinInput}
-                    onChange={(e) => setCardBinInput(e.target.value)}
-                    placeholder="Ex: 5160 (Attijari) / 4032 (BCP) / 4286 (CIH)..."
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-white font-mono text-xs focus:outline-none"
-                  />
+                {/* Status Notice Badge */}
+                <div className="p-3.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs text-zinc-300 leading-relaxed">
+                  {locale === "ar"
+                    ? "الدفع المباشر عبر جهاز البطاقة البنكية (TPE) — المبلغ يمر مباشرة لحسابكم البنكي ويُسجل في إحصائيات الصندوق وتقرير Z"
+                    : locale === "fr"
+                    ? "Paiement Direct par Terminal TPE — Montant encaissé sur votre TPE bancaire et enregistré dans la caisse & rapport Z"
+                    : "Direct Standalone TPE Card Payment — Settled on your bank TPE terminal and logged in POS analytics & Z-Report"}
                 </div>
 
-                {detectedBank && (
-                  <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center gap-2.5 text-xs text-white">
-                    <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span className="font-bold">{detectedBank}</span>
-                  </div>
-                )}
+                {/* Optional Collapsible Reference Toggle */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCardRefInput(!showCardRefInput)}
+                    className="text-[11px] font-semibold text-zinc-400 hover:text-zinc-200 flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <span>
+                      {locale === "ar"
+                        ? "إدخال مرجع TPE أو نوع البطاقة (اختياري)"
+                        : locale === "fr"
+                        ? "Ajouter référence TPE / type de carte (optionnel)"
+                        : "Add TPE Reference / Card Type (Optional)"}
+                    </span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showCardRefInput ? "rotate-180" : ""}`} />
+                  </button>
 
-                <div className="text-[11px] font-mono text-zinc-400 bg-zinc-950 p-2.5 rounded-xl border border-zinc-800 select-all leading-relaxed">
-                  {feeInfo.breakdownText}
+                  {showCardRefInput && (
+                    <div className="mt-2 space-y-2 animate-in fade-in duration-150">
+                      <input
+                        type="text"
+                        value={cardBinInput}
+                        onChange={(e) => setCardBinInput(e.target.value)}
+                        placeholder={
+                          locale === "ar"
+                            ? "مرجع الإيصال أو البنك (مثال: BCP, CIH, Attijari...)"
+                            : "Référence ticket ou banque (ex: BCP, CIH, Attijari...)"
+                        }
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#090C10] border border-white/10 text-white font-mono text-xs focus:outline-none focus:border-[#2DD4BF]"
+                      />
+                      {detectedBank && (
+                        <div className="p-2.5 rounded-xl bg-[#090C10] border border-white/10 flex items-center gap-2 text-xs text-white">
+                          <Building2 className="w-3.5 h-3.5 text-[#2DD4BF] shrink-0" />
+                          <span className="font-semibold text-zinc-200">{detectedBank}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -678,18 +741,26 @@ export function UnifiedCheckoutModal() {
               )}
             </div>
 
-            {/* Confirm & Complete Sale CTA */}
+            {/* Confirm & Complete Sale CTA (1-Click Instant Green Button with Enter Shortcut) */}
             <button
               type="button"
               onClick={handleConfirmCheckout}
               disabled={isProcessingPayment || (selectedPaymentMethod === "credit" && !customer)}
-              className="keycap-3d sheen-btn w-full h-14 rounded-2xl bg-white hover:bg-zinc-200 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed text-zinc-950 font-black text-sm shadow-xl flex items-center justify-center gap-2.5 cursor-pointer transition"
+              className="keycap-3d sheen-btn w-full h-14 rounded-2xl bg-gradient-to-r from-[#10B981] to-[#059669] hover:from-[#34D399] hover:to-[#10B981] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed text-zinc-950 font-black text-sm shadow-[0_0_25px_rgba(16,185,129,0.35)] flex items-center justify-center gap-2.5 cursor-pointer transition border border-emerald-400/30"
             >
-              <CheckCircle2 className="w-5 h-5 stroke-[2.5]" />
+              <CheckCircle2 className="w-5 h-5 stroke-[2.5] text-zinc-950" />
               <span>
                 {isProcessingPayment
-                  ? locale === "ar" ? "جاري توثيق العملية..." : "Traitement & Validation..."
-                  : locale === "ar" ? "تأكيد الدفع وطباعة التذكرة DGI" : "Valider l'Encaissement & Imprimer DGI"}
+                  ? locale === "ar"
+                    ? "جاري توثيق العملية..."
+                    : locale === "fr"
+                    ? "Traitement & Validation..."
+                    : "Processing..."
+                  : locale === "ar"
+                  ? "إتمام البيع وإخراج التذكرة (Enter)"
+                  : locale === "fr"
+                  ? "Valider l'Encaissement & Imprimer (Enter)"
+                  : "Complete Sale & Print Receipt (Enter)"}
               </span>
             </button>
           </div>

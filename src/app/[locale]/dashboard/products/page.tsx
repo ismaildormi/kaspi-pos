@@ -28,6 +28,7 @@ import { compressImage } from "@/lib/image-compression";
 import { useAppDictionary } from "@/i18n/schema";
 import { getCachedData, setCachedData } from "@/lib/cache/client-cache";
 import { usePosStore } from "@/client/store/usePosStore";
+import { playBarcodeScanSound } from "@/lib/audio";
 import { KineticProductCubeBarcodeEmpty } from "@/components/ui/KineticEmptyState";
 import { FloatingCommerceCanvas } from "@/components/ui/FloatingCommerceCanvas";
 import {
@@ -127,6 +128,45 @@ export default function ProductsListPage() {
   const [isCreateProcessingImage, setIsCreateProcessingImage] = useState(false);
   const [isCreateDragging, setIsCreateDragging] = useState(false);
   const createFileInputRef = useRef<HTMLInputElement | null>(null);
+  const createBarcodeInputRef = useRef<HTMLInputElement | null>(null);
+
+  // High-speed hardware barcode gun (USB / Bluetooth HID) auto-capture inside Product Create Modal
+  useEffect(() => {
+    if (!isCreateModalOpen) return;
+    let scanBuffer = "";
+    let lastKeyTime = 0;
+
+    const handleModalScannerKeyDown = (e: KeyboardEvent) => {
+      const now = Date.now();
+      if (now - lastKeyTime > 80) {
+        scanBuffer = "";
+      }
+      lastKeyTime = now;
+
+      if (e.key === "Enter" && scanBuffer.length >= 4) {
+        e.preventDefault();
+        e.stopPropagation();
+        setCreateBarcode(scanBuffer.trim());
+        playBarcodeScanSound();
+        toast.success(
+          locale === "ar"
+            ? `تم التقاط الباركود بالماسح: ${scanBuffer.trim()}`
+            : locale === "en"
+            ? `Barcode captured: ${scanBuffer.trim()}`
+            : `Code-barres scanné : ${scanBuffer.trim()}`
+        );
+        scanBuffer = "";
+        return;
+      }
+
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        scanBuffer += e.key;
+      }
+    };
+
+    window.addEventListener("keydown", handleModalScannerKeyDown, true);
+    return () => window.removeEventListener("keydown", handleModalScannerKeyDown, true);
+  }, [isCreateModalOpen, locale]);
 
   const handleCreateProcessFile = async (file: File) => {
     setIsCreateProcessingImage(true);
@@ -1444,6 +1484,7 @@ export default function ProductsListPage() {
                       <div className="flex gap-2">
                         <div className="relative flex-1">
                           <input
+                            ref={createBarcodeInputRef}
                             type="text"
                             value={createBarcode}
                             onChange={(e) => setCreateBarcode(e.target.value)}
@@ -1454,6 +1495,18 @@ export default function ProductsListPage() {
                         </div>
                         <button
                           type="button"
+                          onClick={() => {
+                            createBarcodeInputRef.current?.focus();
+                            createBarcodeInputRef.current?.select();
+                          }}
+                          className="h-10 px-3 rounded-xl bg-[#14B8A6]/10 hover:bg-[#14B8A6]/20 border border-[#14B8A6]/30 text-xs font-semibold text-[#2DD4BF] flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                          title={locale === "ar" ? "اضغط هنا ووجّه قارئ الباركود نحو المنتج" : "Scanner au lecteur code-barres"}
+                        >
+                          <Barcode className="w-3.5 h-3.5 text-[#2DD4BF]" />
+                          <span>{locale === "ar" ? "مسح بالكود بار" : locale === "fr" ? "Scanner" : "Scan Barcode"}</span>
+                        </button>
+                        <button
+                          type="button"
                           onClick={() =>
                             setCreateBarcode(
                               `6111${Math.floor(100000000 + Math.random() * 899999999)}`
@@ -1462,7 +1515,7 @@ export default function ProductsListPage() {
                           className="h-10 px-3.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.12] text-xs font-semibold text-zinc-200 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
                         >
                           <Sparkles className="w-3.5 h-3.5 text-[#2DD4BF]" />
-                          <span>{locale === "ar" ? "توليد تلقائي" : "Auto-Generate"}</span>
+                          <span>{locale === "ar" ? "توليد تلقائي" : locale === "fr" ? "Auto-générer" : "Auto-Generate"}</span>
                         </button>
                       </div>
                     </div>
