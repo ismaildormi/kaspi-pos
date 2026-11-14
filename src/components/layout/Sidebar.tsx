@@ -179,7 +179,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
         <Link
           href={localizeHref("/dashboard/settings#store-sector")}
           onClick={onNavigate}
-          className="w-full rounded-xl px-3.5 py-2.5 bg-gradient-to-r from-[#5EEAD4]/90 via-[#2DD4BF]/85 to-[#14B8A6]/90 text-[#042F2E] font-extrabold text-xs border border-white/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.7),0_0_24px_rgba(45,212,191,0.35)] flex items-center justify-between cursor-pointer transition-all hover:brightness-105 mb-3"
+          className="kaspi-polar-aurora-orbit w-full rounded-xl px-3.5 py-2.5 text-white font-semibold text-xs flex items-center justify-between cursor-pointer transition-all hover:brightness-105 mb-3"
           title={
             locale === "ar"
               ? "إعدادات قطاع ونشاط المتجر"
@@ -189,11 +189,11 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           }
         >
           <div className="flex items-center gap-2 overflow-hidden">
-            <span className="text-xs font-black text-[#042F2E] truncate tracking-tight">
+            <span className="text-xs font-semibold text-white truncate tracking-tight">
               {sectorBadgeInfo.label}
             </span>
           </div>
-          <span className="w-2 h-2 rounded-full bg-[#042F2E] shrink-0 shadow-[0_0_6px_rgba(4,47,46,0.6)] animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-white/80 shrink-0 shadow-[0_0_8px_rgba(255,255,255,0.65)] animate-pulse" />
         </Link>
 
         <nav className="space-y-1 overflow-y-auto flex-1 pr-0.5">
@@ -242,14 +242,14 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
                 onClick={onNavigate}
                 className={`group transition-all duration-200 ${
                   isActive
-                    ? "relative rounded-xl px-3.5 py-2.5 bg-gradient-to-r from-[#2DD4BF]/25 via-white/[0.12] to-white/[0.03] border border-white/[0.16] text-[#2DD4BF] font-bold text-xs flex items-center justify-between shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] kaspi-polar-aurora-orbit kaspi-orbit-active"
+                    ? "relative rounded-xl px-3.5 py-2.5 text-white font-semibold text-xs flex items-center justify-between kaspi-polar-aurora-orbit kaspi-orbit-active"
                     : "flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-zinc-400 hover:bg-white/[0.06] hover:text-white font-medium"
                 }`}
               >
                 <div className="flex items-center gap-2.5">
                   <Icon
                     className={`h-4 w-4 shrink-0 transition-transform ${iconAnimationClass} ${
-                      isActive ? "text-[#2DD4BF]" : "text-zinc-400 group-hover:text-white"
+                      isActive ? "text-white" : "text-zinc-400 group-hover:text-white"
                     }`}
                   />
                   <span>{item.name}</span>

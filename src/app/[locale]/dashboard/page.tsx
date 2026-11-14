@@ -235,7 +235,7 @@ export default async function DashboardOverviewPage({
                 ? "Daily Register Sales"
                 : "Chiffre d'Affaires Caisse"}
             </span>
-            <ArrowUpRight className="h-4 w-4 text-[#2DD4BF]" />
+            <ArrowUpRight className="h-4 w-4 text-white/80" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-black text-white font-mono tracking-tight">

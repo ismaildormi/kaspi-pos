@@ -240,7 +240,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
           onClick={() => setActiveTab("shelf")}
           className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
             activeTab === "shelf"
-              ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-[#2DD4BF] font-bold"
+              ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-white font-semibold"
               : "kaspi-frosted-glass text-zinc-400 hover:text-white"
           }`}
         >
@@ -251,7 +251,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
           onClick={() => setActiveTab("dlc")}
           className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
             activeTab === "dlc"
-              ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-[#2DD4BF] font-bold"
+              ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-white font-semibold"
               : "kaspi-frosted-glass text-zinc-400 hover:text-white"
           }`}
         >
@@ -262,7 +262,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
           onClick={() => setActiveTab("shrinkage")}
           className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
             activeTab === "shrinkage"
-              ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-[#2DD4BF] font-bold"
+              ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-white font-semibold"
               : "kaspi-frosted-glass text-zinc-400 hover:text-white"
           }`}
         >
@@ -370,12 +370,12 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
                       </span>
                     </td>
 
-                    {/* -30% Promo Luminous Teal Pill Button */}
+                    {/* -30% Promo Luminous White Glass Pill Button */}
                     <td className="py-3.5 px-4">
                       <button
                         type="button"
                         onClick={() => handleApplyClearanceMarkdown(item.id)}
-                        className="px-4 py-1.5 rounded-full bg-[#2DD4BF] hover:bg-[#5EEAD4] text-[#042F2E] font-black text-xs shadow-[0_0_15px_rgba(45,212,191,0.4)] transition-all active:scale-95 cursor-pointer"
+                        className="kaspi-polar-aurora-orbit px-4 py-1.5 rounded-full text-white font-semibold text-xs transition-all active:scale-95 cursor-pointer"
                       >
                         -30% Promo
                       </button>

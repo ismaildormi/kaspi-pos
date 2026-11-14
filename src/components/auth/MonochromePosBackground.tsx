@@ -533,20 +533,24 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
         }
       `}</style>
 
-      {/* Animated Duo-Tone 3D Glass Retail & POS Vector Background Layer */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-95">
+      {/* Subtle Ultra-Refined Vector Background Layer for visionOS Frosted Glass Depth */}
+      <div
+        className={`pointer-events-none absolute inset-0 overflow-hidden transition-opacity duration-300 ${
+          isPearl ? "opacity-[0.08]" : "opacity-[0.06]"
+        }`}
+      >
         <div className="kaspi-bg-drift w-full h-full">
           <RetailLineArtTile idPrefix="kaspi-auth" isPearl={isPearl} />
         </div>
       </div>
 
-      {/* Soft Ambient Polar Aurora Glow Framing the Central Glass Card */}
+      {/* Soft Blurred Glass Ambient Spheres */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background: isPearl
-            ? "radial-gradient(circle at 20% 20%, rgba(2,132,199,0.10) 0%, transparent 55%), radial-gradient(circle at 80% 80%, rgba(16,185,129,0.09) 0%, transparent 55%), radial-gradient(circle at 50% 50%, rgba(243,246,251,0.45) 0%, rgba(243,246,251,0.18) 55%, rgba(226,232,240,0.42) 100%)"
-            : "radial-gradient(circle at 20% 20%, rgba(56,189,248,0.14) 0%, transparent 55%), radial-gradient(circle at 80% 80%, rgba(16,185,129,0.12) 0%, transparent 55%), radial-gradient(circle at 50% 50%, rgba(17,24,39,0.42) 0%, rgba(17,24,39,0.22) 55%, rgba(15,23,42,0.58) 100%)",
+            ? "radial-gradient(circle at 22% 24%, rgba(255,255,255,0.92) 0%, transparent 45%), radial-gradient(circle at 78% 76%, rgba(203,213,225,0.60) 0%, transparent 50%)"
+            : "radial-gradient(circle at 22% 24%, rgba(255,255,255,0.08) 0%, transparent 45%), radial-gradient(circle at 78% 76%, rgba(148,163,184,0.10) 0%, transparent 50%)",
         }}
       />
 

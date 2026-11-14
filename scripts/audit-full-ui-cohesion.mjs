@@ -35,8 +35,10 @@ check(`Discovered all .tsx files in src/ (${tsxFiles.length} files)`, tsxFiles.l
 // 2. Verify globals.css rules
 const css = fs.readFileSync(GLOBALS_CSS, "utf8");
 check(
-  "globals.css restores Living Rotating Polar Aurora perimeter mask without interior bleed",
+  "globals.css implements Pure White Corner-Orbiting Aurora & Inter/IBM Plex Glass Typography",
   css.includes("kaspi-polar-aurora-spin") &&
+    css.includes("--kaspi-aurora-conic") &&
+    css.includes("IBM Plex Sans Arabic") &&
     css.includes("mask-composite: exclude;") &&
     css.includes("z-index: -1;")
 );

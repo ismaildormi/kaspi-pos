@@ -722,7 +722,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
           type="button"
           onClick={openPaymentModal}
           disabled={cart.length === 0}
-          className="h-12 w-full rounded-xl bg-gradient-to-r from-[#5EEAD4] via-[#2DD4BF] to-[#14B8A6] hover:brightness-105 active:scale-[0.99] text-[#042F2E] font-black text-[15px] shadow-[0_8px_25px_-6px_rgba(45,212,191,0.55)] flex items-center justify-between px-5 cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:pointer-events-none"
+          className="kaspi-polar-aurora-orbit h-12 w-full rounded-xl bg-white text-black hover:bg-white/95 active:scale-[0.99] font-semibold text-[15px] shadow-[0_8px_28px_-6px_rgba(255,255,255,0.35)] flex items-center justify-between px-5 cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:pointer-events-none"
         >
           <span className="flex items-center gap-2 font-sans font-extrabold text-[15px] tracking-wide">
             <CreditCard className="w-4 h-4 stroke-[2.5]" />

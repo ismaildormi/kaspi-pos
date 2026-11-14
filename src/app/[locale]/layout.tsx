@@ -30,9 +30,7 @@ export default async function LocaleLayout({
     <div
       lang={locale}
       dir="ltr"
-      className={`min-h-screen antialiased ${
-        locale === "ar" ? "font-['Cairo',sans-serif]" : "font-['Inter',sans-serif]"
-      }`}
+      className="min-h-screen antialiased"
     >
       <NextIntlClientProvider messages={messages}>
         {children}
