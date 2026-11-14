@@ -32,7 +32,7 @@
     "@auth/prisma-adapter": "^2.11.3",
     "@node-rs/argon2": "^2.2.2",
     "@openrouter/ai-sdk-provider": "^3.1.0",
-    "@prisma/client": "^6.19.3",
+    "@prisma/client": "^7.10.1",
     "@supabase/supabase-js": "^2.118.0",
     "@trigger.dev/nextjs": "^3.3.12",
     "@trigger.dev/sdk": "^3.3.17",
