@@ -35,12 +35,30 @@ check(`Discovered all .tsx files in src/ (${tsxFiles.length} files)`, tsxFiles.l
 // 2. Verify globals.css rules
 const css = fs.readFileSync(GLOBALS_CSS, "utf8");
 check(
-  "globals.css implements Pure White Corner-Orbiting Aurora & Inter/IBM Plex Glass Typography",
+  "globals.css implements 16px See-Through Liquid Glass, Hollow-Center Rear White Aurora & Neutral Palettes",
   css.includes("kaspi-polar-aurora-spin") &&
-    css.includes("--kaspi-aurora-conic") &&
+    css.includes("#08080A") &&
+    css.includes("#E4E5E9") &&
+    css.includes("radial-gradient(closest-side, transparent 58%") &&
     css.includes("IBM Plex Sans Arabic") &&
     css.includes("mask-composite: exclude;") &&
     css.includes("z-index: -1;")
+);
+
+// Verify ZERO blue in login/page.tsx, register/page.tsx, KaspiThemeToggle.tsx
+const zeroBlueFiles = [
+  path.join(SRC_DIR, "app", "[locale]", "(auth)", "login", "page.tsx"),
+  path.join(SRC_DIR, "app", "[locale]", "(auth)", "register", "page.tsx"),
+  path.join(SRC_DIR, "components", "theme", "KaspiThemeToggle.tsx"),
+];
+const bluePattern = /text-sky-|text-blue-|bg-sky-|bg-blue-|#0284c7|#38bdf8/;
+const blueViolations = zeroBlueFiles
+  .filter((f) => bluePattern.test(fs.readFileSync(f, "utf8")))
+  .map((f) => path.relative(ROOT, f));
+check(
+  "Zero blue classes/hexes in login/page.tsx, register/page.tsx, and KaspiThemeToggle.tsx",
+  blueViolations.length === 0,
+  blueViolations.join(", ")
 );
 check(
   "globals.css defines pearl-light and fjord-twilight themes",

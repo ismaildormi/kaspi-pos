@@ -61,16 +61,12 @@ export function KaspiThemeToggle({
       title={isPearl ? t.switchToFjord : t.switchToPearl}
       aria-label={isPearl ? t.switchToFjord : t.switchToPearl}
       data-kaspi-theme-toggle="true"
-      className={`kaspi-theme-toggle-btn inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-all cursor-pointer select-none border backdrop-blur-md ${
-        isPearl
-          ? "bg-white/80 text-slate-800 border-slate-300/80 hover:border-sky-500/60 shadow-sm"
-          : "bg-slate-800/75 text-slate-100 border-slate-600/60 hover:border-cyan-400/60 shadow-sm"
-      } ${className}`}
+      className={`kaspi-theme-toggle-btn kaspi-polar-aurora-orbit kaspi-glass-btn inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-all cursor-pointer select-none ${className}`}
     >
       {isPearl ? (
-        <Sun className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+        <Sun className="w-3.5 h-3.5 text-[var(--kaspi-text-primary)] shrink-0" />
       ) : (
-        <Moon className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
+        <Moon className="w-3.5 h-3.5 text-[var(--kaspi-text-primary)] shrink-0" />
       )}
       {!compact && (
         <span className="whitespace-nowrap">

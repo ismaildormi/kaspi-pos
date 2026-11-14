@@ -566,7 +566,7 @@ function LoginForm() {
     >
       {/* Segmented Control (Password | Gmail OTP) */}
       {authMode !== "forgot_password" && (
-        <div className="grid grid-cols-2 bg-zinc-900/85 p-1 rounded-2xl border border-white/10 mb-5">
+        <div className="grid grid-cols-2 kaspi-frosted-glass p-1 rounded-2xl mb-5">
           <button
             type="button"
             onClick={() => {
@@ -577,8 +577,8 @@ function LoginForm() {
             }}
             className={`py-2 text-xs sm:text-[13px] rounded-xl transition-all cursor-pointer ${
               authMode === "password"
-                ? "border border-white bg-zinc-900/95 text-white font-bold shadow-[0_0_16px_rgba(255,255,255,0.28)]"
-                : "border border-transparent text-zinc-400 hover:text-zinc-200 font-medium"
+                ? "kaspi-polar-aurora-orbit kaspi-glass-btn text-[var(--kaspi-text-primary)] font-semibold"
+                : "border border-transparent text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)] font-medium"
             }`}
           >
             {t.tabPassword}
@@ -594,8 +594,8 @@ function LoginForm() {
             }}
             className={`py-2 text-xs sm:text-[13px] rounded-xl transition-all cursor-pointer ${
               authMode === "gmail_otp"
-                ? "border border-white bg-zinc-900/95 text-white font-bold shadow-[0_0_16px_rgba(255,255,255,0.28)]"
-                : "border border-transparent text-zinc-400 hover:text-zinc-200 font-medium"
+                ? "kaspi-polar-aurora-orbit kaspi-glass-btn text-[var(--kaspi-text-primary)] font-semibold"
+                : "border border-transparent text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)] font-medium"
             }`}
           >
             {t.tabGmailOtp}
@@ -680,24 +680,24 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="relative w-full h-12 bg-white text-black font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-[0_0_28px_rgba(255,255,255,0.45)] hover:shadow-[0_0_38px_rgba(255,255,255,0.65)] hover:bg-zinc-100 active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer mt-2 overflow-hidden disabled:cursor-not-allowed"
+            className="kaspi-polar-aurora-orbit kaspi-glass-btn relative w-full h-12 font-semibold text-sm sm:text-[15px] rounded-2xl active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer mt-2 overflow-hidden disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
                 <div
-                  className="absolute inset-y-0 left-0 bg-zinc-200 transition-all duration-100 ease-out z-0"
+                  className="absolute inset-y-0 left-0 bg-white/20 transition-all duration-100 ease-out z-0"
                   style={{ width: `${loginProgress}%` }}
                 />
                 <div className="relative z-10 flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-black shrink-0" />
-                  <span className="font-bold text-black text-sm">
+                  <Loader2 className="w-4 h-4 animate-spin text-[var(--kaspi-text-primary)] shrink-0" />
+                  <span className="font-semibold text-[var(--kaspi-text-primary)] text-sm">
                     {locale === "ar"
                       ? "جاري الدخول... "
                       : locale === "fr"
                       ? "Connexion... "
                       : "Signing in... "}
                   </span>
-                  <span className="font-mono font-black text-black tabular-nums text-sm">
+                  <span className="font-mono font-semibold text-[var(--kaspi-text-primary)] tabular-nums text-sm">
                     {loginProgress}%
                   </span>
                 </div>
@@ -717,7 +717,7 @@ function LoginForm() {
                 setError("");
                 setSuccess("");
               }}
-              className="text-xs font-semibold text-sky-400 hover:text-sky-300 hover:underline transition-colors cursor-pointer"
+              className="text-xs text-[var(--kaspi-text-primary)] font-medium underline decoration-current/30 hover:decoration-current underline-offset-4 transition-colors cursor-pointer"
             >
               {t.forgotPasswordLink}
             </button>
@@ -750,10 +750,10 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 bg-white text-black font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-[0_0_28px_rgba(255,255,255,0.45)] hover:shadow-[0_0_38px_rgba(255,255,255,0.65)] hover:bg-zinc-100 active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer disabled:opacity-50"
+                className="kaspi-polar-aurora-orbit kaspi-glass-btn w-full h-12 font-semibold text-sm sm:text-[15px] rounded-2xl active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer disabled:opacity-50"
               >
                 {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-black" />
+                  <Loader2 className="w-4 h-4 animate-spin text-[var(--kaspi-text-primary)]" />
                 ) : (
                   t.sendOtpBtn
                 )}
@@ -966,7 +966,7 @@ function LoginForm() {
         <Link
           href={`/${locale}/register`}
           onClick={() => playTapSound()}
-          className="text-sky-400 hover:underline font-bold"
+          className="text-[var(--kaspi-text-primary)] font-medium underline decoration-current/30 hover:decoration-current underline-offset-4"
         >
           {t.createAccountLink}
         </Link>

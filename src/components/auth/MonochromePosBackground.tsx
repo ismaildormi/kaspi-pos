@@ -21,11 +21,11 @@ interface AuthGlassShellProps {
  * plates, shopping bags, and PRICE tags.
  */
 function RetailLineArtTile({ idPrefix, isPearl }: { idPrefix: string; isPearl: boolean }) {
-  const strokePrimary = isPearl ? "rgba(2, 132, 199, 0.30)" : "rgba(56, 189, 248, 0.34)";
-  const strokeSecondary = isPearl ? "rgba(13, 148, 136, 0.26)" : "rgba(52, 211, 153, 0.28)";
-  const strokeThin = isPearl ? "rgba(2, 132, 199, 0.16)" : "rgba(56, 189, 248, 0.18)";
-  const glassFill = isPearl ? "rgba(255, 255, 255, 0.60)" : "rgba(26, 36, 54, 0.55)";
-  const textFill = isPearl ? "rgba(2, 132, 199, 0.36)" : "rgba(56, 189, 248, 0.40)";
+  const strokePrimary = isPearl ? "rgba(17, 17, 19, 0.34)" : "rgba(255, 255, 255, 0.50)";
+  const strokeSecondary = isPearl ? "rgba(17, 17, 19, 0.26)" : "rgba(255, 255, 255, 0.42)";
+  const strokeThin = isPearl ? "rgba(17, 17, 19, 0.16)" : "rgba(255, 255, 255, 0.24)";
+  const glassFill = isPearl ? "rgba(255, 255, 255, 0.48)" : "rgba(255, 255, 255, 0.04)";
+  const textFill = isPearl ? "rgba(17, 17, 19, 0.36)" : "rgba(255, 255, 255, 0.48)";
 
   return (
     <svg
@@ -33,6 +33,11 @@ function RetailLineArtTile({ idPrefix, isPearl }: { idPrefix: string; isPearl: b
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className="w-full h-full select-none pointer-events-none"
+      style={{
+        filter: isPearl
+          ? "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.06))"
+          : "drop-shadow(0 0 8px rgba(255, 255, 255, 0.18))",
+      }}
       preserveAspectRatio="xMidYMid slice"
     >
       <defs>
@@ -46,7 +51,7 @@ function RetailLineArtTile({ idPrefix, isPearl }: { idPrefix: string; isPearl: b
           }
           .la-line {
             stroke: ${strokeSecondary};
-            stroke-width: 1.6;
+            stroke-width: 1.65;
             stroke-linecap: round;
             stroke-linejoin: round;
             fill: none;
@@ -60,8 +65,8 @@ function RetailLineArtTile({ idPrefix, isPearl }: { idPrefix: string; isPearl: b
           }
           .la-text {
             fill: ${textFill};
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
             letter-spacing: 0.08em;
           }
         `}</style>
@@ -321,12 +326,15 @@ function RetailLineArtTile({ idPrefix, isPearl }: { idPrefix: string; isPearl: b
         <circle className="la-thin" cx="48" cy="30" r="4" />
       </g>
 
-      {/* Bottles */}
-      <g transform="translate(982, 304)">
-        <path className="la-stroke" d="M12 4 H22 V24 L30 40 V106 H4 V40 L12 24 Z" />
-        <rect className="la-thin" x="6" y="54" width="22" height="28" />
-        <path className="la-stroke" d="M46 8 H56 V28 L64 44 V106 H38 V44 L46 28 Z" />
-        <rect className="la-thin" x="40" y="56" width="22" height="26" />
+      {/* Digital POS Weight Scale */}
+      <g transform="translate(972, 312)">
+        <rect className="la-stroke" x="6" y="48" width="66" height="44" rx="8" />
+        <rect className="la-stroke" x="14" y="24" width="50" height="12" rx="4" />
+        <path className="la-line" d="M26 36 V48 M52 36 V48" />
+        <rect className="la-thin" x="16" y="58" width="46" height="16" rx="3" />
+        <text x="22" y="70" className="la-text" fontSize="9">
+          1.250 KG
+        </text>
       </g>
 
       {/* Shopping Bag Right Middle */}
@@ -391,19 +399,19 @@ function RetailLineArtTile({ idPrefix, isPearl }: { idPrefix: string; isPearl: b
         <path className="la-thin" d="M24 46 C48 48 76 56 112 64" />
       </g>
 
-      {/* Bottle with CAFFEN label */}
-      <g transform="translate(354, 572)">
-        <path className="la-stroke" d="M16 4 H28 V32 L38 54 V142 C38 148 32 152 22 152 C12 152 6 148 6 142 V54 L16 32 Z" />
-        <rect className="la-thin" x="8" y="76" width="28" height="44" rx="2" />
-        <text x="10" y="102" className="la-text" fontSize="7">
-          CAFFEN
-        </text>
+      {/* Thermal 80mm Receipt Printer */}
+      <g transform="translate(332, 578)">
+        <rect className="la-stroke" x="6" y="42" width="76" height="58" rx="10" />
+        <path className="la-stroke" d="M20 42 V10 H68 V42" />
+        <path className="la-thin" d="M28 20 H60 M28 28 H54 M28 36 H48" />
+        <rect className="la-thin" x="16" y="56" width="56" height="12" rx="3" />
+        <circle className="la-stroke" cx="68" cy="82" r="4" />
       </g>
 
       {/* Bottom Barcode & Cart */}
       <g transform="translate(794, 646)">
         <path
-          stroke="rgba(255,255,255,0.82)"
+          className="la-line"
           strokeLinecap="butt"
           d="M4 4 V48 M9 4 V48 M16 4 V48 M22 4 V48 M27 4 V48 M35 4 V48 M42 4 V48 M48 4 V48 M54 4 V48 M62 4 V48 M68 4 V48"
           strokeWidth="2.4"
@@ -533,10 +541,10 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
         }
       `}</style>
 
-      {/* Subtle Ultra-Refined Vector Background Layer for visionOS Frosted Glass Depth */}
+      {/* Clearly Visible Glass-Etched 3D POS Vector Background Layer (Refracts Behind Login Card) */}
       <div
         className={`pointer-events-none absolute inset-0 overflow-hidden transition-opacity duration-300 ${
-          isPearl ? "opacity-[0.08]" : "opacity-[0.06]"
+          isPearl ? "opacity-[0.38]" : "opacity-[0.42]"
         }`}
       >
         <div className="kaspi-bg-drift w-full h-full">
@@ -544,13 +552,13 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
         </div>
       </div>
 
-      {/* Soft Blurred Glass Ambient Spheres */}
+      {/* Soft Neutral Atmospheric Spheres (Zero Blue) */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background: isPearl
-            ? "radial-gradient(circle at 22% 24%, rgba(255,255,255,0.92) 0%, transparent 45%), radial-gradient(circle at 78% 76%, rgba(203,213,225,0.60) 0%, transparent 50%)"
-            : "radial-gradient(circle at 22% 24%, rgba(255,255,255,0.08) 0%, transparent 45%), radial-gradient(circle at 78% 76%, rgba(148,163,184,0.10) 0%, transparent 50%)",
+            ? "radial-gradient(circle at 22% 24%, rgba(255,255,255,0.65) 0%, transparent 45%), radial-gradient(circle at 78% 76%, rgba(212,214,220,0.45) 0%, transparent 50%)"
+            : "radial-gradient(circle at 22% 24%, rgba(255,255,255,0.05) 0%, transparent 45%), radial-gradient(circle at 78% 76%, rgba(255,255,255,0.03) 0%, transparent 50%)",
         }}
       />
 
