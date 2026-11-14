@@ -647,7 +647,7 @@ export function OwnerProfileModal({
                     className="w-full h-10 px-3 kaspi-translucent-input rounded-xl text-xs text-white focus:outline-none cursor-pointer"
                   >
                     {MOROCCAN_BANKS.map((b) => (
-                      <option key={b.id} value={b.id} className="bg-zinc-950 text-white">
+                      <option key={b.id} value={b.id}>
                         {b.label}
                       </option>
                     ))}

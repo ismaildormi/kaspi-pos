@@ -301,11 +301,11 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                   }}
                   className="flex-1 bg-transparent text-[11px] font-mono font-bold text-white focus:outline-none cursor-pointer"
                 >
-                  <option value="" className="bg-zinc-900 text-zinc-400">
+                  <option value="">
                     {locale === "ar" ? "-- اختر طاولة --" : "-- Choisir table --"}
                   </option>
                   {restaurantTables.map((tbl) => (
-                    <option key={tbl.id} value={tbl.name} className="bg-zinc-900 text-white">
+                    <option key={tbl.id} value={tbl.name}>
                       {tbl.name}
                     </option>
                   ))}
