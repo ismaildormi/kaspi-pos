@@ -28,6 +28,7 @@ import { offlineDb } from "@/client/db";
 import { processSyncQueue, getApiUrl } from "@/client/sync-engine";
 import { useAppDictionary } from "@/i18n/schema";
 import { AutonomousSelfHealingBoundary } from "@/components/security/AutonomousSelfHealingBoundary";
+import { bootEdgeClientNanoSwarm } from "@/lib/autonomous-fleet/edge-client-nano-swarm";
 
 const SEEDED_DEMO_NAMES = new Set([
   "Huile d'Olive Extra Vierge Atlas 1L",
@@ -358,6 +359,11 @@ export default function PosPage() {
     }
 
     loadData();
+    bootEdgeClientNanoSwarm({
+      storeId: tenantInfo?.shopName || "kaspi-pos-terminal",
+      posteCount: 1,
+      countryCode: "MA",
+    });
     return () => {
       isMounted = false;
     };

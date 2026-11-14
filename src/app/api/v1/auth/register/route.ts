@@ -6,6 +6,7 @@ import { createSession, SESSION_COOKIE_NAME, SESSION_EXPIRY_DAYS } from "@/serve
 import { jsonError, jsonOk } from "@/server/http/response";
 import { syncUserToSupabaseDirectory } from "@/lib/supabase";
 import { sendWelcomeEmail } from "@/lib/email/mailer";
+import { planetarySwarmManager } from "@/lib/autonomous-fleet/planetary-swarm-mitosis";
 
 const RegisterSchema = z.object({
   email: z
@@ -163,6 +164,13 @@ export async function POST(req: NextRequest) {
       });
 
       return { user, tenant, store, membership };
+    });
+
+    // Spawn dedicated Planetary Mitosis Store Cell with 0ms Global Immunity DNA
+    planetarySwarmManager.onNewTenantOrPosteSpawn({
+      storeId: result.store.id,
+      posteCount: 1,
+      countryCode: req.headers.get("cf-ipcountry") || "MA",
     });
 
     // Mirror newly registered user to Supabase User Directory for marketing / updates

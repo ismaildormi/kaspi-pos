@@ -6,6 +6,7 @@ import { createSession, SESSION_COOKIE_NAME, SESSION_EXPIRY_DAYS } from "@/serve
 import { jsonError, jsonOk } from "@/server/http/response";
 import { syncUserToSupabaseDirectory } from "@/lib/supabase";
 import { sendLoginAlertEmail } from "@/lib/email/mailer";
+import { planetarySwarmManager } from "@/lib/autonomous-fleet/planetary-swarm-mitosis";
 
 import { getLocalizedAuthError, AuthLocale } from "@/lib/auth-errors";
 
@@ -163,6 +164,15 @@ export async function POST(req: NextRequest) {
       ip,
       userAgent,
     });
+
+    // Wake or spawn Planetary Mitosis Store Cell for this tenant
+    if (activeTenantId) {
+      planetarySwarmManager.spawnOrWakeStoreCell(
+        activeTenantId,
+        1,
+        req.headers.get("cf-ipcountry") || "MA"
+      );
+    }
 
     // Mirror user activity to Supabase User Directory
     syncUserToSupabaseDirectory({

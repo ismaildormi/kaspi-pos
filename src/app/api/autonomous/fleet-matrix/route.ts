@@ -5,6 +5,7 @@ import {
   FleetSyncAndAntiStampedeAgent,
   runFullFleetDiagnosticSweep,
 } from "@/lib/autonomous-fleet/fleet-orchestrator";
+import { planetarySwarmManager } from "@/lib/autonomous-fleet/planetary-swarm-mitosis";
 import { getRequestContext } from "@/server/auth/context";
 
 async function isAuthorizedRequest(req: NextRequest): Promise<boolean> {
@@ -25,8 +26,10 @@ export async function GET(req: NextRequest) {
   const runActive = req.nextUrl.searchParams.get("heal") === "1";
   try {
     const report = await runFullFleetDiagnosticSweep(runActive);
+    const planetarySwarm = planetarySwarmManager.getPlanetarySwarmTelemetry();
     return NextResponse.json({
       success: true,
+      ...planetarySwarm,
       ...report,
     });
   } catch (err: any) {
@@ -46,6 +49,30 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const action = String(body?.action || "sweep");
+
+    if (action === "spawn_cell" && body?.storeId) {
+      const cell = planetarySwarmManager.spawnOrWakeStoreCell(
+        String(body.storeId),
+        Number(body.posteCount || 1),
+        body?.countryCode ? String(body.countryCode) : undefined
+      );
+      return NextResponse.json({
+        success: true,
+        action,
+        cell,
+        planetarySwarm: planetarySwarmManager.getPlanetarySwarmTelemetry(),
+      });
+    }
+
+    if (action === "mitosis_rebalance") {
+      const merged = planetarySwarmManager.mergeIdleCellsToParent();
+      return NextResponse.json({
+        success: true,
+        action,
+        scaleToZeroFusions: merged,
+        planetarySwarm: planetarySwarmManager.getPlanetarySwarmTelemetry(),
+      });
+    }
 
     if (action === "heal_sync_dlq") {
       const syncResult = await FleetSyncAndAntiStampedeAgent.healStuckSyncOperations();
@@ -68,9 +95,11 @@ export async function POST(req: NextRequest) {
     }
 
     const report = await runFullFleetDiagnosticSweep(true);
+    const planetarySwarm = planetarySwarmManager.getPlanetarySwarmTelemetry();
     return NextResponse.json({
       success: true,
       action: "sweep",
+      ...planetarySwarm,
       ...report,
     });
   } catch (err: any) {
