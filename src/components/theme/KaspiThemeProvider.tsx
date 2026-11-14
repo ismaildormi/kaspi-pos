@@ -13,23 +13,23 @@ interface KaspiThemeContextValue {
 const STORAGE_KEY = "kaspi-theme";
 
 const KaspiThemeContext = createContext<KaspiThemeContextValue>({
-  theme: "pearl-light",
+  theme: "fjord-twilight",
   setTheme: () => {},
   toggleTheme: () => {},
 });
 
 export function KaspiThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<KaspiTheme>("pearl-light");
+  const [theme, setThemeState] = useState<KaspiTheme>("fjord-twilight");
 
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
       const initial: KaspiTheme =
-        saved === "fjord-twilight" || saved === "pearl-light" ? saved : "pearl-light";
+        saved === "pearl-light" || saved === "fjord-twilight" ? saved : "fjord-twilight";
       setThemeState(initial);
       document.documentElement.setAttribute("data-kaspi-theme", initial);
     } catch {
-      document.documentElement.setAttribute("data-kaspi-theme", "pearl-light");
+      document.documentElement.setAttribute("data-kaspi-theme", "fjord-twilight");
     }
   }, []);
 

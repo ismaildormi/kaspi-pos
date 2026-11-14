@@ -233,42 +233,40 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
         </div>
       </div>
 
-      {/* Horizontal Underlined Tabs matching Image Blueprint */}
-      <div className="flex items-center gap-6 border-b border-white/[0.08] text-sm font-semibold select-none pt-2">
+      {/* Sleek Translucent Aurora Pill Tabs */}
+      <div className="flex flex-wrap items-center gap-2.5 text-xs font-semibold select-none pt-2">
         <button
           type="button"
           onClick={() => setActiveTab("shelf")}
-          className={`pb-3 transition-colors cursor-pointer relative ${
+          className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
             activeTab === "shelf"
-              ? "text-[#2DD4BF] font-bold border-b-2 border-[#2DD4BF]"
-              : "text-zinc-400 hover:text-white"
+              ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-[#2DD4BF] font-bold"
+              : "kaspi-frosted-glass text-zinc-400 hover:text-white"
           }`}
         >
-          {locale === "ar" ? "[مخزون الرفوف والمستودع]" : locale === "fr" ? "[Stock Rayon & Entrepôt]" : "[Shelf & Warehouse Stock]"}
+          {locale === "ar" ? "مخزون الرفوف والمستودع" : locale === "fr" ? "Stock Rayon & Entrepôt" : "Shelf & Warehouse Stock"}
         </button>
-        <span className="text-zinc-600 pb-3">|</span>
         <button
           type="button"
           onClick={() => setActiveTab("dlc")}
-          className={`pb-3 transition-colors cursor-pointer relative ${
+          className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
             activeTab === "dlc"
-              ? "text-[#2DD4BF] font-bold border-b-2 border-[#2DD4BF]"
-              : "text-zinc-400 hover:text-white"
+              ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-[#2DD4BF] font-bold"
+              : "kaspi-frosted-glass text-zinc-400 hover:text-white"
           }`}
         >
-          {locale === "ar" ? "[تواريخ الصلاحية وتخفيض -30%]" : locale === "fr" ? "[DLC & Déstockage -30%]" : "[DLC Expiry & -30% Clearance]"}
+          {locale === "ar" ? "تواريخ الصلاحية وتخفيض -30%" : locale === "fr" ? "DLC & Déstockage -30%" : "DLC Expiry & -30% Clearance"}
         </button>
-        <span className="text-zinc-600 pb-3">|</span>
         <button
           type="button"
           onClick={() => setActiveTab("shrinkage")}
-          className={`pb-3 transition-colors cursor-pointer relative ${
+          className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
             activeTab === "shrinkage"
-              ? "text-[#2DD4BF] font-bold border-b-2 border-[#2DD4BF]"
-              : "text-zinc-400 hover:text-white"
+              ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-[#2DD4BF] font-bold"
+              : "kaspi-frosted-glass text-zinc-400 hover:text-white"
           }`}
         >
-          {locale === "ar" ? "[تدقيق الرهن والهالك]" : locale === "fr" ? "[Audit Consignes & Démarque]" : "[Consigne & Shrinkage Audit]"}
+          {locale === "ar" ? "تدقيق الرهن والهالك" : locale === "fr" ? "Audit Consignes & Démarque" : "Consigne & Shrinkage Audit"}
         </button>
       </div>
 

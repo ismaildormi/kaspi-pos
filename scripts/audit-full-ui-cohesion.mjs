@@ -35,8 +35,10 @@ check(`Discovered all .tsx files in src/ (${tsxFiles.length} files)`, tsxFiles.l
 // 2. Verify globals.css rules
 const css = fs.readFileSync(GLOBALS_CSS, "utf8");
 check(
-  "globals.css disables interior aurora ::before/::after bleed",
-  css.includes("content: none !important;") && css.includes("display: none !important;")
+  "globals.css restores Living Rotating Polar Aurora perimeter mask without interior bleed",
+  css.includes("kaspi-polar-aurora-spin") &&
+    css.includes("mask-composite: exclude;") &&
+    css.includes("z-index: -1;")
 );
 check(
   "globals.css defines pearl-light and fjord-twilight themes",

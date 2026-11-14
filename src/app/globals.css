@@ -347,25 +347,52 @@ html[lang="ar"] label,
   transform: translateY(-2px);
 }
 
+@property --kaspi-aurora-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes kaspi-polar-aurora-spin {
+  0% {
+    --kaspi-aurora-angle: 0deg;
+  }
+  100% {
+    --kaspi-aurora-angle: 360deg;
+  }
+}
+
+@keyframes kaspi-polar-aurora-breathe {
+  0%, 100% {
+    opacity: 0.34;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.01);
+  }
+}
+
 @layer utilities {
   /* 1. CLEAN TRANSLUCENT FROSTED GLASS */
   .kaspi-smoky-glass {
     background: var(--kaspi-glass-bg) !important;
-    backdrop-filter: blur(26px) saturate(165%) !important;
-    -webkit-backdrop-filter: blur(26px) saturate(165%) !important;
+    backdrop-filter: blur(26px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(26px) saturate(180%) !important;
     border: 1px solid var(--kaspi-glass-border) !important;
     box-shadow: var(--kaspi-glass-shadow) !important;
     color: var(--kaspi-text-primary);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
 
-  /* 2. CLEAN GLASS CONTAINERS — NO AURORA BLEED INSIDE CARDS OR TEXT */
+  /* 2. LIVING ROTATING POLAR AURORA PERIMETER ORBIT (Google AI Studio Style from 74ec7fc)
+     Perimeter-only mask (1.6px) + outer ambient glow (z-index: -1) so interior text stays 100% crisp */
   .kaspi-polar-aurora-orbit,
   .kaspi-aistudio-orbit {
     position: relative !important;
     background: var(--kaspi-glass-bg) !important;
-    backdrop-filter: blur(26px) saturate(165%) !important;
-    -webkit-backdrop-filter: blur(26px) saturate(165%) !important;
+    backdrop-filter: blur(26px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(26px) saturate(180%) !important;
     border: 1px solid var(--kaspi-glass-border) !important;
     box-shadow: var(--kaspi-glass-shadow) !important;
     color: var(--kaspi-text-primary);
@@ -376,28 +403,81 @@ html[lang="ar"] label,
   .kaspi-polar-aurora-orbit::before,
   .kaspi-polar-aurora-orbit::after,
   .kaspi-aistudio-orbit::before,
-  .kaspi-aistudio-orbit::after,
-  .kaspi-product-orbit-card::before,
-  .kaspi-product-orbit-card::after {
-    content: none !important;
-    display: none !important;
+  .kaspi-aistudio-orbit::after {
+    content: "";
+    position: absolute;
+    inset: -1.5px;
+    border-radius: inherit;
+    background: conic-gradient(
+      from var(--kaspi-aurora-angle),
+      rgba(56, 189, 248, 0.14) 0deg,
+      #0284c7 50deg,
+      #38bdf8 110deg,
+      #22d3ee 170deg,
+      #10b981 230deg,
+      #34d399 285deg,
+      #06b6d4 330deg,
+      rgba(56, 189, 248, 0.14) 360deg
+    );
+    animation: kaspi-polar-aurora-spin 4.2s linear infinite;
+    pointer-events: none;
   }
 
-  .kaspi-polar-aurora-orbit:hover,
-  .kaspi-polar-aurora-orbit:focus-within,
-  .kaspi-polar-aurora-orbit.kaspi-orbit-active,
-  .kaspi-aistudio-orbit:hover,
-  .kaspi-aistudio-orbit:focus-within,
-  .kaspi-aistudio-orbit.kaspi-orbit-active {
-    box-shadow: var(--kaspi-active-ring) !important;
+  .kaspi-polar-aurora-orbit::before,
+  .kaspi-aistudio-orbit::before {
+    padding: 1.6px;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.88;
+    z-index: 2;
+    transition: opacity 0.25s ease, padding 0.25s ease;
+  }
+
+  .kaspi-polar-aurora-orbit::after,
+  .kaspi-aistudio-orbit::after {
+    inset: -10px;
+    filter: blur(22px);
+    opacity: 0.34;
+    z-index: -1;
+    animation:
+      kaspi-polar-aurora-spin 4.2s linear infinite,
+      kaspi-polar-aurora-breathe 3.2s ease-in-out infinite;
+    transition: opacity 0.25s ease, filter 0.25s ease, inset 0.25s ease;
+  }
+
+  html[data-kaspi-theme="pearl-light"] .kaspi-polar-aurora-orbit::after,
+  html[data-kaspi-theme="pearl-light"] .kaspi-aistudio-orbit::after {
+    opacity: 0.20;
+  }
+
+  .kaspi-polar-aurora-orbit:hover::after,
+  .kaspi-polar-aurora-orbit:focus-within::after,
+  .kaspi-polar-aurora-orbit.kaspi-orbit-active::after,
+  .kaspi-aistudio-orbit:hover::after,
+  .kaspi-aistudio-orbit:focus-within::after,
+  .kaspi-aistudio-orbit.kaspi-orbit-active::after {
+    inset: -14px;
+    filter: blur(26px);
+    opacity: 0.72;
+  }
+
+  .kaspi-polar-aurora-orbit:hover::before,
+  .kaspi-polar-aurora-orbit:focus-within::before,
+  .kaspi-polar-aurora-orbit.kaspi-orbit-active::before,
+  .kaspi-aistudio-orbit:hover::before,
+  .kaspi-aistudio-orbit:focus-within::before,
+  .kaspi-aistudio-orbit.kaspi-orbit-active::before {
+    padding: 2.1px;
+    opacity: 1;
   }
 
   /* 3. TRANSLUCENT FROSTED INPUT FIELDS (Clean Theme-Aware Contrast) */
   .kaspi-translucent-input {
     position: relative !important;
     background: var(--kaspi-input-bg) !important;
-    backdrop-filter: blur(18px) saturate(150%) !important;
-    -webkit-backdrop-filter: blur(18px) saturate(150%) !important;
+    backdrop-filter: blur(18px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
     border: 1px solid var(--kaspi-input-border) !important;
     box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04) !important;
     color: var(--kaspi-text-primary) !important;
@@ -408,29 +488,79 @@ html[lang="ar"] label,
   .kaspi-translucent-input:focus,
   .kaspi-translucent-input:focus-within {
     background: var(--kaspi-glass-bg-elevated) !important;
-    border-color: rgba(2, 132, 199, 0.6) !important;
+    border-color: rgba(34, 211, 238, 0.65) !important;
     box-shadow: var(--kaspi-active-ring) !important;
   }
 
-  /* 4. CLEAN PRODUCT CARD WITH OUTER FOCUS/HOVER RING */
+  /* 4. TRANSLUCENT PRODUCT CARD WITH LIVING POLAR AURORA PERIMETER ORBIT */
   .kaspi-product-orbit-card {
     position: relative !important;
     background: var(--kaspi-glass-bg) !important;
-    backdrop-filter: blur(22px) saturate(160%) !important;
-    -webkit-backdrop-filter: blur(22px) saturate(160%) !important;
+    backdrop-filter: blur(24px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
     border: 1px solid var(--kaspi-glass-border) !important;
     box-shadow: var(--kaspi-glass-shadow) !important;
     color: var(--kaspi-text-primary);
     z-index: 1;
-    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease !important;
+    transition: transform 0.22s ease, box-shadow 0.22s ease !important;
+  }
+
+  .kaspi-product-orbit-card::before,
+  .kaspi-product-orbit-card::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    background: conic-gradient(
+      from var(--kaspi-aurora-angle),
+      rgba(56, 189, 248, 0.12) 0deg,
+      #0284c7 50deg,
+      #38bdf8 110deg,
+      #22d3ee 170deg,
+      #10b981 230deg,
+      #34d399 285deg,
+      #06b6d4 330deg,
+      rgba(56, 189, 248, 0.12) 360deg
+    );
+    animation: kaspi-polar-aurora-spin 3.5s linear infinite;
+    pointer-events: none;
+    opacity: 0.32;
+    transition: opacity 0.22s ease, inset 0.22s ease, filter 0.22s ease;
+  }
+
+  .kaspi-product-orbit-card::before {
+    padding: 1.8px;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    z-index: 2;
+  }
+
+  .kaspi-product-orbit-card::after {
+    inset: -12px;
+    filter: blur(24px);
+    opacity: 0;
+    z-index: -1;
   }
 
   .kaspi-product-orbit-card:hover,
   .kaspi-product-orbit-card:active,
   .kaspi-product-orbit-card.kaspi-orbit-active {
     transform: translateY(-3px);
-    border-color: rgba(2, 132, 199, 0.45) !important;
-    box-shadow: var(--kaspi-active-ring) !important;
+    border-color: transparent !important;
+  }
+
+  .kaspi-product-orbit-card:hover::before,
+  .kaspi-product-orbit-card:active::before,
+  .kaspi-product-orbit-card.kaspi-orbit-active::before {
+    padding: 2.2px;
+    opacity: 1;
+  }
+
+  .kaspi-product-orbit-card:hover::after,
+  .kaspi-product-orbit-card:active::after,
+  .kaspi-product-orbit-card.kaspi-orbit-active::after {
+    opacity: 0.72;
   }
 
   /* 5. Pure White #FFFFFF Studio Product Image Box (92% Scale, Zero Crop) */
@@ -540,6 +670,10 @@ html[data-kaspi-theme="pearl-light"] .text-white,
 html[data-kaspi-theme="pearl-light"] .text-zinc-100,
 html[data-kaspi-theme="pearl-light"] .text-zinc-200 {
   color: #0f172a !important;
+}
+
+html[data-kaspi-theme="pearl-light"] .fill-white {
+  fill: #0f172a !important;
 }
 
 html[data-kaspi-theme="pearl-light"] .text-zinc-300 {

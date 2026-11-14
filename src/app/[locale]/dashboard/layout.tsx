@@ -114,14 +114,14 @@ export default function DashboardLayout({
   }, [setStoreProfile]);
 
   return (
-    <div dir="ltr" className="min-h-screen bg-[#0D1014] text-white flex flex-col md:flex-row">
+    <div dir="ltr" className="min-h-screen text-white flex flex-col md:flex-row">
       <Sidebar
         mobileMenuOpen={mobileMenuOpen}
         onNavigate={() => setMobileMenuOpen(false)}
       />
 
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-        <header className="sticky top-0 z-30 h-14 backdrop-blur-xl bg-[#0D1014]/80 border-b border-white/[0.08] px-6 flex items-center justify-between md:justify-end gap-3 select-none">
+        <header className="sticky top-0 z-30 shrink-0 h-16 kaspi-frosted-glass border-b border-white/[0.08] px-6 flex items-center justify-between md:justify-end gap-3 select-none">
           {/* Mobile menu button ONLY on small screens (md:hidden) */}
           <button
             type="button"
@@ -187,7 +187,7 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-y-auto">
+        <main className="flex-1 px-4 pt-6 pb-8 sm:px-6 sm:pt-8 lg:px-8 max-w-7xl mx-auto w-full">
           <AutonomousSelfHealingBoundary scope="DASHBOARD">
             {children}
           </AutonomousSelfHealingBoundary>

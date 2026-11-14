@@ -325,8 +325,11 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
   };
 
   return (
-    <div dir="ltr" className="relative w-full group rounded-xl kaspi-polar-aurora-orbit">
-      <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none text-zinc-400">
+    <div
+      dir="ltr"
+      className="relative w-full group rounded-xl kaspi-polar-aurora-orbit kaspi-translucent-input h-11 flex items-center gap-2.5 px-3.5 shadow-inner"
+    >
+      <div className="flex items-center pointer-events-none text-zinc-400 shrink-0">
         {isScanning ? (
           <Loader2 className="w-4 h-4 animate-spin text-white" />
         ) : isSlashCommand ? (
@@ -339,6 +342,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
       <input
         ref={inputRef}
         type="text"
+        dir="auto"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         onKeyDown={handleKeyDown}
@@ -356,10 +360,10 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
           }, 80);
         }}
         placeholder={`${t("searchPlaceholder")}  •  /pay  /hold  /clear`}
-        className="w-full h-11 ps-11 pe-40 rounded-xl kaspi-translucent-input text-sm text-white placeholder:text-zinc-400 focus:outline-none transition-all shadow-inner"
+        className="flex-1 min-w-0 h-full !bg-transparent !border-none !shadow-none text-sm text-white placeholder:text-zinc-400 focus:outline-none focus:!shadow-none"
       />
 
-      <div className="absolute inset-y-0 end-0 flex items-center pe-2.5 gap-1.5">
+      <div className="flex items-center gap-1.5 shrink-0">
         {searchQuery && (
           <button
             type="button"

@@ -151,15 +151,9 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
   return (
     <aside
       dir="ltr"
-      style={{
-        background: "linear-gradient(165deg, #262E37 0%, #181E26 42%, #101419 100%)",
-        borderRight: "1px solid rgba(255, 255, 255, 0.22)",
-        boxShadow:
-          "inset -1px 0 0 0 rgba(255, 255, 255, 0.12), 14px 0 40px -10px rgba(0, 0, 0, 0.8)",
-      }}
       className={`${
         mobileMenuOpen ? "flex" : "hidden"
-      } md:flex w-full md:w-64 md:h-screen md:sticky md:top-0 p-3.5 shrink-0 flex-col justify-between select-none relative overflow-hidden`}
+      } md:flex w-full md:w-64 md:h-screen md:sticky md:top-0 p-3.5 shrink-0 flex-col justify-between select-none relative overflow-hidden kaspi-frosted-glass border-r border-white/10`}
     >
       {/* 2 Translucent Curved Silver-White Light Layers (Layer A & Layer B) */}
       <div className="pointer-events-none absolute -right-12 top-16 w-52 h-[420px] rounded-full bg-gradient-to-b from-white/[0.18] via-white/[0.08] to-transparent blur-2xl rotate-[-12deg] z-0" />

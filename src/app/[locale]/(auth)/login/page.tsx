@@ -680,24 +680,24 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="relative w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-lg shadow-emerald-600/25 active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer mt-2 overflow-hidden disabled:cursor-not-allowed"
+            className="relative w-full h-12 bg-white text-black font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-[0_0_28px_rgba(255,255,255,0.45)] hover:shadow-[0_0_38px_rgba(255,255,255,0.65)] hover:bg-zinc-100 active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer mt-2 overflow-hidden disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
                 <div
-                  className="absolute inset-y-0 left-0 bg-emerald-700/80 transition-all duration-100 ease-out z-0"
+                  className="absolute inset-y-0 left-0 bg-zinc-200 transition-all duration-100 ease-out z-0"
                   style={{ width: `${loginProgress}%` }}
                 />
                 <div className="relative z-10 flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-white shrink-0" />
-                  <span className="font-bold text-white text-sm">
+                  <Loader2 className="w-4 h-4 animate-spin text-black shrink-0" />
+                  <span className="font-bold text-black text-sm">
                     {locale === "ar"
                       ? "جاري الدخول... "
                       : locale === "fr"
                       ? "Connexion... "
                       : "Signing in... "}
                   </span>
-                  <span className="font-mono font-black text-white tabular-nums text-sm">
+                  <span className="font-mono font-black text-black tabular-nums text-sm">
                     {loginProgress}%
                   </span>
                 </div>
