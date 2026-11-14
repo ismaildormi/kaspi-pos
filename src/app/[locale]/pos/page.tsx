@@ -27,6 +27,7 @@ import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { offlineDb } from "@/client/db";
 import { processSyncQueue, getApiUrl } from "@/client/sync-engine";
 import { useAppDictionary } from "@/i18n/schema";
+import { AutonomousSelfHealingBoundary } from "@/components/security/AutonomousSelfHealingBoundary";
 
 const SEEDED_DEMO_NAMES = new Set([
   "Huile d'Olive Extra Vierge Atlas 1L",
@@ -387,6 +388,7 @@ export default function PosPage() {
   }, [cart, isPaymentModalOpen, isHeldModalOpen, openPaymentModal, closePaymentModal]);
 
   return (
+    <AutonomousSelfHealingBoundary scope="POS_TERMINAL">
     <div
       dir="ltr"
       style={getSectorCssVariables(storeType)}
@@ -638,5 +640,6 @@ export default function PosPage() {
       {/* Enterprise In-App Paywall & Device Handover Modal */}
       <InAppPaywallModal />
     </div>
+    </AutonomousSelfHealingBoundary>
   );
 }

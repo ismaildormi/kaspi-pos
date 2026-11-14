@@ -22,6 +22,7 @@ import { InAppPaywallModal } from "@/components/billing/InAppPaywallModal";
 import { usePosStore, type StoreBusinessType } from "@/client/store/usePosStore";
 import { getApiUrl } from "@/client/sync-engine";
 import { useAppDictionary } from "@/i18n/schema";
+import { AutonomousSelfHealingBoundary } from "@/components/security/AutonomousSelfHealingBoundary";
 
 export default function DashboardLayout({
   children,
@@ -184,7 +185,9 @@ export default function DashboardLayout({
         </header>
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-y-auto">
-          {children}
+          <AutonomousSelfHealingBoundary scope="DASHBOARD">
+            {children}
+          </AutonomousSelfHealingBoundary>
         </main>
       </div>
 

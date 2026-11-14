@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { offlineDb, type OfflineProduct } from "@/client/db";
 import { playBarcodeScanSound, playErrorSound, playTapSound } from "@/lib/audio";
+import { normalizeMoroccanBarcode } from "@/lib/autonomous-fleet/barcode-auto-healer";
 
 interface ProductSearchProps {
   products: PosProduct[];
@@ -51,12 +52,13 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
     lastKeyTime: 0,
   });
 
-  // Helper: Electronic Weight Scale Barcode Parser (EAN-13 prefixes 20-29)
-  const resolveScaleOrDirectProduct = (code: string): { product: PosProduct; quantity: number } | null => {
-    const trimmed = code.trim().toLowerCase();
+  // Helper: Electronic Weight Scale Barcode Parser (EAN-13 prefixes 20-29) + Agent #08 AZERTY Auto-Healer
+  const resolveScaleOrDirectProduct = (code: string): { product: PosProduct; quantity: number; wasHealed?: boolean } | null => {
+    const healResult = normalizeMoroccanBarcode(code);
+    const trimmed = healResult.normalized.trim().toLowerCase();
     const direct = barcodeIndex.get(trimmed);
     if (direct) {
-      return { product: direct, quantity: 1 };
+      return { product: direct, quantity: 1, wasHealed: healResult.wasHealed };
     }
 
     // EAN-13 Electronic Scale Barcode: 13 digits, starting with 20 through 29
@@ -155,8 +157,10 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
     if (e.key !== "Enter") return;
     e.preventDefault();
 
-    const code = searchQuery.trim();
-    if (!code) return;
+    const rawCode = searchQuery.trim();
+    if (!rawCode) return;
+    const healedScan = normalizeMoroccanBarcode(rawCode);
+    const code = healedScan.normalized;
 
     // Handle Linear/OpenAI-style Slash Commands (/clear, /hold, /pay, /grocery, /restaurant, /fashion, /electronics)
     if (code.startsWith("/")) {
