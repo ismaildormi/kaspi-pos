@@ -9,7 +9,7 @@ import { calculatePosteMonthlyPriceMad, runSubscriptionLifecycleCycle } from "@/
  *
  * Inspired by MetaGPT, LangGraph, CrewAI, AgentTeams, Keep AIOps, OpenSRE,
  * HolmesGPT, StackStorm, Robusta, and GlitchTip.
- * Manages 1,000+ Stores / 10,000+ Postes with 100% Free Zero-Touch Self-Healing.
+ * Manages 1,000,000+ Global Stores & 10,000,000+ Unlimited Postes with 100% Free Zero-Touch Self-Healing.
  */
 
 export type AgentHealthStatus = "HEALTHY" | "HEALING" | "DEGRADED";

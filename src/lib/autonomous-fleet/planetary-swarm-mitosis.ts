@@ -7,14 +7,16 @@ import {
  * KASPI POS — Planetary-Scale Self-Replicating Mitosis & Actor Swarm Engine (V2)
  *
  * Inspired by Erlang/Elixir Actor Model, Cloudflare Edge Isolates, and Ray Distributed Actors.
- * Scales to 1,000,000+ Global Stores & Unlimited Postes across MENA, Europe, Africa, GCC, Americas, APAC
- * via Biological Cellular Mitosis (1 -> 2 -> 4 -> 8 -> Infinity) & 4,096-Node Consistent Hash Ring.
+ * Scales to 1,000,000+ Global Stores & 10,000,000+ Unlimited Postes across 6 Continental Clusters
+ * (MENA-MAROC, AFRICA-SUBSAHARA, EU-WEST, GCC-GULF, AMERICAS, APAC)
+ * via Biological Cellular Mitosis (1 -> 2 -> 4 -> 8 -> 16 -> Infinity) & 4,096-Node Consistent Hash Ring.
  */
 
 export type PlanetaryRegion =
-  | "MENA-AFRICA"
+  | "MENA-MAROC"
+  | "AFRICA-SUBSAHARA"
   | "EU-WEST"
-  | "GCC-ME"
+  | "GCC-GULF"
   | "AMERICAS"
   | "APAC";
 
@@ -76,22 +78,26 @@ const MITOSIS_SPLIT_THRESHOLD = 0.7; // 70% capacity triggers automatic 1 -> 2 c
 const FUSION_IDLE_THRESHOLD = 0.2; // <20% off-peak load triggers scale-to-zero fusion
 
 const REGION_BY_COUNTRY: Record<string, PlanetaryRegion> = {
-  MA: "MENA-AFRICA",
-  DZ: "MENA-AFRICA",
-  TN: "MENA-AFRICA",
-  EG: "MENA-AFRICA",
-  SN: "MENA-AFRICA",
-  CI: "MENA-AFRICA",
-  NG: "MENA-AFRICA",
-  KE: "MENA-AFRICA",
-  ZA: "MENA-AFRICA",
-  AE: "GCC-ME",
-  SA: "GCC-ME",
-  QA: "GCC-ME",
-  KW: "GCC-ME",
-  BH: "GCC-ME",
-  OM: "GCC-ME",
-  JO: "GCC-ME",
+  MA: "MENA-MAROC",
+  DZ: "MENA-MAROC",
+  TN: "MENA-MAROC",
+  EG: "MENA-MAROC",
+  LY: "MENA-MAROC",
+  MR: "MENA-MAROC",
+  SN: "AFRICA-SUBSAHARA",
+  CI: "AFRICA-SUBSAHARA",
+  NG: "AFRICA-SUBSAHARA",
+  KE: "AFRICA-SUBSAHARA",
+  ZA: "AFRICA-SUBSAHARA",
+  GH: "AFRICA-SUBSAHARA",
+  CM: "AFRICA-SUBSAHARA",
+  AE: "GCC-GULF",
+  SA: "GCC-GULF",
+  QA: "GCC-GULF",
+  KW: "GCC-GULF",
+  BH: "GCC-GULF",
+  OM: "GCC-GULF",
+  JO: "GCC-GULF",
   FR: "EU-WEST",
   ES: "EU-WEST",
   DE: "EU-WEST",
@@ -121,9 +127,9 @@ function fnv1aHash32(input: string): number {
 }
 
 export function resolveRegionFromCountry(countryCode?: string | null): PlanetaryRegion {
-  if (!countryCode) return "MENA-AFRICA";
+  if (!countryCode) return "MENA-MAROC";
   const upper = countryCode.trim().toUpperCase();
-  return REGION_BY_COUNTRY[upper] || "MENA-AFRICA";
+  return REGION_BY_COUNTRY[upper] || "MENA-MAROC";
 }
 
 export function resolvePlanetaryDatabaseShard(
@@ -137,9 +143,10 @@ export function resolvePlanetaryDatabaseShard(
   const shardBucket = String((virtualNodeIndex % 64) + 1).padStart(2, "0");
 
   const prefixMap: Record<PlanetaryRegion, string> = {
-    "MENA-AFRICA": "SHARD-MENA",
+    "MENA-MAROC": "SHARD-MENA",
+    "AFRICA-SUBSAHARA": "SHARD-AFRICA",
     "EU-WEST": "SHARD-EU",
-    "GCC-ME": "SHARD-GCC",
+    "GCC-GULF": "SHARD-GCC",
     AMERICAS: "SHARD-AMERICAS",
     APAC: "SHARD-APAC",
   };
@@ -188,11 +195,12 @@ class PlanetarySwarmMitosisEngine {
   public readonly edgeCache = new EdgeReadThroughCache();
 
   constructor() {
-    // Initialize root regional swarm cells (1 cell per planetary region; multiplies via Mitosis)
+    // Initialize root regional swarm cells (6 continental clusters; multiplies via Mitosis)
     const regions: PlanetaryRegion[] = [
-      "MENA-AFRICA",
+      "MENA-MAROC",
+      "AFRICA-SUBSAHARA",
       "EU-WEST",
-      "GCC-ME",
+      "GCC-GULF",
       "AMERICAS",
       "APAC",
     ];
@@ -426,9 +434,10 @@ class PlanetarySwarmMitosisEngine {
       (c) => c.status === "ACTIVE"
     );
     const regionalClusters: Record<PlanetaryRegion, number> = {
-      "MENA-AFRICA": 0,
+      "MENA-MAROC": 0,
+      "AFRICA-SUBSAHARA": 0,
       "EU-WEST": 0,
-      "GCC-ME": 0,
+      "GCC-GULF": 0,
       AMERICAS: 0,
       APAC: 0,
     };
