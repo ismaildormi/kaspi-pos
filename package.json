@@ -25,7 +25,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@ai-sdk/google": "^4.0.108",
+    "@ai-sdk/google": "^4.0.117",
     "@ai-sdk/groq": "^4.0.73",
     "@ai-sdk/openai": "^4.0.105",
     "@ai-sdk/react": "^4.0.161",
