@@ -331,9 +331,9 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-12 bg-white text-black font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-[0_0_28px_rgba(255,255,255,0.45)] hover:shadow-[0_0_38px_rgba(255,255,255,0.65)] hover:bg-zinc-100 active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer mt-3 disabled:opacity-50"
+          className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-lg shadow-emerald-600/25 active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer mt-3 disabled:opacity-50"
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : t.submitBtn}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : t.submitBtn}
         </button>
       </form>
 
@@ -346,7 +346,7 @@ export default function RegisterPage() {
         <Link
           href={`/${locale}/login`}
           onClick={() => playTapSound()}
-          className="text-white hover:underline font-bold"
+          className="text-sky-400 hover:underline font-bold"
         >
           {t.signInLink}
         </Link>

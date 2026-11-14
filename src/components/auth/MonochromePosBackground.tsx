@@ -2,6 +2,8 @@
 
 import React from "react";
 import { playTapSound } from "@/lib/audio";
+import { KaspiThemeToggle } from "@/components/theme/KaspiThemeToggle";
+import { useKaspiTheme } from "@/components/theme/KaspiThemeProvider";
 
 export type AuthLocale = "ar" | "fr" | "en";
 
@@ -18,7 +20,13 @@ interface AuthGlassShellProps {
  * barcodes, laptops, cash registers, TPE terminals, coffee cups, bottles, boxes, headphones,
  * plates, shopping bags, and PRICE tags.
  */
-function RetailLineArtTile({ idPrefix }: { idPrefix: string }) {
+function RetailLineArtTile({ idPrefix, isPearl }: { idPrefix: string; isPearl: boolean }) {
+  const strokePrimary = isPearl ? "rgba(2, 132, 199, 0.30)" : "rgba(56, 189, 248, 0.34)";
+  const strokeSecondary = isPearl ? "rgba(13, 148, 136, 0.26)" : "rgba(52, 211, 153, 0.28)";
+  const strokeThin = isPearl ? "rgba(2, 132, 199, 0.16)" : "rgba(56, 189, 248, 0.18)";
+  const glassFill = isPearl ? "rgba(255, 255, 255, 0.60)" : "rgba(26, 36, 54, 0.55)";
+  const textFill = isPearl ? "rgba(2, 132, 199, 0.36)" : "rgba(56, 189, 248, 0.40)";
+
   return (
     <svg
       viewBox="0 0 1200 800"
@@ -30,28 +38,28 @@ function RetailLineArtTile({ idPrefix }: { idPrefix: string }) {
       <defs>
         <style>{`
           .la-stroke {
-            stroke: rgba(255, 255, 255, 0.72);
-            stroke-width: 1.75;
+            stroke: ${strokePrimary};
+            stroke-width: 1.85;
             stroke-linecap: round;
             stroke-linejoin: round;
-            fill: #070708;
+            fill: ${glassFill};
           }
           .la-line {
-            stroke: rgba(255, 255, 255, 0.68);
-            stroke-width: 1.5;
+            stroke: ${strokeSecondary};
+            stroke-width: 1.6;
             stroke-linecap: round;
             stroke-linejoin: round;
             fill: none;
           }
           .la-thin {
-            stroke: rgba(255, 255, 255, 0.45);
-            stroke-width: 1.1;
+            stroke: ${strokeThin};
+            stroke-width: 1.15;
             stroke-linecap: round;
             stroke-linejoin: round;
             fill: none;
           }
           .la-text {
-            fill: rgba(255, 255, 255, 0.72);
+            fill: ${textFill};
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             font-weight: 700;
             letter-spacing: 0.08em;
@@ -483,12 +491,14 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
   title,
   children,
 }) => {
-  const isRtl = locale === "ar";
+  const { theme } = useKaspiTheme();
+  const isPearl = theme === "pearl-light";
 
   return (
     <div
       dir="ltr"
-      className="min-h-screen w-full flex items-center justify-center bg-[#040405] p-3 sm:p-5 font-sans relative overflow-hidden select-none"
+      className="min-h-screen w-full flex items-center justify-center p-3 sm:p-5 font-sans relative overflow-hidden select-none"
+      style={{ backgroundColor: "var(--kaspi-bg-base)" }}
     >
       {/* Keyframes for Continuous Slow Spatial Parallax Drift */}
       <style>{`
@@ -523,27 +533,29 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
         }
       `}</style>
 
-      {/* Animated Monochrome 3D Line-Art Vector Background Layer */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-85">
+      {/* Animated Duo-Tone 3D Glass Retail & POS Vector Background Layer */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-95">
         <div className="kaspi-bg-drift w-full h-full">
-          <RetailLineArtTile idPrefix="kaspi-auth" />
+          <RetailLineArtTile idPrefix="kaspi-auth" isPearl={isPearl} />
         </div>
       </div>
 
-      {/* Subtle Radial Vignette Framing the Central Glass Card */}
+      {/* Soft Ambient Polar Aurora Glow Framing the Central Glass Card */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background:
-            "radial-gradient(circle at 50% 50%, rgba(5,5,7,0.55) 0%, rgba(4,4,5,0.22) 48%, rgba(3,3,4,0.62) 100%)",
+          background: isPearl
+            ? "radial-gradient(circle at 20% 20%, rgba(2,132,199,0.10) 0%, transparent 55%), radial-gradient(circle at 80% 80%, rgba(16,185,129,0.09) 0%, transparent 55%), radial-gradient(circle at 50% 50%, rgba(243,246,251,0.45) 0%, rgba(243,246,251,0.18) 55%, rgba(226,232,240,0.42) 100%)"
+            : "radial-gradient(circle at 20% 20%, rgba(56,189,248,0.14) 0%, transparent 55%), radial-gradient(circle at 80% 80%, rgba(16,185,129,0.12) 0%, transparent 55%), radial-gradient(circle at 50% 50%, rgba(17,24,39,0.42) 0%, rgba(17,24,39,0.22) 55%, rgba(15,23,42,0.58) 100%)",
         }}
       />
 
-      {/* Ambient White Backlight Behind the Frosted Glass Card */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] rounded-full bg-white/[0.045] blur-[90px]" />
-
-      {/* Central Translucent Frosted Glass Authentication Card with Living Polar Aurora Orbit */}
-      <div className="kaspi-polar-aurora-orbit relative z-10 w-full max-w-[430px] mx-auto rounded-[32px] px-6 py-6 sm:px-8 sm:py-7 shadow-[0_28px_90px_rgba(0,0,0,0.65),0_0_45px_rgba(255,255,255,0.08),inset_0_1px_0_rgba(255,255,255,0.22)] transition-all">
+      {/* Central Clean Frosted Glass Authentication Card */}
+      <div className="kaspi-polar-aurora-orbit relative z-10 w-full max-w-[430px] mx-auto rounded-[32px] px-6 py-6 sm:px-8 sm:py-7 transition-all">
+        {/* Independent Theme Switcher at Top Left */}
+        <div className="absolute top-5 left-5 sm:top-6 sm:left-6 z-20">
+          <KaspiThemeToggle locale={locale} compact />
+        </div>
         {/* Top Ambient Edge Highlight */}
         <div className="pointer-events-none absolute -top-px left-10 right-10 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 

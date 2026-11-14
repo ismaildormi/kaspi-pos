@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { KaspiThemeToggle } from "@/components/theme/KaspiThemeToggle";
 import { OwnerProfileModal } from "@/components/layout/OwnerProfileModal";
 import { StoreOnboardingModal } from "@/components/pos/StoreOnboardingModal";
 import { InAppPaywallModal } from "@/components/billing/InAppPaywallModal";
@@ -148,6 +149,8 @@ export default function DashboardLayout({
               <Download className="w-3.5 h-3.5 text-zinc-400 group-hover:translate-y-0.5 transition-transform duration-200" />
               <span className="hidden xl:inline">{t.topbar.desktopApp}</span>
             </Link>
+
+            <KaspiThemeToggle locale={locale} />
 
             <LanguageSwitcher />
 

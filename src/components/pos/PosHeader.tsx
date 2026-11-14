@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { KaspiThemeToggle } from "@/components/theme/KaspiThemeToggle";
 import { SyncStatusBadge } from "./SyncStatusBadge";
 import { useAppDictionary } from "@/i18n/schema";
 
@@ -233,6 +234,9 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         >
           <Settings className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-500 ease-out" />
         </Link>
+
+        {/* Theme Switcher */}
+        <KaspiThemeToggle locale={locale} />
 
         {/* Language Switcher */}
         <LanguageSwitcher />

@@ -23,13 +23,78 @@
     border-color: var(--border);
   }
 
+  :root,
+  html[data-kaspi-theme="pearl-light"] {
+    --kaspi-bg-base: #f3f6fb;
+    --kaspi-text-primary: #0f172a;
+    --kaspi-text-secondary: #334155;
+    --kaspi-text-muted: #64748b;
+    --kaspi-glass-bg: rgba(255, 255, 255, 0.84);
+    --kaspi-glass-bg-elevated: rgba(255, 255, 255, 0.94);
+    --kaspi-glass-border: rgba(15, 23, 42, 0.09);
+    --kaspi-glass-shadow: 0 12px 36px -8px rgba(15, 23, 42, 0.09), 0 2px 6px rgba(15, 23, 42, 0.04);
+    --kaspi-input-bg: rgba(255, 255, 255, 0.94);
+    --kaspi-input-border: rgba(15, 23, 42, 0.14);
+    --kaspi-aurora-1: rgba(2, 132, 199, 0.12);
+    --kaspi-aurora-2: rgba(16, 185, 129, 0.10);
+    --kaspi-aurora-3: rgba(56, 189, 248, 0.11);
+    --kaspi-active-ring: 0 0 0 2px rgba(2, 132, 199, 0.35), 0 8px 24px -4px rgba(16, 185, 129, 0.18);
+  }
+
+  html[data-kaspi-theme="fjord-twilight"] {
+    --kaspi-bg-base: #111827;
+    --kaspi-text-primary: #f8fafc;
+    --kaspi-text-secondary: #cbd5e1;
+    --kaspi-text-muted: #94a3b8;
+    --kaspi-glass-bg: rgba(26, 36, 54, 0.78);
+    --kaspi-glass-bg-elevated: rgba(30, 41, 59, 0.88);
+    --kaspi-glass-border: rgba(148, 163, 184, 0.18);
+    --kaspi-glass-shadow: 0 20px 44px -12px rgba(2, 6, 23, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    --kaspi-input-bg: rgba(15, 23, 42, 0.72);
+    --kaspi-input-border: rgba(148, 163, 184, 0.24);
+    --kaspi-aurora-1: rgba(56, 189, 248, 0.16);
+    --kaspi-aurora-2: rgba(16, 185, 129, 0.14);
+    --kaspi-aurora-3: rgba(6, 182, 212, 0.15);
+    --kaspi-active-ring: 0 0 0 2px rgba(56, 189, 248, 0.45), 0 8px 28px -4px rgba(16, 185, 129, 0.25);
+  }
+
+  @keyframes kaspi-global-aurora-drift {
+    0% {
+      transform: translate3d(0%, 0%, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(-2%, 2%, 0) scale(1.04);
+    }
+    100% {
+      transform: translate3d(0%, 0%, 0) scale(1);
+    }
+  }
+
   body {
-    background-color: #09090b;
-    color: #fafafa;
+    position: relative;
+    background-color: var(--kaspi-bg-base);
+    color: var(--kaspi-text-primary);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum" 1;
     font-variant-numeric: tabular-nums slashed-zero;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.28s ease, color 0.28s ease;
+  }
+
+  /* Living Polar Aurora restricted STRICTLY to global page background BEHIND everything */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: -15%;
+    z-index: -10;
+    pointer-events: none;
+    background:
+      radial-gradient(45% 42% at 15% 18%, var(--kaspi-aurora-1) 0%, transparent 72%),
+      radial-gradient(42% 40% at 85% 22%, var(--kaspi-aurora-2) 0%, transparent 72%),
+      radial-gradient(50% 45% at 50% 88%, var(--kaspi-aurora-3) 0%, transparent 75%);
+    filter: blur(48px);
+    animation: kaspi-global-aurora-drift 22s ease-in-out infinite;
+    will-change: transform;
   }
 }
 
@@ -44,31 +109,35 @@ table,
 
 /* Titanium Gradient Text for Hero KPIs and Pricing */
 .text-titanium-gradient {
-  background: linear-gradient(180deg, #ffffff 0%, #e4e4e7 55%, #a1a1aa 100%);
+  background: linear-gradient(180deg, var(--kaspi-text-primary) 0%, var(--kaspi-text-secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* Machined Obsidian Surface with Specular Top-Edge Reflection & 3D Depth */
-.surface-obsidian {
-  background: #0d0d12;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.14), 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+/* Machined Glass Surface with Theme-Aware Specular Top-Edge Reflection */
+.surface-obsidian,
+.surface-obsidian-3d {
+  background: var(--kaspi-glass-bg);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid var(--kaspi-glass-border);
+  box-shadow: var(--kaspi-glass-shadow);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.surface-obsidian:hover {
-  border-color: rgba(255, 255, 255, 0.22);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2), 0 24px 44px -12px rgba(0, 0, 0, 0.8);
+.surface-obsidian:hover,
+.surface-obsidian-3d:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--kaspi-active-ring);
 }
 
 /* 3D Tactile Keycap Buttons (Hardware-Grade Mechanical Feel) */
 .keycap-3d {
-  background: linear-gradient(180deg, #1a1a20 0%, #0e0e12 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-bottom: 3px solid #000000;
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.16), 0 4px 10px rgba(0, 0, 0, 0.6);
-  transition: all 0.1s cubic-bezier(0.22, 1, 0.36, 1);
+  background: var(--kaspi-glass-bg-elevated);
+  border: 1px solid var(--kaspi-glass-border);
+  border-bottom: 2px solid var(--kaspi-glass-border);
+  box-shadow: var(--kaspi-glass-shadow);
+  transition: all 0.12s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .keycap-3d.bg-white {
@@ -77,47 +146,34 @@ table,
 }
 
 .keycap-3d:hover:not(.bg-white) {
-  background: linear-gradient(180deg, #22222a 0%, #121218 100%);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.24), 0 6px 14px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--kaspi-active-ring);
 }
 
 .keycap-3d:active:not(:disabled) {
-  transform: translateY(2px);
-  border-bottom-width: 1px;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8), 0 2px 4px rgba(0, 0, 0, 0.5);
+  transform: translateY(1px);
 }
 
-/* 3D Ambient Card Depth & Glass Bevels */
-.surface-obsidian-3d {
-  background: #0d0d12;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.14), 0 20px 40px -15px rgba(0, 0, 0, 0.7);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.surface-obsidian-3d:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.22), 0 24px 48px -12px rgba(0, 0, 0, 0.85);
-}
-
-/* Machined Recessed Inputs (Linear / Raycast Craftsmanship) */
+/* Machined Recessed Inputs (Theme-Aware, High Contrast) */
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 select,
 textarea {
-  background-color: #0b0b0e !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.65);
+  background-color: var(--kaspi-input-bg) !important;
+  color: var(--kaspi-text-primary) !important;
+  border-color: var(--kaspi-input-border) !important;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"])::placeholder,
+textarea::placeholder {
+  color: var(--kaspi-text-muted) !important;
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
 select:focus,
 textarea:focus {
-  background-color: #111116 !important;
-  border-color: rgba(255, 255, 255, 0.4) !important;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 0 3px rgba(255, 255, 255, 0.08) !important;
+  background-color: var(--kaspi-glass-bg-elevated) !important;
+  border-color: rgba(2, 132, 199, 0.65) !important;
+  box-shadow: var(--kaspi-active-ring) !important;
   outline: none !important;
 }
 
@@ -244,39 +300,23 @@ html[lang="ar"] label,
   background: #3f3f46;
 }
 
-/* Universal Smoky Frosted Translucent Glass System (Like Inter-Store Stock Transfer Modal + Top Polar Aurora Sheen) */
+/* Universal Clean Frosted Translucent Glass System (Zero interior aurora bleed!) */
 .kaspi-frosted-glass,
-.kaspi-smoky-glass {
-  background:
-    radial-gradient(120% 80% at 50% 0%, rgba(16, 185, 129, 0.16) 0%, rgba(6, 182, 212, 0.10) 38%, rgba(24, 30, 42, 0.48) 100%),
-    linear-gradient(165deg, rgba(28, 34, 46, 0.54) 0%, rgba(16, 20, 28, 0.62) 100%) !important;
-  backdrop-filter: blur(28px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  box-shadow:
-    0 20px 45px -12px rgba(0, 0, 0, 0.65),
-    0 0 26px -6px rgba(6, 182, 212, 0.16),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.20) !important;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
+.kaspi-smoky-glass,
 .kaspi-frosted-card {
-  background:
-    radial-gradient(115% 70% at 50% 0%, rgba(16, 185, 129, 0.14) 0%, rgba(6, 182, 212, 0.08) 45%, rgba(22, 28, 38, 0.48) 100%),
-    linear-gradient(165deg, rgba(26, 32, 44, 0.50) 0%, rgba(15, 19, 27, 0.58) 100%) !important;
-  backdrop-filter: blur(28px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.13) !important;
-  box-shadow:
-    0 16px 36px -10px rgba(0, 0, 0, 0.60),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.18) !important;
+  background: var(--kaspi-glass-bg) !important;
+  backdrop-filter: blur(26px) saturate(165%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(165%) !important;
+  border: 1px solid var(--kaspi-glass-border) !important;
+  box-shadow: var(--kaspi-glass-shadow) !important;
+  color: var(--kaspi-text-primary);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .kaspi-studio-product-box {
   background-color: #ffffff !important;
   border-radius: 0.875rem !important;
-  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -297,235 +337,94 @@ html[lang="ar"] label,
 
 .kaspi-frosted-glass-hover:hover,
 .kaspi-frosted-card-hover:hover {
-  border-color: rgba(255, 255, 255, 0.32) !important;
-  box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.38),
-    0 20px 42px -10px rgba(0, 0, 0, 0.82) !important;
+  box-shadow: var(--kaspi-active-ring) !important;
   transform: translateY(-2px);
 }
 
-@property --kaspi-aurora-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@keyframes kaspi-polar-aurora-spin {
-  0% {
-    --kaspi-aurora-angle: 0deg;
-  }
-  100% {
-    --kaspi-aurora-angle: 360deg;
-  }
-}
-
-@keyframes kaspi-polar-aurora-breathe {
-  0%, 100% {
-    opacity: 0.45;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.82;
-    transform: scale(1.012);
-  }
-}
-
 @layer utilities {
-  /* 1. TRUE TRANSLUCENT FROSTED GLASS (Like Inter-Store Stock Transfer Modal + Top Polar Aurora Sheen — NO Heavy Black Background!) */
+  /* 1. CLEAN TRANSLUCENT FROSTED GLASS */
   .kaspi-smoky-glass {
-    background:
-      radial-gradient(120% 80% at 50% 0%, rgba(16, 185, 129, 0.16) 0%, rgba(6, 182, 212, 0.10) 38%, rgba(24, 30, 42, 0.48) 100%),
-      linear-gradient(165deg, rgba(28, 34, 46, 0.54) 0%, rgba(16, 20, 28, 0.62) 100%) !important;
-    backdrop-filter: blur(28px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    box-shadow:
-      0 20px 45px -12px rgba(0, 0, 0, 0.65),
-      0 0 26px -6px rgba(6, 182, 212, 0.16),
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.20) !important;
+    background: var(--kaspi-glass-bg) !important;
+    backdrop-filter: blur(26px) saturate(165%) !important;
+    -webkit-backdrop-filter: blur(26px) saturate(165%) !important;
+    border: 1px solid var(--kaspi-glass-border) !important;
+    box-shadow: var(--kaspi-glass-shadow) !important;
+    color: var(--kaspi-text-primary);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
 
-  /* 2. LIVING POLAR AURORA 360° ORBIT ON TRANSLUCENT GLASS CARDS, MODALS & INPUTS
-     Strictly Polar Emerald (#10b981 / #34d399), Glacial Cyan (#06b6d4 / #22d3ee), and Arctic Blue (#38bdf8 / #0284c7) */
+  /* 2. CLEAN GLASS CONTAINERS — NO AURORA BLEED INSIDE CARDS OR TEXT */
   .kaspi-polar-aurora-orbit,
   .kaspi-aistudio-orbit {
     position: relative !important;
-    background:
-      radial-gradient(120% 75% at 50% 0%, rgba(16, 185, 129, 0.18) 0%, rgba(6, 182, 212, 0.11) 42%, rgba(22, 28, 38, 0.50) 100%),
-      linear-gradient(165deg, rgba(26, 32, 44, 0.52) 0%, rgba(15, 19, 27, 0.60) 100%) !important;
-    backdrop-filter: blur(28px) saturate(185%) !important;
-    -webkit-backdrop-filter: blur(28px) saturate(185%) !important;
-    box-shadow:
-      0 18px 40px -10px rgba(0, 0, 0, 0.62),
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.22) !important;
+    background: var(--kaspi-glass-bg) !important;
+    backdrop-filter: blur(26px) saturate(165%) !important;
+    -webkit-backdrop-filter: blur(26px) saturate(165%) !important;
+    border: 1px solid var(--kaspi-glass-border) !important;
+    box-shadow: var(--kaspi-glass-shadow) !important;
+    color: var(--kaspi-text-primary);
     z-index: 1;
+    transition: box-shadow 0.22s ease, border-color 0.22s ease, transform 0.22s ease !important;
   }
 
   .kaspi-polar-aurora-orbit::before,
   .kaspi-polar-aurora-orbit::after,
   .kaspi-aistudio-orbit::before,
-  .kaspi-aistudio-orbit::after {
-    content: "";
-    position: absolute;
-    inset: -1.5px;
-    border-radius: inherit;
-    background: conic-gradient(
-      from var(--kaspi-aurora-angle),
-      rgba(56, 189, 248, 0.14) 0deg,
-      #0284c7 50deg,
-      #38bdf8 110deg,
-      #22d3ee 170deg,
-      #10b981 230deg,
-      #34d399 285deg,
-      #06b6d4 330deg,
-      rgba(56, 189, 248, 0.14) 360deg
-    );
-    animation: kaspi-polar-aurora-spin 4.2s linear infinite;
-    pointer-events: none;
+  .kaspi-aistudio-orbit::after,
+  .kaspi-product-orbit-card::before,
+  .kaspi-product-orbit-card::after {
+    content: none !important;
+    display: none !important;
   }
 
-  /* Crisp 1.6px rotating Polar Aurora light rim */
-  .kaspi-polar-aurora-orbit::before,
-  .kaspi-aistudio-orbit::before {
-    padding: 1.6px;
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    opacity: 0.94;
-    z-index: 2;
-    transition: opacity 0.25s ease, padding 0.25s ease;
+  .kaspi-polar-aurora-orbit:hover,
+  .kaspi-polar-aurora-orbit:focus-within,
+  .kaspi-polar-aurora-orbit.kaspi-orbit-active,
+  .kaspi-aistudio-orbit:hover,
+  .kaspi-aistudio-orbit:focus-within,
+  .kaspi-aistudio-orbit.kaspi-orbit-active {
+    box-shadow: var(--kaspi-active-ring) !important;
   }
 
-  /* Soft living Polar Aurora halo behind the translucent glass */
-  .kaspi-polar-aurora-orbit::after,
-  .kaspi-aistudio-orbit::after {
-    inset: -10px;
-    filter: blur(22px);
-    opacity: 0.42;
-    z-index: -1;
-    animation:
-      kaspi-polar-aurora-spin 4.2s linear infinite,
-      kaspi-polar-aurora-breathe 3.2s ease-in-out infinite;
-    transition: opacity 0.25s ease, filter 0.25s ease, inset 0.25s ease;
-  }
-
-  .kaspi-polar-aurora-orbit:hover::after,
-  .kaspi-polar-aurora-orbit:focus-within::after,
-  .kaspi-polar-aurora-orbit.kaspi-orbit-active::after,
-  .kaspi-aistudio-orbit:hover::after,
-  .kaspi-aistudio-orbit:focus-within::after,
-  .kaspi-aistudio-orbit.kaspi-orbit-active::after {
-    inset: -14px;
-    filter: blur(28px);
-    opacity: 0.85;
-  }
-
-  .kaspi-polar-aurora-orbit:hover::before,
-  .kaspi-polar-aurora-orbit:focus-within::before,
-  .kaspi-polar-aurora-orbit.kaspi-orbit-active::before,
-  .kaspi-aistudio-orbit:hover::before,
-  .kaspi-aistudio-orbit:focus-within::before,
-  .kaspi-aistudio-orbit.kaspi-orbit-active::before {
-    padding: 2.2px;
-    opacity: 1;
-  }
-
-  /* 3. TRANSLUCENT FROSTED INPUT FIELDS WITH LIVING POLAR AURORA ORBIT (No solid black input background!) */
+  /* 3. TRANSLUCENT FROSTED INPUT FIELDS (Clean Theme-Aware Contrast) */
   .kaspi-translucent-input {
     position: relative !important;
-    background: linear-gradient(165deg, rgba(30, 38, 52, 0.46) 0%, rgba(18, 23, 34, 0.56) 100%) !important;
-    backdrop-filter: blur(20px) saturate(170%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(170%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
-    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.14) !important;
-    color: #f8fafc !important;
+    background: var(--kaspi-input-bg) !important;
+    backdrop-filter: blur(18px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(150%) !important;
+    border: 1px solid var(--kaspi-input-border) !important;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04) !important;
+    color: var(--kaspi-text-primary) !important;
     transition: all 0.22s ease !important;
   }
 
   .kaspi-translucent-input:hover,
   .kaspi-translucent-input:focus,
   .kaspi-translucent-input:focus-within {
-    background: linear-gradient(165deg, rgba(34, 44, 60, 0.58) 0%, rgba(20, 27, 40, 0.66) 100%) !important;
-    border-color: rgba(34, 211, 238, 0.65) !important;
-    box-shadow:
-      0 0 20px -4px rgba(16, 185, 129, 0.38),
-      0 0 14px -2px rgba(56, 189, 248, 0.35),
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.22) !important;
+    background: var(--kaspi-glass-bg-elevated) !important;
+    border-color: rgba(2, 132, 199, 0.6) !important;
+    box-shadow: var(--kaspi-active-ring) !important;
   }
 
-  /* 4. TRANSLUCENT PRODUCT CARD WITH LIVING POLAR AURORA ORBIT ON CLICK / BARCODE SCAN / HOVER */
+  /* 4. CLEAN PRODUCT CARD WITH OUTER FOCUS/HOVER RING */
   .kaspi-product-orbit-card {
     position: relative !important;
-    background:
-      radial-gradient(115% 70% at 50% 0%, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.08) 45%, rgba(22, 28, 38, 0.50) 100%),
-      linear-gradient(165deg, rgba(28, 34, 46, 0.52) 0%, rgba(16, 20, 28, 0.60) 100%) !important;
-    backdrop-filter: blur(26px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(26px) saturate(180%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.14) !important;
-    box-shadow:
-      0 14px 32px -10px rgba(0, 0, 0, 0.58),
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.18) !important;
+    background: var(--kaspi-glass-bg) !important;
+    backdrop-filter: blur(22px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(160%) !important;
+    border: 1px solid var(--kaspi-glass-border) !important;
+    box-shadow: var(--kaspi-glass-shadow) !important;
+    color: var(--kaspi-text-primary);
     z-index: 1;
-    transition: transform 0.22s ease, box-shadow 0.22s ease !important;
-  }
-
-  .kaspi-product-orbit-card::before,
-  .kaspi-product-orbit-card::after {
-    content: "";
-    position: absolute;
-    inset: -2px;
-    border-radius: inherit;
-    background: conic-gradient(
-      from var(--kaspi-aurora-angle),
-      rgba(56, 189, 248, 0.12) 0deg,
-      #0284c7 50deg,
-      #38bdf8 110deg,
-      #22d3ee 170deg,
-      #10b981 230deg,
-      #34d399 285deg,
-      #06b6d4 330deg,
-      rgba(56, 189, 248, 0.12) 360deg
-    );
-    animation: kaspi-polar-aurora-spin 3.5s linear infinite;
-    pointer-events: none;
-    opacity: 0.30;
-    transition: opacity 0.22s ease, inset 0.22s ease, filter 0.22s ease;
-  }
-
-  .kaspi-product-orbit-card::before {
-    padding: 1.8px;
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    z-index: 2;
-  }
-
-  .kaspi-product-orbit-card::after {
-    inset: -12px;
-    filter: blur(24px);
-    opacity: 0;
-    z-index: -1;
+    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease !important;
   }
 
   .kaspi-product-orbit-card:hover,
   .kaspi-product-orbit-card:active,
   .kaspi-product-orbit-card.kaspi-orbit-active {
     transform: translateY(-3px);
-    border-color: transparent !important;
-  }
-
-  .kaspi-product-orbit-card:hover::before,
-  .kaspi-product-orbit-card:active::before,
-  .kaspi-product-orbit-card.kaspi-orbit-active::before {
-    padding: 2.2px;
-    opacity: 1;
-  }
-
-  .kaspi-product-orbit-card:hover::after,
-  .kaspi-product-orbit-card:active::after,
-  .kaspi-product-orbit-card.kaspi-orbit-active::after {
-    opacity: 0.82;
+    border-color: rgba(2, 132, 199, 0.45) !important;
+    box-shadow: var(--kaspi-active-ring) !important;
   }
 
   /* 5. Pure White #FFFFFF Studio Product Image Box (92% Scale, Zero Crop) */
@@ -537,7 +436,7 @@ html[lang="ar"] label,
     align-items: center !important;
     justify-content: center !important;
     overflow: hidden !important;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.28) !important;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.08) !important;
   }
 
   .kaspi-product-white-box img {
@@ -550,4 +449,119 @@ html[lang="ar"] label,
     background-color: #ffffff !important;
     mix-blend-mode: normal !important;
   }
+}
+
+/* ============================================================================
+   GLOBAL DUAL-THEME UTILITY HARMONIZATION
+   - pearl-light: Alabaster Pearl (#f3f6fb), Deep Charcoal text, Soft Frosted White Glass
+   - fjord-twilight: Deep Fjord Slate (#111827), Zero #000000 pitch black, Snow White text
+   ============================================================================ */
+html[data-kaspi-theme="pearl-light"] .bg-black,
+html[data-kaspi-theme="pearl-light"] .bg-zinc-950,
+html[data-kaspi-theme="pearl-light"] .bg-\[\#040405\],
+html[data-kaspi-theme="pearl-light"] .bg-\[\#050505\],
+html[data-kaspi-theme="pearl-light"] .bg-\[\#06070a\],
+html[data-kaspi-theme="pearl-light"] .bg-\[\#090d16\],
+html[data-kaspi-theme="pearl-light"] .bg-\[\#0a0a0c\],
+html[data-kaspi-theme="pearl-light"] .bg-\[\#09090b\],
+html[data-kaspi-theme="pearl-light"] .bg-\[\#0d0f14\] {
+  background-color: var(--kaspi-bg-base) !important;
+}
+
+html[data-kaspi-theme="pearl-light"] .bg-zinc-900,
+html[data-kaspi-theme="pearl-light"] .bg-zinc-900\/80,
+html[data-kaspi-theme="pearl-light"] .bg-zinc-900\/90,
+html[data-kaspi-theme="pearl-light"] .bg-zinc-950\/80,
+html[data-kaspi-theme="pearl-light"] .bg-zinc-950\/90 {
+  background-color: var(--kaspi-glass-bg) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+}
+
+html[data-kaspi-theme="pearl-light"] .bg-white\/\[0\.02\],
+html[data-kaspi-theme="pearl-light"] .bg-white\/\[0\.03\],
+html[data-kaspi-theme="pearl-light"] .bg-white\/\[0\.04\],
+html[data-kaspi-theme="pearl-light"] .bg-white\/\[0\.05\],
+html[data-kaspi-theme="pearl-light"] .bg-white\/\[0\.06\],
+html[data-kaspi-theme="pearl-light"] .bg-white\/5,
+html[data-kaspi-theme="pearl-light"] .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.72) !important;
+}
+
+html[data-kaspi-theme="pearl-light"] .text-white,
+html[data-kaspi-theme="pearl-light"] .text-zinc-100,
+html[data-kaspi-theme="pearl-light"] .text-zinc-200 {
+  color: #0f172a !important;
+}
+
+/* Preserve crisp white text inside solid colored CTA / action buttons */
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-emerald-5"],
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-emerald-6"],
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-sky-5"],
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-sky-6"],
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-cyan-5"],
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-cyan-6"],
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-teal-5"],
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-teal-6"],
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-blue-6"],
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-indigo-6"],
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-red-5"],
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-red-6"],
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-rose-5"],
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-rose-6"],
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-amber-6"] {
+  color: #ffffff !important;
+}
+
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-emerald-5"] *,
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-emerald-6"] *,
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-sky-6"] *,
+html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-red-6"] * {
+  color: #ffffff !important;
+}
+
+html[data-kaspi-theme="pearl-light"] .text-zinc-300 {
+  color: #334155 !important;
+}
+
+html[data-kaspi-theme="pearl-light"] .text-zinc-400,
+html[data-kaspi-theme="pearl-light"] .text-zinc-500 {
+  color: #475569 !important;
+}
+
+html[data-kaspi-theme="pearl-light"] .text-emerald-300,
+html[data-kaspi-theme="pearl-light"] .text-emerald-400 {
+  color: #059669 !important;
+}
+
+html[data-kaspi-theme="pearl-light"] .text-cyan-300,
+html[data-kaspi-theme="pearl-light"] .text-cyan-400,
+html[data-kaspi-theme="pearl-light"] .text-sky-300,
+html[data-kaspi-theme="pearl-light"] .text-sky-400 {
+  color: #0284c7 !important;
+}
+
+html[data-kaspi-theme="pearl-light"] .border-white\/10,
+html[data-kaspi-theme="pearl-light"] .border-white\/15,
+html[data-kaspi-theme="pearl-light"] .border-white\/20,
+html[data-kaspi-theme="pearl-light"] .border-zinc-800,
+html[data-kaspi-theme="pearl-light"] .border-zinc-900 {
+  border-color: rgba(15, 23, 42, 0.11) !important;
+}
+
+/* Fjord Twilight (Muted Deep Fjord Slate — NEVER #000000 pitch black) */
+html[data-kaspi-theme="fjord-twilight"] .bg-black,
+html[data-kaspi-theme="fjord-twilight"] .bg-zinc-950,
+html[data-kaspi-theme="fjord-twilight"] .bg-\[\#040405\],
+html[data-kaspi-theme="fjord-twilight"] .bg-\[\#050505\],
+html[data-kaspi-theme="fjord-twilight"] .bg-\[\#06070a\],
+html[data-kaspi-theme="fjord-twilight"] .bg-\[\#090d16\],
+html[data-kaspi-theme="fjord-twilight"] .bg-\[\#0a0a0c\],
+html[data-kaspi-theme="fjord-twilight"] .bg-\[\#09090b\],
+html[data-kaspi-theme="fjord-twilight"] .bg-\[\#0d0f14\] {
+  background-color: #111827 !important;
+}
+
+html[data-kaspi-theme="fjord-twilight"] .bg-zinc-900 {
+  background-color: rgba(30, 41, 59, 0.78) !important;
 }

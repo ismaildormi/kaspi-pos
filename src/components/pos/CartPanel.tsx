@@ -556,7 +556,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             }`}
           >
             <Percent className="w-3 h-3" />
-            <span>{locale === "ar" ? "تخفيض %" : locale === "en" ? "% Discount" : "% Remise"}</span>
+            <span>{locale === "ar" ? "تخفيض" : locale === "en" ? "Discount" : "Remise"}</span>
           </button>
 
           <button

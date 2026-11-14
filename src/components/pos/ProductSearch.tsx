@@ -356,7 +356,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
           }, 80);
         }}
         placeholder={`${t("searchPlaceholder")}  •  /pay  /hold  /clear`}
-        className="w-full h-11 ps-10 pe-32 rounded-xl kaspi-translucent-input text-sm text-white placeholder:text-zinc-400 focus:outline-none transition-all shadow-inner"
+        className="w-full h-11 ps-11 pe-40 rounded-xl kaspi-translucent-input text-sm text-white placeholder:text-zinc-400 focus:outline-none transition-all shadow-inner"
       />
 
       <div className="absolute inset-y-0 end-0 flex items-center pe-2.5 gap-1.5">
