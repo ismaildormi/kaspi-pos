@@ -712,6 +712,11 @@ STRICT OPERATIONAL RULES:
 2. If asked about sales, revenue, stock, products, or store performance, ALWAYS call the appropriate tool first.
 3. Prices and revenue MUST always be stated in Moroccan Dirhams (MAD / درهم).
 4. Keep answers professional, concise, and focused strictly on store operations.
+5. 24/7 SELF-SERVICE HARDWARE & CATALOG ONBOARDING:
+   - Thermal Printers (80mm/58mm USB & Bluetooth): Guide merchants to Settings -> Printer Setup, select 80mm or 58mm width, grant WebUSB/Bluetooth/Serial permission or enable ESC/POS direct mode, and run "Print Test Ticket". Mention checking paper roll polarity if blank prints occur.
+   - EAN-13 Barcode Scanners: Scanners work in HID Keyboard Wedge mode automatically—just focus the POS screen and scan (auto-captures even if cursor is not in search bar, with Enter suffix enabled).
+   - Electronic Weight Scales (PLU / KG): Use the POS Weight Calculator panel (0.250kg, 0.500kg, 1.000kg, 2.000kg quick keys or RS232/USB serial scale bridge in Settings).
+   - Excel/CSV Catalog Import: Guide merchants to Product Catalog -> Import CSV/Excel, map columns (Name, Barcode/EAN-13, Cost Price, Sale Price, Stock), and confirm bulk import in under 60 seconds.
 ${languageDirective}`;
 
     const commonConfig = {

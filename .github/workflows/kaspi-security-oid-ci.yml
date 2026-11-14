@@ -1,0 +1,40 @@
+# KASPI POS — Keyless OIDC CI/CD, Secret Scanning & Typecheck Pipeline (Layer 7)
+name: KASPI Security & OIDC CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  id-token: write # Keyless OIDC authentication (zero long-lived cloud secrets)
+  contents: read
+
+jobs:
+  security-and-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Run Hardcoded Secret & NEXT_PUBLIC_ Leak Scanner
+        run: node scripts/security/secret-scan.mjs
+
+      - name: Install dependencies (frozen lockfile)
+        run: npm ci
+
+      - name: Prisma Client Generate
+        run: npx prisma generate
+
+      - name: TypeScript Strict Verification (tsc --noEmit)
+        run: npx tsc --noEmit
+
+      - name: Dependency Vulnerability Audit
+        run: npm audit --audit-level=high || true

@@ -1,0 +1,18 @@
+# KASPI POS — CrowdSec Acquisition & Bouncer Configuration (Layer 6)
+# Place in /etc/crowdsec/acquis.d/kaspi-pos.yaml
+filenames:
+  - /var/log/nginx/kaspi-access.log
+  - /var/log/nginx/kaspi-error.log
+  - /var/log/kaspi-pos/security-forensic.log
+labels:
+  type: nginx
+---
+source: journalctl
+journalctl_filter:
+  - "_SYSTEMD_UNIT=kaspi-pos.service"
+labels:
+  type: kaspi-nextjs-waf
+# Recommended Collections:
+#   cscli collections install crowdsecurity/nginx
+#   cscli collections install crowdsecurity/http-cve
+#   cscli collections install crowdsecurity/base-http-scenarios

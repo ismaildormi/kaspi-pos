@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db/prisma";
 import { verifyHyperswitchWebhook } from "@/lib/hyperswitch";
+import {
+  checkReplayWindow,
+  logWebhookForensicEvidence,
+} from "@/lib/security/webhook-verifier";
 
 /**
  * POST /api/webhooks/hyperswitch
@@ -12,6 +16,13 @@ export async function POST(req: NextRequest) {
   const signature = req.headers.get("x-webhook-signature-512");
 
   if (!verifyHyperswitchWebhook(rawBody, signature)) {
+    await logWebhookForensicEvidence({
+      provider: "hyperswitch",
+      valid: false,
+      reason: "Invalid x-webhook-signature-512",
+      rawBody,
+      headers: req.headers,
+    });
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
@@ -30,6 +41,21 @@ export async function POST(req: NextRequest) {
   if (!eventId) {
     return NextResponse.json({ error: "Missing event id" }, { status: 400 });
   }
+
+  const replayCheck = checkReplayWindow(eventId);
+  if (!replayCheck.ok) {
+    return NextResponse.json({ received: true, duplicate: true, reason: replayCheck.reason });
+  }
+
+  await logWebhookForensicEvidence({
+    provider: "hyperswitch",
+    valid: true,
+    eventId,
+    eventType,
+    tenantId,
+    rawBody,
+    headers: req.headers,
+  });
 
   const existing = await prisma.webhookEvent.findUnique({
     where: { provider_eventId: { provider: "hyperswitch", eventId } },

@@ -1,0 +1,27 @@
+<!-- KASPI POS — Wazuh XDR / Active Response Custom Rules (Layer 6) -->
+<!-- Place in /var/ossec/etc/rules/kaspi_pos_rules.xml -->
+<group name="kaspi_pos,security_forensics,">
+  <rule id="100501" level="12">
+    <match>FORGED_PAYMENT_WEBHOOK_SIGNATURE|WEBHOOK_SIGNATURE_FORGED_REJECTED</match>
+    <description>KASPI P0: Forged Payment Gateway Webhook Signature Rejected</description>
+    <group>pci_dss_10.6.1,attack,</group>
+  </rule>
+
+  <rule id="100502" level="14">
+    <match>BROKEN_INVOICE_OR_AUDIT_HASH_CHAIN|FORENSIC_IMMUTABILITY_LOCK</match>
+    <description>KASPI P0: Fiscal Invoice or Forensic Audit Hash Chain Tampering Attempt</description>
+    <group>integrity_checking,pci_dss_10.5,</group>
+  </rule>
+
+  <rule id="100503" level="12">
+    <match>SUPER_ADMIN_UNAUTHORIZED_ACCESS_ATTEMPT|ZERO_TRUST_FORBIDDEN</match>
+    <description>KASPI P0: Unauthorized Super Admin Access Attempt Blocked</description>
+    <group>authentication_failed,zero_trust,</group>
+  </rule>
+
+  <rule id="100504" level="10">
+    <match>WAF_ATTACK_BLOCKED_SQLI_XSS|OWASP-CRS-942100|OWASP-CRS-941100</match>
+    <description>KASPI WAF: SQLi/XSS/Path Traversal Attack Blocked</description>
+    <group>web,attack,owasp_crs,</group>
+  </rule>
+</group>

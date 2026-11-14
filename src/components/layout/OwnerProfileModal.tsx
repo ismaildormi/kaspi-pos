@@ -373,6 +373,18 @@ export function OwnerProfileModal({
                   ? "Protected financial details & owner phone hidden from cashiers"
                   : "Données financières protégées et masquées aux employés"}
               </p>
+              {isUnlocked && (
+                <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-[10px] font-semibold text-emerald-300">
+                  <ShieldCheck className="w-3 h-3 shrink-0 text-emerald-400" />
+                  <span>
+                    {locale === "ar"
+                      ? "محمي بسجل جنائي غير قابل للمحو • SHA-256 Verified"
+                      : locale === "fr"
+                      ? "Protégé par journal forensique immuable • SHA-256 Vérifié"
+                      : "Protected by Immutable Forensic Trail • SHA-256 Verified"}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

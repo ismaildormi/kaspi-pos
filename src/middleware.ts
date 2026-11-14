@@ -3,6 +3,19 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limit";
+import {
+  applySecurityHeaders,
+  createWafForbiddenResponse,
+  emitIpsThreatTelemetry,
+  inspectRequestWafAndIps,
+  quarantineIp,
+} from "@/lib/security/waf-ips-shield";
+import {
+  emitSuperAdminAccessTelemetry,
+  extractClientIpEdge,
+  isSuperAdminPath,
+  verifySuperAdminZeroTrust,
+} from "@/lib/security/zero-trust-admin";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -43,26 +56,68 @@ export async function middleware(request: NextRequest) {
 
   // 2. NextAuth handlers
   if (pathname.startsWith("/api/auth")) {
-    return NextResponse.next();
+    return applySecurityHeaders(NextResponse.next());
   }
 
-  // Rate Limiting for all API endpoints
+  // Layer 6: Application-Layer WAF (OWASP CRS) & Automated IPS Quarantine Check
+  const wafResult = inspectRequestWafAndIps(request);
+  if (wafResult.blocked) {
+    return createWafForbiddenResponse(wafResult);
+  }
+
+  // Layer 5: Super Admin Zero-Trust Access Fortress (/super-admin, /admin, /api/admin, stealth path)
+  const adminRouteInfo = isSuperAdminPath(pathname);
+  if (adminRouteInfo.isAdmin) {
+    const ztResult = verifySuperAdminZeroTrust(request);
+    emitSuperAdminAccessTelemetry({
+      allowed: ztResult.allowed,
+      reason: ztResult.reason,
+      ipAddress: ztResult.ipAddress,
+      pathname,
+      userAgent: request.headers.get("user-agent") || "",
+    });
+    if (!ztResult.allowed) {
+      return applySecurityHeaders(
+        NextResponse.json(
+          {
+            error: {
+              code: "ZERO_TRUST_FORBIDDEN",
+              message: "Super Admin Zero-Trust verification failed",
+              reason: ztResult.reason,
+              request_id: crypto.randomUUID(),
+            },
+          },
+          { status: 403 }
+        )
+      );
+    }
+  }
+
+  // Rate Limiting for all API endpoints + Automated IPS Quarantine on abuse
   if (pathname.startsWith("/api/")) {
-    const forwarded = request.headers.get("x-forwarded-for");
-    const ip = forwarded ? forwarded.split(",")[0].trim() : "127.0.0.1";
-    const isSensitive =
-      pathname.startsWith("/api/v1/auth") || pathname.startsWith("/api/ai");
-    const limit = isSensitive ? 20 : 120;
-    const windowSec = 60;
+    const ip = extractClientIpEdge(request);
+    const isAuthPath = pathname.startsWith("/api/v1/auth");
+    const isSensitive = isAuthPath || pathname.startsWith("/api/ai");
+    const limit = isAuthPath ? 5 : isSensitive ? 20 : 120;
+    const windowSec = isAuthPath ? 120 : 60;
 
     const rateResult = await checkRateLimit(
-      `${ip}:${isSensitive ? "auth_ai" : "api"}`,
+      `${ip}:${isAuthPath ? "auth_strict" : isSensitive ? "ai" : "api"}`,
       limit,
       windowSec
     );
 
     if (!rateResult.success) {
-      return createRateLimitResponse(rateResult);
+      emitIpsThreatTelemetry({
+        ipAddress: ip,
+        eventType: "RATE_LIMIT_EXCEEDED",
+        reason: `Exceeded ${limit} req/${windowSec}s on ${pathname}`,
+        action: "HTTP_429",
+      });
+      if (isAuthPath || pathname.startsWith("/api/v1/products")) {
+        quarantineIp(ip, `EXCESSIVE_${isAuthPath ? "AUTH_ATTEMPTS" : "BULK_SCRAPING"}`);
+      }
+      return applySecurityHeaders(createRateLimitResponse(rateResult));
     }
   }
 
@@ -109,8 +164,8 @@ export async function middleware(request: NextRequest) {
       loginUrl.searchParams.set("from", pathname);
       return NextResponse.redirect(loginUrl);
     }
-    if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
-      return NextResponse.next();
+    if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin") || adminRouteInfo.isAdmin) {
+      return applySecurityHeaders(NextResponse.next());
     }
   }
 
@@ -121,23 +176,25 @@ export async function middleware(request: NextRequest) {
     );
 
     if (!isPublic && !hasAuth) {
-      return NextResponse.json(
-        {
-          error: {
-            code: "UNAUTHORIZED",
-            message: "Authentication required to access tenant resources",
-            request_id: crypto.randomUUID(),
+      return applySecurityHeaders(
+        NextResponse.json(
+          {
+            error: {
+              code: "UNAUTHORIZED",
+              message: "Authentication required to access tenant resources",
+              request_id: crypto.randomUUID(),
+            },
           },
-        },
-        { status: 401 }
+          { status: 401 }
+        )
       );
     }
-    return NextResponse.next();
+    return applySecurityHeaders(NextResponse.next());
   }
 
   // 4. Page routing with next-intl (Auth redirect bypassed for local UI testing except /admin above)
   const intlResponse = intlMiddleware(request);
-  return intlResponse;
+  return applySecurityHeaders(intlResponse);
 }
 
 export const config = {

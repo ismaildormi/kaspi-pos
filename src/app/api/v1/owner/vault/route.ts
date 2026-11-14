@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/server/db/prisma";
 import { getRequestContext } from "@/server/auth/context";
 import { verifyPassword, hashPassword } from "@/server/auth/password";
+import { recordForensicAudit } from "@/lib/security/forensic-audit";
+import { dispatchP0CriticalAlert } from "@/lib/automation/smart-critical-alerter";
 
 const DEMO_FALLBACK_PASSWORDS = [
   "admin123",
@@ -95,6 +97,17 @@ export async function POST(req: NextRequest) {
     }
 
     if (!isPasswordValid) {
+      await recordForensicAudit({
+        eventType: "OWNER_VAULT_FAILED_PIN",
+        tenantId: ctx.tenantId,
+        storeId: ctx.storeIds?.[0] || null,
+        actorId: ctx.userId,
+        actorEmail: user?.email || ctx.userEmail || null,
+        actorRole: ctx.role,
+        entityType: "owner_vault",
+        reason: "Invalid PIN / Password on Owner Vault access",
+        headers: req.headers,
+      });
       return NextResponse.json(
         { error: "كلمة المرور غير صحيحة. تم رفض الوصول إلى الخزنة" },
         { status: 401 }
@@ -103,6 +116,17 @@ export async function POST(req: NextRequest) {
 
     // 4. ACTION: UNLOCK -> Return sensitive vault data
     if (action === "unlock") {
+      await recordForensicAudit({
+        eventType: "OWNER_VAULT_UNLOCKED",
+        tenantId: ctx.tenantId,
+        storeId: ctx.storeIds?.[0] || null,
+        actorId: ctx.userId,
+        actorEmail: user?.email || ctx.userEmail || null,
+        actorRole: ctx.role,
+        entityType: "owner_vault",
+        reason: "Owner Vault unlocked successfully",
+        headers: req.headers,
+      });
       const [settings, payoutRecord] = await Promise.all([
         prisma.tenantSettings.findUnique({
           where: { tenantId: ctx.tenantId },
@@ -269,6 +293,59 @@ export async function POST(req: NextRequest) {
           responseBody: newPayoutConfig,
         },
       });
+
+      const normalizedNewRib =
+        bankRib !== undefined ? String(bankRib).trim().replace(/\s+/g, "") : existingPayout.bankRib;
+      const ribChanged =
+        bankRib !== undefined && normalizedNewRib !== (existingPayout.bankRib || "");
+      const gatewayChanged =
+        selectedGateway !== undefined &&
+        String(selectedGateway).trim() !== (existingPayout.selectedGateway || "");
+
+      if (ribChanged) {
+        const auditEntry = await recordForensicAudit({
+          eventType: "RIB_BANK_ACCOUNT_CHANGED",
+          tenantId: ctx.tenantId,
+          storeId: ctx.storeIds?.[0] || null,
+          actorId: ctx.userId,
+          actorEmail: user?.email || ctx.userEmail || null,
+          actorRole: ctx.role,
+          entityType: "owner_bank_rib",
+          beforeState: { bankName: existingPayout.bankName || "", bankRib: existingPayout.bankRib || "" },
+          afterState: { bankName: newPayoutConfig.bankName || "", bankRib: normalizedNewRib },
+          reason: "Moroccan Bank RIB updated in Owner Vault",
+          headers: req.headers,
+        });
+
+        await dispatchP0CriticalAlert({
+          type: "OWNER_RIB_CHANGED_ALERT",
+          tenantId: ctx.tenantId,
+          actorId: ctx.userId,
+          ipAddress: auditEntry.ipAddress,
+          summary: `Owner Bank RIB modified for tenant ${ctx.tenantId}`,
+          details: {
+            bankName: newPayoutConfig.bankName,
+            ribSuffix: String(normalizedNewRib || "").slice(-4),
+            forensicHash: auditEntry.currentHash,
+          },
+        });
+      }
+
+      if (gatewayChanged) {
+        await recordForensicAudit({
+          eventType: "PAYMENT_GATEWAY_CONFIG_CHANGED",
+          tenantId: ctx.tenantId,
+          storeId: ctx.storeIds?.[0] || null,
+          actorId: ctx.userId,
+          actorEmail: user?.email || ctx.userEmail || null,
+          actorRole: ctx.role,
+          entityType: "payment_gateway",
+          beforeState: { selectedGateway: existingPayout.selectedGateway || "cash_only" },
+          afterState: { selectedGateway: newPayoutConfig.selectedGateway },
+          reason: "Payment gateway configuration changed in Owner Vault",
+          headers: req.headers,
+        });
+      }
 
       return NextResponse.json({
         success: true,

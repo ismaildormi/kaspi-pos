@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KASPI POS Shuffle SOAR & DFIR-IRIS Incident Webhook Schema (Layer 6)",
+  "type": "object",
+  "required": ["schema", "timestampIso", "ipAddress", "eventType", "reason", "action"],
+  "properties": {
+    "schema": { "const": "kaspi-ips-telemetry-v1" },
+    "integrations": {
+      "type": "array",
+      "items": { "enum": ["crowdsec", "wazuh", "shuffle-soar", "dfir-iris"] }
+    },
+    "timestampIso": { "type": "string", "format": "date-time" },
+    "ipAddress": { "type": "string" },
+    "eventType": {
+      "enum": [
+        "WAF_ATTACK_BLOCKED_SQLI_XSS",
+        "MASS_SCRAPING_OR_BRUTE_FORCE_AUTO_BANNED",
+        "RATE_LIMIT_EXCEEDED",
+        "BROKEN_INVOICE_OR_AUDIT_HASH_CHAIN",
+        "FORGED_PAYMENT_WEBHOOK_SIGNATURE",
+        "SUPER_ADMIN_UNAUTHORIZED_ACCESS_ATTEMPT",
+        "OWNER_RIB_CHANGED_ALERT"
+      ]
+    },
+    "reason": { "type": "string" },
+    "action": { "type": "string" },
+    "forensicHash": { "type": "string" }
+  }
+}
