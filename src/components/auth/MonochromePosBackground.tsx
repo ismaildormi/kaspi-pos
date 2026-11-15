@@ -557,7 +557,7 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
         className="pointer-events-none absolute inset-0"
         style={{
           background: isPearl
-            ? "radial-gradient(circle at 22% 24%, rgba(16,185,129,0.28) 0%, transparent 48%), radial-gradient(circle at 78% 76%, rgba(52,211,153,0.24) 0%, transparent 52%), radial-gradient(circle at 50% 45%, rgba(255,255,255,0.80) 0%, transparent 60%)"
+            ? "radial-gradient(circle at 22% 24%, rgba(16,185,129,0.34) 0%, transparent 48%), radial-gradient(circle at 78% 76%, rgba(52,211,153,0.28) 0%, transparent 52%), radial-gradient(circle at 50% 45%, rgba(255,255,255,0.24) 0%, transparent 60%)"
             : "radial-gradient(circle at 22% 24%, rgba(255,255,255,0.06) 0%, transparent 45%), radial-gradient(circle at 78% 76%, rgba(255,255,255,0.04) 0%, transparent 50%)",
         }}
       />
@@ -602,11 +602,13 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
 
         {/* Brand Identity Header */}
         <div className="text-center mb-4">
-          <img
-            src="/logo.png"
-            alt="KASPI POS"
-            className="w-14 h-14 rounded-2xl object-cover mx-auto mb-2.5 select-none bg-transparent"
-          />
+          <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto mb-2.5 select-none">
+            <img
+              src="/logo.png"
+              alt="KASPI POS"
+              className="w-full h-full object-cover scale-[1.24] select-none bg-transparent"
+            />
+          </div>
           <div
             dir="ltr"
             className="text-[11px] tracking-[0.18em] uppercase text-zinc-300 font-semibold"

@@ -29,12 +29,14 @@ export default function DownloadCenterPage() {
         <div className="max-w-6xl mx-auto">
           {/* Hero Section */}
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <img
-              src="/logo.png"
-              alt="KASPI POS"
-              className="w-16 h-16 rounded-2xl object-cover bg-transparent mx-auto mb-6 select-none"
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
+            <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-6 select-none">
+              <img
+                src="/logo.png"
+                alt="KASPI POS"
+                className="w-full h-full object-cover scale-[1.24] bg-transparent select-none"
+                onError={(e) => (e.currentTarget.style.display = "none")}
+              />
+            </div>
 
             <div className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-4 py-1.5 text-xs font-mono text-zinc-300 mb-6">
               <span className="h-2 w-2 rounded-full bg-white animate-pulse" />

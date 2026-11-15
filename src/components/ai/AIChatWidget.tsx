@@ -500,22 +500,22 @@ export function AIChatWidget() {
         >
           <div className="relative w-full h-[580px] max-h-[calc(100vh-5rem)] kaspi-polar-aurora-orbit kaspi-opaque-glass-modal rounded-2xl shadow-2xl border border-white/20 flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="border-b border-white/10 text-[var(--kaspi-text-primary)] p-4 flex items-center justify-between shadow-xs shrink-0">
+          <div className="border-b border-white/15 text-[var(--kaspi-text-primary)] p-4 flex items-center justify-between shadow-xs shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full kaspi-polar-aurora-orbit flex items-center justify-center shrink-0">
-                <Bot className="w-5 h-5 text-white" />
+                <Bot className="w-5 h-5 text-[var(--kaspi-text-primary)]" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-sm tracking-wide text-white truncate">
+                  <h3 className="font-bold text-sm tracking-wide text-[var(--kaspi-text-primary)] truncate">
                     {isAdminView ? t.headerTitleAdmin : t.headerTitle}
                   </h3>
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 shrink-0">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 border border-emerald-500/40 text-emerald-500 shrink-0">
                     <Zap className="w-2.5 h-2.5" />
                     {isAdminView ? t.activeBadgeAdmin : t.activeBadge}
                   </span>
                 </div>
-                <p className="text-xs text-zinc-400 font-normal truncate">
+                <p className="text-xs text-[var(--kaspi-text-muted)] font-normal truncate">
                   {isAdminView ? t.subtitleAdmin : t.subtitle}
                 </p>
               </div>
@@ -524,7 +524,7 @@ export function AIChatWidget() {
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+              className="p-1.5 rounded-lg text-[var(--kaspi-text-muted)] hover:text-[var(--kaspi-text-primary)] hover:bg-white/10 transition-colors cursor-pointer shrink-0"
               title={t.closeTitle}
               aria-label={t.closeTitle}
             >
@@ -535,9 +535,9 @@ export function AIChatWidget() {
           {/* Messages Area with Monochrome POS Doodle Wallpaper */}
           <div className="relative flex-1 overflow-y-auto p-4">
             {/* Vector Doodle Wallpaper Layer */}
-            <div className="pointer-events-none absolute inset-0 overflow-hidden z-0 select-none">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden z-0 select-none text-[var(--kaspi-text-primary)]">
               <svg
-                className="w-full h-full opacity-60"
+                className="w-full h-full opacity-[0.06]"
                 xmlns="http://www.w3.org/2000/svg"
                 width="100%"
                 height="100%"
@@ -552,7 +552,7 @@ export function AIChatWidget() {
                     patternUnits="userSpaceOnUse"
                   >
                     <g
-                      stroke="rgba(255,255,255,0.055)"
+                      stroke="currentColor"
                       strokeWidth="1.25"
                       fill="none"
                       strokeLinecap="round"

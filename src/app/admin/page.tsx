@@ -56,12 +56,14 @@ export default async function AdminDashboardPage() {
       {/* Top Banner with Super Admin Identity */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-zinc-900 border border-zinc-800 p-6 sm:p-8 rounded-3xl shadow-2xl">
         <div className="flex items-center gap-5">
-          <img
-            src="/logo.png"
-            alt="KASPI POS"
-            className="w-16 h-16 rounded-2xl object-cover bg-transparent shrink-0 select-none"
-            onError={(e) => (e.currentTarget.style.display = "none")}
-          />
+          <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 select-none">
+            <img
+              src="/logo.png"
+              alt="KASPI POS"
+              className="w-full h-full object-cover scale-[1.24] bg-transparent select-none"
+              onError={(e) => (e.currentTarget.style.display = "none")}
+            />
+          </div>
           <div className="space-y-1.5">
             <div className="flex items-center gap-2.5">
               <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />

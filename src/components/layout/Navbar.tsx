@@ -10,11 +10,13 @@ export function Navbar() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand with Transparent Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <img
-            src="/logo.png"
-            alt="KASPI POS"
-            className="w-8 h-8 rounded-xl object-cover transition-transform group-hover:scale-105"
-          />
+          <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 transition-transform group-hover:scale-105 select-none">
+            <img
+              src="/logo.png"
+              alt="KASPI POS"
+              className="w-full h-full object-cover scale-[1.24] bg-transparent select-none"
+            />
+          </div>
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-base tracking-tight text-white">
               KASPI POS

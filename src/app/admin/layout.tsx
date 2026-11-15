@@ -22,11 +22,13 @@ export default function AdminLayout({
       <NextIntlClientProvider locale="fr" messages={enMessages}>
         <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-md px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img
-              src="/logo.png"
-              alt="KASPI POS Logo"
-              className="w-8 h-8 rounded-xl object-cover shrink-0 select-none bg-transparent"
-            />
+            <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 select-none">
+              <img
+                src="/logo.png"
+                alt="KASPI POS Logo"
+                className="w-full h-full object-cover scale-[1.24] bg-transparent select-none"
+              />
+            </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-white text-base tracking-tight">Kasbi POS</span>

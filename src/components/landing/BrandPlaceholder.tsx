@@ -22,11 +22,11 @@ export function BrandPlaceholder({ className = "", size = "md" }: BrandPlacehold
       <div className="absolute inset-0 bg-radial-gradient from-emerald-500/10 via-transparent to-transparent pointer-events-none" />
 
       {/* 3D Infinity Logo */}
-      <div className="relative mb-2 transition-transform duration-300 group-hover:scale-105">
+      <div className={`relative mb-2 transition-transform duration-300 group-hover:scale-105 rounded-xl overflow-hidden ${sizeClasses.split(" ")[0]} ${sizeClasses.split(" ")[1]} shrink-0 select-none`}>
         <img
           src="/logo.png"
           alt="KASPI POS"
-          className={`${sizeClasses.split(" ")[0]} ${sizeClasses.split(" ")[1]} rounded-xl object-cover bg-transparent select-none`}
+          className="w-full h-full object-cover scale-[1.24] bg-transparent select-none"
           onError={(e) => {
             // Fallback to text icon if file is inaccessible
             e.currentTarget.style.display = "none";

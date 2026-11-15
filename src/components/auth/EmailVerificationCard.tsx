@@ -214,16 +214,18 @@ export const EmailVerificationCard: React.FC<EmailVerificationCardProps> = ({
           <KaspiMonogram />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src="/logo.png"
-            alt="KASPI POS"
-            className="w-14 h-14 rounded-2xl object-cover bg-transparent select-none"
-            onError={() => {
-              if (!logoFailed) {
-                setLogoFailed(true);
-              }
-            }}
-          />
+          <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 select-none">
+            <img
+              src="/logo.png"
+              alt="KASPI POS"
+              className="w-full h-full object-cover scale-[1.24] bg-transparent select-none"
+              onError={() => {
+                if (!logoFailed) {
+                  setLogoFailed(true);
+                }
+              }}
+            />
+          </div>
         )}
         <span className="h-px w-16 bg-gradient-to-l from-transparent to-zinc-300 dark:to-zinc-700" />
       </div>

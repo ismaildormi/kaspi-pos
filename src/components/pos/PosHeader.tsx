@@ -150,11 +150,13 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         <div className="h-4 w-px bg-white/10 hidden sm:block" />
 
         <div className="flex items-center gap-2 min-w-0">
-          <img
-            src="/logo.png"
-            alt="KASPI POS"
-            className="w-8 h-8 rounded-xl object-cover shrink-0 transition-transform hover:scale-105 select-none bg-transparent"
-          />
+          <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 transition-transform hover:scale-105 select-none">
+            <img
+              src="/logo.png"
+              alt="KASPI POS"
+              className="w-full h-full object-cover scale-[1.24] select-none bg-transparent"
+            />
+          </div>
           <span className="font-extrabold text-xs tracking-tight text-white hidden md:inline shrink-0">
             KASPI POS
           </span>

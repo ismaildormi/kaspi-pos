@@ -10,11 +10,13 @@ export function Footer() {
           {/* Brand Info */}
           <div className="md:col-span-1 space-y-4">
             <div className="flex items-center gap-3">
-              <img
-                src="/logo.png"
-                alt="KASPI POS Logo"
-                className="w-8 h-8 rounded-xl object-cover bg-transparent shrink-0 select-none"
-              />
+              <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 select-none">
+                <img
+                  src="/logo.png"
+                  alt="KASPI POS Logo"
+                  className="w-full h-full object-cover scale-[1.24] bg-transparent select-none"
+                />
+              </div>
               <span className="font-extrabold text-base tracking-tight text-white">KASPI POS</span>
             </div>
             <p className="text-xs text-zinc-400 leading-relaxed">

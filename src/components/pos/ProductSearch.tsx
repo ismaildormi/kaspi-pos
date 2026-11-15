@@ -376,7 +376,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
             <X className="w-3.5 h-3.5" />
           </button>
         )}
-        <div className="relative overflow-hidden hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-950/90 border border-white/15 group-hover:border-white/30 group-focus-within:border-white/50 text-[10px] font-mono text-zinc-400 group-focus-within:text-white transition-all shadow-xs">
+        <div className="relative overflow-hidden hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 border border-white/20 group-hover:border-white/35 group-focus-within:border-white/50 text-[10px] font-mono text-[var(--kaspi-text-muted)] group-focus-within:text-[var(--kaspi-text-primary)] transition-all shadow-xs">
           {/* Animated Scanning Laser Bar */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
           <span

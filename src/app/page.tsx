@@ -59,11 +59,11 @@ export default function LandingPage() {
 
           {/* Transparent Logo */}
           <div className="flex justify-center mb-6">
-            <div className="relative group">
+            <div className="relative group h-20 w-20 sm:h-24 sm:w-24 rounded-2xl overflow-hidden shrink-0 select-none">
               <img
                 src="/logo.png"
                 alt="KASPI POS Logo"
-                className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover bg-transparent transition-transform duration-300 group-hover:scale-105 select-none"
+                className="relative w-full h-full object-cover scale-[1.24] bg-transparent transition-transform duration-300 group-hover:scale-[1.30] select-none"
               />
             </div>
           </div>
