@@ -714,10 +714,10 @@ export default function ProductsListPage() {
               <Plus className="w-4 h-4" />
               <span>
                 {locale === "ar"
-                  ? "+ إضافة منتج جديد"
+                  ? "إضافة منتج جديد"
                   : locale === "fr"
-                  ? "+ Nouveau Produit"
-                  : "+ New Product"}
+                  ? "Nouveau Produit"
+                  : "New Product"}
               </span>
             </button>
           </div>
@@ -1315,8 +1315,8 @@ export default function ProductsListPage() {
         };
 
         return (
-          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-2xl flex items-center justify-center p-3 sm:p-5 overflow-y-auto select-none animate-fadeIn">
-            <div className="max-w-3xl w-full rounded-3xl bg-[#0B0F13]/95 backdrop-blur-2xl border border-white/[0.12] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.85)] flex flex-col my-auto transition-all">
+          <div className="fixed inset-0 z-50 bg-black/55 backdrop-blur-xl flex items-center justify-center p-3 sm:p-5 overflow-y-auto select-none animate-fadeIn">
+            <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit max-w-3xl w-full rounded-3xl p-6 shadow-[0_24px_80px_rgba(0,0,0,0.85)] flex flex-col my-auto transition-all">
               {/* Header Row */}
               <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
                 <h3 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
@@ -1608,13 +1608,13 @@ export default function ProductsListPage() {
                         <label className="block text-xs font-semibold text-zinc-300 mb-1">
                           {locale === "ar" ? "وحدة البيع:" : "Unit :"}
                         </label>
-                        <div className="h-10 p-1 rounded-xl bg-[#090C10] border border-white/[0.10] flex items-center gap-1">
+                        <div className="h-10 p-1 rounded-xl kaspi-frosted-card flex items-center gap-1">
                           <button
                             type="button"
                             onClick={() => setCreateUnit("piece")}
                             className={`flex-1 h-8 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
                               createUnit === "piece"
-                                ? "bg-white text-zinc-950 font-black shadow-xs"
+                                ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
                                 : "text-zinc-400 hover:text-white"
                             }`}
                           >
@@ -1625,7 +1625,7 @@ export default function ProductsListPage() {
                             onClick={() => setCreateUnit("kg")}
                             className={`flex-1 h-8 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
                               createUnit === "kg"
-                                ? "bg-white text-zinc-950 font-black shadow-xs"
+                                ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
                                 : "text-zinc-400 hover:text-white"
                             }`}
                           >
@@ -1643,11 +1643,11 @@ export default function ProductsListPage() {
                         </label>
                         <input
                           type="number"
-                          step="1"
+                          step={createUnit === "kg" ? "0.1" : "1"}
                           min="0"
                           value={createInitialStock}
                           onChange={(e) => setCreateInitialStock(e.target.value)}
-                          className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3 font-mono text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6]"
+                          className="w-full h-10 rounded-xl kaspi-translucent-input px-3 font-mono text-xs placeholder-zinc-500 focus:outline-none"
                         />
                       </div>
 
@@ -1655,7 +1655,7 @@ export default function ProductsListPage() {
                         <button
                           type="button"
                           onClick={() => setIsCreateModalOpen(false)}
-                          className="w-full h-10 rounded-xl bg-[#090C10] hover:bg-white/[0.08] border border-white/[0.10] text-xs font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                          className="w-full h-10 rounded-xl kaspi-glass-btn text-xs font-semibold transition-colors cursor-pointer"
                         >
                           {modalI18n.cancel}
                         </button>
@@ -1668,7 +1668,7 @@ export default function ProductsListPage() {
                 <button
                   type="submit"
                   disabled={isCreatingProduct}
-                  className="mt-6 w-full h-12 rounded-xl bg-gradient-to-r from-[#14B8A6] to-[#2DD4BF] hover:opacity-95 text-[#041E1B] font-extrabold text-sm shadow-[0_8px_28px_-6px_rgba(20,184,166,0.55)] flex items-center justify-center cursor-pointer transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="mt-6 w-full h-12 rounded-xl kaspi-polar-aurora-orbit kaspi-emerald-checkout-btn font-extrabold text-sm flex items-center justify-center cursor-pointer transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isCreatingProduct ? (
                     <Loader2 className="w-5 h-5 animate-spin" />

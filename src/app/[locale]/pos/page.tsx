@@ -493,7 +493,7 @@ export default function PosPage() {
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
               <span className="hidden sm:inline">
-                {locale === "ar" ? "+ منتج جديد" : locale === "en" ? "+ New Product" : "+ Nouveau"}
+                {locale === "ar" ? "منتج جديد" : locale === "en" ? "New Product" : "Nouveau"}
               </span>
             </button>
           </div>

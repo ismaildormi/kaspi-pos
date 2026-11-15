@@ -167,13 +167,11 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           onClick={onNavigate}
           className="flex items-center gap-3 px-2 py-2.5 mb-2.5 rounded-xl hover:bg-white/[0.04] transition-colors"
         >
-          <div className="kaspi-logo-immutable-frame w-9 h-9 rounded-xl shrink-0 flex items-center justify-center">
-            <img
-              src="/logo.png"
-              alt="KASPI POS"
-              className="w-full h-full object-cover"
-            />
-          </div>
+          <img
+            src="/logo.png"
+            alt="KASPI POS"
+            className="w-9 h-9 rounded-xl object-cover shrink-0 select-none bg-transparent"
+          />
           <span className="font-black text-[15px] tracking-tight text-white">
             KASPI POS
           </span>

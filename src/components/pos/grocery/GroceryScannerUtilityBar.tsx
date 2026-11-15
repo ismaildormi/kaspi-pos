@@ -436,18 +436,22 @@ export function GroceryScannerUtilityBar({
                 ))}
               </div>
 
-              {/* Custom Weight Keypad Input */}
+              {/* Custom Weight Keypad Input (Free decimal typing & clearing) */}
               <div className="flex items-center gap-2 pt-1">
                 <input
-                  type="number"
-                  step="0.05"
+                  type="text"
+                  inputMode="decimal"
                   value={customWeightInput}
+                  placeholder="0.000"
                   onChange={(e) => {
-                    setCustomWeightInput(e.target.value);
-                    const val = parseFloat(e.target.value);
-                    if (!isNaN(val) && val > 0) setWeightKg(val);
+                    const raw = e.target.value.replace(",", ".");
+                    if (raw === "" || /^[0-9]*\.?[0-9]{0,3}$/.test(raw)) {
+                      setCustomWeightInput(raw);
+                      const val = parseFloat(raw);
+                      setWeightKg(!isNaN(val) && val > 0 ? val : 0);
+                    }
                   }}
-                  className="flex-1 h-10 px-3 bg-zinc-950 border border-zinc-800 focus:border-teal-400 rounded-xl text-xs font-mono text-white text-center"
+                  className="flex-1 h-10 px-3 kaspi-translucent-input rounded-xl text-xs font-mono text-center"
                 />
                 <span className="text-xs font-mono text-zinc-400 shrink-0">KG</span>
               </div>

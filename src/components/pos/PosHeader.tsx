@@ -10,7 +10,6 @@ import {
   Maximize2,
   Minimize2,
   Settings,
-  Download,
   Bot,
 } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
@@ -151,13 +150,11 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         <div className="h-4 w-px bg-white/10 hidden sm:block" />
 
         <div className="flex items-center gap-2 min-w-0">
-          <div className="kaspi-logo-immutable-frame w-8 h-8 rounded-xl shrink-0 flex items-center justify-center transition-transform hover:scale-105">
-            <img
-              src="/logo.png"
-              alt="KASPI POS"
-              className="w-full h-full object-cover"
-            />
-          </div>
+          <img
+            src="/logo.png"
+            alt="KASPI POS"
+            className="w-8 h-8 rounded-xl object-cover shrink-0 transition-transform hover:scale-105 select-none bg-transparent"
+          />
           <span className="font-extrabold text-xs tracking-tight text-white hidden md:inline shrink-0">
             KASPI POS
           </span>
@@ -217,16 +214,6 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         >
           <Bot className="w-3.5 h-3.5 text-zinc-300 group-hover:text-white group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
         </button>
-
-        {/* Desktop App Link */}
-        <Link
-          href={`/${locale}/download`}
-          className="group hidden xl:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 hover:border-white/25 kaspi-frosted-glass hover:bg-white/[0.08] text-xs font-medium text-zinc-300 hover:text-white transition-all"
-          title="Application Desktop"
-        >
-          <Download className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white group-hover:translate-y-0.5 transition-all duration-200" />
-          <span>{t.topbar.desktopApp}</span>
-        </Link>
 
         {/* Store Settings Link */}
         <Link

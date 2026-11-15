@@ -357,10 +357,10 @@ export default async function InventoryPage({
                         <Plus className="w-4 h-4" />
                         <span>
                           {locale === "ar"
-                            ? "+ إضافة منتج جديد"
+                            ? "إضافة منتج جديد"
                             : locale === "fr"
-                            ? "+ Ajouter un nouveau produit"
-                            : "+ Add New Product"}
+                            ? "Ajouter un nouveau produit"
+                            : "Add New Product"}
                         </span>
                       </Link>
                     </div>

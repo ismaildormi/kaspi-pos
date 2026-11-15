@@ -6,7 +6,6 @@ import {
   Menu,
   X,
   ShoppingBag,
-  Download,
   Settings,
   User as UserIcon,
   ShoppingBasket,
@@ -140,14 +139,6 @@ export default function DashboardLayout({
             >
               <ShoppingBag className="w-3.5 h-3.5 group-hover:-translate-y-0.5 group-hover:scale-105 transition-transform duration-200" />
               <span>{t.topbar.posRegister}</span>
-            </Link>
-
-            <Link
-              href={localizeHref("/download")}
-              className="group hidden sm:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg kaspi-frosted-glass hover:bg-white/[0.08] text-xs font-medium text-zinc-300 hover:text-white transition-all"
-            >
-              <Download className="w-3.5 h-3.5 text-zinc-400 group-hover:translate-y-0.5 transition-transform duration-200" />
-              <span className="hidden xl:inline">{t.topbar.desktopApp}</span>
             </Link>
 
             <KaspiThemeToggle locale={locale} />

@@ -26,7 +26,7 @@ export function BrandPlaceholder({ className = "", size = "md" }: BrandPlacehold
         <img
           src="/logo.png"
           alt="KASPI POS"
-          className={`${sizeClasses.split(" ")[0]} ${sizeClasses.split(" ")[1]} object-contain filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]`}
+          className={`${sizeClasses.split(" ")[0]} ${sizeClasses.split(" ")[1]} rounded-xl object-cover bg-transparent select-none`}
           onError={(e) => {
             // Fallback to text icon if file is inaccessible
             e.currentTarget.style.display = "none";

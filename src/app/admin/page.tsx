@@ -59,7 +59,7 @@ export default async function AdminDashboardPage() {
           <img
             src="/logo.png"
             alt="KASPI POS"
-            className="w-16 h-16 object-contain bg-transparent shrink-0"
+            className="w-16 h-16 rounded-2xl object-cover bg-transparent shrink-0 select-none"
             onError={(e) => (e.currentTarget.style.display = "none")}
           />
           <div className="space-y-1.5">

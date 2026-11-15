@@ -492,14 +492,15 @@ export function AIChatWidget() {
 
   return (
     <>
-      {/* Floating Chat Window Modal / Sheet — Strict LTR geometry + High-Density Opaque Frosted Glass */}
+      {/* Floating Chat Window Modal / Sheet — Strict Viewport Bottom-Corner Anchor (Opens Upwards) */}
       {isOpen && (
         <div
           dir="ltr"
-          className="fixed bottom-6 right-6 z-50 w-[92vw] sm:w-[420px] h-[600px] max-h-[85vh] kaspi-polar-aurora-orbit kaspi-opaque-glass-modal rounded-2xl shadow-2xl border border-white/20 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300 print:hidden font-sans"
+          className="fixed bottom-4 end-4 z-50 w-[92vw] sm:w-[420px] max-h-[calc(100vh-5rem)] origin-bottom animate-in fade-in slide-in-from-bottom-4 duration-200 print:hidden font-sans"
         >
+          <div className="relative w-full h-[580px] max-h-[calc(100vh-5rem)] kaspi-polar-aurora-orbit kaspi-opaque-glass-modal rounded-2xl shadow-2xl border border-white/20 flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="kaspi-opaque-glass-modal border-b border-white/10 text-white p-4 flex items-center justify-between shadow-xs">
+          <div className="border-b border-white/10 text-[var(--kaspi-text-primary)] p-4 flex items-center justify-between shadow-xs shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full kaspi-polar-aurora-orbit flex items-center justify-center shrink-0">
                 <Bot className="w-5 h-5 text-white" />
@@ -531,8 +532,8 @@ export function AIChatWidget() {
             </button>
           </div>
 
-          {/* Messages Area with WhatsApp-Style Monochrome POS Doodle Wallpaper */}
-          <div className="relative flex-1 overflow-y-auto p-4 kaspi-opaque-glass-modal">
+          {/* Messages Area with Monochrome POS Doodle Wallpaper */}
+          <div className="relative flex-1 overflow-y-auto p-4">
             {/* Vector Doodle Wallpaper Layer */}
             <div className="pointer-events-none absolute inset-0 overflow-hidden z-0 select-none">
               <svg
@@ -743,7 +744,7 @@ export function AIChatWidget() {
           {/* Input Bar */}
           <form
             onSubmit={handleSend}
-            className="p-3 kaspi-opaque-glass-modal border-t border-white/10 flex items-center gap-2"
+            className="p-3 border-t border-white/10 flex items-center gap-2 shrink-0"
           >
             <input
               ref={fileInputRef}
@@ -768,7 +769,7 @@ export function AIChatWidget() {
               onChange={(e) => setInput(e.target.value)}
               placeholder={t.inputPlaceholder}
               disabled={isLoading}
-              className="flex-1 px-3.5 py-2.5 text-xs kaspi-translucent-input rounded-xl focus:outline-none transition-all text-white placeholder-zinc-500"
+              className="flex-1 px-3.5 py-2.5 text-xs kaspi-translucent-input rounded-xl focus:outline-none transition-all placeholder-zinc-500"
             />
             <button
               type="submit"
@@ -783,6 +784,7 @@ export function AIChatWidget() {
               )}
             </button>
           </form>
+          </div>
         </div>
       )}
     </>

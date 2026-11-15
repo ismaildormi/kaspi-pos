@@ -35,19 +35,21 @@ check(`Discovered all .tsx files in src/ (${tsxFiles.length} files)`, tsxFiles.l
 // 2. Verify globals.css rules
 const css = fs.readFileSync(GLOBALS_CSS, "utf8");
 check(
-  "globals.css implements 12px See-Through Crystal Glass, Dual-Mode Corner Aurora (White in Dark, Emerald in Light), Green Checkout CTA, Immutable Logo Frame & Opaque AI Modal",
+  "globals.css implements 14px See-Through Crystal Glass (#D4DFDC Light), Dual-Mode 1.75px Corner Aurora (White in Dark, Emerald in Light), Green Checkout CTA, Full-Bleed Logo & Opaque AI Modal",
   css.includes("kaspi-polar-aurora-spin") &&
     css.includes("#07090D") &&
-    css.includes("#DDE5E2") &&
+    css.includes("#D4DFDC") &&
     css.includes("--kaspi-corner-aurora-beam") &&
     css.includes("kaspi-emerald-checkout-btn") &&
     css.includes("kaspi-opaque-glass-modal") &&
-    css.includes("kaspi-logo-immutable-frame") &&
+    !css.includes("kaspi-logo-immutable-frame") &&
     css.includes('img[src*="logo"]') &&
+    css.includes("background: transparent !important") &&
     !css.includes("radial-gradient(closest-side") &&
     css.includes("IBM Plex Sans Arabic") &&
     css.includes("mask-composite: exclude;") &&
-    css.includes("padding: 2px;")
+    css.includes("padding: 1.75px;") &&
+    css.includes("blur(14px) saturate(165%)")
 );
 
 // Verify ZERO blue in login/page.tsx, register/page.tsx, KaspiThemeToggle.tsx
@@ -122,7 +124,25 @@ check(
   darkOptionMatches.join(", ")
 );
 
-// 5. Verify KaspiThemeProvider & KaspiThemeToggle exist
+// 5. Verify KaspiThemeProvider, KaspiThemeToggle, full-bleed logo, AI widget upward anchor & zero Desktop App nav buttons
+const aiWidgetSrc = fs.readFileSync(path.join(SRC_DIR, "components", "ai", "AIChatWidget.tsx"), "utf8");
+const posHeaderSrc = fs.readFileSync(path.join(SRC_DIR, "components", "pos", "PosHeader.tsx"), "utf8");
+const dashLayoutSrc = fs.readFileSync(path.join(SRC_DIR, "app", "[locale]", "dashboard", "layout.tsx"), "utf8");
+
+check(
+  "AIChatWidget uses independent fixed viewport bottom-corner anchor (opens upwards without position:relative override)",
+  aiWidgetSrc.includes("fixed bottom-4 end-4") &&
+    aiWidgetSrc.includes("origin-bottom") &&
+    !aiWidgetSrc.includes("fixed bottom-6 right-6 z-50 w-[92vw] sm:w-[420px] h-[600px] max-h-[85vh] kaspi-polar-aurora-orbit")
+);
+
+check(
+  "Desktop App button removed from PosHeader & dashboard layout, and zero kaspi-logo-immutable-frame wrappers in TSX",
+  !posHeaderSrc.includes("topbar.desktopApp") &&
+    !dashLayoutSrc.includes("topbar.desktopApp") &&
+    tsxFiles.every((f) => !fs.readFileSync(f, "utf8").includes("kaspi-logo-immutable-frame"))
+);
+
 check(
   "KaspiThemeProvider and KaspiThemeToggle exist",
   fs.existsSync(path.join(SRC_DIR, "components", "theme", "KaspiThemeProvider.tsx")) &&

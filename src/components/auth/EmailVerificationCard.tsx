@@ -217,7 +217,7 @@ export const EmailVerificationCard: React.FC<EmailVerificationCardProps> = ({
           <img
             src="/logo.png"
             alt="KASPI POS"
-            className="w-14 h-14 rounded-2xl object-cover shadow-lg"
+            className="w-14 h-14 rounded-2xl object-cover bg-transparent select-none"
             onError={() => {
               if (!logoFailed) {
                 setLogoFailed(true);

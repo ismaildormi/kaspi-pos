@@ -29,6 +29,8 @@ export interface PluItem {
   nameFr: string;
   pricePerKg: number;
   isCustom?: boolean;
+  imageUrl?: string | null;
+  productRef?: PosProduct;
 }
 
 export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePluScalePanelProps) {
@@ -57,13 +59,32 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
     return [];
   }, [propProducts]);
 
-  // Read weighted items dynamically from merchant catalog + custom PLU items (No hardcoded demo items)
+  // Read weighted items dynamically from merchant catalog + custom PLU items (With Studio Photos)
   const allPluItems = useMemo<PluItem[]>(() => {
-    const list: PluItem[] = [...customPlus];
+    const list: PluItem[] = customPlus.map((item) => {
+      const matched = catalogProducts.find(
+        (p) =>
+          p.name?.toLowerCase() === item.nameFr?.toLowerCase() ||
+          p.name?.toLowerCase() === item.nameAr?.toLowerCase() ||
+          p.sku?.replace(/\D/g, "").slice(-4) === item.plu
+      );
+      return {
+        ...item,
+        imageUrl: item.imageUrl || (matched as any)?.imageUrl || matched?.image || null,
+        productRef: matched,
+      };
+    });
 
     catalogProducts.forEach((p: PosProduct) => {
-      if (p.isScaleItem || p.weightUnit === "kg" || p.categoryId === "produce") {
+      if (
+        p.isScaleItem ||
+        p.weightUnit === "kg" ||
+        (p as any).unit === "kg" ||
+        p.categoryId === "produce" ||
+        p.categoryName === "produce"
+      ) {
         const skuNumber = p.sku?.replace(/\D/g, "").slice(-4) || "4099";
+        const resolvedImg = (p as any).imageUrl || p.image || null;
         const alreadyExists = list.some((item) => item.plu === skuNumber || item.nameFr === p.name);
         if (!alreadyExists) {
           list.push({
@@ -71,7 +92,9 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
             nameAr: p.name,
             nameFr: p.name,
             pricePerKg: p.salePrice || 10,
-            isCustom: true,
+            isCustom: false,
+            imageUrl: resolvedImg,
+            productRef: p,
           });
         }
       }
@@ -89,6 +112,8 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
         nameFr: p.name,
         pricePerKg: Number(p.salePrice || p.price || 10),
         isCustom: false,
+        imageUrl: (p as any).imageUrl || p.image || null,
+        productRef: p,
       };
     }
     return {
@@ -97,6 +122,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
       nameFr: locale === "en" ? "Weighed Product" : locale === "ar" ? "منتج بالوزن" : "Article Pesé",
       pricePerKg: 10,
       isCustom: false,
+      imageUrl: null,
     };
   }, [catalogProducts, locale]);
 
@@ -134,26 +160,38 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
 
     if (calcMode === "weight") {
       if (val === "C") {
-        setWeightInput("0");
+        setWeightInput("");
         return;
       }
       if (val === "BACK") {
-        setWeightInput((prev) => (prev.length > 1 ? prev.slice(0, -1) : "0"));
+        setWeightInput((prev) => prev.slice(0, -1));
         return;
       }
-      if (val === "." && weightInput.includes(".")) return;
-      setWeightInput((prev) => (prev === "0" && val !== "." ? val : prev + val));
+      if (val === ".") {
+        setWeightInput((prev) => {
+          if (prev.includes(".")) return prev;
+          return prev === "" ? "0." : `${prev}.`;
+        });
+        return;
+      }
+      setWeightInput((prev) => `${prev}${val}`);
     } else {
       if (val === "C") {
-        setAmountInput("0");
+        setAmountInput("");
         return;
       }
       if (val === "BACK") {
-        setAmountInput((prev) => (prev.length > 1 ? prev.slice(0, -1) : "0"));
+        setAmountInput((prev) => prev.slice(0, -1));
         return;
       }
-      if (val === "." && amountInput.includes(".")) return;
-      setAmountInput((prev) => (prev === "0" && val !== "." ? val : prev + val));
+      if (val === ".") {
+        setAmountInput((prev) => {
+          if (prev.includes(".")) return prev;
+          return prev === "" ? "0." : `${prev}.`;
+        });
+        return;
+      }
+      setAmountInput((prev) => `${prev}${val}`);
     }
   };
 
@@ -167,11 +205,11 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
     setAmountInput(amt.toFixed(2));
   };
 
-  // Math Calculations: Real zero-math for the worker
+  // Math Calculations: Real zero-math for the worker (Supports free decimal clearing & commas)
   const activePlu = effectiveSelectedPlu;
   const activePricePerKg = activePlu ? activePlu.pricePerKg : 0;
-  const currentWeightKg = parseFloat(weightInput) || 0;
-  const currentTargetAmount = parseFloat(amountInput) || 0;
+  const currentWeightKg = parseFloat(weightInput.replace(",", ".")) || 0;
+  const currentTargetAmount = parseFloat(amountInput.replace(",", ".")) || 0;
 
   // In Weight Mode: Total = Weight × Price/kg
   const computedTotalFromWeight = Math.round(activePricePerKg * currentWeightKg * 100) / 100;
@@ -192,33 +230,39 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
       return;
     }
 
-    playSuccessSound();
-
     if (calcMode === "weight") {
       if (currentWeightKg <= 0) return;
-      const lineTotal = computedTotalFromWeight;
-      const displayName =
-        locale === "ar"
-          ? `${activePlu.nameAr} (${currentWeightKg.toFixed(3)} كغ)`
-          : locale === "en"
-          ? `${activePlu.nameFr || activePlu.nameAr} (${currentWeightKg.toFixed(3)} kg)`
-          : `${activePlu.nameFr} (${currentWeightKg.toFixed(3)} kg)`;
+      playSuccessSound();
+      if (activePlu.productRef) {
+        addToCart(activePlu.productRef, Number(currentWeightKg.toFixed(3)));
+      } else {
+        const lineTotal = computedTotalFromWeight;
+        const displayName =
+          locale === "ar"
+            ? `${activePlu.nameAr} (${currentWeightKg.toFixed(3)} كغ)`
+            : locale === "en"
+            ? `${activePlu.nameFr || activePlu.nameAr} (${currentWeightKg.toFixed(3)} kg)`
+            : `${activePlu.nameFr} (${currentWeightKg.toFixed(3)} kg)`;
 
-      const pluProduct: PosProduct = {
-        id: `plu_${activePlu.plu}_${Date.now()}`,
-        name: displayName,
-        sku: `PLU-${activePlu.plu}`,
-        barcode: `20${activePlu.plu}00000`,
-        salePrice: lineTotal,
-        taxRate: 0,
-        trackStock: true,
-        stockQuantity: 999,
-        categoryId: "produce",
-        isScaleItem: true,
-      };
-      addToCart(pluProduct, 1);
+        const pluProduct: PosProduct = {
+          id: `plu_${activePlu.plu}_${Date.now()}`,
+          name: displayName,
+          sku: `PLU-${activePlu.plu}`,
+          barcode: `20${activePlu.plu}00000`,
+          salePrice: lineTotal,
+          taxRate: 0,
+          trackStock: true,
+          stockQuantity: 999,
+          categoryId: "produce",
+          image: activePlu.imageUrl || null,
+          isScaleItem: true,
+          weightUnit: "kg",
+        };
+        addToCart(pluProduct, 1);
+      }
     } else {
       if (currentTargetAmount <= 0) return;
+      playSuccessSound();
       const displayName =
         locale === "ar"
           ? `${activePlu.nameAr} (${computedWeightGrams} غرام - ${computedWeightFromAmountKg.toFixed(3)} كغ)`
@@ -236,7 +280,9 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
         trackStock: true,
         stockQuantity: 999,
         categoryId: "produce",
+        image: activePlu.imageUrl || null,
         isScaleItem: true,
+        weightUnit: "kg",
       };
       addToCart(pluProduct, 1);
     }
@@ -324,7 +370,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
           <button
             type="button"
             onClick={onBack}
-            className="h-8 px-2.5 rounded-lg bg-[#111113] hover:bg-[#18181B] border border-white/[0.08] text-xs font-bold text-zinc-300 hover:text-white flex items-center gap-1.5 cursor-pointer transition-colors"
+            className="h-8 px-2.5 rounded-lg kaspi-frosted-glass text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>
@@ -348,20 +394,20 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}
-            className="h-8 px-3 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+            className="h-8 px-3 rounded-lg kaspi-polar-aurora-orbit kaspi-glass-btn text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>
               {locale === "ar"
-                ? "+ إضافة سلعة للميزان"
+                ? "إضافة سلعة للميزان"
                 : locale === "en"
-                ? "+ New Weighed Item"
-                : "+ Nouvel Article Pesé"}
+                ? "New Weighed Item"
+                : "Nouvel Article Pesé"}
             </span>
           </button>
 
           {activePlu && (
-            <span className="hidden sm:inline font-mono text-[11px] text-zinc-400 bg-white/[0.04] px-2.5 py-1 rounded-md border border-white/[0.08]">
+            <span className="hidden sm:inline font-mono text-[11px] text-zinc-400 kaspi-frosted-glass px-2.5 py-1 rounded-md">
               PLU #{activePlu.plu} • {activePlu.pricePerKg.toFixed(2)} MAD/kg
             </span>
           )}
@@ -370,11 +416,11 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
 
       {/* Main Split Grid: 7 Cols PLU Produce Matrix + 5 Cols Compact Dual Calculator */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2.5 min-h-0 overflow-hidden items-start">
-        {/* Left Side (7 Cols): PLU Produce Cards Matrix */}
+        {/* Left Side (7 Cols): PLU Produce Cards Matrix with Studio Photos */}
         <div className="lg:col-span-7 h-full overflow-y-auto pr-1">
           {allPluItems.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center text-center p-6 rounded-2xl bg-[#0D0D10] border border-dashed border-white/10 space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-400">
+            <div className="h-64 flex flex-col items-center justify-center text-center p-6 rounded-2xl kaspi-polar-aurora-orbit kaspi-frosted-card space-y-3">
+              <div className="w-12 h-12 rounded-xl kaspi-frosted-glass flex items-center justify-center text-zinc-400">
                 <Scale className="w-6 h-6" />
               </div>
               <p className="text-sm font-bold text-white">
@@ -390,13 +436,14 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(true)}
-                className="px-4 py-2 rounded-xl bg-white text-zinc-950 font-bold text-xs hover:bg-zinc-200 transition-colors shadow-xs cursor-pointer"
+                className="px-4 py-2 rounded-xl kaspi-polar-aurora-orbit kaspi-emerald-checkout-btn font-bold text-xs shadow-xs cursor-pointer inline-flex items-center gap-1.5"
               >
-                {locale === "ar" ? "+ إضافة أول سلعة للميزان" : locale === "en" ? "+ Add First Item" : "+ Ajouter un premier article"}
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>{locale === "ar" ? "إضافة أول سلعة للميزان" : locale === "en" ? "Add First Item" : "Ajouter un premier article"}</span>
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pb-2">
               {allPluItems.map((item) => {
                 const isSelected = activePlu?.plu === item.plu;
                 return (
@@ -406,14 +453,12 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                       playTapSound();
                       setSelectedPlu(item);
                     }}
-                    className={`relative p-2.5 rounded-xl border text-start transition-all cursor-pointer flex flex-col justify-between h-[92px] ${
-                      isSelected
-                        ? "bg-white text-zinc-950 border-white shadow-xs"
-                        : "bg-[#0D0D10] hover:bg-[#121216] border-white/[0.08] text-zinc-300 hover:border-white/[0.20]"
+                    className={`relative p-2.5 rounded-2xl kaspi-product-orbit-card text-start transition-all cursor-pointer flex flex-col justify-between min-h-[158px] ${
+                      isSelected ? "kaspi-orbit-active ring-1 ring-emerald-400/60" : ""
                     }`}
                   >
-                    <div className="flex items-center justify-between w-full">
-                      <span className={`text-[10px] font-mono font-black ${isSelected ? "text-zinc-950" : "text-zinc-400"}`}>
+                    <div className="flex items-center justify-between w-full mb-1.5">
+                      <span className="text-[10px] font-mono font-bold text-zinc-400">
                         #{item.plu}
                       </span>
                       <div className="flex items-center gap-1">
@@ -424,25 +469,40 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                               e.stopPropagation();
                               handleDeletePlu(item.plu);
                             }}
-                            className={`p-0.5 transition-colors ${isSelected ? "text-zinc-600 hover:text-rose-600" : "text-zinc-500 hover:text-rose-400"}`}
+                            className="p-0.5 transition-colors text-zinc-400 hover:text-rose-400"
                             title="Supprimer"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
                         )}
-                        {isSelected && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
+                        {isSelected && <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />}
                       </div>
                     </div>
 
-                    <span className={`font-sans font-semibold text-xs leading-snug line-clamp-2 ${isSelected ? "text-zinc-950 font-bold" : "text-white"}`}>
+                    {/* Unified Studio Photo Box */}
+                    <div className="kaspi-product-white-box w-full h-20 mb-1.5">
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={locale === "ar" ? item.nameAr : item.nameFr}
+                          className="w-[92%] h-[92%] object-contain mx-auto"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-white">
+                          <Scale className="w-6 h-6 text-zinc-500" />
+                        </div>
+                      )}
+                    </div>
+
+                    <span className="font-sans font-semibold text-xs leading-snug line-clamp-1 text-white">
                       {locale === "ar" ? item.nameAr : item.nameFr}
                     </span>
 
-                    <div className={`flex items-baseline justify-between border-t pt-1 ${isSelected ? "border-zinc-200" : "border-white/[0.06]"}`}>
-                      <span className={`font-mono font-black text-xs ${isSelected ? "text-zinc-950" : "text-white"}`}>
+                    <div className="flex items-baseline justify-between border-t border-white/[0.08] pt-1 mt-1">
+                      <span className="font-mono font-black text-xs text-white tabular-nums">
                         {item.pricePerKg.toFixed(2)}
                       </span>
-                      <span className={`text-[9.5px] font-semibold ${isSelected ? "text-zinc-700" : "text-zinc-400"}`}>MAD/kg</span>
+                      <span className="text-[9.5px] font-semibold text-zinc-400">MAD/kg</span>
                     </div>
                   </div>
                 );
@@ -451,34 +511,47 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
           )}
         </div>
 
-        {/* Right Side (5 Cols): Compact Dual Mode Calculator (Fits 100% in viewport) */}
-        <div className="lg:col-span-5 h-full max-h-[calc(100vh-140px)] flex flex-col justify-between p-2.5 rounded-2xl bg-[#0D0D10] border border-white/[0.08] space-y-2 overflow-y-auto">
+        {/* Right Side (5 Cols): Compact Dual Mode Calculator (Crystal Glass + Free Editable Input) */}
+        <div className="lg:col-span-5 h-full max-h-[calc(100vh-140px)] flex flex-col justify-between p-3 rounded-2xl kaspi-polar-aurora-orbit kaspi-frosted-card space-y-2 overflow-y-auto">
           {activePlu ? (
             <>
-              {/* Active Item Title & Price */}
-              <div className="pb-1.5 border-b border-white/[0.08] flex items-center justify-between shrink-0">
-                <div>
-                  <span className="text-[9.5px] font-mono text-zinc-400 font-bold">PLU #{activePlu.plu}</span>
-                  <h4 className="font-bold text-xs text-white line-clamp-1">
-                    {locale === "ar" ? activePlu.nameAr : activePlu.nameFr}
-                  </h4>
+              {/* Active Item Header with Photo Thumbnail */}
+              <div className="pb-1.5 border-b border-white/[0.08] flex items-center justify-between gap-2 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="kaspi-product-white-box w-10 h-10 shrink-0 !p-1">
+                    {activePlu.imageUrl ? (
+                      <img
+                        src={activePlu.imageUrl}
+                        alt={locale === "ar" ? activePlu.nameAr : activePlu.nameFr}
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <Scale className="w-4 h-4 text-zinc-500" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[9.5px] font-mono text-zinc-400 font-bold block">PLU #{activePlu.plu}</span>
+                    <h4 className="font-bold text-xs text-white truncate">
+                      {locale === "ar" ? activePlu.nameAr : activePlu.nameFr}
+                    </h4>
+                  </div>
                 </div>
-                <span className="text-xs font-mono font-black text-white">
+                <span className="text-xs font-mono font-black text-white shrink-0 tabular-nums">
                   {activePlu.pricePerKg.toFixed(2)} <span className="text-[9.5px] text-zinc-400 font-normal">MAD/kg</span>
                 </span>
               </div>
 
               {/* Dual Mode Switcher: By Weight (kg) vs. By Target Amount (MAD) */}
-              <div className="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-[#111113] border border-white/[0.08] shrink-0">
+              <div className="grid grid-cols-2 gap-1 p-0.5 rounded-xl kaspi-frosted-glass shrink-0">
                 <button
                   type="button"
                   onClick={() => {
                     playTapSound();
                     setCalcMode("weight");
                   }}
-                  className={`h-7 rounded-md text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                  className={`h-7 rounded-lg text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     calcMode === "weight"
-                      ? "bg-white text-zinc-950 shadow-xs"
+                      ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
                       : "text-zinc-400 hover:text-white"
                   }`}
                 >
@@ -494,9 +567,9 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                     playTapSound();
                     setCalcMode("amount");
                   }}
-                  className={`h-7 rounded-md text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                  className={`h-7 rounded-lg text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     calcMode === "amount"
-                      ? "bg-white text-zinc-950 shadow-xs"
+                      ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
                       : "text-zinc-400 hover:text-white"
                   }`}
                 >
@@ -507,29 +580,51 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                 </button>
               </div>
 
-              {/* Primary Calculation Display */}
+              {/* Primary Calculation Display (Free Editable Decimal Field) */}
               {calcMode === "weight" ? (
-                <div className="p-2.5 rounded-xl bg-[#111113] border border-white/[0.08] flex items-baseline justify-between shrink-0">
+                <div className="p-2.5 rounded-xl kaspi-frosted-glass flex items-center justify-between gap-2 shrink-0">
                   <span className="text-[11px] font-semibold text-zinc-400">
                     {locale === "ar" ? "الوزن المقاس:" : locale === "en" ? "Measured Weight:" : "Poids mesuré :"}
                   </span>
-                  <div className="flex items-baseline gap-1 font-mono">
-                    <span className="text-xl font-black text-white tabular-nums tracking-tight">
-                      {weightInput}
-                    </span>
+                  <div className="flex items-center gap-1.5 font-mono">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={weightInput}
+                      placeholder="0.000"
+                      aria-label={locale === "ar" ? "الوزن المقاس بالكيلو" : "Measured weight (kg)"}
+                      onChange={(e) => {
+                        const next = e.target.value.replace(",", ".");
+                        if (next === "" || /^[0-9]*\.?[0-9]{0,3}$/.test(next)) {
+                          setWeightInput(next);
+                        }
+                      }}
+                      className="w-28 h-9 px-2.5 rounded-xl kaspi-translucent-input text-end font-mono text-lg font-black tabular-nums tracking-tight focus:outline-none"
+                    />
                     <span className="text-[11px] font-bold text-zinc-400">kg</span>
                   </div>
                 </div>
               ) : (
-                <div className="p-2.5 rounded-xl bg-[#111113] border border-white/[0.12] space-y-1.5 shrink-0">
-                  <div className="flex items-baseline justify-between">
+                <div className="p-2.5 rounded-xl kaspi-frosted-glass space-y-1.5 shrink-0">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-[11px] font-semibold text-zinc-400">
                       {locale === "ar" ? "مبلغ الزبون:" : locale === "en" ? "Target Amount:" : "Montant demandé :"}
                     </span>
-                    <div className="flex items-baseline gap-1 font-mono">
-                      <span className="text-xl font-black text-white tabular-nums">
-                        {amountInput}
-                      </span>
+                    <div className="flex items-center gap-1.5 font-mono">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={amountInput}
+                        placeholder="0.00"
+                        aria-label={locale === "ar" ? "مبلغ الزبون بالدرهم" : "Target amount (MAD)"}
+                        onChange={(e) => {
+                          const next = e.target.value.replace(",", ".");
+                          if (next === "" || /^[0-9]*\.?[0-9]{0,2}$/.test(next)) {
+                            setAmountInput(next);
+                          }
+                        }}
+                        className="w-28 h-9 px-2.5 rounded-xl kaspi-translucent-input text-end font-mono text-lg font-black tabular-nums focus:outline-none"
+                      />
                       <span className="text-[11px] font-bold text-zinc-400">MAD</span>
                     </div>
                   </div>
@@ -539,7 +634,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                     <span className="font-bold text-zinc-400">
                       {locale === "ar" ? "الوزن الواجب وضعه:" : locale === "en" ? "Target Weight to Serve:" : "Poids à servir :"}
                     </span>
-                    <span className="font-black text-white text-sm">
+                    <span className="font-black text-white text-sm tabular-nums">
                       {computedWeightGrams}g ({computedWeightFromAmountKg.toFixed(3)}kg)
                     </span>
                   </div>
@@ -554,10 +649,10 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                         key={w}
                         type="button"
                         onClick={() => handleSelectWeightPreset(w)}
-                        className={`h-7 rounded-md text-[10px] font-mono font-bold border transition-colors cursor-pointer ${
+                        className={`h-7 rounded-lg text-[10px] font-mono font-bold transition-colors cursor-pointer ${
                           currentWeightKg === w
-                            ? "bg-white text-zinc-950 border-white shadow-xs"
-                            : "bg-[#111113] border-white/[0.08] text-zinc-300 hover:text-white"
+                            ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
+                            : "kaspi-frosted-glass text-zinc-300 hover:text-white"
                         }`}
                       >
                         {w >= 1 ? `${w}kg` : `${w * 1000}g`}
@@ -568,10 +663,10 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                         key={amt}
                         type="button"
                         onClick={() => handleSelectAmountPreset(amt)}
-                        className={`h-7 rounded-md text-[10px] font-mono font-bold border transition-colors cursor-pointer ${
+                        className={`h-7 rounded-lg text-[10px] font-mono font-bold transition-colors cursor-pointer ${
                           currentTargetAmount === amt
-                            ? "bg-white text-zinc-950 border-white shadow-xs"
-                            : "bg-[#111113] border-white/[0.08] text-zinc-300 hover:text-white"
+                            ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
+                            : "kaspi-frosted-glass text-zinc-300 hover:text-white"
                         }`}
                       >
                         {amt} DH
@@ -586,7 +681,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                     key={key}
                     type="button"
                     onClick={() => handleKeypadPress(key)}
-                    className="h-10 rounded-xl bg-[#111113] hover:bg-[#18181B] active:scale-[0.98] border border-white/[0.08] text-white font-mono font-bold text-sm flex items-center justify-center transition-colors cursor-pointer"
+                    className="h-9 rounded-xl kaspi-glass-btn font-mono font-bold text-sm flex items-center justify-center transition-all cursor-pointer active:scale-95"
                   >
                     {key}
                   </button>
@@ -607,8 +702,9 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
 
                 <button
                   type="button"
+                  disabled={calcMode === "weight" ? currentWeightKg <= 0 : currentTargetAmount <= 0}
                   onClick={handleAddToCart}
-                  className="h-10 w-full rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-black text-xs shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99] transition-all"
+                  className="h-10 w-full rounded-xl kaspi-polar-aurora-orbit kaspi-emerald-checkout-btn disabled:opacity-40 font-black text-xs shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99] transition-all"
                 >
                   <Plus className="w-4 h-4 stroke-[2.5]" />
                   <span>
@@ -634,7 +730,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                 {locale === "ar" ? "اختر أو أضف سلعة ميزان" : locale === "en" ? "Select a weighed item" : "Sélectionnez un article pesé"}
               </p>
               <p className="text-[11px] text-zinc-500">
-                {locale === "ar" ? "اضغط على + إضافة سلعة للبدء" : locale === "en" ? "Click + New Item to start" : "Cliquez sur + Nouvel Article"}
+                {locale === "ar" ? "اضغط على إضافة سلعة للبدء" : locale === "en" ? "Click New Item to start" : "Cliquez sur Nouvel Article"}
               </p>
             </div>
           )}
@@ -643,8 +739,8 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
 
       {/* Modal: Add Custom PLU Weighted Item */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fadeIn">
-          <div className="kaspi-frosted-glass w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-xl animate-fadeIn">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Scale className="w-4 h-4 text-zinc-400" />
@@ -679,7 +775,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                   value={newPluCode}
                   onChange={(e) => setNewPluCode(e.target.value)}
                   placeholder="4020"
-                  className="w-full h-9 px-3 bg-[#111113] border border-white/[0.08] focus:border-white rounded-lg text-white font-mono"
+                  className="w-full h-9 px-3 kaspi-translucent-input rounded-lg font-mono"
                   required
                 />
               </div>
@@ -693,7 +789,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                   value={newNameAr}
                   onChange={(e) => setNewNameAr(e.target.value)}
                   placeholder={locale === "ar" ? "مثال: زيتون أحمر مشرمل" : "Ex: Red Olives"}
-                  className="w-full h-9 px-3 bg-[#111113] border border-white/[0.08] focus:border-white rounded-lg text-white"
+                  className="w-full h-9 px-3 kaspi-translucent-input rounded-lg"
                 />
               </div>
 
@@ -710,7 +806,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                   value={newNameFr}
                   onChange={(e) => setNewNameFr(e.target.value)}
                   placeholder="Ex: Olives Rouges"
-                  className="w-full h-9 px-3 bg-[#111113] border border-white/[0.08] focus:border-white rounded-lg text-white"
+                  className="w-full h-9 px-3 kaspi-translucent-input rounded-lg"
                   required
                 />
               </div>
@@ -724,12 +820,17 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                     : "Prix au kilo (MAD / kg) :"}
                 </label>
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   value={newPriceKg}
-                  onChange={(e) => setNewPriceKg(e.target.value)}
+                  onChange={(e) => {
+                    const next = e.target.value.replace(",", ".");
+                    if (next === "" || /^[0-9]*\.?[0-9]{0,2}$/.test(next)) {
+                      setNewPriceKg(next);
+                    }
+                  }}
                   placeholder="25.00"
-                  className="w-full h-9 px-3 bg-[#111113] border border-white/[0.08] focus:border-white rounded-lg text-white font-mono"
+                  className="w-full h-9 px-3 kaspi-translucent-input rounded-lg font-mono"
                   required
                 />
               </div>
@@ -738,13 +839,13 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg border border-white/[0.08] text-zinc-400 hover:text-white text-xs cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg kaspi-glass-btn text-xs cursor-pointer"
                 >
                   {locale === "ar" ? "إلغاء" : locale === "en" ? "Cancel" : "Annuler"}
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-white text-zinc-950 font-bold text-xs hover:bg-zinc-200 transition-colors shadow-xs cursor-pointer"
+                  className="px-4 py-1.5 rounded-lg kaspi-polar-aurora-orbit kaspi-emerald-checkout-btn font-bold text-xs shadow-xs cursor-pointer"
                 >
                   {locale === "ar" ? "حفظ وإضافة" : locale === "en" ? "Save & Add" : "Enregistrer"}
                 </button>

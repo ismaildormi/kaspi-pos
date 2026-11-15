@@ -297,7 +297,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
       dir="ltr"
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/45 backdrop-blur-xl select-none overflow-y-auto animate-fadeIn"
     >
-      <div className="kaspi-frosted-glass kaspi-polar-aurora-orbit w-full max-w-3xl rounded-3xl p-6 shadow-[0_24px_80px_rgba(0,0,0,0.65)] flex flex-col my-auto transition-all">
+      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-3xl rounded-3xl p-6 shadow-[0_24px_80px_rgba(0,0,0,0.65)] flex flex-col my-auto transition-all">
         {/* Header Row */}
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
           <h2 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
@@ -575,13 +575,13 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">
                     {locale === "ar" ? "وحدة البيع:" : "Unit :"}
                   </label>
-                  <div className="h-10 p-1 rounded-xl bg-[#090C10] border border-white/[0.10] flex items-center gap-1">
+                  <div className="h-10 p-1 rounded-xl kaspi-frosted-card flex items-center gap-1">
                     <button
                       type="button"
                       onClick={() => setUnitType("piece")}
                       className={`flex-1 h-8 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
                         unitType === "piece"
-                          ? "bg-white text-zinc-950 font-black shadow-xs"
+                          ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
                           : "text-zinc-400 hover:text-white"
                       }`}
                     >
@@ -592,7 +592,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                       onClick={() => setUnitType("kg")}
                       className={`flex-1 h-8 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
                         unitType === "kg"
-                          ? "bg-white text-zinc-950 font-black shadow-xs"
+                          ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
                           : "text-zinc-400 hover:text-white"
                       }`}
                     >
@@ -610,11 +610,11 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                   </label>
                   <input
                     type="number"
-                    step="1"
+                    step={unitType === "kg" ? "0.1" : "1"}
                     min="0"
                     value={stockQuantity}
                     onChange={(e) => setStockQuantity(e.target.value)}
-                    className="w-full h-10 rounded-xl bg-[#090C10] border border-white/[0.10] px-3 font-mono text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#14B8A6]"
+                    className="w-full h-10 rounded-xl kaspi-translucent-input px-3 font-mono text-xs placeholder-zinc-500 focus:outline-none"
                   />
                 </div>
 
@@ -622,7 +622,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="w-full h-10 rounded-xl bg-[#090C10] hover:bg-white/[0.08] border border-white/[0.10] text-xs font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                    className="w-full h-10 rounded-xl kaspi-glass-btn text-xs font-semibold transition-colors cursor-pointer"
                   >
                     {locale === "ar" ? "إلغاء" : "Cancel"}
                   </button>
@@ -635,7 +635,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-6 w-full h-12 rounded-xl bg-gradient-to-r from-[#14B8A6] to-[#2DD4BF] hover:opacity-95 text-[#041E1B] font-extrabold text-sm shadow-[0_8px_28px_-6px_rgba(20,184,166,0.55)] flex items-center justify-center cursor-pointer transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-6 w-full h-12 rounded-xl kaspi-polar-aurora-orbit kaspi-emerald-checkout-btn font-extrabold text-sm flex items-center justify-center cursor-pointer transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <Loader2 className="w-5 h-5 animate-spin" />

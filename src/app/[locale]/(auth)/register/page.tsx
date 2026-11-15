@@ -241,7 +241,7 @@ export default function RegisterPage() {
 
       {/* Monochrome Error Feedback */}
       {error && (
-        <div className="mb-3 px-3.5 py-2 bg-zinc-900/95 border border-white/25 text-zinc-200 text-xs rounded-2xl text-center font-medium">
+        <div className="mb-3 px-3.5 py-2 kaspi-frosted-glass border border-white/25 text-[var(--kaspi-text-primary)] text-xs rounded-2xl text-center font-medium">
           {error}
         </div>
       )}

@@ -494,7 +494,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
               <div className="flex items-center justify-between text-[11.5px] text-zinc-400 font-mono mt-1">
                 <div className="flex items-center gap-2">
                   <span>
-                    {(item as any).unit === "kg" ? "kg" : locale === "ar" ? "قطعة" : "Unité"} × {item.quantity}
+                    {(item as any).unit === "kg" || (item as any).isScaleItem ? "kg" : locale === "ar" ? "قطعة" : "Unité"} × {item.quantity}
                   </span>
                   {item.taxRate > 0 && (
                     <span className="text-[9.5px] px-1 py-0.2 rounded bg-white/[0.04] text-zinc-400 border border-white/[0.06]">

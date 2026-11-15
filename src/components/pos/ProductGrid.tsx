@@ -27,7 +27,30 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
     lastInteractedProductId,
   } = usePosStore();
   const [openMenuProductId, setOpenMenuProductId] = useState<string | null>(null);
+  const [weightDrafts, setWeightDrafts] = useState<Record<string, string>>({});
   const gridContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const isWeighableProduct = (p: PosProduct) =>
+    Boolean(
+      p.isScaleItem ||
+        p.weightUnit === "kg" ||
+        (p as any).unit === "kg" ||
+        p.categoryId === "produce" ||
+        p.categoryName === "produce"
+    );
+
+  const parseDraftWeight = (raw: string | undefined): number => {
+    if (raw === undefined) return 1;
+    const normalized = raw.replace(",", ".").trim();
+    if (!normalized) return 0;
+    const parsed = parseFloat(normalized);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  };
+
+  const formatQtyBadge = (qty: number, weighable: boolean) => {
+    const clean = Number.isInteger(qty) ? String(qty) : Number(qty.toFixed(3)).toString();
+    return weighable ? `${clean}kg` : clean;
+  };
 
   // Smooth scroll to top-left when a product is scanned or added to cart
   useEffect(() => {
@@ -172,10 +195,10 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
             <button
               type="button"
               onClick={onOpenQuickAdd}
-              className="sheen-btn flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#14B8A6] to-[#2DD4BF] text-[#041E1B] font-black text-xs hover:opacity-95 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(20,184,166,0.35)] active:scale-[0.98] transition-all duration-200 cursor-pointer shadow-md"
+              className="kaspi-polar-aurora-orbit kaspi-emerald-checkout-btn flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 cursor-pointer shadow-md"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>{locale === "ar" ? "+ منتج جديد" : locale === "en" ? "+ New Product" : "+ Nouvel Article"}</span>
+              <span>{locale === "ar" ? "منتج جديد" : locale === "en" ? "New Product" : "Nouvel Article"}</span>
             </button>
           )}
           <Link
@@ -205,6 +228,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
         const inCartItem = cart.find((i) => i.productId === product.id);
         const inCartQty = inCartItem ? inCartItem.quantity : 0;
         const imgSource = (product as any).imageUrl || product.image;
+        const weighable = isWeighableProduct(product);
 
         // Price resolution based on tier
         const effectiveUnitPrice =
@@ -212,6 +236,9 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
             ? product.wholesalePrice
             : product.salePrice;
 
+        const rawWeightDraft = weightDrafts[product.id] ?? "1";
+        const draftWeightKg = parseDraftWeight(rawWeightDraft);
+        const computedWeightedPrice = Math.round(effectiveUnitPrice * draftWeightKg * 100) / 100;
         const accumulatedTotal = effectiveUnitPrice * inCartQty;
 
         return (
@@ -220,12 +247,24 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
             role="button"
             tabIndex={0}
             onClick={() => {
+              if (weighable) {
+                if (draftWeightKg <= 0) return;
+                playBarcodeScanSound();
+                addToCart(product, Number(draftWeightKg.toFixed(3)));
+                return;
+              }
               playBarcodeScanSound();
               addToCart(product);
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
+                if (weighable) {
+                  if (draftWeightKg <= 0) return;
+                  playBarcodeScanSound();
+                  addToCart(product, Number(draftWeightKg.toFixed(3)));
+                  return;
+                }
                 playBarcodeScanSound();
                 addToCart(product);
               }
@@ -234,10 +273,10 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
               e.preventDefault();
               if (inCartQty > 0) {
                 playBarcodeScanSound();
-                updateItemQuantity(product.id, -1);
+                updateItemQuantity(product.id, weighable ? -0.25 : -1);
               }
             }}
-            className={`group relative min-h-[225px] p-3.5 rounded-2xl kaspi-product-orbit-card ${
+            className={`group relative min-h-[240px] p-3.5 rounded-2xl kaspi-product-orbit-card ${
               inCartQty > 0 || lastInteractedProductId === product.id
                 ? "kaspi-orbit-active"
                 : ""
@@ -261,8 +300,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
 
             {/* Top-Right Live Quantity Circle Badge (ONLY visible when inCartQty > 0) */}
             {inCartQty > 0 && (
-              <span className="absolute top-3 right-3 z-10 w-7 h-7 rounded-full bg-[#2DD4BF] text-[#042F2E] font-mono font-black text-xs flex items-center justify-center shadow-[0_0_16px_rgba(45,212,191,0.7)] animate-in zoom-in-75">
-                {inCartQty}
+              <span className="absolute top-3 right-3 z-10 min-w-7 h-7 px-1.5 rounded-full bg-[#10b981] text-white font-mono font-bold text-[11px] flex items-center justify-center shadow-[0_0_16px_rgba(16,185,129,0.55)] animate-in zoom-in-75">
+                {formatQtyBadge(inCartQty, weighable)}
               </span>
             )}
 
@@ -405,7 +444,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
             )}
 
             {/* Center Floating Pure White Studio Box */}
-            <div className="kaspi-product-white-box w-full h-32 mb-2 shadow-[0_8px_20px_rgba(0,0,0,0.55)] group-hover:scale-[1.02] transition-transform duration-200">
+            <div className={`kaspi-product-white-box w-full ${weighable ? "h-28" : "h-32"} mb-2 shadow-[0_8px_20px_rgba(0,0,0,0.45)] group-hover:scale-[1.02] transition-transform duration-200`}>
               {imgSource ? (
                 <img
                   src={imgSource}
@@ -424,24 +463,86 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
               )}
             </div>
 
-            {/* Bottom Centered Title, Measure & Auto-Multiplying Price */}
+            {/* Bottom Centered Title, Measure & Auto-Multiplying / Weighable Live Price */}
             <div className="w-full flex flex-col items-center justify-center pt-2 border-t border-white/[0.06]">
-              {/* Line 1: Product Name & Measure */}
+              {/* Line 1: Product Name */}
               <h3 className="font-sans font-medium text-[13px] leading-tight text-zinc-200 line-clamp-2 w-full text-center">
                 {product.name}
               </h3>
 
-              {/* Line 2: Price Display (Multiplies live when tapped multiple times) */}
-              {inCartQty === 0 ? (
+              {weighable ? (
+                <>
+                  <div className="font-mono text-[11px] text-zinc-400 mt-0.5 tabular-nums">
+                    {effectiveUnitPrice.toFixed(2)} MAD / kg
+                  </div>
+
+                  {/* Interactive Decimal Weight Box + Real-Time MAD Add CTA */}
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full mt-1.5 flex items-center gap-1"
+                  >
+                    <div className="relative flex-1 min-w-0">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={rawWeightDraft}
+                        placeholder="0.000"
+                        aria-label={locale === "ar" ? "الوزن بالكيلو" : "Weight (kg)"}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter" && draftWeightKg > 0) {
+                            e.preventDefault();
+                            playBarcodeScanSound();
+                            addToCart(product, Number(draftWeightKg.toFixed(3)));
+                          }
+                        }}
+                        onChange={(e) => {
+                          const next = e.target.value.replace(",", ".");
+                          if (next === "" || /^[0-9]*\.?[0-9]{0,3}$/.test(next)) {
+                            setWeightDrafts((prev) => ({ ...prev, [product.id]: next }));
+                          }
+                        }}
+                        className="w-full h-7 rounded-lg kaspi-translucent-input pe-5 ps-1.5 text-center font-mono font-bold text-xs tabular-nums focus:outline-none"
+                      />
+                      <span className="pointer-events-none absolute end-1.5 top-1/2 -translate-y-1/2 text-[9px] font-mono text-zinc-400">
+                        kg
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={draftWeightKg <= 0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (draftWeightKg <= 0) return;
+                        playBarcodeScanSound();
+                        addToCart(product, Number(draftWeightKg.toFixed(3)));
+                      }}
+                      className="h-7 px-2 rounded-lg kaspi-emerald-checkout-btn disabled:opacity-40 font-mono font-bold text-[10.5px] flex items-center gap-0.5 shrink-0 cursor-pointer tabular-nums transition-all active:scale-95"
+                      title={locale === "ar" ? "إضافة الوزن للسلة" : "Add weighted item"}
+                    >
+                      <Plus className="w-3 h-3 stroke-[2.5]" />
+                      <span>{computedWeightedPrice.toFixed(2)}</span>
+                    </button>
+                  </div>
+
+                  {inCartQty > 0 && (
+                    <span className="text-[10px] font-mono text-emerald-400 mt-1 tabular-nums">
+                      {accumulatedTotal.toFixed(2)} MAD ({formatQtyBadge(inCartQty, true)})
+                    </span>
+                  )}
+                </>
+              ) : inCartQty === 0 ? (
                 <div className="font-mono font-extrabold text-[15px] text-white mt-1 tabular-nums">
                   {effectiveUnitPrice.toFixed(2)}{" "}
                   <span className="text-[11px] font-normal text-zinc-400">MAD</span>
                 </div>
               ) : (
                 <div className="flex flex-col items-center mt-1">
-                  <span className="font-mono font-black text-[15.5px] text-[#2DD4BF] tabular-nums tracking-tight">
+                  <span className="font-mono font-black text-[15.5px] text-emerald-400 tabular-nums tracking-tight">
                     {accumulatedTotal.toFixed(2)}{" "}
-                    <span className="text-[11px] font-bold text-[#2DD4BF]/80">MAD</span>
+                    <span className="text-[11px] font-bold opacity-80">MAD</span>
                   </span>
                   {inCartQty > 1 && (
                     <span className="text-[10px] font-mono text-zinc-400 mt-0.5">

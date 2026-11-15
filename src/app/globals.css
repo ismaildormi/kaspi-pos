@@ -116,93 +116,93 @@
 
   html[data-kaspi-theme="pearl-light"] {
     --font-kaspi-glass: 'Inter', 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, sans-serif;
-    --kaspi-bg-primary: #DDE5E2;
-    --kaspi-bg-base: #DDE5E2;
-    --kaspi-bg-secondary: #D2DDD9;
+    --kaspi-bg-primary: #D4DFDC;
+    --kaspi-bg-base: #D4DFDC;
+    --kaspi-bg-secondary: #C8D6D1;
     --kaspi-text-primary: #0F172A;
-    --kaspi-text-secondary: rgba(15, 23, 42, 0.76);
-    --kaspi-text-muted: rgba(15, 23, 42, 0.52);
+    --kaspi-text-secondary: rgba(15, 23, 42, 0.78);
+    --kaspi-text-muted: rgba(15, 23, 42, 0.56);
     --kaspi-glass-bg: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.28) 0%,
-      rgba(255, 255, 255, 0.12) 45%,
+      rgba(255, 255, 255, 0.24) 0%,
+      rgba(255, 255, 255, 0.08) 45%,
       rgba(16, 185, 129, 0.08) 70%,
-      rgba(255, 255, 255, 0.22) 100%
+      rgba(255, 255, 255, 0.18) 100%
     );
     --kaspi-glass-bg-elevated: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.36) 0%,
-      rgba(255, 255, 255, 0.18) 45%,
-      rgba(16, 185, 129, 0.12) 70%,
-      rgba(255, 255, 255, 0.30) 100%
+      rgba(255, 255, 255, 0.30) 0%,
+      rgba(255, 255, 255, 0.12) 45%,
+      rgba(16, 185, 129, 0.10) 70%,
+      rgba(255, 255, 255, 0.22) 100%
     );
     --kaspi-glass-surface: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.28) 0%,
-      rgba(255, 255, 255, 0.12) 45%,
+      rgba(255, 255, 255, 0.24) 0%,
+      rgba(255, 255, 255, 0.08) 45%,
       rgba(16, 185, 129, 0.08) 70%,
-      rgba(255, 255, 255, 0.22) 100%
+      rgba(255, 255, 255, 0.18) 100%
     );
     --kaspi-glass-elevated: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.34) 0%,
-      rgba(255, 255, 255, 0.16) 45%,
+      rgba(255, 255, 255, 0.30) 0%,
+      rgba(255, 255, 255, 0.12) 45%,
       rgba(16, 185, 129, 0.10) 70%,
-      rgba(255, 255, 255, 0.28) 100%
+      rgba(255, 255, 255, 0.22) 100%
     );
     --kaspi-glass-surface-elevated: #ECF3F0;
     --kaspi-glass-button: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.34) 0%,
-      rgba(255, 255, 255, 0.16) 45%,
+      rgba(255, 255, 255, 0.30) 0%,
+      rgba(255, 255, 255, 0.12) 45%,
       rgba(16, 185, 129, 0.10) 70%,
-      rgba(255, 255, 255, 0.28) 100%
+      rgba(255, 255, 255, 0.22) 100%
     );
     --kaspi-glass-border: rgba(16, 185, 129, 0.35);
     --kaspi-glass-shadow:
       0 18px 38px -10px rgba(15, 23, 42, 0.12),
-      0 4px 16px rgba(16, 185, 129, 0.12),
-      inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.85),
-      inset 1px 0 1px 0 rgba(255, 255, 255, 0.65),
-      inset 0 -1px 1px 0 rgba(16, 185, 129, 0.28);
+      0 4px 16px rgba(16, 185, 129, 0.14),
+      inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.92),
+      inset 1px 0 1px 0 rgba(255, 255, 255, 0.72),
+      inset 0 -1px 1px 0 rgba(16, 185, 129, 0.32);
     --kaspi-corner-aurora-beam: conic-gradient(
       from var(--kaspi-aurora-angle),
-      rgba(16, 185, 129, 0.28) 0deg,
-      rgba(16, 185, 129, 0.60) 35deg,
+      rgba(16, 185, 129, 0.32) 0deg,
+      rgba(16, 185, 129, 0.68) 35deg,
       #10b981 65deg,
       #059669 90deg,
       #34d399 115deg,
-      rgba(16, 185, 129, 0.60) 145deg,
-      rgba(16, 185, 129, 0.28) 180deg,
-      rgba(16, 185, 129, 0.60) 215deg,
+      rgba(16, 185, 129, 0.68) 145deg,
+      rgba(16, 185, 129, 0.32) 180deg,
+      rgba(16, 185, 129, 0.68) 215deg,
       #10b981 245deg,
       #059669 270deg,
       #34d399 295deg,
-      rgba(16, 185, 129, 0.60) 325deg,
-      rgba(16, 185, 129, 0.28) 360deg
+      rgba(16, 185, 129, 0.68) 325deg,
+      rgba(16, 185, 129, 0.32) 360deg
     );
     --kaspi-corner-aurora-bloom: conic-gradient(
       from var(--kaspi-aurora-angle),
-      rgba(16, 185, 129, 0.18) 0deg,
-      rgba(16, 185, 129, 0.70) 45deg,
+      rgba(16, 185, 129, 0.22) 0deg,
+      rgba(16, 185, 129, 0.78) 45deg,
       #10b981 75deg,
       #059669 90deg,
       #34d399 105deg,
-      rgba(52, 211, 153, 0.70) 135deg,
-      rgba(16, 185, 129, 0.18) 180deg,
-      rgba(16, 185, 129, 0.70) 225deg,
+      rgba(52, 211, 153, 0.78) 135deg,
+      rgba(16, 185, 129, 0.22) 180deg,
+      rgba(16, 185, 129, 0.78) 225deg,
       #10b981 255deg,
       #059669 270deg,
       #34d399 285deg,
-      rgba(52, 211, 153, 0.70) 315deg,
-      rgba(16, 185, 129, 0.18) 360deg
+      rgba(52, 211, 153, 0.78) 315deg,
+      rgba(16, 185, 129, 0.22) 360deg
     );
-    --kaspi-input-bg: rgba(255, 255, 255, 0.18);
-    --kaspi-input-border: rgba(16, 185, 129, 0.35);
-    --kaspi-aurora-1: rgba(16, 185, 129, 0.22);
-    --kaspi-aurora-2: rgba(52, 211, 153, 0.18);
-    --kaspi-aurora-3: rgba(255, 255, 255, 0.75);
-    --kaspi-active-ring: 0 0 0 1.5px rgba(16, 185, 129, 0.85), 0 12px 28px -6px rgba(16, 185, 129, 0.28);
+    --kaspi-input-bg: rgba(255, 255, 255, 0.14);
+    --kaspi-input-border: rgba(16, 185, 129, 0.38);
+    --kaspi-aurora-1: rgba(16, 185, 129, 0.28);
+    --kaspi-aurora-2: rgba(52, 211, 153, 0.24);
+    --kaspi-aurora-3: rgba(255, 255, 255, 0.80);
+    --kaspi-active-ring: 0 0 0 1.5px rgba(16, 185, 129, 0.88), 0 12px 28px -6px rgba(16, 185, 129, 0.30);
   }
 
   @keyframes kaspi-global-aurora-drift {
@@ -333,7 +333,7 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="
 select:focus,
 textarea:focus {
   background-color: var(--kaspi-glass-bg-elevated) !important;
-  border-color: rgba(2, 132, 199, 0.65) !important;
+  border-color: var(--kaspi-glass-border) !important;
   box-shadow: var(--kaspi-active-ring) !important;
   outline: none !important;
 }
@@ -461,15 +461,23 @@ html[lang="ar"] label,
   background: #3f3f46;
 }
 
-/* Universal Apple visionOS Translucent See-Through Glass + Rear-Moving White Aurora */
+/* Universal Apple visionOS Translucent See-Through Glass + Rear-Moving Aurora */
+:is(
+  .kaspi-frosted-glass,
+  .kaspi-smoky-glass,
+  .kaspi-frosted-card,
+  .kaspi-frosted-surface
+):not(.fixed):not(.absolute):not(.sticky) {
+  position: relative;
+}
+
 .kaspi-frosted-glass,
 .kaspi-smoky-glass,
 .kaspi-frosted-card,
 .kaspi-frosted-surface {
-  position: relative;
   background: var(--kaspi-glass-bg) !important;
-  backdrop-filter: blur(12px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
+  backdrop-filter: blur(14px) saturate(165%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
   border: 1px solid var(--kaspi-glass-border) !important;
   box-shadow: var(--kaspi-glass-shadow) !important;
   color: var(--kaspi-text-primary);
@@ -534,8 +542,8 @@ html[lang="ar"] label,
   /* 1. CLEAN TRANSLUCENT FROSTED GLASS */
   .kaspi-smoky-glass {
     background: var(--kaspi-glass-bg) !important;
-    backdrop-filter: blur(12px) saturate(160%) !important;
-    -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
+    backdrop-filter: blur(14px) saturate(165%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
     border: 1px solid var(--kaspi-glass-border) !important;
     box-shadow: var(--kaspi-glass-shadow) !important;
     color: var(--kaspi-text-primary);
@@ -543,6 +551,20 @@ html[lang="ar"] label,
   }
 
   /* 2. APPLE VISIONOS 3D CRYSTAL GLASS + DUAL-MODE CORNER AURORA (WHITE IN DARK, EMERALD GREEN IN LIGHT) */
+  :is(
+    .kaspi-polar-aurora-orbit,
+    .kaspi-aistudio-orbit,
+    .kaspi-product-orbit-card,
+    .kaspi-frosted-surface,
+    .kaspi-frosted-card,
+    .surface-obsidian,
+    .surface-obsidian-3d
+  ):not(.fixed):not(.absolute):not(.sticky),
+  div:is(.rounded-2xl, .rounded-3xl):is([class*="bg-zinc-9"], [class*="bg-[#0"], [class*="bg-[#1"]):not(.fixed):not(.absolute):not(.sticky):not(.kaspi-opaque-glass-modal),
+  section:is(.rounded-2xl, .rounded-3xl):is([class*="bg-zinc-9"], [class*="bg-[#0"], [class*="bg-[#1"]):not(.fixed):not(.absolute):not(.sticky) {
+    position: relative;
+  }
+
   .kaspi-polar-aurora-orbit,
   .kaspi-aistudio-orbit,
   .kaspi-product-orbit-card,
@@ -550,12 +572,11 @@ html[lang="ar"] label,
   .kaspi-frosted-card,
   .surface-obsidian,
   .surface-obsidian-3d,
-  div:is(.rounded-2xl, .rounded-3xl):is([class*="bg-zinc-9"], [class*="bg-[#0"], [class*="bg-[#1"]):not(.fixed):not(.kaspi-opaque-glass-modal):not(.kaspi-logo-immutable-frame),
+  div:is(.rounded-2xl, .rounded-3xl):is([class*="bg-zinc-9"], [class*="bg-[#0"], [class*="bg-[#1"]):not(.fixed):not(.kaspi-opaque-glass-modal),
   section:is(.rounded-2xl, .rounded-3xl):is([class*="bg-zinc-9"], [class*="bg-[#0"], [class*="bg-[#1"]) {
-    position: relative !important;
     background: var(--kaspi-glass-surface) !important;
-    backdrop-filter: blur(12px) saturate(160%) !important;
-    -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
+    backdrop-filter: blur(14px) saturate(165%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
     border: 1px solid var(--kaspi-glass-border) !important;
     box-shadow: var(--kaspi-glass-shadow) !important;
     color: var(--kaspi-text-primary);
@@ -563,7 +584,7 @@ html[lang="ar"] label,
     transition: box-shadow 0.22s ease, border-color 0.22s ease, transform 0.22s ease !important;
   }
 
-  /* Crisp 2px rotating corner glint — strictly locked to the border line! */
+  /* Crisp 1.75px rotating corner glint — strictly locked to the border line! */
   .kaspi-polar-aurora-orbit::before,
   .kaspi-aistudio-orbit::before,
   .kaspi-product-orbit-card::before,
@@ -572,13 +593,13 @@ html[lang="ar"] label,
   .kaspi-glass-btn::before,
   .surface-obsidian::before,
   .surface-obsidian-3d::before,
-  div:is(.rounded-2xl, .rounded-3xl):is([class*="bg-zinc-9"], [class*="bg-[#0"], [class*="bg-[#1"]):not(.fixed):not(.kaspi-logo-immutable-frame)::before,
+  div:is(.rounded-2xl, .rounded-3xl):is([class*="bg-zinc-9"], [class*="bg-[#0"], [class*="bg-[#1"]):not(.fixed)::before,
   section:is(.rounded-2xl, .rounded-3xl):is([class*="bg-zinc-9"], [class*="bg-[#0"], [class*="bg-[#1"])::before {
     content: "";
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    padding: 2px;
+    padding: 1.75px;
     background: var(--kaspi-corner-aurora-beam);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
@@ -597,13 +618,13 @@ html[lang="ar"] label,
   .kaspi-glass-btn::after,
   .surface-obsidian::after,
   .surface-obsidian-3d::after,
-  div:is(.rounded-2xl, .rounded-3xl):is([class*="bg-zinc-9"], [class*="bg-[#0"], [class*="bg-[#1"]):not(.fixed):not(.kaspi-logo-immutable-frame)::after,
+  div:is(.rounded-2xl, .rounded-3xl):is([class*="bg-zinc-9"], [class*="bg-[#0"], [class*="bg-[#1"]):not(.fixed)::after,
   section:is(.rounded-2xl, .rounded-3xl):is([class*="bg-zinc-9"], [class*="bg-[#0"], [class*="bg-[#1"])::after {
     content: "";
     position: absolute;
     inset: -1px;
     border-radius: inherit;
-    padding: 3.5px;
+    padding: 3px;
     background: var(--kaspi-corner-aurora-bloom);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
@@ -615,11 +636,14 @@ html[lang="ar"] label,
     animation: kaspi-polar-aurora-spin 8s linear infinite;
   }
 
+  .kaspi-glass-btn:not(.fixed):not(.absolute):not(.sticky) {
+    position: relative;
+  }
+
   .kaspi-glass-btn {
-    position: relative !important;
     background: var(--kaspi-glass-elevated) !important;
-    backdrop-filter: blur(12px) saturate(160%) !important;
-    -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
+    backdrop-filter: blur(14px) saturate(165%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
     border: 1px solid var(--kaspi-glass-border) !important;
     box-shadow: var(--kaspi-glass-shadow) !important;
     color: var(--kaspi-text-primary) !important;
@@ -670,28 +694,22 @@ html[lang="ar"] label,
     -webkit-backdrop-filter: blur(48px) saturate(180%) !important;
   }
 
-  /* 2D. IMMUTABLE OBSIDIAN FRAME FOR OFFICIAL LOGO.PNG IN BOTH THEMES */
-  .kaspi-logo-immutable-frame {
-    background: #090B10 !important;
-    background-color: #090B10 !important;
-    border: 1px solid rgba(255, 255, 255, 0.18) !important;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35) !important;
-    overflow: hidden !important;
-  }
-
+  /* 2D. IMMUTABLE FULL-BLEED OFFICIAL LOGO.PNG IN BOTH THEMES (ZERO BOX, ZERO TINT) */
   img[src*="logo"] {
     filter: none !important;
     -webkit-filter: none !important;
     opacity: 1 !important;
     mix-blend-mode: normal !important;
+    background: transparent !important;
+    background-color: transparent !important;
   }
 
   /* 3. TRANSLUCENT FROSTED INPUT FIELDS (Clean Theme-Aware Contrast) */
   .kaspi-translucent-input {
     position: relative !important;
     background: var(--kaspi-input-bg) !important;
-    backdrop-filter: blur(12px) saturate(160%) !important;
-    -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
+    backdrop-filter: blur(14px) saturate(165%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
     border: 1px solid var(--kaspi-input-border) !important;
     box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.30) !important;
     color: var(--kaspi-text-primary) !important;
@@ -754,7 +772,7 @@ html[lang="ar"] label,
 
 /* ============================================================================
    GLOBAL DUAL-THEME UTILITY HARMONIZATION (100% Full-Application Coverage)
-   - pearl-light: Alabaster Pearl (#DDE5E2), Deep Charcoal text, See-Through Crystal Glass
+   - pearl-light: Alabaster Pearl (#D4DFDC), Deep Charcoal text, See-Through Crystal Glass
    - fjord-twilight: Deep Fjord Slate (#090B10), Snow White text
    ============================================================================ */
 
@@ -763,8 +781,8 @@ html[data-kaspi-theme="pearl-light"] .fixed.inset-0[class*="bg-black"],
 html[data-kaspi-theme="pearl-light"] .fixed.inset-0[class*="bg-zinc-9"],
 html[data-kaspi-theme="pearl-light"] .fixed.inset-0[class*="bg-[#0"] {
   background-color: rgba(15, 23, 42, 0.35) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
 }
 
 /* Intercept ALL Arbitrary Dark Hexes & Dark Tailwind Surfaces in pearl-light */
@@ -778,10 +796,10 @@ html[data-kaspi-theme="pearl-light"] :is(
   [class*="bg-gray-9"],
   .bg-black,
   [class*="bg-black/"]
-):not(.fixed.inset-0):not([class*="bg-[#ffffff"]):not([class*="bg-[#fff"]):not(.kaspi-product-white-box):not(.kaspi-studio-product-box):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn):not(.kaspi-logo-immutable-frame) {
+):not(.fixed.inset-0):not([class*="bg-[#ffffff"]):not([class*="bg-[#fff"]):not(.kaspi-product-white-box):not(.kaspi-studio-product-box):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn) {
   background: var(--kaspi-glass-surface) !important;
-  backdrop-filter: blur(12px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
+  backdrop-filter: blur(14px) saturate(165%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
   box-shadow: var(--kaspi-glass-shadow) !important;
 }
 
@@ -792,27 +810,29 @@ html[data-kaspi-theme="pearl-light"] :is(
   [class*="from-[#0"],
   [class*="from-[#1"],
   [class*="from-black"]
-):not(.fixed.inset-0):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn):not(.kaspi-logo-immutable-frame) {
+):not(.fixed.inset-0):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn) {
   background-image: none !important;
   background: var(--kaspi-glass-surface) !important;
   box-shadow: var(--kaspi-glass-shadow) !important;
 }
 
-/* Intercept Translucent White Fills (bg-white/5, bg-white/10, bg-white/[0.03], etc. — excluding hover-only utilities so inactive sidebar links stay transparent) */
-html[data-kaspi-theme="pearl-light"] [class*="bg-white/"]:not([class*="hover:bg-white/"]):not([class*="bg-white/8"]):not([class*="bg-white/9"]) {
-  background-color: rgba(255, 255, 255, 0.18) !important;
+/* Intercept Translucent White Fills (bg-white/5, bg-white/10, etc.) to True See-Through Crystal Glass */
+html[data-kaspi-theme="pearl-light"] [class*="bg-white/"]:not([class*="hover:bg-white/"]):not(.kaspi-product-white-box):not(.kaspi-studio-product-box):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn) {
+  background-color: rgba(255, 255, 255, 0.14) !important;
+  backdrop-filter: blur(14px) saturate(165%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
 }
 
-html[data-kaspi-theme="pearl-light"] [class*="bg-white/"]:not([class*="bg-white/8"]):not([class*="bg-white/9"]):hover {
-  background-color: rgba(255, 255, 255, 0.28) !important;
+html[data-kaspi-theme="pearl-light"] [class*="bg-white/"]:not(.kaspi-product-white-box):not(.kaspi-studio-product-box):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn):hover {
+  background-color: rgba(255, 255, 255, 0.24) !important;
 }
 
 /* Intercept ALL Borders, Dividers & Rings with Emerald Green Glass Rims in pearl-light */
-html[data-kaspi-theme="pearl-light"] [class*="border-white/"]:not(.kaspi-logo-immutable-frame),
-html[data-kaspi-theme="pearl-light"] [class*="border-zinc-7"]:not(.kaspi-logo-immutable-frame),
-html[data-kaspi-theme="pearl-light"] [class*="border-zinc-8"]:not(.kaspi-logo-immutable-frame),
-html[data-kaspi-theme="pearl-light"] [class*="border-zinc-9"]:not(.kaspi-logo-immutable-frame) {
-  border-color: rgba(16, 185, 129, 0.32) !important;
+html[data-kaspi-theme="pearl-light"] [class*="border-white/"],
+html[data-kaspi-theme="pearl-light"] [class*="border-zinc-7"],
+html[data-kaspi-theme="pearl-light"] [class*="border-zinc-8"],
+html[data-kaspi-theme="pearl-light"] [class*="border-zinc-9"] {
+  border-color: rgba(16, 185, 129, 0.35) !important;
 }
 
 html[data-kaspi-theme="pearl-light"] [class*="divide-white/"] > :not([hidden]) ~ :not([hidden]),
@@ -870,21 +890,24 @@ html[data-kaspi-theme="pearl-light"] .text-emerald-400 {
   color: var(--kaspi-text-primary) !important;
 }
 
-/* 3D Liquid Glass Adaptation for Primary CTA Buttons in pearl-light (NO Solid Dark Bricks!) */
-html[data-kaspi-theme="pearl-light"] :is(button, a).bg-white:is(.text-black, .text-zinc-950, .text-zinc-900):not(.kaspi-emerald-checkout-btn) {
+/* 3D Liquid Glass Adaptation for ALL .bg-white Surfaces/Buttons in pearl-light (NO Solid White/Dark Bricks!) */
+html[data-kaspi-theme="pearl-light"] :is(button, a).bg-white:is(.text-black, .text-zinc-950, .text-zinc-900):not(.kaspi-emerald-checkout-btn),
+html[data-kaspi-theme="pearl-light"] :is(button, a, div, span, section, nav, aside).bg-white:not(.kaspi-product-white-box):not(.kaspi-studio-product-box):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn):not(img) {
   background: var(--kaspi-glass-button) !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  backdrop-filter: blur(14px) saturate(165%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
   color: #0F172A !important;
-  border: 1px solid rgba(16, 185, 129, 0.28) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
   box-shadow: var(--kaspi-glass-shadow) !important;
 }
 
-html[data-kaspi-theme="pearl-light"] :is(button, a).bg-white:is(.text-black, .text-zinc-950, .text-zinc-900):not(.kaspi-emerald-checkout-btn) * {
+html[data-kaspi-theme="pearl-light"] :is(button, a).bg-white:is(.text-black, .text-zinc-950, .text-zinc-900):not(.kaspi-emerald-checkout-btn) *,
+html[data-kaspi-theme="pearl-light"] :is(button, a, div, span).bg-white:not(.kaspi-product-white-box):not(.kaspi-studio-product-box):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn) * {
   color: #0F172A !important;
 }
 
-html[data-kaspi-theme="pearl-light"] :is(button, a).bg-white:is(.text-black, .text-zinc-950, .text-zinc-900):not(.kaspi-emerald-checkout-btn):hover {
+html[data-kaspi-theme="pearl-light"] :is(button, a).bg-white:is(.text-black, .text-zinc-950, .text-zinc-900):not(.kaspi-emerald-checkout-btn):hover,
+html[data-kaspi-theme="pearl-light"] :is(button, a).bg-white:not(.kaspi-product-white-box):not(.kaspi-studio-product-box):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn):hover {
   background: var(--kaspi-glass-bg-elevated) !important;
   box-shadow: var(--kaspi-active-ring) !important;
 }
@@ -919,8 +942,8 @@ html[data-kaspi-theme="fjord-twilight"] :is(
 
 html[data-kaspi-theme="fjord-twilight"] .bg-zinc-900:not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn) {
   background: var(--kaspi-glass-surface) !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  backdrop-filter: blur(14px) saturate(165%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
   box-shadow: var(--kaspi-glass-shadow) !important;
 }
 

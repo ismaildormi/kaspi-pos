@@ -48,6 +48,8 @@ export interface CartItem {
   taxRate: number;
   discountAmount: number;
   lineTotal: number;
+  unit?: string | null;
+  isScaleItem?: boolean;
   notes?: string;
   lastUpdatedAt?: number;
 }
@@ -354,7 +356,7 @@ export const usePosStore = create<PosState>()(
 
           if (existingIndex > -1) {
             const current = state.cart[existingIndex];
-            const newQty = roundMoney(toDecimal(current.quantity).plus(quantity)).toNumber();
+            const newQty = toDecimal(current.quantity).plus(quantity).toDecimalPlaces(3).toNumber();
             const netAmount = (current.unitPrice * newQty) - current.discountAmount;
             const taxAmount = (netAmount * current.taxRate) / 100;
             const lineTotal = roundMoney(toDecimal(netAmount).plus(taxAmount)).toNumber();
@@ -391,6 +393,8 @@ export const usePosStore = create<PosState>()(
             taxRate: resolvedTaxRate,
             discountAmount: 0,
             lineTotal,
+            unit: (product as any).unit || product.weightUnit || (product.isScaleItem ? "kg" : null),
+            isScaleItem: Boolean(product.isScaleItem || product.weightUnit === "kg" || (product as any).unit === "kg"),
             notes,
             lastUpdatedAt: now,
           };
@@ -444,7 +448,7 @@ export const usePosStore = create<PosState>()(
 
           if (existingIndex > -1) {
             const current = state.cart[existingIndex];
-            const newQty = roundMoney(toDecimal(current.quantity).plus(quantity)).toNumber();
+            const newQty = toDecimal(current.quantity).plus(quantity).toDecimalPlaces(3).toNumber();
             const netAmount = (current.unitPrice * newQty) - current.discountAmount;
             const taxAmount = (netAmount * current.taxRate) / 100;
             const lineTotal = roundMoney(toDecimal(netAmount).plus(taxAmount)).toNumber();
@@ -479,6 +483,8 @@ export const usePosStore = create<PosState>()(
             taxRate: resolvedTaxRate,
             discountAmount: 0,
             lineTotal,
+            unit: (product as any).unit || product.weightUnit || (product.isScaleItem ? "kg" : null),
+            isScaleItem: Boolean(product.isScaleItem || product.weightUnit === "kg" || (product as any).unit === "kg"),
             lastUpdatedAt: now,
           };
 
@@ -495,7 +501,7 @@ export const usePosStore = create<PosState>()(
           const item = state.cart.find((i) => i.productId === productId);
           if (!item) return state;
 
-          const newQty = item.quantity + delta;
+          const newQty = toDecimal(item.quantity).plus(delta).toDecimalPlaces(3).toNumber();
           if (newQty <= 0) {
             return {
               cart: state.cart.filter((i) => i.productId !== productId),
