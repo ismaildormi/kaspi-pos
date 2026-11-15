@@ -175,7 +175,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
         {/* Customer Select / Detach */}
         <div className="flex items-center justify-between gap-2">
           {customer ? (
-            <div className="h-9 w-full px-3 rounded-lg bg-[#0D1116] border border-white/[0.08] hover:border-white/[0.16] flex items-center justify-between text-xs font-semibold text-zinc-200">
+            <div className="h-9 w-full px-3 rounded-lg kaspi-polar-aurora-orbit flex items-center justify-between text-xs font-semibold text-zinc-200">
               <div className="flex items-center gap-2 truncate">
                 <UserCheck className="w-3.5 h-3.5 text-white shrink-0" />
                 <div className="truncate">
@@ -202,7 +202,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             <button
               type="button"
               onClick={onOpenCustomerModal}
-              className="h-9 w-full px-3 rounded-lg bg-[#0D1116] border border-white/[0.08] hover:border-white/[0.16] flex items-center justify-between text-xs font-semibold text-zinc-200 cursor-pointer transition-colors"
+              className="h-9 w-full px-3 rounded-lg kaspi-polar-aurora-orbit flex items-center justify-between text-xs font-semibold text-zinc-200 cursor-pointer transition-colors"
             >
               <span className="flex items-center gap-2">
                 <UserPlus className="w-3.5 h-3.5 text-zinc-400" />
@@ -214,13 +214,13 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
         </div>
 
         {/* Unit vs. Pack Segmented Switch */}
-        <div className="h-9 p-1 rounded-lg bg-[#080B0E] border border-white/[0.07] grid grid-cols-2 gap-1">
+        <div className="h-9 p-1 rounded-lg kaspi-polar-aurora-orbit grid grid-cols-2 gap-1">
           <button
             type="button"
             onClick={() => setPricingTier("retail")}
             className={`flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
               pricingTier === "retail"
-                ? "bg-white text-zinc-950 font-bold text-xs rounded-md shadow-xs"
+                ? "kaspi-polar-aurora-orbit kaspi-glass-btn text-white font-bold text-xs rounded-md shadow-xs"
                 : "text-zinc-400 hover:text-white font-semibold text-xs rounded-md"
             }`}
           >
@@ -232,7 +232,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             onClick={() => setPricingTier("wholesale")}
             className={`flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
               pricingTier === "wholesale"
-                ? "bg-white text-zinc-950 font-bold text-xs rounded-md shadow-xs"
+                ? "kaspi-polar-aurora-orbit kaspi-glass-btn text-white font-bold text-xs rounded-md shadow-xs"
                 : "text-zinc-400 hover:text-white font-semibold text-xs rounded-md"
             }`}
           >
@@ -542,7 +542,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
 
       {/* Zone R3: Square Register 4-Action Utility Dock */}
       <div className="px-3 py-2 border-t border-white/[0.08] bg-white/[0.02]">
-        <div className="grid grid-cols-4 divide-x divide-white/[0.07] rounded-xl border border-white/[0.12] bg-[#12171E] overflow-hidden shadow-sm">
+        <div className="grid grid-cols-4 divide-x divide-white/[0.07] rounded-xl kaspi-polar-aurora-orbit overflow-hidden shadow-sm">
           <button
             type="button"
             onClick={() => {
@@ -717,18 +717,18 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
           )}
         </div>
 
-        {/* Square Register Full-Width Primary Charge CTA Button */}
+        {/* Square Register Full-Width Primary Charge CTA Button (3D Aurora Emerald Green Glass in Both Modes) */}
         <button
           type="button"
           onClick={openPaymentModal}
           disabled={cart.length === 0}
-          className="kaspi-polar-aurora-orbit h-12 w-full rounded-xl bg-white text-black hover:bg-white/95 active:scale-[0.99] font-semibold text-[15px] shadow-[0_8px_28px_-6px_rgba(255,255,255,0.35)] flex items-center justify-between px-5 cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:pointer-events-none"
+          className="kaspi-emerald-checkout-btn kaspi-polar-aurora-orbit h-12 w-full rounded-xl active:scale-[0.99] font-semibold text-[15px] flex items-center justify-between px-5 cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:pointer-events-none"
         >
-          <span className="flex items-center gap-2 font-sans font-extrabold text-[15px] tracking-wide">
-            <CreditCard className="w-4 h-4 stroke-[2.5]" />
+          <span className="flex items-center gap-2 font-sans font-extrabold text-[15px] tracking-wide text-white">
+            <CreditCard className="w-4 h-4 stroke-[2.5] text-white" />
             <span>{t("checkout")}</span>
           </span>
-          <span className="font-mono font-black text-base tabular-nums">
+          <span className="font-mono font-black text-base tabular-nums text-white">
             {grandTotal.toFixed(2)} MAD
           </span>
         </button>

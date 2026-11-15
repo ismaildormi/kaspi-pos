@@ -270,7 +270,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
             {openMenuProductId === product.id && (
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="absolute inset-x-2 top-2 bottom-2 z-30 p-2.5 rounded-xl kaspi-frosted-glass border border-white/20 shadow-[0_12px_36px_rgba(0,0,0,0.85)] flex flex-col justify-between animate-in zoom-in-95 duration-150 backdrop-blur-3xl overflow-y-auto"
+                className="absolute inset-x-2 top-2 bottom-2 z-30 p-2.5 rounded-xl kaspi-polar-aurora-orbit kaspi-opaque-glass-modal border border-white/20 shadow-[0_12px_36px_rgba(0,0,0,0.85)] flex flex-col justify-between animate-in zoom-in-95 duration-150 overflow-y-auto"
               >
                 {/* Header */}
                 <div className="flex items-center justify-between pb-1 border-b border-white/10 shrink-0">

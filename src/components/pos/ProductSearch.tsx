@@ -360,7 +360,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
           }, 80);
         }}
         placeholder={`${t("searchPlaceholder")}  •  /pay  /hold  /clear`}
-        className="flex-1 min-w-0 h-full !bg-transparent !border-none !shadow-none text-sm text-white placeholder:text-zinc-400 focus:outline-none focus:!shadow-none"
+        className="flex-1 min-w-0 h-full ps-2 pe-2 !bg-transparent !border-none !shadow-none text-sm text-white placeholder:text-zinc-400 focus:outline-none focus:!shadow-none"
       />
 
       <div className="flex items-center gap-1.5 shrink-0">

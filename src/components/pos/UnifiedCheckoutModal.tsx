@@ -297,7 +297,7 @@ export function UnifiedCheckoutModal() {
       dir="ltr"
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/45 backdrop-blur-xl select-none overflow-y-auto"
     >
-      <div className="kaspi-frosted-glass kaspi-polar-aurora-orbit w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto">
+      <div className="kaspi-frosted-glass kaspi-polar-aurora-orbit kaspi-opaque-glass-modal w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto">
         {/* Modal Top Header */}
         <div className="flex items-center justify-between p-4 px-6 border-b border-zinc-800 kaspi-frosted-card">
           <div className="flex items-center gap-2.5">
@@ -746,9 +746,9 @@ export function UnifiedCheckoutModal() {
               type="button"
               onClick={handleConfirmCheckout}
               disabled={isProcessingPayment || (selectedPaymentMethod === "credit" && !customer)}
-              className="keycap-3d sheen-btn w-full h-14 rounded-2xl bg-gradient-to-r from-[#10B981] to-[#059669] hover:from-[#34D399] hover:to-[#10B981] active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed text-zinc-950 font-black text-sm shadow-[0_0_25px_rgba(16,185,129,0.35)] flex items-center justify-center gap-2.5 cursor-pointer transition border border-emerald-400/30"
+              className="kaspi-emerald-checkout-btn kaspi-polar-aurora-orbit w-full h-14 rounded-2xl active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed text-white font-black text-sm flex items-center justify-center gap-2.5 cursor-pointer transition"
             >
-              <CheckCircle2 className="w-5 h-5 stroke-[2.5] text-zinc-950" />
+              <CheckCircle2 className="w-5 h-5 stroke-[2.5] text-white" />
               <span>
                 {isProcessingPayment
                   ? locale === "ar"

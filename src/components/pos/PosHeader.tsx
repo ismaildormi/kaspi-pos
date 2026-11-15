@@ -135,13 +135,13 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
   return (
     <header
       dir="ltr"
-      className="h-14 bg-[#09090B] border-b border-white/[0.08] px-3 sm:px-4 flex items-center justify-between gap-2 select-none shrink-0"
+      className="h-14 kaspi-frosted-glass border-b border-white/[0.08] px-3 sm:px-4 flex items-center justify-between gap-2 select-none shrink-0"
     >
       {/* LEFT: Branding & Workspace Link */}
       <div className="flex items-center gap-2.5 min-w-0">
         <Link
           href={`/${locale}/dashboard`}
-          className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg kaspi-frosted-glass hover:bg-white/[0.08] text-zinc-300 hover:text-white transition group border border-white/10 hover:border-white/20"
+          className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg kaspi-polar-aurora-orbit hover:bg-white/[0.08] text-zinc-300 hover:text-white transition group"
           title={t.nav.dashboard}
         >
           <LayoutDashboard className="w-4 h-4 text-zinc-400 group-hover:text-white" />
@@ -154,7 +154,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
           <img
             src="/logo.png"
             alt="KASPI POS"
-            className="w-8 h-8 rounded-xl object-cover shrink-0 transition-transform hover:scale-105"
+            className="w-8 h-8 rounded-xl object-cover shrink-0 shadow-md transition-transform hover:scale-105"
           />
           <span className="font-extrabold text-xs tracking-tight text-white hidden md:inline shrink-0">
             KASPI POS
@@ -241,25 +241,17 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
         {/* Language Switcher */}
         <LanguageSwitcher />
 
-        {/* Store Profile Button with Crisp Circular Avatar & Store Name */}
+        {/* Store Profile Button with Crisp Circular Monogram & Store Name */}
         <button
           type="button"
           onClick={() => {
             window.dispatchEvent(new CustomEvent("open-owner-vault"));
           }}
-          className="inline-flex items-center gap-2 h-8 px-2.5 rounded-lg border border-white/10 hover:border-white/25 kaspi-frosted-glass hover:bg-white/[0.08] text-xs font-semibold text-zinc-200 transition-all cursor-pointer"
+          className="inline-flex items-center gap-2 h-8 px-2.5 rounded-lg kaspi-polar-aurora-orbit hover:bg-white/[0.08] text-xs font-semibold text-zinc-200 transition-all cursor-pointer"
           title={locale === "ar" ? "خزنة المالك والملف الشخصي" : "Profil Propriétaire & Coffre-Fort"}
         >
-          <div className="w-6 h-6 rounded-full overflow-hidden border border-white/25 bg-zinc-800 shrink-0 flex items-center justify-center text-[10px] font-bold text-white shadow-inner">
-            {displayLogo ? (
-              <img
-                src={displayLogo}
-                alt={displayShopName}
-                className="w-full h-full object-cover rounded-full"
-              />
-            ) : (
-              <span>{displayShopName.slice(0, 1).toUpperCase()}</span>
-            )}
+          <div className="w-6 h-6 rounded-full overflow-hidden border border-white/25 bg-white/10 shrink-0 flex items-center justify-center text-[10px] font-bold text-white shadow-inner">
+            <span>{(displayShopName || "AS").slice(0, 2).toUpperCase()}</span>
           </div>
           <span className="hidden sm:inline truncate max-w-[120px] font-bold text-white">
             {displayShopName}

@@ -492,16 +492,16 @@ export function AIChatWidget() {
 
   return (
     <>
-      {/* Floating Chat Window Modal / Sheet — Strict LTR geometry */}
+      {/* Floating Chat Window Modal / Sheet — Strict LTR geometry + High-Density Opaque Frosted Glass */}
       {isOpen && (
         <div
           dir="ltr"
-          className="fixed bottom-6 right-6 z-50 w-[92vw] sm:w-[420px] h-[600px] max-h-[85vh] bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-800 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300 print:hidden font-sans"
+          className="fixed bottom-6 right-6 z-50 w-[92vw] sm:w-[420px] h-[600px] max-h-[85vh] kaspi-polar-aurora-orbit kaspi-opaque-glass-modal rounded-2xl shadow-2xl border border-white/20 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300 print:hidden font-sans"
         >
           {/* Header */}
-          <div className="bg-zinc-900 border-b border-zinc-800 text-white p-4 flex items-center justify-between shadow-xs">
+          <div className="kaspi-opaque-glass-modal border-b border-white/10 text-white p-4 flex items-center justify-between shadow-xs">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 shrink-0">
+              <div className="w-9 h-9 rounded-full kaspi-polar-aurora-orbit flex items-center justify-center shrink-0">
                 <Bot className="w-5 h-5 text-white" />
               </div>
               <div className="min-w-0">
@@ -509,7 +509,7 @@ export function AIChatWidget() {
                   <h3 className="font-bold text-sm tracking-wide text-white truncate">
                     {isAdminView ? t.headerTitleAdmin : t.headerTitle}
                   </h3>
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white text-black shrink-0">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 shrink-0">
                     <Zap className="w-2.5 h-2.5" />
                     {isAdminView ? t.activeBadgeAdmin : t.activeBadge}
                   </span>
@@ -523,7 +523,7 @@ export function AIChatWidget() {
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
               title={t.closeTitle}
               aria-label={t.closeTitle}
             >
@@ -532,7 +532,7 @@ export function AIChatWidget() {
           </div>
 
           {/* Messages Area with WhatsApp-Style Monochrome POS Doodle Wallpaper */}
-          <div className="relative flex-1 overflow-y-auto p-4 bg-[#09090B]">
+          <div className="relative flex-1 overflow-y-auto p-4 kaspi-opaque-glass-modal">
             {/* Vector Doodle Wallpaper Layer */}
             <div className="pointer-events-none absolute inset-0 overflow-hidden z-0 select-none">
               <svg
@@ -605,9 +605,9 @@ export function AIChatWidget() {
                       key={idx}
                       type="button"
                       onClick={() => handleQuickPrompt(prompt.text)}
-                      className="w-full p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/90 backdrop-blur-md hover:bg-zinc-850 hover:border-zinc-700 transition-all text-xs font-medium text-zinc-300 flex items-center gap-2.5 shadow-xs cursor-pointer group"
+                      className="w-full p-2.5 rounded-xl kaspi-polar-aurora-orbit transition-all text-xs font-medium text-zinc-200 flex items-center gap-2.5 shadow-xs cursor-pointer group"
                     >
-                      <div className="p-1 rounded-md bg-zinc-800 text-white group-hover:scale-110 transition-transform shrink-0">
+                      <div className="p-1 rounded-md bg-white/10 text-white group-hover:scale-110 transition-transform shrink-0">
                         {prompt.icon === "trending" && <TrendingUp className="w-3.5 h-3.5" />}
                         {prompt.icon === "alert" && <AlertTriangle className="w-3.5 h-3.5" />}
                         {prompt.icon === "bag" && <ShoppingBag className="w-3.5 h-3.5" />}
@@ -743,7 +743,7 @@ export function AIChatWidget() {
           {/* Input Bar */}
           <form
             onSubmit={handleSend}
-            className="p-3 bg-zinc-950 border-t border-zinc-800 flex items-center gap-2"
+            className="p-3 kaspi-opaque-glass-modal border-t border-white/10 flex items-center gap-2"
           >
             <input
               ref={fileInputRef}
@@ -756,7 +756,7 @@ export function AIChatWidget() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
-              className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-900 rounded-xl transition-colors cursor-pointer flex items-center justify-center shrink-0"
+              className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-xl transition-colors cursor-pointer flex items-center justify-center shrink-0"
               title={t.uploadTooltip}
               aria-label={t.uploadTooltip}
             >
@@ -768,18 +768,18 @@ export function AIChatWidget() {
               onChange={(e) => setInput(e.target.value)}
               placeholder={t.inputPlaceholder}
               disabled={isLoading}
-              className="flex-1 px-3.5 py-2.5 text-xs bg-zinc-900 border border-zinc-800 rounded-xl focus:outline-none focus:border-white transition-all text-white placeholder-zinc-500"
+              className="flex-1 px-3.5 py-2.5 text-xs kaspi-translucent-input rounded-xl focus:outline-none transition-all text-white placeholder-zinc-500"
             />
             <button
               type="submit"
               disabled={isLoading || (!input.trim() && !attachment)}
-              className="p-2.5 rounded-xl bg-white text-black hover:bg-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-xs cursor-pointer flex items-center justify-center shrink-0"
+              className="p-2.5 rounded-xl kaspi-emerald-checkout-btn disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-xs cursor-pointer flex items-center justify-center shrink-0"
               aria-label="Send Message"
             >
               {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin text-black" />
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
               ) : (
-                <Send className="w-4 h-4 text-black" />
+                <Send className="w-4 h-4 text-white" />
               )}
             </button>
           </form>

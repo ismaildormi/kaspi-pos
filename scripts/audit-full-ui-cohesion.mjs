@@ -35,10 +35,14 @@ check(`Discovered all .tsx files in src/ (${tsxFiles.length} files)`, tsxFiles.l
 // 2. Verify globals.css rules
 const css = fs.readFileSync(GLOBALS_CSS, "utf8");
 check(
-  "globals.css implements 24px Apple visionOS Liquid Glass, Corner-Locked 1.5px Specular Glint (Zero Interior Bleed) & Neutral Palettes",
+  "globals.css implements 24px Apple visionOS 3D Crystal Glass, Dual-Mode Corner Aurora (White in Dark, Emerald in Light), Green Checkout CTA & Opaque AI Modal",
   css.includes("kaspi-polar-aurora-spin") &&
-    css.includes("#0B0E14") &&
-    css.includes("#DCE1EA") &&
+    css.includes("#07090D") &&
+    css.includes("#E6ECEA") &&
+    css.includes("--kaspi-corner-aurora-beam") &&
+    css.includes("kaspi-emerald-checkout-btn") &&
+    css.includes("kaspi-opaque-glass-modal") &&
+    css.includes('img[src*="logo"]') &&
     !css.includes("radial-gradient(closest-side") &&
     css.includes("IBM Plex Sans Arabic") &&
     css.includes("mask-composite: exclude;") &&
