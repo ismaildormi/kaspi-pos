@@ -227,10 +227,10 @@ export default function RegisterPage() {
                 playTapSound();
                 setStoreType(vertical);
               }}
-              className={`h-10 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center text-center ${
+              className={`kaspi-polar-aurora-orbit kaspi-glass-btn h-10 px-2.5 rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center text-center ${
                 selected
-                  ? "kaspi-polar-aurora-orbit kaspi-orbit-active border-transparent text-white"
-                  : "border border-white/12 bg-zinc-900/70 text-zinc-300 hover:border-white/30 hover:bg-zinc-900/90"
+                  ? "kaspi-orbit-active font-bold text-[var(--kaspi-text-primary)]"
+                  : "font-medium text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
               }`}
             >
               {t.verticals[vertical]}
