@@ -9,6 +9,7 @@ import {
   toWesternNumerals,
   translatePaymentMethod,
 } from "@/lib/printing/receipt-translations";
+import { printThermalReceipt } from "@/client/printing";
 
 export interface ReceiptItem {
   name: string;
@@ -78,12 +79,17 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
     if (onPrint) {
       onPrint();
     } else {
-      window.print();
+      printThermalReceipt({
+        ...data,
+        storeName: data.shopName || "ASIMA",
+        createdAt: data.date,
+        paperWidthMm: width === "58mm" ? 58 : 80,
+        receiptLanguage: lang,
+      }).catch(() => {});
     }
   };
 
   const is58mm = width === "58mm";
-  const showLogo = data.showStoreLogo ?? true;
 
   return (
     <div className="flex flex-col items-center gap-4 select-none">
@@ -98,24 +104,16 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
         </span>
       </button>
 
-      {/* Thermal Receipt Paper Container */}
+      {/* Thermal Receipt Paper Container (Store Name Header ONLY — Zero Logo Image, Pure Black Ink on White Paper) */}
       <div
         ref={receiptRef}
         dir={dict.dir}
-        style={{ width: is58mm ? "58mm" : "80mm" }}
-        className="bg-white text-black p-3 font-mono text-[11px] leading-tight border border-slate-300 shadow-lg text-start mx-auto"
+        style={{ width: is58mm ? "58mm" : "80mm", backgroundColor: "#ffffff", color: "#000000" }}
+        className="kaspi-thermal-receipt-sheet !bg-white !text-black [&_*]:!text-black p-3 font-mono text-[11px] leading-tight border border-slate-300 shadow-lg text-start mx-auto"
       >
-        {/* Header: Optional Logo, Shop Name & Tax Identifiers */}
+        {/* Header: Store Name & Tax Identifiers (NO Logo Image) */}
         <div className="text-center pb-2 border-b border-dashed border-black">
-          {showLogo && (
-            <img
-              src={data.logoUrl || "/logo.png"}
-              alt="Logo"
-              className="w-10 h-10 object-contain mx-auto mb-1 grayscale contrast-200"
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
-          )}
-          <h2 className="text-sm font-black uppercase tracking-tight">{data.shopName}</h2>
+          <h2 className="text-base font-black uppercase tracking-tight">{data.shopName || "ASIMA"}</h2>
           {data.legalName && <p className="text-[10px]">{data.legalName}</p>}
           <p className="text-[10px] mt-0.5">
             {data.address || ""} {data.city || ""}

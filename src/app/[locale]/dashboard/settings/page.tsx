@@ -1755,16 +1755,8 @@ export default function SettingsPage() {
                     }`}
                   >
                     <div className="text-center space-y-1 pb-2 border-b border-dashed border-current/40">
-                      {showStoreLogo && (
-                        <img
-                          src={storeLogoUrl || "/logo.png"}
-                          alt="Store Logo"
-                          className="w-10 h-10 object-contain mx-auto mb-1 grayscale contrast-200"
-                          onError={(e) => (e.currentTarget.style.display = "none")}
-                        />
-                      )}
-                      <h4 className="font-black text-sm uppercase tracking-tight">
-                        {shopName || "KASPI POS STORE"}
+                      <h4 className="font-black text-base uppercase tracking-tight">
+                        {shopName || "ASIMA"}
                       </h4>
                       <p className="text-[10px] opacity-80">{address || "Casablanca, Maroc"}</p>
                       {phone && (

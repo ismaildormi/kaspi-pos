@@ -25,7 +25,7 @@ import {
 import { usePosStore, type PaymentMethodType } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
 import { ThermalReceipt, type ReceiptData } from "./ThermalReceipt";
-import { printReceipt } from "@/client/printing";
+import { printReceipt, printThermalReceipt } from "@/client/printing";
 import { formatReceiptDate, toWesternNumerals } from "@/lib/printing/receipt-translations";
 import { calculatePaymentFees } from "@/lib/fees";
 import { playTapSound, playSuccessSound, playErrorSound } from "@/lib/audio";
@@ -61,9 +61,11 @@ export function UnifiedCheckoutModal() {
     getGrandTotal,
     getSubtotal,
     getTaxTotal,
+    getDiscountTotal,
     getChangeDue,
     cart,
     customer,
+    pricingTier,
     completeSale,
     isProcessingPayment,
     deviceCount,
@@ -93,6 +95,7 @@ export function UnifiedCheckoutModal() {
   const grandTotal = getGrandTotal();
   const subtotal = getSubtotal();
   const taxTotal = getTaxTotal();
+  const discountTotal = getDiscountTotal();
   const changeDue = getChangeDue();
 
   // Moroccan Bank detector
@@ -213,16 +216,36 @@ export function UnifiedCheckoutModal() {
   }, [isPaymentModalOpen, saleResult, isProcessingPayment, selectedPaymentMethod, customer, grandTotal, amountTendered]);
 
   const handleConfirmCheckout = async () => {
-    const receiptLang = printerSettings?.receiptLanguage || "fr";
+    const receiptLang = printerSettings?.receiptLanguage || "ar";
+    const savedStoreName =
+      typeof window !== "undefined" ? window.localStorage.getItem("kaspi_store_name") : null;
+    const rawCandidateName = tenantInfo?.shopName || savedStoreName || "ASIMA";
+    const resolvedShopName =
+      rawCandidateName === "Kasbi Retail (كسب)" ||
+      rawCandidateName.toUpperCase() === "KASPI POS" ||
+      rawCandidateName === "Magasin Principal"
+        ? savedStoreName || "ASIMA"
+        : rawCandidateName;
+
+    // Deep snapshot of all cart items, prices, totals, customer, and store info BEFORE completeSale() clears the cart!
+    const snapshotItems = cart.map((i) => ({
+      name: i.notes ? `${i.name} (${i.notes})` : i.name,
+      quantity: Number(i.quantity || 1),
+      unitPrice: isGiftVoucherRequested ? 0 : Number(i.unitPrice || 0),
+      taxRate: Number(i.taxRate ?? 20),
+      lineTotal: isGiftVoucherRequested
+        ? 0
+        : Number(i.lineTotal ?? Number(i.quantity || 1) * Number(i.unitPrice || 0)),
+    }));
 
     const receiptSnapshot: ReceiptData = {
-      shopName: tenantInfo?.shopName || "Kasbi Retail (كسب)",
-      legalName: tenantInfo?.legalName || tenantInfo?.shopName || "Ste Kasbi SARL",
-      logoUrl: tenantInfo?.logoUrl || undefined,
+      shopName: resolvedShopName,
+      legalName: tenantInfo?.legalName || undefined,
+      logoUrl: undefined,
       ice: toWesternNumerals(tenantInfo?.ice || "002345678000045"),
       taxId: toWesternNumerals(tenantInfo?.taxId || "45892134"),
       rcNumber: toWesternNumerals(tenantInfo?.rcNumber || "98765 Casablanca"),
-      address: tenantInfo?.address || "123 Bd d'Anfa",
+      address: tenantInfo?.address || "Casablanca, Maroc",
       city: tenantInfo?.city || "Casablanca",
       phone: toWesternNumerals(tenantInfo?.phone || ""),
       receiptNumber: toWesternNumerals(`REC-${Date.now().toString().slice(-6)}`),
@@ -230,15 +253,10 @@ export function UnifiedCheckoutModal() {
       cashierName: "Caisse 1",
       customerName: customer?.name || undefined,
       customerIce: (buyerIceInput || customer?.ice) ? toWesternNumerals(buyerIceInput || customer?.ice || "") : undefined,
-      items: cart.map((i) => ({
-        name: i.notes ? `${i.name} (${i.notes})` : i.name,
-        quantity: i.quantity,
-        unitPrice: isGiftVoucherRequested ? 0 : i.unitPrice,
-        taxRate: i.taxRate,
-        lineTotal: isGiftVoucherRequested ? 0 : i.lineTotal,
-      })),
+      items: snapshotItems,
       subtotal: isGiftVoucherRequested ? 0 : subtotal,
       taxTotal: isGiftVoucherRequested ? 0 : taxTotal,
+      discountTotal: isGiftVoucherRequested ? 0 : discountTotal,
       grandTotal: isGiftVoucherRequested ? 0 : grandTotal,
       paidTotal:
         selectedPaymentMethod === "cash"
@@ -255,7 +273,7 @@ export function UnifiedCheckoutModal() {
       receiptLanguage: receiptLang,
       receiptHeader: printerSettings?.receiptHeader || tenantInfo?.receiptHeader,
       receiptFooter: printerSettings?.receiptFooter || tenantInfo?.receiptFooter,
-      showStoreLogo: printerSettings?.showStoreLogo ?? true,
+      showStoreLogo: false,
       sectorBadge: storeType,
       sectorMetadata: sectorMetadataList,
       isGiftVoucher: isGiftVoucherRequested,
@@ -272,15 +290,15 @@ export function UnifiedCheckoutModal() {
         receiptData: receiptSnapshot,
       });
 
-      if (res.isOffline || printerSettings?.autoPrintReceipt || selectedPaymentMethod === "cash" || selectedPaymentMethod === "card") {
-        printReceipt({
-          ...receiptSnapshot,
-          createdAt: receiptSnapshot.date,
-          paperWidthMm: printerSettings?.paperWidthMm || 80,
-          openDrawer: printerSettings?.openDrawer ?? true,
-          receiptLanguage: receiptLang,
-        }).catch(() => {});
-      }
+      printReceipt({
+        ...receiptSnapshot,
+        storeName: resolvedShopName,
+        pricingTier,
+        createdAt: receiptSnapshot.date,
+        paperWidthMm: printerSettings?.paperWidthMm || 80,
+        openDrawer: printerSettings?.openDrawer ?? true,
+        receiptLanguage: receiptLang,
+      }).catch(() => {});
     } else {
       playErrorSound();
     }
@@ -369,12 +387,14 @@ export function UnifiedCheckoutModal() {
                   language={printerSettings?.receiptLanguage || "fr"}
                   onPrint={() => {
                     if (saleResult.receiptData) {
-                      printReceipt({
+                      printThermalReceipt({
                         ...saleResult.receiptData,
+                        storeName: saleResult.receiptData.shopName,
+                        pricingTier,
                         createdAt: saleResult.receiptData.date,
                         paperWidthMm: printerSettings?.paperWidthMm || 80,
                         openDrawer: printerSettings?.openDrawer ?? true,
-                        receiptLanguage: printerSettings?.receiptLanguage || "fr",
+                        receiptLanguage: printerSettings?.receiptLanguage || "ar",
                       }).catch(() => {});
                     }
                   }}
@@ -387,12 +407,14 @@ export function UnifiedCheckoutModal() {
                 type="button"
                 onClick={() => {
                   if (saleResult.receiptData) {
-                    printReceipt({
+                    printThermalReceipt({
                       ...saleResult.receiptData,
+                      storeName: saleResult.receiptData.shopName,
+                      pricingTier,
                       createdAt: saleResult.receiptData.date,
                       paperWidthMm: printerSettings?.paperWidthMm || 80,
                       openDrawer: printerSettings?.openDrawer ?? true,
-                      receiptLanguage: printerSettings?.receiptLanguage || "fr",
+                      receiptLanguage: printerSettings?.receiptLanguage || "ar",
                     }).catch(() => {});
                   }
                 }}

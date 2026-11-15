@@ -774,8 +774,16 @@ export const usePosStore = create<PosState>()(
         }
 
         await refreshOfflineQueueCount();
-        clearCart();
-        set({ isProcessingPayment: false });
+        set({
+          cart: [],
+          customer: null,
+          discountPercent: 0,
+          discountFixed: 0,
+          loyaltyPointsToRedeem: 0,
+          amountTendered: "",
+          lastInteractedProductId: null,
+          isProcessingPayment: false,
+        });
 
         return {
           success: true,

@@ -90,8 +90,15 @@ check(
   !cssNoComments.includes("#000000")
 );
 
-// 3. Verify MonochromePosBackground.tsx
+// 3. Verify MonochromePosBackground.tsx & Isolated Thermal Receipt Spooler
 const bgSrc = fs.readFileSync(MONOCHROME_BG, "utf8");
+const printingSrc = fs.readFileSync(path.join(SRC_DIR, "client", "printing", "index.ts"), "utf8");
+check(
+  "Isolated hidden <iframe> printThermalReceipt spooler exists with zero logo image",
+  printingSrc.includes("export async function printThermalReceipt") &&
+    printingSrc.includes('document.createElement("iframe")') &&
+    !printingSrc.includes("<img")
+);
 check(
   "MonochromePosBackground.tsx contains zero #000000 or #040405 pitch-black backgrounds",
   !bgSrc.includes("#000000") && !bgSrc.includes("#040405") && !bgSrc.includes("#070708")
