@@ -35,14 +35,14 @@ check(`Discovered all .tsx files in src/ (${tsxFiles.length} files)`, tsxFiles.l
 // 2. Verify globals.css rules
 const css = fs.readFileSync(GLOBALS_CSS, "utf8");
 check(
-  "globals.css implements 16px See-Through Liquid Glass, Hollow-Center Rear White Aurora & Neutral Palettes",
+  "globals.css implements 24px Apple visionOS Liquid Glass, Corner-Locked 1.5px Specular Glint (Zero Interior Bleed) & Neutral Palettes",
   css.includes("kaspi-polar-aurora-spin") &&
-    css.includes("#08080A") &&
-    css.includes("#E4E5E9") &&
-    css.includes("radial-gradient(closest-side, transparent 58%") &&
+    css.includes("#0B0E14") &&
+    css.includes("#DCE1EA") &&
+    !css.includes("radial-gradient(closest-side") &&
     css.includes("IBM Plex Sans Arabic") &&
     css.includes("mask-composite: exclude;") &&
-    css.includes("z-index: -1;")
+    css.includes("padding: 1.5px;")
 );
 
 // Verify ZERO blue in login/page.tsx, register/page.tsx, KaspiThemeToggle.tsx

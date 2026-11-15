@@ -243,7 +243,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
                 className={`group transition-all duration-200 ${
                   isActive
                     ? "relative rounded-xl px-3.5 py-2.5 text-white font-semibold text-xs flex items-center justify-between kaspi-polar-aurora-orbit kaspi-orbit-active"
-                    : "flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-zinc-400 hover:bg-white/[0.06] hover:text-white font-medium"
+                    : "flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-zinc-400 bg-transparent hover:bg-white/[0.08] border border-transparent hover:text-white font-medium"
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -266,16 +266,12 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           onClick={() => {
             window.dispatchEvent(new CustomEvent("open-owner-vault"));
           }}
-          className="group w-full flex items-center justify-between px-3 py-2 rounded-xl kaspi-polar-aurora-orbit bg-white/[0.06] hover:bg-white/[0.10] border border-white/10 hover:border-white/25 text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+          className="group w-full flex items-center justify-between px-3 py-2 rounded-xl kaspi-polar-aurora-orbit text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer"
           title={locale === "ar" ? "خزنة المالك المحمية" : locale === "en" ? "Protected Owner Vault" : "Coffre-Fort Propriétaire"}
         >
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full overflow-hidden border border-white/20 bg-zinc-800 shrink-0 flex items-center justify-center">
-              {ownerAvatarUrl ? (
-                <img src={ownerAvatarUrl} alt="Vault" className="w-full h-full object-cover rounded-full" />
-              ) : (
-                <ShieldCheck className="w-3.5 h-3.5 text-zinc-400 group-hover:text-emerald-400 transition-all" />
-              )}
+            <div className="w-5 h-5 rounded-full overflow-hidden border border-white/25 bg-white/10 shrink-0 flex items-center justify-center text-[9px] font-bold text-white shadow-inner">
+              <span>{(shopName || "AS").slice(0, 2).toUpperCase()}</span>
             </div>
             <span className="truncate max-w-[140px] font-bold">
               {shopName}

@@ -136,7 +136,7 @@ export default function DashboardLayout({
           <div className="flex items-center gap-2.5">
             <Link
               href={localizeHref("/pos")}
-              className="group sheen-btn inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white text-zinc-950 hover:bg-zinc-200 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] active:scale-[0.98] text-xs font-bold transition-all shadow-xs cursor-pointer"
+              className="group kaspi-polar-aurora-orbit kaspi-glass-btn inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-white hover:-translate-y-0.5 active:scale-[0.98] text-xs font-bold transition-all cursor-pointer"
             >
               <ShoppingBag className="w-3.5 h-3.5 group-hover:-translate-y-0.5 group-hover:scale-105 transition-transform duration-200" />
               <span>{t.topbar.posRegister}</span>
@@ -162,23 +162,15 @@ export default function DashboardLayout({
               <Settings className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-500 ease-out" />
             </Link>
 
-            {/* Top-Right Store Profile Button with Crisp Circular Avatar & Store Name */}
+            {/* Top-Right Store Profile Button with Crisp Circular Monogram & Store Name */}
             <button
               type="button"
               onClick={() => setIsOwnerModalOpen(true)}
               className="hidden md:inline-flex items-center gap-2 h-9 px-2.5 rounded-xl kaspi-frosted-glass hover:bg-white/[0.08] text-xs font-semibold text-zinc-200 transition-all cursor-pointer"
               title={locale === "ar" ? "خزنة المالك والملف الشخصي" : "Profil Propriétaire & Coffre-Fort"}
             >
-              <div className="w-7 h-7 rounded-full overflow-hidden border border-white/25 bg-zinc-800 shrink-0 flex items-center justify-center text-[10px] font-bold text-white shadow-inner">
-                {storeLogoUrl ? (
-                  <img
-                    src={storeLogoUrl}
-                    alt={shopName || "Store"}
-                    className="w-full h-full object-cover rounded-full"
-                  />
-                ) : (
-                  <span>{(shopName || userName || "K").slice(0, 2).toUpperCase()}</span>
-                )}
+              <div className="w-7 h-7 rounded-full overflow-hidden border border-white/25 bg-white/10 shrink-0 flex items-center justify-center text-[10px] font-bold text-white shadow-inner">
+                <span>{(shopName || userName || "AS").slice(0, 2).toUpperCase()}</span>
               </div>
               <span className="truncate max-w-[120px] font-bold text-white">
                 {shopName || userName || t.topbar.activeAccount}
