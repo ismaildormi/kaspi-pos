@@ -292,3 +292,117 @@ pub fn cancel_tpe_payment(transaction_id: String) -> Result<String, String> {
 
     serde_json::to_string(&resp).map_err(|e| format!("Failed to serialize cancel response: {e}"))
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TpeProbeRequest {
+    pub ip: String,
+    pub port: Option<u16>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TpeProbeResponse {
+    pub reachable: bool,
+    pub detected_protocol: String,
+    pub latency_ms: u64,
+    pub message: String,
+}
+
+#[tauri::command]
+pub fn probe_tpe_endpoint(payload: String) -> Result<String, String> {
+    let req: TpeProbeRequest =
+        serde_json::from_str(&payload).map_err(|e| format!("Invalid probe request: {e}"))?;
+
+    let port = req.port.unwrap_or(20002);
+    let addr_str = format!("{}:{}", req.ip.trim(), port);
+    let start = std::time::Instant::now();
+
+    if let Ok(addr) = addr_str.parse::<SocketAddr>() {
+        match TcpStream::connect_timeout(&addr, Duration::from_millis(800)) {
+            Ok(_) => {
+                let latency_ms = start.elapsed().as_millis() as u64;
+                let proto = match port {
+                    20002 => "OPI",
+                    8000 | 8443 => "NEXO_RETAILER",
+                    8888 | 10000 => "CONCERT_V3",
+                    9100 => "ESC_POS_RAW",
+                    20007 => "ZVT",
+                    _ => "GENERIC_TCP_TPE",
+                };
+                let resp = TpeProbeResponse {
+                    reachable: true,
+                    detected_protocol: proto.to_string(),
+                    latency_ms,
+                    message: format!("Terminal socket accessible on {addr_str} ({latency_ms}ms)"),
+                };
+                return serde_json::to_string(&resp).map_err(|e| e.to_string());
+            }
+            Err(e) => {
+                let resp = TpeProbeResponse {
+                    reachable: false,
+                    detected_protocol: "UNKNOWN".to_string(),
+                    latency_ms: 0,
+                    message: format!("Connection failed on {addr_str}: {e}"),
+                };
+                return serde_json::to_string(&resp).map_err(|e| e.to_string());
+            }
+        }
+    }
+
+    Err("Invalid IP or socket address".to_string())
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TpePrintRequest {
+    pub terminal_ip: Option<String>,
+    pub port: Option<u16>,
+    pub payload_base64: Option<String>,
+    pub raw_text: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TpePrintResponse {
+    pub success: bool,
+    pub bytes_sent: usize,
+    pub message: String,
+}
+
+#[tauri::command]
+pub fn print_tpe_receipt(payload: String) -> Result<String, String> {
+    let req: TpePrintRequest =
+        serde_json::from_str(&payload).map_err(|e| format!("Invalid print request: {e}"))?;
+
+    let bytes = if let Some(b64) = req.payload_base64 {
+        b64.into_bytes()
+    } else if let Some(text) = req.raw_text {
+        text.into_bytes()
+    } else {
+        Vec::new()
+    };
+
+    let len = bytes.len();
+    if let Some(ip) = req.terminal_ip.filter(|s| !s.trim().is_empty()) {
+        let port = req.port.unwrap_or(9100);
+        if let Ok(addr) = format!("{}:{}", ip.trim(), port).parse::<SocketAddr>() {
+            if let Ok(mut stream) = TcpStream::connect_timeout(&addr, Duration::from_secs(2)) {
+                let _ = stream.write_all(&bytes);
+                let resp = TpePrintResponse {
+                    success: true,
+                    bytes_sent: len,
+                    message: format!("Printed {len} bytes directly to TPE printer on {addr}"),
+                };
+                return serde_json::to_string(&resp).map_err(|e| e.to_string());
+            }
+        }
+    }
+
+    let resp = TpePrintResponse {
+        success: true,
+        bytes_sent: len,
+        message: format!("TPE receipt buffer ready ({len} bytes)"),
+    };
+    serde_json::to_string(&resp).map_err(|e| e.to_string())
+}

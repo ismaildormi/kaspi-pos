@@ -10,3 +10,5 @@ export * from "./VerifiedAcquisitionPipeline";
 export * from "./DeviceDiscoveryEngine";
 export * from "./UniversalAdapters";
 export * from "./TpeTransactionBridge";
+export * from "./TpeReceiptPrinterEngine";
+export * from "./ProtocolAdapters";

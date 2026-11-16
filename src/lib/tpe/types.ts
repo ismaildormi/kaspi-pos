@@ -9,6 +9,9 @@
  */
 
 import type { PosFeeSplitRatio, SupportedCurrency } from "../payments/types";
+export type { SupportedCurrency, PosFeeSplitRatio };
+
+export type TpeCustomReceiptPayload = TpeReceiptFormatParams;
 
 export type TpeTransactionState =
   | "CREATED"
@@ -49,13 +52,18 @@ export type TpeConnectionType =
   | "LEGACY_BRIDGE";
 
 export type TpeProtocolType =
-  | "OFFICIAL_MANUFACTURER_SDK"
-  | "ADYEN_TERMINAL_API"
-  | "STRIPE_TERMINAL"
   | "NEXO_RETAILER"
   | "OPI"
   | "CONCERT_V3"
+  | "ZVT"
+  | "VERIFONE_ECR"
+  | "STRIPE_TERMINAL"
+  | "ADYEN_TERMINAL_API"
+  | "SQUARE_TERMINAL"
+  | "SUMUP_TERMINAL"
+  | "ANDROID_SMART_POS"
   | "SERIAL_ESC"
+  | "OFFICIAL_MANUFACTURER_SDK"
   | "MANUAL_EXTERNAL";
 
 export type TpeDeclaredCapability =
@@ -70,7 +78,68 @@ export type TpeDeclaredCapability =
   | "PARTIAL_REFUND"
   | "TIPS"
   | "OFFLINE_PENDING_QUEUE"
-  | "RECEIPT_PRINT";
+  | "RECEIPT_PRINT"
+  | "CUSTOM_RECEIPT_PRINT"
+  | "PRINT_384PX_RASTER"
+  | "PRINT_NEXO_DOCUMENT"
+  | "PRINT_ESCPOS"
+  | "BANK_LOCKED_RECEIPT"
+  | "ECR_MODE_CAISSE_REQUIRED";
+
+export type TpePrintPath =
+  | "PATH_A_NEXO_PRINT"
+  | "PATH_B_STRIPE_RASTER"
+  | "PATH_C_ESCPOS"
+  | "PATH_D_BANK_LOCKED_FALLBACK";
+
+export interface TpeReceiptItem {
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
+export interface TpeReceiptFormatParams {
+  storeName: string;
+  legalName?: string;
+  ice?: string;
+  taxId?: string;
+  address?: string;
+  city?: string;
+  phone?: string;
+  receiptNumber: string;
+  date?: string;
+  items: TpeReceiptItem[];
+  subtotal: number;
+  taxTotal: number;
+  discountTotal?: number;
+  grandTotal: number;
+  currency: SupportedCurrency;
+  paymentMethod?: string;
+  cardScheme?: string;
+  authCode?: string;
+  terminalId?: string;
+  maskedPan?: string;
+  aid?: string;
+  footerNote?: string;
+  paperWidth?: 58 | 80 | 32 | 42;
+}
+
+export interface TpeReceiptPrintResult {
+  success: boolean;
+  path: TpePrintPath;
+  rawPayload?: string | Uint8Array;
+  rasterPngDataUri?: string;
+  bankLockedFallback?: boolean;
+  mergedFields?: {
+    authCode?: string;
+    terminalId?: string;
+    maskedPan?: string;
+    cardBrand?: string;
+    aid?: string;
+  };
+  message: string;
+}
 
 export interface TpeDeviceFingerprint {
   deviceId: string;
@@ -189,6 +258,8 @@ export interface UniversalTpeAdapter {
   readonly adapterId: string;
   readonly protocol: TpeProtocolType;
   readonly declaredCapabilities: TpeDeclaredCapability[];
+  readonly supportsCustomPrint?: boolean;
+  readonly printPath?: TpePrintPath;
 
   discover(scopeConfig?: {
     subnetHint?: string;
@@ -208,4 +279,5 @@ export interface UniversalTpeAdapter {
   disconnect(): Promise<{ disconnected: boolean }>;
   healthCheck(): Promise<TpeHealthCheckResult>;
   diagnostics(): Promise<TpeDiagnosticReport>;
+  printCustomReceipt?(params: TpeReceiptFormatParams): Promise<TpeReceiptPrintResult>;
 }

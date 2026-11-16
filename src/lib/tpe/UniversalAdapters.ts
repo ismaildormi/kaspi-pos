@@ -11,12 +11,16 @@
 
 import { DeviceDiscoveryEngine } from "./DeviceDiscoveryEngine";
 import { DeviceFingerprinting } from "./DeviceFingerprinting";
+import { TpeReceiptPrinterEngine } from "./TpeReceiptPrinterEngine";
 import type {
   TpeDeclaredCapability,
   TpeDeviceFingerprint,
   TpeDiagnosticReport,
   TpeHealthCheckResult,
+  TpePrintPath,
   TpeProtocolType,
+  TpeReceiptFormatParams,
+  TpeReceiptPrintResult,
   TpeStartPaymentRequest,
   TpeTransactionResult,
   TpeTransactionState,
@@ -50,6 +54,8 @@ export class BaseUniversalTpeAdapter implements UniversalTpeAdapter {
   readonly adapterId: string;
   readonly protocol: TpeProtocolType;
   readonly declaredCapabilities: TpeDeclaredCapability[];
+  readonly supportsCustomPrint: boolean;
+  readonly printPath: TpePrintPath;
 
   protected fingerprint: TpeDeviceFingerprint;
   protected connected = false;
@@ -60,11 +66,25 @@ export class BaseUniversalTpeAdapter implements UniversalTpeAdapter {
     protocol: TpeProtocolType;
     declaredCapabilities: TpeDeclaredCapability[];
     fingerprint: TpeDeviceFingerprint;
+    supportsCustomPrint?: boolean;
+    printPath?: TpePrintPath;
   }) {
     this.adapterId = params.adapterId;
     this.protocol = params.protocol;
     this.declaredCapabilities = params.declaredCapabilities;
     this.fingerprint = params.fingerprint;
+    this.supportsCustomPrint = Boolean(params.supportsCustomPrint);
+    this.printPath = params.printPath || "PATH_D_BANK_LOCKED_FALLBACK";
+  }
+
+  async printCustomReceipt(params: TpeReceiptFormatParams): Promise<TpeReceiptPrintResult> {
+    recordRedactedEvent(
+      this.fingerprint.deviceId,
+      "INFO",
+      "PRINT_RECEIPT",
+      `Executing ${this.printPath} print for store: ${params.storeName || "ASIMA"}`
+    );
+    return TpeReceiptPrinterEngine.executePrint(params, this.printPath);
   }
 
   async discover(scopeConfig?: {
@@ -404,19 +424,46 @@ export function resolveUniversalTpeAdapter(params: {
 }): UniversalTpeAdapter {
   const id = params.adapterId || "opi-retail-ip-serial";
   const protocol = params.fingerprint.supportedProtocols[0] || "OPI";
+
+  let printPath: TpePrintPath = "PATH_D_BANK_LOCKED_FALLBACK";
+  let supportsCustomPrint = false;
+
+  if (protocol === "STRIPE_TERMINAL") {
+    printPath = "PATH_B_STRIPE_RASTER";
+    supportsCustomPrint = true;
+  } else if (protocol === "ADYEN_TERMINAL_API" || protocol === "NEXO_RETAILER") {
+    printPath = "PATH_A_NEXO_PRINT";
+    supportsCustomPrint = true;
+  } else if (protocol === "ANDROID_SMART_POS") {
+    printPath = "PATH_C_ESCPOS";
+    supportsCustomPrint = true;
+  } else if (protocol === "CONCERT_V3" || protocol === "OPI") {
+    printPath = "PATH_D_BANK_LOCKED_FALLBACK";
+    supportsCustomPrint = false; // Bank-locked receipt firmware, merges onto 80mm POS receipt
+  }
+
+  const baseCaps: TpeDeclaredCapability[] = [
+    "CHIP_EMV",
+    "NFC_CONTACTLESS",
+    "APPLE_PAY",
+    "GOOGLE_PAY",
+    "SAMSUNG_WALLET",
+    "VOID_SAME_DAY",
+    "PARTIAL_REFUND",
+    "TIPS",
+    supportsCustomPrint ? "CUSTOM_RECEIPT_PRINT" : "BANK_LOCKED_RECEIPT",
+  ];
+
+  if (protocol === "CONCERT_V3") {
+    baseCaps.push("ECR_MODE_CAISSE_REQUIRED");
+  }
+
   return new BaseUniversalTpeAdapter({
     adapterId: id,
     protocol,
-    declaredCapabilities: [
-      "CHIP_EMV",
-      "NFC_CONTACTLESS",
-      "APPLE_PAY",
-      "GOOGLE_PAY",
-      "SAMSUNG_WALLET",
-      "VOID_SAME_DAY",
-      "PARTIAL_REFUND",
-      "TIPS",
-    ],
+    declaredCapabilities: baseCaps,
     fingerprint: params.fingerprint,
+    supportsCustomPrint,
+    printPath,
   });
 }

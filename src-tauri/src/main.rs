@@ -10,7 +10,7 @@ use printer::{encode_escpos, render_rows, send_to_printer, to_western_numerals, 
 use local_ai::{get_local_ai_capabilities, run_local_ai_inference};
 use tpe_bridge::{
     cancel_tpe_payment, discover_local_tpe_devices, initiate_tpe_payment,
-    query_tpe_transaction_status,
+    print_tpe_receipt, probe_tpe_endpoint, query_tpe_transaction_status,
 };
 use tauri::Manager;
 use serde::Deserialize;
@@ -362,7 +362,9 @@ fn main() {
             discover_local_tpe_devices,
             initiate_tpe_payment,
             query_tpe_transaction_status,
-            cancel_tpe_payment
+            cancel_tpe_payment,
+            probe_tpe_endpoint,
+            print_tpe_receipt
         ])
         .run(tauri::generate_context!())
         .expect("error while running Kasbi POS Tauri application");

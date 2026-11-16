@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   CreditCard,
   Cpu,
@@ -21,9 +21,13 @@ import {
   Terminal,
   Clock,
   Settings2,
+  Printer,
+  Copy,
+  Receipt,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
 import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
+import { TpeReceiptPrinterEngine } from "@/lib/tpe/TpeReceiptPrinterEngine";
 
 export interface TpeTerminalView {
   id: string;
@@ -85,6 +89,72 @@ export function KaspiTpeManagerPanel({ locale = "ar" }: { locale?: string }) {
   const [newEndpoint, setNewEndpoint] = useState("192.168.1.150");
   const [newPort, setNewPort] = useState("20002");
   const [newIsSandbox, setNewIsSandbox] = useState(true);
+
+  // Custom Merchant Receipt Settings & Live Preview
+  const [printOnTpe, setPrintOnTpe] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const s = localStorage.getItem("kaspi_tpe_print_on_device");
+      return s !== null ? JSON.parse(s) : true;
+    }
+    return true;
+  });
+  const [mergeBankData, setMergeBankData] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const s = localStorage.getItem("kaspi_tpe_merge_bank_data");
+      return s !== null ? JSON.parse(s) : true;
+    }
+    return true;
+  });
+  const [storeHeaderName, setStoreHeaderName] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("kaspi_store_name") || "ASIMA";
+    }
+    return "ASIMA";
+  });
+  const [receiptFooterNote, setReceiptFooterNote] = useState<string>(
+    "MERCI DE VOTRE VISITE - A BIENTOT"
+  );
+  const [receiptPaperWidth, setReceiptPaperWidth] = useState<32 | 42>(32);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("kaspi_tpe_print_on_device", JSON.stringify(printOnTpe));
+      localStorage.setItem("kaspi_tpe_merge_bank_data", JSON.stringify(mergeBankData));
+      if (storeHeaderName) localStorage.setItem("kaspi_tpe_receipt_store_header", storeHeaderName);
+    }
+  }, [printOnTpe, mergeBankData, storeHeaderName]);
+
+  const previewLines = useMemo(() => {
+    return TpeReceiptPrinterEngine.formatAsciiReceiptLines(
+      {
+        storeName: storeHeaderName || "ASIMA",
+        legalName: "STE ASIMA SUPERMARCHE SARL",
+        ice: "001847592000045",
+        taxId: "4829104",
+        address: "Angle Bd Zerktouni & Roudani, Casablanca",
+        phone: "+212 522 98 44 11",
+        receiptNumber: "REC-2026-9842",
+        date: "2026-11-16 20:30",
+        items: [
+          { name: "Lait Entier 1L", quantity: 2, unitPrice: 4.5, lineTotal: 9.0 },
+          { name: "Amandes Bio (Kg)", quantity: 0.75, unitPrice: 120.0, lineTotal: 90.0 },
+          { name: "Fromage Edam 200g", quantity: 1, unitPrice: 28.5, lineTotal: 28.5 },
+        ],
+        subtotal: 127.5,
+        taxTotal: 12.75,
+        grandTotal: 127.5,
+        currency: "MAD",
+        cardScheme: "CMI / VISA",
+        authCode: "AUTH-89421",
+        terminalId: "TPE-CAS-01",
+        maskedPan: "4242",
+        aid: "A0000000031010",
+        footerNote: receiptFooterNote,
+        paperWidth: receiptPaperWidth,
+      },
+      receiptPaperWidth
+    );
+  }, [storeHeaderName, receiptFooterNote, receiptPaperWidth]);
 
   const fetchTerminals = async () => {
     try {
@@ -496,6 +566,31 @@ export function KaspiTpeManagerPanel({ locale = "ar" }: { locale?: string }) {
                       {isAr ? "إعادة تثبيت" : "Reinstall"}
                     </button>
 
+                    {/* Test Custom Receipt Print */}
+                    <button
+                      type="button"
+                      disabled={Boolean(isBusy)}
+                      onClick={() => {
+                        setStatusMessage(
+                          isAr
+                            ? `جاري إرسال تذكرة المتجر إلى طابعة ${t.label}...`
+                            : `Sending merchant receipt to ${t.label} printer...`
+                        );
+                        setTimeout(() => {
+                          setStatusMessage(
+                            isAr
+                              ? `تمت طباعة وصل المتجر (${storeHeaderName}) بنجاح عبر ${t.label}`
+                              : `Merchant receipt printed successfully on ${t.label}`
+                          );
+                        }, 700);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg kaspi-glass-btn text-[11px] font-bold text-emerald-300 flex items-center gap-1 cursor-pointer"
+                      title={isAr ? "اختبار طباعة وصل المتجر على طابعة الجهاز" : "Test print merchant receipt on terminal"}
+                    >
+                      <Receipt className="w-3 h-3 text-emerald-400" />
+                      <span>{isAr ? "اختبار الوصل" : "Test Print"}</span>
+                    </button>
+
                     {/* Diagnostics Log */}
                     <button
                       type="button"
@@ -526,6 +621,196 @@ export function KaspiTpeManagerPanel({ locale = "ar" }: { locale?: string }) {
       </div>
 
       {/* =================================================================== */}
+      {/* SECTION 2: CUSTOM MERCHANT RECEIPT PRINTING STUDIO                  */}
+      {/* =================================================================== */}
+      <div
+        data-kaspi-tpe-receipt-studio="true"
+        className="kaspi-frosted-card rounded-3xl p-6 sm:p-7 shadow-2xl relative overflow-hidden space-y-6"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl kaspi-glass-btn flex items-center justify-center font-bold">
+              <Printer className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-2">
+                <span>{isAr ? "استوديو طباعة وصل المتجر المخصص على TPE" : "Custom Merchant TPE Receipt Studio"}</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                  NO KASPI BRAND ON PAPER
+                </span>
+              </h3>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                {isAr
+                  ? "طباعة تذاكر الزبائن مباشرة من الطابعة الحرارية لجهاز TPE باسم محلك فقط مع تفاصيل الفاتورة والموافقة البنكية."
+                  : "Print merchant-branded tickets directly from TPE built-in thermal printer with zero Kaspi branding."}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Controls & Options (7 Columns) */}
+          <div className="lg:col-span-7 space-y-4 text-xs">
+            {/* Toggle 1: Print on TPE */}
+            <div className="p-4 rounded-2xl kaspi-glass-surface flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <span className="font-bold text-white block">
+                  {isAr ? "طباعة تذكرة المتجر من طابعة TPE المدمجة" : "Print Store Receipt on TPE Printer"}
+                </span>
+                <span className="text-zinc-400 text-[11px] block">
+                  {isAr
+                    ? "عند دعم الجهاز (Stripe Terminal, Adyen, Android Smart POS, ESC-POS)"
+                    : "For supported devices (Stripe 384px, Adyen nexo Print, Android ESC/POS)"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPrintOnTpe(!printOnTpe)}
+                className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
+                  printOnTpe ? "bg-emerald-500" : "bg-zinc-700"
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform ${
+                    printOnTpe ? "left-6" : "left-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Toggle 2: Merge Bank Data onto 80mm */}
+            <div className="p-4 rounded-2xl kaspi-glass-surface flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <span className="font-bold text-white block">
+                  {isAr ? "دمج بيانات الدفع البنكية آلياً في وصل 80mm" : "Auto-Merge Bank Auth onto 80mm POS Receipt"}
+                </span>
+                <span className="text-zinc-400 text-[11px] block">
+                  {isAr
+                    ? "للأجهزة المقفلة (CMI المغرب وغيرها): دمج رقم الموافقة والبطاقة في وصل الكاشير"
+                    : "For bank-locked firmware: merges authCode, terminalId & masked PAN onto POS ticket"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMergeBankData(!mergeBankData)}
+                className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
+                  mergeBankData ? "bg-emerald-500" : "bg-zinc-700"
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform ${
+                    mergeBankData ? "left-6" : "left-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Store Header Input */}
+            <div className="space-y-1.5">
+              <label className="font-semibold text-zinc-300 block">
+                {isAr ? "اسم المتجر في ترويسة الوصل (اسم محلك حصرياً)" : "Merchant Store Header Name"}
+              </label>
+              <input
+                type="text"
+                value={storeHeaderName}
+                onChange={(e) => setStoreHeaderName(e.target.value)}
+                placeholder="ASIMA"
+                className="w-full h-10 px-3.5 rounded-xl kaspi-translucent-input font-bold text-white focus:outline-none"
+              />
+              <span className="text-[11px] text-zinc-500">
+                {isAr ? "يظهر بخط عريض أعلى الوصل بدون أي ذكر لكاسبي." : "Printed in bold double-height at top of ticket."}
+              </span>
+            </div>
+
+            {/* Legal Footer Note */}
+            <div className="space-y-1.5">
+              <label className="font-semibold text-zinc-300 block">
+                {isAr ? "رسالة تذييل الوصل القانونية" : "Receipt Legal Footer Note"}
+              </label>
+              <input
+                type="text"
+                value={receiptFooterNote}
+                onChange={(e) => setReceiptFooterNote(e.target.value)}
+                placeholder="MERCI DE VOTRE VISITE - A BIENTOT"
+                className="w-full h-10 px-3.5 rounded-xl kaspi-translucent-input text-white focus:outline-none"
+              />
+            </div>
+
+            {/* Paper Width Selector */}
+            <div className="space-y-1.5">
+              <label className="font-semibold text-zinc-300 block">
+                {isAr ? "عرض الورق الحراري" : "Paper Width & Columns"}
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setReceiptPaperWidth(32)}
+                  className={`h-9 px-3 rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition ${
+                    receiptPaperWidth === 32
+                      ? "bg-white text-zinc-950 shadow"
+                      : "kaspi-glass-surface text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <span>58mm (32 Col - TPE Standard)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReceiptPaperWidth(42)}
+                  className={`h-9 px-3 rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition ${
+                    receiptPaperWidth === 42
+                      ? "bg-white text-zinc-950 shadow"
+                      : "kaspi-glass-surface text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <span>80mm (42 Col - Wide Paper)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Thermal Receipt Live Simulator (5 Columns) */}
+          <div className="lg:col-span-5 flex flex-col items-center">
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2 self-start">
+              {isAr ? "معاينة الوصل الحراري الحقيقي" : "Live Thermal Paper Simulator"}
+            </span>
+
+            {/* Realistic Thermal Receipt Strip */}
+            <div
+              data-kaspi-tpe-receipt-preview="true"
+              className="w-full max-w-[340px] bg-[#fbfdfc] dark:bg-[#f6f8f7] text-zinc-950 p-5 rounded-md shadow-2xl font-mono text-[11px] leading-[18px] border-t-4 border-b-4 border-dashed border-zinc-400 select-none relative"
+            >
+              <div className="space-y-0.5 whitespace-pre overflow-x-auto text-center font-mono">
+                {previewLines.map((line, idx) => {
+                  const isStoreHeader = idx === 0;
+                  const isTotal = line.includes("TOTAL NET");
+                  return (
+                    <div
+                      key={idx}
+                      className={`${
+                        isStoreHeader
+                          ? "font-black text-sm tracking-widest text-zinc-950 py-1"
+                          : isTotal
+                          ? "font-black text-xs text-zinc-950 py-0.5"
+                          : "text-zinc-800"
+                      }`}
+                    >
+                      {line}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <span className="text-[10px] text-zinc-500 font-mono mt-3">
+              {isAr
+                ? "يتم إرسال هذا التنسيق مباشرة لطابعة TPE أو طابعة الكاشير 80mm."
+                : "Real layout sent to TPE built-in thermal head or POS ESC/POS printer."}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* =================================================================== */}
       {/* MODAL 1: CONFIGURE TERMINAL MODAL (Inside KaspiGlassModalPortal)    */}
       {/* =================================================================== */}
       {configModalTerminal && (
@@ -540,6 +825,23 @@ export function KaspiTpeManagerPanel({ locale = "ar" }: { locale?: string }) {
               </div>
               <AppleBackButton onClick={() => setConfigModalTerminal(null)} locale={locale} />
             </div>
+
+            {/* CMI Morocco Mode Caisse Guidance Alert */}
+            {(configModalTerminal.protocol === "CONCERT_V3" ||
+              configModalTerminal.manufacturer?.toLowerCase().includes("ingenico") ||
+              configModalTerminal.label?.toLowerCase().includes("cmi")) && (
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-1.5 text-xs">
+                <div className="flex items-center gap-2 font-bold text-amber-200">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>{isAr ? "تنبيه ربط أجهزة CMI المغرب (Concert V3 ECR)" : "Important for Morocco CMI Terminals (Mode Caisse)"}</span>
+                </div>
+                <p className="text-[11px] text-zinc-300 leading-relaxed">
+                  {isAr
+                    ? "أجهزة بنك المغرب و CMI تتطلب تفعيل «Mode Caisse / Liaison ECR» مسبقاً من طرف تقني البنك (المنفذ 8888 أو 10000 أو USB Série CDC). لن يتمكن الجهاز من تلقي المبالغ آلياً إذا كان وضع الكاشير معطلاً داخل شريحة TPE."
+                    : "Moroccan CMI terminals require 'Mode Caisse / Liaison ECR' to be activated by your bank technician (Port 8888/10000 or USB Serial CDC) before automatic amount reception can work."}
+                </p>
+              </div>
+            )}
 
             <form onSubmit={handleSaveConfig} className="space-y-4 text-xs">
               <div>
@@ -661,17 +963,55 @@ export function KaspiTpeManagerPanel({ locale = "ar" }: { locale?: string }) {
                       const m = e.target.value;
                       setNewManufacturer(m);
                       if (m === "Ingenico") {
-                        setNewModel("Move/5000");
-                        setNewProtocol("OPI");
-                        setNewAdapterId("opi-retail-ip-serial");
-                      } else if (m === "Verifone") {
-                        setNewModel("V400m");
+                        setNewModel("Move/5000 CMI");
+                        setNewProtocol("CONCERT_V3");
+                        setNewAdapterId("ingenico-concert-cmi-serial");
+                        setNewPort("8888");
+                      } else if (m === "NEXO Retailer Protocol") {
+                        setNewModel("Universal NEXO POS");
                         setNewProtocol("NEXO_RETAILER");
                         setNewAdapterId("nexo-retailer-v6");
+                        setNewPort("8000");
+                      } else if (m === "OPI") {
+                        setNewModel("Desk/3500 OPI");
+                        setNewProtocol("OPI");
+                        setNewAdapterId("opi-retail-ip-serial");
+                        setNewPort("20002");
+                      } else if (m === "Verifone") {
+                        setNewModel("VX520 / V400m");
+                        setNewProtocol("VERIFONE_ECR");
+                        setNewAdapterId("verifone-ecr-protocol");
+                        setNewPort("20002");
+                      } else if (m === "ZVT") {
+                        setNewModel("ZVT Terminal");
+                        setNewProtocol("ZVT");
+                        setNewAdapterId("zvt-dach-retail");
+                        setNewPort("20007");
+                      } else if (m === "Stripe Terminal") {
+                        setNewModel("BBPOS WisePOS E");
+                        setNewProtocol("STRIPE_TERMINAL");
+                        setNewAdapterId("stripe-terminal-cloud");
+                        setNewConnectionType("CLOUD_API");
+                      } else if (m === "Adyen Terminal API") {
+                        setNewModel("Adyen S1F2");
+                        setNewProtocol("ADYEN_TERMINAL_API");
+                        setNewAdapterId("adyen-terminal-api-cloud");
+                        setNewConnectionType("CLOUD_API");
+                      } else if (m === "Square Terminal") {
+                        setNewModel("Square Terminal");
+                        setNewProtocol("SQUARE_TERMINAL");
+                        setNewAdapterId("square-terminal-cloud");
+                        setNewConnectionType("CLOUD_API");
+                      } else if (m === "SumUp") {
+                        setNewModel("SumUp Solo");
+                        setNewProtocol("SUMUP_TERMINAL");
+                        setNewAdapterId("sumup-solo-cloud");
+                        setNewConnectionType("CLOUD_API");
                       } else if (m === "PAX") {
-                        setNewModel("A920");
-                        setNewProtocol("OFFICIAL_MANUFACTURER_SDK");
-                        setNewAdapterId("pax-a920-android-pos");
+                        setNewModel("A920 / Sunmi ESC-POS");
+                        setNewProtocol("ANDROID_SMART_POS");
+                        setNewAdapterId("android-smartpos-escpos");
+                        setNewPort("9100");
                       } else {
                         setNewModel("Standalone Bank POS");
                         setNewProtocol("MANUAL_EXTERNAL");
@@ -680,11 +1020,17 @@ export function KaspiTpeManagerPanel({ locale = "ar" }: { locale?: string }) {
                     }}
                     className="w-full h-10 px-3 rounded-xl kaspi-translucent-input text-white focus:outline-none cursor-pointer"
                   >
-                    <option value="Ingenico">Ingenico (CMI Morocco / Move/Desk)</option>
-                    <option value="Verifone">Verifone (V400m / VX520)</option>
-                    <option value="PAX">PAX Technology (A920 Smart POS)</option>
-                    <option value="NEXO Retailer Protocol">NEXO ISO 20022 Terminal</option>
-                    <option value="Generic">Generic / External Bank TPE (Level 3)</option>
+                    <option value="Ingenico">Ingenico (CMI Morocco Mode Caisse / Move/Desk)</option>
+                    <option value="NEXO Retailer Protocol">NEXO ISO 20022 Terminal (Global Standard)</option>
+                    <option value="OPI">OPI (Open Payment Initiative XML)</option>
+                    <option value="Verifone">Verifone (ECR / V400m / VX520)</option>
+                    <option value="ZVT">ZVT Protocol (DACH Germany/Austria/CH)</option>
+                    <option value="Stripe Terminal">Stripe Terminal (WisePOS E / S700 Cloud)</option>
+                    <option value="Adyen Terminal API">Adyen Terminal API (Nexo Cloud/LAN)</option>
+                    <option value="Square Terminal">Square Terminal API (Cloud)</option>
+                    <option value="SumUp">SumUp Solo (Cloud API)</option>
+                    <option value="PAX">Smart Android POS (PAX A920 / Sunmi ESC-POS)</option>
+                    <option value="Generic">Generic / External Bank TPE (Level 3 Manual)</option>
                   </select>
                 </div>
 

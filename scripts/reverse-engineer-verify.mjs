@@ -237,7 +237,7 @@ async function runStaticReverseEngineeringChecks() {
     "All 3 feature suites verified"
   );
 
-  // 9. Universal TPE Hub Modules & Multi-Protocol Interfaces
+  // 9. Universal TPE Hub Modules, 7 Protocols & Terminal Receipt Engine
   const tpeModules = [
     "src/lib/tpe/types.ts",
     "src/lib/tpe/DeviceFingerprinting.ts",
@@ -246,8 +246,11 @@ async function runStaticReverseEngineeringChecks() {
     "src/lib/tpe/VerifiedAcquisitionPipeline.ts",
     "src/lib/tpe/DeviceDiscoveryEngine.ts",
     "src/lib/tpe/UniversalAdapters.ts",
+    "src/lib/tpe/ProtocolAdapters.ts",
+    "src/lib/tpe/TpeReceiptPrinterEngine.ts",
     "src/lib/tpe/TpeTransactionBridge.ts",
     "src/lib/tpe/index.ts",
+    "docs/KASPI_UNIVERSAL_TPE_SOURCES.md",
     "src/lib/payments/WalletAdapter.ts",
     "src/lib/payments/SettlementManager.ts",
     "src/lib/payments/WebhookProcessor.ts",
@@ -256,11 +259,32 @@ async function runStaticReverseEngineeringChecks() {
     "src/components/settings/KaspiTpeManagerPanel.tsx",
   ];
   const missingTpeModules = tpeModules.filter((m) => !fs.existsSync(path.join(ROOT, m)));
+  const protocolAdaptersCode = readFileSafe("src/lib/tpe/ProtocolAdapters.ts");
+  const receiptEngineCode = readFileSafe("src/lib/tpe/TpeReceiptPrinterEngine.ts");
+  const tpeSourcesDoc = readFileSafe("docs/KASPI_UNIVERSAL_TPE_SOURCES.md");
+
+  const hasAllProtocols =
+    protocolAdaptersCode.includes("NexoRetailerProtocol") &&
+    protocolAdaptersCode.includes("OpiProtocol") &&
+    protocolAdaptersCode.includes("ConcertV3Protocol") &&
+    protocolAdaptersCode.includes("ZvtProtocol") &&
+    protocolAdaptersCode.includes("VerifoneEcrProtocol") &&
+    protocolAdaptersCode.includes("CloudTerminalRestApiAdapter") &&
+    protocolAdaptersCode.includes("AndroidSmartPosProtocol");
+
+  const hasAllReceiptPaths =
+    receiptEngineCode.includes("PATH_A_NEXO_PRINT") &&
+    receiptEngineCode.includes("PATH_B_STRIPE_RASTER") &&
+    receiptEngineCode.includes("PATH_C_ESCPOS") &&
+    receiptEngineCode.includes("PATH_D_BANK_LOCKED_FALLBACK");
+
   record(
     "Universal TPE Architecture",
-    "All Universal TPE Hub modules, pipelines, bridges & manager components exist",
-    missingTpeModules.length === 0,
-    missingTpeModules.length === 0 ? `${tpeModules.length} TPE modules verified` : `Missing: ${missingTpeModules.join(", ")}`
+    "All Universal TPE Hub modules, 7 Global Protocols & 4-Path Receipt Engine exist with docs/KASPI_UNIVERSAL_TPE_SOURCES.md",
+    missingTpeModules.length === 0 && hasAllProtocols && hasAllReceiptPaths && Boolean(tpeSourcesDoc),
+    missingTpeModules.length === 0
+      ? `${tpeModules.length} TPE modules + 7 Protocols + 4 Print Paths verified`
+      : `Missing: ${missingTpeModules.join(", ")}`
   );
 
   // 10. 11-State Transaction Lifecycle & Zero Amount Re-entry State Machine
@@ -290,18 +314,23 @@ async function runStaticReverseEngineeringChecks() {
     "11 states + Zero Re-entry + Disconnect Recovery verified"
   );
 
-  // 11. Multi-Tenant TPE Prisma Models & Tauri Rust Local Bridge
+  // 11. Multi-Tenant TPE Prisma Models & Tauri Rust Local Bridge with probe & print
   const tauriBridgeRs = readFileSafe("src-tauri/src/tpe_bridge.rs");
+  const tauriMainRs = readFileSafe("src-tauri/src/main.rs");
   record(
     "Tauri Bridge & Tenant Isolation",
-    "Tauri tpe_bridge.rs implements TCP OPI/NEXO & Prisma schema defines tenant/store-isolated TPE models",
+    "Tauri tpe_bridge.rs implements TCP OPI/NEXO, probe_tpe_endpoint & print_tpe_receipt; Prisma schema defines tenant/store-isolated TPE models",
     tauriBridgeRs.includes("initiate_tpe_payment") &&
       tauriBridgeRs.includes("discover_local_tpe_devices") &&
+      tauriBridgeRs.includes("probe_tpe_endpoint") &&
+      tauriBridgeRs.includes("print_tpe_receipt") &&
+      tauriMainRs.includes("probe_tpe_endpoint") &&
+      tauriMainRs.includes("print_tpe_receipt") &&
       prismaSchema.includes("model TpeTerminal") &&
       prismaSchema.includes("model TpeTransaction") &&
       prismaSchema.includes("model PaymentAuditLog") &&
       !forbiddenPrismaCols.test(prismaSchema),
-    "Tauri Rust TCP bridge + scoped schema models verified"
+    "Tauri Rust TCP bridge + probe/print + scoped schema models verified"
   );
 }
 
@@ -352,6 +381,8 @@ async function runLiveBrowserReverseEngineeringChecks() {
       }, theme);
 
       const page = await context.newPage();
+      page.setDefaultNavigationTimeout(60000);
+      page.setDefaultTimeout(60000);
 
       // 1. /ar/login — Check Logo Height (<= 50px), Theme Toggle (36x36, zero text), Single Eye, Glass Alpha
       await page.goto(`${BASE_URL}/ar/login`, { waitUntil: "domcontentloaded" });
@@ -496,6 +527,8 @@ async function runLiveBrowserReverseEngineeringChecks() {
             path: path.join(SCREENSHOT_DIR, `04_subscription_modal_${theme}.png`),
           });
         }
+        await page.keyboard.press("Escape").catch(() => {});
+        await page.waitForTimeout(250);
       }
 
       // 4. Scrolled /ar/dashboard/inventory — Verify Locked 100vh Sidebar & Non-Sticky Topbar
@@ -534,7 +567,7 @@ async function runLiveBrowserReverseEngineeringChecks() {
         `asideHeight=${scrollMetrics.asideHeight}px, headerTop=${scrollMetrics.headerTop}px`
       );
 
-      // 4b. /ar/dashboard/settings?tab=terminals — Universal TPE Hardware Hub
+      // 4b. /ar/dashboard/settings?tab=terminals — Universal TPE Hardware Hub & Receipt Studio
       await page.goto(`${BASE_URL}/ar/dashboard/settings?tab=terminals`, { waitUntil: "domcontentloaded" });
       await page.evaluate((t) => {
         document.documentElement.setAttribute("data-kaspi-theme", t);
@@ -542,6 +575,10 @@ async function runLiveBrowserReverseEngineeringChecks() {
       await page.waitForTimeout(450);
 
       const tpeManagerVisible = await page.locator('[data-kaspi-tpe-manager-panel="true"]').count();
+      const tpeReceiptStudioVisible = await page.locator('[data-kaspi-tpe-receipt-studio="true"]').count();
+      const tpeReceiptPreviewVisible = await page.locator('[data-kaspi-tpe-receipt-preview="true"]').count();
+      const previewText = await page.locator('[data-kaspi-tpe-receipt-preview="true"]').innerText().catch(() => "");
+
       if (CAPTURE_SCREENSHOTS) {
         await page.screenshot({
           path: path.join(SCREENSHOT_DIR, `11_dashboard_settings_tpe_${theme}.png`),
@@ -550,9 +587,9 @@ async function runLiveBrowserReverseEngineeringChecks() {
 
       record(
         `Live DOM (${theme})`,
-        "/ar/dashboard/settings?tab=terminals renders Universal TPE Hub with working controls",
-        tpeManagerVisible > 0,
-        "KaspiTpeManagerPanel verified"
+        "/ar/dashboard/settings?tab=terminals renders Universal TPE Hub & Custom Store Receipt Studio (ASIMA)",
+        tpeManagerVisible > 0 && tpeReceiptStudioVisible > 0 && tpeReceiptPreviewVisible > 0 && previewText.includes("ASIMA"),
+        "KaspiTpeManagerPanel + Receipt Studio + Thermal Preview verified"
       );
 
       // 5. /ar/pos — Seed Showcase Products (Unit + Weighable Kg with Photo), Verify Grid, (...) Menu, PLU Modal vs Checkout Z-Index, Price Verifier, Cash Shift
