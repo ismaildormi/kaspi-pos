@@ -17,6 +17,7 @@ import {
   Banknote,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 import { toast } from "sonner";
 import { printReceipt } from "@/client/printing";
 import { usePosStore } from "@/client/store/usePosStore";
@@ -504,22 +505,54 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
       : null;
 
   return (
-    <div dir="ltr" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-xl select-none">
-      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.08] gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center kaspi-glass-btn text-[var(--kaspi-text-primary)]">
-              {activeShift ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5 opacity-75" />}
+    <KaspiGlassModalPortal
+      isOpen={isOpen}
+      onClose={onClose}
+      dir={locale === "ar" ? "rtl" : "ltr"}
+    >
+      <div
+        data-kaspi-cash-shift-modal="true"
+        className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-3xl max-h-[90vh] overflow-hidden my-auto rounded-3xl shadow-2xl flex flex-col"
+      >
+        {/* Clean Executive Apple visionOS Header */}
+        <div className="flex flex-wrap items-center justify-between px-6 py-4 border-b border-white/[0.12] gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center kaspi-glass-btn text-[var(--kaspi-text-primary)] shrink-0">
+              {activeShift ? (
+                <Unlock className="w-5 h-5 text-emerald-400" />
+              ) : (
+                <Lock className="w-5 h-5 text-[var(--kaspi-text-secondary)]" />
+              )}
             </div>
-            <div>
-              <h2 className="text-base font-bold text-[var(--kaspi-text-primary)] tracking-tight flex items-center gap-2">
-                <span>{shiftI18n.modalTitle}</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-white/10 bg-white/[0.05] text-[var(--kaspi-text-secondary)]">
-                  {activeShift ? shiftI18n.drawerOpen : shiftI18n.drawerClosed}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h2 className="text-base sm:text-lg font-bold text-[var(--kaspi-text-primary)] tracking-tight">
+                  {shiftI18n.modalTitle}
+                </h2>
+                <span
+                  className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${
+                    activeShift
+                      ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-400"
+                      : "kaspi-glass-surface text-[var(--kaspi-text-secondary)]"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      activeShift ? "bg-emerald-400 animate-pulse" : "bg-zinc-400"
+                    }`}
+                  />
+                  <span>
+                    {locale === "ar"
+                      ? activeShift
+                        ? "الوردية مفتوحة"
+                        : "الوردية مغلقة"
+                      : activeShift
+                      ? shiftI18n.drawerOpen
+                      : shiftI18n.drawerClosed}
+                  </span>
                 </span>
-              </h2>
-              <p className="text-xs text-[var(--kaspi-text-secondary)]">
+              </div>
+              <p className="text-xs text-[var(--kaspi-text-secondary)] mt-0.5 truncate">
                 {shiftI18n.modalSubtitle}
               </p>
             </div>
@@ -528,83 +561,139 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
           <AppleBackButton onClick={onClose} locale={locale} />
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 px-6 py-3 bg-zinc-900/30 border-b border-zinc-800 overflow-x-auto">
-          {activeShift && (
-            <>
-              <button
-                onClick={() => setActiveTab("x_report")}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
-                  activeTab === "x_report"
-                    ? "bg-white text-zinc-950 shadow-xs"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
-                }`}
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>{shiftI18n.tabXReport}</span>
-              </button>
+        {/* Tactile Segmented Glass Tabs */}
+        <div className="px-6 py-3 border-b border-white/[0.10] kaspi-frosted-card">
+          <div className="flex items-center gap-2 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => setActiveTab("x_report")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${
+                activeTab === "x_report"
+                  ? "kaspi-glass-btn kaspi-orbit-active shadow-xs"
+                  : "text-[var(--kaspi-text-muted)] hover:text-[var(--kaspi-text-primary)]"
+              }`}
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>
+                {locale === "ar"
+                  ? "إدارة الصندوق والافتتاح"
+                  : shiftI18n.tabXReport}
+              </span>
+            </button>
 
-              <button
-                onClick={() => setActiveTab("movements")}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
-                  activeTab === "movements"
-                    ? "bg-white text-zinc-950 shadow-xs"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
-                }`}
-              >
-                <Wallet className="w-3.5 h-3.5" />
-                <span>{shiftI18n.tabMovements} ({activeShift.movements.length})</span>
-              </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("history")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${
+                activeTab === "history"
+                  ? "kaspi-glass-btn kaspi-orbit-active shadow-xs"
+                  : "text-[var(--kaspi-text-muted)] hover:text-[var(--kaspi-text-primary)]"
+              }`}
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>
+                {locale === "ar"
+                  ? `سجل الإقفالات (X / Z) (${recentShifts.length})`
+                  : `${shiftI18n.tabHistory} (${recentShifts.length})`}
+              </span>
+            </button>
 
+            <button
+              type="button"
+              onClick={() => setActiveTab("movements")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${
+                activeTab === "movements"
+                  ? "kaspi-glass-btn kaspi-orbit-active shadow-xs"
+                  : "text-[var(--kaspi-text-muted)] hover:text-[var(--kaspi-text-primary)]"
+              }`}
+            >
+              <Wallet className="w-3.5 h-3.5" />
+              <span>
+                {locale === "ar"
+                  ? `حركات النقدية والمصروفات (${activeShift?.movements.length ?? 0})`
+                  : `${shiftI18n.tabMovements} (${activeShift?.movements.length ?? 0})`}
+              </span>
+            </button>
+
+            {activeShift && (
               <button
+                type="button"
                 onClick={() => {
                   setCountedCashInput(activeShift.expectedCash.toFixed(2));
                   setActiveTab("close_z");
                 }}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap ${
                   activeTab === "close_z"
-                    ? "bg-white text-zinc-950 shadow-xs"
-                    : "text-zinc-300 hover:text-white hover:bg-zinc-900 border border-white/10"
+                    ? "kaspi-glass-btn kaspi-orbit-active shadow-xs"
+                    : "text-[var(--kaspi-text-muted)] hover:text-[var(--kaspi-text-primary)]"
                 }`}
               >
                 <Lock className="w-3.5 h-3.5" />
-                <span>{shiftI18n.tabCloseZ}</span>
+                <span>
+                  {locale === "ar"
+                    ? "إصدار تقرير Z وإقفال اليومية"
+                    : shiftI18n.tabCloseZ}
+                </span>
               </button>
-            </>
-          )}
-
-          <button
-            onClick={() => setActiveTab("history")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
-              activeTab === "history"
-                ? "bg-white text-zinc-950 shadow-xs"
-                : "text-zinc-400 hover:text-white hover:bg-zinc-900"
-            }`}
-          >
-            <History className="w-3.5 h-3.5" />
-            <span>{shiftI18n.tabHistory} ({recentShifts.length})</span>
-          </button>
+            )}
+          </div>
         </div>
 
         {/* Body Content */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1">
           {!activeShift && activeTab !== "history" ? (
-            /* OPEN SHIFT VIEW */
-            <form onSubmit={handleOpenShift} className="max-w-md mx-auto space-y-5 py-2">
+            /* OPEN SHIFT VIEW — Executive Apple Glass Cash Vault */
+            <form onSubmit={handleOpenShift} className="max-w-lg mx-auto space-y-5 py-1">
               <div className="text-center space-y-1.5">
-                <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-white/10 text-white flex items-center justify-center mx-auto">
-                  <Banknote className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-2xl kaspi-glass-btn text-[var(--kaspi-text-primary)] flex items-center justify-center mx-auto">
+                  <Banknote className="w-6 h-6 text-emerald-400" />
                 </div>
-                <h3 className="text-lg font-bold text-white">
+                <h3 className="text-lg font-bold text-[var(--kaspi-text-primary)]">
                   {shiftI18n.openShiftTitle}
                 </h3>
-                <p className="text-xs text-zinc-400">
+                <p className="text-xs text-[var(--kaspi-text-secondary)]">
                   {shiftI18n.openShiftSubtitle}
                 </p>
               </div>
 
+              {/* 4-Card Shift Reconciliation Preview (Opening Float, Cash Sales, Cash Out, Expected Balance) */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
+                <div className="p-3 rounded-2xl kaspi-frosted-card">
+                  <span className="text-[10px] text-[var(--kaspi-text-muted)] block">
+                    {locale === "ar" ? "رصيد الافتتاح" : shiftI18n.initialFloat}
+                  </span>
+                  <span className="text-xs font-bold font-mono text-[var(--kaspi-text-primary)] mt-1 block" dir="ltr">
+                    {(parseFloat(openingCashInput) || 0).toFixed(2)} MAD
+                  </span>
+                </div>
+                <div className="p-3 rounded-2xl kaspi-frosted-card">
+                  <span className="text-[10px] text-[var(--kaspi-text-muted)] block">
+                    {locale === "ar" ? "مبيعات الكاش" : shiftI18n.cashSales}
+                  </span>
+                  <span className="text-xs font-bold font-mono text-[var(--kaspi-text-primary)] mt-1 block" dir="ltr">
+                    0.00 MAD
+                  </span>
+                </div>
+                <div className="p-3 rounded-2xl kaspi-frosted-card">
+                  <span className="text-[10px] text-[var(--kaspi-text-muted)] block">
+                    {locale === "ar" ? "السحوبات/المصروفات" : shiftI18n.cashOut}
+                  </span>
+                  <span className="text-xs font-bold font-mono text-[var(--kaspi-text-primary)] mt-1 block" dir="ltr">
+                    0.00 MAD
+                  </span>
+                </div>
+                <div className="p-3 rounded-2xl kaspi-frosted-card">
+                  <span className="text-[10px] text-[var(--kaspi-text-muted)] block">
+                    {locale === "ar" ? "الرصيد المتوقع" : shiftI18n.expectedLabel}
+                  </span>
+                  <span className="text-xs font-bold font-mono text-emerald-500 mt-1 block" dir="ltr">
+                    {(parseFloat(openingCashInput) || 0).toFixed(2)} MAD
+                  </span>
+                </div>
+              </div>
+
               <div>
-                <label className="block text-xs font-bold text-zinc-300 mb-1.5">
+                <label className="block text-xs font-bold text-[var(--kaspi-text-secondary)] mb-1.5 text-center">
                   {shiftI18n.initialFloatLabel}
                 </label>
                 <input
@@ -614,24 +703,34 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
                   required
                   value={openingCashInput}
                   onChange={(e) => setOpeningCashInput(e.target.value)}
-                  className="w-full h-12 px-4 rounded-xl bg-zinc-900 border border-zinc-700 text-xl font-bold font-mono text-white text-center focus:outline-none focus:border-white"
+                  dir="ltr"
+                  className="w-full h-14 px-4 rounded-2xl kaspi-translucent-input text-2xl font-black font-mono text-center tabular-nums focus:outline-none"
                 />
-                <div className="grid grid-cols-4 gap-2 mt-2">
-                  {["200.00", "500.00", "1000.00", "2000.00"].map((preset) => (
+                <div className="grid grid-cols-4 gap-2 mt-2.5" dir="ltr">
+                  {[
+                    { val: "200.00", label: "200 MAD" },
+                    { val: "500.00", label: "500 MAD" },
+                    { val: "1000.00", label: "1,000 MAD" },
+                    { val: "2000.00", label: "2,000 MAD" },
+                  ].map((preset) => (
                     <button
-                      key={preset}
+                      key={preset.val}
                       type="button"
-                      onClick={() => setOpeningCashInput(preset)}
-                      className="py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-mono text-zinc-300 cursor-pointer"
+                      onClick={() => setOpeningCashInput(preset.val)}
+                      className={`py-2 rounded-xl text-xs font-mono font-bold cursor-pointer transition-all ${
+                        openingCashInput === preset.val
+                          ? "kaspi-glass-btn kaspi-orbit-active"
+                          : "kaspi-frosted-card text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
+                      }`}
                     >
-                      {preset} {t.common.currency}
+                      {preset.label}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                <label className="block text-xs font-semibold text-[var(--kaspi-text-secondary)] mb-1">
                   {shiftI18n.openingNotesLabel}
                 </label>
                 <input
@@ -639,14 +738,14 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
                   value={openingNotes}
                   onChange={(e) => setOpeningNotes(e.target.value)}
                   placeholder={shiftI18n.openingNotesPlaceholder}
-                  className="w-full h-10 px-3.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-white"
+                  className="w-full h-10 px-3.5 rounded-xl kaspi-translucent-input text-xs focus:outline-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmittingOpen}
-                className="w-full py-3.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer"
+                className="w-full py-3.5 rounded-2xl kaspi-emerald-checkout-btn font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer"
               >
                 {isSubmittingOpen ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -660,24 +759,24 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
             /* LIVE X-REPORT VIEW */
             <div className="space-y-6">
               {/* Top Expected Cash Banner */}
-              <div className="p-5 rounded-2xl bg-zinc-900 border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="p-5 rounded-2xl kaspi-frosted-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 font-mono">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--kaspi-text-muted)] font-mono">
                     {shiftI18n.theoreticalCashTitle}
                   </span>
-                  <div className="text-3xl font-black text-white font-mono mt-1" dir="ltr">
+                  <div className="text-3xl font-black text-[var(--kaspi-text-primary)] font-mono mt-1" dir="ltr">
                     {formatReceiptAmount(activeShift.expectedCash)} {t.common.currency}
                   </div>
-                  <p className="text-xs text-zinc-400 mt-1">
+                  <p className="text-xs text-[var(--kaspi-text-secondary)] mt-1">
                     {shiftI18n.openedBy} {formatReceiptDate(activeShift.openedAt, locale)} {shiftI18n.byUser}{" "}
-                    <strong className="text-white">{activeShift.cashierName}</strong>
+                    <strong className="text-[var(--kaspi-text-primary)]">{activeShift.cashierName}</strong>
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => handlePrintShiftReport(activeShift, "X-REPORT")}
-                  className="px-4 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl kaspi-glass-btn font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer"
                 >
                   <Printer className="w-4 h-4" />
                   <span>{shiftI18n.printXBtn}</span>
@@ -686,58 +785,58 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
 
               {/* 4-Card Drawer Cash Math Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-                  <span className="text-[11px] text-zinc-400 block">{shiftI18n.initialFloat}</span>
-                  <span className="text-base font-bold text-white font-mono mt-1 block" dir="ltr">
+                <div className="p-4 rounded-2xl kaspi-frosted-card">
+                  <span className="text-[11px] text-[var(--kaspi-text-muted)] block">{shiftI18n.initialFloat}</span>
+                  <span className="text-base font-bold text-[var(--kaspi-text-primary)] font-mono mt-1 block" dir="ltr">
                     +{formatReceiptAmount(activeShift.openingCash)} {t.common.currency}
                   </span>
                 </div>
 
-                <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-                  <span className="text-[11px] text-zinc-400 block">{shiftI18n.cashSales}</span>
-                  <span className="text-base font-bold text-white font-mono mt-1 block" dir="ltr">
+                <div className="p-4 rounded-2xl kaspi-frosted-card">
+                  <span className="text-[11px] text-[var(--kaspi-text-muted)] block">{shiftI18n.cashSales}</span>
+                  <span className="text-base font-bold text-[var(--kaspi-text-primary)] font-mono mt-1 block" dir="ltr">
                     +{formatReceiptAmount(activeShift.cashSalesTotal)} {t.common.currency}
                   </span>
                 </div>
 
-                <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-                  <span className="text-[11px] text-zinc-400 block">{shiftI18n.cashIn}</span>
-                  <span className="text-base font-bold text-white font-mono mt-1 block" dir="ltr">
+                <div className="p-4 rounded-2xl kaspi-frosted-card">
+                  <span className="text-[11px] text-[var(--kaspi-text-muted)] block">{shiftI18n.cashIn}</span>
+                  <span className="text-base font-bold text-[var(--kaspi-text-primary)] font-mono mt-1 block" dir="ltr">
                     +{formatReceiptAmount(activeShift.cashInTotal)} {t.common.currency}
                   </span>
                 </div>
 
-                <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-                  <span className="text-[11px] text-zinc-400 block">{shiftI18n.cashOut}</span>
-                  <span className="text-base font-bold text-white font-mono mt-1 block" dir="ltr">
+                <div className="p-4 rounded-2xl kaspi-frosted-card">
+                  <span className="text-[11px] text-[var(--kaspi-text-muted)] block">{shiftI18n.cashOut}</span>
+                  <span className="text-base font-bold text-[var(--kaspi-text-primary)] font-mono mt-1 block" dir="ltr">
                     -{formatReceiptAmount(activeShift.cashOutTotal)} {t.common.currency}
                   </span>
                 </div>
               </div>
 
               {/* Secondary Revenue Breakdown */}
-              <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+              <div className="p-4 rounded-2xl kaspi-frosted-card grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
                 <div>
-                  <span className="text-zinc-400 block">{shiftI18n.cardSales}</span>
-                  <span className="font-bold text-white font-mono" dir="ltr">
+                  <span className="text-[var(--kaspi-text-muted)] block">{shiftI18n.cardSales}</span>
+                  <span className="font-bold text-[var(--kaspi-text-primary)] font-mono" dir="ltr">
                     {formatReceiptAmount(activeShift.cardSalesTotal)} {t.common.currency}
                   </span>
                 </div>
                 <div>
-                  <span className="text-zinc-400 block">{shiftI18n.creditSales}</span>
-                  <span className="font-bold text-white font-mono" dir="ltr">
+                  <span className="text-[var(--kaspi-text-muted)] block">{shiftI18n.creditSales}</span>
+                  <span className="font-bold text-[var(--kaspi-text-primary)] font-mono" dir="ltr">
                     {formatReceiptAmount(activeShift.creditSalesTotal)} {t.common.currency}
                   </span>
                 </div>
                 <div>
-                  <span className="text-zinc-400 block">{shiftI18n.ticketsEncashed}</span>
-                  <span className="font-bold text-white font-mono" dir="ltr">
+                  <span className="text-[var(--kaspi-text-muted)] block">{shiftI18n.ticketsEncashed}</span>
+                  <span className="font-bold text-[var(--kaspi-text-primary)] font-mono" dir="ltr">
                     {activeShift.salesCount} {locale === "ar" ? "عملية" : "ventes"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-zinc-400 block">{shiftI18n.totalRevenue}</span>
-                  <span className="font-bold text-white font-mono" dir="ltr">
+                  <span className="text-[var(--kaspi-text-muted)] block">{shiftI18n.totalRevenue}</span>
+                  <span className="font-bold text-[var(--kaspi-text-primary)] font-mono" dir="ltr">
                     {formatReceiptAmount(activeShift.totalSalesRevenue)} {t.common.currency}
                   </span>
                 </div>
@@ -748,10 +847,10 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
             <div className="space-y-6">
               <form
                 onSubmit={handleRecordMovement}
-                className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-4"
+                className="p-5 rounded-2xl kaspi-frosted-card space-y-4"
               >
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <PlusCircle className="w-4 h-4 text-zinc-300" />
+                <h3 className="text-sm font-bold text-[var(--kaspi-text-primary)] flex items-center gap-2">
+                  <PlusCircle className="w-4 h-4 text-emerald-400" />
                   <span>{shiftI18n.newMovementTitle}</span>
                 </h3>
 
@@ -766,10 +865,10 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
                       key={tItem.id}
                       type="button"
                       onClick={() => setMovementType(tItem.id)}
-                      className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                      className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
                         movementType === tItem.id
-                          ? "bg-white text-zinc-950 shadow-xs border-white"
-                          : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
+                          ? "kaspi-glass-btn kaspi-orbit-active shadow-xs"
+                          : "kaspi-frosted-card text-[var(--kaspi-text-muted)] hover:text-[var(--kaspi-text-primary)]"
                       }`}
                     >
                       <tItem.icon className="w-3.5 h-3.5" />
@@ -780,7 +879,7 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                    <label className="block text-[11px] font-semibold text-[var(--kaspi-text-secondary)] mb-1">
                       {shiftI18n.movementAmountLabel}
                     </label>
                     <input
@@ -791,11 +890,11 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
                       value={movementAmount}
                       onChange={(e) => setMovementAmount(e.target.value)}
                       placeholder="Ex: 120.00"
-                      className="w-full h-10 px-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono text-white focus:outline-none focus:border-white"
+                      className="w-full h-10 px-3 rounded-xl kaspi-translucent-input text-xs font-mono focus:outline-none"
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-[11px] font-semibold text-zinc-400 mb-1">
+                    <label className="block text-[11px] font-semibold text-[var(--kaspi-text-secondary)] mb-1">
                       {shiftI18n.movementReasonLabel}
                     </label>
                     <input
@@ -804,7 +903,7 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
                       value={movementReason}
                       onChange={(e) => setMovementReason(e.target.value)}
                       placeholder={shiftI18n.movementReasonPlaceholder}
-                      className="w-full h-10 px-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white focus:outline-none focus:border-white"
+                      className="w-full h-10 px-3 rounded-xl kaspi-translucent-input text-xs focus:outline-none"
                     />
                   </div>
                 </div>
@@ -813,7 +912,7 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
                   <button
                     type="submit"
                     disabled={isSubmittingMovement}
-                    className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="px-5 py-2.5 rounded-xl kaspi-emerald-checkout-btn font-bold text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {isSubmittingMovement && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                     <span>{shiftI18n.validateMovementBtn}</span>
@@ -823,15 +922,15 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
 
               {/* Movements History List */}
               <div className="space-y-2">
-                <h4 className="text-xs font-bold text-zinc-400 font-mono">
+                <h4 className="text-xs font-bold text-[var(--kaspi-text-secondary)] font-mono">
                   {shiftI18n.movementsLogTitle} ({activeShift.movements.length})
                 </h4>
                 {activeShift.movements.length === 0 ? (
-                  <div className="p-6 rounded-xl bg-zinc-900/40 border border-zinc-800 text-center text-xs text-zinc-500 font-mono">
+                  <div className="p-6 rounded-2xl kaspi-frosted-card text-center text-xs text-[var(--kaspi-text-muted)] font-mono">
                     {shiftI18n.noMovements}
                   </div>
                 ) : (
-                  <div className="divide-y divide-zinc-800 rounded-xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
+                  <div className="divide-y divide-white/[0.08] rounded-2xl kaspi-frosted-card overflow-hidden">
                     {activeShift.movements.map((mv) => {
                       const isIn = mv.type === "cash_in";
                       return (
@@ -840,8 +939,8 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
                           className="p-3.5 flex items-center justify-between text-xs"
                         >
                           <div>
-                            <div className="font-bold text-white">{mv.reason}</div>
-                            <div className="text-[10px] text-zinc-500 font-mono">
+                            <div className="font-bold text-[var(--kaspi-text-primary)]">{mv.reason}</div>
+                            <div className="text-[10px] text-[var(--kaspi-text-muted)] font-mono">
                               {mv.type.toUpperCase()} • {formatReceiptDate(mv.createdAt, locale)} •{" "}
                               {mv.createdByName || "Caissier"}
                             </div>
@@ -865,26 +964,26 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
           ) : activeShift && activeTab === "close_z" ? (
             /* CLOSE SHIFT & Z-REPORT VIEW */
             <form onSubmit={handleCloseShift} className="max-w-lg mx-auto space-y-5">
-              <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-between">
+              <div className="p-4 rounded-2xl kaspi-frosted-card flex items-center justify-between">
                 <div>
-                  <span className="text-xs text-zinc-400 block">
+                  <span className="text-xs text-[var(--kaspi-text-secondary)] block">
                     {shiftI18n.expectedCashDrawer}
                   </span>
-                  <span className="text-2xl font-black text-white font-mono" dir="ltr">
+                  <span className="text-2xl font-black text-[var(--kaspi-text-primary)] font-mono" dir="ltr">
                     {formatReceiptAmount(activeShift.expectedCash)} {t.common.currency}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setCountedCashInput(activeShift.expectedCash.toFixed(2))}
-                  className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white border border-zinc-700 cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl kaspi-glass-btn text-xs font-bold cursor-pointer"
                 >
                   {shiftI18n.exactAmountBtn}
                 </button>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-300 mb-1.5">
+                <label className="block text-xs font-bold text-[var(--kaspi-text-secondary)] mb-1.5">
                   {shiftI18n.actualCountedCash}
                 </label>
                 <input
@@ -895,21 +994,13 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
                   value={countedCashInput}
                   onChange={(e) => setCountedCashInput(e.target.value)}
                   placeholder={shiftI18n.countedPlaceholder}
-                  className="w-full h-12 px-4 rounded-xl bg-zinc-900 border border-zinc-700 text-xl font-black font-mono text-white text-center focus:outline-none focus:border-white"
+                  className="w-full h-12 px-4 rounded-2xl kaspi-translucent-input text-xl font-black font-mono text-center focus:outline-none"
                 />
               </div>
 
               {liveVariance !== null && (
-                <div
-                  className={`p-4 rounded-xl border flex items-center justify-between ${
-                    liveVariance === 0
-                      ? "bg-zinc-900 border-white/20 text-white"
-                      : liveVariance > 0
-                      ? "bg-zinc-900 border-white/30 text-white"
-                      : "bg-zinc-900 border-rose-500/40 text-rose-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 text-xs font-bold">
+                <div className="p-4 rounded-2xl kaspi-frosted-card flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[var(--kaspi-text-primary)]">
                     {liveVariance === 0 ? (
                       <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                     ) : (
@@ -923,7 +1014,7 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
                         : shiftI18n.shortageTitle}
                     </span>
                   </div>
-                  <span className="font-mono font-bold text-base" dir="ltr">
+                  <span className="font-mono font-bold text-base text-[var(--kaspi-text-primary)]" dir="ltr">
                     {liveVariance > 0 ? "+" : ""}
                     {formatReceiptAmount(liveVariance)} {t.common.currency}
                   </span>
@@ -931,7 +1022,7 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                <label className="block text-xs font-semibold text-[var(--kaspi-text-secondary)] mb-1">
                   {shiftI18n.closingNotesLabel}
                 </label>
                 <input
@@ -939,14 +1030,14 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
                   value={closingNotes}
                   onChange={(e) => setClosingNotes(e.target.value)}
                   placeholder={shiftI18n.closingNotesPlaceholder}
-                  className="w-full h-10 px-3.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-white"
+                  className="w-full h-10 px-3.5 rounded-xl kaspi-translucent-input text-xs focus:outline-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmittingClose}
-                className="w-full py-3.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
+                className="w-full py-3.5 rounded-2xl kaspi-emerald-checkout-btn font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
               >
                 {isSubmittingClose ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -960,13 +1051,13 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
             /* HISTORY OF CLOSED Z-REPORTS */
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider font-mono">
+                <h3 className="text-xs font-bold text-[var(--kaspi-text-secondary)] uppercase tracking-wider font-mono">
                   {shiftI18n.recentZTitle} ({recentShifts.length})
                 </h3>
               </div>
 
               {recentShifts.length === 0 ? (
-                <div className="p-8 rounded-xl bg-zinc-900/40 border border-zinc-800 text-center text-xs text-zinc-500 font-mono">
+                <div className="p-8 rounded-2xl kaspi-frosted-card text-center text-xs text-[var(--kaspi-text-muted)] font-mono">
                   {shiftI18n.noZHistory}
                 </div>
               ) : (
@@ -974,25 +1065,25 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
                   {recentShifts.map((s) => (
                     <div
                       key={s.sessionId}
-                      className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      className="p-4 rounded-2xl kaspi-frosted-card flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-black text-white font-mono">
+                          <span className="text-xs font-black text-[var(--kaspi-text-primary)] font-mono">
                             Z-{s.sessionId.slice(0, 6).toUpperCase()}
                           </span>
-                          <span className="text-[11px] text-zinc-400">
+                          <span className="text-[11px] text-[var(--kaspi-text-secondary)]">
                             • {s.cashierName}
                           </span>
                           <span
-                            className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-white/10 bg-white/[0.04] text-zinc-300"
+                            className="text-[10px] font-mono px-2 py-0.5 rounded-full kaspi-glass-surface text-[var(--kaspi-text-secondary)]"
                             dir="ltr"
                           >
                             {shiftI18n.diffLabel} {(s.discrepancy || 0) > 0 ? "+" : ""}
                             {formatReceiptAmount(s.discrepancy || 0)} {t.common.currency}
                           </span>
                         </div>
-                        <div className="text-[11px] text-zinc-400 font-mono" dir="ltr">
+                        <div className="text-[11px] text-[var(--kaspi-text-secondary)] font-mono" dir="ltr">
                           {shiftI18n.expectedLabel} {formatReceiptAmount(s.expectedCash)} {t.common.currency} • {shiftI18n.countedLabel}{" "}
                           {formatReceiptAmount(s.countedCash || 0)} {t.common.currency} • CA:{" "}
                           {formatReceiptAmount(s.totalSalesRevenue)} {t.common.currency} ({s.salesCount} {shiftI18n.salesLabel})
@@ -1002,7 +1093,7 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
                       <button
                         type="button"
                         onClick={() => handlePrintShiftReport(s, "Z-REPORT")}
-                        className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold flex items-center gap-1.5 border border-zinc-700 cursor-pointer self-start sm:self-center"
+                        className="px-3 py-1.5 rounded-xl kaspi-glass-btn text-xs font-bold flex items-center gap-1.5 cursor-pointer self-start sm:self-center"
                       >
                         <Printer className="w-3.5 h-3.5" />
                         <span>{shiftI18n.reprintZ}</span>
@@ -1015,6 +1106,6 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </KaspiGlassModalPortal>
   );
 };

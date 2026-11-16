@@ -300,6 +300,11 @@ model Tenant {
   stockPredictions   StockPrediction[]
   settings           TenantSettings?
   supportMessages    SupportMessage[]
+  tpeTerminals       TpeTerminal[]
+  tpeTransactions    TpeTransaction[]
+  tpeDiagnosticLogs  TpeDiagnosticLog[]
+  tpePluginAuditLogs TpePluginAuditLog[]
+  paymentAuditLogs   PaymentAuditLog[]
 
   @@map("tenants")
 }
@@ -444,6 +449,8 @@ model Store {
   transfersReceived  StockTransfer[]     @relation("TransfersReceived")
   zReports           ZReport[]
   stockPredictions   StockPrediction[]
+  tpeTerminals       TpeTerminal[]
+  tpeTransactions    TpeTransaction[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, code])
@@ -1510,5 +1517,169 @@ model DownloadLog {
 
   @@index([createdAt])
   @@map("download_logs")
+}
+
+// ==========================================
+// PHASE 4 — UNIVERSAL TPE INTEGRATION & PCI-DSS AUDIT LEDGER
+// ==========================================
+
+enum TpeTransactionState {
+  CREATED
+  VALIDATED
+  SENT_TO_TERMINAL
+  WAITING_FOR_CUSTOMER
+  PROCESSING
+  APPROVED
+  DECLINED
+  CANCELLED
+  TIMED_OUT
+  UNKNOWN
+  RECONCILIATION_REQUIRED
+}
+
+model TpeAdapterRegistry {
+  id                  String    @id @default(uuid()) @db.Uuid
+  adapterId           String    @unique @map("adapter_id")
+  manufacturer        String
+  supportedModels     Json      @map("supported_models")
+  supportedFirmware   String    @map("supported_firmware")
+  protocol            String
+  sdkVersion          String    @map("sdk_version")
+  provider            String
+  supportedCountries  Json      @map("supported_countries")
+  requiredPermissions Json      @map("required_permissions")
+  installationMethod  String    @map("installation_method")
+  licenseInfo         String    @map("license_info")
+  securitySignature   String    @map("security_signature")
+  sha256              String
+  compatibilityStatus String    @map("compatibility_status")
+  automationLevel     String    @map("automation_level")
+  lastVerifiedDate    DateTime? @map("last_verified_date") @db.Timestamptz(6)
+  testResults         Json?     @map("test_results")
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("tpe_adapter_registry")
+}
+
+model TpeTerminal {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @map("tenant_id") @db.Uuid
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  storeId             String   @map("store_id") @db.Uuid
+  store               Store    @relation(fields: [tenantId, storeId], references: [tenantId, id], onDelete: Cascade)
+  label               String
+  manufacturer        String   @default("unknown")
+  model               String   @default("unknown")
+  hardwareRevision    String?  @map("hardware_revision")
+  firmwareVersion     String   @default("unknown") @map("firmware_version")
+  os                  String   @default("unknown")
+  protocol            String   @default("OPI")
+  connectionType      String   @default("ETHERNET_TCPIP") @map("connection_type")
+  adapterId           String   @default("opi-retail-ip-serial") @map("adapter_id")
+  provider            String   @default("CMI / NAPS")
+  certificationStatus String   @default("Not Yet Tested") @map("certification_status")
+  automationLevel     String   @default("LEVEL_2_ASSISTED_AUTO") @map("automation_level")
+  endpointAddress     String?  @map("endpoint_address")
+  port                Int?
+  serialPort          String?  @map("serial_port")
+  feeSplitRatio       String   @default("0/100") @map("fee_split_ratio")
+  isConnected         Boolean  @default(false) @map("is_connected")
+  isSandbox           Boolean  @default(true) @map("is_sandbox")
+  encryptedConfigJson Json?    @map("encrypted_config_json")
+  healthLatencyMs     Int?     @map("health_latency_ms")
+  lastHeartbeatAt     DateTime? @map("last_heartbeat_at") @db.Timestamptz(6)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  transactions   TpeTransaction[]
+  diagnosticLogs TpeDiagnosticLog[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, storeId])
+  @@map("tpe_terminals")
+}
+
+model TpeTransaction {
+  id                  String              @id @default(uuid()) @db.Uuid
+  tenantId            String              @map("tenant_id") @db.Uuid
+  tenant              Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  storeId             String              @map("store_id") @db.Uuid
+  store               Store               @relation(fields: [tenantId, storeId], references: [tenantId, id], onDelete: Cascade)
+  terminalId          String              @map("terminal_id") @db.Uuid
+  terminal            TpeTerminal         @relation(fields: [tenantId, terminalId], references: [tenantId, id], onDelete: Cascade)
+  saleId              String?             @map("sale_id") @db.Uuid
+  idempotencyKey      String              @map("idempotency_key")
+  providerReference   String?             @map("provider_reference")
+  authCode            String?             @map("auth_code")
+  cardScheme          String?             @map("card_scheme")
+  maskedLast4         String?             @map("masked_last4")
+  walletUsed          String              @default("NONE") @map("wallet_used")
+  amount              Decimal             @db.Decimal(12, 2)
+  feeCustomerSurcharge Decimal            @default(0.00) @map("fee_customer_surcharge") @db.Decimal(12, 2)
+  netMerchantSettlement Decimal           @default(0.00) @map("net_merchant_settlement") @db.Decimal(12, 2)
+  currency            String              @default("MAD") @db.Char(3)
+  status              TpeTransactionState @default(CREATED)
+  isSandbox           Boolean             @default(true) @map("is_sandbox")
+  offlinePending      Boolean             @default(false) @map("offline_pending")
+  recoveryRequired    Boolean             @default(false) @map("recovery_required")
+  createdAt           DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, storeId, createdAt])
+  @@index([tenantId, status])
+  @@map("tpe_transactions")
+}
+
+model TpeDiagnosticLog {
+  id              String       @id @default(uuid()) @db.Uuid
+  tenantId        String       @map("tenant_id") @db.Uuid
+  tenant          Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  terminalId      String?      @map("terminal_id") @db.Uuid
+  terminal        TpeTerminal? @relation(fields: [tenantId, terminalId], references: [tenantId, id], onDelete: SetNull)
+  level           String       @default("INFO")
+  eventCode       String       @map("event_code")
+  redactedMessage String       @map("redacted_message")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([tenantId, terminalId, createdAt])
+  @@map("tpe_diagnostic_logs")
+}
+
+model TpePluginAuditLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actorUserId  String?  @map("actor_user_id") @db.Uuid
+  adapterId    String   @map("adapter_id")
+  action       String
+  sha256       String
+  signatureOk  Boolean  @map("signature_ok")
+  sandboxLimit Json?    @map("sandbox_limit")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([tenantId, adapterId, createdAt])
+  @@map("tpe_plugin_audit_logs")
+}
+
+model PaymentAuditLog {
+  id                 String   @id @default(uuid()) @db.Uuid
+  tenantId           String   @map("tenant_id") @db.Uuid
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actorUserId        String?  @map("actor_user_id") @db.Uuid
+  flow               String
+  action             String
+  provider           String
+  settlementTarget   String   @map("settlement_target")
+  amount             Decimal? @db.Decimal(12, 2)
+  currency           String   @default("MAD") @db.Char(3)
+  idempotencyKeyHash String   @map("idempotency_key_hash")
+  sanitizedMetadata  Json     @map("sanitized_metadata")
+  entryHash          String   @map("entry_hash")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([tenantId, flow, createdAt])
+  @@map("payment_audit_logs")
 }
 

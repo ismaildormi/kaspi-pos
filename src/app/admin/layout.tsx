@@ -6,6 +6,7 @@ import { NextIntlClientProvider } from "next-intl";
 import enMessages from "../../../messages/en.json";
 import { AIChatWidget } from "@/components/ai/AIChatWidget";
 import { KaspiBrandMark } from "@/components/common/KaspiBrandMark";
+import { KaspiThemeToggle } from "@/components/theme/KaspiThemeToggle";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
 
 export const metadata = {
@@ -36,6 +37,7 @@ export default function AdminLayout({
           </div>
 
           <div className="flex items-center gap-3 text-xs">
+            <KaspiThemeToggle />
             <Link
               href="/admin"
               className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-1.5 font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition"

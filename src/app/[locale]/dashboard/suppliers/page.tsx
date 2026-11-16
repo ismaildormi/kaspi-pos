@@ -22,6 +22,7 @@ import {
   Clock,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 interface SupplierItem {
   id: string;
@@ -557,8 +558,12 @@ export default function SuppliersPage() {
 
       {/* Add Supplier Modal */}
       {isSupplierModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xl">
-          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-md w-full p-6 shadow-2xl">
+        <KaspiGlassModalPortal
+          isOpen={isSupplierModalOpen}
+          onClose={() => setIsSupplierModalOpen(false)}
+          dir="ltr"
+        >
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto my-auto p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] mb-4 gap-3">
               <h3 className="font-bold text-[var(--kaspi-text-primary)] text-base">{t.suppliers.addSupplier}</h3>
               <AppleBackButton onClick={() => setIsSupplierModalOpen(false)} locale={locale} />
@@ -691,13 +696,17 @@ export default function SuppliersPage() {
               </div>
             </form>
           </div>
-        </div>
+        </KaspiGlassModalPortal>
       )}
 
       {/* Record Debt / Invoice Modal */}
       {isDebtModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xl">
-          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-lg w-full p-6 shadow-2xl">
+        <KaspiGlassModalPortal
+          isOpen={isDebtModalOpen}
+          onClose={() => setIsDebtModalOpen(false)}
+          dir="ltr"
+        >
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto my-auto p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] mb-4 gap-3">
               <h3 className="font-bold text-[var(--kaspi-text-primary)] text-base">{t.suppliers.recordDebtInvoice}</h3>
               <AppleBackButton onClick={() => setIsDebtModalOpen(false)} locale={locale} />
@@ -844,13 +853,20 @@ export default function SuppliersPage() {
               </div>
             </form>
           </div>
-        </div>
+        </KaspiGlassModalPortal>
       )}
 
       {/* OCR Wholesale Invoice Scanner Modal */}
       {isOcrModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xl">
-          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-2xl w-full p-6 shadow-2xl flex flex-col max-h-[90vh]">
+        <KaspiGlassModalPortal
+          isOpen={isOcrModalOpen}
+          onClose={() => {
+            setIsOcrModalOpen(false);
+            setOcrItems([]);
+          }}
+          dir="ltr"
+        >
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-2xl w-full p-6 shadow-2xl flex flex-col max-h-[90vh] my-auto">
             <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] mb-4 shrink-0 gap-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg kaspi-glass-btn flex items-center justify-center font-bold">
@@ -986,7 +1002,7 @@ export default function SuppliersPage() {
               )}
             </div>
           </div>
-        </div>
+        </KaspiGlassModalPortal>
       )}
     </div>
   );

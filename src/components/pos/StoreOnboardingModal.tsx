@@ -21,6 +21,7 @@ import { StoreBusinessType, usePosStore } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
 import { KaspiBrandMark } from "@/components/common/KaspiBrandMark";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 interface StoreOnboardingModalProps {
   isOpen: boolean;
@@ -156,11 +157,12 @@ export function StoreOnboardingModal({
   };
 
   return (
-    <div
+    <KaspiGlassModalPortal
+      isOpen={isOpen}
+      onClose={canDismiss ? onClose : undefined}
       dir="ltr"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xl p-4 overflow-y-auto"
     >
-      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit relative w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden my-auto">
+      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl my-auto">
         {/* Top Accent Banner */}
         <div className="h-1 w-full bg-white/15" />
 
@@ -357,6 +359,6 @@ export function StoreOnboardingModal({
           </form>
         </div>
       </div>
-    </div>
+    </KaspiGlassModalPortal>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Scale,
   ArrowLeft,
@@ -10,11 +10,17 @@ import {
   Coins,
   Weight,
   Layers,
+  Upload,
+  Loader2,
+  Image as ImageIcon,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
-import { getCachedData } from "@/lib/cache/client-cache";
+import { getCachedData, setCachedData } from "@/lib/cache/client-cache";
+import { offlineDb } from "@/client/db";
+import { compressImage } from "@/lib/image-compression";
 import { playTapSound, playSuccessSound } from "@/lib/audio";
 import { toast } from "sonner";
 
@@ -151,6 +157,37 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
   const [newNameAr, setNewNameAr] = useState("");
   const [newNameFr, setNewNameFr] = useState("");
   const [newPriceKg, setNewPriceKg] = useState("");
+  const [newImageUrl, setNewImageUrl] = useState("");
+  const [isProcessingPluImage, setIsProcessingPluImage] = useState(false);
+  const pluFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handlePluImageFile = async (file: File) => {
+    setIsProcessingPluImage(true);
+    try {
+      const res = await compressImage(file, {
+        autoRemoveBackground: true,
+        generateDataUrl: true,
+        maxDimension: 720,
+        quality: 0.85,
+      });
+      if (res.dataUrl) {
+        setNewImageUrl(res.dataUrl);
+        playSuccessSound();
+        toast.success(
+          locale === "ar"
+            ? "تم تجهيز وتفريغ صورة سلعة الميزان بنجاح"
+            : locale === "en"
+            ? "Scale item photo processed"
+            : "Photo de l'article pesé préparée"
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to process image");
+    } finally {
+      setIsProcessingPluImage(false);
+      if (pluFileInputRef.current) pluFileInputRef.current.value = "";
+    }
+  };
 
   const weightPresets = [0.25, 0.5, 1.0, 2.0];
   const amountPresets = [10, 15, 20, 50];
@@ -315,12 +352,15 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
       return;
     }
 
+    const cleanImage = newImageUrl.trim() || null;
+
     const newItem: PluItem = {
       plu: newPluCode.trim(),
       nameAr: newNameAr.trim() || newNameFr.trim(),
       nameFr: newNameFr.trim(),
       pricePerKg: price,
       isCustom: true,
+      imageUrl: cleanImage,
     };
 
     const updated = [newItem, ...customPlus];
@@ -329,12 +369,75 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
       localStorage.setItem("kaspi_custom_plu_items", JSON.stringify(updated));
     }
 
+    // Persist in DB & Dexie so weighable PLU items and their photos sync across Smart Grid & PLU Scale
+    const createdPosItem: PosProduct = {
+      id: `plu_prod_${newItem.plu}_${Date.now()}`,
+      name: newItem.nameAr || newItem.nameFr,
+      sku: `PLU-${newItem.plu}`,
+      barcode: `20${newItem.plu.padStart(4, "0")}00000`,
+      salePrice: price,
+      taxRate: 20,
+      stockQuantity: 100,
+      trackStock: true,
+      categoryId: "produce",
+      categoryName: "produce",
+      image: cleanImage,
+      isScaleItem: true,
+      weightUnit: "kg",
+    };
+
+    if (typeof navigator !== "undefined" && navigator.onLine) {
+      fetch("/api/v1/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: createdPosItem.name,
+          sku: createdPosItem.sku,
+          barcode: createdPosItem.barcode,
+          salePrice: price,
+          initialStock: 100,
+          stockQuantity: 100,
+          categoryName: "produce",
+          imageUrl: cleanImage || undefined,
+          unit: "kg",
+          isScaleItem: true,
+        }),
+      }).catch(() => {});
+    }
+
+    if (offlineDb?.offlineProducts) {
+      offlineDb.offlineProducts
+        .put({
+          id: createdPosItem.id,
+          tenantId: "current",
+          sku: createdPosItem.sku,
+          barcode: createdPosItem.barcode,
+          name: createdPosItem.name,
+          imageUrl: cleanImage,
+          salePrice: price,
+          taxRate: 20,
+          trackStock: true,
+          stockQuantity: 100,
+          categoryName: "produce",
+          unit: "kg",
+          isScaleItem: true,
+        })
+        .catch(() => {});
+    }
+
+    try {
+      const cached = getCachedData<any[]>("products_catalog", []);
+      const list = Array.isArray(cached.data) ? cached.data : [];
+      setCachedData("products_catalog", [createdPosItem, ...list]);
+    } catch {}
+
     setSelectedPlu(newItem);
     setIsAddModalOpen(false);
     setNewPluCode("");
     setNewNameAr("");
     setNewNameFr("");
     setNewPriceKg("");
+    setNewImageUrl("");
     toast.success(
       locale === "ar"
         ? "تمت إضافة السلعة للميزان بنجاح"
@@ -393,6 +496,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
         <div className="flex items-center gap-2">
           <button
             type="button"
+            data-kaspi-add-plu-trigger="true"
             onClick={() => setIsAddModalOpen(true)}
             className="h-8 px-3 rounded-lg kaspi-glass-btn text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
           >
@@ -488,8 +592,8 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                           className="w-[92%] h-[92%] object-contain mx-auto"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-white">
-                          <Scale className="w-6 h-6 text-zinc-500" />
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Scale className="w-6 h-6 text-[var(--kaspi-text-muted)]" />
                         </div>
                       )}
                     </div>
@@ -737,81 +841,143 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
         </div>
       </div>
 
-      {/* Modal: Add Custom PLU Weighted Item */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-xl animate-fadeIn">
-          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-2.5">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Scale className="w-4 h-4 text-zinc-400" />
-                <span>
-                  {locale === "ar"
-                    ? "إضافة سلعة جديدة للميزان (PLU)"
-                    : locale === "en"
-                    ? "New Weighed Item (PLU)"
-                    : "Nouvel Article Pesé (PLU)"}
-                </span>
-              </h3>
-              <AppleBackButton onClick={() => setIsAddModalOpen(false)} locale={locale} />
+      {/* Modal: Add Custom PLU Weighted Item (Portal z-[9999] + Glass Image Uploader) */}
+      <KaspiGlassModalPortal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        dir={locale === "ar" ? "rtl" : "ltr"}
+      >
+        <div
+          data-kaspi-plu-modal="true"
+          className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-md max-h-[90vh] overflow-y-auto my-auto rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl"
+        >
+          <div className="flex items-center justify-between border-b border-white/[0.12] pb-3 gap-2">
+            <h3 className="text-sm sm:text-base font-bold text-[var(--kaspi-text-primary)] flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl kaspi-glass-btn flex items-center justify-center shrink-0">
+                <Scale className="w-4 h-4 text-emerald-400" />
+              </div>
+              <span>
+                {locale === "ar"
+                  ? "إضافة سلعة جديدة للميزان (PLU)"
+                  : locale === "en"
+                  ? "New Weighed Item (PLU)"
+                  : "Nouvel Article Pesé (PLU)"}
+              </span>
+            </h3>
+            <AppleBackButton onClick={() => setIsAddModalOpen(false)} locale={locale} />
+          </div>
+
+          <input
+            ref={pluFileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handlePluImageFile(file);
+            }}
+          />
+
+          <form onSubmit={handleSaveCustomPlu} className="space-y-3.5 text-xs">
+            {/* Glass Image Uploader / Dropzone for Weighable PLU Item */}
+            <div>
+              <label className="block text-[var(--kaspi-text-secondary)] font-semibold mb-1.5">
+                {locale === "ar"
+                  ? "صورة السلعة (رفع مباشر أو سحب وإفلات):"
+                  : locale === "en"
+                  ? "Item Photo (Upload or Drag & Drop):"
+                  : "Photo de l'article (Téléverser ou Glisser) :"}
+              </label>
+              <div
+                onClick={() => pluFileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) handlePluImageFile(file);
+                }}
+                data-kaspi-plu-photo-dropzone="true"
+                className="kaspi-product-white-box relative h-32 w-full rounded-2xl border border-dashed border-white/25 hover:border-emerald-400/60 transition-all flex items-center justify-center cursor-pointer group"
+              >
+                {isProcessingPluImage ? (
+                  <div className="flex flex-col items-center gap-1.5">
+                    <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
+                    <span className="text-[11px] font-semibold text-[var(--kaspi-text-secondary)]">
+                      {locale === "ar" ? "جاري تحسين وتفريغ الصورة..." : "Traitement de l'image..."}
+                    </span>
+                  </div>
+                ) : newImageUrl ? (
+                  <div className="relative w-full h-full flex items-center justify-center">
+                    <img
+                      src={newImageUrl}
+                      alt="PLU Preview"
+                      className="h-[90%] w-[90%] object-contain mx-auto drop-shadow-sm"
+                    />
+                    <span className="absolute bottom-1.5 end-2 px-2.5 py-1 rounded-lg kaspi-glass-btn text-[10px] font-bold">
+                      {locale === "ar" ? "تغيير الصورة" : "Changer"}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-1.5 text-center p-3">
+                    <div className="w-9 h-9 rounded-xl kaspi-glass-btn flex items-center justify-center">
+                      <Upload className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <span className="text-xs font-bold text-[var(--kaspi-text-primary)]">
+                      {locale === "ar"
+                        ? "اضغط لرفع صورة الخضر / الفواكه / اللحوم"
+                        : locale === "en"
+                        ? "Click or drop produce / meat photo"
+                        : "Cliquez pour ajouter une photo produit"}
+                    </span>
+                    <span className="text-[10px] text-[var(--kaspi-text-muted)] font-mono">
+                      PNG, JPG, WEBP • Auto Cutout Studio
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-[var(--kaspi-text-muted)] shrink-0" />
+                <input
+                  type="url"
+                  value={newImageUrl.startsWith("data:") ? "" : newImageUrl}
+                  onChange={(e) => setNewImageUrl(e.target.value)}
+                  placeholder={
+                    locale === "ar"
+                      ? "أو الصق رابط صورة مباشر (اختياري)..."
+                      : "Ou collez une URL d'image directe (optionnel)..."
+                  }
+                  className="w-full h-8 px-2.5 kaspi-translucent-input rounded-lg text-[11px]"
+                />
+              </div>
             </div>
 
-            <form onSubmit={handleSaveCustomPlu} className="space-y-3 text-xs">
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-zinc-400 font-semibold mb-1">
+                <label className="block text-[var(--kaspi-text-secondary)] font-semibold mb-1">
                   {locale === "ar"
-                    ? "كود PLU (4 أرقام مثل 4020):"
+                    ? "كود PLU (4 أرقام):"
                     : locale === "en"
-                    ? "PLU Code (4 digits, e.g. 4020):"
-                    : "Code PLU (4 chiffres, ex: 4020) :"}
+                    ? "PLU Code (4 digits):"
+                    : "Code PLU (4 chiffres) :"}
                 </label>
                 <input
                   type="text"
                   value={newPluCode}
                   onChange={(e) => setNewPluCode(e.target.value)}
                   placeholder="4020"
-                  className="w-full h-9 px-3 kaspi-translucent-input rounded-lg font-mono"
+                  dir="ltr"
+                  className="w-full h-9 px-3 kaspi-translucent-input rounded-xl font-mono"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-zinc-400 font-semibold mb-1">
-                  {locale === "ar" ? "اسم السلعة بالعربية:" : locale === "en" ? "Item Name (Arabic):" : "Nom en Arabe :"}
-                </label>
-                <input
-                  type="text"
-                  value={newNameAr}
-                  onChange={(e) => setNewNameAr(e.target.value)}
-                  placeholder={locale === "ar" ? "مثال: زيتون أحمر مشرمل" : "Ex: Red Olives"}
-                  className="w-full h-9 px-3 kaspi-translucent-input rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-zinc-400 font-semibold mb-1">
+                <label className="block text-[var(--kaspi-text-secondary)] font-semibold mb-1">
                   {locale === "ar"
-                    ? "اسم السلعة بالفرنسية (أو اللاتينية):"
+                    ? "السعر للكيلو (MAD/kg):"
                     : locale === "en"
-                    ? "Item Name (Latin / English):"
-                    : "Nom en Français :"}
-                </label>
-                <input
-                  type="text"
-                  value={newNameFr}
-                  onChange={(e) => setNewNameFr(e.target.value)}
-                  placeholder="Ex: Olives Rouges"
-                  className="w-full h-9 px-3 kaspi-translucent-input rounded-lg"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-zinc-400 font-semibold mb-1">
-                  {locale === "ar"
-                    ? "السعر للكيلوغرام (MAD / kg):"
-                    : locale === "en"
-                    ? "Price per kg (MAD / kg):"
-                    : "Prix au kilo (MAD / kg) :"}
+                    ? "Price / kg (MAD):"
+                    : "Prix / kg (MAD) :"}
                 </label>
                 <input
                   type="text"
@@ -824,30 +990,64 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                     }
                   }}
                   placeholder="25.00"
-                  className="w-full h-9 px-3 kaspi-translucent-input rounded-lg font-mono"
+                  dir="ltr"
+                  className="w-full h-9 px-3 kaspi-translucent-input rounded-xl font-mono"
                   required
                 />
               </div>
+            </div>
 
-              <div className="pt-2 flex items-center justify-end gap-2 border-t border-white/[0.08]">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg kaspi-glass-btn text-xs cursor-pointer"
-                >
-                  {locale === "ar" ? "إلغاء" : locale === "en" ? "Cancel" : "Annuler"}
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-lg kaspi-polar-aurora-orbit kaspi-emerald-checkout-btn font-bold text-xs shadow-xs cursor-pointer"
-                >
-                  {locale === "ar" ? "حفظ وإضافة" : locale === "en" ? "Save & Add" : "Enregistrer"}
-                </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[var(--kaspi-text-secondary)] font-semibold mb-1">
+                  {locale === "ar" ? "اسم السلعة بالعربية:" : locale === "en" ? "Name (Arabic):" : "Nom en Arabe :"}
+                </label>
+                <input
+                  type="text"
+                  value={newNameAr}
+                  onChange={(e) => setNewNameAr(e.target.value)}
+                  placeholder={locale === "ar" ? "مثال: زيتون أحمر مشرمل" : "Ex: Red Olives"}
+                  className="w-full h-9 px-3 kaspi-translucent-input rounded-xl"
+                />
               </div>
-            </form>
-          </div>
+
+              <div>
+                <label className="block text-[var(--kaspi-text-secondary)] font-semibold mb-1">
+                  {locale === "ar"
+                    ? "الاسم بالفرنسية / اللاتينية:"
+                    : locale === "en"
+                    ? "Name (Latin / FR):"
+                    : "Nom en Français :"}
+                </label>
+                <input
+                  type="text"
+                  value={newNameFr}
+                  onChange={(e) => setNewNameFr(e.target.value)}
+                  placeholder="Ex: Olives Rouges"
+                  className="w-full h-9 px-3 kaspi-translucent-input rounded-xl"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="pt-2.5 flex items-center justify-end gap-2 border-t border-white/[0.12]">
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="px-4 py-2 rounded-xl kaspi-glass-btn text-xs font-semibold cursor-pointer"
+              >
+                {locale === "ar" ? "إلغاء" : locale === "en" ? "Cancel" : "Annuler"}
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 rounded-xl kaspi-emerald-checkout-btn font-bold text-xs shadow-xs cursor-pointer"
+              >
+                {locale === "ar" ? "حفظ وإضافة للميزان" : locale === "en" ? "Save & Add" : "Enregistrer"}
+              </button>
+            </div>
+          </form>
         </div>
-      )}
+      </KaspiGlassModalPortal>
     </div>
   );
 }

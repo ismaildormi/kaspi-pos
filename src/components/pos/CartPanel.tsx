@@ -601,13 +601,13 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
       <div className="p-3.5 border-t border-white/[0.08] bg-white/[0.02] space-y-2.5">
         {/* Consigne Drawer Popover */}
         {isConsigneDrawerOpen && (
-          <div className="p-2.5 rounded-xl bg-[#111113] border border-white/[0.12] space-y-1.5 animate-fadeIn">
-            <div className="flex items-center justify-between text-[10px] font-mono font-bold text-zinc-300">
+          <div className="p-2.5 rounded-xl kaspi-frosted-card space-y-1.5 animate-fadeIn">
+            <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[var(--kaspi-text-secondary)]">
               <span>{locale === "ar" ? "رهن القنينات والصناديق (Consigne)" : locale === "en" ? "Gas & Crate Deposits" : "Consignes Bouteilles & Casiers"}</span>
               <button
                 type="button"
                 onClick={() => setIsConsigneDrawerOpen(false)}
-                className="text-zinc-400 hover:text-white p-0.5 cursor-pointer"
+                className="text-[var(--kaspi-text-muted)] hover:text-[var(--kaspi-text-primary)] p-0.5 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -616,7 +616,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
               <button
                 type="button"
                 onClick={() => handleConsigneDeposit("gas_deposit", 100)}
-                className="py-1 px-2 rounded-lg bg-[#18181B] border border-white/[0.08] hover:border-white/20 text-white flex items-center justify-between cursor-pointer"
+                className="py-1 px-2 rounded-lg kaspi-glass-btn flex items-center justify-between cursor-pointer"
               >
                 <span>{locale === "ar" ? "+ الغاز" : locale === "en" ? "+ Gas" : "+ Gaz"}</span>
                 <span className="font-mono font-black">+100 DH</span>
@@ -624,7 +624,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
               <button
                 type="button"
                 onClick={() => handleConsigneDeposit("gas_return", -100)}
-                className="py-1 px-2 rounded-lg bg-[#18181B] border border-white/[0.08] hover:border-white/20 text-zinc-300 flex items-center justify-between cursor-pointer"
+                className="py-1 px-2 rounded-lg kaspi-glass-btn flex items-center justify-between cursor-pointer"
               >
                 <span>{locale === "ar" ? "- إرجاع الغاز" : locale === "en" ? "- Gas Return" : "- Retour Gaz"}</span>
                 <span className="font-mono font-black">-100 DH</span>
@@ -632,7 +632,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
               <button
                 type="button"
                 onClick={() => handleConsigneDeposit("crate_deposit", 15)}
-                className="py-1 px-2 rounded-lg bg-[#18181B] border border-white/[0.08] hover:border-white/20 text-white flex items-center justify-between cursor-pointer"
+                className="py-1 px-2 rounded-lg kaspi-glass-btn flex items-center justify-between cursor-pointer"
               >
                 <span>{locale === "ar" ? "+ الصندوق" : locale === "en" ? "+ Crate" : "+ Casier"}</span>
                 <span className="font-mono font-black">+15 DH</span>
@@ -640,7 +640,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
               <button
                 type="button"
                 onClick={() => handleConsigneDeposit("crate_return", -15)}
-                className="py-1 px-2 rounded-lg bg-[#18181B] border border-white/[0.08] hover:border-white/20 text-zinc-300 flex items-center justify-between cursor-pointer"
+                className="py-1 px-2 rounded-lg kaspi-glass-btn flex items-center justify-between cursor-pointer"
               >
                 <span>{locale === "ar" ? "- إرجاع الصندوق" : locale === "en" ? "- Crate Return" : "- Retour Casier"}</span>
                 <span className="font-mono font-black">-15 DH</span>
@@ -651,19 +651,19 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
 
         {/* Coupon Discount Drawer */}
         {isCouponOpen && (
-          <div className="p-2.5 rounded-xl bg-[#0D1116] border border-white/[0.12] space-y-2 animate-fadeIn">
+          <div className="p-2.5 rounded-xl kaspi-frosted-card space-y-2 animate-fadeIn">
             <div className="flex gap-1.5">
               <input
                 type="text"
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value)}
                 placeholder={tDict.pos.couponPlaceholder}
-                className="flex-1 h-8 px-2.5 rounded-lg bg-zinc-950 border border-zinc-700 text-xs text-white uppercase font-mono placeholder:normal-case placeholder:text-zinc-500 focus:outline-none focus:border-white"
+                className="flex-1 h-8 px-2.5 rounded-lg kaspi-translucent-input text-xs uppercase font-mono placeholder:normal-case focus:outline-none"
               />
               <button
                 type="button"
                 onClick={() => handleApplyCoupon()}
-                className="px-3 h-8 rounded-lg bg-white hover:bg-zinc-200 text-black font-bold text-xs cursor-pointer transition"
+                className="px-3 h-8 rounded-lg kaspi-glass-btn font-bold text-xs cursor-pointer transition"
               >
                 {tDict.pos.applyCoupon}
               </button>
@@ -677,10 +677,10 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                     setDiscount(pct, 0);
                     setCouponMsg({ text: `${tDict.pos.couponApplied} (${pct}%)` });
                   }}
-                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition cursor-pointer ${
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition cursor-pointer ${
                     discountPercent === pct
-                      ? "bg-white text-black border-white"
-                      : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white"
+                      ? "kaspi-glass-btn kaspi-orbit-active"
+                      : "kaspi-glass-surface text-[var(--kaspi-text-muted)]"
                   }`}
                 >
                   -{pct}%

@@ -22,6 +22,9 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
+import { TpeBridgePaymentAdapter } from "@/lib/payments";
+import { QrCode, Coins } from "lucide-react";
 import { usePosStore, type PaymentMethodType } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
 import { ThermalReceipt, type ReceiptData } from "./ThermalReceipt";
@@ -86,6 +89,8 @@ export function UnifiedCheckoutModal() {
   const [cardBinInput, setCardBinInput] = useState("");
   const [showCardRefInput, setShowCardRefInput] = useState(false);
   const [splitCashAmount, setSplitCashAmount] = useState<string>("");
+  const [tipAmountMad, setTipAmountMad] = useState<number>(0);
+  const [showQrLink, setShowQrLink] = useState<boolean>(false);
   const [isGiftVoucherRequested, setIsGiftVoucherRequested] = useState(false);
   const [isBlRequested, setIsBlRequested] = useState(false);
   const [buyerIceInput, setBuyerIceInput] = useState(customer?.ice || "");
@@ -111,10 +116,18 @@ export function UnifiedCheckoutModal() {
     "MAD"
   );
 
-  const splitCardAmount = useMemo(() => {
-    const cash = parseFloat(splitCashAmount) || 0;
-    return Math.max(0, grandTotal - cash);
-  }, [splitCashAmount, grandTotal]);
+  const splitTenderDetails = useMemo(() => {
+    const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+    return TpeBridgePaymentAdapter.computeSplitTender({
+      grandTotalMad: grandTotal,
+      cashTenderedMad: parseFloat(splitCashAmount) || 0,
+      cardAmountMad: 0,
+      tipAmountMad,
+      isOffline,
+    });
+  }, [grandTotal, splitCashAmount, tipAmountMad]);
+
+  const splitCardAmount = splitTenderDetails.cardPartMad;
 
   const handleQuickCash = (extra: number) => {
     playTapSound();
@@ -311,11 +324,11 @@ export function UnifiedCheckoutModal() {
   };
 
   return (
-    <div
-      dir="ltr"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/45 backdrop-blur-xl select-none overflow-y-auto"
-    >
-      <div className="kaspi-frosted-glass kaspi-polar-aurora-orbit kaspi-opaque-glass-modal w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto">
+    <KaspiGlassModalPortal isOpen={isPaymentModalOpen} onClose={handleClose} dir="ltr">
+      <div
+        data-kaspi-pos-checkout-modal="true"
+        className="kaspi-frosted-glass kaspi-polar-aurora-orbit kaspi-opaque-glass-modal w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto"
+      >
         {/* Modal Top Header */}
         <div className="flex items-center justify-between p-4 px-6 border-b border-zinc-800 kaspi-frosted-card">
           <div className="flex items-center gap-2.5">
@@ -681,17 +694,19 @@ export function UnifiedCheckoutModal() {
               </div>
             )}
 
-            {/* 4. SPLIT / MIXTE PAYMENT VIEW */}
+            {/* 4. SPLIT / MIXTE PAYMENT VIEW (Cash + Card + Tips + Payment Link/QR + Offline Pending Tracking) */}
             {selectedPaymentMethod === "transfer" && (
-              <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-3">
-                <div className="flex items-center justify-between text-xs font-bold text-white">
-                  <span>{locale === "ar" ? "دفع مجزأ (نقداً + بطاقة)" : "Paiement Mixte (Espèces + TPE)"}</span>
-                  <Layers className="w-4 h-4 text-white" />
+              <div className="p-4 rounded-2xl kaspi-frosted-card space-y-3">
+                <div className="flex items-center justify-between text-xs font-bold text-[var(--kaspi-text-primary)]">
+                  <span>{locale === "ar" ? "دفع مجزأ (نقداً + بطاقة TPE)" : "Paiement Mixte (Espèces + TPE)"}</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    {splitTenderDetails.cardSettlementStatus}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-400 mb-1">
+                    <label className="block text-[11px] font-bold text-[var(--kaspi-text-secondary)] mb-1">
                       {locale === "ar" ? "جزء الكاش (د.م)" : "Part Espèces (MAD)"}
                     </label>
                     <input
@@ -699,18 +714,58 @@ export function UnifiedCheckoutModal() {
                       value={splitCashAmount}
                       onChange={(e) => setSplitCashAmount(e.target.value)}
                       placeholder={(grandTotal / 2).toFixed(2)}
-                      className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white font-mono text-xs focus:outline-none"
+                      className="w-full px-3 py-2 rounded-xl kaspi-translucent-input font-mono text-xs focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-400 mb-1">
+                    <label className="block text-[11px] font-bold text-[var(--kaspi-text-secondary)] mb-1">
                       {locale === "ar" ? "جزء البطاقة (TPE)" : "Part Carte TPE (MAD)"}
                     </label>
-                    <div className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white font-mono text-xs">
+                    <div className="w-full px-3 py-2 rounded-xl kaspi-glass-surface font-mono text-xs font-bold">
                       {splitCardAmount.toFixed(2)} MAD
                     </div>
                   </div>
                 </div>
+
+                {/* Tips & Payment Link / QR Row */}
+                <div className="pt-2 border-t border-white/[0.10] flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <Coins className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-[11px] text-[var(--kaspi-text-secondary)]">
+                      {locale === "ar" ? "إكرامية (Tip):" : "Pourboire :"}
+                    </span>
+                    {[0, 5, 10, 20].map((tip) => (
+                      <button
+                        key={tip}
+                        type="button"
+                        onClick={() => setTipAmountMad(tip)}
+                        className={`px-2 py-0.5 rounded-lg font-mono text-[10px] font-bold cursor-pointer ${
+                          tipAmountMad === tip
+                            ? "kaspi-glass-btn kaspi-orbit-active"
+                            : "kaspi-glass-surface text-[var(--kaspi-text-muted)]"
+                        }`}
+                      >
+                        +{tip}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowQrLink(!showQrLink)}
+                    className="px-2.5 py-1 rounded-lg kaspi-glass-btn text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <QrCode className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>{locale === "ar" ? "رابط دفع / QR" : "Lien / QR"}</span>
+                  </button>
+                </div>
+
+                {showQrLink && (
+                  <div className="p-2.5 rounded-xl kaspi-glass-surface text-[11px] font-mono text-[var(--kaspi-text-secondary)] flex items-center justify-between" dir="ltr">
+                    <span className="truncate">{splitTenderDetails.paymentLinkQrPayload}</span>
+                    <span className="text-emerald-400 font-bold shrink-0 ml-2">QR READY</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -783,6 +838,6 @@ export function UnifiedCheckoutModal() {
           </div>
         )}
       </div>
-    </div>
+    </KaspiGlassModalPortal>
   );
 }

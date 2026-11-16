@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { usePosStore } from "@/client/store/usePosStore";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 interface CustomerItem {
   id: string;
@@ -424,8 +425,8 @@ export default function CustomersPage() {
 
       {/* Add Customer Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xl">
-          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-md w-full p-6 shadow-2xl">
+        <KaspiGlassModalPortal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} dir="ltr">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto my-auto p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] mb-4">
               <h3 className="font-bold text-[var(--kaspi-text-primary)] text-base">{t.customers.modalTitle}</h3>
               <AppleBackButton onClick={() => setIsModalOpen(false)} locale={locale} />
@@ -510,13 +511,17 @@ export default function CustomersPage() {
               </div>
             </form>
           </div>
-        </div>
+        </KaspiGlassModalPortal>
       )}
 
       {/* Carnet de Crédit (Repayment & Ledger History) Modal */}
       {activeCustomerForCredit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xl">
-          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+        <KaspiGlassModalPortal
+          isOpen={Boolean(activeCustomerForCredit)}
+          onClose={() => setActiveCustomerForCredit(null)}
+          dir="ltr"
+        >
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-lg w-full my-auto p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 gap-3">
               <div>
                 <h3 className="font-bold text-[var(--kaspi-text-primary)] text-base">
@@ -665,7 +670,7 @@ export default function CustomersPage() {
               )}
             </div>
           </div>
-        </div>
+        </KaspiGlassModalPortal>
       )}
     </div>
   );

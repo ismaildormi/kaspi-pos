@@ -5,7 +5,7 @@
  * Supports sandbox and production modes.
  */
 
-import crypto from "node:crypto";
+import crypto from "crypto";
 import {
   PaymentAdapter,
   PaymentIntentOptions,
@@ -145,6 +145,7 @@ export class YouCanPayPaymentAdapter implements PaymentAdapter {
     return {
       success: true,
       refundId: `rf_ycp_${options.transactionId.slice(0, 10)}`,
+      actionTaken: options.isSameDayVoid ? "VOID" : "FULL_REFUND",
       amountRefunded: options.amount || 0,
     };
   }

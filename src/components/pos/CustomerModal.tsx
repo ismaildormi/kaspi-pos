@@ -14,6 +14,7 @@ import { offlineDb } from "@/client/db";
 import { getApiUrl } from "@/client/sync-engine";
 import { useAppDictionary } from "@/i18n/schema";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 interface CustomerModalProps {
   isOpen: boolean;
@@ -232,8 +233,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
   };
 
   return (
-    <div dir="ltr" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xl select-none">
-      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+    <KaspiGlassModalPortal isOpen={isOpen} onClose={onClose} dir="ltr">
+      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit relative w-full max-w-lg max-h-[85vh] overflow-hidden my-auto rounded-2xl shadow-2xl flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-white/[0.08] flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -452,6 +453,6 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </KaspiGlassModalPortal>
   );
 };

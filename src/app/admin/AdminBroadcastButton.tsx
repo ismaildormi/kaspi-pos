@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Mail, Send, X, Loader2, CheckCircle2, Sparkles } from "lucide-react";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 export function AdminBroadcastButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -53,8 +54,15 @@ export function AdminBroadcastButton() {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs select-none">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+        <KaspiGlassModalPortal
+          isOpen={isOpen}
+          onClose={() => {
+            setIsOpen(false);
+            setResult(null);
+          }}
+          dir="ltr"
+        >
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto my-auto p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
@@ -159,7 +167,7 @@ export function AdminBroadcastButton() {
               </div>
             </form>
           </div>
-        </div>
+        </KaspiGlassModalPortal>
       )}
     </>
   );

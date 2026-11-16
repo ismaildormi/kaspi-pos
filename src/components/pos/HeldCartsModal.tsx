@@ -6,6 +6,7 @@ import { Play, Trash2, Clock } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 interface HeldCartsModalProps {
   isOpen: boolean;
@@ -21,8 +22,8 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({ isOpen, onClose 
   if (!isOpen) return null;
 
   return (
-    <div dir="ltr" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xl select-none">
-      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit relative w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+    <KaspiGlassModalPortal isOpen={isOpen} onClose={onClose} dir="ltr">
+      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit relative w-full max-w-md max-h-[90vh] overflow-y-auto my-auto rounded-2xl shadow-2xl flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-white/[0.08] flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -86,6 +87,6 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({ isOpen, onClose 
           )}
         </div>
       </div>
-    </div>
+    </KaspiGlassModalPortal>
   );
 };

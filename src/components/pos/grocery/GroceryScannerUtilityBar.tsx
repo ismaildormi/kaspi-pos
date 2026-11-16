@@ -17,6 +17,7 @@ import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
 import { playTapSound, playSuccessSound } from "@/lib/audio";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 interface GroceryScannerUtilityBarProps {
   products: PosProduct[];
@@ -195,11 +196,16 @@ export function GroceryScannerUtilityBar({
          MODAL 1: PRICE, SHELF & DLC EXPIRATION VERIFIER
          ======================================================================= */}
       {isPriceVerifierOpen && (
-        <div
+        <KaspiGlassModalPortal
+          isOpen={isPriceVerifierOpen}
+          onClose={() => {
+            setIsPriceVerifierOpen(false);
+            setVerifiedProduct(null);
+            setVerifierQuery("");
+          }}
           dir="ltr"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-xl animate-fadeIn select-none"
         >
-          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-lg rounded-3xl shadow-2xl p-6 space-y-5">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-lg max-h-[90vh] overflow-y-auto my-auto rounded-3xl shadow-2xl p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 gap-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
@@ -327,18 +333,19 @@ export function GroceryScannerUtilityBar({
               </div>
             )}
           </div>
-        </div>
+        </KaspiGlassModalPortal>
       )}
 
       {/* =======================================================================
          MODAL 2: 4-DIGIT PLU PRODUCE QUICK ENTRY (Fruits, Vegetables, Olives)
          ======================================================================= */}
       {isPluModalOpen && (
-        <div
+        <KaspiGlassModalPortal
+          isOpen={isPluModalOpen}
+          onClose={() => setIsPluModalOpen(false)}
           dir="ltr"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-xl animate-fadeIn select-none"
         >
-          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-lg rounded-3xl shadow-2xl p-6 space-y-5">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-lg max-h-[90vh] overflow-y-auto my-auto rounded-3xl shadow-2xl p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 gap-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
@@ -471,7 +478,7 @@ export function GroceryScannerUtilityBar({
               </span>
             </button>
           </div>
-        </div>
+        </KaspiGlassModalPortal>
       )}
     </>
   );

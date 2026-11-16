@@ -9,10 +9,10 @@ export interface KaspiBrandMarkProps {
 
 const SIZE_CLASSES: Record<NonNullable<KaspiBrandMarkProps["size"]>, string> = {
   xs: "h-6 w-auto",
-  sm: "h-9 w-auto",
-  md: "h-10 w-auto",
-  lg: "h-12 w-auto",
-  auth: "h-14 sm:h-16 w-auto",
+  sm: "h-7 w-auto",
+  md: "h-8 w-auto",
+  lg: "h-10 w-auto",
+  auth: "h-11 sm:h-12 w-auto",
 };
 
 /**

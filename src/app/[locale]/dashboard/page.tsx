@@ -103,47 +103,105 @@ export default async function DashboardOverviewPage({
   let customersCount = 0;
   let outOfStockCount = 0;
   let totalUnits = 0;
+  let streakDays = 0;
+  let weeklyConsistency: boolean[] = [false, false, false, false, false, false, false];
   let workspaceRecord: { responseBody: unknown } | null = null;
   let salesAgg: { _sum: { grandTotal: unknown } } = { _sum: { grandTotal: null } };
 
   if (!isFallbackTenant) {
     try {
       let stockAgg: { _sum: { quantity: unknown } } = { _sum: { quantity: null } };
-      [productsCount, salesCount, customersCount, outOfStockCount, workspaceRecord, salesAgg, stockAgg] =
-        await Promise.all([
-          prisma.product.count({ where: { tenantId } }).catch(() => 0),
-          prisma.sale
-            .count({ where: { tenantId, status: "completed" } })
-            .catch(() => 0),
-          prisma.customer.count({ where: { tenantId } }).catch(() => 0),
-          prisma.stockLevel
-            .count({ where: { tenantId, quantity: { lte: 0 } } })
-            .catch(() => 0),
-          prisma.idempotencyRecord
-            .findUnique({
-              where: {
-                tenantId_scope_key: {
-                  tenantId,
-                  scope: "workspace_config",
-                  key: "store_profile",
-                },
+      let recentSaleDates: Array<{ createdAt: Date }> = [];
+      let recentShiftDates: Array<{ openedAt: Date }> = [];
+      [
+        productsCount,
+        salesCount,
+        customersCount,
+        outOfStockCount,
+        workspaceRecord,
+        salesAgg,
+        stockAgg,
+        recentSaleDates,
+        recentShiftDates,
+      ] = await Promise.all([
+        prisma.product.count({ where: { tenantId } }).catch(() => 0),
+        prisma.sale
+          .count({ where: { tenantId, status: "completed" } })
+          .catch(() => 0),
+        prisma.customer.count({ where: { tenantId } }).catch(() => 0),
+        prisma.stockLevel
+          .count({ where: { tenantId, quantity: { lte: 0 } } })
+          .catch(() => 0),
+        prisma.idempotencyRecord
+          .findUnique({
+            where: {
+              tenantId_scope_key: {
+                tenantId,
+                scope: "workspace_config",
+                key: "store_profile",
               },
-            })
-            .catch(() => null),
-          prisma.sale
-            .aggregate({
-              where: { tenantId, status: "completed" },
-              _sum: { grandTotal: true },
-            })
-            .catch(() => ({ _sum: { grandTotal: null } })),
-          prisma.stockLevel
-            .aggregate({
-              where: { tenantId },
-              _sum: { quantity: true },
-            })
-            .catch(() => ({ _sum: { quantity: null } })),
-        ]);
+            },
+          })
+          .catch(() => null),
+        prisma.sale
+          .aggregate({
+            where: { tenantId, status: "completed" },
+            _sum: { grandTotal: true },
+          })
+          .catch(() => ({ _sum: { grandTotal: null } })),
+        prisma.stockLevel
+          .aggregate({
+            where: { tenantId },
+            _sum: { quantity: true },
+          })
+          .catch(() => ({ _sum: { quantity: null } })),
+        prisma.sale
+          .findMany({
+            where: { tenantId, status: "completed" },
+            select: { createdAt: true },
+            orderBy: { createdAt: "desc" },
+            take: 300,
+          })
+          .catch(() => []),
+        prisma.cashSession
+          .findMany({
+            where: { tenantId },
+            select: { openedAt: true },
+            orderBy: { openedAt: "desc" },
+            take: 120,
+          })
+          .catch(() => []),
+      ]);
       totalUnits = Number(stockAgg?._sum?.quantity || 0);
+
+      // Compute Real Consecutive Active Days (Sale + CashSession timestamps)
+      const activeDayKeys = new Set<string>();
+      for (const s of recentSaleDates) {
+        if (s.createdAt) activeDayKeys.add(s.createdAt.toISOString().slice(0, 10));
+      }
+      for (const cs of recentShiftDates) {
+        if (cs.openedAt) activeDayKeys.add(cs.openedAt.toISOString().slice(0, 10));
+      }
+
+      const todayUtc = new Date();
+      const last7: boolean[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(todayUtc.getTime() - i * 86_400_000);
+        const key = d.toISOString().slice(0, 10);
+        last7.push(activeDayKeys.has(key));
+      }
+      weeklyConsistency = last7;
+
+      let cursor = new Date(todayUtc);
+      const todayKey = cursor.toISOString().slice(0, 10);
+      if (!activeDayKeys.has(todayKey)) {
+        // Check starting from yesterday if no activity yet today
+        cursor = new Date(todayUtc.getTime() - 86_400_000);
+      }
+      while (activeDayKeys.has(cursor.toISOString().slice(0, 10))) {
+        streakDays += 1;
+        cursor = new Date(cursor.getTime() - 86_400_000);
+      }
     } catch (err) {
       console.warn("[DashboardOverviewPage] Fallback metrics used:", err);
     }
@@ -233,7 +291,7 @@ export default async function DashboardOverviewPage({
         </div>
       </div>
 
-      {/* KPI Cards (Interactive Real-Data Sparklines & Click-to-Inspect Modals) */}
+      {/* KPI Cards (Interactive Real-Data Sparklines & Click-to-Inspect Modals + Daily Store Streak) */}
       <DashboardInteractiveKpis
         locale={locale}
         currency={t.common.currency}
@@ -243,6 +301,8 @@ export default async function DashboardOverviewPage({
         outOfStockCount={outOfStockCount}
         productsCount={productsCount}
         totalUnits={totalUnits}
+        streakDays={streakDays}
+        weeklyConsistency={weeklyConsistency}
       />
 
       {/* Quick Launch Cards (Frosted Glass Translucent Surface) */}

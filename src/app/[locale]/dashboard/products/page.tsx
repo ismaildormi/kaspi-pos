@@ -23,6 +23,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 import { generateProductImageUrl } from "@/lib/pollinations";
 import { uploadProductImage } from "@/lib/supabase-storage";
 import { compressImage } from "@/lib/image-compression";
@@ -1048,8 +1049,12 @@ export default function ProductsListPage() {
          MODAL 1: CHANGE IMAGE URL ("تغيير الصورة")
          ==================================================================== */}
       {imageModalProduct && (
-        <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xl flex items-center justify-center p-4">
-          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-md rounded-2xl p-6 space-y-5 shadow-2xl">
+        <KaspiGlassModalPortal
+          isOpen={Boolean(imageModalProduct)}
+          onClose={() => setImageModalProduct(null)}
+          dir="ltr"
+        >
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-md max-h-[90vh] overflow-y-auto my-auto rounded-2xl p-6 space-y-5 shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 gap-3">
               <div>
                 <h3 className="text-base font-bold text-[var(--kaspi-text-primary)] flex items-center gap-2">
@@ -1152,15 +1157,19 @@ export default function ProductsListPage() {
               </div>
             </form>
           </div>
-        </div>
+        </KaspiGlassModalPortal>
       )}
 
       {/* ====================================================================
          MODAL 2: EDIT PRICE ("تعديل الثمن")
          ==================================================================== */}
       {priceModalProduct && (
-        <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xl flex items-center justify-center p-4">
-          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-md rounded-2xl p-6 space-y-5 shadow-2xl">
+        <KaspiGlassModalPortal
+          isOpen={Boolean(priceModalProduct)}
+          onClose={() => setPriceModalProduct(null)}
+          dir="ltr"
+        >
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-md max-h-[90vh] overflow-y-auto my-auto rounded-2xl p-6 space-y-5 shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 gap-3">
               <div>
                 <h3 className="text-base font-bold text-[var(--kaspi-text-primary)] flex items-center gap-2">
@@ -1214,7 +1223,7 @@ export default function ProductsListPage() {
               </div>
             </form>
           </div>
-        </div>
+        </KaspiGlassModalPortal>
       )}
 
       {/* ====================================================================
@@ -1304,8 +1313,12 @@ export default function ProductsListPage() {
         };
 
         return (
-          <div className="fixed inset-0 z-50 bg-black/55 backdrop-blur-xl flex items-center justify-center p-3 sm:p-5 overflow-y-auto select-none animate-fadeIn">
-            <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit max-w-3xl w-full rounded-3xl p-6 shadow-[0_24px_80px_rgba(0,0,0,0.85)] flex flex-col my-auto transition-all">
+          <KaspiGlassModalPortal
+            isOpen={isCreateModalOpen}
+            onClose={() => setIsCreateModalOpen(false)}
+            dir="ltr"
+          >
+            <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit max-w-3xl w-full max-h-[90vh] overflow-y-auto rounded-3xl p-6 shadow-2xl flex flex-col my-auto transition-all">
               {/* Header Row */}
               <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
                 <h3 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
@@ -1370,14 +1383,11 @@ export default function ProductsListPage() {
                           const f = e.dataTransfer.files?.[0];
                           if (f) handleCreateProcessFile(f);
                         }}
-                        className={`relative h-56 w-full rounded-xl overflow-hidden border transition-all flex items-center justify-center cursor-pointer ${
+                        className={`relative h-56 w-full rounded-2xl overflow-hidden border transition-all flex items-center justify-center cursor-pointer kaspi-product-white-box ${
                           isCreateDragging
                             ? "border-[#14B8A6] ring-2 ring-[#14B8A6]/40"
-                            : "border-white/[0.08] hover:border-white/[0.20]"
+                            : "border-white/[0.14] hover:border-white/[0.28]"
                         }`}
-                        style={{
-                          backgroundColor: createImageUrl ? "#FFFFFF" : "#0B0E12",
-                        }}
                       >
                         {isCreateProcessingImage ? (
                           <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
@@ -1667,7 +1677,7 @@ export default function ProductsListPage() {
                 </button>
               </form>
             </div>
-          </div>
+          </KaspiGlassModalPortal>
         );
       })()}
     </div>

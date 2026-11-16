@@ -6,6 +6,7 @@ import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
 import { playSuccessSound } from "@/lib/audio";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 interface SquarePriceDlcModalProps {
   isOpen: boolean;
@@ -49,15 +50,12 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
   };
 
   return (
-    <div
-      dir="ltr"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-xl animate-fadeIn select-none"
-    >
-      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-lg rounded-3xl shadow-2xl p-6 space-y-5">
+    <KaspiGlassModalPortal isOpen={isOpen} onClose={onClose} dir="ltr">
+      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-lg max-h-[90vh] overflow-y-auto my-auto rounded-3xl shadow-2xl p-6 space-y-5">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 gap-3">
+        <div className="flex items-center justify-between border-b border-white/[0.12] pb-3 gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/[0.10] flex items-center justify-center text-[var(--kaspi-text-primary)]">
+            <div className="w-9 h-9 rounded-xl kaspi-glass-btn flex items-center justify-center text-[var(--kaspi-text-primary)]">
               <ScanBarcode className="w-4 h-4" />
             </div>
             <div>
@@ -82,7 +80,7 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
 
         {/* Barcode Search Field */}
         <div className="relative">
-          <Search className="w-4 h-4 text-zinc-400 absolute start-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[var(--kaspi-text-muted)] absolute start-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
           <input
             type="text"
             autoFocus
@@ -95,59 +93,59 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
                 ? "Scan barcode or search by name..."
                 : "Scannez code-barres ou recherchez par nom..."
             }
-            className="w-full h-11 ps-10 pe-4 bg-[#111113] border border-white/[0.08] focus:border-white rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none font-mono transition-colors"
+            className="w-full h-11 ps-10 pe-4 kaspi-translucent-input rounded-xl text-xs font-mono transition-colors focus:outline-none"
           />
         </div>
 
         {/* Result Card */}
         {matchedProduct ? (
-          <div className="p-4 rounded-2xl bg-[#111113] border border-white/[0.08] space-y-4 animate-scale-in">
+          <div className="p-4 rounded-2xl kaspi-frosted-card space-y-4 animate-scale-in">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider block">
+                <span className="text-[10px] font-mono font-bold text-[var(--kaspi-text-muted)] uppercase tracking-wider block">
                   {matchedProduct.categoryName || (locale === "ar" ? "جناح عام" : "Rayon Général")}
                 </span>
-                <h4 className="text-base font-bold text-white mt-0.5">{matchedProduct.name}</h4>
-                <span className="text-[11px] font-mono text-zinc-400 block mt-1">
+                <h4 className="text-base font-bold text-[var(--kaspi-text-primary)] mt-0.5">{matchedProduct.name}</h4>
+                <span className="text-[11px] font-mono text-[var(--kaspi-text-muted)] block mt-1">
                   SKU: {matchedProduct.sku} {matchedProduct.barcode ? `• EAN: ${matchedProduct.barcode}` : ""}
                 </span>
               </div>
               <div className="text-end">
-                <span className="text-[10px] uppercase font-bold text-zinc-400 block">
+                <span className="text-[10px] uppercase font-bold text-[var(--kaspi-text-muted)] block">
                   {locale === "ar" ? "سعر البيع" : "Prix Vente"}
                 </span>
-                <span className="text-2xl font-black font-mono text-white tabular-nums">
+                <span className="text-2xl font-black font-mono text-[var(--kaspi-text-primary)] tabular-nums">
                   {matchedProduct.salePrice.toFixed(2)}{" "}
-                  <span className="text-xs font-normal text-zinc-400">MAD</span>
+                  <span className="text-xs font-normal text-[var(--kaspi-text-muted)]">MAD</span>
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/[0.08] text-xs font-mono">
-              <div className="p-2 rounded-xl bg-[#09090B] border border-white/[0.06]">
-                <span className="text-[10px] text-zinc-400 block">
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/[0.12] text-xs font-mono">
+              <div className="p-2.5 rounded-xl kaspi-glass-surface">
+                <span className="text-[10px] text-[var(--kaspi-text-muted)] block">
                   {locale === "ar" ? "سعر الباك:" : "Prix Pack :"}
                 </span>
-                <span className="text-xs font-bold text-white">
+                <span className="text-xs font-bold text-[var(--kaspi-text-primary)]">
                   {matchedProduct.wholesalePrice
                     ? `${Number(matchedProduct.wholesalePrice).toFixed(2)} MAD`
                     : "—"}
                 </span>
               </div>
-              <div className="p-2 rounded-xl bg-[#09090B] border border-white/[0.06]">
-                <span className="text-[10px] text-zinc-400 block">
+              <div className="p-2.5 rounded-xl kaspi-glass-surface">
+                <span className="text-[10px] text-[var(--kaspi-text-muted)] block">
                   {locale === "ar" ? "الرصيد بالرف:" : "Stock Rayon :"}
                 </span>
-                <span className="text-xs font-bold text-white">
+                <span className="text-xs font-bold text-[var(--kaspi-text-primary)]">
                   {matchedProduct.stockQuantity ?? 0} {locale === "ar" ? "قطعة" : "unités"}
                 </span>
               </div>
-              <div className="p-2 rounded-xl bg-[#09090B] border border-white/[0.06]">
-                <span className="text-[10px] text-zinc-400 block">
+              <div className="p-2.5 rounded-xl kaspi-glass-surface">
+                <span className="text-[10px] text-[var(--kaspi-text-muted)] block">
                   {locale === "ar" ? "الصلاحية DLC:" : "Date DLC :"}
                 </span>
-                <span className="text-xs font-bold text-zinc-300 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-zinc-400" />
+                <span className="text-xs font-bold text-[var(--kaspi-text-primary)] flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                   <span>{locale === "ar" ? "صالحة" : "Valide"}</span>
                 </span>
               </div>
@@ -156,7 +154,7 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
             <button
               type="button"
               onClick={handleAddToCart}
-              className="w-full h-11 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-black text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs"
+              className="w-full h-11 rounded-xl kaspi-emerald-checkout-btn font-black text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
               <span>
@@ -169,9 +167,9 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
             </button>
           </div>
         ) : (
-          <div className="p-8 text-center border border-dashed border-white/[0.08] rounded-2xl bg-[#111113] space-y-2">
-            <Package className="w-8 h-8 text-zinc-600 mx-auto" />
-            <p className="text-xs text-zinc-400">
+          <div className="p-8 text-center rounded-2xl kaspi-frosted-card space-y-2">
+            <Package className="w-8 h-8 text-[var(--kaspi-text-muted)] mx-auto" />
+            <p className="text-xs text-[var(--kaspi-text-secondary)]">
               {locale === "ar"
                 ? "قم بتوجيه الماسح الضوئي نحو الباركود لعرض السعر والمخزون في أجزاء من الثانية"
                 : locale === "en"
@@ -181,6 +179,6 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
           </div>
         )}
       </div>
-    </div>
+    </KaspiGlassModalPortal>
   );
 }

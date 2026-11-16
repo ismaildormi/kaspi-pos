@@ -1,0 +1,40 @@
+name: KASPI Reverse-Engineering & UI/Payment Compliance Gate
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  reverse-engineering-gate:
+    name: TypeScript, UI Cohesion, Secret Scan & Reverse-Engineering Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run TypeScript Compiler Gate (tsc --noEmit)
+        run: node ./node_modules/typescript/bin/tsc --noEmit
+
+      - name: Run Architectural & visionOS UI Cohesion Audit
+        run: node scripts/audit-full-ui-cohesion.mjs
+
+      - name: Run Reverse-Engineering Compliance Verification Suite
+        run: node scripts/reverse-engineer-verify.mjs
+
+      - name: Run Security Secret Scan
+        run: node scripts/security/secret-scan.mjs

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { StockTransferModal, TransferStoreItem } from "./StockTransferModal";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 export interface StockAuditProductItem {
   id: string;
@@ -172,8 +173,8 @@ export function StockAuditClient({
       />
 
       {isOpen && (
-        <div dir="ltr" className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xl p-4">
-          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5">
+        <KaspiGlassModalPortal isOpen={isOpen} onClose={() => setIsOpen(false)} dir="ltr">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-lg max-h-[90vh] overflow-y-auto my-auto rounded-3xl p-6 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 gap-3">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
@@ -347,7 +348,7 @@ export function StockAuditClient({
               </button>
             </form>
           </div>
-        </div>
+        </KaspiGlassModalPortal>
       )}
     </>
   );

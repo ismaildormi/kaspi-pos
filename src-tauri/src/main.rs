@@ -8,7 +8,10 @@ mod desktop_handoff;
 
 use printer::{encode_escpos, render_rows, send_to_printer, to_western_numerals, Align, Fonts, Row};
 use local_ai::{get_local_ai_capabilities, run_local_ai_inference};
-use tpe_bridge::initiate_tpe_payment;
+use tpe_bridge::{
+    cancel_tpe_payment, discover_local_tpe_devices, initiate_tpe_payment,
+    query_tpe_transaction_status,
+};
 use tauri::Manager;
 use serde::Deserialize;
 
@@ -356,7 +359,10 @@ fn main() {
             print_receipt,
             get_local_ai_capabilities,
             run_local_ai_inference,
-            initiate_tpe_payment
+            discover_local_tpe_devices,
+            initiate_tpe_payment,
+            query_tpe_transaction_status,
+            cancel_tpe_payment
         ])
         .run(tauri::generate_context!())
         .expect("error while running Kasbi POS Tauri application");

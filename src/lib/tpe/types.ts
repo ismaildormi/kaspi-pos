@@ -1,0 +1,211 @@
+/**
+ * KASPI POS (كسب) — Universal TPE Integration & Auto-Discovery Type Contracts
+ *
+ * Enforces:
+ * - Zero Amount Re-entry transaction lifecycle (Exact 11-State Machine)
+ * - 3 Honest Automation Levels (Full Auto / Assisted Auto / Manual-Unsupported)
+ * - 8 Truthful Compatibility Statuses (Never fake "Verified Compatible")
+ * - Strict PCI-DSS 4.0.1 & Bank Al-Maghrib Law 103-12 separation (Zero PAN/CVV/PIN)
+ */
+
+import type { PosFeeSplitRatio, SupportedCurrency } from "../payments/types";
+
+export type TpeTransactionState =
+  | "CREATED"
+  | "VALIDATED"
+  | "SENT_TO_TERMINAL"
+  | "WAITING_FOR_CUSTOMER"
+  | "PROCESSING"
+  | "APPROVED"
+  | "DECLINED"
+  | "CANCELLED"
+  | "TIMED_OUT"
+  | "UNKNOWN"
+  | "RECONCILIATION_REQUIRED";
+
+export type TpeAutomationLevel =
+  | "LEVEL_1_FULL_AUTO"
+  | "LEVEL_2_ASSISTED_AUTO"
+  | "LEVEL_3_MANUAL_UNSUPPORTED";
+
+export type TpeCompatibilityStatus =
+  | "Verified Compatible"
+  | "Sandbox Tested"
+  | "Partially Compatible"
+  | "Requires Provider Approval"
+  | "Requires Merchant Credentials"
+  | "Requires Official SDK"
+  | "Unsupported"
+  | "Not Yet Tested";
+
+export type TpeConnectionType =
+  | "USB"
+  | "SERIAL_RS232"
+  | "ETHERNET_TCPIP"
+  | "WIFI"
+  | "BLUETOOTH"
+  | "ANDROID_SMART_POS"
+  | "CLOUD_API"
+  | "LEGACY_BRIDGE";
+
+export type TpeProtocolType =
+  | "OFFICIAL_MANUFACTURER_SDK"
+  | "ADYEN_TERMINAL_API"
+  | "STRIPE_TERMINAL"
+  | "NEXO_RETAILER"
+  | "OPI"
+  | "CONCERT_V3"
+  | "SERIAL_ESC"
+  | "MANUAL_EXTERNAL";
+
+export type TpeDeclaredCapability =
+  | "CHIP_EMV"
+  | "NFC_CONTACTLESS"
+  | "APPLE_PAY"
+  | "GOOGLE_PAY"
+  | "SAMSUNG_WALLET"
+  | "PRE_AUTH"
+  | "CAPTURE"
+  | "VOID_SAME_DAY"
+  | "PARTIAL_REFUND"
+  | "TIPS"
+  | "OFFLINE_PENDING_QUEUE"
+  | "RECEIPT_PRINT";
+
+export interface TpeDeviceFingerprint {
+  deviceId: string;
+  manufacturer: string;
+  model: string;
+  hardwareRevision: string | null;
+  firmwareVersion: string; // Strictly "unknown" when unavailable — never hallucinated
+  os: string;
+  supportedProtocols: TpeProtocolType[];
+  connectionType: TpeConnectionType;
+  sdkCompatibility: string | null;
+  paymentProvider: string;
+  acquirerCompatibility: string[];
+  countryCompatibility: string[];
+  certificationStatus: TpeCompatibilityStatus;
+  endpointAddress?: string | null;
+  port?: number | null;
+  serialPort?: string | null;
+}
+
+export interface TpeAdapterTestResult {
+  testedAt: string;
+  environment: "SANDBOX" | "LOCAL_SIMULATION" | "HARDWARE_BENCH" | "LIVE_PILOT";
+  passed: boolean;
+  notes: string;
+  evidenceId: string;
+}
+
+export interface TpeAdapterRegistryEntry {
+  adapterId: string;
+  manufacturer: string;
+  supportedModels: string[];
+  supportedFirmware: string;
+  protocol: TpeProtocolType;
+  sdkVersion: string;
+  provider: string;
+  supportedCountries: string[];
+  requiredPermissions: string[];
+  installationMethod: "BUILTIN_CLOUD_OR_NEXO" | "BROWSER_SERIAL_USB" | "TAURI_LOCAL_BRIDGE" | "OEM_SDK_BUILD" | "MANUAL_ONLY";
+  licenseInfo: string;
+  registrySourceUrl: string;
+  securitySignature: string;
+  sha256: string;
+  compatibilityStatus: TpeCompatibilityStatus;
+  automationLevel: TpeAutomationLevel;
+  isInitialResearchMatrix: boolean;
+  lastVerifiedDate: string | null;
+  testResults: TpeAdapterTestResult[];
+  declaredCapabilities: TpeDeclaredCapability[];
+}
+
+export interface TpeStartPaymentRequest {
+  idempotencyKey: string;
+  saleId?: string;
+  storeId: string;
+  tenantId: string;
+  terminalId: string;
+  amount: number;
+  tipAmount?: number;
+  splitCashAmount?: number;
+  currency: SupportedCurrency;
+  feeSplitRatio?: PosFeeSplitRatio;
+  isSandbox?: boolean;
+  isOffline?: boolean;
+  captureMethod?: "IMMEDIATE" | "PRE_AUTH";
+}
+
+export interface TpeTransactionResult {
+  transactionId: string;
+  idempotencyKey: string;
+  terminalId: string;
+  providerReference: string | null;
+  state: TpeTransactionState;
+  amount: number;
+  currency: SupportedCurrency;
+  authCode: string | null;
+  cardScheme: string | null; // e.g. "CMI / VISA / MASTERCARD" — NEVER PAN/CVV/PIN
+  maskedLast4: string | null;
+  walletUsed: "NONE" | "APPLE_PAY" | "GOOGLE_PAY" | "SAMSUNG_WALLET";
+  feeCustomerSurcharge: number;
+  netMerchantSettlement: number;
+  isSandbox: boolean;
+  offlinePending: boolean;
+  canSafelyFinalizeSale: boolean; // True ONLY when state === "APPROVED"
+  recoveryRequired: boolean;
+  message: string;
+  timestamp: string;
+}
+
+export interface TpeHealthCheckResult {
+  terminalId: string;
+  healthy: boolean;
+  latencyMs: number | null;
+  firmwareVersion: string;
+  connectionType: TpeConnectionType;
+  checkedAt: string;
+  notes: string;
+}
+
+export interface TpeDiagnosticReport {
+  terminalId: string;
+  adapterId: string;
+  protocol: TpeProtocolType;
+  connectionType: TpeConnectionType;
+  lastHeartbeatAt: string;
+  capabilities: TpeDeclaredCapability[];
+  redactedEvents: Array<{
+    timestamp: string;
+    level: "INFO" | "WARN" | "ERROR";
+    code: string;
+    message: string;
+  }>;
+}
+
+export interface UniversalTpeAdapter {
+  readonly adapterId: string;
+  readonly protocol: TpeProtocolType;
+  readonly declaredCapabilities: TpeDeclaredCapability[];
+
+  discover(scopeConfig?: {
+    subnetHint?: string;
+    endpoints?: string[];
+  }): Promise<TpeDeviceFingerprint[]>;
+  identify(targetEndpoint?: string): Promise<TpeDeviceFingerprint>;
+  connect(config: Record<string, unknown>): Promise<{ connected: boolean; sessionToken?: string; message: string }>;
+  authenticate(credentials: Record<string, string>): Promise<{ authenticated: boolean; message: string }>;
+  getDeviceInfo(): Promise<TpeDeviceFingerprint>;
+  getCapabilities(): TpeDeclaredCapability[];
+  sendAmount(params: { amount: number; currency: SupportedCurrency; orderId: string }): Promise<{ acknowledged: boolean; terminalDisplayText: string }>;
+  startPayment(request: TpeStartPaymentRequest): Promise<TpeTransactionResult>;
+  getTransactionStatus(transactionId: string): Promise<TpeTransactionResult>;
+  cancelPayment(transactionId: string): Promise<{ cancelled: boolean; state: TpeTransactionState; message: string }>;
+  requestRefund(params: { transactionId: string; amount: number; reason?: string }): Promise<{ refunded: boolean; refundReference: string; message: string }>;
+  getLastTransaction(): Promise<TpeTransactionResult | null>;
+  disconnect(): Promise<{ disconnected: boolean }>;
+  healthCheck(): Promise<TpeHealthCheckResult>;
+  diagnostics(): Promise<TpeDiagnosticReport>;
+}

@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 interface TenantItem {
   id: string;
@@ -319,8 +320,12 @@ export function TenantsTable({ tenants }: TenantsTableProps) {
 
       {/* License Key Generator Modal */}
       {isLicenseModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-          <div className="bg-zinc-950 rounded-3xl border border-zinc-800 shadow-2xl max-w-md w-full p-6 sm:p-7 space-y-5 animate-in fade-in zoom-in-95">
+        <KaspiGlassModalPortal
+          isOpen={isLicenseModalOpen}
+          onClose={() => setIsLicenseModalOpen(false)}
+          dir="ltr"
+        >
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto my-auto p-6 sm:p-7 space-y-5 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-amber-400/15 border border-amber-400/30 text-amber-400">
@@ -418,7 +423,7 @@ export function TenantsTable({ tenants }: TenantsTableProps) {
               )}
             </div>
           </div>
-        </div>
+        </KaspiGlassModalPortal>
       )}
     </div>
   );

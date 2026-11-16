@@ -32,39 +32,35 @@
     --kaspi-text-primary: #FFFFFF;
     --kaspi-text-secondary: rgba(255, 255, 255, 0.78);
     --kaspi-text-muted: rgba(255, 255, 255, 0.56);
-    --kaspi-glass-blur: blur(28px) saturate(160%);
+    --kaspi-glass-blur: blur(28px) saturate(165%);
     --kaspi-glass-bg:
       linear-gradient(
-        145deg,
-        rgba(255, 255, 255, 0.12) 0%,
-        rgba(255, 255, 255, 0.04) 55%,
-        rgba(255, 255, 255, 0.08) 100%
+        135deg,
+        rgba(255, 255, 255, 0.11) 0%,
+        rgba(255, 255, 255, 0.03) 100%
       ),
-      rgba(12, 14, 18, 0.36);
+      rgba(14, 16, 20, 0.48);
     --kaspi-glass-bg-elevated:
       linear-gradient(
-        145deg,
+        135deg,
         rgba(255, 255, 255, 0.16) 0%,
-        rgba(255, 255, 255, 0.06) 55%,
-        rgba(255, 255, 255, 0.12) 100%
+        rgba(255, 255, 255, 0.06) 100%
       ),
-      rgba(14, 16, 22, 0.44);
+      rgba(14, 16, 20, 0.54);
     --kaspi-glass-surface:
       linear-gradient(
-        145deg,
-        rgba(255, 255, 255, 0.12) 0%,
-        rgba(255, 255, 255, 0.04) 55%,
-        rgba(255, 255, 255, 0.08) 100%
+        135deg,
+        rgba(255, 255, 255, 0.11) 0%,
+        rgba(255, 255, 255, 0.03) 100%
       ),
-      rgba(12, 14, 18, 0.36);
+      rgba(14, 16, 20, 0.48);
     --kaspi-glass-elevated:
       linear-gradient(
-        145deg,
+        135deg,
         rgba(255, 255, 255, 0.16) 0%,
-        rgba(255, 255, 255, 0.06) 55%,
-        rgba(255, 255, 255, 0.12) 100%
+        rgba(255, 255, 255, 0.06) 100%
       ),
-      rgba(14, 16, 22, 0.44);
+      rgba(14, 16, 20, 0.54);
     --kaspi-glass-surface-elevated: #121620;
     --kaspi-glass-button:
       linear-gradient(
@@ -110,36 +106,44 @@
     --kaspi-text-primary: #09090b;
     --kaspi-text-secondary: rgba(9, 9, 11, 0.78);
     --kaspi-text-muted: rgba(9, 9, 11, 0.56);
-    --kaspi-glass-blur: blur(26px) saturate(185%);
-    --kaspi-glass-bg: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.28) 0%,
-      rgba(255, 255, 255, 0.10) 48%,
-      rgba(255, 255, 255, 0.20) 100%
-    );
-    --kaspi-glass-bg-elevated: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.42) 0%,
-      rgba(255, 255, 255, 0.22) 100%
-    );
-    --kaspi-glass-surface: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.28) 0%,
-      rgba(255, 255, 255, 0.10) 48%,
-      rgba(255, 255, 255, 0.20) 100%
-    );
-    --kaspi-glass-elevated: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.24) 0%,
-      rgba(255, 255, 255, 0.10) 100%
-    );
+    --kaspi-glass-blur: blur(28px) saturate(185%);
+    --kaspi-glass-bg:
+      linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.34) 0%,
+        rgba(255, 255, 255, 0.14) 100%
+      ),
+      rgba(255, 255, 255, 0.24);
+    --kaspi-glass-bg-elevated:
+      linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.44) 0%,
+        rgba(255, 255, 255, 0.24) 100%
+      ),
+      rgba(255, 255, 255, 0.34);
+    --kaspi-glass-surface:
+      linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.34) 0%,
+        rgba(255, 255, 255, 0.14) 100%
+      ),
+      rgba(255, 255, 255, 0.24);
+    --kaspi-glass-elevated:
+      linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.30) 0%,
+        rgba(255, 255, 255, 0.14) 100%
+      ),
+      rgba(255, 255, 255, 0.22);
     --kaspi-glass-surface-elevated: #e8f0ed;
-    --kaspi-glass-button: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.24) 0%,
-      rgba(255, 255, 255, 0.10) 100%
-    );
-    --kaspi-glass-border: rgba(255, 255, 255, 0.62);
+    --kaspi-glass-button:
+      linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.30) 0%,
+        rgba(255, 255, 255, 0.12) 100%
+      ),
+      rgba(255, 255, 255, 0.20);
+    --kaspi-glass-border: rgba(255, 255, 255, 0.68);
     --kaspi-glass-shadow:
       inset 0 1px 1px rgba(255, 255, 255, 0.85),
       inset 0 -1px 1px rgba(15, 23, 42, 0.05),
@@ -705,10 +709,10 @@ html[lang="ar"] label,
     color: #09090b !important;
   }
 
-  /* 2B. 3D AURORA EMERALD GREEN CHECKOUT BUTTON (Both Modes) */
+  /* 2B. 3D AURORA EMERALD GREEN CHECKOUT BUTTON (Both Modes, Zero Elevated Z-Index Leak) */
   .kaspi-emerald-checkout-btn {
     position: relative;
-    isolation: isolate;
+    z-index: 0 !important;
     background: linear-gradient(
       135deg,
       rgba(16, 185, 129, 0.94) 0%,
@@ -732,20 +736,36 @@ html[lang="ar"] label,
     color: #ffffff !important;
   }
 
-  /* 2C. HIGH-DENSITY OPAQUE FROSTED GLASS MODAL (Blocks Background Text 100%) */
+  /* 2C. TRUE FROSTED TRANSLUCENT CRYSTAL GLASS MODALS (Rich Readable Crystal <0.65 Alpha) */
   html[data-kaspi-theme="fjord-twilight"] .kaspi-opaque-glass-modal,
   :root .kaspi-opaque-glass-modal,
+  html[data-kaspi-theme="fjord-twilight"] .kaspi-modal-portal-backdrop > div > :is(div, form),
   html[data-kaspi-theme="fjord-twilight"] .fixed.inset-0 > :is(div, form):is(.rounded-2xl, .rounded-3xl) {
-    background: linear-gradient(145deg, rgba(12, 15, 22, 0.97) 0%, rgba(8, 10, 15, 0.98) 100%) !important;
-    backdrop-filter: blur(48px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(48px) saturate(180%) !important;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%),
+      rgba(14, 16, 20, 0.56) !important;
+    background-color: rgba(14, 16, 20, 0.56) !important;
+    backdrop-filter: blur(36px) saturate(175%) !important;
+    -webkit-backdrop-filter: blur(36px) saturate(175%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow:
+      0 28px 72px -12px rgba(0, 0, 0, 0.68),
+      inset 0 1px 1px rgba(255, 255, 255, 0.24) !important;
   }
 
   html[data-kaspi-theme="pearl-light"] .kaspi-opaque-glass-modal,
+  html[data-kaspi-theme="pearl-light"] .kaspi-modal-portal-backdrop > div > :is(div, form),
   html[data-kaspi-theme="pearl-light"] .fixed.inset-0 > :is(div, form):is(.rounded-2xl, .rounded-3xl) {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.94) 0%, rgba(235, 244, 240, 0.96) 100%) !important;
-    backdrop-filter: blur(48px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(48px) saturate(180%) !important;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.32) 100%),
+      rgba(255, 255, 255, 0.46) !important;
+    background-color: rgba(255, 255, 255, 0.46) !important;
+    backdrop-filter: blur(36px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(36px) saturate(190%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.72) !important;
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.92),
+      0 24px 60px -12px rgba(6, 78, 59, 0.18) !important;
   }
 
   /* 2D. IMMUTABLE FULL-BLEED OFFICIAL 3D LOGO IN BOTH THEMES (ZERO BOX, 100% CHROME CONTRAST) */
@@ -800,23 +820,23 @@ html[lang="ar"] label,
     box-shadow: var(--kaspi-active-ring) !important;
   }
 
-  /* 5. Translucent Crystal Product Image Slot (92% Scale, Zero Opaque White Box) */
+  /* 5. Clean Borderless Glass Product Photo Slot (92% Scale, Zero Thick White Frame) */
   .kaspi-product-white-box {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%) !important;
-    border-radius: 0.875rem !important;
-    padding: 0.4rem !important;
+    background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.015) 100%) !important;
+    border-radius: 1rem !important;
+    padding: 0.35rem !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     overflow: hidden !important;
-    border: 1px solid rgba(255, 255, 255, 0.14) !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
   }
 
   html[data-kaspi-theme="pearl-light"] .kaspi-product-white-box {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.08) 100%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.52) !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+    background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.08) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.42) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65) !important;
   }
 
   .kaspi-product-white-box img {
@@ -838,12 +858,13 @@ html[lang="ar"] label,
    ============================================================================ */
 
 /* Modal Backdrops */
+html[data-kaspi-theme="pearl-light"] .kaspi-modal-portal-backdrop,
 html[data-kaspi-theme="pearl-light"] .fixed.inset-0[class*="bg-black"],
 html[data-kaspi-theme="pearl-light"] .fixed.inset-0[class*="bg-zinc-9"],
 html[data-kaspi-theme="pearl-light"] .fixed.inset-0[class*="bg-[#0"] {
-  background-color: rgba(15, 23, 42, 0.35) !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
+  background-color: rgba(6, 78, 59, 0.18) !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
 }
 
 /* Intercept ALL Arbitrary Dark Hexes & Dark Tailwind Surfaces in pearl-light (Excluding Transparent Layout Shells & Fixed Backdrops) */

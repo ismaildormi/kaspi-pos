@@ -11,30 +11,23 @@ interface KaspiThemeToggleProps {
   className?: string;
 }
 
-const THEME_LABELS = {
+const THEME_TOOLTIPS = {
   ar: {
-    pearl: "أبيض لؤلؤي",
-    fjord: "كحلي مغموغ",
-    switchToFjord: "التبديل إلى الوضع الكحلي المغموغ",
-    switchToPearl: "التبديل إلى الوضع الأبيض اللؤلؤي",
+    switchToFjord: "التبديل إلى الوضع الداكن",
+    switchToPearl: "التبديل إلى الوضع الفاتح",
   },
   fr: {
-    pearl: "Blanc Perle",
-    fjord: "Ardoise Fjord",
-    switchToFjord: "Passer au thème Ardoise Fjord",
-    switchToPearl: "Passer au thème Blanc Perle",
+    switchToFjord: "Passer au mode sombre",
+    switchToPearl: "Passer au mode clair",
   },
   en: {
-    pearl: "Pearl White",
-    fjord: "Fjord Slate",
-    switchToFjord: "Switch to Fjord Slate theme",
-    switchToPearl: "Switch to Pearl White theme",
+    switchToFjord: "Switch to dark mode",
+    switchToPearl: "Switch to light mode",
   },
 } as const;
 
 export function KaspiThemeToggle({
   locale,
-  compact = false,
   className = "",
 }: KaspiThemeToggleProps) {
   const { theme, toggleTheme } = useKaspiTheme();
@@ -48,8 +41,9 @@ export function KaspiThemeToggle({
           ? "en"
           : "fr";
 
-  const t = THEME_LABELS[resolvedLocale];
+  const t = THEME_TOOLTIPS[resolvedLocale];
   const isPearl = theme === "pearl-light";
+  const label = isPearl ? t.switchToFjord : t.switchToPearl;
 
   return (
     <button
@@ -58,20 +52,15 @@ export function KaspiThemeToggle({
         playTapSound();
         toggleTheme();
       }}
-      title={isPearl ? t.switchToFjord : t.switchToPearl}
-      aria-label={isPearl ? t.switchToFjord : t.switchToPearl}
+      title={label}
+      aria-label={label}
       data-kaspi-theme-toggle="true"
-      className={`kaspi-theme-toggle-btn kaspi-glass-btn inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-all cursor-pointer select-none ${className}`}
+      className={`kaspi-theme-toggle-btn kaspi-glass-btn rounded-full w-9 h-9 p-0 flex items-center justify-center shrink-0 transition-all duration-300 cursor-pointer select-none hover:scale-105 active:scale-95 ${className}`}
     >
       {isPearl ? (
-        <Sun className="w-3.5 h-3.5 text-[var(--kaspi-text-primary)] shrink-0" />
+        <Sun className="w-4 h-4 text-[var(--kaspi-text-primary)] shrink-0 transition-transform duration-300 rotate-0 scale-100" />
       ) : (
-        <Moon className="w-3.5 h-3.5 text-[var(--kaspi-text-primary)] shrink-0" />
-      )}
-      {!compact && (
-        <span className="whitespace-nowrap">
-          {isPearl ? t.pearl : t.fjord}
-        </span>
+        <Moon className="w-4 h-4 text-[var(--kaspi-text-primary)] shrink-0 transition-transform duration-300 rotate-0 scale-100" />
       )}
     </button>
   );

@@ -18,6 +18,8 @@ import { offlineDb } from "@/client/db";
 import { setCachedData, getCachedData } from "@/lib/cache/client-cache";
 import { playBarcodeScanSound, playTapSound, playSuccessSound } from "@/lib/audio";
 import { compressImage } from "@/lib/image-compression";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 import type { PosProduct } from "@/client/store/usePosStore";
 
 interface QuickProductModalProps {
@@ -293,14 +295,11 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
   };
 
   return (
-    <div
-      dir="ltr"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/45 backdrop-blur-xl select-none overflow-y-auto animate-fadeIn"
-    >
-      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-3xl rounded-3xl p-6 shadow-[0_24px_80px_rgba(0,0,0,0.65)] flex flex-col my-auto transition-all">
+    <KaspiGlassModalPortal isOpen={isOpen} onClose={onClose} dir="ltr">
+      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 shadow-2xl flex flex-col my-auto transition-all">
         {/* Header Row */}
-        <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
-          <h2 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+        <div className="flex items-center justify-between border-b border-white/[0.12] pb-4">
+          <h2 className="text-base sm:text-lg font-bold text-[var(--kaspi-text-primary)] tracking-tight flex items-center gap-2">
             <span>
               {locale === "ar"
                 ? "إضافة منتج سريع — استوديو تفريغ الصور PNG"
@@ -310,13 +309,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
             </span>
           </h2>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-3.5 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.10] border border-white/[0.10] text-xs font-semibold text-zinc-200 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <span>{locale === "ar" ? "← رجوع" : locale === "en" ? "← Back" : "← Retour"}</span>
-          </button>
+          <AppleBackButton onClick={onClose} locale={locale} />
         </div>
 
         {/* Hidden File Input */}
@@ -348,58 +341,55 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                   />
                 </div>
 
-                {/* Center Canvas with Pure Studio White Container or Upload Area */}
+                {/* Center Canvas with Translucent Glass Photo Slot or Upload Area */}
                 <div
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  className={`relative h-56 w-full rounded-xl overflow-hidden border transition-all flex items-center justify-center cursor-pointer ${
+                  className={`relative h-56 w-full rounded-2xl overflow-hidden border transition-all flex items-center justify-center cursor-pointer kaspi-product-white-box ${
                     isDragging
                       ? "border-[#14B8A6] ring-2 ring-[#14B8A6]/40"
-                      : "border-white/[0.08] hover:border-white/[0.20]"
+                      : "border-white/[0.14] hover:border-white/[0.28]"
                   }`}
-                  style={{
-                    backgroundColor: imageUrl ? "#FFFFFF" : "#0B0E12",
-                  }}
                 >
                   {isProcessingImage ? (
                     <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
                       <Loader2 className="w-8 h-8 animate-spin text-[#14B8A6]" />
-                      <span className="font-mono text-xs font-bold text-white">
+                      <span className="font-mono text-xs font-bold text-[var(--kaspi-text-primary)]">
                         {uploadProgress}%
                       </span>
-                      <span className="text-[11px] text-zinc-400">
-                        {locale === "ar" ? "جاري إزالة الخلفية والتوسيط على خلفية بيضاء..." : "Traitement fond blanc studio 92%..."}
+                      <span className="text-[11px] text-[var(--kaspi-text-secondary)]">
+                        {locale === "ar" ? "جاري معالجة الصورة وتفريغ الخلفية..." : "Traitement détourage..."}
                       </span>
                     </div>
                   ) : imageUrl ? (
-                    <div className="kaspi-product-white-box relative w-full h-full flex items-center justify-center group overflow-hidden bg-white">
+                    <div className="relative w-full h-full flex items-center justify-center group overflow-hidden">
                       <img
                         src={imageUrl}
                         alt="Preview"
                         className="w-[92%] h-[92%] object-contain mx-auto drop-shadow-sm transition-transform duration-200 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
-                        <span className="px-3 py-1.5 rounded-lg bg-black/80 border border-white/20 text-[11px] font-semibold text-white">
+                        <span className="px-3 py-1.5 rounded-lg kaspi-glass-btn text-[11px] font-semibold">
                           {locale === "ar" ? "تغيير الصورة" : locale === "en" ? "Change Photo" : "Changer la photo"}
                         </span>
                       </div>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center gap-2.5 p-4 text-center">
-                      <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-400">
-                        <Upload className="w-5 h-5 text-zinc-400 stroke-[1.75]" />
+                      <div className="w-10 h-10 rounded-xl kaspi-glass-btn flex items-center justify-center text-[var(--kaspi-text-secondary)]">
+                        <Upload className="w-5 h-5 stroke-[1.75]" />
                       </div>
-                      <p className="text-xs font-medium text-zinc-300">
+                      <p className="text-xs font-medium text-[var(--kaspi-text-primary)]">
                         {locale === "ar"
-                          ? "ارفع صورة المنتج لتفريغ الخلفية تلقائياً على خلفية بيضاء"
+                          ? "ارفع صورة المنتج أو اسحبها هنا (للسلعة بالحبة أو الميزان Kg)"
                           : locale === "fr"
-                          ? "Téléversez une photo pour le détourage automatique sur fond blanc studio"
-                          : "Upload photo for auto white-studio cutout"}
+                          ? "Téléversez une photo (article à l'unité ou au kilo)"
+                          : "Upload or drop product photo (unit or weighable Kg)"}
                       </p>
-                      <span className="text-[10px] text-zinc-500 font-mono">
-                        JPG, PNG, WEBP • Auto 92% Studio White
+                      <span className="text-[10px] text-[var(--kaspi-text-muted)] font-mono">
+                        JPG, PNG, WEBP • Auto Cutout
                       </span>
                     </div>
                   )}
@@ -651,6 +641,6 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
           </button>
         </form>
       </div>
-    </div>
+    </KaspiGlassModalPortal>
   );
 };

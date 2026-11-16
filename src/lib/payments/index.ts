@@ -1,35 +1,34 @@
 /**
- * KASPI POS (كسب) — Unified Payment Adapters Registry
+ * KASPI POS (كسب) — Unified Global & Morocco Payment & Recurring Billing Architecture
+ *
+ * Exports all 16 payment, orchestration, fee-splitting, recurring mandate, TPE,
+ * reconciliation, refund, dispute, fraud, currency, and PCI-DSS audit modules.
  */
 
 export * from "./types";
 export * from "./stripe";
 export * from "./youcanpay";
 export * from "./cmi-web";
-export * from "./tpe-bridge";
+export * from "./NapsAdapter";
+export * from "./PayzoneAdapter";
+export * from "./TpeBridge";
+export * from "./WalletAdapter";
+export * from "./PaymentGatewayManager";
+export * from "./PaymentOrchestrator";
+export * from "./FeeEngine";
+export * from "./SubscriptionEngine";
+export * from "./SettlementManager";
+export * from "./WebhookProcessor";
+export * from "./ReconciliationEngine";
+export * from "./RefundEngine";
+export * from "./DisputeManager";
+export * from "./FraudRiskEngine";
+export * from "./CurrencyEngine";
+export * from "./AuditLogger";
 
-import { PaymentAdapter } from "./types";
-import { StripePaymentAdapter } from "./stripe";
-import { YouCanPayPaymentAdapter } from "./youcanpay";
-import { CmiWebPaymentAdapter } from "./cmi-web";
-import { TpeBridgePaymentAdapter } from "./tpe-bridge";
+import type { PaymentAdapter } from "./types";
+import { PaymentGatewayManager } from "./PaymentGatewayManager";
 
 export function getPaymentAdapter(gateway: string): PaymentAdapter {
-  switch (gateway.toLowerCase()) {
-    case "stripe":
-      return new StripePaymentAdapter();
-    case "youcanpay":
-    case "youcanpay_local":
-    case "youcanpay_intl":
-      return new YouCanPayPaymentAdapter();
-    case "cmi_web":
-    case "cmi":
-      return new CmiWebPaymentAdapter();
-    case "cmi_tpe":
-    case "tpe":
-    case "card":
-      return new TpeBridgePaymentAdapter();
-    default:
-      return new TpeBridgePaymentAdapter();
-  }
+  return PaymentGatewayManager.getAdapter(gateway);
 }

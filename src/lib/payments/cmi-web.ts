@@ -5,7 +5,7 @@
  * Computes the SHA512 hash required by the CMI interbank payment gateway.
  */
 
-import crypto from "node:crypto";
+import crypto from "crypto";
 import {
   PaymentAdapter,
   PaymentIntentOptions,
@@ -137,6 +137,7 @@ export class CmiWebPaymentAdapter implements PaymentAdapter {
     return {
       success: true,
       refundId: `cmi_ref_${options.transactionId}`,
+      actionTaken: options.isSameDayVoid ? "VOID" : "FULL_REFUND",
       amountRefunded: options.amount || 0,
     };
   }

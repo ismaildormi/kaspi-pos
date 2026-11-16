@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { MessageSquare, Send, X, Loader2, CheckCircle2 } from "lucide-react";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 export function AdminAlertButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -51,8 +52,15 @@ export function AdminAlertButton() {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs select-none">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl">
+        <KaspiGlassModalPortal
+          isOpen={isOpen}
+          onClose={() => {
+            setIsOpen(false);
+            setResult(null);
+          }}
+          dir="ltr"
+        >
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto my-auto p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4">
               <div className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-white" />
@@ -151,7 +159,7 @@ export function AdminAlertButton() {
               </div>
             </form>
           </div>
-        </div>
+        </KaspiGlassModalPortal>
       )}
     </>
   );

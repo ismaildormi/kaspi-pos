@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Download, LogIn } from "lucide-react";
 import { LanguageSwitcher } from "../LanguageSwitcher";
 import { KaspiBrandMark } from "../common/KaspiBrandMark";
+import { KaspiThemeToggle } from "../theme/KaspiThemeToggle";
 
 export function Navbar() {
   return (
@@ -43,6 +44,7 @@ export function Navbar() {
 
         {/* Public Actions: Download & Login */}
         <div className="flex items-center gap-2 sm:gap-3">
+          <KaspiThemeToggle />
           <LanguageSwitcher />
 
           <Link

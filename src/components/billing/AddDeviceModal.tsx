@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 interface AddDeviceModalProps {
   isOpen: boolean;
@@ -73,9 +74,9 @@ export function AddDeviceModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-xl animate-in fade-in duration-200">
+    <KaspiGlassModalPortal isOpen={isOpen} onClose={onClose} dir="ltr">
       <div
-        className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden"
+        className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto my-auto p-6 sm:p-8 shadow-2xl relative"
         dir="ltr"
       >
         {/* Glowing backdrop pill */}
@@ -246,7 +247,7 @@ export function AddDeviceModal({
           </div>
         )}
       </div>
-    </div>
+    </KaspiGlassModalPortal>
   );
 }
 

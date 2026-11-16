@@ -32,6 +32,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
+import { KaspiTpeManagerPanel } from "@/components/settings/KaspiTpeManagerPanel";
 import {
   SUPPORTED_RECEIPT_LANGUAGES,
   getReceiptTranslation,
@@ -65,7 +67,7 @@ interface StoreItem {
   salesCount: number;
 }
 
-type SettingsTab = "general" | "hardware" | "users" | "ecommerce";
+type SettingsTab = "general" | "hardware" | "terminals" | "ecommerce" | "users";
 
 export default function SettingsPage() {
   const { t, locale } = useAppDictionary();
@@ -179,8 +181,12 @@ export default function SettingsPage() {
     fetchStores();
     fetchMeProfile();
     setAudioFeedbackEnabled(isAudioEnabled());
-    const storedGw = localStorage.getItem("kaspi_payment_gateway") as any;
-    if (storedGw) setSelectedGateway(storedGw);
+    if (typeof window !== "undefined") {
+      const qTab = new URLSearchParams(window.location.search).get("tab");
+      if (qTab === "terminals" || qTab === "hardware" || qTab === "ecommerce" || qTab === "users") {
+        setActiveTab(qTab as SettingsTab);
+      }
+    }
 
     // Load E-Commerce config
     const savedYoucan = localStorage.getItem("kaspi_youcan_api_key") || "";
@@ -845,6 +851,11 @@ export default function SettingsPage() {
       label: t.settings.hardware,
       icon: Printer,
     },
+    {
+      id: "terminals",
+      label: locale === "ar" ? "أجهزة الدفع TPE" : locale === "en" ? "Card Terminals (TPE)" : "Terminaux TPE",
+      icon: CreditCard,
+    },
     { id: "ecommerce", label: locale === "ar" ? "المتاجر الإلكترونية" : locale === "en" ? "E-Commerce Sync" : "E-Commerce", icon: Globe },
     { id: "users", label: st.usersTab, icon: Users },
   ];
@@ -1065,8 +1076,8 @@ export default function SettingsPage() {
             </div>
 
             {isAddingStore && (
-              <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xl flex items-center justify-center p-4">
-                <div className="w-full max-w-lg kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-2xl p-6 shadow-2xl relative space-y-5 animate-in fade-in zoom-in-95 duration-200">
+              <KaspiGlassModalPortal isOpen={isAddingStore} onClose={() => setIsAddingStore(false)} dir="ltr">
+                <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto my-auto kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-2xl p-6 shadow-2xl relative space-y-5 animate-in fade-in zoom-in-95 duration-200">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl kaspi-glass-btn flex items-center justify-center">
@@ -1180,7 +1191,7 @@ export default function SettingsPage() {
                     </div>
                   </form>
                 </div>
-              </div>
+              </KaspiGlassModalPortal>
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1814,6 +1825,13 @@ export default function SettingsPage() {
       )}
 
 
+
+      {/* =================================================================== */}
+      {/* TAB 3: UNIVERSAL TPE TERMINALS HUB                                  */}
+      {/* =================================================================== */}
+      {activeTab === "terminals" && (
+        <KaspiTpeManagerPanel locale={locale} />
+      )}
 
       {/* =================================================================== */}
       {/* TAB 4: USER & ROLES                                                 */}

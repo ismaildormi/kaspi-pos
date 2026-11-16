@@ -21,6 +21,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 import { compressImage } from "@/lib/storage/compression-engine";
 import { useAppDictionary } from "@/i18n/schema";
 import { usePosStore } from "@/client/store/usePosStore";
@@ -299,11 +300,8 @@ export function OwnerProfileModal({
   };
 
   return (
-    <div
-      dir="ltr"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xl select-none animate-in fade-in duration-200"
-    >
-      <div className="kaspi-frosted-glass kaspi-polar-aurora-orbit relative w-full max-w-xl rounded-3xl p-6 sm:p-7 space-y-6 overflow-hidden shadow-2xl">
+    <KaspiGlassModalPortal isOpen={isOpen} onClose={handleModalClose} dir="ltr">
+      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit relative w-full max-w-xl max-h-[90vh] overflow-y-auto my-auto rounded-3xl p-6 sm:p-7 space-y-6 shadow-2xl">
         {/* Ambient Top Glow */}
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
 
@@ -868,6 +866,6 @@ export function OwnerProfileModal({
           </form>
         )}
       </div>
-    </div>
+    </KaspiGlassModalPortal>
   );
 }

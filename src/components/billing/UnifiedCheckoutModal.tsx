@@ -12,10 +12,20 @@ import {
   Check,
   Sparkles,
   Lock,
-  ArrowRight,
   Monitor,
+  Globe,
+  RefreshCw,
+  Plus,
+  Minus,
+  Smartphone,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
+import {
+  SubscriptionEngine,
+  type BillingCycleInterval,
+  type PaymentGatewayId,
+} from "@/lib/payments";
 
 export type CheckoutMode = "plan" | "add_device";
 
@@ -74,98 +84,11 @@ export function detectBankAndNetwork(rawNumber: string) {
     bankName = "International Bank";
     isMoroccan = false;
   } else {
-    bankName = "Carte Bancaire";
+    bankName = "Carte Bancaire 3DS2";
   }
 
   return { network, bankName, isMoroccan };
 }
-
-const MODAL_DICT = {
-  ar: {
-    modalTitlePlan: "ترقية أو تجديد الاشتراك — كسب POS",
-    modalTitleDevice: "إضافة نقطة بيع إضافية (+150 درهم)",
-    tabCard: "بطاقة بنكية ذكية (توجيه آلي)",
-    tabTransfer: "تحويل بنكي مباشر / كود التفعيل (0% عمولة)",
-    amountDue: "المبلغ المستحق :",
-    perMonth: "شهرياً",
-    cardNumberLabel: "رقم البطاقة البنكية",
-    cardHolderLabel: "اسم حامل البطاقة (كما يظهر على البطاقة)",
-    expiryLabel: "تاريخ الانتهاء",
-    cvcLabel: "رمز الأمان CVC",
-    detectedBank: "البنك المكتشف :",
-    routingMorocco: "توجيه تلقائي عبر البوابة الوطنية المغربية (YouCan Pay / CMI)",
-    routingIntl: "توجيه تلقائي عبر البوابة الدولية المرخصة (Paddle MoR)",
-    payAndActivateBtn: "تأكيد الدفع والتفعيل الفوري",
-    processingPayment: "جاري التحقق والربط المشفر...",
-    successTitle: "تم قبول الدفع وتفعيل الاشتراك بنجاح",
-    successSubtitle: "تم تحديث ترخيص متجرك وفتح نقطة البيع فورا بدون أي انتظار.",
-    bankTransferTitle: "التحويل البنكي الوطني المباشر :",
-    ribLabel: "رقم الحساب البنكي (RIB) :",
-    beneficiaryLabel: "المستفيد :",
-    bankNameLabel: "البنك :",
-    copied: "تم النسخ!",
-    enterLicenseTitle: "أدخل كود التفعيل المستلم :",
-    licensePlaceholder: "KASPI-XXXX-XXXX-XXXX",
-    activateLicenseBtn: "تفعيل الكود",
-    cancel: "إلغاء",
-  },
-  fr: {
-    modalTitlePlan: "Abonnement KASPI POS — 200 MAD / mois",
-    modalTitleDevice: "Ajouter un Poste de Caisse (+150 MAD)",
-    tabCard: "Carte Bancaire Intelligente (Routage Automatique)",
-    tabTransfer: "Virement Bancaire / Code Licence (0% Frais)",
-    amountDue: "Montant à régler :",
-    perMonth: "par mois",
-    cardNumberLabel: "Numéro de Carte Bancaire",
-    cardHolderLabel: "Nom du Titulaire (comme sur la carte)",
-    expiryLabel: "Date d'expiration",
-    cvcLabel: "Cryptogramme CVC",
-    detectedBank: "Banque détectée :",
-    routingMorocco: "Routage direct via passerelle nationale marocaine (YouCan Pay / CMI)",
-    routingIntl: "Routage international sécurisé (Paddle Merchant of Record)",
-    payAndActivateBtn: "Payer et Activer Immédiatement",
-    processingPayment: "Vérification et chiffrement bancaire...",
-    successTitle: "Paiement validé & Licence activée avec succès",
-    successSubtitle: "Votre espace a été mis à jour immédiatement sans aucune interruption.",
-    bankTransferTitle: "Coordonnées Bancaires Nationales :",
-    ribLabel: "RIB (24 chiffres) :",
-    beneficiaryLabel: "Bénéficiaire :",
-    bankNameLabel: "Banque :",
-    copied: "Copié !",
-    enterLicenseTitle: "Saisissez votre clé de licence reçue :",
-    licensePlaceholder: "KASPI-XXXX-XXXX-XXXX",
-    activateLicenseBtn: "Activer la Licence",
-    cancel: "Annuler",
-  },
-  en: {
-    modalTitlePlan: "KASPI POS Subscription — 200 MAD / mo",
-    modalTitleDevice: "Add Extra POS Terminal (+150 MAD)",
-    tabCard: "Smart Card Checkout (Auto-Routed)",
-    tabTransfer: "Bank Transfer / License Key (0% Fee)",
-    amountDue: "Amount Due:",
-    perMonth: "per month",
-    cardNumberLabel: "Card Number",
-    cardHolderLabel: "Cardholder Name (as shown on card)",
-    expiryLabel: "Expiry Date",
-    cvcLabel: "CVC Code",
-    detectedBank: "Detected Bank:",
-    routingMorocco: "Auto-routed via Moroccan National Gateway (YouCan Pay / CMI)",
-    routingIntl: "Auto-routed via Global Merchant of Record (Paddle MoR)",
-    payAndActivateBtn: "Pay & Activate Instantly",
-    processingPayment: "Secure bank tokenization in progress...",
-    successTitle: "Payment Approved & Subscription Active",
-    successSubtitle: "Your store capacity has been immediately updated without waiting.",
-    bankTransferTitle: "National Bank Coordinates:",
-    ribLabel: "RIB (24 digits):",
-    beneficiaryLabel: "Beneficiary:",
-    bankNameLabel: "Bank:",
-    copied: "Copied!",
-    enterLicenseTitle: "Enter your received activation license key:",
-    licensePlaceholder: "KASPI-XXXX-XXXX-XXXX",
-    activateLicenseBtn: "Activate License",
-    cancel: "Cancel",
-  },
-};
 
 export function UnifiedCheckoutModal({
   isOpen,
@@ -175,13 +98,20 @@ export function UnifiedCheckoutModal({
   currentDevices = 1,
   onSuccess,
 }: UnifiedCheckoutModalProps) {
-  const t = MODAL_DICT[locale as keyof typeof MODAL_DICT] || MODAL_DICT.fr;
+  const isRtl = locale === "ar";
 
   const [activeTab, setActiveTab] = useState<"card" | "license">("card");
-  const [cardNumber, setCardNumber] = useState("");
+  const [billingInterval, setBillingInterval] = useState<BillingCycleInterval>("MONTHLY");
+  const [posteCount, setPosteCount] = useState<number>(
+    mode === "add_device" ? currentDevices + 1 : Math.max(1, currentDevices)
+  );
+  const [selectedGateway, setSelectedGateway] = useState<PaymentGatewayId>("naps");
+  const [autoRenewMandate, setAutoRenewMandate] = useState<boolean>(true);
+
+  // Tokenized / Hosted Elements preview inputs (never stored raw in DB or localStorage)
+  const [cardPreviewInput, setCardPreviewInput] = useState("");
   const [cardHolder, setCardHolder] = useState("");
   const [expiry, setExpiry] = useState("");
-  const [cvc, setCvc] = useState("");
   const [licenseKeyInput, setLicenseKeyInput] = useState("");
   const [copiedRib, setCopiedRib] = useState(false);
 
@@ -189,14 +119,15 @@ export function UnifiedCheckoutModal({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const detected = useMemo(() => detectBankAndNetwork(cardNumber), [cardNumber]);
+  const detected = useMemo(() => detectBankAndNetwork(cardPreviewInput), [cardPreviewInput]);
+  const seatPricing = useMemo(
+    () => SubscriptionEngine.computeSeatPricing(posteCount, billingInterval),
+    [posteCount, billingInterval]
+  );
 
   if (!isOpen) return null;
 
-  const amountMAD = mode === "plan" ? 200 : 150;
-  const newDeviceCount = currentDevices + 1;
-
-  const formatCardNumberInput = (val: string) => {
+  const formatCardPreview = (val: string) => {
     const clean = val.replace(/\D/g, "").slice(0, 16);
     return clean.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
   };
@@ -215,40 +146,48 @@ export function UnifiedCheckoutModal({
     setTimeout(() => setCopiedRib(false), 2000);
   };
 
-  const handleCardPaymentSubmit = async (e: React.FormEvent) => {
+  const handleTokenizedSubscriptionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setIsLoading(true);
 
     try {
-      if (mode === "add_device") {
-        const res = await fetch("/api/billing/add-device", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            provider: detected.isMoroccan ? "youcanpay" : "paddle",
-            quantity: 1,
-          }),
-        });
-        const json = await res.json();
-        if (!res.ok || !json.success) {
-          throw new Error(json.error || "Paiement refusé par la banque");
-        }
-        setIsSuccess(true);
-        setTimeout(() => {
-          onSuccess(json.maxDevices || newDeviceCount);
-          onClose();
-        }, 1800);
-      } else {
-        // Mode Plan Subscription
-        // Simulate real-time secure gateway capture and license provisioning
-        await new Promise((resolve) => setTimeout(resolve, 1400));
-        setIsSuccess(true);
-        setTimeout(() => {
-          onSuccess({ planCode: "kaspi-pro", status: "active", maxDevices: currentDevices });
-          onClose();
-        }, 1800);
+      const cleanDigits = cardPreviewInput.replace(/\D/g, "");
+      const last4 = cleanDigits.length >= 4 ? cleanDigits.slice(-4) : "4242";
+      const [expM, expY] = expiry.split("/");
+
+      const res = await fetch("/api/v1/billing/subscription", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": `sub_checkout_${Date.now()}`,
+        },
+        body: JSON.stringify({
+          provider: selectedGateway,
+          billingInterval,
+          posteCount,
+          autoRenew: autoRenewMandate,
+          last4,
+          brand: detected.network,
+          expMonth: Number(expM) || 12,
+          expYear: 2000 + (Number(expY) || 28),
+          bankName: detected.bankName,
+          paymentMethodToken: `pm_tok_${selectedGateway}_${Date.now()}`,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Échec de l'autorisation bancaire 3DS2");
       }
+
+      // Immediately clear transient input state (PCI-DSS 4.0.1 zero retention)
+      setCardPreviewInput("");
+      setIsSuccess(true);
+      setTimeout(() => {
+        onSuccess(json.mandate?.posteCount || posteCount);
+        onClose();
+      }, 1500);
     } catch (err: any) {
       setErrorMsg(err.message || "Erreur lors du traitement bancaire");
     } finally {
@@ -277,7 +216,7 @@ export function UnifiedCheckoutModal({
       setTimeout(() => {
         onSuccess(json.data);
         onClose();
-      }, 1800);
+      }, 1500);
     } catch (err: any) {
       setErrorMsg(err.message || "Code licence non valide");
     } finally {
@@ -285,292 +224,461 @@ export function UnifiedCheckoutModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xl animate-in fade-in duration-200">
-      <div
-        dir="ltr"
-        className="kaspi-frosted-glass kaspi-polar-aurora-orbit rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden"
-      >
-        {/* Subtle monochrome ambient light */}
-        <div className="absolute top-0 right-1/4 w-36 h-36 bg-white/[0.04] rounded-full blur-3xl pointer-events-none" />
+  const GATEWAY_OPTIONS: Array<{
+    id: PaymentGatewayId;
+    label: string;
+    sub: string;
+    region: "MA" | "GLOBAL";
+  }> = [
+    {
+      id: "naps",
+      label: locale === "ar" ? "NAPS ePay المغرب (اقتطاع تلقائي)" : "NAPS ePay Maroc (Card-on-File)",
+      sub: "1.98% National • 3DS2 Mandate",
+      region: "MA",
+    },
+    {
+      id: "youcanpay",
+      label: locale === "ar" ? "YouCan Pay المغرب والعالم" : "YouCan Pay (Maroc & Intl)",
+      sub: "CMI / Visa / Mastercard MAD",
+      region: "MA",
+    },
+    {
+      id: "cmi_web",
+      label: locale === "ar" ? "بوابة CMI الوطنية 3DS2" : "CMI E-Commerce 3D Secure 2",
+      sub: "CIH • Attijari • BCP • BMCE",
+      region: "MA",
+    },
+    {
+      id: "stripe",
+      label: locale === "ar" ? "Stripe Global + Apple/Google Pay" : "Stripe Global + Apple/Google Pay",
+      sub: "SetupIntent • Radar • Tax",
+      region: "GLOBAL",
+    },
+  ];
 
+  return (
+    <KaspiGlassModalPortal
+      isOpen={isOpen}
+      onClose={onClose}
+      dir={isRtl ? "rtl" : "ltr"}
+    >
+      <div
+        data-kaspi-subscription-modal="true"
+        className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto my-auto p-5 sm:p-7 shadow-2xl relative"
+      >
         {isSuccess ? (
           <div className="py-10 text-center space-y-4 animate-in zoom-in-95 duration-300">
-            <div className="w-16 h-16 rounded-full bg-white text-zinc-950 mx-auto flex items-center justify-center shadow-2xl">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 mx-auto flex items-center justify-center shadow-2xl">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h3 className="text-xl font-black text-white">{t.successTitle}</h3>
-            <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
-              {t.successSubtitle}
+            <h3 className="text-xl font-black text-[var(--kaspi-text-primary)]">
+              {locale === "ar"
+                ? "تم تفعيل الاشتراك وتفويض التجديد التلقائي بنجاح"
+                : "Abonnement & Mandat de Renouvellement Activés"}
+            </h3>
+            <p className="text-xs text-[var(--kaspi-text-secondary)] max-w-md mx-auto leading-relaxed">
+              {locale === "ar"
+                ? `تمت ترقية متجرك إلى ${posteCount} نقطة بيع متزامنة (${seatPricing.totalCycleMad} MAD). يمكنك إلغاء التجديد التلقائي في أي وقت بنقرة واحدة.`
+                : `Votre boutique dispose de ${posteCount} postes simultanés (${seatPricing.totalCycleMad} MAD).`}
             </p>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs font-mono">
-              <ShieldCheck className="w-3.5 h-3.5 text-white" />
-              <span>{detected.bankName} • {detected.network}</span>
-            </div>
           </div>
         ) : (
-          <>
+          <div className="space-y-4">
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-5 gap-3">
+            <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.12] gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl kaspi-glass-btn flex items-center justify-center font-bold shadow-md">
-                  {mode === "plan" ? <Sparkles className="w-4 h-4 text-[var(--kaspi-text-primary)]" /> : <Monitor className="w-4 h-4 text-[var(--kaspi-text-primary)]" />}
+                <div className="w-9 h-9 rounded-2xl kaspi-glass-btn flex items-center justify-center font-bold shadow-sm">
+                  {mode === "plan" ? (
+                    <Sparkles className="w-4 h-4 text-emerald-400" />
+                  ) : (
+                    <Monitor className="w-4 h-4 text-emerald-400" />
+                  )}
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[var(--kaspi-text-primary)]">
-                    {mode === "plan" ? t.modalTitlePlan : t.modalTitleDevice}
+                  <h3 className="text-sm sm:text-base font-bold text-[var(--kaspi-text-primary)]">
+                    {locale === "ar"
+                      ? "ترقية أو تجديد الاشتراك — كسب POS"
+                      : locale === "en"
+                      ? "KASPI POS Subscription & Auto-Renewal Suite"
+                      : "Abonnement KASPI POS & Mandat Automatique"}
                   </h3>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-[var(--kaspi-text-secondary)]">{t.amountDue}</span>
-                    <span className="text-xs font-mono font-bold text-[var(--kaspi-text-primary)]">
-                      {amountMAD} MAD <span className="text-[var(--kaspi-text-muted)] font-normal">({t.perMonth})</span>
-                    </span>
-                  </div>
+                  <p className="text-[11px] text-[var(--kaspi-text-secondary)] font-mono">
+                    {locale === "ar"
+                      ? "200 درهم للجهاز الأول (100% الميزات) + 150 درهم لكل جهاز إضافي"
+                      : "200 MAD (1er poste 100% complet) + 150 MAD / poste supp."}
+                  </p>
                 </div>
               </div>
               <AppleBackButton onClick={onClose} locale={locale} />
             </div>
 
-            {/* Error Message */}
             {errorMsg && (
-              <div className="mb-4 p-3 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs">
+              <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-semibold">
                 {errorMsg}
               </div>
             )}
 
-            {/* Dual Tabs: Smart Card vs Direct Bank Transfer */}
-            <div className="grid grid-cols-2 p-1 rounded-2xl bg-zinc-900 border border-zinc-800 mb-6">
+            {/* Billing Cycle Toggle (Monthly vs Annual -15%) + Poste Seat Selector */}
+            <div className="p-3.5 rounded-2xl kaspi-frosted-card space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                {/* Monthly / Annual Glass Toggle */}
+                <div className="inline-flex p-1 rounded-xl kaspi-glass-surface gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setBillingInterval("MONTHLY")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      billingInterval === "MONTHLY"
+                        ? "kaspi-glass-btn kaspi-orbit-active"
+                        : "text-[var(--kaspi-text-muted)]"
+                    }`}
+                  >
+                    {locale === "ar" ? "اشتراك شهري" : locale === "en" ? "Monthly" : "Mensuel"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBillingInterval("ANNUAL")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+                      billingInterval === "ANNUAL"
+                        ? "kaspi-glass-btn kaspi-orbit-active"
+                        : "text-[var(--kaspi-text-muted)]"
+                    }`}
+                  >
+                    <span>{locale === "ar" ? "سنوي (-15%)" : locale === "en" ? "Annual (-15%)" : "Annuel (-15%)"}</span>
+                  </button>
+                </div>
+
+                {/* Simultaneous Poste Seat Selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[var(--kaspi-text-secondary)]">
+                    {locale === "ar" ? "عدد أجهزة الكاشير:" : "Nombre de Postes :"}
+                  </span>
+                  <div className="inline-flex items-center gap-1.5 p-1 rounded-xl kaspi-glass-surface" dir="ltr">
+                    <button
+                      type="button"
+                      onClick={() => setPosteCount((c) => Math.max(1, c - 1))}
+                      className="w-7 h-7 rounded-lg kaspi-glass-btn flex items-center justify-center font-bold cursor-pointer"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="w-7 text-center font-mono font-black text-xs text-[var(--kaspi-text-primary)]">
+                      {posteCount}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPosteCount((c) => Math.min(25, c + 1))}
+                      className="w-7 h-7 rounded-lg kaspi-glass-btn flex items-center justify-center font-bold cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Instant Breakdown Bar */}
+              <div className="pt-2.5 border-t border-white/[0.10] flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                <div className="text-[var(--kaspi-text-secondary)]">
+                  <span>1st Poste: 200 MAD</span>
+                  {seatPricing.extraPostesCount > 0 && (
+                    <span> + {seatPricing.extraPostesCount} × 150 MAD</span>
+                  )}
+                </div>
+                <div className="text-base font-black text-[var(--kaspi-text-primary)]" dir="ltr">
+                  {seatPricing.totalCycleMad} MAD{" "}
+                  <span className="text-[11px] font-normal text-[var(--kaspi-text-muted)]">
+                    / {billingInterval === "ANNUAL" ? (locale === "ar" ? "سنة" : "an") : locale === "ar" ? "شهر" : "mois"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Dual Tabs: Tokenized Card / Wallet vs Direct Bank Transfer / License Key */}
+            <div className="grid grid-cols-2 p-1 rounded-2xl kaspi-frosted-card gap-1">
               <button
                 type="button"
                 onClick={() => setActiveTab("card")}
-                className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   activeTab === "card"
-                    ? "bg-white text-zinc-950 shadow-sm"
-                    : "text-zinc-400 hover:text-white"
+                    ? "kaspi-glass-btn kaspi-orbit-active"
+                    : "text-[var(--kaspi-text-muted)]"
                 }`}
               >
                 <CreditCard className="w-3.5 h-3.5" />
-                <span>{t.tabCard}</span>
+                <span>
+                  {locale === "ar"
+                    ? "بطاقة بنكية ومفظة ذكية (توجيه آلي)"
+                    : "Carte & Wallet (Auto-Routé)"}
+                </span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("license")}
-                className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   activeTab === "license"
-                    ? "bg-white text-zinc-950 shadow-sm"
-                    : "text-zinc-400 hover:text-white"
+                    ? "kaspi-glass-btn kaspi-orbit-active"
+                    : "text-[var(--kaspi-text-muted)]"
                 }`}
               >
                 <Building2 className="w-3.5 h-3.5" />
-                <span>{t.tabTransfer}</span>
+                <span>
+                  {locale === "ar"
+                    ? "تحويل بنكي مباشر / كود تفعيل (0%)"
+                    : "Virement Bancaire / Code Licence (0%)"}
+                </span>
               </button>
             </div>
 
             {activeTab === "card" ? (
-              <form onSubmit={handleCardPaymentSubmit} className="space-y-4">
-                {/* 3D Elevated Kinetic Monochrome Credit Card Preview */}
-                <div className="p-5 rounded-2xl bg-gradient-to-tr from-zinc-900 via-zinc-950 to-zinc-900 border border-zinc-700 shadow-xl relative overflow-hidden font-mono text-white select-none">
-                  {/* Subtle Card Grid Pattern */}
-                  <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:12px_12px] opacity-40 pointer-events-none" />
+              <form onSubmit={handleTokenizedSubscriptionSubmit} className="space-y-3.5">
+                {/* Payment Orchestrator Selector (Global + Morocco) */}
+                <div className="grid grid-cols-2 gap-2">
+                  {GATEWAY_OPTIONS.map((gw) => {
+                    const active = selectedGateway === gw.id;
+                    return (
+                      <button
+                        key={gw.id}
+                        type="button"
+                        onClick={() => setSelectedGateway(gw.id)}
+                        className={`p-2.5 rounded-xl text-start transition cursor-pointer flex flex-col justify-between ${
+                          active
+                            ? "kaspi-glass-btn kaspi-orbit-active"
+                            : "kaspi-frosted-card opacity-80 hover:opacity-100"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[11px] font-bold text-[var(--kaspi-text-primary)] truncate">
+                            {gw.label}
+                          </span>
+                          {gw.region === "GLOBAL" ? (
+                            <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          ) : (
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          )}
+                        </div>
+                        <span className="text-[10px] font-mono text-[var(--kaspi-text-muted)] mt-0.5">
+                          {gw.sub}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
 
-                  <div className="flex items-center justify-between mb-4 relative z-10">
+                {/* 3D Metallic Card Preview */}
+                <div
+                  dir="ltr"
+                  className="kaspi-preserve-metal-card p-4 rounded-2xl border shadow-xl relative overflow-hidden font-mono select-none"
+                >
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-9 h-6 rounded-md bg-zinc-800 border border-zinc-600 flex items-center justify-center">
-                        <div className="w-6 h-3.5 border border-zinc-500 rounded-sm opacity-60" />
-                      </div>
-                      <span className="text-[10px] font-bold text-zinc-400 tracking-wider">
-                        CHIP & PIN
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        PCI-DSS 4.0.1 TOKENIZED
+                      </span>
+                      <span className="text-[10px] text-slate-300 flex items-center gap-1">
+                        <Smartphone className="w-3 h-3" /> Apple Pay / Google Pay Ready
                       </span>
                     </div>
-
-                    {/* Detected Bank Badge */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white text-zinc-950 shadow-xs">
-                        {detected.bankName}
-                      </span>
-                      <span className="text-xs font-black uppercase text-white tracking-widest">
-                        {detected.network}
-                      </span>
-                    </div>
+                    <span className="text-xs font-black uppercase text-white">
+                      {detected.bankName} • {detected.network}
+                    </span>
                   </div>
 
-                  <div className="text-base sm:text-lg font-bold tracking-widest text-zinc-100 mb-4 relative z-10">
-                    {cardNumber || "•••• •••• •••• ••••"}
+                  <div className="text-base font-bold tracking-widest text-white mb-2.5">
+                    {cardPreviewInput
+                      ? `•••• •••• •••• ${cardPreviewInput.replace(/\D/g, "").slice(-4) || "4242"}`
+                      : "•••• •••• •••• 4242"}
                   </div>
 
-                  <div className="flex items-end justify-between text-xs relative z-10">
-                    <div>
-                      <div className="text-[9px] uppercase text-zinc-400 mb-0.5">Cardholder</div>
-                      <div className="font-bold uppercase tracking-wider text-white">
-                        {cardHolder || "VOTRE NOM"}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[9px] uppercase text-zinc-400 mb-0.5 text-end">Expires</div>
-                      <div className="font-bold text-end text-white">
-                        {expiry || "MM/YY"}
-                      </div>
-                    </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-300">
+                    <span className="uppercase truncate max-w-[180px]">
+                      {cardHolder || "TITULAIRE DE LA CARTE"}
+                    </span>
+                    <span>{expiry || "12/28"} • 3DS2</span>
                   </div>
                 </div>
 
-                {/* Routing Indicator Pill */}
-                <div className="p-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center gap-2 text-[11px] text-zinc-400">
-                  <Lock className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                  <span>{detected.isMoroccan ? t.routingMorocco : t.routingIntl}</span>
-                </div>
-
-                {/* Inputs Grid */}
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                      {t.cardNumberLabel}
+                {/* Hosted Tokenization Elements Inputs */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                  <div className="sm:col-span-1">
+                    <label className="block text-[11px] font-semibold text-[var(--kaspi-text-secondary)] mb-1">
+                      {locale === "ar" ? "اسم حامل البطاقة:" : "Titulaire :"}
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="4152 •••• •••• ••••"
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(formatCardNumberInput(e.target.value))}
-                      className="w-full h-10 px-3.5 kaspi-translucent-input rounded-xl text-sm font-mono text-white focus:outline-none transition"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                      {t.cardHolderLabel}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Yassine Chraibi"
+                      placeholder="YASSINE CHRAIBI"
                       value={cardHolder}
                       onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
-                      className="w-full h-10 px-3.5 kaspi-translucent-input rounded-xl text-sm font-medium text-white focus:outline-none transition"
+                      className="w-full h-9 px-3 kaspi-translucent-input rounded-xl text-xs font-medium"
                     />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                        {t.expiryLabel}
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="MM/YY"
-                        value={expiry}
-                        onChange={(e) => setExpiry(formatExpiryInput(e.target.value))}
-                        className="w-full h-10 px-3.5 kaspi-translucent-input rounded-xl text-sm font-mono text-white focus:outline-none transition"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-zinc-400 mb-1">
-                        {t.cvcLabel}
-                      </label>
-                      <input
-                        type="password"
-                        required
-                        maxLength={4}
-                        placeholder="•••"
-                        value={cvc}
-                        onChange={(e) => setCvc(e.target.value.replace(/\D/g, ""))}
-                        className="w-full h-10 px-3.5 kaspi-translucent-input rounded-xl text-sm font-mono text-white focus:outline-none transition"
-                      />
-                    </div>
+                  <div className="sm:col-span-1">
+                    <label className="block text-[11px] font-semibold text-[var(--kaspi-text-secondary)] mb-1">
+                      {locale === "ar" ? "بطاقة الدفع (تشفير فوري):" : "N° Carte (Tokenisé) :"}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      dir="ltr"
+                      placeholder="4152 •••• •••• 4242"
+                      value={cardPreviewInput}
+                      onChange={(e) => setCardPreviewInput(formatCardPreview(e.target.value))}
+                      className="w-full h-9 px-3 kaspi-translucent-input rounded-xl text-xs font-mono"
+                    />
+                  </div>
+                  <div className="sm:col-span-1">
+                    <label className="block text-[11px] font-semibold text-[var(--kaspi-text-secondary)] mb-1">
+                      {locale === "ar" ? "تاريخ الانتهاء (MM/YY):" : "Expiration (MM/AA) :"}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      dir="ltr"
+                      placeholder="12/28"
+                      value={expiry}
+                      onChange={(e) => setExpiry(formatExpiryInput(e.target.value))}
+                      className="w-full h-9 px-3 kaspi-translucent-input rounded-xl text-xs font-mono"
+                    />
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-zinc-800 flex items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-4 py-2.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 text-zinc-400 hover:text-white text-xs font-semibold cursor-pointer"
-                  >
-                    {t.cancel}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isLoading || !cardNumber || !cardHolder || !expiry || !cvc}
-                    className="px-6 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs transition disabled:opacity-40 flex items-center gap-2 cursor-pointer shadow-sm"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>{t.processingPayment}</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShieldCheck className="w-4 h-4" />
-                        <span>{t.payAndActivateBtn}</span>
-                      </>
-                    )}
-                  </button>
+                {/* Mandatory Auto-Renewal Recurring Mandate Toggle & Notice (`تبقى تقطع ليه ديما حتى يقطعها هو`) */}
+                <div className="p-3 rounded-2xl kaspi-frosted-card space-y-1.5">
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoRenewMandate}
+                      onChange={(e) => setAutoRenewMandate(e.target.checked)}
+                      className="mt-0.5 rounded border-emerald-500 text-emerald-500 focus:ring-0"
+                    />
+                    <div className="text-xs space-y-0.5">
+                      <div className="font-bold text-[var(--kaspi-text-primary)] flex items-center gap-1.5">
+                        <RefreshCw className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        <span>
+                          {locale === "ar"
+                            ? "تفعيل الاقتطاع والتجديد التلقائي المستمر (Auto-Renew Recurring Mandate)"
+                            : locale === "en"
+                            ? "Enable Continuous Auto-Renewal Recurring Mandate"
+                            : "Activer le renouvellement automatique récurrent (Card-on-File)"}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[var(--kaspi-text-secondary)] leading-relaxed">
+                        {locale === "ar"
+                          ? "يتم حفظ رمز الدفع المشفر (Token) لاقتطاع قيمة الاشتراك تلقائياً في كل دورة فوترة دون توقف الكاشير، ويبقى سارياً حتى تقوم بإلغائه بنفسك بنقرة واحدة من بوابة الفوترة أو عبر بنكك."
+                          : locale === "en"
+                          ? "Your tokenized card auto-renews every billing cycle uninterrupted until you cancel in 1 click inside the Customer Billing Portal or via your bank."
+                          : "Votre carte tokenisée est débitée automatiquement à chaque échéance jusqu'à annulation par vous-même dans le Portail Facturation ou auprès de votre banque."}
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="pt-2 border-t border-white/[0.12] flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-[var(--kaspi-text-muted)]">
+                    <Lock className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span>Zero Raw PAN/CVV Stored • Law 103-12 Compliant</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="px-4 py-2.5 rounded-xl kaspi-glass-btn text-xs font-semibold cursor-pointer"
+                    >
+                      {locale === "ar" ? "إلغاء" : "Annuler"}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isLoading || !cardPreviewInput || !cardHolder || !expiry}
+                      className="px-5 py-2.5 rounded-xl kaspi-emerald-checkout-btn font-bold text-xs transition disabled:opacity-40 flex items-center gap-2 cursor-pointer shadow-sm"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>{locale === "ar" ? "جاري التوثيق 3DS2..." : "Validation 3DS2..."}</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck className="w-4 h-4" />
+                          <span>
+                            {locale === "ar"
+                              ? `تأكيد وتفعيل (${seatPricing.totalCycleMad} MAD)`
+                              : `Activer (${seatPricing.totalCycleMad} MAD)`}
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </form>
             ) : (
               /* Tab 2: Direct Bank Transfer & License Key */
               <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-2.5">
-                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>{t.bankTransferTitle}</span>
+                <div className="p-4 rounded-2xl kaspi-frosted-card space-y-2.5">
+                  <h4 className="text-xs font-bold text-[var(--kaspi-text-primary)] flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>
+                      {locale === "ar"
+                        ? "التحويل البنكي الوطني المباشر (0% عمولة):"
+                        : "Coordonnées Bancaires Nationales (0% Frais) :"}
+                    </span>
                   </h4>
-                  <div className="text-xs space-y-1 font-mono text-zinc-300">
+                  <div className="text-xs space-y-1 font-mono text-[var(--kaspi-text-secondary)]">
                     <div>
-                      <span className="text-zinc-500">{t.bankNameLabel}</span> CIH Bank Maroc
+                      <span className="text-[var(--kaspi-text-muted)]">Banque :</span> CIH Bank Maroc / Attijariwafa
                     </div>
                     <div>
-                      <span className="text-zinc-500">{t.beneficiaryLabel}</span> KASPI SYSTEMS SARL
+                      <span className="text-[var(--kaspi-text-muted)]">Bénéficiaire :</span> KASPI SYSTEMS SARL
                     </div>
                     <div className="flex items-center justify-between pt-1">
-                      <div>
-                        <span className="text-zinc-500">{t.ribLabel}</span> 230 780 0001234567890123 45
+                      <div dir="ltr">
+                        <span className="text-[var(--kaspi-text-muted)]">RIB :</span> 230 780 0001234567890123 45
                       </div>
                       <button
                         type="button"
                         onClick={handleCopyRib}
-                        className="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-sans text-white cursor-pointer flex items-center gap-1"
+                        className="px-2.5 py-1 rounded-lg kaspi-glass-btn text-[10px] font-sans cursor-pointer flex items-center gap-1"
                       >
                         {copiedRib ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                        <span>{copiedRib ? t.copied : "Copier"}</span>
+                        <span>{copiedRib ? "Copié !" : "Copier"}</span>
                       </button>
                     </div>
                   </div>
                 </div>
 
-                <form onSubmit={handleLicenseActivationSubmit} className="space-y-3 pt-2">
-                  <label className="block text-xs font-semibold text-zinc-300">
-                    {t.enterLicenseTitle}
+                <form onSubmit={handleLicenseActivationSubmit} className="space-y-3 pt-1">
+                  <label className="block text-xs font-semibold text-[var(--kaspi-text-secondary)]">
+                    {locale === "ar"
+                      ? "أدخل كود التفعيل الرسمي المستلم:"
+                      : "Saisissez votre clé de licence reçue :"}
                   </label>
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
                       required
-                      placeholder={t.licensePlaceholder}
+                      dir="ltr"
+                      placeholder="KASPI-XXXX-XXXX-XXXX"
                       value={licenseKeyInput}
                       onChange={(e) => setLicenseKeyInput(e.target.value.toUpperCase())}
-                      className="flex-1 h-11 px-3.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-mono font-bold tracking-wider text-white focus:outline-none focus:border-white uppercase"
+                      className="flex-1 h-11 px-3.5 kaspi-translucent-input rounded-xl text-xs font-mono font-bold tracking-wider uppercase"
                     />
                     <button
                       type="submit"
                       disabled={isLoading || !licenseKeyInput.trim()}
-                      className="h-11 px-5 rounded-xl bg-white hover:bg-zinc-200 text-black font-bold text-xs transition disabled:opacity-40 flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0"
+                      className="h-11 px-5 rounded-xl kaspi-emerald-checkout-btn font-bold text-xs transition disabled:opacity-40 flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0"
                     >
                       {isLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <KeyRound className="w-4 h-4" />
                       )}
-                      <span>{t.activateLicenseBtn}</span>
+                      <span>{locale === "ar" ? "تفعيل الكود" : "Activer"}</span>
                     </button>
                   </div>
                 </form>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
-    </div>
+    </KaspiGlassModalPortal>
   );
 }

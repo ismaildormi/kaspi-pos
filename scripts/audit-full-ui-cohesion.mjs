@@ -237,6 +237,71 @@ check(
   fs.existsSync(appleBackBtnPath) && modalBackAdopters.length >= 12
 );
 
+// 18. Shared KaspiGlassModalPortal (z-[9999] createPortal) adopted across all modal components (ZERO non-portal fixed inset-0 overlays)
+const modalPortalPath = path.join(SRC_DIR, "components", "common", "KaspiGlassModalPortal.tsx");
+const portalAdopters = tsxFiles.filter((f) =>
+  fs.readFileSync(f, "utf8").includes("KaspiGlassModalPortal")
+);
+const nonPortalFixedModals = tsxFiles.filter((f) => {
+  if (f.endsWith("KaspiGlassModalPortal.tsx")) return false;
+  return fs.readFileSync(f, "utf8").includes("fixed inset-0");
+});
+check(
+  `KaspiGlassModalPortal exists and handles all modal overlays cleanly (${portalAdopters.length} files, 0 non-portal fixed inset-0 overlays)`,
+  fs.existsSync(modalPortalPath) &&
+    portalAdopters.length >= 20 &&
+    nonPortalFixedModals.length === 0,
+  nonPortalFixedModals.length > 0 ? `Remaining: ${nonPortalFixedModals.join(", ")}` : ""
+);
+
+// 19. Circular Icon-Only Theme Switcher (Zero text span inside KaspiThemeToggle)
+check(
+  "KaspiThemeToggle renders strictly a circular icon-only button (w-9 h-9 rounded-full, zero text labels)",
+  themeToggleTsx.includes("rounded-full") &&
+    themeToggleTsx.includes("w-9 h-9") &&
+    !themeToggleTsx.includes("<span") &&
+    !themeToggleTsx.includes("أبيض لؤلؤي") &&
+    !themeToggleTsx.includes("كحلي مغموغ")
+);
+
+// 20. Refined KaspiBrandMark natural proportions (h-11 sm:h-12 auth, h-7 sm, h-8 md)
+check(
+  "KaspiBrandMark uses natural balanced proportions (auth: h-11 sm:h-12, sm: h-7, md: h-8)",
+  brandMarkTsx.includes('sm: "h-7 w-auto"') &&
+    brandMarkTsx.includes('md: "h-8 w-auto"') &&
+    brandMarkTsx.includes('auth: "h-11 sm:h-12 w-auto"')
+);
+
+// 21. 16 Modular Payment Engine files + Recurring Mandate + Daily Store Streak
+const paymentsDir = path.join(SRC_DIR, "lib", "payments");
+const requiredPaymentFiles = [
+  "types.ts",
+  "stripe.ts",
+  "youcanpay.ts",
+  "cmi-web.ts",
+  "NapsAdapter.ts",
+  "PayzoneAdapter.ts",
+  "TpeBridge.ts",
+  "PaymentGatewayManager.ts",
+  "PaymentOrchestrator.ts",
+  "FeeEngine.ts",
+  "SubscriptionEngine.ts",
+  "ReconciliationEngine.ts",
+  "RefundEngine.ts",
+  "DisputeManager.ts",
+  "FraudRiskEngine.ts",
+  "CurrencyEngine.ts",
+  "AuditLogger.ts",
+  "index.ts",
+];
+const allPaymentFilesExist = requiredPaymentFiles.every((f) =>
+  fs.existsSync(path.join(paymentsDir, f))
+);
+check(
+  `All ${requiredPaymentFiles.length} Global & Morocco Payment Engine modules exist in src/lib/payments/`,
+  allPaymentFilesExist
+);
+
 if (failures > 0) {
   console.error(`\n[AUDIT FAILED] ${failures} check(s) failed.`);
   process.exit(1);

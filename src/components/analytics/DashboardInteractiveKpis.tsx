@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ArrowUpRight, Barcode, AlertTriangle } from "lucide-react";
+import { ArrowUpRight, Barcode, AlertTriangle, Flame, CheckCircle2 } from "lucide-react";
 import { KaspiMiniSparkline } from "./KaspiMiniSparkline";
 import { KaspiGlassAnalyticsModal } from "./KaspiGlassAnalyticsModal";
 import { useKaspiAnalytics } from "@/lib/analytics/useKaspiAnalytics";
@@ -16,6 +16,8 @@ export interface DashboardInteractiveKpisProps {
   outOfStockCount: number;
   productsCount: number;
   totalUnits: number;
+  streakDays?: number;
+  weeklyConsistency?: boolean[];
 }
 
 function IsometricCratesIllustration({ className = "w-16 h-12" }: { className?: string }) {
@@ -72,6 +74,8 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
   outOfStockCount,
   productsCount,
   totalUnits,
+  streakDays = 0,
+  weeklyConsistency = [false, false, false, false, false, false, false],
 }) => {
   const [activeModal, setActiveModal] = useState<{
     metric: AnalyticsMetric;
@@ -81,6 +85,7 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
 
   const { data: analytics } = useKaspiAnalytics("sales", "7d", true);
   const sparks = analytics?.sparklines;
+  const nextMilestone = streakDays < 7 ? 7 : streakDays < 14 ? 14 : streakDays < 30 ? 30 : 60;
 
   const salesTitle =
     locale === "ar"
@@ -119,6 +124,63 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
 
   return (
     <>
+      {/* Subtle Apple-Clean Merchant Operational Streak Bar (`سلسلة النشاط اليومي / Daily Store Streak`) */}
+      <div
+        data-kaspi-daily-streak="true"
+        className="kaspi-frosted-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3"
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl kaspi-glass-btn flex items-center justify-center shrink-0">
+            <Flame className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-[var(--kaspi-text-primary)] flex items-center gap-2">
+              <span>
+                {locale === "ar"
+                  ? `سلسلة النشاط اليومي: ${streakDays} ${streakDays === 1 ? "يوم" : "أيام متتالية"}`
+                  : locale === "en"
+                  ? `Daily Store Streak: ${streakDays} consecutive ${streakDays === 1 ? "day" : "days"}`
+                  : `Série d'Activité Quotidienne : ${streakDays} ${streakDays <= 1 ? "jour" : "jours"} consécutifs`}
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                {locale === "ar"
+                  ? `الهدف القادم: ${nextMilestone} أيام`
+                  : locale === "en"
+                  ? `Next Milestone: ${nextMilestone}d`
+                  : `Prochain cap : ${nextMilestone}j`}
+              </span>
+            </div>
+            <p className="text-[11px] text-[var(--kaspi-text-muted)]">
+              {locale === "ar"
+                ? "محسوبة تلقائياً من فواتير البيع وورديات الصندوق الفعلية بالمتجر"
+                : locale === "en"
+                ? "Computed from real store sales & cash register shifts"
+                : "Calculé en temps réel depuis vos ventes et sessions de caisse"}
+            </p>
+          </div>
+        </div>
+
+        {/* Weekly Consistency Dots (Last 7 Days) */}
+        <div className="flex items-center gap-1.5" dir="ltr">
+          <span className="text-[10px] font-mono text-[var(--kaspi-text-muted)] mr-1">
+            7d:
+          </span>
+          {weeklyConsistency.map((activeDay, idx) => (
+            <div
+              key={idx}
+              title={activeDay ? "Active Day" : "No Activity"}
+              className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-mono transition-all ${
+                activeDay
+                  ? "bg-emerald-500/25 border border-emerald-400/60 text-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+                  : "kaspi-glass-surface text-[var(--kaspi-text-muted)] opacity-60"
+              }`}
+            >
+              {activeDay ? <CheckCircle2 className="w-3 h-3" /> : "·"}
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Revenue / Daily Register Sales */}
         <button

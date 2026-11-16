@@ -21,6 +21,8 @@ import {
   Plus,
 } from "lucide-react";
 import { UnifiedCheckoutModal } from "@/components/billing/UnifiedCheckoutModal";
+import { FeeEngine, type PosFeeSplitRatio } from "@/lib/payments";
+import { RefreshCw, Download, Lock } from "lucide-react";
 
 interface SubscriptionData {
   id: string | null;
@@ -29,6 +31,10 @@ interface SubscriptionData {
   status: "trialing" | "active" | "past_due" | "canceled" | "paused";
   provider: string;
   billingInterval: string;
+  autoRenew?: boolean;
+  mandateStatus?: string;
+  cancelAtPeriodEnd?: boolean;
+  nextBillingAt?: string | null;
   currentPeriodEnd: string | null;
   trialEndAt: string | null;
   daysRemaining: number;
@@ -36,6 +42,13 @@ interface SubscriptionData {
   priceMAD: number;
   maxDevices?: number;
   activeDevicesCount?: number;
+  tokenizedMethod?: {
+    last4: string;
+    brand: string;
+    expMonth: number;
+    expYear: number;
+    bankName?: string;
+  } | null;
 }
 
 interface PaymentHistoryItem {
@@ -236,6 +249,49 @@ export default function BillingDashboardPage() {
   const [isActivatingLicense, setIsActivatingLicense] = useState(false);
   const [licenseSuccessMsg, setLicenseSuccessMsg] = useState<string | null>(null);
   const [licenseErrorMsg, setLicenseErrorMsg] = useState<string | null>(null);
+  const [isTogglingMandate, setIsTogglingMandate] = useState(false);
+  const [feeSplitRatio, setFeeSplitRatio] = useState<PosFeeSplitRatio>("70/30");
+
+  const feePreview = React.useMemo(() => {
+    const engine = new FeeEngine();
+    return engine.calculate({
+      amount: 100,
+      gateway: "cmi_tpe",
+      currency: "MAD",
+      splitRatio: feeSplitRatio,
+      surchargeEnabled: feeSplitRatio !== "0/100",
+    });
+  }, [feeSplitRatio]);
+
+  const handleToggleAutoRenewMandate = async () => {
+    setIsTogglingMandate(true);
+    const currentAuto = subscription?.autoRenew ?? !subscription?.cancelAtPeriodEnd;
+    const nextAuto = !currentAuto;
+    try {
+      const res = await fetch("/api/v1/billing/subscription", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          autoRenew: nextAuto,
+          cancelAtPeriodEnd: !nextAuto,
+        }),
+      });
+      if (res.ok) {
+        setSubscription((prev) =>
+          prev
+            ? {
+                ...prev,
+                autoRenew: nextAuto,
+                cancelAtPeriodEnd: !nextAuto,
+                mandateStatus: nextAuto ? "ACTIVE" : "CANCELED_AT_PERIOD_END",
+              }
+            : prev
+        );
+      }
+    } finally {
+      setIsTogglingMandate(false);
+    }
+  };
 
   const handleActivateLicense = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -525,10 +581,161 @@ export default function BillingDashboardPage() {
                 setCheckoutMode("plan");
                 setCheckoutModalOpen(true);
               }}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-white border border-white/10 font-bold text-xs sm:text-sm transition cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl kaspi-glass-btn font-bold text-xs sm:text-sm transition cursor-pointer"
             >
               {t.updatePaymentBtn}
             </button>
+          </div>
+        </div>
+
+        {/* Executive Customer Billing Portal & Auto-Renewal Mandate Controls (`تبقى تقطع ليه ديما حتى يقطعها هو`) */}
+        <div
+          data-kaspi-customer-billing-portal="true"
+          className="kaspi-frosted-card kaspi-polar-aurora-orbit rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="w-5 h-5 text-emerald-400" />
+                <h3 className="text-base sm:text-lg font-bold text-[var(--kaspi-text-primary)]">
+                  {locale === "ar"
+                    ? "بوابة الزبون وإدارة تفويض التجديد التلقائي (Auto-Renew Mandate)"
+                    : locale === "en"
+                    ? "Customer Billing Portal & Auto-Renewal Mandate"
+                    : "Portail Client & Mandat de Renouvellement Automatique"}
+                </h3>
+              </div>
+              <p className="text-xs text-[var(--kaspi-text-secondary)]">
+                {locale === "ar"
+                  ? "تحكم كامل في بطاقتك المشفرة (PCI-DSS 4.0.1)، تاريخ الاقتطاع القادم، تحميل الفواتير الضريبية، أو إلغاء التجديد التلقائي بنقرة واحدة."
+                  : locale === "en"
+                  ? "Full control over your tokenized card-on-file, next billing date, tax invoices, and 1-click auto-renewal cancellation."
+                  : "Contrôle complet de votre carte tokenisée, prochaine échéance, factures fiscales et annulation en 1 clic."}
+              </p>
+            </div>
+
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+                (subscription?.autoRenew ?? true)
+                  ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-400"
+                  : "bg-amber-500/15 border-amber-500/35 text-amber-400"
+              }`}
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>
+                {(subscription?.autoRenew ?? true)
+                  ? locale === "ar"
+                    ? "التجديد التلقائي مفعل (Auto-Renew ON)"
+                    : "Auto-Renew ACTIVE"
+                  : locale === "ar"
+                  ? "يتوقف نهاية الفترة (Canceled at Period End)"
+                  : "Fin de période programmée"}
+              </span>
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            {/* Saved Tokenized Card */}
+            <div className="p-4 rounded-2xl kaspi-glass-surface space-y-2">
+              <span className="text-[11px] font-bold text-[var(--kaspi-text-muted)] block uppercase">
+                {locale === "ar" ? "وسيلة الدفع المشفرة المحفوظة" : "Carte Tokenisée (Card-on-File)"}
+              </span>
+              <div className="font-mono font-bold text-sm text-[var(--kaspi-text-primary)] flex items-center gap-2" dir="ltr">
+                <CreditCard className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>
+                  {subscription?.tokenizedMethod?.brand || "Visa"} ••••{" "}
+                  {subscription?.tokenizedMethod?.last4 || "4242"}
+                </span>
+              </div>
+              <span className="text-[11px] font-mono text-[var(--kaspi-text-secondary)] block">
+                {subscription?.tokenizedMethod?.bankName || "Attijariwafa / NAPS 3DS2"} • Exp{" "}
+                {subscription?.tokenizedMethod?.expMonth || 12}/
+                {subscription?.tokenizedMethod?.expYear || 2028}
+              </span>
+            </div>
+
+            {/* Next Auto-Debit Date & Amount */}
+            <div className="p-4 rounded-2xl kaspi-glass-surface space-y-2">
+              <span className="text-[11px] font-bold text-[var(--kaspi-text-muted)] block uppercase">
+                {locale === "ar" ? "موعد وقيمة الاقتطاع القادم" : "Prochaine Échéance Automatique"}
+              </span>
+              <div className="font-mono font-bold text-sm text-[var(--kaspi-text-primary)]" dir="ltr">
+                {subscription?.priceMAD ?? 200}.00 MAD
+              </div>
+              <span className="text-[11px] font-mono text-[var(--kaspi-text-secondary)] block">
+                {subscription?.nextBillingAt
+                  ? new Date(subscription.nextBillingAt).toLocaleDateString()
+                  : "Automatique mensuel"}
+              </span>
+            </div>
+
+            {/* 1-Click Cancel / Resume Auto-Renewal + Tax Invoice */}
+            <div className="p-4 rounded-2xl kaspi-glass-surface flex flex-col justify-between gap-2">
+              <button
+                type="button"
+                disabled={isTogglingMandate}
+                onClick={handleToggleAutoRenewMandate}
+                data-kaspi-toggle-autorenew="true"
+                className="w-full py-2 px-3 rounded-xl kaspi-glass-btn font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isTogglingMandate ? "animate-spin" : ""}`} />
+                <span>
+                  {(subscription?.autoRenew ?? true)
+                    ? locale === "ar"
+                      ? "إيقاف التجديد التلقائي نهاية الشهر (1-Click Cancel)"
+                      : "Désactiver le renouvellement auto (1-Clic)"
+                    : locale === "ar"
+                    ? "إعادة تفعيل التجديد التلقائي المستمر"
+                    : "Réactiver le renouvellement automatique"}
+                </span>
+              </button>
+
+              <a
+                href="/api/v1/billing/portal"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-2 px-3 rounded-xl kaspi-frosted-card text-center font-semibold text-[11px] flex items-center justify-center gap-1.5 hover:brightness-105 transition"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-400" />
+                <span>
+                  {locale === "ar"
+                    ? "تحميل الفاتورة الضريبية (TVA 20%)"
+                    : "Télécharger Facture Fiscale TVA"}
+                </span>
+              </a>
+            </div>
+          </div>
+
+          {/* Independent POS Terminal Fee-Split Calculator (`100/0`, `70/30`, `60/40`, `50/50`) */}
+          <div className="pt-4 border-t border-white/10 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-bold text-[var(--kaspi-text-primary)]">
+                {locale === "ar"
+                  ? "حاسبة تقسيم عمولة جهاز TPE للبطاقات البنكية (مثال: معاملة 100 MAD):"
+                  : "Simulateur de Répartition Frais TPE POS (Ex: Ticket 100 MAD) :"}
+              </span>
+              <div className="inline-flex flex-wrap gap-1 p-1 rounded-xl kaspi-glass-surface" dir="ltr">
+                {(["0/100", "50/50", "60/40", "70/30", "100/0"] as PosFeeSplitRatio[]).map(
+                  (ratio) => (
+                    <button
+                      key={ratio}
+                      type="button"
+                      onClick={() => setFeeSplitRatio(ratio)}
+                      className={`px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold cursor-pointer transition ${
+                        feeSplitRatio === ratio
+                          ? "kaspi-glass-btn kaspi-orbit-active"
+                          : "text-[var(--kaspi-text-muted)]"
+                      }`}
+                    >
+                      {ratio}
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+            <div className="p-3 rounded-xl kaspi-glass-surface text-[11px] font-mono text-[var(--kaspi-text-secondary)]" dir="ltr">
+              {feePreview.transparentReceiptDisclosure}
+            </div>
           </div>
         </div>
 

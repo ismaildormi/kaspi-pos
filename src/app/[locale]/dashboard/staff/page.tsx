@@ -14,6 +14,7 @@ import {
   User,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 interface MemberItem {
   id: string;
@@ -286,8 +287,8 @@ export default function StaffPage() {
 
       {/* Invite Member Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xl">
-          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-md w-full p-6 shadow-2xl">
+        <KaspiGlassModalPortal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} dir="ltr">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto my-auto p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] mb-4">
               <h3 className="font-bold text-[var(--kaspi-text-primary)] text-base">{t.modalTitle}</h3>
               <AppleBackButton onClick={() => setIsModalOpen(false)} locale={locale} />
@@ -362,7 +363,7 @@ export default function StaffPage() {
               </div>
             </form>
           </div>
-        </div>
+        </KaspiGlassModalPortal>
       )}
     </div>
   );

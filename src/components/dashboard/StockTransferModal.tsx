@@ -5,6 +5,7 @@ import { ArrowRightLeft, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDictionary } from "@/i18n/schema";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 export interface TransferStoreItem {
   id: string;
@@ -119,11 +120,8 @@ export function StockTransferModal({
   };
 
   return (
-    <div
-      dir="ltr"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xl animate-in fade-in"
-    >
-      <div className="kaspi-frosted-glass kaspi-polar-aurora-orbit relative w-full max-w-lg overflow-hidden rounded-2xl text-white shadow-2xl p-6 sm:p-7">
+    <KaspiGlassModalPortal isOpen={isOpen} onClose={onClose} dir="ltr">
+      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit relative w-full max-w-lg max-h-[90vh] overflow-y-auto my-auto rounded-2xl text-white shadow-2xl p-6 sm:p-7">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
           <div className="flex items-center gap-3">
@@ -267,6 +265,6 @@ export function StockTransferModal({
           </div>
         </form>
       </div>
-    </div>
+    </KaspiGlassModalPortal>
   );
 }

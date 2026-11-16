@@ -445,6 +445,7 @@ export default function PosPage() {
             <div className="h-11 p-1 rounded-xl kaspi-glass-surface flex items-center gap-1 shrink-0">
               <button
                 type="button"
+                data-kaspi-view-switch="grid"
                 onClick={() => setGroceryView("grid")}
                 className={`h-9 px-3 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                   groceryView === "grid"
@@ -460,6 +461,7 @@ export default function PosPage() {
 
               <button
                 type="button"
+                data-kaspi-view-switch="plu"
                 onClick={() => setGroceryView("plu")}
                 className={`h-9 px-3 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                   groceryView === "plu"
@@ -475,6 +477,7 @@ export default function PosPage() {
 
               <button
                 type="button"
+                data-kaspi-view-switch="price_check"
                 onClick={() => setGroceryView("price_check")}
                 className={`h-9 px-3 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                   groceryView === "price_check"

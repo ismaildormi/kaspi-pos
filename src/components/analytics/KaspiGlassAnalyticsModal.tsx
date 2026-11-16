@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { ArrowUpRight, ArrowDownRight, TrendingUp, Layers, CreditCard, ShoppingBag } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 import { KaspiGlassAnalyticsChart } from "./KaspiGlassAnalyticsChart";
 import { useKaspiAnalytics } from "@/lib/analytics/useKaspiAnalytics";
 import type { AnalyticsMetric, AnalyticsRange } from "@/lib/analytics/types";
@@ -45,14 +46,14 @@ export const KaspiGlassAnalyticsModal: React.FC<KaspiGlassAnalyticsModalProps> =
       : `${summary?.totalValue ?? 0} ${unitLabel}`;
 
   return (
-    <div
+    <KaspiGlassModalPortal
+      isOpen={isOpen}
+      onClose={onClose}
       dir={locale === "ar" ? "rtl" : "ltr"}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/45 backdrop-blur-xl select-none overflow-y-auto animate-fadeIn"
-      onClick={onClose}
     >
       <div
-        className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-4xl rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5 my-auto"
-        onClick={(e) => e.stopPropagation()}
+        data-kaspi-analytics-modal="true"
+        className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-4xl max-h-[90vh] overflow-y-auto my-auto rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5"
       >
         {/* Apple Header Row with Unified Back Pill */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 pb-4">
@@ -186,7 +187,7 @@ export const KaspiGlassAnalyticsModal: React.FC<KaspiGlassAnalyticsModalProps> =
           </div>
         </div>
       </div>
-    </div>
+    </KaspiGlassModalPortal>
   );
 };
 

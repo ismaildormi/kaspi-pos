@@ -34,8 +34,19 @@ const nextConfig = {
       },
     ];
   },
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.resolve.alias["@"] = path.resolve(__dirname, "src");
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        crypto: false,
+        "node:crypto": false,
+        fs: false,
+        path: false,
+        net: false,
+        tls: false,
+      };
+    }
     return config;
   },
 };
