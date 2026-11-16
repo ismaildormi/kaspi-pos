@@ -553,13 +553,13 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
         </div>
       </div>
 
-      {/* Ambient Atmospheric Aurora Spheres (Flowing Silver-White in Dark, Emerald-Pearl in Light) */}
+      {/* Ambient Atmospheric Aurora Spheres (Flowing Silver-White in Dark, Open Emerald-Crystal in Light) */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background: isPearl
-            ? "radial-gradient(ellipse 52% 42% at 22% 24%, rgba(16,185,129,0.42) 0%, transparent 55%), radial-gradient(ellipse 56% 44% at 78% 76%, rgba(52,211,153,0.34) 0%, transparent 58%), radial-gradient(ellipse 65% 48% at 50% 45%, rgba(255,255,255,0.38) 0%, transparent 65%)"
-            : "radial-gradient(ellipse 52% 42% at 22% 24%, rgba(255,255,255,0.16) 0%, transparent 55%), radial-gradient(ellipse 56% 44% at 78% 76%, rgba(226,232,240,0.11) 0%, transparent 58%)",
+            ? "radial-gradient(ellipse 56% 46% at 20% 24%, rgba(16,185,129,0.32) 0%, transparent 58%), radial-gradient(ellipse 58% 48% at 80% 76%, rgba(5,150,105,0.22) 0%, transparent 60%), radial-gradient(ellipse 68% 52% at 50% 45%, rgba(255,255,255,0.68) 0%, transparent 66%)"
+            : "radial-gradient(ellipse 52% 42% at 22% 24%, rgba(255,255,255,0.18) 0%, transparent 55%), radial-gradient(ellipse 56% 44% at 78% 76%, rgba(226,232,240,0.12) 0%, transparent 58%)",
         }}
       />
 
@@ -602,7 +602,7 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
         </div>
 
         {/* Brand Identity Header — Sculpted Frameless 3D Metallic Infinity Mark */}
-        <div className="text-center mb-4">
+        <div className="text-center mb-3.5">
           <div className="flex justify-center mb-2">
             <KaspiBrandMark size="auth" alt="KASPI POS" />
           </div>
@@ -613,7 +613,7 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
             <span className="font-extrabold text-white">KASPI</span>{" "}
             <span className="text-zinc-400 font-medium">POS</span>
           </div>
-          <h1 className="text-2xl sm:text-[26px] font-extrabold text-white tracking-tight mt-2">
+          <h1 className="text-2xl sm:text-[26px] font-extrabold text-white tracking-tight mt-1.5">
             {title}
           </h1>
         </div>

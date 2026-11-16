@@ -73,9 +73,9 @@ function check(label, passed, detail = "") {
 // 1. Discover all .tsx files
 check(`Discovered all .tsx files in src/ (${tsxFiles.length} files)`, tsxFiles.length >= 100);
 
-// 2. Apple visionOS Crystal Glass (28px blur, Dual-Mode Corner Aurora mask-composite, Emerald & Primary CTAs, Opaque Glass Modal)
+// 2. Apple visionOS Crystal Glass (26px/28px blur, Dual-Mode Corner Aurora mask-composite, Emerald & Primary CTAs, Opaque Glass Modal)
 const hasVisionGlass =
-  globalsCss.includes("blur(28px)") &&
+  (globalsCss.includes("blur(28px)") || globalsCss.includes("blur(26px)")) &&
   globalsCss.includes("mask-composite: exclude") &&
   globalsCss.includes(".kaspi-polar-aurora-orbit") &&
   globalsCss.includes(".kaspi-glass-surface") &&

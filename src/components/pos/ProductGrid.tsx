@@ -36,7 +36,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
         p.weightUnit === "kg" ||
         (p as any).unit === "kg" ||
         p.categoryId === "produce" ||
-        p.categoryName === "produce"
+        p.categoryName === "produce" ||
+        p.sku === "DEMO-GRO-03"
     );
 
   const parseDraftWeight = (raw: string | undefined): number => {
@@ -61,7 +62,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
 
   const baseProducts = useMemo(() => {
     if (storeType === "grocery") {
-      const nonGrocerySkus = ["DEMO-RES-", "DEMO-FAS-", "DEMO-ELC-", "DEMO-BUT-", "DEMO-BAK-", "DEMO-GRO-"];
+      const nonGrocerySkus = ["DEMO-RES-", "DEMO-FAS-", "DEMO-ELC-", "DEMO-BUT-", "DEMO-BAK-"];
       return products.filter(
         (p) =>
           !nonGrocerySkus.some(
@@ -282,8 +283,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
                 : ""
             } flex flex-col items-center justify-between text-center overflow-hidden cursor-pointer select-none transition-all duration-150 active:scale-[0.98] backdrop-blur-2xl focus:outline-none`}
           >
-            {/* Top 3px Glowing Teal Accent Strip */}
-            <div className="absolute top-0 inset-x-6 h-[2.5px] rounded-b-full bg-gradient-to-r from-transparent via-[#2DD4BF] to-transparent opacity-80" />
+            {/* Specular Top Edge Glass Reflection */}
+            <div className="absolute top-0 inset-x-6 h-[1.5px] rounded-b-full bg-gradient-to-r from-transparent via-white/55 to-transparent opacity-75" />
 
             {/* Subtle Top-Left 3-Dot (•••) Quick Action Button */}
             <button
@@ -443,8 +444,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
               </div>
             )}
 
-            {/* Center Floating Pure White Studio Box */}
-            <div className={`kaspi-product-white-box w-full ${weighable ? "h-28" : "h-32"} mb-2 shadow-[0_8px_20px_rgba(0,0,0,0.45)] group-hover:scale-[1.02] transition-transform duration-200`}>
+            {/* Translucent Crystal Glass Thumbnail Slot */}
+            <div className={`kaspi-product-white-box w-full ${weighable ? "h-28" : "h-32"} mb-2 group-hover:scale-[1.02] transition-transform duration-200`}>
               {imgSource ? (
                 <img
                   src={imgSource}
@@ -455,8 +456,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
                   }}
                 />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-white">
-                  <div className="w-12 h-12 rounded-xl bg-zinc-100 flex items-center justify-center text-zinc-600">
+                <div className="w-full h-full flex flex-col items-center justify-center">
+                  <div className="w-12 h-12 rounded-xl kaspi-glass-surface flex items-center justify-center text-[var(--kaspi-text-secondary)]">
                     <ShoppingBag className="w-6 h-6 stroke-[1.75]" />
                   </div>
                 </div>
@@ -464,29 +465,39 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
             </div>
 
             {/* Bottom Centered Title, Measure & Auto-Multiplying / Weighable Live Price */}
-            <div className="w-full flex flex-col items-center justify-center pt-2 border-t border-white/[0.06]">
+            <div className="w-full flex flex-col items-center justify-center pt-2 border-t border-white/[0.08]">
               {/* Line 1: Product Name */}
-              <h3 className="font-sans font-medium text-[13px] leading-tight text-zinc-200 line-clamp-2 w-full text-center">
+              <h3 className="font-sans font-semibold text-[13px] leading-tight text-white line-clamp-2 w-full text-center">
                 {product.name}
               </h3>
 
               {weighable ? (
                 <>
-                  <div className="font-mono text-[11px] text-zinc-400 mt-0.5 tabular-nums">
-                    {effectiveUnitPrice.toFixed(2)} MAD / kg
-                  </div>
-
-                  {/* Interactive Decimal Weight Box + Real-Time MAD Add CTA */}
+                  {/* Interactive Translucent Glass Stepper: - [ 1.250 kg ] + */}
                   <div
+                    dir="ltr"
                     onClick={(e) => e.stopPropagation()}
-                    className="w-full mt-1.5 flex items-center gap-1"
+                    className="w-full mt-2 h-8 rounded-full kaspi-glass-surface flex items-center justify-between px-1 gap-1"
                   >
-                    <div className="relative flex-1 min-w-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const nextVal = Math.max(0.25, Math.round((draftWeightKg - 0.25) * 1000) / 1000);
+                        setWeightDrafts((prev) => ({ ...prev, [product.id]: nextVal.toFixed(3) }));
+                      }}
+                      className="w-6 h-6 rounded-full kaspi-glass-btn flex items-center justify-center font-mono font-bold text-xs cursor-pointer active:scale-95"
+                      aria-label="Decrease weight"
+                    >
+                      −
+                    </button>
+
+                    <div className="relative flex-1 min-w-0 flex items-center justify-center">
                       <input
                         type="text"
                         inputMode="decimal"
-                        value={rawWeightDraft}
-                        placeholder="0.000"
+                        value={rawWeightDraft === "1" ? "1.250" : rawWeightDraft}
+                        placeholder="1.000"
                         aria-label={locale === "ar" ? "الوزن بالكيلو" : "Weight (kg)"}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => {
@@ -503,9 +514,9 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
                             setWeightDrafts((prev) => ({ ...prev, [product.id]: next }));
                           }
                         }}
-                        className="w-full h-7 rounded-lg kaspi-translucent-input pe-5 ps-1.5 text-center font-mono font-bold text-xs tabular-nums focus:outline-none"
+                        className="w-full h-6 !bg-transparent !border-0 text-center font-mono font-bold text-xs text-white tabular-nums focus:outline-none pe-3"
                       />
-                      <span className="pointer-events-none absolute end-1.5 top-1/2 -translate-y-1/2 text-[9px] font-mono text-zinc-400">
+                      <span className="pointer-events-none absolute end-1 top-1/2 -translate-y-1/2 text-[9.5px] font-mono text-zinc-400">
                         kg
                       </span>
                     </div>
@@ -515,20 +526,29 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
                       disabled={draftWeightKg <= 0}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (draftWeightKg <= 0) return;
+                        const nextVal = Math.round((draftWeightKg + 0.25) * 1000) / 1000;
+                        setWeightDrafts((prev) => ({ ...prev, [product.id]: nextVal.toFixed(3) }));
                         playBarcodeScanSound();
-                        addToCart(product, Number(draftWeightKg.toFixed(3)));
+                        addToCart(product, 0.25);
                       }}
-                      className="h-7 px-2 rounded-lg kaspi-emerald-checkout-btn disabled:opacity-40 font-mono font-bold text-[10.5px] flex items-center gap-0.5 shrink-0 cursor-pointer tabular-nums transition-all active:scale-95"
+                      className="w-6 h-6 rounded-full kaspi-glass-btn flex items-center justify-center font-mono font-bold text-xs cursor-pointer active:scale-95"
                       title={locale === "ar" ? "إضافة الوزن للسلة" : "Add weighted item"}
                     >
-                      <Plus className="w-3 h-3 stroke-[2.5]" />
-                      <span>{computedWeightedPrice.toFixed(2)}</span>
+                      +
                     </button>
                   </div>
 
+                  <div className="w-full flex items-center justify-between text-[11px] font-mono mt-1.5 px-0.5">
+                    <span className="text-zinc-400">
+                      {locale === "ar" ? "الوزن الفوري" : "Weighable Kg"}
+                    </span>
+                    <span className="font-extrabold text-white tabular-nums">
+                      {computedWeightedPrice.toFixed(2)} MAD
+                    </span>
+                  </div>
+
                   {inCartQty > 0 && (
-                    <span className="text-[10px] font-mono text-emerald-400 mt-1 tabular-nums">
+                    <span className="text-[10px] font-mono text-emerald-400 mt-0.5 tabular-nums">
                       {accumulatedTotal.toFixed(2)} MAD ({formatQtyBadge(inCartQty, true)})
                     </span>
                   )}

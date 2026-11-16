@@ -10,15 +10,15 @@ export interface KaspiBrandMarkProps {
 const SIZE_CLASSES: Record<NonNullable<KaspiBrandMarkProps["size"]>, string> = {
   xs: "h-6 w-auto",
   sm: "h-9 w-auto",
-  md: "h-11 w-auto",
-  lg: "h-14 w-auto",
-  auth: "h-20 sm:h-24 w-auto",
+  md: "h-10 w-auto",
+  lg: "h-12 w-auto",
+  auth: "h-14 sm:h-16 w-auto",
 };
 
 /**
  * KASPI POS authentic 3D brushed-chrome & pearlescent-ceramic infinity logo cutout.
  * Frameless transparent PNG (/logo-mark.png) extracted cleanly from /logo.png —
- * zero background plate, zero square box, zero border wrapper.
+ * locked to 100% original 3D dark-chrome + ceramic-white contrast in both themes.
  */
 export const KaspiBrandMark: React.FC<KaspiBrandMarkProps> = ({
   size = "md",
@@ -32,11 +32,13 @@ export const KaspiBrandMark: React.FC<KaspiBrandMarkProps> = ({
       alt={alt}
       data-kaspi-brand-mark="authentic-3d-cutout"
       draggable={false}
-      className={`inline-block shrink-0 select-none object-contain ${SIZE_CLASSES[size]} ${
-        glow
-          ? "drop-shadow-[0_12px_28px_rgba(0,0,0,0.28)]"
-          : ""
-      } ${className}`}
+      style={{
+        filter: glow ? "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.22))" : "none",
+        WebkitFilter: glow ? "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.22))" : "none",
+        opacity: 1,
+        mixBlendMode: "normal",
+      }}
+      className={`inline-block shrink-0 select-none object-contain bg-transparent border-0 rounded-none p-0 ${SIZE_CLASSES[size]} ${className}`}
     />
   );
 };

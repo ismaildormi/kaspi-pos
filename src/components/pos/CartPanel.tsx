@@ -472,7 +472,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
               <div className="flex items-center justify-between gap-2.5">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   {Boolean((item as any).imageUrl || (item as any).image) && (
-                    <div className="w-8 h-8 rounded-lg bg-white p-0.5 flex items-center justify-center shrink-0 overflow-hidden shadow-xs border border-white/80">
+                    <div className="w-8 h-8 rounded-lg kaspi-product-white-box p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
                       <img
                         src={(item as any).imageUrl || (item as any).image}
                         alt={item.name}
@@ -722,7 +722,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
           type="button"
           onClick={openPaymentModal}
           disabled={cart.length === 0}
-          className="kaspi-emerald-checkout-btn kaspi-polar-aurora-orbit h-12 w-full rounded-xl active:scale-[0.99] font-semibold text-[15px] flex items-center justify-between px-5 cursor-pointer transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:pointer-events-none"
+          className="kaspi-emerald-checkout-btn kaspi-polar-aurora-orbit h-12 w-full rounded-xl active:scale-[0.99] font-semibold text-[15px] flex items-center justify-between px-5 cursor-pointer transition-all disabled:opacity-90 disabled:cursor-not-allowed disabled:pointer-events-none"
         >
           <span className="flex items-center gap-2 font-sans font-extrabold text-[15px] tracking-wide text-white">
             <CreditCard className="w-4 h-4 stroke-[2.5] text-white" />

@@ -178,11 +178,15 @@ export default function PosPage() {
       try {
         if (offlineDb?.offlineProducts) {
           const cachedProds = await offlineDb.offlineProducts.toArray();
-          const cleanProds = (cachedProds || []).filter((p: any) => !isDemoProduct(p));
-          // Purge demo products from local offline database if any exist
-          const demoIds = (cachedProds || []).filter((p: any) => isDemoProduct(p)).map((p: any) => p.id);
-          if (demoIds.length > 0) {
-            offlineDb.offlineProducts.bulkDelete(demoIds).catch(() => {});
+          const hasRealProds = (cachedProds || []).some((p: any) => !isDemoProduct(p));
+          const cleanProds = hasRealProds
+            ? (cachedProds || []).filter((p: any) => !isDemoProduct(p))
+            : cachedProds || [];
+          if (hasRealProds) {
+            const demoIds = (cachedProds || []).filter((p: any) => isDemoProduct(p)).map((p: any) => p.id);
+            if (demoIds.length > 0) {
+              offlineDb.offlineProducts.bulkDelete(demoIds).catch(() => {});
+            }
           }
           if (isMounted && cleanProds.length > 0) {
             setProducts(
@@ -286,7 +290,8 @@ export default function PosPage() {
         if (prodRes.ok) {
           const prodData = await prodRes.json();
           const rawItems: PosProduct[] = prodData.data?.products || [];
-          const items = rawItems.filter((p) => !isDemoProduct(p));
+          const hasRealItems = rawItems.some((p) => !isDemoProduct(p));
+          const items = hasRealItems ? rawItems.filter((p) => !isDemoProduct(p)) : rawItems;
           setProducts(items);
 
           // Cache in Dexie for offline lookup
@@ -533,7 +538,7 @@ export default function PosPage() {
           </div>
 
           {/* Main Workspace (Smart Grid or PLU Scale Touch Keypad) */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto rounded-2xl kaspi-glass-card p-3 sm:p-3.5">
             {!loaderDone ? (
               <CatalogProgressLoader
                 isLoading={isLoading}

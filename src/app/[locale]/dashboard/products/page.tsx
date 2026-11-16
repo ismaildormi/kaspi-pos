@@ -949,7 +949,7 @@ export default function ProductsListPage() {
                     >
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-xl bg-white border border-white/80 p-0.5 overflow-hidden shrink-0 flex items-center justify-center shadow-xs">
+                          <div className="h-10 w-10 rounded-xl kaspi-product-white-box p-0.5 overflow-hidden shrink-0 flex items-center justify-center">
                             {isUpdating ? (
                               <Loader2 className="w-4 h-4 animate-spin text-zinc-900" />
                             ) : p.imageUrl ? (
@@ -1390,7 +1390,7 @@ export default function ProductsListPage() {
                             </span>
                           </div>
                         ) : createImageUrl ? (
-                          <div className="relative w-full h-full bg-white p-2 flex items-center justify-center shadow-inner group">
+                          <div className="relative w-full h-full kaspi-product-white-box p-2 flex items-center justify-center group">
                             <img
                               src={createImageUrl}
                               alt="Cutout Preview"
