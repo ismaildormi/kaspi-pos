@@ -471,7 +471,7 @@ export default function BillingDashboardPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
               <div className={`p-3 rounded-xl border text-center transition-all ${
                 (subscription?.maxDevices ?? 1) === 1
-                  ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-white font-bold"
+                  ? "kaspi-glass-btn kaspi-orbit-active text-white font-bold"
                   : "kaspi-smoky-glass text-zinc-400 hover:text-white"
               }`}>
                 <span className="block text-[11px] mb-0.5">{t.tier1Title}</span>
@@ -480,7 +480,7 @@ export default function BillingDashboardPage() {
               </div>
               <div className={`p-3 rounded-xl border text-center transition-all ${
                 (subscription?.maxDevices ?? 1) === 2
-                  ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-white font-bold"
+                  ? "kaspi-glass-btn kaspi-orbit-active text-white font-bold"
                   : "kaspi-smoky-glass text-zinc-400 hover:text-white"
               }`}>
                 <span className="block text-[11px] mb-0.5">{t.tier2Title}</span>
@@ -489,7 +489,7 @@ export default function BillingDashboardPage() {
               </div>
               <div className={`p-3 rounded-xl border text-center transition-all ${
                 (subscription?.maxDevices ?? 1) === 3
-                  ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-white font-bold"
+                  ? "kaspi-glass-btn kaspi-orbit-active text-white font-bold"
                   : "kaspi-smoky-glass text-zinc-400 hover:text-white"
               }`}>
                 <span className="block text-[11px] mb-0.5">{t.tier3Title}</span>
@@ -498,7 +498,7 @@ export default function BillingDashboardPage() {
               </div>
               <div className={`p-3 rounded-xl border text-center transition-all ${
                 (subscription?.maxDevices ?? 1) >= 4
-                  ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-white font-bold"
+                  ? "kaspi-glass-btn kaspi-orbit-active text-white font-bold"
                   : "kaspi-smoky-glass text-zinc-400 hover:text-white"
               }`}>
                 <span className="block text-[11px] mb-0.5">{t.tier4Title}</span>

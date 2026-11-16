@@ -564,7 +564,7 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
       />
 
       {/* Central Clean Frosted Glass Authentication Card */}
-      <div className="kaspi-polar-aurora-orbit relative z-10 w-full max-w-[430px] mx-auto rounded-[32px] px-6 py-6 sm:px-8 sm:py-7 transition-all">
+      <div className="kaspi-glass-card kaspi-polar-aurora-orbit relative z-10 w-full max-w-[430px] mx-auto rounded-[32px] px-6 py-6 sm:px-8 sm:py-7 transition-all">
         {/* Independent Theme Switcher at Top Left */}
         <div className="absolute top-5 left-5 sm:top-6 sm:left-6 z-20">
           <KaspiThemeToggle locale={locale} compact />
@@ -575,7 +575,7 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
         {/* Independent Pill-Shaped Language Switcher (AR | FR | EN) at Top Right */}
         <div
           dir="ltr"
-          className="kaspi-frosted-glass kaspi-polar-aurora-orbit !absolute top-5 right-5 sm:top-6 sm:right-6 z-20 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-mono tracking-wider"
+          className="kaspi-glass-surface !absolute top-5 right-5 sm:top-6 sm:right-6 z-20 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-mono tracking-wider"
         >
           {(["ar", "fr", "en"] as AuthLocale[]).map((lang, idx) => {
             const active = locale === lang;

@@ -129,7 +129,7 @@ export const OtpVerification: React.FC<OtpVerificationProps> = ({
   };
 
   return (
-    <div dir="ltr" className="grid grid-cols-6 gap-2 sm:gap-2.5 select-none p-1 rounded-2xl kaspi-polar-aurora-orbit">
+    <div dir="ltr" className="grid grid-cols-6 gap-2 sm:gap-2.5 select-none p-1 rounded-2xl">
       {Array.from({ length }).map((_, idx) => {
         const digit = cleanValue[idx] || "";
         return (

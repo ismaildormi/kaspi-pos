@@ -327,7 +327,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({ products }) => {
   return (
     <div
       dir="ltr"
-      className="relative w-full group rounded-xl kaspi-polar-aurora-orbit kaspi-translucent-input h-11 flex items-center gap-2.5 px-3.5 shadow-inner"
+      className="relative w-full group rounded-xl kaspi-translucent-input h-11 flex items-center gap-2.5 px-3.5 shadow-inner"
     >
       <div className="flex items-center pointer-events-none text-zinc-400 shrink-0">
         {isScanning ? (

@@ -1597,7 +1597,7 @@ export default function ProductsListPage() {
                             onClick={() => setCreateUnit("piece")}
                             className={`flex-1 h-8 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
                               createUnit === "piece"
-                                ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
+                                ? "kaspi-glass-btn kaspi-orbit-active font-black"
                                 : "text-zinc-400 hover:text-white"
                             }`}
                           >
@@ -1608,7 +1608,7 @@ export default function ProductsListPage() {
                             onClick={() => setCreateUnit("kg")}
                             className={`flex-1 h-8 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
                               createUnit === "kg"
-                                ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
+                                ? "kaspi-glass-btn kaspi-orbit-active font-black"
                                 : "text-zinc-400 hover:text-white"
                             }`}
                           >

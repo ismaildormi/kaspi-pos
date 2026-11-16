@@ -577,7 +577,7 @@ function LoginForm() {
             }}
             className={`py-2 text-xs sm:text-[13px] rounded-xl transition-all cursor-pointer ${
               authMode === "password"
-                ? "kaspi-polar-aurora-orbit kaspi-glass-btn text-[var(--kaspi-text-primary)] font-semibold"
+                ? "kaspi-glass-btn text-[var(--kaspi-text-primary)] font-semibold"
                 : "border border-transparent text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)] font-medium"
             }`}
           >
@@ -594,7 +594,7 @@ function LoginForm() {
             }}
             className={`py-2 text-xs sm:text-[13px] rounded-xl transition-all cursor-pointer ${
               authMode === "gmail_otp"
-                ? "kaspi-polar-aurora-orbit kaspi-glass-btn text-[var(--kaspi-text-primary)] font-semibold"
+                ? "kaspi-glass-btn text-[var(--kaspi-text-primary)] font-semibold"
                 : "border border-transparent text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)] font-medium"
             }`}
           >
@@ -623,7 +623,7 @@ function LoginForm() {
             <label className="block text-xs font-bold text-zinc-200 mb-2">
               {t.emailLabel}
             </label>
-            <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+            <div className="relative rounded-2xl">
               <input
                 type="email"
                 name="email"
@@ -642,7 +642,7 @@ function LoginForm() {
             <label className="block text-xs font-bold text-zinc-200 mb-2">
               {t.passwordLabel}
             </label>
-            <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+            <div className="relative rounded-2xl">
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -680,7 +680,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="kaspi-polar-aurora-orbit kaspi-glass-btn relative w-full h-12 font-semibold text-sm sm:text-[15px] rounded-2xl active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer mt-2 overflow-hidden disabled:cursor-not-allowed"
+            className="kaspi-primary-cta-btn relative w-full h-12 font-semibold text-sm sm:text-[15px] rounded-2xl active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer mt-2 overflow-hidden disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
@@ -734,7 +734,7 @@ function LoginForm() {
                 <label className="block text-xs font-bold text-zinc-200 mb-2">
                   {t.emailLabel}
                 </label>
-                <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+                <div className="relative rounded-2xl">
                   <input
                     type="email"
                     dir="ltr"
@@ -750,7 +750,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="kaspi-polar-aurora-orbit kaspi-glass-btn w-full h-12 font-semibold text-sm sm:text-[15px] rounded-2xl active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer disabled:opacity-50"
+                className="kaspi-primary-cta-btn w-full h-12 font-semibold text-sm sm:text-[15px] rounded-2xl active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer disabled:opacity-50"
               >
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin text-[var(--kaspi-text-primary)]" />
@@ -784,7 +784,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading || otpCode.length < 6}
-                className="kaspi-polar-aurora-orbit kaspi-glass-btn relative w-full h-12 font-semibold text-sm sm:text-[15px] rounded-2xl active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                className="kaspi-primary-cta-btn relative w-full h-12 font-semibold text-sm sm:text-[15px] rounded-2xl active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
@@ -841,7 +841,7 @@ function LoginForm() {
                 <label className="block text-xs font-bold text-zinc-200 mb-2">
                   {t.emailLabel}
                 </label>
-                <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+                <div className="relative rounded-2xl">
                   <input
                     type="email"
                     dir="ltr"
@@ -857,7 +857,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="kaspi-polar-aurora-orbit kaspi-glass-btn w-full h-12 font-semibold text-sm sm:text-[15px] rounded-2xl transition-all flex justify-center items-center cursor-pointer disabled:opacity-50"
+                className="kaspi-primary-cta-btn w-full h-12 font-semibold text-sm sm:text-[15px] rounded-2xl transition-all flex justify-center items-center cursor-pointer disabled:opacity-50"
               >
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin text-[var(--kaspi-text-primary)]" />
@@ -882,7 +882,7 @@ function LoginForm() {
                 autoFocus
               />
 
-              <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+              <div className="relative rounded-2xl">
                 <input
                   type={showNewPassword ? "text" : "password"}
                   dir="ltr"
@@ -911,7 +911,7 @@ function LoginForm() {
                 </button>
               </div>
 
-              <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+              <div className="relative rounded-2xl">
                 <input
                   type={showNewPassword ? "text" : "password"}
                   dir="ltr"
@@ -929,7 +929,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="kaspi-polar-aurora-orbit kaspi-glass-btn w-full h-12 font-semibold text-sm sm:text-[15px] rounded-2xl transition-all flex justify-center items-center cursor-pointer disabled:opacity-50"
+                className="kaspi-primary-cta-btn w-full h-12 font-semibold text-sm sm:text-[15px] rounded-2xl transition-all flex justify-center items-center cursor-pointer disabled:opacity-50"
               >
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin text-[var(--kaspi-text-primary)]" />

@@ -394,7 +394,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}
-            className="h-8 px-3 rounded-lg kaspi-polar-aurora-orbit kaspi-glass-btn text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+            className="h-8 px-3 rounded-lg kaspi-glass-btn text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>
@@ -551,7 +551,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                   }}
                   className={`h-7 rounded-lg text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     calcMode === "weight"
-                      ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
+                      ? "kaspi-glass-btn kaspi-orbit-active font-black"
                       : "text-zinc-400 hover:text-white"
                   }`}
                 >
@@ -569,7 +569,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                   }}
                   className={`h-7 rounded-lg text-[10.5px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     calcMode === "amount"
-                      ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
+                      ? "kaspi-glass-btn kaspi-orbit-active font-black"
                       : "text-zinc-400 hover:text-white"
                   }`}
                 >
@@ -651,7 +651,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                         onClick={() => handleSelectWeightPreset(w)}
                         className={`h-7 rounded-lg text-[10px] font-mono font-bold transition-colors cursor-pointer ${
                           currentWeightKg === w
-                            ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
+                            ? "kaspi-glass-btn kaspi-orbit-active font-black"
                             : "kaspi-frosted-glass text-zinc-300 hover:text-white"
                         }`}
                       >
@@ -665,7 +665,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                         onClick={() => handleSelectAmountPreset(amt)}
                         className={`h-7 rounded-lg text-[10px] font-mono font-bold transition-colors cursor-pointer ${
                           currentTargetAmount === amt
-                            ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
+                            ? "kaspi-glass-btn kaspi-orbit-active font-black"
                             : "kaspi-frosted-glass text-zinc-300 hover:text-white"
                         }`}
                       >

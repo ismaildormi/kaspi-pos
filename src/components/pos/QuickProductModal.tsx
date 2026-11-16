@@ -433,7 +433,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                 <label className="block text-xs font-semibold text-zinc-300 mb-1">
                   {locale === "ar" ? "اسم المنتج:" : "Product Name :"}
                 </label>
-                <div className="relative rounded-xl kaspi-polar-aurora-orbit">
+                <div className="relative rounded-xl">
                   <input
                     type="text"
                     required
@@ -458,7 +458,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                   {locale === "ar" ? "الباركود (EAN-13):" : "Barcode EAN-13 :"}
                 </label>
                 <div className="flex gap-2">
-                  <div className="relative flex-1 rounded-xl kaspi-polar-aurora-orbit">
+                  <div className="relative flex-1 rounded-xl">
                     <input
                       ref={barcodeInputRef}
                       type="text"
@@ -581,7 +581,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                       onClick={() => setUnitType("piece")}
                       className={`flex-1 h-8 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
                         unitType === "piece"
-                          ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
+                          ? "kaspi-glass-btn kaspi-orbit-active font-black"
                           : "text-zinc-400 hover:text-white"
                       }`}
                     >
@@ -592,7 +592,7 @@ export const QuickProductModal: React.FC<QuickProductModalProps> = ({
                       onClick={() => setUnitType("kg")}
                       className={`flex-1 h-8 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
                         unitType === "kg"
-                          ? "kaspi-polar-aurora-orbit kaspi-glass-btn kaspi-orbit-active font-black"
+                          ? "kaspi-glass-btn kaspi-orbit-active font-black"
                           : "text-zinc-400 hover:text-white"
                       }`}
                     >

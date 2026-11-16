@@ -437,13 +437,13 @@ export default function PosPage() {
             </div>
 
             {/* Middle: Square Register Segmented View Switcher (Always Active) */}
-            <div className="h-11 p-1 rounded-xl kaspi-polar-aurora-orbit flex items-center gap-1 shrink-0">
+            <div className="h-11 p-1 rounded-xl kaspi-glass-surface flex items-center gap-1 shrink-0">
               <button
                 type="button"
                 onClick={() => setGroceryView("grid")}
                 className={`h-9 px-3 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                   groceryView === "grid"
-                    ? "kaspi-polar-aurora-orbit kaspi-glass-btn text-white font-black"
+                    ? "kaspi-glass-btn text-white font-black"
                     : "text-zinc-400 hover:text-white hover:bg-white/[0.06]"
                 }`}
               >
@@ -458,7 +458,7 @@ export default function PosPage() {
                 onClick={() => setGroceryView("plu")}
                 className={`h-9 px-3 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                   groceryView === "plu"
-                    ? "kaspi-polar-aurora-orbit kaspi-glass-btn text-white font-black"
+                    ? "kaspi-glass-btn text-white font-black"
                     : "text-zinc-400 hover:text-white hover:bg-white/[0.06]"
                 }`}
               >
@@ -473,7 +473,7 @@ export default function PosPage() {
                 onClick={() => setGroceryView("price_check")}
                 className={`h-9 px-3 rounded-lg font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                   groceryView === "price_check"
-                    ? "kaspi-polar-aurora-orbit kaspi-glass-btn text-white font-black"
+                    ? "kaspi-glass-btn text-white font-black"
                     : "text-zinc-400 hover:text-white hover:bg-white/[0.06]"
                 }`}
               >
@@ -488,7 +488,7 @@ export default function PosPage() {
             <button
               type="button"
               onClick={() => setIsQuickProductModalOpen(true)}
-              className="kaspi-polar-aurora-orbit kaspi-glass-btn h-11 px-4 rounded-xl text-white font-extrabold text-xs flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0 transition-all active:scale-[0.98]"
+              className="kaspi-glass-btn h-11 px-4 rounded-xl text-white font-extrabold text-xs flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0 transition-all active:scale-[0.98]"
               title={locale === "ar" ? "إضافة منتج جديد" : "Ajouter un produit"}
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -505,7 +505,7 @@ export default function PosPage() {
             </div>
 
             {/* Scan Multiplier Bar (Always Active) */}
-            <div className="h-8 p-0.5 rounded-lg kaspi-polar-aurora-orbit flex items-center gap-0.5 shrink-0">
+            <div className="h-8 p-0.5 rounded-lg kaspi-glass-surface flex items-center gap-0.5 shrink-0">
               <span className="font-mono text-[10px] font-bold text-zinc-400 px-2">
                 {locale === "ar" ? "الكمية:" : locale === "fr" ? "QTÉ:" : "QTY:"}
               </span>
@@ -522,7 +522,7 @@ export default function PosPage() {
                   onClick={() => handleSetScanMultiplier(item.m)}
                   className={`h-7 px-2 rounded-md font-mono text-[11px] transition-colors cursor-pointer ${
                     scanMultiplier === item.m
-                      ? "kaspi-polar-aurora-orbit kaspi-glass-btn text-white font-black shadow-xs"
+                      ? "kaspi-glass-btn text-white font-black shadow-xs"
                       : "text-zinc-400 hover:text-white font-bold hover:bg-white/[0.06]"
                   }`}
                 >

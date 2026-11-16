@@ -141,7 +141,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
       <div className="flex items-center gap-2.5 min-w-0">
         <Link
           href={`/${locale}/dashboard`}
-          className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg kaspi-polar-aurora-orbit hover:bg-white/[0.08] text-zinc-300 hover:text-white transition group"
+          className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg kaspi-glass-surface hover:bg-white/[0.08] text-zinc-300 hover:text-white transition group"
           title={t.nav.dashboard}
         >
           <LayoutDashboard className="w-4 h-4 text-zinc-400 group-hover:text-white" />
@@ -233,7 +233,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
           onClick={() => {
             window.dispatchEvent(new CustomEvent("open-owner-vault"));
           }}
-          className="inline-flex items-center gap-2 h-8 px-2.5 rounded-lg kaspi-polar-aurora-orbit hover:bg-white/[0.08] text-xs font-semibold text-zinc-200 transition-all cursor-pointer"
+          className="inline-flex items-center gap-2 h-8 px-2.5 rounded-lg kaspi-glass-surface hover:bg-white/[0.08] text-xs font-semibold text-zinc-200 transition-all cursor-pointer"
           title={locale === "ar" ? "خزنة المالك والملف الشخصي" : "Profil Propriétaire & Coffre-Fort"}
         >
           <div className="w-6 h-6 rounded-full overflow-hidden border border-white/25 bg-white/10 shrink-0 flex items-center justify-center text-[10px] font-bold text-white shadow-inner">

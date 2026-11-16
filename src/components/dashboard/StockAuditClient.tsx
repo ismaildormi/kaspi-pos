@@ -137,7 +137,7 @@ export function StockAuditClient({
           }
           setIsOpen(true);
         }}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-zinc-950 hover:bg-zinc-200 transition cursor-pointer shadow-sm"
+        className="kaspi-glass-btn inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer shadow-sm"
       >
         <ClipboardCheck className="h-3.5 w-3.5" />
         <span>{t.inventory.adjustStock}</span>

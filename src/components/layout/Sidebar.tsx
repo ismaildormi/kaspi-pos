@@ -155,7 +155,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
       dir="ltr"
       className={`${
         mobileMenuOpen ? "flex" : "hidden"
-      } md:flex w-full md:w-64 md:h-screen md:shrink-0 p-3.5 shrink-0 flex-col justify-between select-none relative overflow-hidden kaspi-frosted-glass border-r border-white/10`}
+      } md:flex w-full md:w-64 md:h-screen md:shrink-0 p-3.5 shrink-0 flex-col justify-between select-none relative overflow-hidden kaspi-sidebar-glass border-r border-white/10`}
     >
       {/* 2 Translucent Curved Silver-White Light Layers (Layer A & Layer B) */}
       <div className="pointer-events-none absolute -right-12 top-16 w-52 h-[420px] rounded-full bg-gradient-to-b from-white/[0.18] via-white/[0.08] to-transparent blur-2xl rotate-[-12deg] z-0" />
@@ -169,7 +169,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           onClick={onNavigate}
           className="flex items-center gap-3 px-2 py-2.5 mb-2.5 rounded-xl hover:bg-white/[0.04] transition-colors"
         >
-          <KaspiBrandMark size="sm" />
+          <KaspiBrandMark size="md" />
           <span className="font-black text-[15px] tracking-tight text-white">
             KASPI POS
           </span>
@@ -179,7 +179,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
         <Link
           href={localizeHref("/dashboard/settings#store-sector")}
           onClick={onNavigate}
-          className="kaspi-polar-aurora-orbit w-full rounded-xl px-3.5 py-2.5 text-white font-semibold text-xs flex items-center justify-between cursor-pointer transition-all hover:brightness-105 mb-3"
+          className="kaspi-glass-surface w-full rounded-xl px-3.5 py-2.5 text-white font-semibold text-xs flex items-center justify-between cursor-pointer transition-all hover:brightness-105 mb-3"
           title={
             locale === "ar"
               ? "إعدادات قطاع ونشاط المتجر"
@@ -242,7 +242,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
                 onClick={onNavigate}
                 className={`group transition-all duration-200 ${
                   isActive
-                    ? "relative rounded-xl px-3.5 py-2.5 text-white font-semibold text-xs flex items-center justify-between kaspi-polar-aurora-orbit kaspi-orbit-active"
+                    ? "relative rounded-xl px-3.5 py-2.5 text-white font-semibold text-xs flex items-center justify-between kaspi-glass-btn kaspi-orbit-active"
                     : "flex items-center justify-between rounded-xl px-3.5 py-2 text-xs text-zinc-400 bg-transparent hover:bg-white/[0.08] border border-transparent hover:text-white font-medium"
                 }`}
               >
@@ -266,7 +266,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           onClick={() => {
             window.dispatchEvent(new CustomEvent("open-owner-vault"));
           }}
-          className="group w-full flex items-center justify-between px-3 py-2 rounded-xl kaspi-polar-aurora-orbit text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer"
+          className="group w-full flex items-center justify-between px-3 py-2 rounded-xl kaspi-glass-surface text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer"
           title={locale === "ar" ? "خزنة المالك المحمية" : locale === "en" ? "Protected Owner Vault" : "Coffre-Fort Propriétaire"}
         >
           <div className="flex items-center gap-2">
@@ -285,7 +285,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           onClick={() => {
             window.dispatchEvent(new CustomEvent("open-ai-chat"));
           }}
-          className="group w-full flex items-center justify-between px-3 py-2 rounded-xl kaspi-polar-aurora-orbit bg-white/[0.06] hover:bg-white/[0.10] border border-white/10 hover:border-white/25 text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+          className="group w-full flex items-center justify-between px-3 py-2 rounded-xl kaspi-glass-surface bg-white/[0.06] hover:bg-white/[0.10] border border-white/10 hover:border-white/25 text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
           title="KASPI AI Assistant"
         >
           <div className="flex items-center gap-2">

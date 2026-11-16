@@ -227,7 +227,7 @@ export default function RegisterPage() {
                 playTapSound();
                 setStoreType(vertical);
               }}
-              className={`kaspi-polar-aurora-orbit kaspi-glass-btn h-10 px-2.5 rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center text-center ${
+              className={`kaspi-glass-btn h-10 px-2.5 rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center text-center ${
                 selected
                   ? "kaspi-orbit-active font-bold text-[var(--kaspi-text-primary)]"
                   : "font-medium text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
@@ -248,7 +248,7 @@ export default function RegisterPage() {
 
       {/* Compact Registration Form (Zero Vertical Scrolling) */}
       <form onSubmit={handleSubmit} className="space-y-2.5">
-        <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+        <div className="relative rounded-2xl">
           <input
             type="text"
             name="name"
@@ -263,7 +263,7 @@ export default function RegisterPage() {
           />
         </div>
 
-        <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+        <div className="relative rounded-2xl">
           <input
             type="text"
             name="organization"
@@ -279,7 +279,7 @@ export default function RegisterPage() {
           />
         </div>
 
-        <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+        <div className="relative rounded-2xl">
           <input
             type="email"
             name="email"
@@ -294,7 +294,7 @@ export default function RegisterPage() {
           />
         </div>
 
-        <div className="relative rounded-2xl kaspi-polar-aurora-orbit">
+        <div className="relative rounded-2xl">
           <input
             type={showPassword ? "text" : "password"}
             name="password"
@@ -331,7 +331,7 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="kaspi-polar-aurora-orbit kaspi-glass-btn w-full h-12 font-semibold text-sm sm:text-[15px] rounded-2xl active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer mt-3 disabled:opacity-50"
+          className="kaspi-primary-cta-btn w-full h-12 font-semibold text-sm sm:text-[15px] rounded-2xl active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer mt-3 disabled:opacity-50"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin text-[var(--kaspi-text-primary)]" /> : t.submitBtn}
         </button>

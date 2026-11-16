@@ -434,7 +434,7 @@ export function OwnerProfileModal({
               <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
                 {locale === "ar" ? "كلمة مرور الحساب" : locale === "en" ? "Account Password" : "Mot de passe du compte"}
               </label>
-              <div className="relative rounded-xl kaspi-polar-aurora-orbit">
+              <div className="relative rounded-xl">
                 <input
                   ref={passwordInputRef}
                   type={showPassword ? "text" : "password"}

@@ -503,7 +503,7 @@ export function AIChatWidget() {
           {/* Header */}
           <div className="border-b border-white/15 text-[var(--kaspi-text-primary)] p-4 flex items-center justify-between shadow-xs shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full kaspi-polar-aurora-orbit flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-full kaspi-glass-surface flex items-center justify-center shrink-0">
                 <Bot className="w-5 h-5 text-[var(--kaspi-text-primary)]" />
               </div>
               <div className="min-w-0">
@@ -603,7 +603,7 @@ export function AIChatWidget() {
                       key={idx}
                       type="button"
                       onClick={() => handleQuickPrompt(prompt.text)}
-                      className="w-full p-2.5 rounded-xl kaspi-polar-aurora-orbit transition-all text-xs font-medium text-zinc-200 flex items-center gap-2.5 shadow-xs cursor-pointer group"
+                      className="w-full p-2.5 rounded-xl kaspi-glass-surface hover:bg-white/[0.08] transition-all text-xs font-medium text-zinc-200 flex items-center gap-2.5 shadow-xs cursor-pointer group"
                     >
                       <div className="p-1 rounded-md bg-white/10 text-white group-hover:scale-110 transition-transform shrink-0">
                         {prompt.icon === "trending" && <TrendingUp className="w-3.5 h-3.5" />}

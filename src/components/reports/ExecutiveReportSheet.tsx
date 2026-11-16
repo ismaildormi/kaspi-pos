@@ -260,7 +260,7 @@ export function ExecutiveReportSheet({
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("open-owner-vault"))}
-            className="sheen-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs transition cursor-pointer shadow-sm shrink-0"
+            className="sheen-btn kaspi-glass-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer shadow-sm shrink-0"
           >
             <Lock className="w-3.5 h-3.5" />
             <span>

@@ -101,7 +101,7 @@ export const KaspiGlassAnalyticsModal: React.FC<KaspiGlassAnalyticsModalProps> =
                   onClick={() => setRange(r.id)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                     active
-                      ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-[var(--kaspi-text-primary)] shadow-sm"
+                      ? "kaspi-glass-btn kaspi-orbit-active text-[var(--kaspi-text-primary)] shadow-sm"
                       : "text-[var(--kaspi-text-muted)] hover:text-[var(--kaspi-text-primary)]"
                   }`}
                 >

@@ -73,16 +73,28 @@ function check(label, passed, detail = "") {
 // 1. Discover all .tsx files
 check(`Discovered all .tsx files in src/ (${tsxFiles.length} files)`, tsxFiles.length >= 100);
 
-// 2. Apple visionOS Crystal Glass (22px blur, Dual-Mode Corner Aurora mask-composite, Emerald CTA, Opaque Glass Modal)
+// 2. Apple visionOS Crystal Glass (28px blur, Dual-Mode Corner Aurora mask-composite, Emerald & Primary CTAs, Opaque Glass Modal)
 const hasVisionGlass =
-  globalsCss.includes("blur(22px)") &&
+  globalsCss.includes("blur(28px)") &&
   globalsCss.includes("mask-composite: exclude") &&
   globalsCss.includes(".kaspi-polar-aurora-orbit") &&
+  globalsCss.includes(".kaspi-glass-surface") &&
+  globalsCss.includes(".kaspi-glass-card") &&
+  globalsCss.includes(".kaspi-sidebar-glass") &&
+  globalsCss.includes(".kaspi-primary-cta-btn") &&
   globalsCss.includes(".kaspi-emerald-checkout-btn") &&
   globalsCss.includes(".kaspi-opaque-glass-modal");
 check(
-  "globals.css implements 22px visionOS Crystal Glass, Dual-Mode Corner Aurora, Emerald Checkout CTA & Opaque Modals",
+  "globals.css implements 28px visionOS Crystal Glass, Dual-Mode Corner Aurora, Primary/Emerald CTAs & Opaque Modals",
   hasVisionGlass
+);
+
+check(
+  "login & register pages do not wrap text inputs with kaspi-polar-aurora-orbit and use .kaspi-primary-cta-btn",
+  !loginTsx.includes("rounded-2xl kaspi-polar-aurora-orbit") &&
+    !registerTsx.includes("rounded-2xl kaspi-polar-aurora-orbit") &&
+    loginTsx.includes("kaspi-primary-cta-btn") &&
+    registerTsx.includes("kaspi-primary-cta-btn")
 );
 
 // 3. Password native Chromium/Edge/WebKit eye suppression in globals.css (Fixes double-eye in RTL Arabic)
@@ -203,11 +215,14 @@ check(
   hasRealAnalyticsFiles && !hasFakeInventoryHardcodes
 );
 
-// 16. Frameless 3D Metallic Infinity Logo (KaspiBrandMark SVG) used across Auth, Sidebar & PosHeader
+// 16. Frameless Authentic 3D Metallic Infinity Cutout (/logo-mark.png) used across Auth, Sidebar & PosHeader
 const brandMarkTsx = fs.existsSync(kaspiBrandMarkPath) ? fs.readFileSync(kaspiBrandMarkPath, "utf8") : "";
+const hasLogoMarkAsset = fs.existsSync(path.join(ROOT, "public", "logo-mark.png"));
 check(
-  "KaspiBrandMark sculpted 3D SVG used in MonochromePosBackground.tsx, Sidebar.tsx, and PosHeader.tsx",
-  brandMarkTsx.includes("<svg") &&
+  "KaspiBrandMark renders frameless /logo-mark.png cutout (zero fake SVG) across MonochromePosBackground, Sidebar & PosHeader",
+  hasLogoMarkAsset &&
+    brandMarkTsx.includes("/logo-mark.png") &&
+    !brandMarkTsx.includes("<svg") &&
     bgCanvasTsx.includes("<KaspiBrandMark") &&
     sidebarTsx.includes("<KaspiBrandMark") &&
     posHeaderTsx.includes("<KaspiBrandMark")

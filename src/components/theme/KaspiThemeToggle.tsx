@@ -61,7 +61,7 @@ export function KaspiThemeToggle({
       title={isPearl ? t.switchToFjord : t.switchToPearl}
       aria-label={isPearl ? t.switchToFjord : t.switchToPearl}
       data-kaspi-theme-toggle="true"
-      className={`kaspi-theme-toggle-btn kaspi-polar-aurora-orbit kaspi-glass-btn inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-all cursor-pointer select-none ${className}`}
+      className={`kaspi-theme-toggle-btn kaspi-glass-btn inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-all cursor-pointer select-none ${className}`}
     >
       {isPearl ? (
         <Sun className="w-3.5 h-3.5 text-[var(--kaspi-text-primary)] shrink-0" />

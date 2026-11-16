@@ -189,7 +189,7 @@ export const ReportsInteractiveAnalytics: React.FC<ReportsInteractiveAnalyticsPr
                   onClick={() => setRange(r.id)}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer ${
                     range === r.id
-                      ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-white"
+                      ? "kaspi-glass-btn kaspi-orbit-active text-white"
                       : "text-zinc-400 hover:text-white"
                   }`}
                 >

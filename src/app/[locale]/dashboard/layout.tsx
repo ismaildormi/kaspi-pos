@@ -135,7 +135,7 @@ export default function DashboardLayout({
           <div className="flex items-center gap-2.5">
             <Link
               href={localizeHref("/pos")}
-              className="group kaspi-polar-aurora-orbit kaspi-glass-btn inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-white hover:-translate-y-0.5 active:scale-[0.98] text-xs font-bold transition-all cursor-pointer"
+              className="group kaspi-glass-btn inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-white hover:-translate-y-0.5 active:scale-[0.98] text-xs font-bold transition-all cursor-pointer"
             >
               <ShoppingBag className="w-3.5 h-3.5 group-hover:-translate-y-0.5 group-hover:scale-105 transition-transform duration-200" />
               <span>{t.topbar.posRegister}</span>

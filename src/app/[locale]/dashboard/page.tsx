@@ -218,14 +218,14 @@ export default async function DashboardOverviewPage({
         <div className="flex flex-wrap items-center gap-3">
           <Link
             href={`/${locale}/dashboard/products/import`}
-            className="kaspi-polar-aurora-orbit kaspi-glass-btn inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold text-white hover:-translate-y-0.5 transition"
+            className="kaspi-glass-btn inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold text-white hover:-translate-y-0.5 transition"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" />
             <span>{t.dashboard.importExcel}</span>
           </Link>
           <Link
             href={`/${locale}/pos`}
-            className="kaspi-polar-aurora-orbit kaspi-glass-btn inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white transition-all hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer"
+            className="kaspi-glass-btn inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white transition-all hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer"
           >
             <ShoppingBag className="h-3.5 w-3.5" />
             <span>{t.dashboard.openPos}</span>
@@ -261,7 +261,7 @@ export default async function DashboardOverviewPage({
           <div className="mt-6">
             <Link
               href={`/${locale}/pos`}
-              className="kaspi-polar-aurora-orbit kaspi-glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white transition hover:-translate-y-0.5"
+              className="kaspi-glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white transition hover:-translate-y-0.5"
             >
               <span>{t.dashboard.launchPosBtn}</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -283,7 +283,7 @@ export default async function DashboardOverviewPage({
           <div className="mt-6">
             <Link
               href={`/${locale}/dashboard/reports`}
-              className="kaspi-polar-aurora-orbit kaspi-glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white transition hover:-translate-y-0.5"
+              className="kaspi-glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white transition hover:-translate-y-0.5"
             >
               <span>{t.dashboard.viewReportsBtn}</span>
               <ArrowRight className="h-3.5 w-3.5" />

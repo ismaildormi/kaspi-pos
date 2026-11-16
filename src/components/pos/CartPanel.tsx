@@ -175,7 +175,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
         {/* Customer Select / Detach */}
         <div className="flex items-center justify-between gap-2">
           {customer ? (
-            <div className="h-9 w-full px-3 rounded-lg kaspi-polar-aurora-orbit flex items-center justify-between text-xs font-semibold text-zinc-200">
+            <div className="h-9 w-full px-3 rounded-lg kaspi-glass-surface flex items-center justify-between text-xs font-semibold text-zinc-200">
               <div className="flex items-center gap-2 truncate">
                 <UserCheck className="w-3.5 h-3.5 text-white shrink-0" />
                 <div className="truncate">
@@ -202,7 +202,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             <button
               type="button"
               onClick={onOpenCustomerModal}
-              className="h-9 w-full px-3 rounded-lg kaspi-polar-aurora-orbit flex items-center justify-between text-xs font-semibold text-zinc-200 cursor-pointer transition-colors"
+              className="h-9 w-full px-3 rounded-lg kaspi-glass-surface flex items-center justify-between text-xs font-semibold text-zinc-200 cursor-pointer transition-colors"
             >
               <span className="flex items-center gap-2">
                 <UserPlus className="w-3.5 h-3.5 text-zinc-400" />
@@ -214,13 +214,13 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
         </div>
 
         {/* Unit vs. Pack Segmented Switch */}
-        <div className="h-9 p-1 rounded-lg kaspi-polar-aurora-orbit grid grid-cols-2 gap-1">
+        <div className="h-9 p-1 rounded-lg kaspi-glass-surface grid grid-cols-2 gap-1">
           <button
             type="button"
             onClick={() => setPricingTier("retail")}
             className={`flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
               pricingTier === "retail"
-                ? "kaspi-polar-aurora-orbit kaspi-glass-btn text-white font-bold text-xs rounded-md shadow-xs"
+                ? "kaspi-glass-btn text-white font-bold text-xs rounded-md shadow-xs"
                 : "text-zinc-400 hover:text-white font-semibold text-xs rounded-md"
             }`}
           >
@@ -232,7 +232,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             onClick={() => setPricingTier("wholesale")}
             className={`flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
               pricingTier === "wholesale"
-                ? "kaspi-polar-aurora-orbit kaspi-glass-btn text-white font-bold text-xs rounded-md shadow-xs"
+                ? "kaspi-glass-btn text-white font-bold text-xs rounded-md shadow-xs"
                 : "text-zinc-400 hover:text-white font-semibold text-xs rounded-md"
             }`}
           >
@@ -323,7 +323,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             {/* Interactive Supermarket Trolley SVG Scene */}
             <div className="relative group w-32 h-32 flex items-center justify-center mb-2 cursor-pointer">
               <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08)_0%,transparent_70%)] group-hover:bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.22)_0%,transparent_75%)] transition-all duration-500" />
-              <div className="relative w-24 h-24 rounded-2xl bg-zinc-900/90 border border-white/10 group-hover:border-white/30 transition-all duration-500 shadow-2xl backdrop-blur-xs flex items-center justify-center overflow-hidden animate-float">
+              <div className="relative w-24 h-24 rounded-2xl kaspi-glass-surface group-hover:border-white/30 transition-all duration-500 shadow-2xl flex items-center justify-center overflow-hidden animate-float">
                 {/* Laser scan */}
                 <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white/50 to-transparent top-0 animate-laser pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
 
@@ -465,7 +465,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
             <div
               key={item.productId}
               className={`py-2.5 px-2 rounded-xl flex flex-col justify-between group transition-all ${
-                idx === 0 ? "kaspi-polar-aurora-orbit kaspi-orbit-active" : ""
+                idx === 0 ? "kaspi-glass-btn kaspi-orbit-active" : ""
               }`}
             >
               {/* Top Row: Product Name + Accumulated Line Price (Auto-doubles live) */}
@@ -542,7 +542,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
 
       {/* Zone R3: Square Register 4-Action Utility Dock */}
       <div className="px-3 py-2 border-t border-white/[0.08] bg-white/[0.02]">
-        <div className="grid grid-cols-4 divide-x divide-white/[0.07] rounded-xl kaspi-polar-aurora-orbit overflow-hidden shadow-sm">
+        <div className="grid grid-cols-4 divide-x divide-white/[0.07] rounded-xl kaspi-glass-surface overflow-hidden shadow-sm">
           <button
             type="button"
             onClick={() => {

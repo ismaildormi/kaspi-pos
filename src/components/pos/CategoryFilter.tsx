@@ -25,8 +25,8 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({ categories }) =>
         onClick={() => setActiveCategory(null)}
         className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
           activeCategoryId === null
-            ? "bg-white text-black shadow-sm"
-            : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800"
+            ? "kaspi-glass-btn kaspi-orbit-active text-[var(--kaspi-text-primary)] font-bold"
+            : "kaspi-glass-surface text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
         }`}
       >
         <LayoutGrid className="w-3.5 h-3.5" />
@@ -41,8 +41,8 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({ categories }) =>
             onClick={() => setActiveCategory(cat.id)}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
               isActive
-                ? "bg-white text-black shadow-sm"
-                : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800"
+                ? "kaspi-glass-btn kaspi-orbit-active text-[var(--kaspi-text-primary)] font-bold"
+                : "kaspi-glass-surface text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
             }`}
           >
             <span>{cat.name}</span>

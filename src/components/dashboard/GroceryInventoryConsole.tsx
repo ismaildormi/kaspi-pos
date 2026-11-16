@@ -356,7 +356,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
           onClick={() => setActiveTab("shelf")}
           className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
             activeTab === "shelf"
-              ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-white font-semibold"
+              ? "kaspi-glass-btn kaspi-orbit-active text-white font-semibold"
               : "kaspi-frosted-glass text-zinc-400 hover:text-white"
           }`}
         >
@@ -367,7 +367,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
           onClick={() => setActiveTab("dlc")}
           className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
             activeTab === "dlc"
-              ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-white font-semibold"
+              ? "kaspi-glass-btn kaspi-orbit-active text-white font-semibold"
               : "kaspi-frosted-glass text-zinc-400 hover:text-white"
           }`}
         >
@@ -378,7 +378,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
           onClick={() => setActiveTab("shrinkage")}
           className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
             activeTab === "shrinkage"
-              ? "kaspi-polar-aurora-orbit kaspi-orbit-active text-white font-semibold"
+              ? "kaspi-glass-btn kaspi-orbit-active text-white font-semibold"
               : "kaspi-frosted-glass text-zinc-400 hover:text-white"
           }`}
         >
@@ -465,9 +465,9 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
                       </div>
                     </td>
 
-                    {/* Aisle Pill (Slate/Teal Frosted Pill) */}
+                    {/* Aisle Pill (Pure Translucent Frosted Crystal Pill) */}
                     <td className="py-3.5 px-4">
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#1E293B]/80 text-[#94A3B8] border border-white/[0.08]">
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold kaspi-glass-surface text-[var(--kaspi-text-secondary)]">
                         {item.aisle}
                       </span>
                     </td>
@@ -491,7 +491,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
                       <button
                         type="button"
                         onClick={() => handleApplyClearanceMarkdown(item.id)}
-                        className="kaspi-polar-aurora-orbit px-4 py-1.5 rounded-full text-white font-semibold text-xs transition-all active:scale-95 cursor-pointer"
+                        className="kaspi-glass-btn px-4 py-1.5 rounded-full text-white font-semibold text-xs transition-all active:scale-95 cursor-pointer"
                       >
                         -30% Promo
                       </button>
