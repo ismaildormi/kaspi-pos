@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { KaspiBrandMark } from "@/components/common/KaspiBrandMark";
 import {
   WELCOME_COPY,
   WELCOME_LANGS,
@@ -26,7 +27,6 @@ export const WelcomeEmailCard: React.FC<WelcomeEmailCardProps> = ({
   className = "",
 }) => {
   const [locale, setLocale] = useState<WelcomeLang>(normalizeWelcomeLang(initialLocale));
-  const [logoFailed, setLogoFailed] = useState(false);
 
   const t = WELCOME_COPY[locale];
   const isRtl = t.dir === "rtl";
@@ -93,17 +93,7 @@ export const WelcomeEmailCard: React.FC<WelcomeEmailCardProps> = ({
           <div className="rounded-full border border-zinc-200 dark:border-zinc-800 bg-gradient-to-b from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 p-2 shadow-[inset_0_1px_2px_rgba(16,24,40,0.06)]">
             <div className="rounded-full border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-1.5">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden shrink-0 select-none">
-                {logoFailed ? (
-                  <span className="font-mono font-black text-xl">K</span>
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src="/logo.png"
-                    alt="KASPI POS"
-                    className="h-full w-full object-cover scale-[1.24] bg-transparent select-none"
-                    onError={() => setLogoFailed(true)}
-                  />
-                )}
+                <KaspiBrandMark size="md" />
               </div>
             </div>
           </div>

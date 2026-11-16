@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { KaspiBrandMark } from "@/components/common/KaspiBrandMark";
 import { copyTextToClipboard, tryCopyWithoutGesture } from "@/lib/clipboard";
 import {
   VERIFICATION_COPY,
@@ -65,22 +66,6 @@ function CheckIcon({ className = "" }: { className?: string }) {
   );
 }
 
-/** Fallback monogram shown if /logo.png fails to load. */
-function KaspiMonogram() {
-  return (
-    <svg viewBox="0 0 40 40" className="w-9 h-9 text-white" aria-hidden="true">
-      <path
-        d="M12 8v24M12 20l13-12M15.5 17l10.5 15"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 /* --------------------------------- Component -------------------------------- */
 
 export const EmailVerificationCard: React.FC<EmailVerificationCardProps> = ({
@@ -94,7 +79,6 @@ export const EmailVerificationCard: React.FC<EmailVerificationCardProps> = ({
   const [locale, setLocale] = useState<VerificationLang>(initialLocale);
   const [status, setStatus] = useState<CopyStatus>("idle");
   const [awaitingGesture, setAwaitingGesture] = useState(false);
-  const [logoFailed, setLogoFailed] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cleanCode = normalizeVerificationCode(code);
@@ -210,23 +194,7 @@ export const EmailVerificationCard: React.FC<EmailVerificationCardProps> = ({
       {/* 2. Brand mark */}
       <div className="relative z-10 my-7 flex items-center justify-center gap-4">
         <span className="h-px w-16 bg-gradient-to-r from-transparent to-zinc-300 dark:to-zinc-700" />
-        {logoFailed ? (
-          <KaspiMonogram />
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 select-none">
-            <img
-              src="/logo.png"
-              alt="KASPI POS"
-              className="w-full h-full object-cover scale-[1.24] bg-transparent select-none"
-              onError={() => {
-                if (!logoFailed) {
-                  setLogoFailed(true);
-                }
-              }}
-            />
-          </div>
-        )}
+        <KaspiBrandMark size="md" />
         <span className="h-px w-16 bg-gradient-to-l from-transparent to-zinc-300 dark:to-zinc-700" />
       </div>
 

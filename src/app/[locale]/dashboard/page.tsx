@@ -19,6 +19,7 @@ import {
   Layers,
 } from "lucide-react";
 import { FloatingCommerceCanvas } from "@/components/ui/FloatingCommerceCanvas";
+import { DashboardInteractiveKpis } from "@/components/analytics/DashboardInteractiveKpis";
 import type { StoreBusinessType } from "@/client/store/usePosStore";
 import { getDictionary, type Locale } from "@/i18n/schema";
 
@@ -101,12 +102,14 @@ export default async function DashboardOverviewPage({
   let salesCount = 0;
   let customersCount = 0;
   let outOfStockCount = 0;
+  let totalUnits = 0;
   let workspaceRecord: { responseBody: unknown } | null = null;
   let salesAgg: { _sum: { grandTotal: unknown } } = { _sum: { grandTotal: null } };
 
   if (!isFallbackTenant) {
     try {
-      [productsCount, salesCount, customersCount, outOfStockCount, workspaceRecord, salesAgg] =
+      let stockAgg: { _sum: { quantity: unknown } } = { _sum: { quantity: null } };
+      [productsCount, salesCount, customersCount, outOfStockCount, workspaceRecord, salesAgg, stockAgg] =
         await Promise.all([
           prisma.product.count({ where: { tenantId } }).catch(() => 0),
           prisma.sale
@@ -133,7 +136,14 @@ export default async function DashboardOverviewPage({
               _sum: { grandTotal: true },
             })
             .catch(() => ({ _sum: { grandTotal: null } })),
+          prisma.stockLevel
+            .aggregate({
+              where: { tenantId },
+              _sum: { quantity: true },
+            })
+            .catch(() => ({ _sum: { quantity: null } })),
         ]);
+      totalUnits = Number(stockAgg?._sum?.quantity || 0);
     } catch (err) {
       console.warn("[DashboardOverviewPage] Fallback metrics used:", err);
     }
@@ -223,110 +233,17 @@ export default async function DashboardOverviewPage({
         </div>
       </div>
 
-      {/* KPI Cards (Multi-Layered Frosted Glass matching Blueprint) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* KPI 1: Revenue / Daily Register Sales */}
-        <div className="kaspi-frosted-card kaspi-frosted-card-hover kaspi-polar-aurora-orbit group relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold">
-            <span>
-              {locale === "ar"
-                ? "مبيعات الصندوق اليومية"
-                : locale === "en"
-                ? "Daily Register Sales"
-                : "Chiffre d'Affaires Caisse"}
-            </span>
-            <ArrowUpRight className="h-4 w-4 text-white/80" />
-          </div>
-          <div className="mt-4">
-            <div className="text-2xl font-black text-white font-mono tracking-tight">
-              {totalSalesMad} {t.common.currency}
-            </div>
-            <p className="text-[11px] text-zinc-400 mt-1">
-              {locale === "ar"
-                ? `متوسط سلة المشتريات: ${avgBasketMad} MAD`
-                : locale === "en"
-                ? `Average Basket: ${avgBasketMad} MAD`
-                : `Panier Moyen : ${avgBasketMad} MAD`}
-            </p>
-          </div>
-        </div>
-
-        {/* KPI 2: FMCG Velocity / Transactions */}
-        <div className="kaspi-frosted-card kaspi-frosted-card-hover kaspi-polar-aurora-orbit group relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold">
-            <span>
-              {locale === "ar"
-                ? "حركة السلع الممسوحة"
-                : locale === "en"
-                ? "Scanned Items & FMCG Velocity"
-                : "Articles Scannés & Rotation"}
-            </span>
-            <Barcode className="h-4 w-4 text-zinc-400 group-hover:text-white transition-colors" />
-          </div>
-          <div className="mt-4">
-            <div className="text-2xl font-black text-white font-mono tracking-tight">{salesCount}</div>
-            <p className="text-[11px] text-zinc-400 mt-1">
-              {locale === "ar"
-                ? "دوران السلع الاستهلاكية السريعة اليوم"
-                : locale === "en"
-                ? "Fast-moving goods turnover today"
-                : "Rotation active des produits du jour"}
-            </p>
-          </div>
-        </div>
-
-        {/* KPI 3: Shelf Low-Stock & Expiry Alerts (with Red Alert Icon) */}
-        <div className="kaspi-frosted-card kaspi-frosted-card-hover kaspi-polar-aurora-orbit group relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-zinc-300 text-xs font-semibold">
-            <span>
-              {locale === "ar"
-                ? "تنبيهات الصلاحية والرفوف"
-                : locale === "en"
-                ? "DLC Expiry Alerts"
-                : "Alertes Péremption & Rupture"}
-            </span>
-            <AlertTriangle className="h-4 w-4 text-[#F87171]" />
-          </div>
-          <div className="mt-4">
-            <div className="text-2xl font-black text-white font-mono tracking-tight">
-              {outOfStockCount || productsCount} <span className="text-sm font-semibold text-zinc-400">items</span>
-            </div>
-            <p className="text-[11px] text-zinc-400 mt-1">
-              {locale === "ar"
-                ? `${outOfStockCount} نفدت من الرف • 0 قريبة الانتهاء`
-                : locale === "en"
-                ? `${outOfStockCount} Out of stock • 0 Expiring soon`
-                : `${outOfStockCount} En rupture • 0 Proches péremption`}
-            </p>
-          </div>
-        </div>
-
-        {/* KPI 4: Gas & Crate Consigne Balance with 3D Stacked Crates (Matching Blueprint 1:1 Across All Modes) */}
-        <div className="kaspi-frosted-card kaspi-frosted-card-hover kaspi-polar-aurora-orbit relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
-          <div className="text-xs font-semibold text-zinc-300">
-            <span>
-              {locale === "ar"
-                ? "رصيد الرهن: الغاز والصناديق"
-                : locale === "en"
-                ? "Gas & Crate Consigne Balance"
-                : "Solde Consignes Gaz & Casiers"}
-            </span>
-          </div>
-          <div className="mt-4 flex items-end justify-between gap-2">
-            <div className="flex items-baseline whitespace-nowrap">
-              <span className="text-2xl font-black text-white font-mono tracking-tight">
-                +45
-              </span>
-              <span className="text-xs font-semibold text-zinc-400 mx-1.5 whitespace-nowrap">Units ·</span>
-              <span className="text-sm font-bold text-[#F87171] font-mono">
-                -12
-              </span>
-              <span className="text-xs font-semibold text-zinc-400 ms-1 whitespace-nowrap">Empty</span>
-            </div>
-            <IsometricCratesIllustration className="w-16 h-12 shrink-0 drop-shadow-md" />
-          </div>
-        </div>
-      </div>
+      {/* KPI Cards (Interactive Real-Data Sparklines & Click-to-Inspect Modals) */}
+      <DashboardInteractiveKpis
+        locale={locale}
+        currency={t.common.currency}
+        totalSalesMad={totalSalesMad}
+        avgBasketMad={avgBasketMad}
+        salesCount={salesCount}
+        outOfStockCount={outOfStockCount}
+        productsCount={productsCount}
+        totalUnits={totalUnits}
+      />
 
       {/* Quick Launch Cards (Frosted Glass Translucent Surface) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { KaspiBrandMark } from "@/components/common/KaspiBrandMark";
 
 interface BrandPlaceholderProps {
   className?: string;
@@ -8,37 +9,20 @@ interface BrandPlaceholderProps {
 }
 
 export function BrandPlaceholder({ className = "", size = "md" }: BrandPlaceholderProps) {
-  const sizeClasses = {
-    sm: "w-8 h-8 text-[9px]",
-    md: "w-14 h-14 text-[10px]",
-    lg: "w-20 h-20 text-xs",
-  }[size];
-
   return (
     <div
-      className={`w-full h-full bg-zinc-950 flex flex-col items-center justify-center p-3 select-none relative overflow-hidden group ${className}`}
+      className={`w-full h-full bg-transparent flex flex-col items-center justify-center p-3 select-none relative overflow-hidden group ${className}`}
     >
-      {/* Subtle background glow */}
-      <div className="absolute inset-0 bg-radial-gradient from-emerald-500/10 via-transparent to-transparent pointer-events-none" />
-
-      {/* 3D Infinity Logo */}
-      <div className={`relative mb-2 transition-transform duration-300 group-hover:scale-105 rounded-xl overflow-hidden ${sizeClasses.split(" ")[0]} ${sizeClasses.split(" ")[1]} shrink-0 select-none`}>
-        <img
-          src="/logo.png"
-          alt="KASPI POS"
-          className="w-full h-full object-cover scale-[1.24] bg-transparent select-none"
-          onError={(e) => {
-            // Fallback to text icon if file is inaccessible
-            e.currentTarget.style.display = "none";
-          }}
-        />
+      {/* Frameless 3D Infinity Logo */}
+      <div className="relative mb-2 transition-transform duration-300 group-hover:scale-105 shrink-0 select-none">
+        <KaspiBrandMark size={size} />
       </div>
 
       {/* Brand Text */}
-      <span className="font-mono font-bold tracking-widest text-zinc-400 uppercase text-[10px] group-hover:text-white transition-colors">
+      <span className="font-mono font-bold tracking-widest text-[var(--kaspi-text-secondary)] uppercase text-[10px] group-hover:text-[var(--kaspi-text-primary)] transition-colors">
         KASPI POS
       </span>
-      <span className="text-[9px] font-mono text-zinc-600">Article Certifié</span>
+      <span className="text-[9px] font-mono text-[var(--kaspi-text-muted)]">Article Certifié</span>
     </div>
   );
 }

@@ -113,14 +113,14 @@ export default function DashboardLayout({
   }, [setStoreProfile]);
 
   return (
-    <div dir="ltr" className="min-h-screen text-white flex flex-col md:flex-row">
+    <div dir="ltr" className="min-h-screen md:h-screen md:overflow-hidden text-[var(--kaspi-text-primary)] flex flex-col md:flex-row">
       <Sidebar
         mobileMenuOpen={mobileMenuOpen}
         onNavigate={() => setMobileMenuOpen(false)}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-        <header className="sticky top-0 z-30 shrink-0 h-16 kaspi-frosted-glass border-b border-white/[0.08] px-6 flex items-center justify-between md:justify-end gap-3 select-none">
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen md:h-screen md:overflow-y-auto overflow-x-hidden">
+        <header className="relative z-20 shrink-0 h-16 kaspi-frosted-glass border-b border-white/[0.08] px-6 flex items-center justify-between md:justify-end gap-3 select-none">
           {/* Mobile menu button ONLY on small screens (md:hidden) */}
           <button
             type="button"

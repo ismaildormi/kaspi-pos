@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import {
-  X,
   Monitor,
   Plus,
   ShieldCheck,
@@ -13,6 +12,7 @@ import {
   Globe,
   Sparkles,
 } from "lucide-react";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 
 interface AddDeviceModalProps {
   isOpen: boolean;
@@ -73,35 +73,30 @@ export function AddDeviceModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-xl animate-in fade-in duration-200">
       <div
-        className="kaspi-frosted-glass rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden"
+        className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden"
         dir="ltr"
       >
         {/* Glowing backdrop pill */}
         <div className="absolute top-0 right-1/4 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Modal Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-zinc-800/80 mb-5">
+        <div className="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-5 gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-white text-black flex items-center justify-center font-bold shadow-md">
-              <Plus className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-xl kaspi-glass-btn flex items-center justify-center font-bold shadow-md">
+              <Plus className="w-4 h-4 text-[var(--kaspi-text-primary)]" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">
+              <h3 className="text-base font-bold text-[var(--kaspi-text-primary)]">
                 {isRtl ? "إضافة نقطة بيع إضافية" : "Ajouter un Poste de Caisse"}
               </h3>
-              <p className="text-[11px] text-zinc-400 font-mono">
+              <p className="text-[11px] text-[var(--kaspi-text-secondary)] font-mono">
                 {isRtl ? "توسيع شبكة أجهزتك فورياً" : "Extension instantanée de matériel"}
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-900 transition cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <AppleBackButton onClick={onClose} locale={isRtl ? "ar" : "fr"} />
         </div>
 
         {/* State Banner: Success or Error */}

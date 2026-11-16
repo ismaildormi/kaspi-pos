@@ -11,6 +11,7 @@ import { EnterpriseChainShowcase } from "@/components/landing/EnterpriseChainSho
 import { LocalGpuShowcase } from "@/components/landing/LocalGpuShowcase";
 import { DevicePricingCalculator } from "@/components/landing/DevicePricingCalculator";
 import { QuantumEnterpriseSections } from "@/components/landing/QuantumEnterpriseSections";
+import { KaspiBrandMark } from "@/components/common/KaspiBrandMark";
 import {
   Download,
   LogIn,
@@ -57,14 +58,10 @@ export default function LandingPage() {
             <span className="text-zinc-200">Née au Maroc, Conçue pour le Monde • Born in Morocco, Built for the World</span>
           </div>
 
-          {/* Transparent Logo */}
+          {/* Frameless 3D Metallic Infinity Logo */}
           <div className="flex justify-center mb-6">
-            <div className="relative group h-20 w-20 sm:h-24 sm:w-24 rounded-2xl overflow-hidden shrink-0 select-none">
-              <img
-                src="/logo.png"
-                alt="KASPI POS Logo"
-                className="relative w-full h-full object-cover scale-[1.24] bg-transparent transition-transform duration-300 group-hover:scale-[1.30] select-none"
-              />
+            <div className="relative group transition-transform duration-300 hover:scale-105 select-none">
+              <KaspiBrandMark size="lg" />
             </div>
           </div>
 

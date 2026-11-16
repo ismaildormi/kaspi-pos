@@ -14,7 +14,7 @@ export function FloatingCommerceCanvas({
       className={`absolute inset-0 overflow-hidden pointer-events-none select-none ${className}`}
       aria-hidden="true"
     >
-      <div className={`relative w-full h-full text-white ${opacity}`}>
+      <div className={`relative w-full h-full text-[var(--kaspi-text-primary)] ${opacity}`}>
         {/* 1. Shopping Cart (Top Left) */}
         <div className="absolute top-6 left-8 sm:left-12 transform -rotate-6 animate-pulse">
           <svg width="48" height="48" viewBox="0 0 64 64" fill="none" className="text-current">

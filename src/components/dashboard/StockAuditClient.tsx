@@ -9,11 +9,11 @@ import {
   Plus,
   Minus,
   CheckCircle2,
-  X,
   RefreshCw,
   ArrowRightLeft,
 } from "lucide-react";
 import { StockTransferModal, TransferStoreItem } from "./StockTransferModal";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 
 export interface StockAuditProductItem {
   id: string;
@@ -172,29 +172,23 @@ export function StockAuditClient({
       />
 
       {isOpen && (
-        <div dir="ltr" className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg rounded-3xl bg-zinc-950 border border-zinc-800 p-6 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+        <div dir="ltr" className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xl p-4">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 gap-3">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
                   <ClipboardCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-white">
+                  <h3 className="text-base font-black text-[var(--kaspi-text-primary)]">
                     Inventaire Physique &amp; Ajustement de Stock
                   </h3>
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-[11px] text-[var(--kaspi-text-secondary)]">
                     Comptage réel par douchette code-barres, réapprovisionnement ou démarque
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <AppleBackButton onClick={() => setIsOpen(false)} locale={locale} />
             </div>
 
             {feedback && (

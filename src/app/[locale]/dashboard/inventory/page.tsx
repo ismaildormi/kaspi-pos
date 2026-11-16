@@ -129,18 +129,23 @@ export default async function InventoryPage({
       : {};
   const currentStoreType = String(workspacePayload.storeType || "grocery");
 
-  const groceryProducts = products.map((p) => ({
-    id: p.id,
-    name: p.name,
-    sku: p.sku || "",
-    barcode: p.barcode || "",
-    imageUrl: (p as any).imageUrl ?? null,
-    salePrice: Number(p.salePrice || 0),
-    stockQuantity: Number(p.stockLevels[0]?.quantity ?? 12),
-    aisle: p.category?.name || (locale === "ar" ? "البقالة العامة" : "Épicerie Générale"),
-    dlc: "2026-11-28",
-    unit: p.unit || "unit",
-  }));
+  const groceryProducts = products.map((p) => {
+    const qtySum = p.stockLevels.reduce((s, l) => s + Number(l.quantity || 0), 0);
+    return {
+      id: p.id,
+      name: p.name,
+      sku: p.sku || "",
+      barcode: p.barcode || "",
+      imageUrl: (p as any).imageUrl ?? null,
+      costPrice: Number(p.costPrice || 0),
+      salePrice: Number(p.salePrice || 0),
+      stockQuantity: qtySum,
+      lowStockThreshold: Number(p.lowStockThreshold ?? 5),
+      aisle: p.category?.name || (locale === "ar" ? "البقالة العامة" : "Épicerie Générale"),
+      dlc: p.expiryDate ? p.expiryDate.toISOString().split("T")[0] : "—",
+      unit: p.unit || "unit",
+    };
+  });
 
   // 3. AI Predictive Stockout Velocity (Last 14 days sales velocity)
   const fourteenDaysAgo = new Date();
@@ -316,16 +321,16 @@ export default async function InventoryPage({
 
       {/* Stock Summary Table */}
       <div className="kaspi-frosted-card rounded-3xl overflow-hidden">
-        <div className="p-5 border-b border-zinc-800 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white">{t.inventory.realtimeLevels}</h2>
-          <span className="text-xs text-zinc-400 font-mono bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-800">
+        <div className="p-5 border-b border-white/[0.08] flex items-center justify-between">
+          <h2 className="text-sm font-bold text-[var(--kaspi-text-primary)]">{t.inventory.realtimeLevels}</h2>
+          <span className="text-xs text-[var(--kaspi-text-secondary)] font-mono kaspi-frosted-card px-2.5 py-1 rounded-lg">
             {products.length} {t.inventory.trackedItemsCount}
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-start text-xs text-zinc-300">
-            <thead className="bg-zinc-950 text-zinc-400 font-mono border-b border-zinc-800">
+          <table className="w-full text-start text-xs text-[var(--kaspi-text-primary)]">
+            <thead className="bg-white/[0.05] text-[var(--kaspi-text-secondary)] font-mono border-b border-white/[0.08]">
               <tr>
                 <th className="py-3 px-4 text-start font-semibold">{t.inventory.productName}</th>
                 <th className="py-3 px-4 text-start font-semibold">{t.products.sku} / {t.products.barcode}</th>

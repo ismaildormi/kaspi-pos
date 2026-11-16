@@ -14,6 +14,10 @@ import {
 import { useAppDictionary } from "@/i18n/schema";
 import { toast } from "sonner";
 import { playSuccessSound, playTapSound } from "@/lib/audio";
+import { KaspiMiniSparkline } from "@/components/analytics/KaspiMiniSparkline";
+import { KaspiGlassAnalyticsModal } from "@/components/analytics/KaspiGlassAnalyticsModal";
+import { useKaspiAnalytics } from "@/lib/analytics/useKaspiAnalytics";
+import type { AnalyticsMetric } from "@/lib/analytics/types";
 
 interface GroceryInventoryConsoleProps {
   initialProducts: any[];
@@ -91,28 +95,75 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
   const { locale } = useAppDictionary();
   const [activeTab, setActiveTab] = useState<"shelf" | "dlc" | "shrinkage">("dlc");
 
+  const [activeMetricModal, setActiveMetricModal] = useState<{
+    metric: AnalyticsMetric;
+    title: string;
+    unitLabel: string;
+  } | null>(null);
+  const { data: analytics } = useKaspiAnalytics("retail_value", "7d", true);
+  const sparks = analytics?.sparklines;
+
   // Clean universal inventory state (zero fake demo items)
   const defaultItems: any[] = [];
 
   const [productsList, setProductsList] = useState(() => {
     if (initialProducts && initialProducts.length > 0) {
-      return initialProducts.map((p, idx) => ({
-        ...p,
-        aisle: p.aisle || `Rayon ${["A2", "B3", "D1", "A2"][idx % 4]}`,
-        packInfo: "36 Pack / 12 Unit",
-        dlc: p.dlc || (idx % 3 === 0 ? "2023-11-20" : idx % 3 === 1 ? "2023-11-25" : "2024-01-15"),
-        dlcLabel: idx % 3 === 0 ? "Yellow" : idx % 3 === 1 ? "Orange" : "Green",
-        dlcVariant: idx % 3 === 0 ? "yellow" : idx % 3 === 1 ? "orange" : "green",
-      }));
+      const nowMs = Date.now();
+      return initialProducts.map((p) => {
+        const qty = Number(p.stockQuantity ?? 0);
+        const lowThresh = Number(p.lowStockThreshold ?? 5);
+        const rawDlc = typeof p.dlc === "string" && p.dlc && p.dlc !== "—" ? p.dlc : "";
+        let dlcVariant: "yellow" | "orange" | "green" = "green";
+        let dlcLabel: "Yellow" | "Orange" | "Green" = "Green";
+        if (rawDlc) {
+          const daysLeft = (new Date(rawDlc).getTime() - nowMs) / 86400000;
+          if (daysLeft <= 7) {
+            dlcVariant = "orange";
+            dlcLabel = "Orange";
+          } else if (daysLeft <= 30) {
+            dlcVariant = "yellow";
+            dlcLabel = "Yellow";
+          }
+        } else if (qty <= lowThresh) {
+          dlcVariant = "orange";
+          dlcLabel = "Orange";
+        }
+        return {
+          ...p,
+          aisle: p.aisle || (locale === "ar" ? "عام" : "Général"),
+          packInfo: `${qty} ${p.unit || "u"}`,
+          dlc: rawDlc || "—",
+          dlcLabel,
+          dlcVariant,
+        };
+      });
     }
     return defaultItems;
   });
 
-  // Consigne Tracker state
-  const [gasFull, setGasFull] = useState(45);
-  const [gasEmpty, setGasEmpty] = useState(12);
-  const [cratesFull, setCratesFull] = useState(30);
-  const [cratesEmpty, setCratesEmpty] = useState(8);
+  // Real computed inventory metrics (zero hardcoded figures)
+  const totalCostValueMad = productsList.reduce(
+    (sum, p) => sum + Number(p.costPrice || 0) * Math.max(0, Number(p.stockQuantity || 0)),
+    0
+  );
+  const totalRetailValueMad = productsList.reduce(
+    (sum, p) => sum + Number(p.salePrice || 0) * Math.max(0, Number(p.stockQuantity || 0)),
+    0
+  );
+  const dlcAlertCount = productsList.filter((p) => p.dlcVariant !== "green").length;
+  const totalUnitsOnShelf = productsList.reduce(
+    (sum, p) => sum + Math.max(0, Number(p.stockQuantity || 0)),
+    0
+  );
+  const lowOrEmptyCount = productsList.filter(
+    (p) => Number(p.stockQuantity || 0) <= Number(p.lowStockThreshold ?? 5)
+  ).length;
+
+  // Consigne Tracker state (manual container deposit ledger below)
+  const [gasFull, setGasFull] = useState(0);
+  const [gasEmpty, setGasEmpty] = useState(0);
+  const [cratesFull, setCratesFull] = useState(0);
+  const [cratesEmpty, setCratesEmpty] = useState(0);
 
   const getDlcColorText = (variant: string, label: string) => {
     if (variant === "yellow" || label.toLowerCase() === "yellow") {
@@ -160,78 +211,143 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
     );
   };
 
+  const costTitle = locale === "ar" ? "إجمالي قيمة الشراء (MAD)" : locale === "fr" ? "Valeur d'Achat Stock (MAD)" : "Total Cost Value MAD";
+  const retailTitle = locale === "ar" ? "إجمالي قيمة بيع الرفوف (MAD)" : locale === "fr" ? "Valeur Marchande Rayon (MAD)" : "Retail Shelf Value MAD";
+  const alertsTitle = locale === "ar" ? "تنبيهات اقتراب انتهاء الصلاحية والنفاد" : locale === "fr" ? "Alertes DLC & Stock Faible" : "Expiry & Low-Stock Alerts";
+  const stockTitle = locale === "ar" ? "إجمالي وحدات المخزون والصناديق" : locale === "fr" ? "Unités en Stock & Ruptures" : "Total Stock Units & Alerts";
+
   return (
     <div dir="ltr" className="space-y-6">
-      {/* 4 Smoky Frosted Glass KPI Cards matching Zoomed-In Card (.kaspi-frosted-card) */}
+      {/* 4 Interactive Frosted Glass KPI Cards (100% Real Computed Inventory Data) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Total Cost Value MAD */}
-        <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs font-semibold text-zinc-300">
-            <span>{locale === "ar" ? "إجمالي قيمة الشراء (MAD)" : locale === "fr" ? "Valeur d'Achat Stock (MAD)" : "Total Cost Value MAD"}</span>
-            <ArrowUpRight className="w-4 h-4 text-[#2DD4BF]" />
+        <button
+          type="button"
+          onClick={() => setActiveMetricModal({ metric: "cost_value", title: costTitle, unitLabel: "MAD" })}
+          className="kaspi-frosted-card kaspi-frosted-card-hover kaspi-polar-aurora-orbit group relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between text-start cursor-pointer"
+        >
+          <div className="flex items-center justify-between text-xs font-semibold text-zinc-300 gap-2">
+            <span>{costTitle}</span>
+            <ArrowUpRight className="w-4 h-4 text-[#2DD4BF] shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </div>
-          <div className="mt-4">
-            <span className="text-2xl font-black text-white font-mono tracking-tight">
-              2,450,000{" "}
+          <div className="mt-3 space-y-2.5">
+            <span className="text-2xl font-black text-white font-mono tracking-tight block">
+              {totalCostValueMad.toLocaleString("en-US", { maximumFractionDigits: 2 })}{" "}
               <span className="text-sm font-semibold text-zinc-400">MAD</span>
             </span>
+            <KaspiMiniSparkline
+              values={sparks?.cost_value?.values}
+              deltaPct={sparks?.cost_value?.deltaPct ?? 0}
+              positiveIsGood={true}
+            />
           </div>
-        </div>
+        </button>
 
         {/* Card 2: Retail Shelf Value MAD */}
-        <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
-          <div className="text-xs font-semibold text-zinc-300">
-            <span>{locale === "ar" ? "إجمالي قيمة بيع الرفوف (MAD)" : locale === "fr" ? "Valeur Marchande Rayon (MAD)" : "Retail Shelf Value MAD"}</span>
+        <button
+          type="button"
+          onClick={() => setActiveMetricModal({ metric: "retail_value", title: retailTitle, unitLabel: "MAD" })}
+          className="kaspi-frosted-card kaspi-frosted-card-hover kaspi-polar-aurora-orbit group relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between text-start cursor-pointer"
+        >
+          <div className="flex items-center justify-between text-xs font-semibold text-zinc-300 gap-2">
+            <span>{retailTitle}</span>
+            <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </div>
-          <div className="mt-4">
-            <span className="text-2xl font-black text-white font-mono tracking-tight">
-              3,980,000{" "}
+          <div className="mt-3 space-y-2.5">
+            <span className="text-2xl font-black text-white font-mono tracking-tight block">
+              {totalRetailValueMad.toLocaleString("en-US", { maximumFractionDigits: 2 })}{" "}
               <span className="text-sm font-semibold text-zinc-400">MAD</span>
             </span>
+            <KaspiMiniSparkline
+              values={sparks?.retail_value?.values}
+              deltaPct={sparks?.retail_value?.deltaPct ?? 0}
+              positiveIsGood={true}
+            />
           </div>
-        </div>
+        </button>
 
-        {/* Card 3: DLC Expiry Alerts (with Red Alert Icon) */}
-        <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs font-semibold text-zinc-300">
-            <span>{locale === "ar" ? "تنبيهات اقتراب انتهاء الصلاحية" : locale === "fr" ? "Alertes DLC Proches" : "DLC Expiry Alerts"}</span>
-            <AlertTriangle className="w-4 h-4 text-[#F87171]" />
+        {/* Card 3: Real DLC & Threshold Alerts */}
+        <button
+          type="button"
+          onClick={() =>
+            setActiveMetricModal({
+              metric: "alerts",
+              title: alertsTitle,
+              unitLabel: locale === "ar" ? "تنبيه" : "alerts",
+            })
+          }
+          className="kaspi-frosted-card kaspi-frosted-card-hover kaspi-polar-aurora-orbit group relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between text-start cursor-pointer"
+        >
+          <div className="flex items-center justify-between text-xs font-semibold text-zinc-300 gap-2">
+            <span>{alertsTitle}</span>
+            <AlertTriangle className="w-4 h-4 text-[#F87171] shrink-0" />
           </div>
-          <div className="mt-4">
-            <span className="text-2xl font-black text-white font-mono tracking-tight">
-              38{" "}
+          <div className="mt-3 space-y-2.5">
+            <span className="text-2xl font-black text-white font-mono tracking-tight block">
+              {dlcAlertCount}{" "}
               <span className="text-sm font-semibold text-zinc-400">
                 {locale === "ar" ? "سلعة" : locale === "fr" ? "articles" : "items"}
               </span>
             </span>
+            <KaspiMiniSparkline
+              values={sparks?.alerts?.values}
+              deltaPct={sparks?.alerts?.deltaPct ?? 0}
+              positiveIsGood={false}
+            />
           </div>
-        </div>
+        </button>
 
-        {/* Card 4: Gas & Crate Consigne Balance (Exact Zoomed-In Blueprint) */}
-        <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
+        {/* Card 4: Real Stock Units vs Low/Out Alerts */}
+        <button
+          type="button"
+          onClick={() =>
+            setActiveMetricModal({
+              metric: "items",
+              title: stockTitle,
+              unitLabel: locale === "ar" ? "وحدة" : "u",
+            })
+          }
+          className="kaspi-frosted-card kaspi-frosted-card-hover kaspi-polar-aurora-orbit group relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between text-start cursor-pointer"
+        >
           <div className="text-xs font-semibold text-zinc-300">
-            <span>{locale === "ar" ? "رصيد الرهن: قنينات الغاز والصناديق" : locale === "fr" ? "Solde Consignes Gaz & Casiers" : "Gas & Crate Consigne Balance"}</span>
+            <span>{stockTitle}</span>
           </div>
-          <div className="mt-4 flex items-end justify-between">
-            <div className="flex items-center gap-1.5 whitespace-nowrap">
-              <span className="text-2xl font-black text-white font-mono tracking-tight">
-                +{gasFull}
-              </span>
-              <span className="text-xs font-semibold text-zinc-400">
-                {locale === "ar" ? "وحدة" : "Units"}
-              </span>
-              <span className="text-xs font-semibold text-zinc-500 mx-1">/</span>
-              <span className="text-sm font-bold text-[#F87171] font-mono">
-                -{gasEmpty}
-              </span>
-              <span className="text-xs font-semibold text-[#F87171]/80">
-                {locale === "ar" ? "فارغة" : locale === "fr" ? "Vides" : "Empty"}
-              </span>
+          <div className="mt-3 flex items-end justify-between gap-2">
+            <div className="min-w-0 space-y-1.5">
+              <div className="flex items-center gap-1.5 whitespace-nowrap">
+                <span className="text-2xl font-black text-white font-mono tracking-tight">
+                  {Math.round(totalUnitsOnShelf)}
+                </span>
+                <span className="text-xs font-semibold text-zinc-400">
+                  {locale === "ar" ? "وحدة" : "Units"}
+                </span>
+                <span className="text-xs font-semibold text-zinc-500 mx-0.5">·</span>
+                <span className="text-sm font-bold text-[#F87171] font-mono">
+                  {lowOrEmptyCount}
+                </span>
+                <span className="text-xs font-semibold text-[#F87171]/80">
+                  {locale === "ar" ? "منخفض" : locale === "fr" ? "Faible" : "Low"}
+                </span>
+              </div>
+              <KaspiMiniSparkline
+                values={sparks?.items?.values}
+                deltaPct={sparks?.items?.deltaPct ?? 0}
+                positiveIsGood={true}
+              />
             </div>
-            <IsometricCratesIllustration className="w-16 h-12 shrink-0 drop-shadow-md" />
+            <IsometricCratesIllustration className="w-14 h-11 shrink-0 drop-shadow-md group-hover:scale-105 transition-transform" />
           </div>
-        </div>
+        </button>
       </div>
+
+      <KaspiGlassAnalyticsModal
+        isOpen={activeMetricModal !== null}
+        onClose={() => setActiveMetricModal(null)}
+        metric={activeMetricModal?.metric || "retail_value"}
+        title={activeMetricModal?.title || retailTitle}
+        unitLabel={activeMetricModal?.unitLabel || "MAD"}
+        locale={locale}
+      />
 
       {/* Sleek Translucent Aurora Pill Tabs */}
       <div className="flex flex-wrap items-center gap-2.5 text-xs font-semibold select-none pt-2">
@@ -276,7 +392,7 @@ export function GroceryInventoryConsole({ initialProducts }: GroceryInventoryCon
       {activeTab !== "shrinkage" ? (
         <div className="kaspi-frosted-card rounded-2xl overflow-hidden shadow-2xl">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#141A22]/90 text-zinc-400 font-semibold border-b border-white/[0.08]">
+            <thead className="bg-white/[0.05] text-[var(--kaspi-text-secondary)] font-semibold border-b border-white/[0.08]">
               <tr>
                 <th className="py-3.5 px-5">{locale === "ar" ? "المنتج" : locale === "fr" ? "Article" : "Product"}</th>
                 <th className="py-3.5 px-4">{locale === "ar" ? "الجناح / الرف" : locale === "fr" ? "Rayon" : "Aisle"}</th>

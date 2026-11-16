@@ -9,11 +9,11 @@ import {
   UserPlus,
   Trash2,
   ArrowLeft,
-  X,
   Loader2,
   Mail,
   User,
 } from "lucide-react";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 
 interface MemberItem {
   id: string;
@@ -183,9 +183,9 @@ export default function StaffPage() {
   };
 
   return (
-    <div dir="ltr" className="min-h-screen bg-zinc-950 text-white pb-20 select-none">
+    <div dir="ltr" className="kaspi-transparent-shell min-h-screen bg-transparent text-[var(--kaspi-text-primary)] pb-20 select-none">
       {/* Top Bar */}
-      <header className="bg-zinc-950 border-b border-zinc-800 sticky top-0 z-30">
+      <header className="kaspi-frosted-glass border-b border-white/[0.08] relative z-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
@@ -286,16 +286,11 @@ export default function StaffPage() {
 
       {/* Invite Member Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4">
-              <h3 className="font-bold text-white text-base">{t.modalTitle}</h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xl">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] mb-4">
+              <h3 className="font-bold text-[var(--kaspi-text-primary)] text-base">{t.modalTitle}</h3>
+              <AppleBackButton onClick={() => setIsModalOpen(false)} locale={locale} />
             </div>
 
             {errorMsg && (

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Download, Monitor, CheckCircle2, ExternalLink, X } from "lucide-react";
+import { Download, Monitor, CheckCircle2, ExternalLink } from "lucide-react";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -103,14 +104,7 @@ export function DownloadPwaButton({
               <Monitor className="h-4 w-4 text-white shrink-0" />
               <span>Install KASPI POS to Your Windows Desktop</span>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowFallback(false)}
-              className="text-zinc-500 hover:text-white transition cursor-pointer"
-              aria-label="Close instructions"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <AppleBackButton onClick={() => setShowFallback(false)} locale="en" />
           </div>
 
           <p className="text-zinc-400 leading-relaxed">

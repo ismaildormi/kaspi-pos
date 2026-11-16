@@ -10,7 +10,6 @@ import {
   Truck,
   Plus,
   ArrowLeft,
-  X,
   Loader2,
   FileText,
   Sparkles,
@@ -22,6 +21,7 @@ import {
   Wallet,
   Clock,
 } from "lucide-react";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 
 interface SupplierItem {
   id: string;
@@ -332,9 +332,9 @@ export default function SuppliersPage() {
   };
 
   return (
-    <div dir="ltr" className="min-h-screen bg-zinc-950 text-white pb-20 select-none">
+    <div dir="ltr" className="kaspi-transparent-shell min-h-screen bg-transparent text-[var(--kaspi-text-primary)] pb-20 select-none">
       {/* Top Bar */}
-      <header className="bg-zinc-950 border-b border-zinc-800 sticky top-0 z-30">
+      <header className="kaspi-frosted-glass border-b border-white/[0.08] relative z-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
@@ -557,16 +557,11 @@ export default function SuppliersPage() {
 
       {/* Add Supplier Modal */}
       {isSupplierModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4">
-              <h3 className="font-bold text-white text-base">{t.suppliers.addSupplier}</h3>
-              <button
-                onClick={() => setIsSupplierModalOpen(false)}
-                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xl">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] mb-4 gap-3">
+              <h3 className="font-bold text-[var(--kaspi-text-primary)] text-base">{t.suppliers.addSupplier}</h3>
+              <AppleBackButton onClick={() => setIsSupplierModalOpen(false)} locale={locale} />
             </div>
 
             {errorMsg && (
@@ -701,16 +696,11 @@ export default function SuppliersPage() {
 
       {/* Record Debt / Invoice Modal */}
       {isDebtModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4">
-              <h3 className="font-bold text-white text-base">{t.suppliers.recordDebtInvoice}</h3>
-              <button
-                onClick={() => setIsDebtModalOpen(false)}
-                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xl">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-lg w-full p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] mb-4 gap-3">
+              <h3 className="font-bold text-[var(--kaspi-text-primary)] text-base">{t.suppliers.recordDebtInvoice}</h3>
+              <AppleBackButton onClick={() => setIsDebtModalOpen(false)} locale={locale} />
             </div>
 
             <form onSubmit={handleRecordDebt} className="space-y-4">
@@ -859,31 +849,29 @@ export default function SuppliersPage() {
 
       {/* OCR Wholesale Invoice Scanner Modal */}
       {isOcrModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4 shrink-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xl">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-2xl w-full p-6 shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] mb-4 shrink-0 gap-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-white text-black flex items-center justify-center font-bold">
-                  <Sparkles className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-lg kaspi-glass-btn flex items-center justify-center font-bold">
+                  <Sparkles className="w-4 h-4 text-[var(--kaspi-text-primary)]" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-base leading-tight">
+                  <h3 className="font-bold text-[var(--kaspi-text-primary)] text-base leading-tight">
                     {t.suppliers.ocrModalTitle}
                   </h3>
-                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                  <p className="text-[11px] text-[var(--kaspi-text-secondary)] mt-0.5">
                     {t.suppliers.ocrModalSubtitle}
                   </p>
                 </div>
               </div>
-              <button
+              <AppleBackButton
                 onClick={() => {
                   setIsOcrModalOpen(false);
                   setOcrItems([]);
                 }}
-                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+                locale={locale}
+              />
             </div>
 
             {/* Dropzone */}

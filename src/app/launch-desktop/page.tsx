@@ -2,6 +2,7 @@
 
 import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { KaspiBrandMark } from "@/components/common/KaspiBrandMark";
 
 const LAUNCH_I18N = {
   ar: {
@@ -101,9 +102,7 @@ function LaunchDesktopContent() {
 
         {/* Brand Header */}
         <div dir="ltr" className="flex items-center justify-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 select-none">
-            <img src="/logo.png" alt="KASPI POS" className="w-full h-full object-cover scale-[1.24] bg-transparent select-none" />
-          </div>
+          <KaspiBrandMark size="sm" />
           <div className="flex items-center gap-2">
             <span className="text-[28px] font-black tracking-[-0.03em] text-zinc-950 dark:text-white leading-none">
               KASPI

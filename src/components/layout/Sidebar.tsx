@@ -1,5 +1,7 @@
 "use client";
 
+import { KaspiBrandMark } from "@/components/common/KaspiBrandMark";
+
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -153,7 +155,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
       dir="ltr"
       className={`${
         mobileMenuOpen ? "flex" : "hidden"
-      } md:flex w-full md:w-64 md:h-screen md:sticky md:top-0 p-3.5 shrink-0 flex-col justify-between select-none relative overflow-hidden kaspi-frosted-glass border-r border-white/10`}
+      } md:flex w-full md:w-64 md:h-screen md:shrink-0 p-3.5 shrink-0 flex-col justify-between select-none relative overflow-hidden kaspi-frosted-glass border-r border-white/10`}
     >
       {/* 2 Translucent Curved Silver-White Light Layers (Layer A & Layer B) */}
       <div className="pointer-events-none absolute -right-12 top-16 w-52 h-[420px] rounded-full bg-gradient-to-b from-white/[0.18] via-white/[0.08] to-transparent blur-2xl rotate-[-12deg] z-0" />
@@ -167,13 +169,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           onClick={onNavigate}
           className="flex items-center gap-3 px-2 py-2.5 mb-2.5 rounded-xl hover:bg-white/[0.04] transition-colors"
         >
-          <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 select-none">
-            <img
-              src="/logo.png"
-              alt="KASPI POS"
-              className="w-full h-full object-cover scale-[1.24] select-none bg-transparent"
-            />
-          </div>
+          <KaspiBrandMark size="sm" />
           <span className="font-black text-[15px] tracking-tight text-white">
             KASPI POS
           </span>

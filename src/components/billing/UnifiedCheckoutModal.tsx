@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo } from "react";
 import {
-  X,
   CreditCard,
   Building2,
   KeyRound,
@@ -16,6 +15,7 @@ import {
   ArrowRight,
   Monitor,
 } from "lucide-react";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 
 export type CheckoutMode = "plan" | "add_device";
 
@@ -311,30 +311,24 @@ export function UnifiedCheckoutModal({
         ) : (
           <>
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-zinc-800/80 mb-5">
+            <div className="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-5 gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-white text-black flex items-center justify-center font-bold shadow-md">
-                  {mode === "plan" ? <Sparkles className="w-4 h-4" /> : <Monitor className="w-4 h-4" />}
+                <div className="w-8 h-8 rounded-xl kaspi-glass-btn flex items-center justify-center font-bold shadow-md">
+                  {mode === "plan" ? <Sparkles className="w-4 h-4 text-[var(--kaspi-text-primary)]" /> : <Monitor className="w-4 h-4 text-[var(--kaspi-text-primary)]" />}
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">
+                  <h3 className="text-base font-bold text-[var(--kaspi-text-primary)]">
                     {mode === "plan" ? t.modalTitlePlan : t.modalTitleDevice}
                   </h3>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-zinc-400">{t.amountDue}</span>
-                    <span className="text-xs font-mono font-bold text-white">
-                      {amountMAD} MAD <span className="text-zinc-500 font-normal">({t.perMonth})</span>
+                    <span className="text-xs text-[var(--kaspi-text-secondary)]">{t.amountDue}</span>
+                    <span className="text-xs font-mono font-bold text-[var(--kaspi-text-primary)]">
+                      {amountMAD} MAD <span className="text-[var(--kaspi-text-muted)] font-normal">({t.perMonth})</span>
                     </span>
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <AppleBackButton onClick={onClose} locale={locale} />
             </div>
 
             {/* Error Message */}

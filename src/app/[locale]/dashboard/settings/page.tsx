@@ -27,11 +27,11 @@ import {
   Users,
   ShieldCheck,
   RefreshCw,
-  X,
   Sparkles,
   Lock,
   ChevronDown,
 } from "lucide-react";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 import {
   SUPPORTED_RECEIPT_LANGUAGES,
   getReceiptTranslation,
@@ -1065,25 +1065,19 @@ export default function SettingsPage() {
             </div>
 
             {isAddingStore && (
-              <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-                <div className="w-full max-w-lg bg-zinc-950 border border-white/10 rounded-2xl p-6 shadow-2xl relative space-y-5 animate-in fade-in zoom-in-95 duration-200">
-                  <div className="flex items-start justify-between">
+              <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xl flex items-center justify-center p-4">
+                <div className="w-full max-w-lg kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-2xl p-6 shadow-2xl relative space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center">
-                        <Store className="w-5 h-5 text-white" />
+                      <div className="w-10 h-10 rounded-xl kaspi-glass-btn flex items-center justify-center">
+                        <Store className="w-5 h-5 text-[var(--kaspi-text-primary)]" />
                       </div>
                       <div>
-                        <h3 className="text-base font-bold text-white">{st.branchModalTitle}</h3>
-                        <p className="text-xs text-zinc-400 mt-0.5">{st.branchModalDesc}</p>
+                        <h3 className="text-base font-bold text-[var(--kaspi-text-primary)]">{st.branchModalTitle}</h3>
+                        <p className="text-xs text-[var(--kaspi-text-secondary)] mt-0.5">{st.branchModalDesc}</p>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingStore(false)}
-                      className="text-zinc-500 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
+                    <AppleBackButton onClick={() => setIsAddingStore(false)} locale={locale} />
                   </div>
 
                   {/* Add-on Pricing Badge */}

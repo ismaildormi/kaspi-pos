@@ -7,11 +7,11 @@ import {
   Plus,
   Check,
   Trash2,
-  X,
   Coins,
   Weight,
   Layers,
 } from "lucide-react";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
 import { getCachedData } from "@/lib/cache/client-cache";
@@ -752,13 +752,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                     : "Nouvel Article Pesé (PLU)"}
                 </span>
               </h3>
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-zinc-400 hover:text-white p-1 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <AppleBackButton onClick={() => setIsAddModalOpen(false)} locale={locale} />
             </div>
 
             <form onSubmit={handleSaveCustomPlu} className="space-y-3 text-xs">

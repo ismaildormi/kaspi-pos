@@ -271,7 +271,7 @@ export default function KitchenDisplayPage() {
   const countReady = tickets.filter((t) => t.status === "ready").length;
 
   return (
-    <div dir="ltr" className="min-h-screen bg-zinc-950 text-white flex flex-col select-none">
+    <div dir="ltr" className="kaspi-transparent-shell min-h-screen bg-transparent text-[var(--kaspi-text-primary)] flex flex-col select-none">
       <Toaster
         theme="dark"
         position="top-center"
@@ -285,7 +285,7 @@ export default function KitchenDisplayPage() {
       />
 
       {/* Top KDS Command Bar */}
-      <header className="bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-20">
+      <header className="kaspi-frosted-glass border-b border-white/[0.08] px-6 py-4 flex flex-wrap items-center justify-between gap-4 relative z-20">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
             <ChefHat className="h-6 w-6" />

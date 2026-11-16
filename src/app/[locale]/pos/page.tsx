@@ -398,7 +398,7 @@ export default function PosPage() {
     <div
       dir="ltr"
       style={getSectorCssVariables(storeType)}
-      className="flex flex-col h-screen overflow-hidden bg-zinc-950 text-white font-sans"
+      className="kaspi-transparent-shell flex flex-col h-screen overflow-hidden bg-transparent text-[var(--kaspi-text-primary)] font-sans"
     >
       <Toaster
         theme="dark"

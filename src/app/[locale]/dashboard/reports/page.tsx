@@ -23,6 +23,7 @@ import {
   generateWhatsAppLink,
 } from "@/lib/whatsapp";
 import { ExecutiveReportSheet } from "@/components/reports/ExecutiveReportSheet";
+import { ReportsInteractiveAnalytics } from "@/components/analytics/ReportsInteractiveAnalytics";
 
 export const dynamic = "force-dynamic";
 
@@ -180,51 +181,27 @@ export default async function ReportsPage({
         </div>
       </div>
 
-      {/* Today's Z-Report Card */}
-      <div className="kaspi-frosted-card rounded-3xl p-6 space-y-6 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
-          <div className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 rounded-full bg-white animate-pulse" />
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-              {t.reports.zReportTitle} ({new Date().toLocaleDateString()})
-            </h2>
-          </div>
-          <span className="text-xs text-zinc-400 font-mono">
-            {todaySales.length} {t.reports.transactionsCount}
-          </span>
-        </div>
-
-        {/* Multi-Layered Frosted Glass KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
-            <span className="text-xs text-zinc-300 font-semibold">{t.reports.dailySales}</span>
-            <div className="text-2xl font-black text-white font-mono tracking-tight mt-3">
-              {totalMad.toFixed(2)} <span className="text-sm font-semibold text-zinc-400">{t.common.currency}</span>
-            </div>
-          </div>
-
-          <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
-            <span className="text-xs text-zinc-300 font-semibold">{t.reports.todayCash}</span>
-            <div className="text-2xl font-black text-white font-mono tracking-tight mt-3">
-              {cashMad.toFixed(2)} <span className="text-sm font-semibold text-zinc-400">{t.common.currency}</span>
-            </div>
-          </div>
-
-          <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
-            <span className="text-xs text-zinc-300 font-semibold">{t.reports.todayCard}</span>
-            <div className="text-2xl font-black text-white font-mono tracking-tight mt-3">
-              {cardMad.toFixed(2)} <span className="text-sm font-semibold text-zinc-400">{t.common.currency}</span>
-            </div>
-          </div>
-
-          <div className="kaspi-frosted-card kaspi-frosted-card-hover relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between">
-            <span className="text-xs text-zinc-300 font-semibold">{t.reports.todayCredit}</span>
-            <div className="text-2xl font-black text-[#5EEAD4] font-mono tracking-tight mt-3">
-              {creditMad.toFixed(2)} <span className="text-sm font-semibold text-zinc-400">{t.common.currency}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Today's Z-Report & Interactive Analytics */}
+      <ReportsInteractiveAnalytics
+        locale={locale}
+        currency={t.common.currency}
+        todaySalesCount={todaySales.length}
+        reportDateLabel={new Date().toLocaleDateString()}
+        zReportTitle={t.reports.zReportTitle}
+        transactionsCountLabel={t.reports.transactionsCount}
+        labels={{
+          dailySales: t.reports.dailySales,
+          todayCash: t.reports.todayCash,
+          todayCard: t.reports.todayCard,
+          todayCredit: t.reports.todayCredit,
+        }}
+        initialTotals={{
+          totalMad,
+          cashMad,
+          cardMad,
+          creditMad,
+        }}
+      />
 
       {/* 3D Elevated Strategic Executive Document Sheet & Scheduled Automation */}
       <ExecutiveReportSheet
@@ -252,16 +229,16 @@ export default async function ReportsPage({
 
       {/* Today's Transactions Table */}
       <div className="kaspi-frosted-card rounded-3xl overflow-hidden shadow-2xl">
-        <div className="p-5 border-b border-zinc-800 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white">{t.reports.dailySales}</h2>
-          <span className="text-xs text-zinc-400 font-mono">
+        <div className="p-5 border-b border-white/[0.08] flex items-center justify-between">
+          <h2 className="text-sm font-bold text-[var(--kaspi-text-primary)]">{t.reports.dailySales}</h2>
+          <span className="text-xs text-[var(--kaspi-text-secondary)] font-mono">
             {t.nav.liveBadge}
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-start text-xs text-zinc-300">
-            <thead className="bg-zinc-950 text-zinc-400 font-mono border-b border-zinc-800">
+          <table className="w-full text-start text-xs text-[var(--kaspi-text-primary)]">
+            <thead className="bg-white/[0.05] text-[var(--kaspi-text-secondary)] font-mono border-b border-white/[0.08]">
               <tr>
                 <th className="py-3 px-4 text-start font-semibold">#</th>
                 <th className="py-3 px-4 text-start font-semibold">{t.common.date}</th>

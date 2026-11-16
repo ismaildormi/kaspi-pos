@@ -5,6 +5,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { usePathname } from "next/navigation";
 import { getApiUrl } from "@/client/sync-engine";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 import {
   Bot,
   Sparkles,
@@ -521,15 +522,11 @@ export function AIChatWidget() {
               </div>
             </div>
 
-            <button
-              type="button"
+            <AppleBackButton
               onClick={() => setIsOpen(false)}
-              className="p-1.5 rounded-lg text-[var(--kaspi-text-muted)] hover:text-[var(--kaspi-text-primary)] hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+              locale={activeLocale}
               title={t.closeTitle}
-              aria-label={t.closeTitle}
-            >
-              <X className="w-5 h-5" />
-            </button>
+            />
           </div>
 
           {/* Messages Area with Monochrome POS Doodle Wallpaper */}

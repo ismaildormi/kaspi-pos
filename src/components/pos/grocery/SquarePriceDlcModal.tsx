@@ -5,6 +5,7 @@ import { ScanBarcode, Search, Package, CheckCircle2, Plus } from "lucide-react";
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
 import { playSuccessSound } from "@/lib/audio";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 
 interface SquarePriceDlcModalProps {
   isOpen: boolean;
@@ -50,24 +51,24 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
   return (
     <div
       dir="ltr"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn select-none"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-xl animate-fadeIn select-none"
     >
-      <div className="kaspi-frosted-glass w-full max-w-lg rounded-3xl shadow-2xl p-6 space-y-5">
+      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-lg rounded-3xl shadow-2xl p-6 space-y-5">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+        <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/[0.10] flex items-center justify-center text-white">
+            <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/[0.10] flex items-center justify-center text-[var(--kaspi-text-primary)]">
               <ScanBarcode className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">
+              <h3 className="text-sm font-bold text-[var(--kaspi-text-primary)]">
                 {locale === "ar"
                   ? "فاحص الثمن والصلاحية"
                   : locale === "en"
                   ? "Price & DLC Verifier"
                   : "Vérificateur Prix & DLC"}
               </h3>
-              <p className="text-[11px] text-zinc-400">
+              <p className="text-[11px] text-[var(--kaspi-text-secondary)]">
                 {locale === "ar"
                   ? "امسح الباركود للتحقق الفوري من سعر الحبة، سعر الباك، الجناح وتاريخ الصلاحية"
                   : locale === "en"
@@ -76,13 +77,7 @@ export function SquarePriceDlcModal({ isOpen, onClose, products }: SquarePriceDl
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-8 px-3 rounded-lg bg-[#111113] hover:bg-[#18181B] border border-white/[0.08] text-xs font-bold text-zinc-300 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <span>{locale === "ar" ? "← رجوع" : locale === "en" ? "← Back" : "← Retour"}</span>
-          </button>
+          <AppleBackButton onClick={onClose} locale={locale} />
         </div>
 
         {/* Barcode Search Field */}

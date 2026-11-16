@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { playTapSound, playSuccessSound, playErrorSound } from "@/lib/audio";
 import { KaspiBrandMark } from "../common/KaspiBrandMark";
+import { AppleBackButton } from "../common/AppleBackButton";
 
 export type PaywallMode = "expired" | "device_conflict";
 
@@ -221,18 +222,18 @@ export const InAppPaywallModal: React.FC<InAppPaywallModalProps> = ({
   return (
     <div
       dir={isRtl ? "rtl" : "ltr"}
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/65 backdrop-blur-xl animate-in fade-in duration-200"
     >
-      <div className="kaspi-frosted-glass relative w-full max-w-xl overflow-hidden rounded-3xl p-6 sm:p-8 shadow-[0_24px_80px_rgba(0,0,0,0.85)] text-white">
+      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit relative w-full max-w-xl overflow-hidden rounded-3xl p-6 sm:p-8 shadow-[0_24px_80px_rgba(0,0,0,0.85)] text-[var(--kaspi-text-primary)]">
         {/* Subtle Titanium Radial Glow */}
         <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full bg-white/5 blur-3xl" />
 
         {/* Header Bar */}
-        <div className="flex items-center justify-between pb-4 border-b border-zinc-800/80">
+        <div className="flex items-center justify-between pb-4 border-b border-white/[0.08] gap-3">
           <div className="flex items-center gap-3">
-            <KaspiBrandMark className="w-8 h-8" />
+            <KaspiBrandMark size="sm" />
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm tracking-tight text-white">
+              <span className="font-extrabold text-sm tracking-tight text-[var(--kaspi-text-primary)]">
                 KASPI POS
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -241,17 +242,14 @@ export const InAppPaywallModal: React.FC<InAppPaywallModalProps> = ({
             </div>
           </div>
 
-          <button
-            type="button"
+          <AppleBackButton
             onClick={() => {
               playTapSound();
               setIsOpen(false);
             }}
-            className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition-colors cursor-pointer"
-            aria-label={t.closeBtn}
-          >
-            <X className="w-5 h-5" />
-          </button>
+            locale={isRtl ? "ar" : "fr"}
+            title={t.closeBtn}
+          />
         </div>
 
         {/* Modal Body */}

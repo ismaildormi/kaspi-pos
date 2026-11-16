@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import {
-  X,
   Wallet,
   ArrowUpRight,
   ArrowDownLeft,
@@ -17,6 +16,7 @@ import {
   FileSpreadsheet,
   Banknote,
 } from "lucide-react";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 import { toast } from "sonner";
 import { printReceipt } from "@/client/printing";
 import { usePosStore } from "@/client/store/usePosStore";
@@ -504,33 +504,28 @@ export const CashShiftModal: React.FC<CashShiftModalProps> = ({
       : null;
 
   return (
-    <div dir="ltr" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs select-none">
-      <div className="kaspi-frosted-glass w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div dir="ltr" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-xl select-none">
+      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.08] gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center border border-white/10 bg-zinc-900 text-white">
-              {activeShift ? <Unlock className="w-5 h-5 text-zinc-300" /> : <Lock className="w-5 h-5 text-zinc-400" />}
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center kaspi-glass-btn text-[var(--kaspi-text-primary)]">
+              {activeShift ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5 opacity-75" />}
             </div>
             <div>
-              <h2 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+              <h2 className="text-base font-bold text-[var(--kaspi-text-primary)] tracking-tight flex items-center gap-2">
                 <span>{shiftI18n.modalTitle}</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-white/10 bg-white/[0.05] text-zinc-300">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-white/10 bg-white/[0.05] text-[var(--kaspi-text-secondary)]">
                   {activeShift ? shiftI18n.drawerOpen : shiftI18n.drawerClosed}
                 </span>
               </h2>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-[var(--kaspi-text-secondary)]">
                 {shiftI18n.modalSubtitle}
               </p>
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-zinc-800 transition cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <AppleBackButton onClick={onClose} locale={locale} />
         </div>
 
         {/* Navigation Tabs */}

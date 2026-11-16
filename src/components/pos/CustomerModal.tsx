@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  X,
   Search,
   UserPlus,
   Coins,
@@ -14,6 +13,7 @@ import { usePosStore, type PosCustomer } from "@/client/store/usePosStore";
 import { offlineDb } from "@/client/db";
 import { getApiUrl } from "@/client/sync-engine";
 import { useAppDictionary } from "@/i18n/schema";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 
 interface CustomerModalProps {
   isOpen: boolean;
@@ -232,22 +232,17 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
   };
 
   return (
-    <div dir="ltr" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs select-none">
-      <div className="kaspi-frosted-glass relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+    <div dir="ltr" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xl select-none">
+      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
         {/* Header */}
-        <div className="p-4 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between">
+        <div className="p-4 border-b border-white/[0.08] flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <User className="w-5 h-5 text-white" />
-            <h3 className="font-bold text-white text-base">
+            <User className="w-5 h-5 text-[var(--kaspi-text-primary)]" />
+            <h3 className="font-bold text-[var(--kaspi-text-primary)] text-base">
               {isCreating ? modalI18n.newTitle : modalI18n.title}
             </h3>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <AppleBackButton onClick={onClose} locale={locale} />
         </div>
 
         {/* Action Toggle Bar */}

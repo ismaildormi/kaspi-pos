@@ -2,9 +2,10 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { X, Play, Trash2, Clock } from "lucide-react";
+import { Play, Trash2, Clock } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 
 interface HeldCartsModalProps {
   isOpen: boolean;
@@ -20,20 +21,15 @@ export const HeldCartsModal: React.FC<HeldCartsModalProps> = ({ isOpen, onClose 
   if (!isOpen) return null;
 
   return (
-    <div dir="ltr" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs select-none">
-      <div className="kaspi-frosted-glass relative w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+    <div dir="ltr" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xl select-none">
+      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit relative w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between">
+        <div className="p-4 border-b border-white/[0.08] flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-white" />
-            <h3 className="font-bold text-white text-base">{t("heldOrders")}</h3>
+            <Clock className="w-4 h-4 text-[var(--kaspi-text-primary)]" />
+            <h3 className="font-bold text-[var(--kaspi-text-primary)] text-base">{t("heldOrders")}</h3>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <AppleBackButton onClick={onClose} locale={locale} />
         </div>
 
         {/* List */}

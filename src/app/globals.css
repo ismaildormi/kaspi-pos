@@ -26,183 +26,183 @@
   :root,
   html[data-kaspi-theme="fjord-twilight"] {
     --font-kaspi-glass: 'Inter', 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, sans-serif;
-    --kaspi-bg-primary: #07090D;
-    --kaspi-bg-base: #07090D;
-    --kaspi-bg-secondary: #0E121A;
+    --kaspi-bg-primary: #06080B;
+    --kaspi-bg-base: #06080B;
+    --kaspi-bg-secondary: #0D1117;
     --kaspi-text-primary: #FFFFFF;
-    --kaspi-text-secondary: rgba(255, 255, 255, 0.76);
-    --kaspi-text-muted: rgba(255, 255, 255, 0.52);
+    --kaspi-text-secondary: rgba(255, 255, 255, 0.78);
+    --kaspi-text-muted: rgba(255, 255, 255, 0.56);
     --kaspi-glass-bg: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.16) 0%,
-      rgba(255, 255, 255, 0.06) 38%,
-      rgba(255, 255, 255, 0.03) 65%,
-      rgba(255, 255, 255, 0.10) 100%
+      rgba(255, 255, 255, 0.12) 0%,
+      rgba(255, 255, 255, 0.04) 45%,
+      rgba(255, 255, 255, 0.025) 70%,
+      rgba(255, 255, 255, 0.085) 100%
     );
     --kaspi-glass-bg-elevated: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.22) 0%,
-      rgba(255, 255, 255, 0.09) 42%,
-      rgba(255, 255, 255, 0.05) 70%,
-      rgba(255, 255, 255, 0.14) 100%
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.07) 45%,
+      rgba(255, 255, 255, 0.045) 72%,
+      rgba(255, 255, 255, 0.13) 100%
     );
     --kaspi-glass-surface: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.16) 0%,
-      rgba(255, 255, 255, 0.06) 38%,
-      rgba(255, 255, 255, 0.03) 65%,
-      rgba(255, 255, 255, 0.10) 100%
+      rgba(255, 255, 255, 0.12) 0%,
+      rgba(255, 255, 255, 0.04) 45%,
+      rgba(255, 255, 255, 0.025) 70%,
+      rgba(255, 255, 255, 0.085) 100%
     );
     --kaspi-glass-elevated: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.22) 0%,
-      rgba(255, 255, 255, 0.09) 42%,
-      rgba(255, 255, 255, 0.05) 70%,
-      rgba(255, 255, 255, 0.14) 100%
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.07) 45%,
+      rgba(255, 255, 255, 0.045) 72%,
+      rgba(255, 255, 255, 0.13) 100%
     );
     --kaspi-glass-surface-elevated: #121620;
     --kaspi-glass-button: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.22) 0%,
-      rgba(255, 255, 255, 0.09) 42%,
-      rgba(255, 255, 255, 0.05) 70%,
+      rgba(255, 255, 255, 0.20) 0%,
+      rgba(255, 255, 255, 0.08) 45%,
+      rgba(255, 255, 255, 0.045) 70%,
       rgba(255, 255, 255, 0.14) 100%
     );
-    --kaspi-glass-border: rgba(255, 255, 255, 0.22);
+    --kaspi-glass-border: rgba(255, 255, 255, 0.24);
     --kaspi-glass-shadow:
-      0 20px 42px -10px rgba(0, 0, 0, 0.65),
-      inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.48),
-      inset 1px 0 1px 0 rgba(255, 255, 255, 0.20),
-      inset 0 -1px 1px 0 rgba(255, 255, 255, 0.10);
+      0 20px 44px -10px rgba(0, 0, 0, 0.58),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.42),
+      inset 1px 0 1px 0 rgba(255, 255, 255, 0.18),
+      inset 0 -1px 1px 0 rgba(255, 255, 255, 0.08);
     --kaspi-corner-aurora-beam: conic-gradient(
       from var(--kaspi-aurora-angle),
       transparent 0deg,
-      rgba(255, 255, 255, 0.15) 50deg,
-      rgba(255, 255, 255, 0.95) 84deg,
+      rgba(255, 255, 255, 0.12) 55deg,
+      rgba(255, 255, 255, 0.85) 84deg,
       #ffffff 90deg,
-      rgba(255, 255, 255, 0.95) 96deg,
-      rgba(255, 255, 255, 0.15) 130deg,
+      rgba(255, 255, 255, 0.85) 96deg,
+      rgba(255, 255, 255, 0.12) 125deg,
       transparent 180deg,
-      rgba(255, 255, 255, 0.15) 230deg,
-      rgba(255, 255, 255, 0.95) 264deg,
+      rgba(255, 255, 255, 0.12) 235deg,
+      rgba(255, 255, 255, 0.85) 264deg,
       #ffffff 270deg,
-      rgba(255, 255, 255, 0.95) 276deg,
-      rgba(255, 255, 255, 0.15) 310deg,
+      rgba(255, 255, 255, 0.85) 276deg,
+      rgba(255, 255, 255, 0.12) 305deg,
       transparent 360deg
     );
     --kaspi-corner-aurora-bloom: conic-gradient(
       from var(--kaspi-aurora-angle),
-      rgba(255, 255, 255, 0.14) 0deg,
-      rgba(255, 255, 255, 0.35) 55deg,
-      rgba(255, 255, 255, 0.85) 84deg,
-      #ffffff 90deg,
-      rgba(255, 255, 255, 0.85) 96deg,
-      rgba(255, 255, 255, 0.35) 125deg,
-      rgba(255, 255, 255, 0.14) 180deg,
-      rgba(255, 255, 255, 0.35) 235deg,
-      rgba(255, 255, 255, 0.85) 264deg,
-      #ffffff 270deg,
-      rgba(255, 255, 255, 0.85) 276deg,
-      rgba(255, 255, 255, 0.35) 305deg,
-      rgba(255, 255, 255, 0.14) 360deg
+      rgba(255, 255, 255, 0.08) 0deg,
+      rgba(255, 255, 255, 0.24) 55deg,
+      rgba(255, 255, 255, 0.65) 84deg,
+      rgba(255, 255, 255, 0.88) 90deg,
+      rgba(255, 255, 255, 0.65) 96deg,
+      rgba(255, 255, 255, 0.24) 125deg,
+      rgba(255, 255, 255, 0.08) 180deg,
+      rgba(255, 255, 255, 0.24) 235deg,
+      rgba(255, 255, 255, 0.65) 264deg,
+      rgba(255, 255, 255, 0.88) 270deg,
+      rgba(255, 255, 255, 0.65) 276deg,
+      rgba(255, 255, 255, 0.24) 305deg,
+      rgba(255, 255, 255, 0.08) 360deg
     );
-    --kaspi-input-bg: rgba(255, 255, 255, 0.08);
+    --kaspi-input-bg: rgba(255, 255, 255, 0.075);
     --kaspi-input-border: rgba(255, 255, 255, 0.22);
-    --kaspi-aurora-1: rgba(255, 255, 255, 0.07);
-    --kaspi-aurora-2: rgba(255, 255, 255, 0.05);
-    --kaspi-aurora-3: rgba(255, 255, 255, 0.03);
-    --kaspi-active-ring: 0 0 0 1.5px rgba(255, 255, 255, 0.78), 0 14px 34px -6px rgba(255, 255, 255, 0.24);
+    --kaspi-aurora-1: rgba(255, 255, 255, 0.14);
+    --kaspi-aurora-2: rgba(226, 232, 240, 0.10);
+    --kaspi-aurora-3: rgba(255, 255, 255, 0.06);
+    --kaspi-active-ring: 0 0 0 1.25px rgba(255, 255, 255, 0.72), 0 14px 34px -6px rgba(255, 255, 255, 0.20);
   }
 
   html[data-kaspi-theme="pearl-light"] {
     --font-kaspi-glass: 'Inter', 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, sans-serif;
-    --kaspi-bg-primary: #D4DFDC;
-    --kaspi-bg-base: #D4DFDC;
-    --kaspi-bg-secondary: #C8D6D1;
+    --kaspi-bg-primary: #E5ECE9;
+    --kaspi-bg-base: #E5ECE9;
+    --kaspi-bg-secondary: #D4DFDC;
     --kaspi-text-primary: #0F172A;
     --kaspi-text-secondary: rgba(15, 23, 42, 0.78);
     --kaspi-text-muted: rgba(15, 23, 42, 0.56);
     --kaspi-glass-bg: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.24) 0%,
-      rgba(255, 255, 255, 0.08) 45%,
-      rgba(16, 185, 129, 0.08) 70%,
-      rgba(255, 255, 255, 0.18) 100%
+      rgba(255, 255, 255, 0.44) 0%,
+      rgba(255, 255, 255, 0.22) 48%,
+      rgba(255, 255, 255, 0.16) 72%,
+      rgba(255, 255, 255, 0.34) 100%
     );
     --kaspi-glass-bg-elevated: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.30) 0%,
-      rgba(255, 255, 255, 0.12) 45%,
-      rgba(16, 185, 129, 0.10) 70%,
-      rgba(255, 255, 255, 0.22) 100%
+      rgba(255, 255, 255, 0.56) 0%,
+      rgba(255, 255, 255, 0.30) 48%,
+      rgba(255, 255, 255, 0.22) 72%,
+      rgba(255, 255, 255, 0.44) 100%
     );
     --kaspi-glass-surface: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.24) 0%,
-      rgba(255, 255, 255, 0.08) 45%,
-      rgba(16, 185, 129, 0.08) 70%,
-      rgba(255, 255, 255, 0.18) 100%
+      rgba(255, 255, 255, 0.44) 0%,
+      rgba(255, 255, 255, 0.22) 48%,
+      rgba(255, 255, 255, 0.16) 72%,
+      rgba(255, 255, 255, 0.34) 100%
     );
     --kaspi-glass-elevated: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.30) 0%,
-      rgba(255, 255, 255, 0.12) 45%,
-      rgba(16, 185, 129, 0.10) 70%,
-      rgba(255, 255, 255, 0.22) 100%
+      rgba(255, 255, 255, 0.56) 0%,
+      rgba(255, 255, 255, 0.30) 48%,
+      rgba(255, 255, 255, 0.22) 72%,
+      rgba(255, 255, 255, 0.44) 100%
     );
-    --kaspi-glass-surface-elevated: #ECF3F0;
+    --kaspi-glass-surface-elevated: #F1F6F4;
     --kaspi-glass-button: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.30) 0%,
-      rgba(255, 255, 255, 0.12) 45%,
-      rgba(16, 185, 129, 0.10) 70%,
-      rgba(255, 255, 255, 0.22) 100%
+      rgba(255, 255, 255, 0.56) 0%,
+      rgba(255, 255, 255, 0.30) 48%,
+      rgba(255, 255, 255, 0.22) 72%,
+      rgba(255, 255, 255, 0.44) 100%
     );
-    --kaspi-glass-border: rgba(16, 185, 129, 0.35);
+    --kaspi-glass-border: rgba(255, 255, 255, 0.82);
     --kaspi-glass-shadow:
-      0 18px 38px -10px rgba(15, 23, 42, 0.12),
-      0 4px 16px rgba(16, 185, 129, 0.14),
-      inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.92),
+      0 14px 36px -10px rgba(15, 23, 42, 0.10),
+      0 4px 14px -4px rgba(16, 185, 129, 0.08),
+      inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.95),
       inset 1px 0 1px 0 rgba(255, 255, 255, 0.72),
-      inset 0 -1px 1px 0 rgba(16, 185, 129, 0.32);
+      inset 0 -1px 1px 0 rgba(15, 23, 42, 0.06);
     --kaspi-corner-aurora-beam: conic-gradient(
       from var(--kaspi-aurora-angle),
-      rgba(16, 185, 129, 0.32) 0deg,
-      rgba(16, 185, 129, 0.68) 35deg,
-      #10b981 65deg,
-      #059669 90deg,
-      #34d399 115deg,
-      rgba(16, 185, 129, 0.68) 145deg,
-      rgba(16, 185, 129, 0.32) 180deg,
-      rgba(16, 185, 129, 0.68) 215deg,
-      #10b981 245deg,
-      #059669 270deg,
-      #34d399 295deg,
-      rgba(16, 185, 129, 0.68) 325deg,
-      rgba(16, 185, 129, 0.32) 360deg
+      rgba(255, 255, 255, 0.55) 0deg,
+      rgba(16, 185, 129, 0.36) 45deg,
+      rgba(16, 185, 129, 0.62) 75deg,
+      rgba(5, 150, 105, 0.68) 90deg,
+      rgba(52, 211, 153, 0.55) 105deg,
+      rgba(255, 255, 255, 0.55) 150deg,
+      rgba(255, 255, 255, 0.55) 180deg,
+      rgba(16, 185, 129, 0.36) 225deg,
+      rgba(16, 185, 129, 0.62) 255deg,
+      rgba(5, 150, 105, 0.68) 270deg,
+      rgba(52, 211, 153, 0.55) 285deg,
+      rgba(255, 255, 255, 0.55) 330deg,
+      rgba(255, 255, 255, 0.55) 360deg
     );
     --kaspi-corner-aurora-bloom: conic-gradient(
       from var(--kaspi-aurora-angle),
-      rgba(16, 185, 129, 0.22) 0deg,
-      rgba(16, 185, 129, 0.78) 45deg,
-      #10b981 75deg,
-      #059669 90deg,
-      #34d399 105deg,
-      rgba(52, 211, 153, 0.78) 135deg,
-      rgba(16, 185, 129, 0.22) 180deg,
-      rgba(16, 185, 129, 0.78) 225deg,
-      #10b981 255deg,
-      #059669 270deg,
-      #34d399 285deg,
-      rgba(52, 211, 153, 0.78) 315deg,
-      rgba(16, 185, 129, 0.22) 360deg
+      rgba(255, 255, 255, 0.25) 0deg,
+      rgba(16, 185, 129, 0.32) 55deg,
+      rgba(16, 185, 129, 0.52) 84deg,
+      rgba(5, 150, 105, 0.56) 90deg,
+      rgba(52, 211, 153, 0.45) 96deg,
+      rgba(255, 255, 255, 0.25) 135deg,
+      rgba(255, 255, 255, 0.25) 180deg,
+      rgba(16, 185, 129, 0.32) 235deg,
+      rgba(16, 185, 129, 0.52) 264deg,
+      rgba(5, 150, 105, 0.56) 270deg,
+      rgba(52, 211, 153, 0.45) 276deg,
+      rgba(255, 255, 255, 0.25) 315deg,
+      rgba(255, 255, 255, 0.25) 360deg
     );
-    --kaspi-input-bg: rgba(255, 255, 255, 0.14);
-    --kaspi-input-border: rgba(16, 185, 129, 0.38);
-    --kaspi-aurora-1: rgba(16, 185, 129, 0.34);
-    --kaspi-aurora-2: rgba(5, 150, 105, 0.24);
-    --kaspi-aurora-3: rgba(255, 255, 255, 0.20);
-    --kaspi-active-ring: 0 0 0 1.5px rgba(16, 185, 129, 0.88), 0 12px 28px -6px rgba(16, 185, 129, 0.30);
+    --kaspi-input-bg: rgba(255, 255, 255, 0.34);
+    --kaspi-input-border: rgba(255, 255, 255, 0.78);
+    --kaspi-aurora-1: rgba(16, 185, 129, 0.36);
+    --kaspi-aurora-2: rgba(52, 211, 153, 0.28);
+    --kaspi-aurora-3: rgba(255, 255, 255, 0.36);
+    --kaspi-active-ring: 0 0 0 1px rgba(16, 185, 129, 0.42), 0 12px 28px -8px rgba(16, 185, 129, 0.18);
   }
 
   @keyframes kaspi-global-aurora-drift {
@@ -232,7 +232,7 @@
     transition: background-color 0.28s ease, color 0.28s ease;
   }
 
-  /* Soft atmospheric light spheres BEHIND frosted glass (zero cyan/green pollution) */
+  /* Living Flowing Atmospheric Aurora Mist Waves BEHIND Every Frosted Glass Panel */
   body::before {
     content: "";
     position: fixed;
@@ -240,12 +240,25 @@
     z-index: -10;
     pointer-events: none;
     background:
-      radial-gradient(circle at 20% 20%, var(--kaspi-aurora-1) 0%, transparent 45%),
-      radial-gradient(circle at 80% 75%, var(--kaspi-aurora-2) 0%, transparent 50%),
-      radial-gradient(circle at 50% 45%, var(--kaspi-aurora-3) 0%, transparent 65%);
-    filter: blur(52px);
-    animation: kaspi-global-aurora-drift 22s ease-in-out infinite;
+      radial-gradient(ellipse 52% 42% at 18% 22%, var(--kaspi-aurora-1) 0%, transparent 60%),
+      radial-gradient(ellipse 56% 44% at 82% 76%, var(--kaspi-aurora-2) 0%, transparent 62%),
+      radial-gradient(ellipse 68% 48% at 50% 48%, var(--kaspi-aurora-3) 0%, transparent 68%);
+    filter: blur(56px);
+    animation: kaspi-global-aurora-drift 20s ease-in-out infinite;
     will-change: transform;
+  }
+
+  /* Strip Browser Native Password Reveal Eye (Fixes Double-Eye Bug in RTL/LTR Edge & Chromium) */
+  input[type="password"]::-ms-reveal,
+  input[type="password"]::-ms-clear,
+  input[type="password"]::-webkit-contacts-auto-fill-button,
+  input[type="password"]::-webkit-credentials-auto-fill-button {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
   }
 }
 
@@ -476,12 +489,20 @@ html[lang="ar"] label,
 .kaspi-frosted-card,
 .kaspi-frosted-surface {
   background: var(--kaspi-glass-bg) !important;
-  backdrop-filter: blur(14px) saturate(165%) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
+  backdrop-filter: blur(22px) saturate(165%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(165%) !important;
   border: 1px solid var(--kaspi-glass-border) !important;
   box-shadow: var(--kaspi-glass-shadow) !important;
   color: var(--kaspi-text-primary);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.kaspi-transparent-shell {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
 }
 
 .kaspi-studio-product-box {
@@ -542,15 +563,15 @@ html[lang="ar"] label,
   /* 1. CLEAN TRANSLUCENT FROSTED GLASS */
   .kaspi-smoky-glass {
     background: var(--kaspi-glass-bg) !important;
-    backdrop-filter: blur(14px) saturate(165%) !important;
-    -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
+    backdrop-filter: blur(22px) saturate(165%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(165%) !important;
     border: 1px solid var(--kaspi-glass-border) !important;
     box-shadow: var(--kaspi-glass-shadow) !important;
     color: var(--kaspi-text-primary);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
 
-  /* 2. APPLE VISIONOS 3D CRYSTAL GLASS + DUAL-MODE CORNER AURORA (WHITE IN DARK, EMERALD GREEN IN LIGHT) */
+  /* 2. APPLE VISIONOS 3D CRYSTAL GLASS + DUAL-MODE CORNER AURORA (WHITE IN DARK, EMERALD PEARL IN LIGHT) */
   :is(
     .kaspi-polar-aurora-orbit,
     .kaspi-aistudio-orbit,
@@ -575,8 +596,8 @@ html[lang="ar"] label,
   div:is(.rounded-2xl, .rounded-3xl):is([class*="bg-zinc-9"], [class*="bg-[#0"], [class*="bg-[#1"]):not(.fixed):not(.kaspi-opaque-glass-modal),
   section:is(.rounded-2xl, .rounded-3xl):is([class*="bg-zinc-9"], [class*="bg-[#0"], [class*="bg-[#1"]) {
     background: var(--kaspi-glass-surface) !important;
-    backdrop-filter: blur(14px) saturate(165%) !important;
-    -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
+    backdrop-filter: blur(22px) saturate(165%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(165%) !important;
     border: 1px solid var(--kaspi-glass-border) !important;
     box-shadow: var(--kaspi-glass-shadow) !important;
     color: var(--kaspi-text-primary);
@@ -584,7 +605,7 @@ html[lang="ar"] label,
     transition: box-shadow 0.22s ease, border-color 0.22s ease, transform 0.22s ease !important;
   }
 
-  /* Crisp 1.75px rotating corner glint — strictly locked to the border line! */
+  /* Crisp 1.5px rotating corner glint — strictly locked to the border line! */
   .kaspi-polar-aurora-orbit::before,
   .kaspi-aistudio-orbit::before,
   .kaspi-product-orbit-card::before,
@@ -599,7 +620,7 @@ html[lang="ar"] label,
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    padding: 1.75px;
+    padding: 1.5px;
     background: var(--kaspi-corner-aurora-beam);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
@@ -624,13 +645,13 @@ html[lang="ar"] label,
     position: absolute;
     inset: -1px;
     border-radius: inherit;
-    padding: 3px;
+    padding: 2.5px;
     background: var(--kaspi-corner-aurora-bloom);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     filter: blur(3px);
-    opacity: 0.95;
+    opacity: 0.78;
     pointer-events: none;
     z-index: 3;
     animation: kaspi-polar-aurora-spin 8s linear infinite;
@@ -642,8 +663,8 @@ html[lang="ar"] label,
 
   .kaspi-glass-btn {
     background: var(--kaspi-glass-elevated) !important;
-    backdrop-filter: blur(14px) saturate(165%) !important;
-    -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
+    backdrop-filter: blur(22px) saturate(165%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(165%) !important;
     border: 1px solid var(--kaspi-glass-border) !important;
     box-shadow: var(--kaspi-glass-shadow) !important;
     color: var(--kaspi-text-primary) !important;
@@ -785,7 +806,7 @@ html[data-kaspi-theme="pearl-light"] .fixed.inset-0[class*="bg-[#0"] {
   -webkit-backdrop-filter: blur(14px) !important;
 }
 
-/* Intercept ALL Arbitrary Dark Hexes & Dark Tailwind Surfaces in pearl-light */
+/* Intercept ALL Arbitrary Dark Hexes & Dark Tailwind Surfaces in pearl-light (Excluding Transparent Layout Shells & Fixed Backdrops) */
 html[data-kaspi-theme="pearl-light"] :is(
   [class*="bg-[#0"],
   [class*="bg-[#1"],
@@ -796,10 +817,10 @@ html[data-kaspi-theme="pearl-light"] :is(
   [class*="bg-gray-9"],
   .bg-black,
   [class*="bg-black/"]
-):not(.fixed.inset-0):not([class*="bg-[#ffffff"]):not([class*="bg-[#fff"]):not(.kaspi-product-white-box):not(.kaspi-studio-product-box):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn) {
+):not(.fixed.inset-0):not(.min-h-screen):not(.h-screen):not(.kaspi-transparent-shell):not([class*="bg-[#ffffff"]):not([class*="bg-[#fff"]):not(.kaspi-product-white-box):not(.kaspi-studio-product-box):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn) {
   background: var(--kaspi-glass-surface) !important;
-  backdrop-filter: blur(14px) saturate(165%) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
+  backdrop-filter: blur(22px) saturate(175%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(175%) !important;
   box-shadow: var(--kaspi-glass-shadow) !important;
 }
 
@@ -810,29 +831,29 @@ html[data-kaspi-theme="pearl-light"] :is(
   [class*="from-[#0"],
   [class*="from-[#1"],
   [class*="from-black"]
-):not(.fixed.inset-0):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn) {
+):not(.fixed.inset-0):not(.kaspi-transparent-shell):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn) {
   background-image: none !important;
   background: var(--kaspi-glass-surface) !important;
   box-shadow: var(--kaspi-glass-shadow) !important;
 }
 
-/* Intercept Translucent White Fills (bg-white/5, bg-white/10, etc.) to True See-Through Crystal Glass */
+/* Intercept Translucent White Fills (bg-white/5, bg-white/10, etc.) to True See-Through Pearl Crystal Glass */
 html[data-kaspi-theme="pearl-light"] [class*="bg-white/"]:not([class*="hover:bg-white/"]):not(.kaspi-product-white-box):not(.kaspi-studio-product-box):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn) {
-  background-color: rgba(255, 255, 255, 0.14) !important;
-  backdrop-filter: blur(14px) saturate(165%) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
+  background-color: rgba(255, 255, 255, 0.30) !important;
+  backdrop-filter: blur(22px) saturate(175%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(175%) !important;
 }
 
 html[data-kaspi-theme="pearl-light"] [class*="bg-white/"]:not(.kaspi-product-white-box):not(.kaspi-studio-product-box):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn):hover {
-  background-color: rgba(255, 255, 255, 0.24) !important;
+  background-color: rgba(255, 255, 255, 0.44) !important;
 }
 
-/* Intercept ALL Borders, Dividers & Rings with Emerald Green Glass Rims in pearl-light */
+/* Intercept ALL Borders & Rings with Crisp 1px White Crystal Bevel (Zero Thick Neon Green Borders!) */
 html[data-kaspi-theme="pearl-light"] [class*="border-white/"],
 html[data-kaspi-theme="pearl-light"] [class*="border-zinc-7"],
 html[data-kaspi-theme="pearl-light"] [class*="border-zinc-8"],
 html[data-kaspi-theme="pearl-light"] [class*="border-zinc-9"] {
-  border-color: rgba(16, 185, 129, 0.35) !important;
+  border-color: rgba(255, 255, 255, 0.72) !important;
 }
 
 html[data-kaspi-theme="pearl-light"] [class*="divide-white/"] > :not([hidden]) ~ :not([hidden]),
@@ -894,10 +915,10 @@ html[data-kaspi-theme="pearl-light"] .text-emerald-400 {
 html[data-kaspi-theme="pearl-light"] :is(button, a).bg-white:is(.text-black, .text-zinc-950, .text-zinc-900):not(.kaspi-emerald-checkout-btn),
 html[data-kaspi-theme="pearl-light"] :is(button, a, div, span, section, nav, aside).bg-white:not(.kaspi-product-white-box):not(.kaspi-studio-product-box):not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn):not(img) {
   background: var(--kaspi-glass-button) !important;
-  backdrop-filter: blur(14px) saturate(165%) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
+  backdrop-filter: blur(22px) saturate(175%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(175%) !important;
   color: #0F172A !important;
-  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
   box-shadow: var(--kaspi-glass-shadow) !important;
 }
 
@@ -931,19 +952,30 @@ html[data-kaspi-theme="pearl-light"] :is(button, a)[class*="bg-red-6"] * {
   color: #ffffff !important;
 }
 
-/* Fjord Twilight (Deep Obsidian #07090D + 3D Smoked Glass Cards) */
+/* Fjord Twilight (Transparent Page Wrappers Letting Flowing Silver-White Aurora Refract Behind 22px Smoked Crystal Glass) */
+html[data-kaspi-theme="fjord-twilight"] :is(
+  .min-h-screen,
+  .h-screen,
+  .kaspi-transparent-shell
+):is(.bg-black, .bg-zinc-950, [class*="bg-[#0"]) {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
 html[data-kaspi-theme="fjord-twilight"] :is(
   .bg-black,
   .bg-zinc-950,
   [class*="bg-[#0"]
-):not(.fixed.inset-0):not(.kaspi-product-white-box):not(.kaspi-studio-product-box):not(.kaspi-opaque-glass-modal):not(.kaspi-polar-aurora-orbit):not(.kaspi-emerald-checkout-btn) {
-  background-color: #07090D !important;
+):not(.fixed.inset-0):not(.min-h-screen):not(.h-screen):not(.kaspi-transparent-shell):not(.kaspi-product-white-box):not(.kaspi-studio-product-box):not(.kaspi-opaque-glass-modal):not(.kaspi-polar-aurora-orbit):not(.kaspi-emerald-checkout-btn) {
+  background: rgba(255, 255, 255, 0.045) !important;
+  backdrop-filter: blur(18px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
 }
 
 html[data-kaspi-theme="fjord-twilight"] .bg-zinc-900:not(.kaspi-opaque-glass-modal):not(.kaspi-emerald-checkout-btn) {
   background: var(--kaspi-glass-surface) !important;
-  backdrop-filter: blur(14px) saturate(165%) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(165%) !important;
+  backdrop-filter: blur(22px) saturate(165%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(165%) !important;
   box-shadow: var(--kaspi-glass-shadow) !important;
 }
 

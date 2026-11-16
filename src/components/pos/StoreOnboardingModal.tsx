@@ -16,10 +16,11 @@ import {
   PackagePlus,
   ArrowRight,
   AlertTriangle,
-  X,
 } from "lucide-react";
 import { StoreBusinessType, usePosStore } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
+import { KaspiBrandMark } from "@/components/common/KaspiBrandMark";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 
 interface StoreOnboardingModalProps {
   isOpen: boolean;
@@ -157,39 +158,31 @@ export function StoreOnboardingModal({
   return (
     <div
       dir="ltr"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xl p-4 overflow-y-auto"
     >
-      <div className="kaspi-frosted-glass relative w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden my-auto">
-        {/* Top Accent Banner (Strict Monochrome) */}
-        <div className="h-1 w-full bg-white/20" />
+      <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit relative w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden my-auto">
+        {/* Top Accent Banner */}
+        <div className="h-1 w-full bg-white/15" />
 
         <div className="p-6 md:p-8">
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <div className="flex items-center gap-2.5 mb-2.5">
-                <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 select-none">
-                  <img src="/logo.png" alt="KASPI POS" className="w-full h-full object-cover scale-[1.24] bg-transparent select-none" />
-                </div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-xs font-bold">
+                <KaspiBrandMark size="sm" />
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-btn text-[var(--kaspi-text-primary)] text-xs font-bold">
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>{t.onboarding.businessSectorBtn}</span>
                 </div>
               </div>
-              <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+              <h2 className="text-2xl md:text-3xl font-black text-[var(--kaspi-text-primary)] tracking-tight">
                 {t.onboarding.modalTitle}
               </h2>
-              <p className="text-sm text-zinc-400 mt-1">
+              <p className="text-sm text-[var(--kaspi-text-secondary)] mt-1">
                 {t.onboarding.modalSubtitle}
               </p>
             </div>
             {canDismiss && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <AppleBackButton onClick={onClose} locale={locale} />
             )}
           </div>
 

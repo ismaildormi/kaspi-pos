@@ -5,7 +5,6 @@ import {
   Scan,
   Scale,
   Search,
-  X,
   Package,
   Calendar,
   Layers,
@@ -17,6 +16,7 @@ import {
 import { usePosStore, type PosProduct } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
 import { playTapSound, playSuccessSound } from "@/lib/audio";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 
 interface GroceryScannerUtilityBarProps {
   products: PosProduct[];
@@ -197,40 +197,37 @@ export function GroceryScannerUtilityBar({
       {isPriceVerifierOpen && (
         <div
           dir="ltr"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn select-none"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-xl animate-fadeIn select-none"
         >
-          <div className="kaspi-frosted-glass w-full max-w-lg rounded-3xl shadow-2xl p-6 space-y-5">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-lg rounded-3xl shadow-2xl p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 gap-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
                   <Scan className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">
+                  <h3 className="text-sm font-bold text-[var(--kaspi-text-primary)]">
                     {locale === "ar"
                       ? "جهاز فحص السعر وصلاحية الرفوف (DLC)"
                       : locale === "fr"
                       ? "Vérificateur de Prix & DLC"
                       : "Price & Shelf DLC Verifier"}
                   </h3>
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-[11px] text-[var(--kaspi-text-secondary)]">
                     {locale === "ar"
                       ? "امسح الباركود أو اكتب اسم السلعة للتحقق من السعر الفوري دون إضافة للسلة"
                       : "Scannez le code-barres pour afficher le prix sans ajouter au panier"}
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
+              <AppleBackButton
                 onClick={() => {
                   setIsPriceVerifierOpen(false);
                   setVerifiedProduct(null);
                   setVerifierQuery("");
                 }}
-                className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+                locale={locale}
+              />
             </div>
 
             {/* Barcode Search Field */}
@@ -339,36 +336,30 @@ export function GroceryScannerUtilityBar({
       {isPluModalOpen && (
         <div
           dir="ltr"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn select-none"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-xl animate-fadeIn select-none"
         >
-          <div className="kaspi-frosted-glass w-full max-w-lg rounded-3xl shadow-2xl p-6 space-y-5">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-lg rounded-3xl shadow-2xl p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 gap-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
                   <Scale className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">
+                  <h3 className="text-sm font-bold text-[var(--kaspi-text-primary)]">
                     {locale === "ar"
                       ? "إدخال الخضر والفواكه والأوزان (PLU)"
                       : locale === "fr"
                       ? "Saisie Fruits & Légumes au Poids (PLU)"
                       : "Loose Produce & Scale PLU Entry"}
                   </h3>
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-[11px] text-[var(--kaspi-text-secondary)]">
                     {locale === "ar"
                       ? "اختر الصنف بالرمز السريع وحدد الوزن بالكيلوغرام"
                       : "Sélectionnez le produit et ajustez le poids en kg"}
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsPluModalOpen(false)}
-                className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <AppleBackButton onClick={() => setIsPluModalOpen(false)} locale={locale} />
             </div>
 
             {/* Quick PLU Grid Selector */}

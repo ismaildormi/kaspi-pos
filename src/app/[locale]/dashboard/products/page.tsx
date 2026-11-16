@@ -22,6 +22,7 @@ import {
   Printer,
   ChevronDown,
 } from "lucide-react";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 import { generateProductImageUrl } from "@/lib/pollinations";
 import { uploadProductImage } from "@/lib/supabase-storage";
 import { compressImage } from "@/lib/image-compression";
@@ -1047,25 +1048,19 @@ export default function ProductsListPage() {
          MODAL 1: CHANGE IMAGE URL ("تغيير الصورة")
          ==================================================================== */}
       {imageModalProduct && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-5 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+        <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xl flex items-center justify-center p-4">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-md rounded-2xl p-6 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 gap-3">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <h3 className="text-base font-bold text-[var(--kaspi-text-primary)] flex items-center gap-2">
                   <ImageIcon className="w-4 h-4" />
                   {locale === "ar" ? "تغيير صورة المنتج" : locale === "fr" ? "Modifier l'image" : "Change Product Image"}
                 </h3>
-                <p className="text-xs text-zinc-400 mt-0.5">
+                <p className="text-xs text-[var(--kaspi-text-secondary)] mt-0.5">
                   {imageModalProduct.name}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setImageModalProduct(null)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <AppleBackButton onClick={() => setImageModalProduct(null)} locale={locale} />
             </div>
 
             <form onSubmit={handleSaveCustomImageUrl} className="space-y-4">
@@ -1164,25 +1159,19 @@ export default function ProductsListPage() {
          MODAL 2: EDIT PRICE ("تعديل الثمن")
          ==================================================================== */}
       {priceModalProduct && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-5 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+        <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xl flex items-center justify-center p-4">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-md rounded-2xl p-6 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 gap-3">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <h3 className="text-base font-bold text-[var(--kaspi-text-primary)] flex items-center gap-2">
                   <DollarSign className="w-4 h-4" />
                   {locale === "ar" ? "تعديل سعر البيع" : locale === "fr" ? "Modifier le prix de vente" : "Edit Selling Price"}
                 </h3>
-                <p className="text-xs text-zinc-400 mt-0.5">
+                <p className="text-xs text-[var(--kaspi-text-secondary)] mt-0.5">
                   {priceModalProduct.name} ({priceModalProduct.sku})
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setPriceModalProduct(null)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <AppleBackButton onClick={() => setPriceModalProduct(null)} locale={locale} />
             </div>
 
             <form onSubmit={handleSavePrice} className="space-y-4">
@@ -1329,13 +1318,7 @@ export default function ProductsListPage() {
                   </span>
                 </h3>
 
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-3.5 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.10] border border-white/[0.10] text-xs font-semibold text-zinc-200 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <span>{locale === "ar" ? "← رجوع" : locale === "en" ? "← Back" : "← Retour"}</span>
-                </button>
+                <AppleBackButton onClick={() => setIsCreateModalOpen(false)} locale={locale} />
               </div>
 
               {/* Hidden File Input */}

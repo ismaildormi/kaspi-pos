@@ -12,7 +12,6 @@ import {
   CreditCard,
   Upload,
   Check,
-  X,
   Loader2,
   KeyRound,
   Wallet,
@@ -21,6 +20,7 @@ import {
   Landmark,
   MessageSquare,
 } from "lucide-react";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 import { compressImage } from "@/lib/storage/compression-engine";
 import { useAppDictionary } from "@/i18n/schema";
 import { usePosStore } from "@/client/store/usePosStore";
@@ -400,13 +400,7 @@ export function OwnerProfileModal({
                 <span>{locale === "ar" ? "← قفل" : locale === "en" ? "← Lock" : "← Verrouiller"}</span>
               </button>
             )}
-            <button
-              type="button"
-              onClick={handleModalClose}
-              className="keycap-3d px-3 py-1.5 rounded-xl border border-white/10 bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-zinc-200 hover:text-white flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98]"
-            >
-              <span>{locale === "ar" ? "← رجوع" : locale === "en" ? "← Back" : "← Retour"}</span>
-            </button>
+            <AppleBackButton onClick={handleModalClose} locale={locale} />
           </div>
         </div>
 

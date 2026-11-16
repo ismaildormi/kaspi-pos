@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, ArrowRightLeft, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowRightLeft, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDictionary } from "@/i18n/schema";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 
 export interface TransferStoreItem {
   id: string;
@@ -146,12 +147,7 @@ export function StockTransferModal({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <AppleBackButton onClick={onClose} locale={locale} />
         </div>
 
         {/* Form */}

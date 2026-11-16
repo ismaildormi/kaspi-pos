@@ -3,7 +3,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import {
-  X,
   Banknote,
   CreditCard,
   UserCheck,
@@ -22,6 +21,7 @@ import {
   Building2,
   ChevronDown,
 } from "lucide-react";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 import { usePosStore, type PaymentMethodType } from "@/client/store/usePosStore";
 import { useAppDictionary } from "@/i18n/schema";
 import { ThermalReceipt, type ReceiptData } from "./ThermalReceipt";
@@ -333,12 +333,7 @@ export function UnifiedCheckoutModal() {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleClose}
-            className="keycap-3d p-2 text-zinc-400 hover:text-white rounded-xl bg-zinc-900 border border-zinc-800 transition cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <AppleBackButton onClick={handleClose} locale={locale} />
         </div>
 
         {/* Modal Body */}

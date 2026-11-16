@@ -4,6 +4,7 @@ import React from "react";
 import { playTapSound } from "@/lib/audio";
 import { KaspiThemeToggle } from "@/components/theme/KaspiThemeToggle";
 import { useKaspiTheme } from "@/components/theme/KaspiThemeProvider";
+import { KaspiBrandMark } from "@/components/common/KaspiBrandMark";
 
 export type AuthLocale = "ar" | "fr" | "en";
 
@@ -552,13 +553,13 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
         </div>
       </div>
 
-      {/* Ambient Atmospheric Aurora Spheres (Pure White in Dark, Emerald Green in Pearl Light) */}
+      {/* Ambient Atmospheric Aurora Spheres (Flowing Silver-White in Dark, Emerald-Pearl in Light) */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background: isPearl
-            ? "radial-gradient(circle at 22% 24%, rgba(16,185,129,0.34) 0%, transparent 48%), radial-gradient(circle at 78% 76%, rgba(52,211,153,0.28) 0%, transparent 52%), radial-gradient(circle at 50% 45%, rgba(255,255,255,0.24) 0%, transparent 60%)"
-            : "radial-gradient(circle at 22% 24%, rgba(255,255,255,0.06) 0%, transparent 45%), radial-gradient(circle at 78% 76%, rgba(255,255,255,0.04) 0%, transparent 50%)",
+            ? "radial-gradient(ellipse 52% 42% at 22% 24%, rgba(16,185,129,0.42) 0%, transparent 55%), radial-gradient(ellipse 56% 44% at 78% 76%, rgba(52,211,153,0.34) 0%, transparent 58%), radial-gradient(ellipse 65% 48% at 50% 45%, rgba(255,255,255,0.38) 0%, transparent 65%)"
+            : "radial-gradient(ellipse 52% 42% at 22% 24%, rgba(255,255,255,0.16) 0%, transparent 55%), radial-gradient(ellipse 56% 44% at 78% 76%, rgba(226,232,240,0.11) 0%, transparent 58%)",
         }}
       />
 
@@ -600,14 +601,10 @@ export const AuthGlassShell: React.FC<AuthGlassShellProps> = ({
           })}
         </div>
 
-        {/* Brand Identity Header */}
+        {/* Brand Identity Header — Sculpted Frameless 3D Metallic Infinity Mark */}
         <div className="text-center mb-4">
-          <div className="w-14 h-14 rounded-2xl overflow-hidden mx-auto mb-2.5 select-none">
-            <img
-              src="/logo.png"
-              alt="KASPI POS"
-              className="w-full h-full object-cover scale-[1.24] select-none bg-transparent"
-            />
+          <div className="flex justify-center mb-2">
+            <KaspiBrandMark size="auth" alt="KASPI POS" />
           </div>
           <div
             dir="ltr"

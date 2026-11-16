@@ -15,13 +15,13 @@ import {
   ArrowRight,
   Phone,
   Building2,
-  X,
   Loader2,
   Check,
   MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { usePosStore } from "@/client/store/usePosStore";
+import { AppleBackButton } from "@/components/common/AppleBackButton";
 
 interface CustomerItem {
   id: string;
@@ -242,9 +242,9 @@ export default function CustomersPage() {
   const totalPoints = customers.reduce((sum, c) => sum + (c.loyaltyPoints || 0), 0);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white pb-20 select-none">
+    <div className="kaspi-transparent-shell min-h-screen bg-transparent text-[var(--kaspi-text-primary)] pb-20 select-none">
       {/* Top Bar */}
-      <header dir="ltr" className="bg-zinc-950 border-b border-zinc-800 sticky top-0 z-30">
+      <header dir="ltr" className="kaspi-frosted-glass border-b border-white/[0.08] relative z-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
@@ -424,16 +424,11 @@ export default function CustomersPage() {
 
       {/* Add Customer Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4">
-              <h3 className="font-bold text-white text-base">{t.customers.modalTitle}</h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xl">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] mb-4">
+              <h3 className="font-bold text-[var(--kaspi-text-primary)] text-base">{t.customers.modalTitle}</h3>
+              <AppleBackButton onClick={() => setIsModalOpen(false)} locale={locale} />
             </div>
 
             {errorMsg && (
@@ -520,27 +515,21 @@ export default function CustomersPage() {
 
       {/* Carnet de Crédit (Repayment & Ledger History) Modal */}
       {activeCustomerForCredit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xl">
+          <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 gap-3">
               <div>
-                <h3 className="font-bold text-white text-base">
+                <h3 className="font-bold text-[var(--kaspi-text-primary)] text-base">
                   {t.customers.ledgerTitle} • {activeCustomerForCredit.name}
                 </h3>
-                <p className="text-xs text-zinc-400 font-mono mt-0.5">
+                <p className="text-xs text-[var(--kaspi-text-secondary)] font-mono mt-0.5">
                   {t.customers.currentBalance}:{" "}
                   <span className="text-amber-400 font-extrabold">
                     {activeCustomerForCredit.currentCreditBalance.toFixed(2)} MAD
                   </span>
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setActiveCustomerForCredit(null)}
-                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <AppleBackButton onClick={() => setActiveCustomerForCredit(null)} locale={locale} />
             </div>
 
             {creditError && (
