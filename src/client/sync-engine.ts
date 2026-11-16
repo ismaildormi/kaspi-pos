@@ -37,16 +37,14 @@ export function getApiUrl(path: string): string {
 
   // When running inside a local Tauri custom-protocol shell (tauri://localhost),
   // route API calls to the production cloud origin. When already on an http/https
-  // web origin (including kaspi-pos.vercel.app or preview deployments), always use
+  // web origin (including localhost, 127.0.0.1, or remote web host), always use
   // same-origin relative paths so HTTP-only session cookies (pos_session) are
   // persisted and sent on the exact same domain.
   if (
     isTauriDesktopRuntime() &&
     typeof window !== "undefined" &&
     (window.location.protocol === "tauri:" ||
-      window.location.hostname === "tauri.localhost" ||
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1")
+      window.location.hostname === "tauri.localhost")
   ) {
     if (cleanPath.startsWith("/api/v1")) {
       const subPath = cleanPath.slice("/api/v1".length);

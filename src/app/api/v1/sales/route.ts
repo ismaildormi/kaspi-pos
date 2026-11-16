@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/server/db/prisma";
 import { getRequestContext, runWithTenantContext } from "@/server/auth/context";
@@ -19,7 +20,7 @@ const SaleItemInputSchema = z.object({
 const CreateSaleSchema = z.object({
   clientSaleId: z.string().uuid("Invalid clientSaleId"),
   idempotencyKey: z.string().min(1),
-  storeId: z.string().uuid("Invalid store ID"),
+  storeId: z.string().uuid("Invalid store ID").optional().or(z.literal("")),
   customerId: z.string().uuid().optional(),
   tableId: z.string().uuid().optional(),
   redeemedPoints: z.number().int().nonnegative().optional().default(0),
@@ -60,6 +61,30 @@ export async function POST(req: NextRequest) {
       items,
     } = parsed.data;
 
+    // Resolve storeId if omitted or empty
+    let resolvedStoreId = storeId && storeId.trim().length > 0 ? storeId : null;
+    if (!resolvedStoreId) {
+      resolvedStoreId = ctx.storeIds?.[0] || null;
+    }
+    if (!resolvedStoreId) {
+      const primaryStore = await prisma.store.findFirst({
+        where: { tenantId: ctx.tenantId },
+        select: { id: true },
+      });
+      resolvedStoreId = primaryStore?.id || null;
+    }
+    if (!resolvedStoreId) {
+      // Create or use fallback primary store for tenant if needed
+      const autoStore = await prisma.store.create({
+        data: {
+          tenantId: ctx.tenantId,
+          name: "Point de Vente Principal",
+          code: "POS-MAIN",
+        },
+      });
+      resolvedStoreId = autoStore.id;
+    }
+
     // 1. Check for existing idempotency replay
     const existing = await prisma.sale.findFirst({
       where: {
@@ -99,7 +124,7 @@ export async function POST(req: NextRequest) {
           const activeCashSession = await tx.cashSession.findFirst({
             where: {
               tenantId: ctx.tenantId,
-              storeId,
+              storeId: resolvedStoreId,
               status: "open",
             },
             orderBy: { openedAt: "desc" },
@@ -110,7 +135,7 @@ export async function POST(req: NextRequest) {
           const sale = await tx.sale.create({
             data: {
               tenantId: ctx.tenantId,
-              storeId,
+              storeId: resolvedStoreId,
               cashSessionId: activeCashSession?.id || null,
               cashierUserId: ctx.userId,
               customerId: customerId || null,
@@ -123,86 +148,86 @@ export async function POST(req: NextRequest) {
               taxTotal: toPrismaDecimal(taxTotal),
               discountTotal: toPrismaDecimal(discountTotal),
               grandTotal: toPrismaDecimal(grandTotal),
-          paidTotal: toPrismaDecimal(paidTotal),
-          changeDue: toPrismaDecimal(changeDue),
-          paymentMethod,
-          completedAt: new Date(),
-        },
-      });
-
-      // Create SaleItems and update inventory
-      for (let idx = 0; idx < items.length; idx++) {
-        const item = items[idx];
-        const prod = productMap.get(item.productId);
-        const nameSnapshot = prod?.name || "Article Divers";
-        const skuSnapshot = prod?.sku || "DIVERS";
-        const qtyDec = toDecimal(item.quantity);
-        const priceDec = toDecimal(item.unitPrice);
-        const discDec = toDecimal(item.discountAmount);
-        const taxRateDec = toDecimal(item.taxRate);
-
-        const net = roundMoney(qtyDec.times(priceDec).minus(discDec));
-        const tax = roundMoney(net.times(taxRateDec).dividedBy(100));
-        const lineTotal = roundMoney(net.plus(tax));
-
-        await tx.saleItem.create({
-          data: {
-            tenantId: ctx.tenantId,
-            saleId: sale.id,
-            productId: item.productId,
-            lineNo: item.lineNo || idx + 1,
-            productNameSnapshot: nameSnapshot,
-            skuSnapshot,
-            quantity: toPrismaQtyDecimal(qtyDec),
-            unitPrice: toPrismaDecimal(priceDec),
-            discountAmount: toPrismaDecimal(discDec),
-            taxRate: toPrismaDecimal(taxRateDec),
-            taxAmount: toPrismaDecimal(tax),
-            netAmount: toPrismaDecimal(net),
-            lineTotal: toPrismaDecimal(lineTotal),
-            costSnapshot: prod?.costPrice ? toPrismaDecimal(prod.costPrice) : null,
-          },
-        });
-
-        // Record inventory movement (reduction)
-        await tx.inventoryMovement.create({
-          data: {
-            tenantId: ctx.tenantId,
-            storeId,
-            productId: item.productId,
-            movementType: "sale",
-            quantityDelta: toPrismaQtyDecimal(qtyDec.negated()),
-            unitCost: prod?.costPrice ? toPrismaDecimal(prod.costPrice) : null,
-            referenceType: "sale",
-            referenceId: sale.id,
-            reason: `Vente ${sale.receiptNumber}`,
-            idempotencyKey: `mv_sale_${sale.id}_${item.productId}_${idx}`,
-            createdBy: ctx.userId,
-          },
-        });
-
-        // Decrement stock levels
-        await tx.stockLevel.upsert({
-          where: {
-            tenantId_storeId_productId: {
-              tenantId: ctx.tenantId,
-              storeId,
-              productId: item.productId,
+              paidTotal: toPrismaDecimal(paidTotal),
+              changeDue: toPrismaDecimal(changeDue),
+              paymentMethod,
+              completedAt: new Date(),
             },
-          },
-          update: {
-            quantity: { decrement: toPrismaQtyDecimal(qtyDec) },
-          },
-          create: {
-            tenantId: ctx.tenantId,
-            storeId,
-            productId: item.productId,
-            quantity: toPrismaQtyDecimal(qtyDec.negated()),
-          },
-        });
-      }
+          });
 
-      // Record Sale Payment
+          // Create SaleItems and update inventory
+          for (let idx = 0; idx < items.length; idx++) {
+            const item = items[idx];
+            const prod = productMap.get(item.productId);
+            const nameSnapshot = prod?.name || "Article Divers";
+            const skuSnapshot = prod?.sku || "DIVERS";
+            const qtyDec = toDecimal(item.quantity);
+            const priceDec = toDecimal(item.unitPrice);
+            const discDec = toDecimal(item.discountAmount);
+            const taxRateDec = toDecimal(item.taxRate);
+
+            const net = roundMoney(qtyDec.times(priceDec).minus(discDec));
+            const tax = roundMoney(net.times(taxRateDec).dividedBy(100));
+            const lineTotal = roundMoney(net.plus(tax));
+
+            await tx.saleItem.create({
+              data: {
+                tenantId: ctx.tenantId,
+                saleId: sale.id,
+                productId: item.productId,
+                lineNo: item.lineNo || idx + 1,
+                productNameSnapshot: nameSnapshot,
+                skuSnapshot,
+                quantity: toPrismaQtyDecimal(qtyDec),
+                unitPrice: toPrismaDecimal(priceDec),
+                discountAmount: toPrismaDecimal(discDec),
+                taxRate: toPrismaDecimal(taxRateDec),
+                taxAmount: toPrismaDecimal(tax),
+                netAmount: toPrismaDecimal(net),
+                lineTotal: toPrismaDecimal(lineTotal),
+                costSnapshot: prod?.costPrice ? toPrismaDecimal(prod.costPrice) : null,
+              },
+            });
+
+            // Record inventory movement (reduction)
+            await tx.inventoryMovement.create({
+              data: {
+                tenantId: ctx.tenantId,
+                storeId: resolvedStoreId,
+                productId: item.productId,
+                movementType: "sale",
+                quantityDelta: toPrismaQtyDecimal(qtyDec.negated()),
+                unitCost: prod?.costPrice ? toPrismaDecimal(prod.costPrice) : null,
+                referenceType: "sale",
+                referenceId: sale.id,
+                reason: `Vente ${sale.receiptNumber}`,
+                idempotencyKey: `mv_sale_${sale.id}_${item.productId}_${idx}`,
+                createdBy: ctx.userId,
+              },
+            });
+
+            // Decrement stock levels
+            await tx.stockLevel.upsert({
+              where: {
+                tenantId_storeId_productId: {
+                  tenantId: ctx.tenantId,
+                  storeId: resolvedStoreId,
+                  productId: item.productId,
+                },
+              },
+              update: {
+                quantity: { decrement: toPrismaQtyDecimal(qtyDec) },
+              },
+              create: {
+                tenantId: ctx.tenantId,
+                storeId: resolvedStoreId,
+                productId: item.productId,
+                quantity: toPrismaQtyDecimal(qtyDec.negated()),
+              },
+            });
+          }
+
+          // Record Sale Payment
       await tx.salePayment.create({
         data: {
           tenantId: ctx.tenantId,
@@ -278,10 +303,20 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      return sale;
-    });
-  }
-);
+        return sale;
+      });
+    }
+  );
+
+    // Revalidate dashboard and inventory pages across all locales
+    try {
+      revalidatePath("/[locale]/dashboard", "page");
+      revalidatePath("/[locale]/dashboard/inventory", "page");
+      revalidatePath("/[locale]/dashboard/reports", "page");
+      revalidatePath("/[locale]/dashboard/products", "page");
+    } catch {
+      // Revalidation during background requests is best-effort
+    }
 
     return jsonOk({ sale: result }, 201);
   } catch (err) {

@@ -75,6 +75,7 @@ export function UnifiedCheckoutModal() {
     tenantInfo,
     printerSettings,
     storeType,
+    selectedTableId,
     selectedTableName,
   } = usePosStore();
 
@@ -253,14 +254,14 @@ export function UnifiedCheckoutModal() {
 
     const receiptSnapshot: ReceiptData = {
       shopName: resolvedShopName,
-      legalName: tenantInfo?.legalName || undefined,
+      legalName: undefined,
       logoUrl: undefined,
-      ice: toWesternNumerals(tenantInfo?.ice || "002345678000045"),
-      taxId: toWesternNumerals(tenantInfo?.taxId || "45892134"),
-      rcNumber: toWesternNumerals(tenantInfo?.rcNumber || "98765 Casablanca"),
-      address: tenantInfo?.address || "Casablanca, Maroc",
-      city: tenantInfo?.city || "Casablanca",
-      phone: toWesternNumerals(tenantInfo?.phone || ""),
+      ice: tenantInfo?.ice && tenantInfo.ice !== "002345678000045" ? toWesternNumerals(tenantInfo.ice) : undefined,
+      taxId: undefined,
+      rcNumber: undefined,
+      address: tenantInfo?.address || undefined,
+      city: tenantInfo?.city || undefined,
+      phone: undefined, // Phone number strictly removed from customer receipts
       receiptNumber: toWesternNumerals(`REC-${Date.now().toString().slice(-6)}`),
       date: formatReceiptDate(new Date(), receiptLang),
       cashierName: "Caisse 1",
@@ -291,6 +292,12 @@ export function UnifiedCheckoutModal() {
       sectorMetadata: sectorMetadataList,
       isGiftVoucher: isGiftVoucherRequested,
       isDeliveryNote: isBlRequested || storeType === "wholesale",
+      taxDisplayMode: printerSettings?.taxDisplayMode || "INCLUSIVE_CLEAN",
+      showLegalIceOnReceipt: printerSettings?.showLegalIceOnReceipt,
+      receiptFooterCodeType: printerSettings?.receiptFooterCodeType || "NONE",
+      receiptQrTargetUrl: printerSettings?.receiptQrTargetUrl,
+      orderNumber: (selectedTableId || `${Math.floor(Math.random() * 90 + 10)}`),
+      serviceMode: (selectedTableName ? "dine_in" : "takeaway"),
     };
 
     const res = await completeSale();
@@ -311,6 +318,11 @@ export function UnifiedCheckoutModal() {
         paperWidthMm: printerSettings?.paperWidthMm || 80,
         openDrawer: printerSettings?.openDrawer ?? true,
         receiptLanguage: receiptLang,
+        orderNumber: receiptSnapshot.orderNumber,
+        serviceMode: receiptSnapshot.serviceMode,
+        taxDisplayMode: receiptSnapshot.taxDisplayMode,
+        receiptFooterCodeType: receiptSnapshot.receiptFooterCodeType,
+        receiptQrTargetUrl: receiptSnapshot.receiptQrTargetUrl,
       }).catch(() => {});
     } else {
       playErrorSound();

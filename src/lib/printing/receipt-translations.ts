@@ -70,36 +70,30 @@ export function formatReceiptAmount(amount: number | string | undefined | null, 
 }
 
 /**
+ * Formats receipt timestamp in strict Western YYYY/MM/DD HH:mm:ss numerals,
+ * eliminating all RTL/LTR bidi punctuation and wrapping errors.
+ */
+export function formatReceiptIsoDateTime(dateInput?: Date | string | null): string {
+  const d = dateInput
+    ? typeof dateInput === "string"
+      ? new Date(dateInput)
+      : dateInput
+    : new Date();
+  if (!d || Number.isNaN(d.getTime())) return "2026/11/16 00:00:00";
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  return `${yyyy}/${mm}/${dd} ${hh}:${min}:${ss}`;
+}
+
+/**
  * Formats receipt timestamp in the target receipt language while enforcing 0-9 Western digits.
  */
 export function formatReceiptDate(dateInput?: Date | string, lang: ReceiptLanguage = "fr"): string {
-  const dateObj = dateInput ? (typeof dateInput === "string" ? new Date(dateInput) : dateInput) : new Date();
-  if (Number.isNaN(dateObj.getTime())) {
-    return toWesternNumerals(String(dateInput || ""));
-  }
-
-  const localeMap: Record<ReceiptLanguage, string> = {
-    ar: "ar-MA-u-nu-latn",
-    fr: "fr-FR",
-    en: "en-GB",
-    tr: "tr-TR",
-    es: "es-ES",
-    de: "de-DE",
-  };
-
-  try {
-    const formatted = new Intl.DateTimeFormat(localeMap[lang] || "fr-FR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(dateObj);
-    return toWesternNumerals(formatted);
-  } catch {
-    return toWesternNumerals(dateObj.toISOString().slice(0, 16).replace("T", " "));
-  }
+  return formatReceiptIsoDateTime(dateInput);
 }
 
 export interface ReceiptDictionary {
@@ -118,6 +112,15 @@ export interface ReceiptDictionary {
   tax: string;
   discount: string;
   grandTotal: string;
+  totalClean: string;
+  orderNumber: string;
+  serviceMode: string;
+  dineIn: string;
+  takeaway: string;
+  delivery: string;
+  retail: string;
+  wholesale: string;
+  modifiers: string;
   tpeFeeCustomer: string;
   tpeFeeMerchant: string;
   totalPaidTpe: string;
@@ -137,32 +140,41 @@ export interface ReceiptDictionary {
 export const RECEIPT_TRANSLATIONS: Record<ReceiptLanguage, ReceiptDictionary> = {
   ar: {
     dir: "rtl",
-    printButton: "طباعة الفاتورة",
-    invoiceNo: "رقم الفاتورة",
-    date: "التاريخ",
+    printButton: "طباعة التذكرة",
+    invoiceNo: "رقم التذكرة",
+    date: "التاريخ والوقت",
     cashier: "الكاشير",
     customer: "الزبون",
-    customerTaxId: "التعريف الضريبي للزبون",
-    item: "الصنف",
+    customerTaxId: "التعريف الضريبي",
+    item: "المنتج",
     qty: "الكمية",
-    price: "السعر",
+    price: "الثمن",
     lineTotal: "المجموع",
     subtotal: "المجموع بدون ضريبة",
-    tax: "الضريبة (TVA)",
+    tax: "الضريبة",
     discount: "التخفيض",
     grandTotal: "المجموع الإجمالي",
-    tpeFeeCustomer: "رسوم الدفع بالبطاقة",
+    totalClean: "الإجمالي",
+    orderNumber: "رقم طلبك",
+    serviceMode: "نوع الطلب",
+    dineIn: "محلي",
+    takeaway: "سفري",
+    delivery: "توصيل",
+    retail: "بيع بالتقسيط",
+    wholesale: "بيع بالجملة",
+    modifiers: "الإضافات",
+    tpeFeeCustomer: "رسوم الأداء بالبطاقة",
     tpeFeeMerchant: "حصة المتجر",
-    totalPaidTpe: "الإجمالي المدفوع بالبطاقة",
-    paymentMethod: "طريقة الدفع",
-    paid: "المبلغ المدفوع",
+    totalPaidTpe: "المبلغ المؤدى بالبطاقة",
+    paymentMethod: "طريقة الأداء",
+    paid: "المبلغ المقبوض",
     change: "الباقي",
-    thankYou: "شكراً لزيارتكم، نراكم قريباً!",
+    thankYou: "شكراً لزيارتكم ونتمنى رؤيتكم قريباً",
     welcomeHeader: "مرحباً بكم في متجرنا",
     paymentMethods: {
-      cash: "نقداً (Cash)",
-      card: "بطاقة بنكية (TPE)",
-      credit: "آجل / كريدي",
+      cash: "نقداً",
+      card: "بطاقة بنكية",
+      credit: "كريدي",
       transfer: "تحويل بنكي",
     },
   },
@@ -170,7 +182,7 @@ export const RECEIPT_TRANSLATIONS: Record<ReceiptLanguage, ReceiptDictionary> = 
     dir: "ltr",
     printButton: "Imprimer Ticket",
     invoiceNo: "Ticket N°",
-    date: "Date",
+    date: "Date & Heure",
     cashier: "Caissier",
     customer: "Client",
     customerTaxId: "ICE Client",
@@ -179,29 +191,38 @@ export const RECEIPT_TRANSLATIONS: Record<ReceiptLanguage, ReceiptDictionary> = 
     price: "Prix",
     lineTotal: "Total",
     subtotal: "Total HT",
-    tax: "Total TVA",
+    tax: "TVA",
     discount: "Remise",
     grandTotal: "TOTAL TTC",
+    totalClean: "TOTAL",
+    orderNumber: "VOTRE COMMANDE",
+    serviceMode: "Mode Service",
+    dineIn: "Sur Place",
+    takeaway: "À Emporter",
+    delivery: "Livraison",
+    retail: "Vente Détail",
+    wholesale: "Vente Gros",
+    modifiers: "Suppléments",
     tpeFeeCustomer: "Frais TPE (Client)",
     tpeFeeMerchant: "Part Commerçant",
     totalPaidTpe: "TOTAL PAYÉ TPE",
-    paymentMethod: "Mode Règlement",
+    paymentMethod: "Règlement",
     paid: "Reçu",
     change: "Rendu",
     thankYou: "Merci de votre visite et à bientôt !",
-    welcomeHeader: "Bienvenue dans notre magasin",
+    welcomeHeader: "Bienvenue dans notre établissement",
     paymentMethods: {
       cash: "ESPÈCES",
       card: "CARTE BANCAIRE",
-      credit: "CRÉDIT CLIENT",
+      credit: "CRÉDIT",
       transfer: "VIREMENT",
     },
   },
   en: {
     dir: "ltr",
     printButton: "Print Receipt",
-    invoiceNo: "Receipt No",
-    date: "Date",
+    invoiceNo: "Receipt #",
+    date: "Date & Time",
     cashier: "Cashier",
     customer: "Customer",
     customerTaxId: "Customer Tax ID",
@@ -210,22 +231,31 @@ export const RECEIPT_TRANSLATIONS: Record<ReceiptLanguage, ReceiptDictionary> = 
     price: "Price",
     lineTotal: "Total",
     subtotal: "Subtotal",
-    tax: "Tax / VAT",
+    tax: "Tax",
     discount: "Discount",
     grandTotal: "GRAND TOTAL",
-    tpeFeeCustomer: "Card Terminal Fee",
+    totalClean: "TOTAL",
+    orderNumber: "YOUR ORDER",
+    serviceMode: "Service Mode",
+    dineIn: "Dine-In",
+    takeaway: "Takeaway",
+    delivery: "Delivery",
+    retail: "Retail",
+    wholesale: "Wholesale",
+    modifiers: "Modifiers",
+    tpeFeeCustomer: "Card Fee (Customer)",
     tpeFeeMerchant: "Merchant Share",
-    totalPaidTpe: "TOTAL PAID (CARD)",
+    totalPaidTpe: "TOTAL PAID CARD",
     paymentMethod: "Payment Method",
-    paid: "Amount Paid",
-    change: "Change Due",
-    thankYou: "Thank you for your visit! See you soon.",
+    paid: "Paid",
+    change: "Change",
+    thankYou: "Thank you for your visit, see you soon!",
     welcomeHeader: "Welcome to our store",
     paymentMethods: {
       cash: "CASH",
       card: "CARD",
-      credit: "STORE CREDIT",
-      transfer: "BANK TRANSFER",
+      credit: "CREDIT",
+      transfer: "TRANSFER",
     },
   },
   tr: {
@@ -244,6 +274,15 @@ export const RECEIPT_TRANSLATIONS: Record<ReceiptLanguage, ReceiptDictionary> = 
     tax: "Toplam KDV",
     discount: "İndirim",
     grandTotal: "GENEL TOPLAM",
+    totalClean: "TOPLAM",
+    orderNumber: "SİPARİŞ NO",
+    serviceMode: "Servis Türü",
+    dineIn: "Masa",
+    takeaway: "Paket",
+    delivery: "Teslimat",
+    retail: "Perakende",
+    wholesale: "Toptan",
+    modifiers: "Ek Seçenekler",
     tpeFeeCustomer: "POS Komisyonu",
     tpeFeeMerchant: "İşyeri Payı",
     totalPaidTpe: "KARTLA ÖDENEN TOPLAM",
@@ -275,6 +314,15 @@ export const RECEIPT_TRANSLATIONS: Record<ReceiptLanguage, ReceiptDictionary> = 
     tax: "IVA Total",
     discount: "Descuento",
     grandTotal: "TOTAL A PAGAR",
+    totalClean: "TOTAL",
+    orderNumber: "SU PEDIDO",
+    serviceMode: "Modo de Servicio",
+    dineIn: "En Sala",
+    takeaway: "Para Llevar",
+    delivery: "Entrega",
+    retail: "Venta Detalle",
+    wholesale: "Venta Mayor",
+    modifiers: "Suplementos",
     tpeFeeCustomer: "Comisión TPV",
     tpeFeeMerchant: "Cuota Comercio",
     totalPaidTpe: "TOTAL PAGADO TPV",
@@ -306,6 +354,15 @@ export const RECEIPT_TRANSLATIONS: Record<ReceiptLanguage, ReceiptDictionary> = 
     tax: "MwSt. Gesamt",
     discount: "Rabatt",
     grandTotal: "GESAMTBETRAG",
+    totalClean: "GESAMT",
+    orderNumber: "IHRE BESTELLUNG",
+    serviceMode: "Service-Art",
+    dineIn: "Im Haus",
+    takeaway: "Zum Mitnehmen",
+    delivery: "Lieferung",
+    retail: "Einzelhandel",
+    wholesale: "Großhandel",
+    modifiers: "Zusätze",
     tpeFeeCustomer: "Kartengebühr",
     tpeFeeMerchant: "Händleranteil",
     totalPaidTpe: "GESAMT KARTE",

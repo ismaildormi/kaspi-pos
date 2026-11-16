@@ -94,6 +94,7 @@ export default function PosPage() {
     setTenantInfo,
     setPrinterSettings,
     setStoreProfile,
+    setSessionContext,
     tenantInfo,
     storeType,
   } = usePosStore();
@@ -229,6 +230,18 @@ export default function PosPage() {
         if (meRes && meRes.ok) {
           const meData = await meRes.json();
           const currTenant = meData.data?.currentTenant;
+          const resolvedStoreId = meData.data?.storeIds?.[0] || currTenant?.stores?.[0]?.id || "";
+          const resolvedUserId = meData.data?.user?.id || "";
+
+          if (currTenant?.id && resolvedStoreId) {
+            setSessionContext(currTenant.id, resolvedStoreId, resolvedUserId, currTenant?.maxDevices || 1);
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.setItem("kaspi_store_id", resolvedStoreId);
+              } catch {}
+            }
+          }
+
           if (currTenant?.maxDevices) {
             setDeviceCount(currTenant.maxDevices);
           }
@@ -256,7 +269,7 @@ export default function PosPage() {
             setIsOnboardingOpen(true);
           }
           setPrinterSettings({
-            receiptLanguage: sData.receiptLanguage || "fr",
+            receiptLanguage: sData.receiptLanguage || "ar",
             paperWidthMm: sData.paperWidthMm === 58 ? 58 : 80,
             printerConnectionMode: sData.printerConnectionMode || "auto",
             printer: sData.printer || "",
@@ -264,9 +277,13 @@ export default function PosPage() {
             printerPort: sData.printerPort || "9100",
             autoPrintReceipt: Boolean(sData.autoPrintReceipt),
             openDrawer: sData.openDrawer !== undefined ? Boolean(sData.openDrawer) : true,
-            showStoreLogo: sData.showStoreLogo !== undefined ? Boolean(sData.showStoreLogo) : true,
+            showStoreLogo: Boolean(sData.showStoreLogo),
             receiptHeader: sData.receiptHeader || "",
             receiptFooter: sData.receiptFooter || "",
+            taxDisplayMode: sData.taxDisplayMode || "INCLUSIVE_CLEAN",
+            showLegalIceOnReceipt: Boolean(sData.showLegalIceOnReceipt),
+            receiptFooterCodeType: sData.receiptFooterCodeType || "NONE",
+            receiptQrTargetUrl: sData.receiptQrTargetUrl || "",
           });
         }
 

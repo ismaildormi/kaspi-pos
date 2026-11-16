@@ -73,7 +73,11 @@ export async function GET(req: NextRequest) {
         printerPort: printerConfig.printerPort || "9100",
         autoPrintReceipt: printerConfig.autoPrintReceipt ?? false,
         openDrawer: printerConfig.openDrawer ?? true,
-        showStoreLogo: printerConfig.showStoreLogo ?? true,
+        showStoreLogo: printerConfig.showStoreLogo ?? false,
+        taxDisplayMode: printerConfig.taxDisplayMode || "INCLUSIVE_CLEAN",
+        showLegalIceOnReceipt: Boolean(printerConfig.showLegalIceOnReceipt),
+        receiptFooterCodeType: printerConfig.receiptFooterCodeType || "NONE",
+        receiptQrTargetUrl: printerConfig.receiptQrTargetUrl || "",
         storeType: workspaceConfig.storeType || "grocery",
         onboardingCompleted: Boolean(workspaceConfig.onboardingCompleted),
         currency: workspaceConfig.currency || ctx.activeTenant?.currency || "MAD",
@@ -152,7 +156,7 @@ export async function POST(req: NextRequest) {
     });
 
     const thermalConfig = {
-      receiptLanguage: body.receiptLanguage || "fr",
+      receiptLanguage: body.receiptLanguage || "ar",
       paperWidthMm: Number(body.paperWidthMm) === 58 ? 58 : 80,
       printerConnectionMode: body.printerConnectionMode || "auto",
       printer: body.printer || "",
@@ -160,7 +164,11 @@ export async function POST(req: NextRequest) {
       printerPort: body.printerPort || "9100",
       autoPrintReceipt: Boolean(body.autoPrintReceipt),
       openDrawer: body.openDrawer !== undefined ? Boolean(body.openDrawer) : true,
-      showStoreLogo: body.showStoreLogo !== undefined ? Boolean(body.showStoreLogo) : true,
+      showStoreLogo: body.showStoreLogo !== undefined ? Boolean(body.showStoreLogo) : false,
+      taxDisplayMode: body.taxDisplayMode || "INCLUSIVE_CLEAN",
+      showLegalIceOnReceipt: Boolean(body.showLegalIceOnReceipt),
+      receiptFooterCodeType: body.receiptFooterCodeType || "NONE",
+      receiptQrTargetUrl: body.receiptQrTargetUrl || "",
     };
 
     const farFuture = new Date("2099-12-31T23:59:59Z");

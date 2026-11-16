@@ -123,6 +123,11 @@ export interface TpeReceiptFormatParams {
   aid?: string;
   footerNote?: string;
   paperWidth?: 58 | 80 | 32 | 42;
+  orderNumber?: string | number;
+  serviceMode?: "dine_in" | "takeaway" | "delivery";
+  taxDisplayMode?: "INCLUSIVE_CLEAN" | "TAX_BREAKDOWN";
+  receiptFooterCodeType?: "NONE" | "TICKET_BARCODE_1D" | "STORE_QR_CODE";
+  receiptQrTargetUrl?: string;
 }
 
 export interface TpeReceiptPrintResult {

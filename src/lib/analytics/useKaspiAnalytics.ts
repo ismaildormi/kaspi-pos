@@ -247,6 +247,31 @@ export function useKaspiAnalytics(
 
   useEffect(() => {
     refresh();
+
+    if (typeof window === "undefined") return;
+
+    const handleSync = () => {
+      refresh();
+    };
+
+    window.addEventListener("kaspi-pos-sync", handleSync);
+    window.addEventListener("kaspi_stock_updated", handleSync);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("kaspi-pos-sync");
+      bc.onmessage = () => {
+        refresh();
+      };
+    } catch {}
+
+    return () => {
+      window.removeEventListener("kaspi-pos-sync", handleSync);
+      window.removeEventListener("kaspi_stock_updated", handleSync);
+      if (bc) {
+        bc.close();
+      }
+    };
   }, [refresh]);
 
   return { data, loading, refresh };

@@ -53,22 +53,30 @@ export class TpeReceiptPrinterEngine {
     const divider = "-".repeat(width);
     const doubleDivider = "=".repeat(width);
 
-    // 1. Merchant Store Header (Strictly store name, NO Kaspi branding)
+    // 1. Merchant Store Header (Strictly store name, NO Kaspi branding, Zero Phone Number)
     lines.push(centerText(store, width));
-    if (params.legalName && params.legalName !== store) {
-      lines.push(centerText(params.legalName, width));
-    }
     if (params.address) {
       lines.push(centerText(params.address, width));
     }
-    if (params.phone) {
-      lines.push(centerText(`TEL: ${params.phone}`, width));
-    }
-    if (params.ice) {
+    const isDemoIce = (v?: string | null) =>
+      !v || v === "002345678000045" || v === "001987654000089" || v.startsWith("0000");
+    if (params.ice && !isDemoIce(params.ice)) {
       lines.push(centerText(`ICE: ${params.ice}`, width));
     }
-    if (params.taxId) {
-      lines.push(centerText(`IF: ${params.taxId}`, width));
+
+    // Hero Order Number Callout for Cafe / Restaurant
+    if (params.orderNumber) {
+      lines.push(divider);
+      lines.push(centerText(`*** COMMANDE / الطلب #${params.orderNumber} ***`, width));
+      if (params.serviceMode) {
+        const modeLabel =
+          params.serviceMode === "dine_in"
+            ? "SUR PLACE / محلي"
+            : params.serviceMode === "takeaway"
+            ? "A EMPORTER / سفري"
+            : "LIVRAISON / توصيل";
+        lines.push(centerText(`[ ${modeLabel} ]`, width));
+      }
     }
 
     lines.push(divider);
@@ -90,17 +98,19 @@ export class TpeReceiptPrinterEngine {
 
     lines.push(divider);
 
-    // 4. Totals & Tax
-    lines.push(formatTwoColumnLine("SOUS-TOTAL:", `${params.subtotal.toFixed(2)} ${params.currency}`, width));
-    if (params.taxTotal > 0) {
-      lines.push(formatTwoColumnLine("TVA COMPRISE:", `${params.taxTotal.toFixed(2)} ${params.currency}`, width));
+    // 4. Totals & Tax (INCLUSIVE_CLEAN default: NO unwanted +20% TVA surcharge)
+    if (params.taxDisplayMode === "TAX_BREAKDOWN") {
+      lines.push(formatTwoColumnLine("SOUS-TOTAL HT:", `${params.subtotal.toFixed(2)} ${params.currency}`, width));
+      if (params.taxTotal > 0) {
+        lines.push(formatTwoColumnLine("TVA:", `${params.taxTotal.toFixed(2)} ${params.currency}`, width));
+      }
     }
     if (params.discountTotal && params.discountTotal > 0) {
       lines.push(formatTwoColumnLine("REMISE:", `-${params.discountTotal.toFixed(2)} ${params.currency}`, width));
     }
 
     lines.push(doubleDivider);
-    lines.push(formatTwoColumnLine("TOTAL NET:", `${params.grandTotal.toFixed(2)} ${params.currency}`, width));
+    lines.push(formatTwoColumnLine("TOTAL / الإجمالي:", `${params.grandTotal.toFixed(2)} ${params.currency}`, width));
     lines.push(doubleDivider);
 
     // 5. Payment Card Metadata (NEVER PAN/CVV)
@@ -127,6 +137,18 @@ export class TpeReceiptPrinterEngine {
     const footer = params.footerNote || "MERCI DE VOTRE VISITE - A BIENTOT";
     lines.push(centerText(footer, width));
     lines.push(centerText("CONSERVEZ CE TICKET", width));
+
+    if (params.receiptFooterCodeType === "TICKET_BARCODE_1D") {
+      lines.push(divider);
+      lines.push(centerText(`||||||||||||||||||||||||||||`, width));
+      lines.push(centerText(`*${params.receiptNumber}*`, width));
+    } else if (params.receiptFooterCodeType === "STORE_QR_CODE") {
+      lines.push(divider);
+      lines.push(centerText(`[ QR CODE ]`, width));
+      if (params.receiptQrTargetUrl) {
+        lines.push(centerText(params.receiptQrTargetUrl.replace(/^https?:\/\//, ""), width));
+      }
+    }
 
     return lines;
   }

@@ -110,6 +110,10 @@ interface PosState {
     showStoreLogo: boolean;
     receiptHeader: string;
     receiptFooter: string;
+    taxDisplayMode?: "INCLUSIVE_CLEAN" | "TAX_BREAKDOWN";
+    showLegalIceOnReceipt?: boolean;
+    receiptFooterCodeType?: "NONE" | "TICKET_BARCODE_1D" | "STORE_QR_CODE";
+    receiptQrTargetUrl?: string;
   };
 
   // Active Cart State
@@ -195,7 +199,7 @@ export const usePosStore = create<PosState>()(
       selectedTableName: null,
       loyaltyPointsToRedeem: 0,
       printerSettings: {
-        receiptLanguage: "fr",
+        receiptLanguage: "ar",
         paperWidthMm: 80,
         printerConnectionMode: "auto",
         printer: "",
@@ -203,9 +207,13 @@ export const usePosStore = create<PosState>()(
         printerPort: "9100",
         autoPrintReceipt: false,
         openDrawer: true,
-        showStoreLogo: true,
+        showStoreLogo: false,
         receiptHeader: "",
         receiptFooter: "",
+        taxDisplayMode: "INCLUSIVE_CLEAN",
+        showLegalIceOnReceipt: false,
+        receiptFooterCodeType: "NONE",
+        receiptQrTargetUrl: "",
       },
 
       cart: [],
@@ -254,7 +262,8 @@ export const usePosStore = create<PosState>()(
 
       getGrandTotal: () => {
         const subtotal = get().getSubtotal();
-        const tax = get().getTaxTotal();
+        const taxMode = get().printerSettings?.taxDisplayMode || "INCLUSIVE_CLEAN";
+        const tax = taxMode === "TAX_BREAKDOWN" ? get().getTaxTotal() : 0;
         const loyaltyDiscountMad = (get().loyaltyPointsToRedeem || 0) * 0.1;
         const total = Math.max(0, subtotal + tax - loyaltyDiscountMad);
         return roundMoney(toDecimal(total)).toNumber();
@@ -632,10 +641,19 @@ export const usePosStore = create<PosState>()(
         const changeDue = getChangeDue();
         const receiptNumber = `REC-${Date.now().toString().slice(-6)}`;
 
+        const effectiveStoreId =
+          storeId ||
+          (typeof window !== "undefined"
+            ? localStorage.getItem("kaspi_store_id") ||
+              localStorage.getItem("kaspi.store.id") ||
+              ""
+            : "") ||
+          "";
+
         const offlineSaleRecord: OfflineSale = {
           clientSaleId,
           tenantId,
-          storeId,
+          storeId: effectiveStoreId,
           receiptNumber,
           customerId: customer?.id || null,
           customerName: customer?.name || null,
@@ -672,7 +690,7 @@ export const usePosStore = create<PosState>()(
         const saleApiPayload = {
           clientSaleId,
           idempotencyKey,
-          storeId,
+          storeId: effectiveStoreId || undefined,
           customerId: customer?.id,
           tableId: selectedTableId || undefined,
           redeemedPoints: loyaltyPointsToRedeem > 0 ? loyaltyPointsToRedeem : undefined,
@@ -780,6 +798,21 @@ export const usePosStore = create<PosState>()(
         }
 
         await refreshOfflineQueueCount();
+
+        // Broadcast real-time sync event across all tabs and dashboard
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("kaspi-pos-sync", {
+              detail: { clientSaleId, grandTotal },
+            })
+          );
+          try {
+            const bc = new BroadcastChannel("kaspi-pos-sync");
+            bc.postMessage({ type: "SALE_COMPLETED", clientSaleId, grandTotal });
+            bc.close();
+          } catch {}
+        }
+
         set({
           cart: [],
           customer: null,

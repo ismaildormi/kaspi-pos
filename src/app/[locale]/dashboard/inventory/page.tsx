@@ -373,7 +373,10 @@ export default async function InventoryPage({
                 </tr>
               ) : (
                 products.map((p) => {
-                  const qty = Number(p.stockLevels[0]?.quantity || 0);
+                  const qty =
+                    p.stockLevels && p.stockLevels.length > 0
+                      ? p.stockLevels.reduce((acc: number, sl: any) => acc + Number(sl.quantity || 0), 0)
+                      : 0;
                   const isLow = qty <= 5;
                   const imgUrl = (p as any).imageUrl;
 

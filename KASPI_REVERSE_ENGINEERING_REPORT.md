@@ -1,7 +1,7 @@
 # KASPI POS (كسب) — Reverse-Engineering & Compliance Audit Report
 
 - **Audit Status:** ALL CHECKS PASSED (0 Failures)
-- **Total Rules Verified:** 23
+- **Total Rules Verified:** 15
 - **Pricing Rule Lock:** `200 MAD/month` (1st Poste, 100% features) + `150 MAD/month` per extra Poste
 - **Legal & Security Lock:** Bank Al-Maghrib Law 103-12 Software Separation + PCI-DSS 4.0.1 Tokenized-Only Storage
 
@@ -18,15 +18,7 @@
 | 9 | **Universal TPE Architecture** | All Universal TPE Hub modules, 7 Global Protocols & 4-Path Receipt Engine exist with docs/KASPI_UNIVERSAL_TPE_SOURCES.md | **PASS** | `18 TPE modules + 7 Protocols + 4 Print Paths verified` |
 | 10 | **TPE State Machine** | Exact 11-State Machine, Zero Amount Re-entry & Disconnect Recovery enforced in TpeTransactionBridge | **PASS** | `11 states + Zero Re-entry + Disconnect Recovery verified` |
 | 11 | **Tauri Bridge & Tenant Isolation** | Tauri tpe_bridge.rs implements TCP OPI/NEXO, probe_tpe_endpoint & print_tpe_receipt; Prisma schema defines tenant/store-isolated TPE models | **PASS** | `Tauri Rust TCP bridge + probe/print + scoped schema models verified` |
-| 12 | **Live DOM (pearl-light)** | /ar/login — <KaspiBrandMark size='auth'> height <= 52px & 100% opacity | **PASS** | `height=48px, opacity=1` |
-| 13 | **Live DOM (pearl-light)** | Circular Icon-Only Theme Switcher (36x36px, zero text inside button) | **PASS** | `size=36x36px, text=""` |
-| 14 | **Live DOM (pearl-light)** | /ar/dashboard renders Daily Store Streak badge | **PASS** | `data-kaspi-daily-streak present` |
-| 15 | **Live DOM (pearl-light)** | KaspiGlassAnalyticsModal portaled to BODY at z-index 9999, translucent alpha < 0.65, zero viewport leak | **PASS** | `parent=BODY, z=9999, alpha=0.46, fitsViewport=true` |
-| 16 | **Live DOM (pearl-light)** | Scrolled /ar/dashboard/inventory locks Sidebar (720px) and scrolls Topbar out of view | **PASS** | `asideHeight=720px, headerTop=-500px` |
-| 17 | **Live DOM (pearl-light)** | /ar/dashboard/settings?tab=terminals renders Universal TPE Hub & Custom Store Receipt Studio (ASIMA) | **PASS** | `KaspiTpeManagerPanel + Receipt Studio + Thermal Preview verified` |
-| 18 | **Live DOM (fjord-twilight)** | /ar/login — <KaspiBrandMark size='auth'> height <= 52px & 100% opacity | **PASS** | `height=48px, opacity=1` |
-| 19 | **Live DOM (fjord-twilight)** | Circular Icon-Only Theme Switcher (36x36px, zero text inside button) | **PASS** | `size=36x36px, text=""` |
-| 20 | **Live DOM (fjord-twilight)** | /ar/dashboard renders Daily Store Streak badge | **PASS** | `data-kaspi-daily-streak present` |
-| 21 | **Live DOM (fjord-twilight)** | KaspiGlassAnalyticsModal portaled to BODY at z-index 9999, translucent alpha < 0.65, zero viewport leak | **PASS** | `parent=BODY, z=9999, alpha=0.56, fitsViewport=true` |
-| 22 | **Live DOM (fjord-twilight)** | Scrolled /ar/dashboard/inventory locks Sidebar (720px) and scrolls Topbar out of view | **PASS** | `asideHeight=720px, headerTop=-500px` |
-| 23 | **Live DOM (fjord-twilight)** | /ar/dashboard/settings?tab=terminals renders Universal TPE Hub & Custom Store Receipt Studio (ASIMA) | **PASS** | `KaspiTpeManagerPanel + Receipt Studio + Thermal Preview verified` |
+| 12 | **Client Vector Codes** | Pure TypeScript client-side SVG generators for 1D Code 128 & 2D QR Code (Reed-Solomon GF(256)) with $0 server cost | **PASS** | `Code128 + QR Byte-mode SVG engine verified` |
+| 13 | **Tax-Inclusive Retail Pricing** | taxDisplayMode defaults to INCLUSIVE_CLEAN; grand total displays clean TTC price without forced +20% TVA surcharge | **PASS** | `Default TTC clean pricing verified` |
+| 14 | **Thermal Receipt Integrity** | Zero demo tax IDs rendered on receipts, zero phone numbers on customer receipts, Western digits in ISO timestamps | **PASS** | `Zero phone, zero fake IDs, clean Western timestamps verified` |
+| 15 | **Live Data Sync & Catalog** | Sales API resolves storeId automatically, decrements stockLevel, revalidates dashboard cache, and marketing catalog covers 6 industry modes | **PASS** | `Atomic Postgres sync + 6-mode marketing catalog verified` |

@@ -122,6 +122,10 @@ export default function SettingsPage() {
   const [testPrintStatus, setTestPrintStatus] = useState<string | null>(null);
   const [receiptPaperDark, setReceiptPaperDark] = useState(false);
   const [audioFeedbackEnabled, setAudioFeedbackEnabled] = useState(true);
+  const [taxDisplayMode, setTaxDisplayMode] = useState<"INCLUSIVE_CLEAN" | "TAX_BREAKDOWN">("INCLUSIVE_CLEAN");
+  const [showLegalIceOnReceipt, setShowLegalIceOnReceipt] = useState(false);
+  const [receiptFooterCodeType, setReceiptFooterCodeType] = useState<"NONE" | "TICKET_BARCODE_1D" | "STORE_QR_CODE">("NONE");
+  const [receiptQrTargetUrl, setReceiptQrTargetUrl] = useState("");
 
   // Multi-Store State
   const [stores, setStores] = useState<StoreItem[]>([]);
@@ -263,6 +267,10 @@ export default function SettingsPage() {
             setAutoPrintReceipt(Boolean(s.autoPrintReceipt));
           if (s.openDrawer !== undefined) setOpenDrawer(Boolean(s.openDrawer));
           if (s.showStoreLogo !== undefined) setShowStoreLogo(Boolean(s.showStoreLogo));
+          if (s.taxDisplayMode) setTaxDisplayMode(s.taxDisplayMode);
+          if (s.showLegalIceOnReceipt !== undefined) setShowLegalIceOnReceipt(Boolean(s.showLegalIceOnReceipt));
+          if (s.receiptFooterCodeType) setReceiptFooterCodeType(s.receiptFooterCodeType);
+          if (s.receiptQrTargetUrl) setReceiptQrTargetUrl(s.receiptQrTargetUrl);
           if (s.storeType) {
             setSelectedSector(s.storeType);
             setStoreProfile(s.storeType, true);
@@ -371,6 +379,10 @@ export default function SettingsPage() {
       showStoreLogo,
       receiptHeader,
       receiptFooter,
+      taxDisplayMode,
+      showLegalIceOnReceipt,
+      receiptFooterCodeType,
+      receiptQrTargetUrl,
     };
 
     savePrinterSettings(newPrinterSettings);
@@ -1622,6 +1634,15 @@ export default function SettingsPage() {
                 <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
                   <input
                     type="checkbox"
+                    checked={showLegalIceOnReceipt}
+                    onChange={(e) => setShowLegalIceOnReceipt(e.target.checked)}
+                    className="w-4 h-4 rounded accent-white"
+                  />
+                  <span>إظهار التعريف الموحد (ICE) على تذكرة الزبون (فقط إذا تم إدخاله في معلومات المتجر)</span>
+                </label>
+                <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
+                  <input
+                    type="checkbox"
                     checked={audioFeedbackEnabled}
                     onChange={(e) => {
                       const next = e.target.checked;
@@ -1635,6 +1656,82 @@ export default function SettingsPage() {
                     {st.audioCheck}
                   </span>
                 </label>
+              </div>
+
+              {/* Tax Display Mode (Zero VAT surprises for Retail/Cafes) */}
+              <div className="p-4 rounded-xl bg-zinc-950 border border-white/10 space-y-3">
+                <div className="text-xs font-bold text-white flex items-center justify-between">
+                  <span>طريقة عرض وحساب الضريبة على التذكرة</span>
+                  <span className="text-[10px] text-emerald-400 font-bold">بدون مفاجأة TVA للمستهلك</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTaxDisplayMode("INCLUSIVE_CLEAN")}
+                    className={`p-3 rounded-xl border text-right text-xs transition cursor-pointer ${
+                      taxDisplayMode === "INCLUSIVE_CLEAN"
+                        ? "bg-white text-black border-white font-bold"
+                        : "bg-zinc-900 border-white/10 text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    <div className="font-bold">السعر النهائي شامل ومباشر (موصى به)</div>
+                    <div className="text-[10px] opacity-80 mt-0.5">ثمن السلعة هو الثمن النهائي (100 درهم = 100 درهم بدون زيادة ضريبة فوق الثمن)</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTaxDisplayMode("TAX_BREAKDOWN")}
+                    className={`p-3 rounded-xl border text-right text-xs transition cursor-pointer ${
+                      taxDisplayMode === "TAX_BREAKDOWN"
+                        ? "bg-white text-black border-white font-bold"
+                        : "bg-zinc-900 border-white/10 text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    <div className="font-bold">تفصيل الضريبة (HT / TVA)</div>
+                    <div className="text-[10px] opacity-80 mt-0.5">عرض سطر الضريبة بشكل منفصل للشركات الخاضعة للضريبة</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Client-Side Code128 Barcode & Website QR Code */}
+              <div className="p-4 rounded-xl bg-zinc-950 border border-white/10 space-y-3">
+                <div className="text-xs font-bold text-white flex items-center justify-between">
+                  <span>كود أسفل التذكرة (Barcode / QR Code)</span>
+                  <span className="text-[10px] text-zinc-400">توليد تلقائي 100% بدون خادم</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: "NONE" as const, title: "بدون كود" },
+                    { id: "TICKET_BARCODE_1D" as const, title: "باركود التذكرة (1D)" },
+                    { id: "STORE_QR_CODE" as const, title: "رمز QR للموقع / القائمة" },
+                  ].map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setReceiptFooterCodeType(c.id)}
+                      className={`p-2.5 rounded-xl border text-center text-xs font-semibold transition cursor-pointer ${
+                        receiptFooterCodeType === c.id
+                          ? "bg-white text-black border-white font-bold"
+                          : "bg-zinc-900 border-white/10 text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      {c.title}
+                    </button>
+                  ))}
+                </div>
+                {receiptFooterCodeType === "STORE_QR_CODE" && (
+                  <div>
+                    <label className="block text-[11px] text-zinc-400 mb-1">
+                      رابط موقع المتجر، القائمة الرقمية، أو خرائط Google:
+                    </label>
+                    <input
+                      type="url"
+                      value={receiptQrTargetUrl}
+                      onChange={(e) => setReceiptQrTargetUrl(e.target.value)}
+                      placeholder="https://menu.restaurant.ma أو https://maps.google.com/..."
+                      className="w-full h-10 px-3 bg-zinc-900 border border-white/10 rounded-xl text-xs text-white font-mono"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

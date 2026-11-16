@@ -83,9 +83,46 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
     unitLabel: string;
   } | null>(null);
 
+  const [liveSalesAdded, setLiveSalesAdded] = useState(0);
+  const [liveOrdersCount, setLiveOrdersCount] = useState(0);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleSync = (e: any) => {
+      const added = Number(e.detail?.grandTotal || 0);
+      if (added > 0) {
+        setLiveSalesAdded((prev) => prev + added);
+        setLiveOrdersCount((prev) => prev + 1);
+      }
+    };
+
+    window.addEventListener("kaspi-pos-sync", handleSync);
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("kaspi-pos-sync");
+      bc.onmessage = (msg) => {
+        const added = Number(msg.data?.grandTotal || 0);
+        if (added > 0) {
+          setLiveSalesAdded((prev) => prev + added);
+          setLiveOrdersCount((prev) => prev + 1);
+        }
+      };
+    } catch {}
+
+    return () => {
+      window.removeEventListener("kaspi-pos-sync", handleSync);
+      if (bc) bc.close();
+    };
+  }, []);
+
   const { data: analytics } = useKaspiAnalytics("sales", "7d", true);
   const sparks = analytics?.sparklines;
   const nextMilestone = streakDays < 7 ? 7 : streakDays < 14 ? 14 : streakDays < 30 ? 30 : 60;
+
+  const parsedBaseTotal = parseFloat(totalSalesMad.replace(/,/g, "")) || 0;
+  const displayTotalMad = (parsedBaseTotal + liveSalesAdded).toFixed(2);
+  const displaySalesCount = salesCount + liveOrdersCount;
 
   const salesTitle =
     locale === "ar"
@@ -198,7 +235,7 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
           <div className="mt-3 space-y-2.5">
             <div>
               <div className="text-2xl font-bold text-white tabular-nums tracking-tight">
-                {totalSalesMad} {currency}
+                {displayTotalMad} {currency}
               </div>
               <p className="text-[11px] text-zinc-400 mt-0.5">
                 {locale === "ar"
@@ -236,7 +273,7 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
           <div className="mt-3 space-y-2.5">
             <div>
               <div className="text-2xl font-bold text-white tabular-nums tracking-tight">
-                {salesCount}
+                {displaySalesCount}
               </div>
               <p className="text-[11px] text-zinc-400 mt-0.5">
                 {locale === "ar"
