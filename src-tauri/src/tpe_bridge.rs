@@ -244,7 +244,7 @@ pub fn initiate_tpe_payment(payload: String) -> Result<String, String> {
         card_scheme: "MANUAL / UNBOUND".to_string(),
         terminal_id: "UNCONFIGURED".to_string(),
         recovery_required: true,
-        message: "No physical TPE IP/COM port configured and sandbox=false.",
+        message: "No physical TPE IP/COM port configured and sandbox=false.".to_string(),
         raw_response: None,
     };
 
@@ -268,7 +268,7 @@ pub fn query_tpe_transaction_status(payload: String) -> Result<String, String> {
         card_scheme: "UNKNOWN".to_string(),
         terminal_id: req.terminal_ip.unwrap_or_else(|| "UNKNOWN".to_string()),
         recovery_required: true,
-        message: "Status queried; verify merchant bank slip or run OPI LastTransaction echo.",
+        message: "Status queried; verify merchant bank slip or run OPI LastTransaction echo.".to_string(),
         raw_response: None,
     };
 
@@ -286,7 +286,7 @@ pub fn cancel_tpe_payment(transaction_id: String) -> Result<String, String> {
         card_scheme: "CANCELLED".to_string(),
         terminal_id: "LOCAL_TPE".to_string(),
         recovery_required: false,
-        message: "Paiement TPE annulé avant capture.",
+        message: "Paiement TPE annulé avant capture.".to_string(),
         raw_response: Some("CANCELLED".to_string()),
     };
 
