@@ -857,6 +857,7 @@ const htmlContent = `<!DOCTYPE html>
     <button class="chapter-tab-btn" onclick="switchChapter('12-seat-lock')" id="tab-12">12. حماية المقاعد وقفل الأجهزة (Seat Integrity & Hardware Lock)</button>
     <button class="chapter-tab-btn" onclick="switchChapter('13-cybersecurity')" id="tab-13">13. موسوعة الأمن السيبراني والتحصين الهندسي (Global Cybersecurity)</button>
     <button class="chapter-tab-btn" onclick="switchChapter('14-touch')" id="tab-14">14. معمارية الماوس واللمس والتابليت (Hybrid Mouse & Touch)</button>
+    <button class="chapter-tab-btn" onclick="switchChapter('15-privileges')" id="tab-15">15. مصفوفة الامتيازات والخدمات الشاملة (Download Services & Privileges)</button>
   </nav>
 
   <!-- ================= MAIN CONTAINER ================= -->
@@ -942,6 +943,9 @@ const htmlContent = `<!DOCTYPE html>
             </button>
             <button onclick="switchChapter('14-touch')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
               • الفصل 14: نقطة البيع الهجينة للماوس واللمس والتابليت (Dual Mouse & Touch Ergonomics)
+            </button>
+            <button onclick="switchChapter('15-privileges')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
+              • الفصل 15: مصفوفة الامتيازات الشاملة لمنصة التحميل وتطبيقات KASPI POS (10 خدمات ومصفوفة العتاد)
             </button>
           </div>
         </div>
@@ -2470,6 +2474,363 @@ const htmlContent = `<!DOCTYPE html>
         </div>
       </div>
     </section>
+
+    <!-- ================= CHAPTER 15: DOWNLOAD CENTER SERVICES, MULTI-PLATFORM MATRIX & COMMERCIAL PRIVILEGES ================= -->
+    <section class="section-container" id="sec-15-privileges">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title" id="title-15-1">15. مصفوفة الامتيازات والخدمات الشاملة لمنصة التحميل وتطبيقات KASPI POS (Download Center Services, Multi-Platform Matrix & Commercial Privileges)</h2>
+          <span class="card-badge">Omnichannel Deployment & 10 Enterprise Privileges</span>
+        </div>
+        <p id="desc-15-1">
+          يوثق هذا الفصل الشامل كافة الامتيازات التجارية، الخدمات السحابية والمحلية، والميزات التقنية التي تقدمها منصة التحميل وصفحة الهبوط الرسمية لنظام <strong>كسب (KASPI POS)</strong>. يغطي النظام معمارية النشر عبر ثلاثة أبعاد متكاملة (تطبيق ويندوز المكتبي الأصيل، تطبيق الويب التقدمي PWA، وتطبيق التابليت والهواتف الذكية عبر مسح QR)، مع مصفوفة التوافق العتادي المعتمدة 100%، وسجل مزايا الإصدار Quantum v4.0، ونموذج التسعير الشفاف بحسب المقاعد العتادية دون أي عمولة على مبيعات التاجر.
+        </p>
+
+        <!-- Interactive SVG Multi-Platform & Hardware Ecosystem Architecture Diagram -->
+        <div class="diagram-wrapper" style="margin: 1.5rem 0; overflow-x: auto;">
+          <svg viewBox="0 0 960 420" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; min-width: 800px; max-height: 440px;">
+            <defs>
+              <linearGradient id="grad-win-exe" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#0284c7"/>
+                <stop offset="100%" stop-color="#0369a1"/>
+              </linearGradient>
+              <linearGradient id="grad-pwa" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#059669"/>
+                <stop offset="100%" stop-color="#047857"/>
+              </linearGradient>
+              <linearGradient id="grad-mob" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#7c3aed"/>
+                <stop offset="100%" stop-color="#6d28d9"/>
+              </linearGradient>
+              <linearGradient id="grad-core-hub" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#0f172a"/>
+              </linearGradient>
+              <filter id="glow-win" x="-10%" y="-10%" width="120%" height="120%">
+                <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(2, 132, 199, 0.4)"/>
+              </filter>
+              <filter id="glow-pwa" x="-10%" y="-10%" width="120%" height="120%">
+                <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(16, 185, 129, 0.4)"/>
+              </filter>
+              <filter id="glow-mob" x="-10%" y="-10%" width="120%" height="120%">
+                <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(124, 58, 237, 0.4)"/>
+              </filter>
+            </defs>
+
+            <!-- Background Container -->
+            <rect width="960" height="420" rx="16" fill="rgba(0,0,0,0.25)" stroke="rgba(255,255,255,0.08)"/>
+
+            <!-- TIER 1: Windows Desktop (.exe) (Left) -->
+            <g transform="translate(30, 25)">
+              <rect width="280" height="215" rx="14" fill="url(#grad-win-exe)" filter="url(#glow-win)"/>
+              <text x="140" y="30" fill="#ffffff" font-size="13.5" font-weight="bold" text-anchor="middle">💻 تطبيق ويندوز الأصيل (.exe)</text>
+              <text x="140" y="48" fill="#bae6fd" font-size="10" text-anchor="middle">Tauri (Rust) • Windows 10/11 64-bit</text>
+              <line x1="20" y1="58" x2="260" y2="58" stroke="rgba(255,255,255,0.25)"/>
+              <text x="25" y="78" fill="#ffffff" font-size="10.5">• طباعة حرارية فورية ESC/POS (58/80mm)</text>
+              <text x="25" y="96" fill="#ffffff" font-size="10.5">• تشكيل خط عربي أصيل HarfBuzz</text>
+              <text x="25" y="114" fill="#ffffff" font-size="10.5">• فتح درج النقدية RJ11 12V/24V تلقائياً</text>
+              <text x="25" y="132" fill="#ffffff" font-size="10.5">• مسح باركود USB HID فائق السرعة &lt;15ms</text>
+              <text x="25" y="150" fill="#ffffff" font-size="10.5">• قاعدة بيانات محلية مدمجة SQLite 100%</text>
+              <text x="25" y="168" fill="#ffffff" font-size="10.5">• إطلاق فوري عبر بروتوكول kaspipos://</text>
+              <text x="25" y="186" fill="#ffffff" font-size="10.5">• مستمع محلي IPC على 127.0.0.1:41732</text>
+              <text x="25" y="204" fill="#ffffff" font-size="10.5">• تحديثات آلية في الخلفية Auto-Updater</text>
+            </g>
+
+            <!-- TIER 2: Web App (PWA) (Center) -->
+            <g transform="translate(340, 25)">
+              <rect width="280" height="215" rx="14" fill="url(#grad-pwa)" filter="url(#glow-pwa)"/>
+              <text x="140" y="30" fill="#ffffff" font-size="13.5" font-weight="bold" text-anchor="middle">🌐 تطبيق الويب التقدمي (PWA)</text>
+              <text x="140" y="48" fill="#d1fae5" font-size="10" text-anchor="middle">Next.js + Service Worker + Dexie.js</text>
+              <line x1="20" y1="58" x2="260" y2="58" stroke="rgba(255,255,255,0.25)"/>
+              <text x="25" y="78" fill="#ffffff" font-size="10.5">• تثبيت فوري بدون انتظار (Zero Wait)</text>
+              <text x="25" y="96" fill="#ffffff" font-size="10.5">• تثبيت على Taskbar وشريط ابدأ وسطح المكتب</text>
+              <text x="25" y="114" fill="#ffffff" font-size="10.5">• تخزين محلي مشفر عبر IndexedDB</text>
+              <text x="25" y="132" fill="#ffffff" font-size="10.5">• طابور مبيعات متفائل (Optimistic Sales)</text>
+              <text x="25" y="150" fill="#ffffff" font-size="10.5">• مزامنة سحابية تلقائية فور عودة النت</text>
+              <text x="25" y="168" fill="#ffffff" font-size="10.5">• توافق شامل: Windows / macOS / Linux</text>
+              <text x="25" y="186" fill="#ffffff" font-size="10.5">• تشغيل مباشر من المتصفح /pos دون تثبيت</text>
+              <text x="25" y="204" fill="#ffffff" font-size="10.5">• تشفير تام للبيانات الحساسة على العميل</text>
+            </g>
+
+            <!-- TIER 3: Mobile & Tablet POS (Right) -->
+            <g transform="translate(650, 25)">
+              <rect width="280" height="215" rx="14" fill="url(#grad-mob)" filter="url(#glow-mob)"/>
+              <text x="140" y="30" fill="#ffffff" font-size="13.5" font-weight="bold" text-anchor="middle">📱 نقطة بيع التابليت والموبايل</text>
+              <text x="140" y="48" fill="#ede9fe" font-size="10" text-anchor="middle">iOS Safari &amp; Android Chrome (QR Scan)</text>
+              <line x1="20" y1="58" x2="260" y2="58" stroke="rgba(255,255,255,0.25)"/>
+              <text x="25" y="78" fill="#ffffff" font-size="10.5">• مسح كاميرا مباشر لرمز QR للتشغيل الفوري</text>
+              <text x="25" y="96" fill="#ffffff" font-size="10.5">• نظام النادل المتنقل لطاولات المطاعم والمقاهي</text>
+              <text x="25" y="114" fill="#ffffff" font-size="10.5">• ماسح ذكي للبضائع بواسطة كاميرا الموبايل</text>
+              <text x="25" y="132" fill="#ffffff" font-size="10.5">• فحص فوري للأسعار والباركود بالمخزن</text>
+              <text x="25" y="150" fill="#ffffff" font-size="10.5">• لوحة تحكم حية للمالك (Live Owner Dashboard)</text>
+              <text x="25" y="168" fill="#ffffff" font-size="10.5">• مراقبة المبيعات والأرباح من أي مكان بالعالم</text>
+              <text x="25" y="186" fill="#ffffff" font-size="10.5">• واجهة لمسية سريعة بحجم أهداف &ge;48px</text>
+              <text x="25" y="204" fill="#ffffff" font-size="10.5">• دعم أجهزة iPad وأجهزة Sunmi المحمولة</text>
+            </g>
+
+            <!-- CONNECTORS: Tiers to Core Hub -->
+            <path d="M 170 240 L 170 260 L 480 260" stroke="#0284c7" stroke-width="2.5" stroke-dasharray="4 3"/>
+            <path d="M 480 240 L 480 260" stroke="#10b981" stroke-width="2.5"/>
+            <path d="M 790 240 L 790 260 L 480 260" stroke="#7c3aed" stroke-width="2.5" stroke-dasharray="4 3"/>
+            <path d="M 480 260 L 480 280" stroke="#38bdf8" stroke-width="3"/>
+
+            <!-- CORE ENTERPRISE HUB (Bottom) -->
+            <g transform="translate(30, 280)">
+              <rect width="900" height="120" rx="14" fill="url(#grad-core-hub)" stroke="rgba(255,255,255,0.18)"/>
+              <text x="450" y="26" fill="#38bdf8" font-size="13" font-weight="bold" text-anchor="middle">🛡️ منظومة الامتيازات والخدمات المعتمدة ونواة العتاد المتكاملة (KASPI Certified Hub)</text>
+              
+              <g transform="translate(25, 42)">
+                <rect width="160" height="64" rx="8" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)"/>
+                <text x="80" y="20" fill="#ffffff" font-size="10.5" font-weight="bold" text-anchor="middle">طابعات وباركود</text>
+                <text x="80" y="36" fill="#94a3b8" font-size="9" text-anchor="middle">Epson / Xprinter / Rongta</text>
+                <text x="80" y="50" fill="#38bdf8" font-size="9" text-anchor="middle">Zebra / Honeywell / Datalogic</text>
+              </g>
+
+              <g transform="translate(195, 42)">
+                <rect width="160" height="64" rx="8" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)"/>
+                <text x="80" y="20" fill="#ffffff" font-size="10.5" font-weight="bold" text-anchor="middle">موازين وأدراج نقدية</text>
+                <text x="80" y="36" fill="#94a3b8" font-size="9" text-anchor="middle">Dibal / Avery / Digi / Mettler</text>
+                <text x="80" y="50" fill="#38bdf8" font-size="9" text-anchor="middle">أدراج فولاذية RJ11 12/24V</text>
+              </g>
+
+              <g transform="translate(365, 42)">
+                <rect width="170" height="64" rx="8" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)"/>
+                <text x="85" y="20" fill="#ffffff" font-size="10.5" font-weight="bold" text-anchor="middle">أجهزة TPE بنكية CMI</text>
+                <text x="85" y="36" fill="#94a3b8" font-size="9" text-anchor="middle">Ingenico / PAX / Verifone</text>
+                <text x="85" y="50" fill="#38bdf8" font-size="9" text-anchor="middle">7 بروتوكولات عالمية nexo/OPI</text>
+              </g>
+
+              <g transform="translate(545, 42)">
+                <rect width="170" height="64" rx="8" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)"/>
+                <text x="85" y="20" fill="#ffffff" font-size="10.5" font-weight="bold" text-anchor="middle">ذكاء اصطناعي محلي</text>
+                <text x="85" y="36" fill="#94a3b8" font-size="9" text-anchor="middle">Gemini Vision ماسح 500 منتج</text>
+                <text x="85" y="50" fill="#38bdf8" font-size="9" text-anchor="middle">مستشار مالي + تسريع WebGPU</text>
+              </g>
+
+              <g transform="translate(725, 42)">
+                <rect width="150" height="64" rx="8" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)"/>
+                <text x="75" y="20" fill="#ffffff" font-size="10.5" font-weight="bold" text-anchor="middle">الامتثال والتسعير</text>
+                <text x="75" y="36" fill="#94a3b8" font-size="9" text-anchor="middle">Art 145 CGI / NF525 / CNDP</text>
+                <text x="75" y="50" fill="#10b981" font-size="9" text-anchor="middle">200 + 150 MAD (0% عمولة)</text>
+              </g>
+            </g>
+          </svg>
+        </div>
+
+        <!-- Trilingual Exhaustive Breakdown -->
+        <div class="lang-tabs-wrapper" style="margin-top: 1.5rem;">
+          <div class="lang-tab-content active" id="content-privileges-ar">
+            <h3 style="font-size: 1.25rem; color: var(--emerald-accent); margin-bottom: 0.75rem;">
+              أولاً: الامتيازات والخدمات العشر الكبرى لشبكة KASPI POS (العربية)
+            </h3>
+            <p style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-bottom: 1rem;">
+              تم تصميم كل ميزة في نظام كسب لتمنح التاجر استقلالية تشغيلية تامة، وتخفض تكاليف التشغيل إلى الصفر تقريباً، وتضمن أماناً قانونياً ومحاسبياً مطلقاً:
+            </p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 1rem;">
+                <div style="font-weight: 800; color: #38bdf8; font-size: 0.95rem; margin-bottom: 0.4rem;">1. محرك العمل بدون إنترنت 100% (Zero-Downtime)</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">تستمر عمليات البيع والطباعة وفتح الصندوق حتى في حالات انقطاع صبيب الإنترنت أو شبكات 4G أو ألياف الاتصالات، بفضل قاعدة بيانات SQLite و Dexie.js المحلية المشفرة.</div>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 1rem;">
+                <div style="font-weight: 800; color: #38bdf8; font-size: 0.95rem; margin-bottom: 0.4rem;">2. ترحيل البيانات الفوري في دقيقتين (Zero-Loss Migration)</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">استيراد كامل المخزون والأسعار والباركود والديون من ملفات Excel و Loyverse و Square و Sage و Caissa و POSNEX دون أي إدخال يدوي وبخوارزمية منع التكرار.</div>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 1rem;">
+                <div style="font-weight: 800; color: #10b981; font-size: 0.95rem; margin-bottom: 0.4rem;">3. تقارير إغلاق الصندوق الآلية عبر WhatsApp (Z-Reports)</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">إرسال ملخصات الإغلاق المالي اليومي والورديات مباشرة إلى هاتف المالك عبر واتساب، متضمنة تفصيل الكاش، البطاقات البنكية، والديون (الكناش) وتنبيهات العجز.</div>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 1rem;">
+                <div style="font-weight: 800; color: #a855f7; font-size: 0.95rem; margin-bottom: 0.4rem;">4. المستشار المالي والتنبؤي الذكي بالذكاء الاصطناعي 24/7</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">تحليل هوامش الربح الحقيقية لكل صنف، كشف البضائع الراكدة (Dead Stock)، وتوليد اقتراحات طلبات الشراء من الموردين بناءً على معدلات البيع الواقعية.</div>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 1rem;">
+                <div style="font-weight: 800; color: #a855f7; font-size: 0.95rem; margin-bottom: 0.4rem;">5. ماسح المخزون الذكي بواسطة Gemini Vision AI</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">إضافة 500 منتج جديد في 10 دقائق فقط بمجرد توجيه كاميرا الهاتف نحو عبوة المنتج، مع استخراج تلقائي للاسم بالعربية والفرنسية، الباركود، واقتراح هامش البيع.</div>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 1rem;">
+                <div style="font-weight: 800; color: #10b981; font-size: 0.95rem; margin-bottom: 0.4rem;">6. تسريع WebGPU محلي بصفر تكلفة سحابية وسرية تامة</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">تشغيل نماذج التحليل والمحاكاة على معالج الرسوميات المحلي لجهاز التاجر، دون تكاليف خوادم باهظة، وبضمان بقاء الأرقام المالية داخل المتجر بسرية تامة.</div>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 1rem;">
+                <div style="font-weight: 800; color: #0284c7; font-size: 0.95rem; margin-bottom: 0.4rem;">7. إدارة السلاسل والامتيازات التجارية الدولية (50+ فرع)</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">مراقبة فروع الدار البيضاء، باريس، دبي، ومدريد من لوحة قيادة مركزية واحدة، مع دعم تحويل المخزون بين المتاجر وتوحيد الحسابات بالدرهم واليورو والدولار والريال.</div>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 1rem;">
+                <div style="font-weight: 800; color: #38bdf8; font-size: 0.95rem; margin-bottom: 0.4rem;">8. توافق عتادي معتمد 100% دون تعريفات معقدة</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">توصيل فوري للطابعات الحرارية (Epson, Xprinter)، مسدسات الباركود USB HID، موازين الباركود (Dibal, Digi)، وأجهزة الدفع البنكي CMI مع زمن استجابة دون 12ms.</div>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 1rem;">
+                <div style="font-weight: 800; color: #f59e0b; font-size: 0.95rem; margin-bottom: 0.4rem;">9. مزايا إصدار كوانتوم v4.0 (ضغط 90% ومزامنة شوبيفاي)</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">ضغط صور WebP وبصمة SHA-256 CAS، تصدير محاسبي Sage متوافق مع المادة 145، متابعة استحقاق الكمبيالات، ومزامنة حية لمخزون المتجر الإلكتروني مع YouCan و Shopify.</div>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 1rem;">
+                <div style="font-weight: 800; color: #10b981; font-size: 0.95rem; margin-bottom: 0.4rem;">10. تسعير عادل وشفاف (200 + 150 درهم) وبصفر عمولة</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">200 درهم للمقعد الأول، و150 درهم لكل كاشير إضافي شهرياً. لا رسوم خفية، ولا اقتطاع لأي نسبة مئوية من مبيعات التاجر، مع قفل عتادي صارم وسماحية الاستعادة.</div>
+              </div>
+            </div>
+
+            <!-- French Block LTR with Bidi Isolation -->
+            <div class="lang-block-ltr" dir="ltr" style="direction: ltr; text-align: left; unicode-bidi: isolate; margin-top: 1.5rem; border-top: 1px solid var(--border-glass); pt-4;">
+              <h3 style="font-size: 1.15rem; color: var(--emerald-accent); margin-bottom: 0.75rem;">
+                Deuxi&egrave;me: Sp&eacute;cifications Architecturales &amp; 10 Privil&egrave;ges Commerciaux (Fran&ccedil;ais)
+              </h3>
+              <p style="font-size: 0.92rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
+                KASPI POS combine la vitesse du code natif avec la flexibilit&eacute; du cloud, offrant aux commer&ccedil;ants une infrastructure certifi&eacute;e conforme aux standards bancaires et fiscaux :
+              </p>
+              <ul style="font-size: 0.88rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: square;">
+                <li><strong>Application Windows Native (.exe) :</strong> Moteur Tauri (Rust) ultra-l&eacute;ger, d&eacute;clenchement direct du tiroir RJ11 (12V/24V), impression ESC/POS HarfBuzz 58/80mm sans spooler, et scanner USB HID sous 12ms.</li>
+                <li><strong>Application Web Progressive (PWA) :</strong> Installation en 1-clic sur barre des t&acirc;ches Windows, macOS et Linux, stockage hors-ligne IndexedDB (Dexie.js), et r&eacute;conciliation automatique en arri&egrave;re-plan.</li>
+                <li><strong>Caisse Mobile &amp; Tablette (QR Code) :</strong> D&eacute;ploiement imm&eacute;diat via scan QR sur iOS Safari et Android Chrome pour prise de commande en salle et inventaire mobile.</li>
+                <li><strong>R&eacute;silience Hors-Ligne 100% :</strong> Continuit&eacute; totale des encaissements sans coupure gr&acirc;ce &agrave; SQLite embarqu&eacute; et num&eacute;rotation continue sans trou conforme &agrave; l&apos;Article 145 du CGI Marocain et NF525.</li>
+                <li><strong>Migration en 2 Minutes :</strong> Importateur intelligent avec d&eacute;duplication automatique par code-barres pour fichiers Excel/CSV, Loyverse, Square, Sage, POSNEX et Caissa.</li>
+                <li><strong>Cl&ocirc;tures WhatsApp Automatis&eacute;es :</strong> R&eacute;ception quotidienne des totaux d&apos;encaissement esp&egrave;ces, cartes TPE, cr&eacute;dits clients (Kounache) et anomalies directement sur le smartphone du g&eacute;rant.</li>
+                <li><strong>Conseiller Financier IA 24h/24 :</strong> Analyse fine des marges par r&eacute;f&eacute;rence, d&eacute;tection des rossignols de stock, et pr&eacute;conisations d&apos;approvisionnement optimis&eacute;es.</li>
+                <li><strong>Num&eacute;risation de Stock par Gemini Vision :</strong> Cr&eacute;ation de 500 fiches produits en 10 minutes avec extraction bilingue arabe/fran&ccedil;ais et d&eacute;tection automatique de l&apos;EAN-13.</li>
+                <li><strong>Moteur WebGPU &agrave; Co&ucirc;t Serveur Z&eacute;ro :</strong> Calculs analytiques ex&eacute;cut&eacute;s sur le GPU local du commer&ccedil;ant, garantissant confidentialit&eacute; totale et marge brute SaaS sup&eacute;rieure &agrave; 91%.</li>
+                <li><strong>Tarification Mat&eacute;rielle Transparente :</strong> 200 MAD/mois pour la premi&egrave;re caisse, 150 MAD/mois par caisse additionnelle, 0% de commission sur le chiffre d&apos;affaires.</li>
+              </ul>
+            </div>
+
+            <!-- English Block LTR with Bidi Isolation -->
+            <div class="lang-block-ltr" dir="ltr" style="direction: ltr; text-align: left; unicode-bidi: isolate; margin-top: 1.5rem; border-top: 1px solid var(--border-glass); pt-4;">
+              <h3 style="font-size: 1.15rem; color: var(--emerald-accent); margin-bottom: 0.75rem;">
+                Third: Enterprise Multi-Platform Architecture &amp; Merchant Privileges (English)
+              </h3>
+              <p style="font-size: 0.92rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
+                Engineered for global multi-unit franchises and independent retailers, KASPI POS enforces high availability, zero latency, and absolute fiscal integrity:
+              </p>
+              <ul style="font-size: 0.88rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: square;">
+                <li><strong>3-Tier Omnichannel Distribution:</strong> Native 64-bit Windows setup (<code>kaspi-pos-setup.exe</code>) with IPC Loopback (<code>127.0.0.1:41732/handoff</code>) and custom OS protocol handler (<code>kaspipos://open</code>), PWA desktop pinning, and mobile QR scan cashiering.</li>
+                <li><strong>100% Offline-First Architecture:</strong> Zero dependencies on active internet connectivity; transactions buffered in local SQLite / Dexie.js databases with cryptographic gap-less sequence numbers.</li>
+                <li><strong>Hardware Certification Matrix:</strong> Plug-and-play support for Epson, Xprinter, Zebra scanners, and Dibal/Digi weight-price scales decoding barcode prefixes 20, 21, 28, and 29.</li>
+                <li><strong>Universal 7-Protocol TPE Hub:</strong> Direct local integration with CMI, nexo Retailer (ISO 20022), OPI, and PAX POS engines with zero duplicate charge risk.</li>
+                <li><strong>V4.0 Quantum Edition Enhancements:</strong> 90% client-side WebP image compression, SHA-256 CAS deduplication, supplier promissory note (Kembyala) tracker, and bi-directional Shopify / YouCan omnichannel sync.</li>
+                <li><strong>Cryptographic 1-Poste Hardware Lock:</strong> High-entropy machine fingerprinting bound to Postgres <code>PosteBinding</code> records with automatic 3-strike conflict isolation and clean-shutdown recovery grace.</li>
+              </ul>
+            </div>
+
+            <!-- Certified Hardware Matrix Table -->
+            <div style="margin-top: 2rem;">
+              <h4 style="font-size: 1.05rem; color: var(--text-main); margin-bottom: 0.75rem;">
+                🔌 مصفوفة التوافق العتادي المعتمدة 100% (Certified Hardware &amp; Peripherals Matrix)
+              </h4>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: inherit;">
+                  <thead>
+                    <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border-glass);">
+                      <th style="padding: 0.6rem 0.75rem;">نوع العتاد (Peripheral)</th>
+                      <th style="padding: 0.6rem 0.75rem;">المصنعين والموديلات المعتمدة (Certified Models)</th>
+                      <th style="padding: 0.6rem 0.75rem;">منافذ التوصيل (Interfaces)</th>
+                      <th style="padding: 0.6rem 0.75rem;">السرعة والأداء الميداني (Performance Metrics)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                      <td style="padding: 0.6rem 0.75rem; font-weight: bold; color: #38bdf8;">طابعات الإيصالات الحرارية</td>
+                      <td style="padding: 0.6rem 0.75rem;">Epson TM-T20III / TM-T88VI, Xprinter XP-N160M / XP-Q200, Rongta, Bixolon (58mm &amp; 80mm)</td>
+                      <td style="padding: 0.6rem 0.75rem;">USB 2.0/3.0, Ethernet LAN (TCP:9100), Bluetooth</td>
+                      <td style="padding: 0.6rem 0.75rem;">طباعة فورية &lt;8ms، قص آلي، نبضة فتح الصندوق RJ11</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                      <td style="padding: 0.6rem 0.75rem; font-weight: bold; color: #38bdf8;">ماسحات الباركود و QR</td>
+                      <td style="padding: 0.6rem 0.75rem;">Zebra DS2208, Honeywell Voyager 1200g, Datalogic QuickScan, Netum 1D/2D Wireless</td>
+                      <td style="padding: 0.6rem 0.75rem;">USB HID Keyboard Emulation, Bluetooth SPP</td>
+                      <td style="padding: 0.6rem 0.75rem;">قراءة فائقة السرعة &lt;12ms لرموز EAN-13 و QR و Code-128</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                      <td style="padding: 0.6rem 0.75rem; font-weight: bold; color: #38bdf8;">موازين إلكترونية للوزن والسعر</td>
+                      <td style="padding: 0.6rem 0.75rem;">Dibal, Avery Berkel, Digi, Mettler Toledo (بادئات باركود 20، 21، 28، 29)</td>
+                      <td style="padding: 0.6rem 0.75rem;">RS232 Serial COM, USB, مسح ملصق الباركود</td>
+                      <td style="padding: 0.6rem 0.75rem;">تفكيك فوري للوزن بالجرام والمبلغ الإجمالي تلقائياً</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                      <td style="padding: 0.6rem 0.75rem; font-weight: bold; color: #38bdf8;">أدراج النقدية المعدنية</td>
+                      <td style="padding: 0.6rem 0.75rem;">أدراج فولاذية شديدة التحمل 4 إلى 8 خانات مع قفل ميكانيكي ثلاثي الأوضاع</td>
+                      <td style="padding: 0.6rem 0.75rem;">RJ11 / RJ12 12V/24V متصل بالطابعة الحرارية</td>
+                      <td style="padding: 0.6rem 0.75rem;">فتح تلقائي عند إتمام البيع النقدي أو زر F10 بنبضة 100ms</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                      <td style="padding: 0.6rem 0.75rem; font-weight: bold; color: #38bdf8;">أجهزة الدفع البنكي TPE</td>
+                      <td style="padding: 0.6rem 0.75rem;">Ingenico Desk/Move 5000, PAX A920/S920, Verifone V200c / V240m (معتمدة من CMI)</td>
+                      <td style="padding: 0.6rem 0.75rem;">Ethernet LAN, Wi-Fi, USB Serial COM</td>
+                      <td style="padding: 0.6rem 0.75rem;">معالجة متزامنة بآلة 11-State FSM واسترجاع تلقائي عند الانقطاع</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 0.6rem 0.75rem; font-weight: bold; color: #38bdf8;">راوترات وشبكات 4G/5G</td>
+                      <td style="padding: 0.6rem 0.75rem;">Huawei B310/B535, TP-Link Archer, D-Link (اتصالات المغرب، أورنج، إنوي)</td>
+                      <td style="padding: 0.6rem 0.75rem;">Ethernet LAN, Wi-Fi 5/6, SIM 4G/5G</td>
+                      <td style="padding: 0.6rem 0.75rem;">تحمل انقطاع النت بنسبة 100% ومزامنة تلقائية في الخلفية</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Real Code Mapping Table -->
+            <div style="margin-top: 2rem;">
+              <h4 style="font-size: 1.05rem; color: var(--text-main); margin-bottom: 0.75rem;">
+                📁 مصفوفة ربط خدمات التحميل والامتيازات بالكود المصدري الفعلي (Real Codebase Mapping)
+              </h4>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: inherit;">
+                  <thead>
+                    <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border-glass);">
+                      <th style="padding: 0.6rem 0.75rem;">الملف المصدري (Source File)</th>
+                      <th style="padding: 0.6rem 0.75rem;">الخدمة / الميزة المحققة (Verified Feature)</th>
+                      <th style="padding: 0.6rem 0.75rem;">فائدة التاجر المباشرة (Merchant Value)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                      <td style="padding: 0.6rem 0.75rem;"><code>src/app/[locale]/download/page.tsx</code></td>
+                      <td style="padding: 0.6rem 0.75rem;">مركز التحميل الثلاثي: Windows .exe + PWA + QR موبايل</td>
+                      <td style="padding: 0.6rem 0.75rem;">تثبيت بضغطة واحدة لأي جهاز داخل المتجر</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                      <td style="padding: 0.6rem 0.75rem;"><code>src/app/launch-desktop/page.tsx</code></td>
+                      <td style="padding: 0.6rem 0.75rem;">توجيه كاسبي المكتبي عبر 127.0.0.1:41732 و kaspipos://</td>
+                      <td style="padding: 0.6rem 0.75rem;">انتقال فوري سلس من المتصفح إلى البرنامج المثبت</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                      <td style="padding: 0.6rem 0.75rem;"><code>src/components/landing/QuantumEnterpriseSections.tsx</code></td>
+                      <td style="padding: 0.6rem 0.75rem;">محاكي ترحيل Excel، مصفوفة العتاد، وسجل v4.0 Quantum</td>
+                      <td style="padding: 0.6rem 0.75rem;">شفافية تقنية كاملة وضمان تشغيل الأجهزة القديمة</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                      <td style="padding: 0.6rem 0.75rem;"><code>src/components/landing/DevicePricingCalculator.tsx</code></td>
+                      <td style="padding: 0.6rem 0.75rem;">حاسبة التسعير الشفاف (200 + 150 درهم) بدون عمولات</td>
+                      <td style="padding: 0.6rem 0.75rem;">توقع التكاليف بدقة وتوفير آلاف الدراهم سنوياً</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                      <td style="padding: 0.6rem 0.75rem;"><code>src/client/db/dexie.ts</code></td>
+                      <td style="padding: 0.6rem 0.75rem;">قاعدة بيانات IndexedDB المحلية مع طوابير المبيعات المشفرة</td>
+                      <td style="padding: 0.6rem 0.75rem;">عدم توقف الكاشير إطلاقاً أثناء انقطاع الإنترنت</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 0.6rem 0.75rem;"><code>src-tauri/src/main.rs</code> &amp; <code>tpe_bridge.rs</code></td>
+                      <td style="padding: 0.6rem 0.75rem;">محرك الطباعة الخام ESC/POS وجسر TPE المحلي بلغة Rust</td>
+                      <td style="padding: 0.6rem 0.75rem;">سرعة خارقة واستقرار 100% دون أخطاء الويندوز</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
   <div class="lightbox" id="lightbox" onclick="closeLightbox()">
     <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
     <img src="" alt="Fullscreen Preview" class="lightbox-img" id="lightbox-img" onclick="event.stopPropagation()">
@@ -2516,6 +2877,7 @@ const htmlContent = `<!DOCTYPE html>
         tab12: "12. حماية المقاعد وقفل الأجهزة (Hardware Seat Lock & Grace)",
         tab13: "13. موسوعة الأمن السيبراني والتحصين الهندسي (Global Cybersecurity)",
         tab14: "14. معمارية الماوس واللمس والتابليت (Hybrid Mouse & Touch)",
+        tab15: "15. مصفوفة الامتيازات والخدمات الشاملة (Download Services & Privileges)",
         downloadLabel: "تحميل نسخة HTML",
         printLabel: "حفظ PDF",
         execNavTitle: "خريطة التنقل التنفيذية الشاملة (Executive Architecture Map)",
@@ -2550,6 +2912,7 @@ const htmlContent = `<!DOCTYPE html>
         tab12: "12. Intégrité des Postes & Verrouillage (1-Poste Hardware Binding)",
         tab13: "13. Encyclopédie Cybersécurité & Défense (Zero-Breach Architecture)",
         tab14: "14. Architecture Hybride Tactile & Souris (Tablettes & PC)",
+        tab15: "15. Matrice des Privilèges & Services de Téléchargement (Services Matrix)",
         downloadLabel: "Télécharger HTML",
         printLabel: "Exporter PDF",
         execNavTitle: "Carte de Navigation Exécutive Globale",
@@ -2584,6 +2947,7 @@ const htmlContent = `<!DOCTYPE html>
         tab12: "12. Seat Integrity & Hardware Lock (1-Poste Binding & Customer Grace)",
         tab13: "13. Global Cybersecurity & Vulnerability Encyclopedia (Zero-Breach Defense)",
         tab14: "14. Hybrid Mouse & Touch Tablet Architecture (Ergonomics)",
+        tab15: "15. Download Center Services & Privileges Matrix (Omnichannel Matrix)",
         downloadLabel: "Download HTML Copy",
         printLabel: "Save PDF",
         execNavTitle: "Executive Architecture & Fast Navigation Map",
@@ -2633,6 +2997,7 @@ const htmlContent = `<!DOCTYPE html>
       if (document.getElementById("tab-12")) document.getElementById("tab-12").textContent = dict.tab12;
       if (document.getElementById("tab-13")) document.getElementById("tab-13").textContent = dict.tab13;
       if (document.getElementById("tab-14")) document.getElementById("tab-14").textContent = dict.tab14;
+      if (document.getElementById("tab-15")) document.getElementById("tab-15").textContent = dict.tab15;
       if (document.getElementById("download-label")) document.getElementById("download-label").textContent = dict.downloadLabel;
       if (document.getElementById("print-label")) document.getElementById("print-label").textContent = dict.printLabel;
       if (document.getElementById("dossier-search")) document.getElementById("dossier-search").placeholder = dict.searchPlaceholder;
@@ -2681,7 +3046,8 @@ const htmlContent = `<!DOCTYPE html>
         "11-geo": "tab-11",
         "12-seat-lock": "tab-12",
         "13-cybersecurity": "tab-13",
-        "14-touch": "tab-14"
+        "14-touch": "tab-14",
+        "15-privileges": "tab-15"
       };
       const activeTab = document.getElementById(idxMap[chapId]);
       if (activeTab) activeTab.classList.add("active");
@@ -2703,7 +3069,8 @@ const htmlContent = `<!DOCTYPE html>
             "01": "01-legal", "02": "02-infra", "03": "03-audit", "04": "04-tpe",
             "05": "05-economics", "06": "06-simulator", "07": "07-marketing",
             "08": "08-pentest", "09": "09-swarm", "10": "10-runtime", "11": "11-geo",
-            "12": "12-seat-lock", "13": "13-cybersecurity", "14": "14-touch"
+            "12": "12-seat-lock", "13": "13-cybersecurity", "14": "14-touch",
+            "15": "15-privileges"
           };
           switchChapter(chapMap[id] || "01-legal");
         }

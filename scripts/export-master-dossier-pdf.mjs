@@ -11,6 +11,10 @@ const HTML_FILE = path.join(ROOT, "deliverables/kaspi-master-dossier/KASPI_POS_I
 const PDF_OUTPUT = path.join(ROOT, "deliverables/kaspi-master-dossier/KASPI_POS_INTERACTIVE_MASTER_DOSSIER.pdf");
 const DESKTOP_ONEDRIVE_PDF = "/mnt/c/Users/hicha/OneDrive/Desktop/KASPI_POS_INTERACTIVE_MASTER_DOSSIER.pdf";
 const DESKTOP_LOCAL_PDF = "/mnt/c/Users/hicha/Desktop/KASPI_POS_INTERACTIVE_MASTER_DOSSIER.pdf";
+const BRAIN_PDF = "/home/u/.gemini/antigravity/brain/6becd8fe-a711-4b29-82a3-ad4f9aef9f95/KASPI_POS_INTERACTIVE_MASTER_DOSSIER.pdf";
+const BRAIN_HTML = "/home/u/.gemini/antigravity/brain/6becd8fe-a711-4b29-82a3-ad4f9aef9f95/KASPI_POS_INTERACTIVE_MASTER_DOSSIER.html";
+const DESKTOP_ONEDRIVE_HTML = "/mnt/c/Users/hicha/OneDrive/Desktop/KASPI_POS_INTERACTIVE_MASTER_DOSSIER.html";
+const DESKTOP_LOCAL_HTML = "/mnt/c/Users/hicha/Desktop/KASPI_POS_INTERACTIVE_MASTER_DOSSIER.html";
 
 async function exportPdf() {
   console.log("=== EXPORTING OFFICIAL KASPI POS MASTER DOSSIER PDF ===");
@@ -68,18 +72,22 @@ async function exportPdf() {
   const stats = fs.statSync(PDF_OUTPUT);
   console.log(`[SUCCESS] PDF generated: ${PDF_OUTPUT} (${(stats.size / (1024 * 1024)).toFixed(2)} MB)`);
 
-  try {
-    fs.copyFileSync(PDF_OUTPUT, DESKTOP_ONEDRIVE_PDF);
-    console.log(`[MIRRORED] Copied to: ${DESKTOP_ONEDRIVE_PDF}`);
-  } catch (e) {
-    console.warn("Could not copy to OneDrive Desktop:", e.message);
-  }
+  const mirrors = [
+    { src: PDF_OUTPUT, dest: DESKTOP_ONEDRIVE_PDF, name: "OneDrive Desktop PDF" },
+    { src: PDF_OUTPUT, dest: DESKTOP_LOCAL_PDF, name: "Local Desktop PDF" },
+    { src: PDF_OUTPUT, dest: BRAIN_PDF, name: "Brain Artifact PDF" },
+    { src: HTML_FILE, dest: DESKTOP_ONEDRIVE_HTML, name: "OneDrive Desktop HTML" },
+    { src: HTML_FILE, dest: DESKTOP_LOCAL_HTML, name: "Local Desktop HTML" },
+    { src: HTML_FILE, dest: BRAIN_HTML, name: "Brain Artifact HTML" },
+  ];
 
-  try {
-    fs.copyFileSync(PDF_OUTPUT, DESKTOP_LOCAL_PDF);
-    console.log(`[MIRRORED] Copied to: ${DESKTOP_LOCAL_PDF}`);
-  } catch (e) {
-    console.warn("Could not copy to Local Desktop:", e.message);
+  for (const m of mirrors) {
+    try {
+      fs.copyFileSync(m.src, m.dest);
+      console.log(`[MIRRORED] Copied ${m.name} to: ${m.dest}`);
+    } catch (e) {
+      console.warn(`Could not copy ${m.name}:`, e.message);
+    }
   }
 }
 
