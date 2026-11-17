@@ -47,6 +47,11 @@ export function handleApiError(err: unknown) {
   if (err instanceof AppError) {
     return jsonError(err.code, err.message, err.status, err.details);
   }
-  const message = err instanceof Error ? err.message : "Internal server error";
+  const isProd = process.env.NODE_ENV === "production";
+  const message = isProd
+    ? "An internal server error occurred"
+    : err instanceof Error
+    ? err.message
+    : "Internal server error";
   return jsonError("INTERNAL_ERROR", message, 500);
 }

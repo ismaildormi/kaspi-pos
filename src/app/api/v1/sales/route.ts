@@ -15,7 +15,7 @@ const SaleItemInputSchema = z.object({
   unitPrice: z.union([z.string(), z.number()]),
   taxRate: z.union([z.string(), z.number()]).optional().default(20.00),
   discountAmount: z.union([z.string(), z.number()]).optional().default(0),
-});
+}).strict();
 
 const CreateSaleSchema = z.object({
   clientSaleId: z.string().uuid("Invalid clientSaleId"),
@@ -32,7 +32,7 @@ const CreateSaleSchema = z.object({
   changeDue: z.union([z.string(), z.number()]).optional().default(0),
   paymentMethod: z.enum(["cash", "card", "credit", "transfer"]).default("cash"),
   items: z.array(SaleItemInputSchema).min(1, "Sale must contain at least one item"),
-});
+}).strict();
 
 export async function POST(req: NextRequest) {
   try {
@@ -109,6 +109,85 @@ export async function POST(req: NextRequest) {
 
     const productMap = new Map(dbProducts.map((p) => [p.id, p]));
 
+    // Verify all products exist and validate quantities
+    for (const item of items) {
+      if (!productMap.has(item.productId)) {
+        throw new AppError("PRODUCT_NOT_FOUND", `Product not found: ${item.productId}`, 404);
+      }
+      const q = toDecimal(item.quantity);
+      if (!q.gt(0)) {
+        throw new AppError("INVALID_QUANTITY", "Quantity must be strictly greater than zero", 422);
+      }
+    }
+
+    // Authoritative Server-Side Price & Total Verification (Anti-Tampering)
+    let serverSubtotal = toDecimal(0);
+    let serverTaxTotal = toDecimal(0);
+    let serverDiscountTotal = toDecimal(0);
+
+    const validatedItems = items.map((item, idx) => {
+      const prod = productMap.get(item.productId)!;
+      const qtyDec = toDecimal(item.quantity);
+      // Authoritative catalog price takes precedence over client-supplied unitPrice
+      const priceDec = prod.salePrice ? toDecimal(prod.salePrice) : toDecimal(item.unitPrice);
+      const rawDisc = toDecimal(item.discountAmount || 0);
+      const lineGross = qtyDec.times(priceDec);
+      const discDec = rawDisc.gt(lineGross) ? lineGross : (rawDisc.lt(0) ? toDecimal(0) : rawDisc);
+      const taxRateDec = toDecimal(item.taxRate ?? 20.00);
+
+      const net = roundMoney(lineGross.minus(discDec));
+      const tax = roundMoney(net.times(taxRateDec).dividedBy(100));
+      const lineTotal = roundMoney(net.plus(tax));
+
+      serverSubtotal = serverSubtotal.plus(net);
+      serverTaxTotal = serverTaxTotal.plus(tax);
+      serverDiscountTotal = serverDiscountTotal.plus(discDec);
+
+      return {
+        item,
+        idx,
+        prod,
+        qtyDec,
+        priceDec,
+        discDec,
+        taxRateDec,
+        net,
+        tax,
+        lineTotal,
+      };
+    });
+
+    const serverGrandTotal = roundMoney(serverSubtotal.plus(serverTaxTotal));
+    const clientGrandTotalDec = toDecimal(grandTotal);
+    const priceDiff = serverGrandTotal.minus(clientGrandTotalDec).abs();
+
+    // If client price deviates by more than 0.15 MAD, block transaction and record audit incident
+    if (priceDiff.gt(0.15)) {
+      const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
+      try {
+        await prisma.auditLog.create({
+          data: {
+            tenantId: ctx.tenantId,
+            actorUserId: ctx.userId,
+            action: "SECURITY_PRICE_TAMPERING_BLOCKED",
+            entityType: "sale",
+            reason: `Price tampering detected: client grandTotal=${grandTotal}, server calculated=${serverGrandTotal.toFixed(2)}`,
+            beforeState: { clientSaleId, grandTotal, itemsCount: items.length },
+            afterState: { serverGrandTotal: serverGrandTotal.toFixed(2) },
+            ip: clientIp,
+          },
+        });
+      } catch (logErr) {
+        console.error("Failed to log price tampering audit:", logErr);
+      }
+
+      throw new AppError(
+        "PRICE_TAMPERING_DETECTED",
+        "Sale total rejected: submitted amount does not match authoritative catalog pricing",
+        400
+      );
+    }
+
     // 3. Execute atomic transaction in PostgreSQL with RLS context & DGI gap-less sequence
     const result = await runWithTenantContext(
       { tenantId: ctx.tenantId, userId: ctx.userId },
@@ -156,19 +235,10 @@ export async function POST(req: NextRequest) {
           });
 
           // Create SaleItems and update inventory
-          for (let idx = 0; idx < items.length; idx++) {
-            const item = items[idx];
-            const prod = productMap.get(item.productId);
+          for (const vItem of validatedItems) {
+            const { item, idx, prod, qtyDec, priceDec, discDec, taxRateDec, net, tax, lineTotal } = vItem;
             const nameSnapshot = prod?.name || "Article Divers";
             const skuSnapshot = prod?.sku || "DIVERS";
-            const qtyDec = toDecimal(item.quantity);
-            const priceDec = toDecimal(item.unitPrice);
-            const discDec = toDecimal(item.discountAmount);
-            const taxRateDec = toDecimal(item.taxRate);
-
-            const net = roundMoney(qtyDec.times(priceDec).minus(discDec));
-            const tax = roundMoney(net.times(taxRateDec).dividedBy(100));
-            const lineTotal = roundMoney(net.plus(tax));
 
             await tx.saleItem.create({
               data: {

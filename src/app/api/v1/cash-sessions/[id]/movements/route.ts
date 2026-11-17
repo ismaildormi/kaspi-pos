@@ -9,7 +9,7 @@ const MovementSchema = z.object({
   type: z.enum(["cash_in", "cash_out", "supplier_payout", "petty_cash"]),
   amount: z.union([z.number(), z.string()]),
   reason: z.string().min(1, "La raison du mouvement est requise"),
-});
+}).strict();
 
 export async function POST(
   req: NextRequest,

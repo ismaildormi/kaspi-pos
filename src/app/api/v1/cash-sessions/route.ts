@@ -9,7 +9,7 @@ const OpenShiftSchema = z.object({
   storeId: z.string().uuid().optional(),
   openingCash: z.union([z.number(), z.string()]),
   openingNotes: z.string().optional(),
-});
+}).strict();
 
 export async function GET(req: NextRequest) {
   try {

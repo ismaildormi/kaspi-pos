@@ -217,6 +217,98 @@ const htmlContent = `<!DOCTYPE html>
       transform: scale(1.05);
     }
 
+    /* ---------------- SEARCH & PRINT TOOLBAR ---------------- */
+    .dossier-search-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      margin: 0 0.5rem;
+    }
+
+    .dossier-search-input {
+      padding: 0.45rem 1rem;
+      border-radius: 9999px;
+      border: 1px solid var(--glass-border);
+      background: var(--glass-panel);
+      color: var(--text-main);
+      font-size: 0.8rem;
+      outline: none;
+      width: 220px;
+      transition: all 0.25s ease;
+      font-family: inherit;
+    }
+
+    .dossier-search-input:focus {
+      width: 280px;
+      border-color: var(--emerald-accent);
+      box-shadow: 0 0 12px var(--emerald-glow);
+    }
+
+    .print-doc-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.4rem 0.95rem;
+      border-radius: 9999px;
+      background: var(--glass-panel);
+      border: 1px solid var(--glass-border);
+      color: var(--text-main);
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .print-doc-btn:hover {
+      background: var(--glass-panel-hover);
+      border-color: var(--emerald-accent);
+      transform: translateY(-1px);
+    }
+
+    .diagram-container {
+      margin: 2rem 0;
+      padding: 1.75rem;
+      background: rgba(0, 0, 0, 0.02);
+      border: 1px solid var(--glass-border);
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: auto;
+    }
+
+    [data-theme="fjord-twilight"] .diagram-container {
+      background: rgba(0, 0, 0, 0.40);
+    }
+
+    /* Clean Executive Print Stylesheet */
+    @media print {
+      .glass-nav, .chapter-tabs, .dossier-search-wrapper, .print-doc-btn, .lang-pill-group, .theme-toggle-btn, .hero-metrics, .lightbox {
+        display: none !important;
+      }
+      body {
+        background: #ffffff !important;
+        color: #09090b !important;
+      }
+      .container {
+        max-width: 100% !important;
+        padding: 0 !important;
+      }
+      .section-container {
+        display: block !important;
+        page-break-after: always;
+        opacity: 1 !important;
+      }
+      .card {
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        background: #ffffff !important;
+        page-break-inside: avoid;
+        margin-bottom: 2rem !important;
+      }
+    }
+
     /* ---------------- SUB-NAV CHAPTER TABS ---------------- */
     .chapter-tabs {
       display: flex;
@@ -653,7 +745,18 @@ const htmlContent = `<!DOCTYPE html>
       </div>
     </div>
 
+    <!-- Instant Search Across All Chapters -->
+    <div class="dossier-search-wrapper">
+      <input type="text" id="dossier-search" class="dossier-search-input" placeholder="بحث فوري في الملف... / Search..." oninput="handleDossierSearch(this.value)">
+    </div>
+
     <div class="nav-actions">
+      <!-- 1-Click Print / Save Official PDF Button -->
+      <button class="print-doc-btn" onclick="window.print()" title="طباعة أو حفظ PDF رسمي">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span id="print-label">طباعة / PDF</span>
+      </button>
+
       <!-- Trilingual Language Switcher -->
       <div class="lang-pill-group">
         <button class="lang-btn active" onclick="setLocale('ar')">العربية</button>
@@ -677,6 +780,10 @@ const htmlContent = `<!DOCTYPE html>
     <button class="chapter-tab-btn" onclick="switchChapter('05-economics')" id="tab-05">05. نموذج الأرباح والآلة الحاسبة (Economics)</button>
     <button class="chapter-tab-btn" onclick="switchChapter('06-simulator')" id="tab-06">06. محاكي التذاكر والمعرض (Simulator & Gallery)</button>
     <button class="chapter-tab-btn" onclick="switchChapter('07-marketing')" id="tab-07">07. دليل التسويق والوكالات (Marketing Pack)</button>
+    <button class="chapter-tab-btn" onclick="switchChapter('08-pentest')" id="tab-08">08. حماية كالي والطبقات التسع (Kali & 9-Layer Defense)</button>
+    <button class="chapter-tab-btn" onclick="switchChapter('09-swarm')" id="tab-09">09. أسطول السرب الميتوزي (12-Agent Mitosis Swarm)</button>
+    <button class="chapter-tab-btn" onclick="switchChapter('10-runtime')" id="tab-10">10. المحرك المحلي والسحابي (WebGPU / Trigger / Windows CI)</button>
+    <button class="chapter-tab-btn" onclick="switchChapter('11-geo')" id="tab-11">11. استكشاف محركات الذكاء (GEO & llms.txt Strategy)</button>
   </nav>
 
   <!-- ================= MAIN CONTAINER ================= -->
@@ -1226,6 +1333,270 @@ const htmlContent = `<!DOCTYPE html>
       </div>
     </section>
 
+    <!-- ================= CHAPTER 08: KALI PENTEST HARDENING & 9-LAYER DEFENSE ================= -->
+    <section class="section-container" id="sec-08-pentest">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title" id="title-08-1">8. جدار أمان كالي والطبقات التسع (Kali Linux Pentest Hardening & 9+ Defense Shield Pipeline)</h2>
+          <span class="card-badge">Defense-in-Depth & Anti-Tampering</span>
+        </div>
+        <p id="desc-08-1">
+          تم تحصين معمارية كسب ضد اختبارات الاختراق المتقدمة (Kali Linux Pentesting) وأدوات الفحص الهجومي (Burp Suite, SQLMap, Hydra, ffuf, Nmap, Nuclei). لا يعتمد النظام على تعليقات وهمية بل يطبق معمارية دفاعية متعددة الطبقات تجعل استغلال الثغرات مستحيلاً:
+        </p>
+
+        <!-- 9-Layer Defense Shield Diagram -->
+        <div class="diagram-container">
+          <h4 style="margin-bottom: 1.25rem; color: var(--emerald-accent); font-size: 1.1rem;">مخطط خط أنابيب الدروع الدفاعية التسع (9+ Defense Shield Pipeline)</h4>
+          <svg width="100%" height="240" viewBox="0 0 940 240" fill="none" xmlns="http://www.w3.org/2000/svg" style="max-width: 940px;">
+            <defs>
+              <linearGradient id="shieldGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#10b981" stop-opacity="0.8"/>
+                <stop offset="100%" stop-color="#059669" stop-opacity="0.3"/>
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="3" result="blur"/>
+                <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+              </filter>
+            </defs>
+            <!-- Connecting Pipeline -->
+            <path d="M 50 120 L 890 120" stroke="rgba(16, 185, 129, 0.4)" stroke-width="4" stroke-dasharray="8 6"/>
+            <!-- 9 Shield Nodes -->
+            <!-- 1. Cloudflare/CRS -->
+            <g transform="translate(40, 70)">
+              <rect width="80" height="100" rx="14" fill="var(--glass-panel)" stroke="#10b981" stroke-width="2" filter="url(#glow)"/>
+              <text x="40" y="35" text-anchor="middle" fill="var(--text-main)" font-size="11" font-weight="900">01. Edge</text>
+              <text x="40" y="55" text-anchor="middle" fill="var(--text-muted)" font-size="9">Cloudflare</text>
+              <text x="40" y="72" text-anchor="middle" fill="#10b981" font-size="8" font-weight="700">OWASP CRS</text>
+            </g>
+            <!-- 2. WAF/IPS -->
+            <g transform="translate(140, 70)">
+              <rect width="80" height="100" rx="14" fill="var(--glass-panel)" stroke="#10b981" stroke-width="2"/>
+              <text x="40" y="35" text-anchor="middle" fill="var(--text-main)" font-size="11" font-weight="900">02. WAF/IPS</text>
+              <text x="40" y="55" text-anchor="middle" fill="var(--text-muted)" font-size="9">Auto-Ban</text>
+              <text x="40" y="72" text-anchor="middle" fill="#10b981" font-size="8" font-weight="700">SQLi/XSS Wall</text>
+            </g>
+            <!-- 3. Zero-Trust -->
+            <g transform="translate(240, 70)">
+              <rect width="80" height="100" rx="14" fill="var(--glass-panel)" stroke="#10b981" stroke-width="2"/>
+              <text x="40" y="35" text-anchor="middle" fill="var(--text-main)" font-size="11" font-weight="900">03. Admin</text>
+              <text x="40" y="55" text-anchor="middle" fill="var(--text-muted)" font-size="9">Zero-Trust</text>
+              <text x="40" y="72" text-anchor="middle" fill="#10b981" font-size="8" font-weight="700">HMAC + 2FA</text>
+            </g>
+            <!-- 4. Rate Limiting -->
+            <g transform="translate(340, 70)">
+              <rect width="80" height="100" rx="14" fill="var(--glass-panel)" stroke="#10b981" stroke-width="2"/>
+              <text x="40" y="35" text-anchor="middle" fill="var(--text-main)" font-size="11" font-weight="900">04. Throttle</text>
+              <text x="40" y="55" text-anchor="middle" fill="var(--text-muted)" font-size="9">Rate Limiter</text>
+              <text x="40" y="72" text-anchor="middle" fill="#10b981" font-size="8" font-weight="700">Token Bucket</text>
+            </g>
+            <!-- 5. Strict Zod -->
+            <g transform="translate(440, 70)">
+              <rect width="80" height="100" rx="14" fill="var(--glass-panel)" stroke="#10b981" stroke-width="2"/>
+              <text x="40" y="35" text-anchor="middle" fill="var(--text-main)" font-size="11" font-weight="900">05. Zod Strict</text>
+              <text x="40" y="55" text-anchor="middle" fill="var(--text-muted)" font-size="9">Schema Gate</text>
+              <text x="40" y="72" text-anchor="middle" fill="#10b981" font-size="8" font-weight="700">Zero Injection</text>
+            </g>
+            <!-- 6. Authoritative Pricing -->
+            <g transform="translate(540, 70)">
+              <rect width="80" height="100" rx="14" fill="var(--glass-panel)" stroke="#10b981" stroke-width="2"/>
+              <text x="40" y="35" text-anchor="middle" fill="var(--text-main)" font-size="11" font-weight="900">06. Pricing</text>
+              <text x="40" y="55" text-anchor="middle" fill="var(--text-muted)" font-size="9">Server Truth</text>
+              <text x="40" y="72" text-anchor="middle" fill="#10b981" font-size="8" font-weight="700">Anti-Tamper</text>
+            </g>
+            <!-- 7. Postgres RLS -->
+            <g transform="translate(640, 70)">
+              <rect width="80" height="100" rx="14" fill="var(--glass-panel)" stroke="#10b981" stroke-width="2"/>
+              <text x="40" y="35" text-anchor="middle" fill="var(--text-main)" font-size="11" font-weight="900">07. DB RLS</text>
+              <text x="40" y="55" text-anchor="middle" fill="var(--text-muted)" font-size="9">PostgreSQL</text>
+              <text x="40" y="72" text-anchor="middle" fill="#10b981" font-size="8" font-weight="700">Tenant Vault</text>
+            </g>
+            <!-- 8. Idempotency -->
+            <g transform="translate(740, 70)">
+              <rect width="80" height="100" rx="14" fill="var(--glass-panel)" stroke="#10b981" stroke-width="2"/>
+              <text x="40" y="35" text-anchor="middle" fill="var(--text-main)" font-size="11" font-weight="900">08. Replay</text>
+              <text x="40" y="55" text-anchor="middle" fill="var(--text-muted)" font-size="9">Idempotency</text>
+              <text x="40" y="72" text-anchor="middle" fill="#10b981" font-size="8" font-weight="700">Deduplication</text>
+            </g>
+            <!-- 9. Forensic AuditLog -->
+            <g transform="translate(840, 70)">
+              <rect width="80" height="100" rx="14" fill="var(--glass-panel)" stroke="#10b981" stroke-width="2" filter="url(#glow)"/>
+              <text x="40" y="35" text-anchor="middle" fill="var(--text-main)" font-size="11" font-weight="900">09. Audit</text>
+              <text x="40" y="55" text-anchor="middle" fill="var(--text-muted)" font-size="9">Immutable</text>
+              <text x="40" y="72" text-anchor="middle" fill="#10b981" font-size="8" font-weight="700">Write-Only</text>
+            </g>
+          </svg>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-top: 1.5rem;">
+          <div class="metric-card" style="padding: 1.25rem;">
+            <h4 style="color: var(--emerald-accent); font-size: 0.95rem; margin-bottom: 0.4rem;">حظر تلاعب الأسعار (Burp Suite Price Tampering)</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+              يقوم الخادم بحساب إجمالي السلة والأسعار الفردية بشكل مستقل بناءً على قاعدة البيانات (Authoritative Server Pricing). أي محاولة لتعديل السعر أو إرسال كميات سالبة تُرفض فوراً برمز 400 وتُسجل في سجل الحوادث الأمني AuditLog.
+            </p>
+          </div>
+          <div class="metric-card" style="padding: 1.25rem;">
+            <h4 style="color: var(--emerald-accent); font-size: 0.95rem; margin-bottom: 0.4rem;">إيقاف خرائط المصدر (Source Maps Suppressed)</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+              تم تعطيل productionBrowserSourceMaps وإخفاء ترويسة x-powered-by في ملف next.config.mjs لمنع أدوات استطلاع DevTools من قراءة الكود المصدري الأصلي للبنية.
+            </p>
+          </div>
+          <div class="metric-card" style="padding: 1.25rem;">
+            <h4 style="color: var(--emerald-accent); font-size: 0.95rem; margin-bottom: 0.4rem;">الإفصاح الأمني المنظم (RFC 9116)</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+              اعتماد ملف /.well-known/security.txt الرسمي متضمناً قنوات الإبلاغ الآمن وتفويض الباحثين الأخلاقيين وفق شروط الحماية القانونية المعترف بها دولياً.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CHAPTER 09: PLANETARY MITOSIS SWARM V2 ================= -->
+    <section class="section-container" id="sec-09-swarm">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title" id="title-09-1">9. أسطول السرب الميتوزي والوكلاء الذاتيون (Planetary Fractal Mitosis Swarm V2 & 12-Agent Fleet)</h2>
+          <span class="card-badge">Autonomous Self-Healing Swarm</span>
+        </div>
+        <p id="desc-09-1">
+          معمارية السرب الذاتي اللامركزي الموزع عبر 12 وكيلاً متخصصاً يعملون بنظام الرصد المستمر والشفاء التلقائي (Self-Healing Boundary) لضمان عدم توقف عمليات البيع أو فقدان البيانات تحت أي ظرف:
+        </p>
+
+        <!-- Animated Swarm Planetary Diagram -->
+        <div class="diagram-container">
+          <h4 style="margin-bottom: 1.25rem; color: var(--emerald-accent); font-size: 1.1rem;">مخطط الأسطول المداري لـ 12 وكيلاً ذاتياً (Planetary Fractal Mitosis Swarm V2)</h4>
+          <svg width="100%" height="320" viewBox="0 0 600 320" fill="none" xmlns="http://www.w3.org/2000/svg" style="max-width: 600px;">
+            <!-- Orbital Rings -->
+            <circle cx="300" cy="160" r="130" stroke="rgba(16, 185, 129, 0.25)" stroke-width="1.5" stroke-dasharray="6 6"/>
+            <circle cx="300" cy="160" r="85" stroke="rgba(56, 189, 248, 0.25)" stroke-width="1.5"/>
+            <!-- Center Core Node -->
+            <circle cx="300" cy="160" r="42" fill="var(--glass-panel)" stroke="#10b981" stroke-width="3"/>
+            <text x="300" y="155" text-anchor="middle" fill="var(--text-main)" font-size="11" font-weight="900">KASPI SWARM</text>
+            <text x="300" y="172" text-anchor="middle" fill="#10b981" font-size="9" font-weight="700">MITOSIS CORE</text>
+            <!-- 12 Agent Orbiting Nodes -->
+            <!-- 1. Supervisor -->
+            <circle cx="300" cy="30" r="16" fill="var(--glass-panel)" stroke="#10b981" stroke-width="1.5"/>
+            <text x="300" y="34" text-anchor="middle" fill="var(--text-main)" font-size="8" font-weight="700">A01</text>
+            <!-- 2. Security -->
+            <circle cx="365" cy="48" r="16" fill="var(--glass-panel)" stroke="#10b981" stroke-width="1.5"/>
+            <text x="365" y="52" text-anchor="middle" fill="var(--text-main)" font-size="8" font-weight="700">A02</text>
+            <!-- 3. TPE Hub -->
+            <circle cx="418" cy="98" r="16" fill="var(--glass-panel)" stroke="#10b981" stroke-width="1.5"/>
+            <text x="418" y="102" text-anchor="middle" fill="var(--text-main)" font-size="8" font-weight="700">A03</text>
+            <!-- 4. Dexie Sync -->
+            <circle cx="430" cy="160" r="16" fill="var(--glass-panel)" stroke="#10b981" stroke-width="1.5"/>
+            <text x="430" y="164" text-anchor="middle" fill="var(--text-main)" font-size="8" font-weight="700">A04</text>
+            <!-- 5. Fiscal Seq -->
+            <circle cx="418" cy="222" r="16" fill="var(--glass-panel)" stroke="#10b981" stroke-width="1.5"/>
+            <text x="418" y="226" text-anchor="middle" fill="var(--text-main)" font-size="8" font-weight="700">A05</text>
+            <!-- 6. Inventory -->
+            <circle cx="365" cy="272" r="16" fill="var(--glass-panel)" stroke="#10b981" stroke-width="1.5"/>
+            <text x="365" y="276" text-anchor="middle" fill="var(--text-main)" font-size="8" font-weight="700">A06</text>
+            <!-- 7. Thermal Print -->
+            <circle cx="300" cy="290" r="16" fill="var(--glass-panel)" stroke="#10b981" stroke-width="1.5"/>
+            <text x="300" y="294" text-anchor="middle" fill="var(--text-main)" font-size="8" font-weight="700">A07</text>
+            <!-- 8. KDS Kitchen -->
+            <circle cx="235" cy="272" r="16" fill="var(--glass-panel)" stroke="#10b981" stroke-width="1.5"/>
+            <text x="235" y="276" text-anchor="middle" fill="var(--text-main)" font-size="8" font-weight="700">A08</text>
+            <!-- 9. AI Retail -->
+            <circle cx="182" cy="222" r="16" fill="var(--glass-panel)" stroke="#10b981" stroke-width="1.5"/>
+            <text x="182" y="226" text-anchor="middle" fill="var(--text-main)" font-size="8" font-weight="700">A09</text>
+            <!-- 10. WhatsApp -->
+            <circle cx="170" cy="160" r="16" fill="var(--glass-panel)" stroke="#10b981" stroke-width="1.5"/>
+            <text x="170" y="164" text-anchor="middle" fill="var(--text-main)" font-size="8" font-weight="700">A10</text>
+            <!-- 11. Billing -->
+            <circle cx="182" cy="98" r="16" fill="var(--glass-panel)" stroke="#10b981" stroke-width="1.5"/>
+            <text x="182" y="102" text-anchor="middle" fill="var(--text-main)" font-size="8" font-weight="700">A11</text>
+            <!-- 12. Self-Healing -->
+            <circle cx="235" cy="48" r="16" fill="var(--glass-panel)" stroke="#10b981" stroke-width="1.5"/>
+            <text x="235" y="52" text-anchor="middle" fill="var(--text-main)" font-size="8" font-weight="700">A12</text>
+          </svg>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
+          <div class="metric-card" style="padding: 1rem;">
+            <strong style="color: var(--emerald-accent);">A01-A03:</strong> التنسيق المركزي، مراقبة الاختراق والامتثال، وجسر بروتوكولات TPE السبعة.
+          </div>
+          <div class="metric-card" style="padding: 1rem;">
+            <strong style="color: var(--emerald-accent);">A04-A06:</strong> المزامنة المحلية Dexie، التسلسل الضريبي المادة 145، وتنبيهات انتهاء الصلاحية DLC.
+          </div>
+          <div class="metric-card" style="padding: 1rem;">
+            <strong style="color: var(--emerald-accent);">A07-A09:</strong> درايفر الطباعة ESC/POS، خادم شاشات المطبخ KDS، والمستشار الذكي المحلي.
+          </div>
+          <div class="metric-card" style="padding: 1rem;">
+            <strong style="color: var(--emerald-accent);">A10-A12:</strong> إشعارات واتساب، تسوية الفوترة المتكررة، وحاجز الشفاء الذاتي التلقائي.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CHAPTER 10: ADVANCED RUNTIME ENGINE ================= -->
+    <section class="section-container" id="sec-10-runtime">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title" id="title-10-1">10. المحرك المحلي والسحابي (WebGPU / Trigger.dev Microservices & Windows CI/CD)</h2>
+          <span class="card-badge">Hybrid Runtime & Zero Cloud Waste</span>
+        </div>
+        <p id="desc-10-1">
+          بنية تشغيل هجينة تمزج بين كفاءة المعالجة المحلية الخارقة عبر WebGPU على أجهزة نقاط البيع، والمهام الخلفية الموثوقة عبر Trigger.dev، وحزم التثبيت الأصلية لويندوز وماك عبر Tauri v2:
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+          <div class="metric-card" style="padding: 1.5rem;">
+            <h4 style="font-size: 1.1rem; color: var(--emerald-accent); margin-bottom: 0.5rem;">معالجة الذكاء المحلي (WebGPU / Rust)</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+              تشغيل نماذج الذكاء الاصطناعي المحلية لقراءة فواتير الموردين (OCR) وتصنيف المنتجات مباشرة عبر كارت الشاشة المحلي للتاجر بسرعة استجابة أقل من 80ms وتكلفة سحابية صفرية ($0.00).
+            </p>
+          </div>
+          <div class="metric-card" style="padding: 1.5rem;">
+            <h4 style="font-size: 1.1rem; color: var(--emerald-accent); margin-bottom: 0.5rem;">المهام الخلفية المجدولة (Trigger.dev)</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+              أتمتة إنتاج تقارير الإغلاق اليومي (Z-Report)، إرسال ملخصات الأرباح للتجار عبر واتساب عند منتصف الليل، وحفظ نسخ احتياطية مشفرة خارج الخادم الرئيسي بصورة مؤتمتة 100%.
+            </p>
+          </div>
+          <div class="metric-card" style="padding: 1.5rem;">
+            <h4 style="font-size: 1.1rem; color: var(--emerald-accent); margin-bottom: 0.5rem;">حزم ويندوز الأصلية (Tauri v2 .exe / .msi)</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+              بناء أوتوماتيكي عبر GitHub Actions ينتج ملفات تثبيت خفيفة جداً (أقل من 15MB ومعدل استهلاك ذاكرة لا يتجاوز 35MB RAM)، تدعم التحديث الذاتي الموقّع بـ minisign والعمل بدون إنترنت لشهور.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CHAPTER 11: WHITE-HAT GEO & LLM DISCOVERY ================= -->
+    <section class="section-container" id="sec-11-geo">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title" id="title-11-1">11. استكشاف محركات الذكاء الاصطناعي والأرشفة الرسمية (GEO / AEO Strategy & llms.txt)</h2>
+          <span class="card-badge">Factual Machine-Readable Discovery</span>
+        </div>
+        <p id="desc-11-1">
+          استراتيجية معيارية صادقة ومطابقة لمواصفات الويب الحديثة، تُمكّن محركات الذكاء الاصطناعي التوليدية (ChatGPT, Claude, Gemini, Perplexity, Copilot) من قراءة واقتراح نظام كسب بدقة دون تضخيم أو حشو:
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+          <div class="metric-card" style="padding: 1.5rem;">
+            <h4 style="font-size: 1.1rem; color: var(--emerald-accent); margin-bottom: 0.5rem;">ملف /llms.txt و /llms-full.txt</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+              ملخصات بنيوية معتمدة تورد أسعار النظام الصريحة (200 درهم للمركز الأول + 150 درهم للإضافي)، القطاعات الستة، مطابقة بنك المغرب 103-12، وربط أجهزة الدفع العالمية السبعة.
+            </p>
+          </div>
+          <div class="metric-card" style="padding: 1.5rem;">
+            <h4 style="font-size: 1.1rem; color: var(--emerald-accent); margin-bottom: 0.5rem;">بيانات Schema.org المنظمة (JSON-LD)</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+              تضمين كائنات Organization و SoftwareApplication و FAQPage في الصفحة الرئيسية لتسهيل الفهرسة الدقيقة لمحركات البحث الذكية وتقديم إجابات جاهزة عن التسعير والامتثال الضريبي.
+            </p>
+          </div>
+          <div class="metric-card" style="padding: 1.5rem;">
+            <h4 style="font-size: 1.1rem; color: var(--emerald-accent); margin-bottom: 0.5rem;">سياسة robots.txt الصارمة</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+              السماح بفهرسة الصفحات التعريفية وملفات الاستكشاف الذكي، مع حجب كامل لمسارات لوحة التحكم وصفحات نقاط البيع لحماية خصوصية المعاملات والبيانات التجارية للتجار.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- LIGHTBOX MODAL -->
@@ -1253,6 +1624,12 @@ const htmlContent = `<!DOCTYPE html>
         tab5: "05. نموذج الأرباح والآلة الحاسبة (Economics)",
         tab6: "06. محاكي التذاكر والمعرض (Simulator & Gallery)",
         tab7: "07. دليل التسويق والوكالات (Marketing Pack)",
+        tab8: "08. حماية كالي والطبقات التسع (Kali & 9-Layer Defense)",
+        tab9: "09. أسطول السرب الميتوزي (12-Agent Mitosis Swarm)",
+        tab10: "10. المحرك المحلي والسحابي (WebGPU / Trigger / Windows CI)",
+        tab11: "11. استكشاف محركات الذكاء (GEO & llms.txt Strategy)",
+        printLabel: "طباعة / PDF",
+        searchPlaceholder: "بحث فوري في الملف... / Search...",
         sliderLabel: "عدد أجهزة الكاشير النشطة (Active Postes):",
         lblMrr: "الإيراد الشهري المتكرر (MRR)",
         lblArr: "الإيراد السنوي المتكرر (ARR)",
@@ -1275,6 +1652,12 @@ const htmlContent = `<!DOCTYPE html>
         tab5: "05. Économie SaaS & Simulateur (Marges)",
         tab6: "06. Simulateur Tickets & Galerie (Visuels)",
         tab7: "07. Pack Agence & Marketing (Playbook)",
+        tab8: "08. Blindage Kali & 9 Boucliers (Kali Wall)",
+        tab9: "09. Essaim Fractal & 12 Agents (Mitosis Swarm)",
+        tab10: "10. Moteur Local & Cloud (WebGPU / Trigger)",
+        tab11: "11. Stratégie IA Fait-Maison (GEO & llms.txt)",
+        printLabel: "Imprimer / PDF",
+        searchPlaceholder: "Rechercher dans le dossier...",
         sliderLabel: "Nombre de Postes de Caisse Actifs :",
         lblMrr: "Revenu Récurrent Mensuel (MRR)",
         lblArr: "Revenu Récurrent Annuel (ARR)",
@@ -1297,6 +1680,12 @@ const htmlContent = `<!DOCTYPE html>
         tab5: "05. Unit Economics & Margin Simulator",
         tab6: "06. Thermal Ticket Simulator & Gallery",
         tab7: "07. Growth & Marketing Agency Pack",
+        tab8: "08. Kali Pentest Hardening (9-Layer Shield)",
+        tab9: "09. Planetary Mitosis Swarm (12 Agents)",
+        tab10: "10. Local & Cloud Runtime (WebGPU / Trigger)",
+        tab11: "11. White-Hat AI Discovery (GEO Strategy)",
+        printLabel: "Print / PDF",
+        searchPlaceholder: "Search dossier...",
         sliderLabel: "Active POS Registers (Postes):",
         lblMrr: "Monthly Recurring Revenue (MRR)",
         lblArr: "Annual Recurring Revenue (ARR)",
@@ -1334,6 +1723,12 @@ const htmlContent = `<!DOCTYPE html>
       document.getElementById("tab-05").textContent = dict.tab5;
       document.getElementById("tab-06").textContent = dict.tab6;
       document.getElementById("tab-07").textContent = dict.tab7;
+      if (document.getElementById("tab-08")) document.getElementById("tab-08").textContent = dict.tab8;
+      if (document.getElementById("tab-09")) document.getElementById("tab-09").textContent = dict.tab9;
+      if (document.getElementById("tab-10")) document.getElementById("tab-10").textContent = dict.tab10;
+      if (document.getElementById("tab-11")) document.getElementById("tab-11").textContent = dict.tab11;
+      if (document.getElementById("print-label")) document.getElementById("print-label").textContent = dict.printLabel;
+      if (document.getElementById("dossier-search")) document.getElementById("dossier-search").placeholder = dict.searchPlaceholder;
 
       document.getElementById("slider-label").textContent = dict.sliderLabel;
       document.getElementById("lbl-mrr").textContent = dict.lblMrr;
@@ -1367,12 +1762,50 @@ const htmlContent = `<!DOCTYPE html>
         "04-tpe": "tab-04",
         "05-economics": "tab-05",
         "06-simulator": "tab-06",
-        "07-marketing": "tab-07"
+        "07-marketing": "tab-07",
+        "08-pentest": "tab-08",
+        "09-swarm": "tab-09",
+        "10-runtime": "tab-10",
+        "11-geo": "tab-11"
       };
       const activeTab = document.getElementById(idxMap[chapId]);
       if (activeTab) activeTab.classList.add("active");
 
       window.scrollTo({ top: 400, behavior: "smooth" });
+    }
+
+    // 3.5 INSTANT DOSSIER SEARCH
+    function handleDossierSearch(val) {
+      const q = (val || "").toLowerCase().trim();
+      if (!q) {
+        document.querySelectorAll(".section-container").forEach(sec => {
+          sec.style.display = "";
+        });
+        const currentActive = document.querySelector(".chapter-tab-btn.active");
+        if (currentActive) {
+          const id = currentActive.id.replace("tab-", "");
+          const chapMap = {
+            "01": "01-legal", "02": "02-infra", "03": "03-audit", "04": "04-tpe",
+            "05": "05-economics", "06": "06-simulator", "07": "07-marketing",
+            "08": "08-pentest", "09": "09-swarm", "10": "10-runtime", "11": "11-geo"
+          };
+          switchChapter(chapMap[id] || "01-legal");
+        }
+        return;
+      }
+
+      let matchCount = 0;
+      document.querySelectorAll(".section-container").forEach(sec => {
+        const text = sec.textContent.toLowerCase();
+        if (text.includes(q)) {
+          sec.style.display = "block";
+          sec.classList.add("active");
+          matchCount++;
+        } else {
+          sec.style.display = "none";
+          sec.classList.remove("active");
+        }
+      });
     }
 
     // 4. UNIT ECONOMICS CALCULATOR

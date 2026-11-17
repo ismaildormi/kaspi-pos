@@ -1,0 +1,17 @@
+# KASPI POS (كسب) Security Disclosure Policy (RFC 9116)
+# https://kaspi.ma/.well-known/security.txt
+
+Contact: mailto:security@kaspi.ma
+Contact: https://kaspi.ma/security-disclosure
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: ar, fr, en
+Canonical: https://kaspi.ma/.well-known/security.txt
+Policy: https://kaspi.ma/security-policy
+Hiring: https://kaspi.ma/careers
+Acknowledgments: https://kaspi.ma/security-hall-of-fame
+
+# Compliance & Scope:
+# - Bank Al-Maghrib Law 103-12 Non-Custodial Technical Service Provider
+# - CNDP Law 09-08 (Moroccan Data Privacy Protection)
+# - PCI-DSS v4.0.1 SAQ A-EP Tokenized In-Scope Architecture
+# - Safe Harbor: Good-faith security research adhering to our disclosure policy is authorized.

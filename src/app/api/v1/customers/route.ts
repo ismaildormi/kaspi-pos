@@ -13,7 +13,7 @@ const CreateCustomerSchema = z.object({
   taxIdentifier: z.string().optional(),
   address: z.string().optional(),
   creditLimit: z.union([z.string(), z.number()]).optional(),
-});
+}).strict();
 
 export async function GET(req: NextRequest) {
   try {

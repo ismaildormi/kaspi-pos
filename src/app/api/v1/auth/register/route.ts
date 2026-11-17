@@ -20,7 +20,7 @@ const RegisterSchema = z.object({
   storeType: z.enum(["grocery", "restaurant", "fashion", "electronics"]).optional().default("grocery"),
   phone: z.string().optional(),
   city: z.string().optional(),
-});
+}).strict();
 
 function slugify(text: string): string {
   const base = text

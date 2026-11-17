@@ -315,7 +315,8 @@ export default function PosPage() {
             }
           }
           if (isMounted) {
-            const prodsToSet = cleanProds.length > 0 ? cleanProds : SHOWCASE_PRODUCTS;
+            const isStoredAuth = typeof window !== "undefined" && Boolean(localStorage.getItem("kaspi_store_id"));
+            const prodsToSet = isStoredAuth ? cleanProds : (cleanProds.length > 0 ? cleanProds : SHOWCASE_PRODUCTS);
             setProducts(
               prodsToSet.map((p: any) => ({
                 id: p.id,
@@ -434,12 +435,15 @@ export default function PosPage() {
           })
           .catch(() => {});
 
+        const isAuthMerchant = Boolean(meRes && meRes.ok);
+
         if (prodRes.ok) {
           const prodData = await prodRes.json();
           const rawItems: PosProduct[] = prodData.data?.products || [];
           const hasRealItems = rawItems.some((p) => !isDemoProduct(p));
-          const items = hasRealItems ? rawItems.filter((p) => !isDemoProduct(p)) : rawItems;
-          const finalItems = items.length > 0 ? items : SHOWCASE_PRODUCTS;
+          const items = hasRealItems ? rawItems.filter((p) => !isDemoProduct(p)) : (isAuthMerchant ? [] : rawItems);
+          // Authenticated real stores NEVER get fake showcase products injected
+          const finalItems = isAuthMerchant ? items : (items.length > 0 ? items : SHOWCASE_PRODUCTS);
           setProducts(finalItems);
 
           // Cache in Dexie for offline lookup
@@ -465,7 +469,7 @@ export default function PosPage() {
         } else if (offlineDb?.offlineProducts) {
           const cached = await offlineDb.offlineProducts.toArray();
           const cleanCached = (cached || []).filter((p: any) => !isDemoProduct(p));
-          const finalCached = cleanCached.length > 0 ? cleanCached : SHOWCASE_PRODUCTS;
+          const finalCached = isAuthMerchant ? cleanCached : (cleanCached.length > 0 ? cleanCached : SHOWCASE_PRODUCTS);
           setProducts(
             finalCached.map((p: any) => ({
               id: p.id,
@@ -491,10 +495,11 @@ export default function PosPage() {
         }
       } catch (err) {
         console.warn("PosPage: Network fetch failed, falling back to offline DB", err);
+        const isAuthMerchant = typeof window !== "undefined" && Boolean(localStorage.getItem("kaspi_store_id"));
         if (offlineDb?.offlineProducts) {
           const cached = await offlineDb.offlineProducts.toArray();
           const cleanCached = (cached || []).filter((p: any) => !isDemoProduct(p));
-          const finalCached = cleanCached.length > 0 ? cleanCached : SHOWCASE_PRODUCTS;
+          const finalCached = isAuthMerchant ? cleanCached : (cleanCached.length > 0 ? cleanCached : SHOWCASE_PRODUCTS);
           setProducts(
             finalCached.map((p: any) => ({
               id: p.id,

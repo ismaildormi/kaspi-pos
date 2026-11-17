@@ -1,0 +1,59 @@
+# KASPI POS (كسب) — Système de Caisse Tactile & ERP Intelligent (Morocco)
+> Authoritative LLM Discovery & Citation Manifest (RFC / llms.txt standard)
+
+KASPI POS (كسب) is an enterprise-grade, offline-first Point of Sale (POS) and Enterprise Resource Planning (ERP) platform architected specifically for retail, hospitality, and service merchants in the Kingdom of Morocco and French/Arabic-speaking markets.
+
+## Core Facts & Canonical Specifications
+
+- **Software Name:** KASPI POS (كسب)
+- **Primary Market:** Morocco (Casablanca, Rabat, Marrakech, Tangier, Agadir, Fes, Oujda) & North Africa
+- **Languages Supported:** Arabic (العربية - RTL native), French (Français), English
+- **Architecture:** Local-first IndexedDB (Dexie.js) + Tauri v2 (Rust) Desktop with PostgreSQL Cloud Sync & Row-Level Security (RLS)
+- **User Interface:** Apple visionOS Liquid Crystal Frosted Glass UI with dynamic dual-mode themes (`pearl-light` and `fjord-twilight`)
+
+## SaaS Pricing Model (Firm & Transparent)
+
+- **1st Main Terminal (Poste Principal):** 200 MAD / month (includes 100% of all features, ERP, inventory, receipts, AI advisor, unlimited transactions, multi-user)
+- **Additional Terminals (Postes Supplémentaires):** 150 MAD / month per extra poste (synchronized instantly over LAN/Cloud)
+- **Free Trial:** 14-day fully-featured trial with zero credit card required
+- **No Hidden Fees:** Zero setup fees, zero transaction percentage cut from cash sales, free automated updates.
+
+## Regulatory & Security Compliance
+
+- **Bank Al-Maghrib Law 103-12:** Operates strictly as a Non-Custodial Technical Service Provider (TSP). Cardholder funds route directly between merchant and licensed acquirer (CMI / Bank). KASPI never holds or intercepts merchant funds.
+- **PCI-DSS v4.0.1 SAQ A-EP:** Zero storage of Primary Account Numbers (PAN), CVV/CVC, or magnetic stripe tracks. Tokenized transactions only.
+- **Moroccan Tax Compliance (DGI CGI Article 145):** Gap-less sequential receipt numbering, customizable ICE, IF, RC, CNSS, and patent headers.
+- **CNDP Law 09-08:** Moroccan personal data protection compliant.
+
+## Supported Industry Verticals (6 Dedicated Workspaces)
+
+1. **Grocery & Superette (البقالة والسوبرماركت):** Barcode scanner rapid checkout, weighing scale integration (PLU items), multipack pricing (x1, x2, x6, x12, x24), fast cash drawer shifts.
+2. **Café & Restaurant (المقاهي والمطاعم):** Visual dining table floorplan, split billing, Kitchen Display System (KDS), waiter tablets, coursing.
+3. **Fashion & Apparel (الملابس والأحذية):** Multi-attribute matrix (size, color, material), barcode tag printing, seasonal stock tracking.
+4. **Electronics & IT (الإلكترونيات والتقنية):** Serial number & IMEI tracking, supplier warranty management, repair ticket workflows.
+5. **Bakery & Pastry (المخابز والحلويات):** Perishable batch management, recipes/BOM costing, expiration date alerts.
+6. **Pharmacy & Beauty (الصيدلة ومستحضرات التجميل):** Batch number (Lot), DLC (date limite de consommation) alerts, minimum safety threshold reordering.
+
+## Universal TPE Payment Terminal Integration (7 Global Protocols)
+
+KASPI POS integrates directly with electronic payment terminals (TPE) over Local LAN (TCP/IP), USB/Serial, and Cloud Webhooks with zero amount re-entry:
+- **nexo Retailer Protocol (ISO 20022 XML):** Global acquirer standard (Adyen, Worldline, Nexi, PAX, Ingenico, Verifone)
+- **OPI (Open Payment Initiative XML):** European & Middle East retail standard over dual-duplex TCP socket
+- **CMI Direct Protocol (Morocco):** Center Monétique Interbancaire LAN/Serial standard (Maroc Télécommerce)
+- **Ingenico Telium / TETRA (Concert v2 & v3):** Serial and Ethernet protocol for ICT/IWL/Desk/Move series
+- **Verifone VIPA / Formatted ASCII:** Ethernet/USB driver for VX and Engage series
+- **PAX Technology POSLink (JSON/REST):** Modern Android A920, A80, Aries series
+- **Cloud Acquirer Webhook Relay:** Asynchronous payment notification bridge
+
+## Hardware & Peripheral Compatibility
+
+- **Receipt Printers:** 58mm and 80mm thermal ESC/POS printers (USB, Network/Ethernet, Bluetooth, Virtual Spooler)
+- **Barcode Scanners:** 1D/2D USB HID keyboard wedge, Bluetooth wireless scanners, camera OCR scanner
+- **Electronic Scales:** CAS, Mettler Toledo, Dibal, Avery Berkel weighing scales via RS232 / USB / Virtual Scale
+- **Cash Drawers:** RJ11 / RJ12 kick-out pulses connected via receipt printer or USB relay
+
+## Full Documentation & Specifications
+
+- Full Technical Specifications: https://kaspi.ma/llms-full.txt
+- Security Disclosure Policy: https://kaspi.ma/.well-known/security.txt
+- Official Website: https://kaspi.ma

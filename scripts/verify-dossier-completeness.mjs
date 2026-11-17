@@ -41,6 +41,12 @@ if (fs.existsSync(HTML_FILE)) {
   check("HTML contains Trilingual Dictionary (AR, FR, EN)", html.includes("i18n") && html.includes("dir: \"rtl\"") && html.includes("dir: \"ltr\""));
   check("HTML contains Base64 embedded Logo & Screenshots", html.includes("data:image/png;base64,"));
   check("HTML contains Interactive Margin Calculator & Thermal Simulator", html.includes("updateCalculator") && html.includes("receipt-simulator"));
+  check("HTML contains Kali Pentest Hardening & 9+ Defense Shield Pipeline", html.includes("Defense Shield") && html.includes("Kali"));
+  check("HTML contains Planetary Fractal Mitosis Swarm V2 & 12-Agent Fleet", html.includes("Mitosis Swarm") && html.includes("12-Agent"));
+  check("HTML contains WebGPU Local AI, Trigger.dev & Windows CI/CD", html.includes("WebGPU") && html.includes("Trigger.dev"));
+  check("HTML contains White-Hat GEO/AEO & llms.txt Discovery Strategy", html.includes("llms.txt") && html.includes("Schema.org"));
+  check("HTML contains 1-Click Print PDF button & @media print styles", html.includes("window.print()") && html.includes("@media print"));
+  check("HTML contains Instant Chapter Search Engine", html.includes("handleDossierSearch"));
 }
 
 // 2. Verify Companion Markdown Reports (All 14 Required Files)

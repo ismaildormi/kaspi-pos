@@ -1,0 +1,52 @@
+# KASPI POS (كسب) — Complete Technical & Architectural Specification
+> Authoritative LLM Full Knowledge Base (RFC / llms-full.txt standard)
+
+## 1. System Architecture Overview
+
+KASPI POS is built with an offline-first, dual-engine hybrid architecture:
+- **Client Frontend:** Next.js 15 App Router, React 19, TypeScript, Tailwind CSS with customized visionOS liquid crystal glass shaders.
+- **Offline Storage Engine:** Dexie.js (IndexedDB) with local transactional caching, offline catalog search, and offline receipt queue.
+- **Desktop Runtime:** Tauri v2 in Rust, compiling to native lightweight Windows (.exe / .msi), macOS (.dmg), and Linux (.deb / AppImage) binaries (<15MB footprint, ~35MB RAM).
+- **Backend Services:** Next.js API Routes, Prisma ORM with 77 relational models, PostgreSQL with tenant-isolated Row-Level Security (RLS) policies.
+- **Async Workers & Microservices:** Trigger.dev SDK for asynchronous report generation, WhatsApp automated receipts, periodic automated backups, and AI batch processing.
+
+## 2. Security & Regulatory Compliance
+
+- **Bank Al-Maghrib (BAM) Law 103-12 Non-Custodial TSP:** KASPI POS never acts as a payment aggregator or custodian of merchant funds. Transactions initiate from KASPI POS and route directly to licensed acquirers (CMI, Bank Al-Maghrib authorized institutions, Stripe, or PayPal).
+- **PCI-DSS v4.0.1 SAQ A-EP:** All online card payments use hosted payment fields or redirect checkouts. No credit card PAN, CVV, or magnetic stripe tracks enter or persist on KASPI POS servers.
+- **CNDP Law 09-08:** Moroccan law regarding the protection of individuals with regard to the processing of personal data. All merchant tenant data is strictly isolated via tenantId and cryptographic row-level security.
+- **OWASP Top 10 & Kali Pentest Hardened:** Reverse-engineered defenses against Burp Suite tampering, SQLMap SQL injection, Hydra brute force, source map reconnaissance, and unauthenticated IDOR attempts.
+
+## 3. Subscription & Commercial Rules
+
+- **First Active Terminal (Poste Principal):** 200 MAD per month.
+- **Additional Terminals (Postes Additionnels):** 150 MAD per month each.
+- **Multi-Device Pairing:** Secure device handoff with QR code pairing and HMAC-SHA256 device tokens.
+- **In-App Paywall & Grace Period:** 14-day free trial. If unpaid, store shifts into a 3-day read-only grace period before POS checkout lock, allowing full merchant accounting export at all times.
+
+## 4. Universal 7-Protocol TPE Terminal Hub
+
+KASPI POS features an integrated hardware adapter engine (`src/lib/tpe/`) communicating with all global and domestic card terminals:
+1. **nexo Retailer Protocol:** ISO 20022 XML/JSON standard for modern multi-currency and multi-acquirer POI terminals.
+2. **OPI Protocol (Open Payment Initiative):** XML bidirectional TCP socket standard widely used across European, Middle Eastern, and North African retail.
+3. **CMI Direct Protocol:** Moroccan interbank standard supporting direct LAN TCP/IP and RS232 serial connection to CMI-certified terminals (Verifone, Ingenico, PAX).
+4. **Ingenico Telium/TETRA Driver:** Concert protocol parser and frame builder with LRC (Longitudinal Redundancy Check) and ACK/NAK flow control.
+5. **Verifone VIPA Driver:** Formatted ASCII and binary protocol for VX and Engage series terminals.
+6. **PAX Technology POSLink Driver:** RESTful JSON and serial transport for Android smart POS terminals.
+7. **Cloud Acquirer Webhook Relay:** Asynchronous webhook endpoint with signature verification for cloud-native payment gateways.
+
+### TPE 11-State Finite State Machine (FSM):
+`IDLE` -> `CONNECTING` -> `CONNECTED` -> `PROBING` -> `READY` -> `AUTHORIZING` -> `WAITING_CARD` -> `WAITING_PIN` -> `PROCESSING` -> `COMPLETED` (or `FAILED` / `DISCONNECT_RECOVERY`).
+
+## 5. Printing & Peripheral Hardware Engine
+
+- **Adaptive Thermal Receipts:** Supports 58mm (32 characters per line) and 80mm (48 characters per line) formats.
+- **Zero Demo Pollution:** Eliminates duplicate store names, duplicate addresses, demo phone numbers, and placeholder tax IDs.
+- **Client Vector Code Generators:** 100% client-side SVG generation for 1D Barcode (Code 128) and 2D QR Code (Byte-mode Reed-Solomon GF(256)) with zero external API calls and $0 server cost.
+- **Tax Display Flexibility:** Supports `INCLUSIVE_CLEAN` (clean TTC price without forced TVA surcharge) and `ITEMIZED_BREAKDOWN` for corporate B2B clients.
+
+## 6. Offline-to-Cloud Synchronization
+
+- **Event Sourcing Log:** Every offline transaction is recorded in IndexedDB with a monotonically increasing sequence ID and UUIDv4 client identifier.
+- **Background Sync Engine:** When network connectivity is detected, pending transactions batch sync to `/api/v1/sync` with idempotency deduplication.
+- **Conflict Resolution:** Last-write-wins for master catalog data; additive reconciliation for stock movements; strict append-only for fiscal sales logs.

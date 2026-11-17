@@ -15,7 +15,7 @@ const LoginSchema = z.object({
   password: z.string().optional(),
   otpCode: z.string().optional(),
   locale: z.enum(["ar", "fr", "en"]).optional(),
-});
+}).strict();
 
 export async function POST(req: NextRequest) {
   try {

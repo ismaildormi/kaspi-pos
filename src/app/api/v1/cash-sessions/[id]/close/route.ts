@@ -7,7 +7,7 @@ import { closeCashShift } from "@/server/cash-shift/engine";
 const CloseShiftSchema = z.object({
   countedCash: z.union([z.number(), z.string()]),
   closingNotes: z.string().optional(),
-});
+}).strict();
 
 export async function POST(
   req: NextRequest,
