@@ -37,6 +37,7 @@ const screenshots = {
   mobileLight: getBase64Image(path.join(SCREENSHOTS_DIR, "12_pos_mobile_pearl-light.png")),
   adminCenter: getBase64Image(path.join(SCREENSHOTS_DIR, "14_admin_command_center.png")),
   pluModal: getBase64Image(path.join(SCREENSHOTS_DIR, "08_pos_plu_modal_pearl-light.png")),
+  cashShiftLight: getBase64Image(path.join(SCREENSHOTS_DIR, "10_pos_cash_shift_modal_pearl-light.png")),
 };
 
 console.log("[BUILD DOSSIER] Assembling HTML application template...");
@@ -307,28 +308,68 @@ const htmlContent = `<!DOCTYPE html>
 
     /* Clean Executive Print Stylesheet */
     @media print {
+      @page {
+        size: A4 portrait;
+        margin: 12mm 10mm 12mm 10mm;
+      }
       .glass-nav, .chapter-tabs, .dossier-search-wrapper, .print-doc-btn, .download-doc-btn, .lang-pill-group, .theme-toggle-btn, .hero-metrics, .lightbox, .exec-nav-map {
         display: none !important;
       }
       body {
         background: #ffffff !important;
         color: #09090b !important;
+        font-size: 10pt;
+        line-height: 1.45;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
       .container {
         max-width: 100% !important;
         padding: 0 !important;
+        margin: 0 !important;
       }
       .section-container {
         display: block !important;
-        page-break-after: always;
         opacity: 1 !important;
+        break-before: page;
+        page-break-before: always;
+        margin-bottom: 1.5rem !important;
       }
-      .card {
+      .section-container:first-of-type,
+      .hero-banner {
+        break-before: auto !important;
+        page-break-before: auto !important;
+      }
+      .card, .glass-panel, .diagram-container, .spec-grid, .diagram-wrapper {
         border: 1px solid #cbd5e1 !important;
         box-shadow: none !important;
         background: #ffffff !important;
-        page-break-inside: avoid;
-        margin-bottom: 2rem !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        margin-bottom: 1.25rem !important;
+      }
+      .gallery-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.75rem !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      .gallery-item {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      table, tr, td, th {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      h1, h2, h3, h4 {
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+      }
+      p, li {
+        orphans: 3;
+        widows: 3;
       }
     }
 
@@ -815,6 +856,7 @@ const htmlContent = `<!DOCTYPE html>
     <button class="chapter-tab-btn" onclick="switchChapter('11-geo')" id="tab-11">11. استكشاف محركات الذكاء (GEO & llms.txt Strategy)</button>
     <button class="chapter-tab-btn" onclick="switchChapter('12-seat-lock')" id="tab-12">12. حماية المقاعد وقفل الأجهزة (Seat Integrity & Hardware Lock)</button>
     <button class="chapter-tab-btn" onclick="switchChapter('13-cybersecurity')" id="tab-13">13. موسوعة الأمن السيبراني والتحصين الهندسي (Global Cybersecurity)</button>
+    <button class="chapter-tab-btn" onclick="switchChapter('14-touch')" id="tab-14">14. معمارية الماوس واللمس والتابليت (Hybrid Mouse & Touch)</button>
   </nav>
 
   <!-- ================= MAIN CONTAINER ================= -->
@@ -898,6 +940,9 @@ const htmlContent = `<!DOCTYPE html>
             <button onclick="switchChapter('07-marketing')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
               • الفصل 07: دليل التسويق ولوحات الموزعين وشركاء Shopify
             </button>
+            <button onclick="switchChapter('14-touch')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
+              • الفصل 14: نقطة البيع الهجينة للماوس واللمس والتابليت (Dual Mouse & Touch Ergonomics)
+            </button>
           </div>
         </div>
 
@@ -952,52 +997,52 @@ const htmlContent = `<!DOCTYPE html>
         </p>
 
         <!-- 2D Separation Flowchart SVG -->
-        <div class="diagram-wrapper">
-          <svg viewBox="0 0 900 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="900" height="240" rx="16" fill="rgba(0,0,0,0.15)"/>
+        <div class="diagram-wrapper" style="margin: 0.75rem 0;">
+          <svg viewBox="0 0 900 185" fill="none" xmlns="http://www.w3.org/2000/svg" style="max-height: 185px;">
+            <rect width="900" height="185" rx="16" fill="rgba(0,0,0,0.15)"/>
             
             <!-- Nodes -->
-            <g transform="translate(40, 70)">
-              <rect width="160" height="100" rx="12" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
-              <text x="80" y="45" fill="var(--text-main)" font-size="14" font-weight="bold" text-anchor="middle">الزبون / حامل البطاقة</text>
-              <text x="80" y="68" fill="var(--text-muted)" font-size="11" text-anchor="middle">Customer / Cardholder</text>
+            <g transform="translate(40, 20)">
+              <rect width="160" height="85" rx="12" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+              <text x="80" y="38" fill="var(--text-main)" font-size="14" font-weight="bold" text-anchor="middle">الزبون / حامل البطاقة</text>
+              <text x="80" y="58" fill="var(--text-muted)" font-size="11" text-anchor="middle">Customer / Cardholder</text>
             </g>
 
-            <g transform="translate(260, 70)">
-              <rect width="170" height="100" rx="12" fill="rgba(16,185,129,0.15)" stroke="var(--emerald-accent)" stroke-width="2"/>
-              <text x="85" y="45" fill="var(--emerald-accent)" font-size="14" font-weight="bold" text-anchor="middle">جهاز الدفع TPE / Gateway</text>
-              <text x="85" y="68" fill="var(--text-muted)" font-size="11" text-anchor="middle">Direct Encrypted Terminal</text>
+            <g transform="translate(260, 20)">
+              <rect width="170" height="85" rx="12" fill="rgba(16,185,129,0.15)" stroke="var(--emerald-accent)" stroke-width="2"/>
+              <text x="85" y="38" fill="var(--emerald-accent)" font-size="14" font-weight="bold" text-anchor="middle">جهاز الدفع TPE / Gateway</text>
+              <text x="85" y="58" fill="var(--text-muted)" font-size="11" text-anchor="middle">Direct Encrypted Terminal</text>
             </g>
 
-            <g transform="translate(490, 70)">
-              <rect width="170" height="100" rx="12" fill="rgba(56,189,248,0.15)" stroke="#38bdf8" stroke-width="2"/>
-              <text x="85" y="45" fill="#38bdf8" font-size="14" font-weight="bold" text-anchor="middle">المحول البنكي / CMI</text>
-              <text x="85" y="68" fill="var(--text-muted)" font-size="11" text-anchor="middle">Licensed Acquirer Switch</text>
+            <g transform="translate(490, 20)">
+              <rect width="170" height="85" rx="12" fill="rgba(56,189,248,0.15)" stroke="#38bdf8" stroke-width="2"/>
+              <text x="85" y="38" fill="#38bdf8" font-size="14" font-weight="bold" text-anchor="middle">المحول البنكي / CMI</text>
+              <text x="85" y="58" fill="var(--text-muted)" font-size="11" text-anchor="middle">Licensed Acquirer Switch</text>
             </g>
 
-            <g transform="translate(710, 70)">
-              <rect width="150" height="100" rx="12" fill="rgba(16,185,129,0.25)" stroke="var(--emerald-accent)" stroke-width="2"/>
-              <text x="75" y="45" fill="var(--emerald-accent)" font-size="14" font-weight="bold" text-anchor="middle">حساب التاجر البنكي</text>
-              <text x="75" y="68" fill="var(--text-muted)" font-size="11" text-anchor="middle">100% Direct Settlement</text>
+            <g transform="translate(710, 20)">
+              <rect width="150" height="85" rx="12" fill="rgba(16,185,129,0.25)" stroke="var(--emerald-accent)" stroke-width="2"/>
+              <text x="75" y="38" fill="var(--emerald-accent)" font-size="14" font-weight="bold" text-anchor="middle">حساب التاجر البنكي</text>
+              <text x="75" y="58" fill="var(--text-muted)" font-size="11" text-anchor="middle">100% Direct Settlement</text>
             </g>
 
             <!-- Flows -->
-            <path d="M 200 120 L 260 120" stroke="var(--emerald-accent)" stroke-width="3" stroke-dasharray="6 6"/>
-            <path d="M 430 120 L 490 120" stroke="#38bdf8" stroke-width="3" stroke-dasharray="6 6"/>
-            <path d="M 660 120 L 710 120" stroke="var(--emerald-accent)" stroke-width="3"/>
+            <path d="M 200 62 L 260 62" stroke="var(--emerald-accent)" stroke-width="3" stroke-dasharray="6 6"/>
+            <path d="M 430 62 L 490 62" stroke="#38bdf8" stroke-width="3" stroke-dasharray="6 6"/>
+            <path d="M 660 62 L 710 62" stroke="var(--emerald-accent)" stroke-width="3"/>
 
             <!-- KASPI SaaS Isolation Box -->
-            <g transform="translate(260, 185)">
-              <rect width="400" height="40" rx="8" fill="rgba(0,0,0,0.3)" stroke="rgba(255,255,255,0.1)"/>
-              <text x="200" y="25" fill="#94a3b8" font-size="11" font-weight="bold" text-anchor="middle">
+            <g transform="translate(260, 125)">
+              <rect width="400" height="38" rx="8" fill="rgba(0,0,0,0.3)" stroke="rgba(255,255,255,0.1)"/>
+              <text x="200" y="24" fill="#94a3b8" font-size="11" font-weight="bold" text-anchor="middle">
                 نظام كسب السحابي KASPI POS (تبادل البيانات التقنية فقط — 0 درهم تدفق مالي)
               </text>
             </g>
           </svg>
         </div>
 
-        <h3 style="margin: 1.5rem 0 0.5rem; font-size: 1.15rem;" id="title-01-2">مطابقة معايير أمان بطاقات الدفع PCI-DSS 4.0.1 وحماية المعطيات CNDP</h3>
-        <ul style="margin-right: 1.5rem; margin-left: 1.5rem; color: var(--text-muted); font-size: 0.9rem;" id="list-01-1">
+        <h3 style="margin: 1rem 0 0.4rem; font-size: 1.15rem;" id="title-01-2">مطابقة معايير أمان بطاقات الدفع PCI-DSS 4.0.1 وحماية المعطيات CNDP</h3>
+        <ul style="margin-right: 1.5rem; margin-left: 1.5rem; color: var(--text-muted); font-size: 0.88rem; line-height: 1.6;" id="list-01-1">
           <li><strong>حظر تخزين أرقام البطاقات (Zero PAN/CVV):</strong> خالٍ 100% من تخزين أرقام البطاقات البنكية الـ 16 أو الرمز السري CVV في قاعدة بيانات PostgreSQL.</li>
           <li><strong>عزل الإدخال عبر لوحة مفاتيح الأجهزة المعتمدة:</strong> يتم إدخال الرمز السري PIN حصرياً على الأجهزة المعتمدة PCI-PTS.</li>
           <li><strong>مطابقة قانون حماية المعطيات CNDP 09-08:</strong> التزام كامل بحماية المعطيات الشخصية للزبناء، مع إتاحة الحق في الحذف والنسيان التلقائي.</li>
@@ -1493,9 +1538,13 @@ const htmlContent = `<!DOCTYPE html>
             <img src="${screenshots.tpeLight}" alt="Settings TPE Hub" class="gallery-img">
             <div class="gallery-caption">مركز إدارة أجهزة الدفع واستوديو التذاكر</div>
           </div>
-          <div class="gallery-item" onclick="openLightbox('${screenshots.kdsLight}')">
-            <img src="${screenshots.kdsLight}" alt="KDS Kitchen Display" class="gallery-img">
-            <div class="gallery-caption">شاشات المطبخ الذكية وتنسيق الطلبات (KDS)</div>
+          <div class="gallery-item" onclick="openLightbox('${screenshots.pluModal}')">
+            <img src="${screenshots.pluModal}" alt="PLU Produce Scale Studio" class="gallery-img">
+            <div class="gallery-caption">ميزان الخضر والفواكه الذكي واستوديو الصور (PLU Scale)</div>
+          </div>
+          <div class="gallery-item" onclick="openLightbox('${screenshots.cashShiftLight}')">
+            <img src="${screenshots.cashShiftLight}" alt="Cash Shift Z-Report Modal" class="gallery-img">
+            <div class="gallery-caption">إغلاق الوردية والتقرير اليومي Z (Cash Shifts)</div>
           </div>
           <div class="gallery-item" onclick="openLightbox('${screenshots.mobileLight}')">
             <img src="${screenshots.mobileLight}" alt="Mobile POS Register" class="gallery-img">
@@ -1938,36 +1987,42 @@ const htmlContent = `<!DOCTYPE html>
 
           <hr style="border: 0; border-top: 1px solid var(--border-glass); margin: 2rem 0;">
 
-          <h3 style="font-size: 1.25rem; color: #38bdf8; margin-bottom: 1rem;">
-            🇫🇷 2. Architecture de Verrouillage Matériel 1-Poste & Récupération Gracieuse (Français - LTR)
-          </h3>
-          <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
-            Le système KASPI POS applique une politique de tolérance zéro contre le partage abusif d'identifiants sur les licences 1-Poste (200 MAD/mois), tout en préservant la continuité d'activité du commerçant intègre :
-          </p>
-          <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: square;">
-            <li><strong>Empreinte Cryptographique Matérielle :</strong> Combinaison de l'identifiant matériel OS UUID signé en Rust (Tauri) et d'une paire de clés ECDSA non extractible stockée dans IndexedDB via WebCrypto.</li>
-            <li><strong>Verrouillage Instantané DUAL_LOCKDOWN :</strong> Dès qu'un PC secondaire tente d'opérer sur le quota 1-Poste, PostgreSQL déclenche l'état <code>DUAL_LOCKDOWN</code> et envoie une alerte Watchdog Sentinel. Les deux terminaux affichent la fenêtre modale visionOS expliquant le motif exact de suspension.</li>
-            <li><strong>Récupération Gracieuse sur Fermeture Propre :</strong> Si les deux terminaux sont fermés, et que le PC principal d'origine (#1) redémarre seul (PC #2 inactif depuis >90s ou balise beacon de fermeture reçue), la caisse se débloque automatiquement (<code>CONFLICT_GRACE_RECOVERED</code>) tant que les frappes sont inférieures à 3.</li>
-            <li><strong>Escalade HARD_ADMIN_LOCK :</strong> À la 3ème tentative de contournement, le mode gracieux est révoqué. La caisse reste figée jusqu'à validation manuelle dans le Command Center SuperAdmin (<code>/admin/conflict-tickets</code>) ou souscription d'un poste additionnel (+150 MAD/mois).</li>
-            <li><strong>Inbox des Conflits avec Capture d'Écran :</strong> Les tickets créés depuis l'écran de verrouillage incluent une capture du contexte matériel et sont traitables en 1 clic par le fondateur (Débloquer PC Principal, Agréer Nouveau PC, Forcer +150 MAD, Suspendre).</li>
-          </ul>
+          <!-- French LTR Container -->
+          <div class="lang-block-ltr" dir="ltr" style="direction: ltr; text-align: left; unicode-bidi: isolate;">
+            <h3 style="font-size: 1.25rem; color: #38bdf8; margin-bottom: 1rem;">
+              🇫🇷 2. Architecture de Verrouillage Matériel 1-Poste & Récupération Gracieuse (Français - LTR)
+            </h3>
+            <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
+              Le système KASPI POS applique une politique de tolérance zéro contre le partage abusif d'identifiants sur les licences 1-Poste (200 MAD/mois), tout en préservant la continuité d'activité du commerçant intègre :
+            </p>
+            <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: square;">
+              <li><strong>Empreinte Cryptographique Matérielle :</strong> Combinaison de l'identifiant matériel OS UUID signé en Rust (Tauri) et d'une paire de clés ECDSA non extractible stockée dans IndexedDB via WebCrypto.</li>
+              <li><strong>Verrouillage Instantané DUAL_LOCKDOWN :</strong> Dès qu'un PC secondaire tente d'opérer sur le quota 1-Poste, PostgreSQL déclenche l'état <code>DUAL_LOCKDOWN</code> et envoie une alerte Watchdog Sentinel. Les deux terminaux affichent la fenêtre modale visionOS expliquant le motif exact de suspension.</li>
+              <li><strong>Récupération Gracieuse sur Fermeture Propre :</strong> Si les deux terminaux sont fermés, et que le PC principal d'origine (#1) redémarre seul (PC #2 inactif depuis >90s ou balise beacon de fermeture reçue), la caisse se débloque automatiquement (<code>CONFLICT_GRACE_RECOVERED</code>) tant que les frappes sont inférieures à 3.</li>
+              <li><strong>Escalade HARD_ADMIN_LOCK :</strong> À la 3ème tentative de contournement, le mode gracieux est révoqué. La caisse reste figée jusqu'à validation manuelle dans le Command Center SuperAdmin (<code>/admin/conflict-tickets</code>) ou souscription d'un poste additionnel (+150 MAD/mois).</li>
+              <li><strong>Inbox des Conflits avec Capture d'Écran :</strong> Les tickets créés depuis l'écran de verrouillage incluent une capture du contexte matériel et sont traitables en 1 clic par le fondateur (Débloquer PC Principal, Agréer Nouveau PC, Forcer +150 MAD, Suspendre).</li>
+            </ul>
+          </div>
 
           <hr style="border: 0; border-top: 1px solid var(--border-glass); margin: 2rem 0;">
 
-          <h3 style="font-size: 1.25rem; color: #a78bfa; margin-bottom: 1rem;">
-            🇬🇧 3. Seat Integrity, Hardware Binding & Clean Shutdown Recovery (English - LTR)
-          </h3>
-          <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
-            Mathematical zero-trust seat integrity preventing revenue cannibalization while providing friction-free recovery for honest retail operators:
-          </p>
-          <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: disc;">
-            <li><strong>Hardware Identity:</strong> Bound machine UUID (Tauri Rust bridge) + persistent non-extractable WebCrypto ECDSA keypair in IndexedDB.</li>
-            <li><strong>Slot #1 Binding:</strong> Irrevocably attached to PC #1's hardware fingerprint in PostgreSQL <code>poste_bindings</code> table, even during offline periods.</li>
-            <li><strong>Instant Dual-Device Lockdown:</strong> Secondary PC attempts trigger <code>DUAL_LOCKDOWN</code> on both devices, increment strike counters, and dispatch Watchdog Sentinel Bot alerts.</li>
-            <li><strong>Clean Shutdown Customer Grace:</strong> If both machines shut down and PC #1 restarts alone with PC #2 offline (>90s stale or beacon closed), <code>ACTIVE</code> status automatically restores without cashier downtime.</li>
-            <li><strong>Anti-Piracy Escalation:</strong> 3 strikes within 24 hours trigger <code>HARD_ADMIN_LOCK</code>, requiring Founder SuperAdmin approval or adding <code>+1 Extra Poste (+150 MAD/mo)</code>.</li>
-            <li><strong>Founder Console Actions:</strong> <code>/admin/conflict-tickets</code> displays sanitized screen snapshots and provides 1-click resolution actions: <code>UNLOCK_PRIMARY</code>, <code>AUTHORIZE_NEW_PC</code>, <code>REQUIRE_EXTRA_POSTE</code>, <code>SUSPEND</code>.</li>
-          </ul>
+          <!-- English LTR Container -->
+          <div class="lang-block-ltr" dir="ltr" style="direction: ltr; text-align: left; unicode-bidi: isolate;">
+            <h3 style="font-size: 1.25rem; color: #a78bfa; margin-bottom: 1rem;">
+              🇬🇧 3. Seat Integrity, Hardware Binding & Clean Shutdown Recovery (English - LTR)
+            </h3>
+            <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
+              Mathematical zero-trust seat integrity preventing revenue cannibalization while providing friction-free recovery for honest retail operators:
+            </p>
+            <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: disc;">
+              <li><strong>Hardware Identity:</strong> Bound machine UUID (Tauri Rust bridge) + persistent non-extractable WebCrypto ECDSA keypair in IndexedDB.</li>
+              <li><strong>Slot #1 Binding:</strong> Irrevocably attached to PC #1's hardware fingerprint in PostgreSQL <code>poste_bindings</code> table, even during offline periods.</li>
+              <li><strong>Instant Dual-Device Lockdown:</strong> Secondary PC attempts trigger <code>DUAL_LOCKDOWN</code> on both devices, increment strike counters, and dispatch Watchdog Sentinel Bot alerts.</li>
+              <li><strong>Clean Shutdown Customer Grace:</strong> If both machines shut down and PC #1 restarts alone with PC #2 offline (>90s stale or beacon closed), <code>ACTIVE</code> status automatically restores without cashier downtime.</li>
+              <li><strong>Anti-Piracy Escalation:</strong> 3 strikes within 24 hours trigger <code>HARD_ADMIN_LOCK</code>, requiring Founder SuperAdmin approval or adding <code>+1 Extra Poste (+150 MAD/mo)</code>.</li>
+              <li><strong>Founder Console Actions:</strong> <code>/admin/conflict-tickets</code> displays sanitized screen snapshots and provides 1-click resolution actions: <code>UNLOCK_PRIMARY</code>, <code>AUTHORIZE_NEW_PC</code>, <code>REQUIRE_EXTRA_POSTE</code>, <code>SUSPEND</code>.</li>
+            </ul>
+          </div>
         </div>
       </div>
     </section>
@@ -2137,42 +2192,284 @@ const htmlContent = `<!DOCTYPE html>
 
           <hr style="border: 0; border-top: 1px solid var(--border-glass); margin: 2rem 0;">
 
-          <h3 style="font-size: 1.3rem; color: #38bdf8; margin-bottom: 1rem;">
-            🇫🇷 2. Encyclopédie Mondiale de la Cybersécurité & Défense Zéro-Faille (Français - LTR)
-          </h3>
-          <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
-            KASPI POS intègre une architecture de sécurité offensive et défensive conforme aux exigences bancaires les plus strictes :
-          </p>
-          <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: square;">
-            <li><strong>Mitigation CVE-2025-29927 :</strong> Neutralisation des tentatives de contournement de middleware Next.js via l'inspection et le rejet strict des en-têtes internes <code>x-middleware-subrequest</code> à l'entrée de <code>src/middleware.ts</code>.</li>
-            <li><strong>Protection Modulaire kaspi-ironclad-guard.ts :</strong> Éradication de la pollution de prototype (CWE-1321), validation CSRF d'origine stricte (CWE-352), vérification binaire des magic bytes (CWE-434), bouclier anti-SSRF (CWE-918), et masquage opaque des erreurs de production (CWE-209).</li>
-            <li><strong>Sceau Cryptographique Hors-Ligne WebCrypto P-256 :</strong> Génération de clés asymétriques ECDSA non extractibles dans IndexedDB. Chaque vente hors-ligne est chaînée cryptographiquement (<code>prevHash ➔ sha256 ➔ signature</code>), rendant toute falsification via les outils DevTools (F12) mathématiquement impossible.</li>
-            <li><strong>Neutralisation des Injections ESC/POS (CWE-74) :</strong> Filtrage systématique des séquences d'échappement matérielles (<code>\x00-\x1F, ESC 0x1B, GS 0x1D</code>) pour empêcher toute ouverture frauduleuse de tiroir-caisse ou altération de ticket thermique.</li>
-            <li><strong>Garde-Fous IA & Plafonds Budgétaires (OWASP LLM01/06) :</strong> Outils IA strictement limités à des lectures sécurisées, isolation des contextes par délimiteurs stricts, et quotas stricts par boutique pour bloquer tout déni de service financier.</li>
-            <li><strong>Flotte Gratuite de Sentinelles GitHub :</strong> Intégration continue sans surcoût de Gitleaks, TruffleHog, GitHub CodeQL SAST et Dependabot pour une couverture 360° du cycle de développement logiciel.</li>
-          </ul>
+          <!-- French LTR Container -->
+          <div class="lang-block-ltr" dir="ltr" style="direction: ltr; text-align: left; unicode-bidi: isolate;">
+            <h3 style="font-size: 1.3rem; color: #38bdf8; margin-bottom: 1rem;">
+              🇫🇷 2. Encyclopédie Mondiale de la Cybersécurité & Défense Zéro-Faille (Français - LTR)
+            </h3>
+            <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
+              KASPI POS intègre une architecture de sécurité offensive et défensive conforme aux exigences bancaires les plus strictes :
+            </p>
+            <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: square;">
+              <li><strong>Mitigation CVE-2025-29927 :</strong> Neutralisation des tentatives de contournement de middleware Next.js via l'inspection et le rejet strict des en-têtes internes <code>x-middleware-subrequest</code> à l'entrée de <code>src/middleware.ts</code>.</li>
+              <li><strong>Protection Modulaire kaspi-ironclad-guard.ts :</strong> Éradication de la pollution de prototype (CWE-1321), validation CSRF d'origine stricte (CWE-352), vérification binaire des magic bytes (CWE-434), bouclier anti-SSRF (CWE-918), et masquage opaque des erreurs de production (CWE-209).</li>
+              <li><strong>Sceau Cryptographique Hors-Ligne WebCrypto P-256 :</strong> Génération de clés asymétriques ECDSA non extractibles dans IndexedDB. Chaque vente hors-ligne est chaînée cryptographiquement (<code>prevHash ➔ sha256 ➔ signature</code>), rendant toute falsification via les outils DevTools (F12) mathématiquement impossible.</li>
+              <li><strong>Neutralisation des Injections ESC/POS (CWE-74) :</strong> Filtrage systématique des séquences d'échappement matérielles (<code>\x00-\x1F, ESC 0x1B, GS 0x1D</code>) pour empêcher toute ouverture frauduleuse de tiroir-caisse ou altération de ticket thermique.</li>
+              <li><strong>Garde-Fous IA & Plafonds Budgétaires (OWASP LLM01/06) :</strong> Outils IA strictement limités à des lectures sécurisées, isolation des contextes par délimiteurs stricts, et quotas stricts par boutique pour bloquer tout déni de service financier.</li>
+              <li><strong>Flotte Gratuite de Sentinelles GitHub :</strong> Intégration continue sans surcoût de Gitleaks, TruffleHog, GitHub CodeQL SAST et Dependabot pour une couverture 360° du cycle de développement logiciel.</li>
+            </ul>
+          </div>
 
           <hr style="border: 0; border-top: 1px solid var(--border-glass); margin: 2rem 0;">
 
-          <h3 style="font-size: 1.3rem; color: #a78bfa; margin-bottom: 1rem;">
-            🇬🇧 3. Global Threat & Active Countermeasure Matrix (English - LTR)
-          </h3>
-          <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
-            Exhaustive defense-in-depth specification mapping real threat vectors directly to verified code implementations:
-          </p>
-          <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: disc;">
-            <li><strong>Middleware Bypass Defense (CVE-2025-29927):</strong> Edge inspection in <code>src/middleware.ts</code> rejecting forged internal subrequest headers with HTTP 403, backed by independent database session and role authorization on every single API endpoint.</li>
-            <li><strong>Proprietary Security Core:</strong> <code>src/server/security/kaspi-ironclad-guard.ts</code> provides native Node crypto sanitizers covering CWE-1321 (Prototype Pollution), CWE-352 (CSRF), CWE-434 (Binary Magic-Bytes), CWE-918 (SSRF), CWE-208/294 (Timing-Safe HMAC), and CWE-209 (Error Masking).</li>
-            <li><strong>Non-Extractable Offline Tamper Seal:</strong> <code>src/lib/security/offline-tamper-seal.ts</code> utilizes browser WebCrypto ECDSA P-256 non-extractable keys to cryptographically hash-chain offline queued sales, preventing client-side F12 local price/quantity manipulation.</li>
-            <li><strong>Hardware Command Injection Neutralization (CWE-74):</strong> Real-time sanitization of all thermal printer strings, purging control bytes (ESC <code>0x1B</code>, GS <code>0x1D</code>) before rasterization.</li>
-            <li><strong>AI Guardrails & Hard Spend Quotas (OWASP LLM01/LLM06):</strong> Read-only scoped server tools with strict per-tenant daily rate limits and quotas preventing denial-of-wallet cloud abuse.</li>
-            <li><strong>Automated $0 GitHub Bot Sentinel:</strong> <code>kaspi-secret-sentinel.yml</code> & <code>dependabot.yml</code> orchestrating Gitleaks, TruffleHog, GitHub CodeQL, and Dependabot scans on every commit, PR, and weekly schedule.</li>
-          </ul>
+          <!-- English LTR Container -->
+          <div class="lang-block-ltr" dir="ltr" style="direction: ltr; text-align: left; unicode-bidi: isolate;">
+            <h3 style="font-size: 1.3rem; color: #a78bfa; margin-bottom: 1rem;">
+              🇬🇧 3. Global Threat & Active Countermeasure Matrix (English - LTR)
+            </h3>
+            <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
+              Exhaustive defense-in-depth specification mapping real threat vectors directly to verified code implementations:
+            </p>
+            <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: disc;">
+              <li><strong>Middleware Bypass Defense (CVE-2025-29927):</strong> Edge inspection in <code>src/middleware.ts</code> rejecting forged internal subrequest headers with HTTP 403, backed by independent database session and role authorization on every single API endpoint.</li>
+              <li><strong>Proprietary Security Core:</strong> <code>src/server/security/kaspi-ironclad-guard.ts</code> provides native Node crypto sanitizers covering CWE-1321 (Prototype Pollution), CWE-352 (CSRF), CWE-434 (Binary Magic-Bytes), CWE-918 (SSRF), CWE-208/294 (Timing-Safe HMAC), and CWE-209 (Error Masking).</li>
+              <li><strong>Non-Extractable Offline Tamper Seal:</strong> <code>src/lib/security/offline-tamper-seal.ts</code> utilizes browser WebCrypto ECDSA P-256 non-extractable keys to cryptographically hash-chain offline queued sales, preventing client-side F12 local price/quantity manipulation.</li>
+              <li><strong>Hardware Command Injection Neutralization (CWE-74):</strong> Real-time sanitization of all thermal printer strings, purging control bytes (ESC <code>0x1B</code>, GS <code>0x1D</code>) before rasterization.</li>
+              <li><strong>AI Guardrails & Hard Spend Quotas (OWASP LLM01/LLM06):</strong> Read-only scoped server tools with strict per-tenant daily rate limits and quotas preventing denial-of-wallet cloud abuse.</li>
+              <li><strong>Automated $0 GitHub Bot Sentinel:</strong> <code>kaspi-secret-sentinel.yml</code> & <code>dependabot.yml</code> orchestrating Gitleaks, TruffleHog, GitHub CodeQL, and Dependabot scans on every commit, PR, and weekly schedule.</li>
+            </ul>
+          </div>
         </div>
       </div>
     </section>
 
-  <!-- LIGHTBOX MODAL -->
+    <!-- ================= CHAPTER 14: HYBRID TOUCH & MOUSE ARCHITECTURE ================= -->
+    <section class="section-container" id="sec-14-touch">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title" id="title-14-1">14. معمارية نقطة البيع الهجينة للماوس وشاشات اللمس والتابليت (Hybrid Mouse & Touchscreen Tablet POS Architecture)</h2>
+          <span class="card-badge">Dual-Mode Ergonomics & Zero Tap Lag</span>
+        </div>
+        <p id="desc-14-1">
+          تم تصميم وبناء نظام <strong>كسب (KASPI POS)</strong> بهندسة إدخال هجينة ومزدوجة (Hybrid Dual-Input Engine) تتيح تشغيل شاشات الحواسيب المكتبية بدقة مؤشر الماوس واختصارات لوحة المفاتيح الصامتة، جنباً إلى جنب مع شاشات اللمس وأجهزة التابليت اللوحية (Microsoft Surface، أجهزة iPad، أجهزة Android اللوحية، وأجهزة نقاط البيع المدمجة Sunmi و Elo و Posiflex All-in-One) دون الحاجة لتثبيت تطبيقات منفصلة أو التضحية بسلاسة وسرعة الكاشير.
+        </p>
+
+        <!-- Interactive SVG Architecture Diagram -->
+        <div class="diagram-wrapper" style="margin: 1.5rem 0; overflow-x: auto;">
+          <svg viewBox="0 0 960 380" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; min-width: 800px; max-height: 400px;">
+            <defs>
+              <linearGradient id="grad-touch" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#059669"/>
+                <stop offset="100%" stop-color="#10b981"/>
+              </linearGradient>
+              <linearGradient id="grad-arbiter" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#0284c7"/>
+                <stop offset="100%" stop-color="#38bdf8"/>
+              </linearGradient>
+              <linearGradient id="grad-mouse" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#7c3aed"/>
+                <stop offset="100%" stop-color="#a855f7"/>
+              </linearGradient>
+              <linearGradient id="grad-hw" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#0f172a"/>
+              </linearGradient>
+              <filter id="glow-touch" x="-10%" y="-10%" width="120%" height="120%">
+                <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(16, 185, 129, 0.4)"/>
+              </filter>
+            </defs>
+
+            <!-- Background Container -->
+            <rect width="960" height="380" rx="16" fill="rgba(0,0,0,0.2)" stroke="rgba(255,255,255,0.08)"/>
+
+            <!-- SECTION A: Touch Engine (Left) -->
+            <g transform="translate(30, 30)">
+              <rect width="270" height="180" rx="14" fill="url(#grad-touch)" filter="url(#glow-touch)"/>
+              <text x="135" y="32" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">👆 محرك اللمس الفوري (Touch Engine)</text>
+              <text x="135" y="52" fill="#d1fae5" font-size="10.5" text-anchor="middle">شاشات اللمس والتابليت (Fingers / Tablet)</text>
+              <line x1="20" y1="64" x2="250" y2="64" stroke="rgba(255,255,255,0.25)"/>
+              <text x="30" y="85" fill="#ffffff" font-size="11">• touch-action: manipulation (0ms Lag)</text>
+              <text x="30" y="105" fill="#ffffff" font-size="11">• مساحات لمسية قياسية (min-h: 42-58px)</text>
+              <text x="30" y="125" fill="#ffffff" font-size="11">• تعديل الكمية المباشر بنقرة (Instant Popover)</text>
+              <text x="30" y="145" fill="#ffffff" font-size="11">• منع التحديد العرضي (user-select: none)</text>
+              <text x="30" y="165" fill="#ffffff" font-size="11">• سحب انسيابي بالقصور (Inertia Pan-X/Y)</text>
+            </g>
+
+            <!-- CONNECTOR: Touch to Arbiter -->
+            <path d="M 300 120 L 350 120" stroke="#10b981" stroke-width="3" stroke-dasharray="6 4" class="animated-flow-line"/>
+
+            <!-- SECTION B: Central Arbiter (Center) -->
+            <g transform="translate(350, 30)">
+              <rect width="260" height="180" rx="14" fill="url(#grad-arbiter)" stroke="#bae6fd" stroke-width="1.5"/>
+              <text x="130" y="32" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">⚡ مُحكّم الإدخال الهجين (KASPI Arbiter)</text>
+              <text x="130" y="52" fill="#e0f2fe" font-size="10.5" text-anchor="middle">مزامنة الحالة الموحدة دون تكرار أحداث</text>
+              <line x1="20" y1="64" x2="240" y2="64" stroke="rgba(255,255,255,0.25)"/>
+              <text x="30" y="85" fill="#ffffff" font-size="11">• Zustand usePosStore (إدارة موحدة)</text>
+              <text x="30" y="105" fill="#ffffff" font-size="11">• تصفية النقرات المزدوجة (Ghost Click Filter)</text>
+              <text x="30" y="125" fill="#ffffff" font-size="11">• تكيف ديناميكي مع مؤشرات @media (pointer)</text>
+              <text x="30" y="145" fill="#ffffff" font-size="11">• استجابة تكتيكية بصرية (active:scale-95)</text>
+              <text x="30" y="165" fill="#ffffff" font-size="11">• دعم قارئ الباركود USB/HID بالتوازي</text>
+            </g>
+
+            <!-- CONNECTOR: Mouse to Arbiter -->
+            <path d="M 660 120 L 610 120" stroke="#a855f7" stroke-width="3" stroke-dasharray="6 4" class="animated-flow-line"/>
+
+            <!-- SECTION C: Mouse & Keyboard Engine (Right) -->
+            <g transform="translate(660, 30)">
+              <rect width="270" height="180" rx="14" fill="url(#grad-mouse)"/>
+              <text x="135" y="32" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">🖱️ محرك الماوس المكتبي (Mouse Engine)</text>
+              <text x="135" y="52" fill="#f3e8ff" font-size="10.5" text-anchor="middle">الحواسيب والشاشات العريضة (PC / Laptop)</text>
+              <line x1="20" y1="64" x2="250" y2="64" stroke="rgba(255,255,255,0.25)"/>
+              <text x="30" y="85" fill="#ffffff" font-size="11">• دقة مؤشر الماوس الفائقة (Sub-pixel)</text>
+              <text x="30" y="105" fill="#ffffff" font-size="11">• تأثيرات التحويم المتقدمة (Hover Dynamics)</text>
+              <text x="30" y="125" fill="#ffffff" font-size="11">• اختصارات لوحة المفاتيح الصامتة (Hotkeys)</text>
+              <text x="30" y="145" fill="#ffffff" font-size="11">• إتمام الدفع بنقرة Enter (1-Click Enter)</text>
+              <text x="30" y="165" fill="#ffffff" font-size="11">• كثافة معلومات عالية لشاشات 1080p/4K</text>
+            </g>
+
+            <!-- CONNECTOR: Arbiter to Hardware Ecosystem -->
+            <path d="M 480 210 L 480 240" stroke="#38bdf8" stroke-width="3"/>
+
+            <!-- SECTION D: Hardware Support Ecosystem (Bottom) -->
+            <g transform="translate(30, 240)">
+              <rect width="900" height="110" rx="14" fill="url(#grad-hw)" stroke="rgba(255,255,255,0.15)"/>
+              <text x="450" y="28" fill="#38bdf8" font-size="13" font-weight="bold" text-anchor="middle">💻 منظومة التوافق العتادي الميداني الشامل (Certified Hardware Matrix)</text>
+              
+              <g transform="translate(40, 45)">
+                <rect width="180" height="48" rx="8" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)"/>
+                <text x="90" y="20" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">Windows 11 / Surface Pro</text>
+                <text x="90" y="36" fill="#94a3b8" font-size="9.5" text-anchor="middle">لمس هجين + قلم + ماوس</text>
+              </g>
+
+              <g transform="translate(260, 45)">
+                <rect width="180" height="48" rx="8" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)"/>
+                <text x="90" y="20" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">Apple iPad / iPadOS PWA</text>
+                <text x="90" y="36" fill="#94a3b8" font-size="9.5" text-anchor="middle">لمس شبكي فائق + إيماءات</text>
+              </g>
+
+              <g transform="translate(480, 45)">
+                <rect width="180" height="48" rx="8" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)"/>
+                <text x="90" y="20" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">أجهزة Sunmi & Elo POS</text>
+                <text x="90" y="36" fill="#94a3b8" font-size="9.5" text-anchor="middle">شاشات كاشير صناعية متينة</text>
+              </g>
+
+              <g transform="translate(700, 45)">
+                <rect width="160" height="48" rx="8" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)"/>
+                <text x="80" y="20" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">حواسيب مكتبية تقليدية</text>
+                <text x="80" y="36" fill="#94a3b8" font-size="9.5" text-anchor="middle">ماوس + مسدس باركود USB</text>
+              </g>
+            </g>
+          </svg>
+        </div>
+
+        <!-- Trilingual Breakdown -->
+        <div class="tabs-container" style="margin-top: 2rem;">
+          <div class="glass-panel" style="padding: 2rem;">
+            
+            <!-- ARABIC SECTION -->
+            <h3 style="font-size: 1.25rem; color: #10b981; margin-bottom: 1rem;">
+              🇲🇦 1. التفاصيل التقنية لمعمارية التشغيل الهجين (العربية - RTL)
+            </h3>
+            <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-right: 1.5rem; list-style-type: disc;">
+              <li><strong>إلغاء تأخير النقر (Zero Tap Latency):</strong> فرض قاعدة <code>touch-action: manipulation</code> على كافة العناصر التفاعلية في ملف <code>src/app/globals.css</code>، مما يلغي نهائياً مهلة الـ 300ms التي تفرضها المتصفحات للتحقق من النقر المزدوج (Double-Tap Zoom)، وتصبح استجابة اللمس فورية تماماً (0ms).</li>
+              <li><strong>مساحات لمسية مريحة للأصابع (Coarse Touch Ergonomics):</strong> زيادة مساحات أزرار التحكم في الكمية (+ و - وحذف الصنف) في سلة المشتريات <code>CartPanel.tsx</code> من 20px إلى مساحات لمسية قياسية مدعمة بتأثير ارتداد تكتيكي مرئي <code>active:scale-90</code>.</li>
+              <li><strong>تعديل الكميات المباشر باللمس (Instant Inline Quantity Popover):</strong> إمكانية النقر المباشر بالأصبع على كمية أي منتج في السلة (<code>item.quantity</code>) لفتح حقل إدخال عددي يرفع تلقائياً لوحة المفاتيح الافتراضية في التابليت (<code>inputMode="decimal"</code>)، مما يتيح إدخال أي كمية كبيرة (مثلاً: 25 قطعة) بلمسة واحدة دون الحاجة للنقر 25 مرة.</li>
+              <li><strong>شريط التصنيفات الانسيابي (Inertia Swipe Navigation):</strong> تزويد شريط أقسام المنتجات <code>CategoryFilter.tsx</code> بالتمرير الأفقي الحر <code>touch-scroll-x</code> مع ارتفاع مريح <code>min-h-[38px]</code>، مما يتيح التمرير بأصابع اليد كشاشات الهواتف والتابليت مع بقاء دعم عجلة الماوس بالكامل.</li>
+              <li><strong>لوحة الدفع والأرقام اللمسية (Checkout Touch Numpad):</strong> رفع ارتفاع أزرار طرق الدفع الأربعة إلى <code>min-h-[58px]</code>، وأزرار الفئات النقدية السريعة (+20، +50، +100، +200 درهم) إلى <code>min-h-[42px]</code>، ولوحة الأرقام إلى <code>min-h-[46px]</code> في <code>UnifiedCheckoutModal.tsx</code>.</li>
+              <li><strong>منع التحديد الأزرق العرضي (Accidental Selection Guard):</strong> تطبيق <code>user-select: none</code> على بطاقات المنتجات والأزرار لمنع ظهور مستطيلات التحديد الزرقاء العرضية عند النقر السريع المتكرر للكاشير في أوقات الذروة.</li>
+            </ul>
+
+            <hr style="border: 0; border-top: 1px solid var(--border-glass); margin: 2rem 0;">
+
+            <!-- FRENCH SECTION (LTR) -->
+            <div class="lang-block-ltr" dir="ltr" style="direction: ltr; text-align: left; unicode-bidi: isolate;">
+              <h3 style="font-size: 1.25rem; color: #38bdf8; margin-bottom: 1rem;">
+                🇫🇷 2. Architecture Hybride Tactile & Souris pour Caisses et Tablettes (Français - LTR)
+              </h3>
+              <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
+                KASPI POS adopte une conception d'interface bidirectionnelle qui s'adapte sans compromis aux configurations PC de bureau traditionnelles ainsi qu'aux terminaux tactiles et tablettes mobiles :
+              </p>
+              <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: square;">
+                <li><strong>Suppression du Délai Tactile de 300ms :</strong> Application universelle de <code>touch-action: manipulation</code> dans <code>globals.css</code> éliminant le délai de double-tap des navigateurs WebKit et Chromium pour un débit d'encaissement instantané.</li>
+                <li><strong>Cibles Tactiles Conformes aux Normes Ergonomiques :</strong> Élargissement des boutons d'incrémentation (+ / -) et de suppression dans <code>CartPanel.tsx</code> vers un format tactile ergonomique doté d'un retour haptique visuel <code>active:scale-90</code>.</li>
+                <li><strong>Édition Tactile Directe des Quantités :</strong> Toucher directement le libellé de quantité d'un article déclenche un champ d'édition rapide avec <code>inputMode="decimal"</code>, déployant le pavé numérique virtuel sur tablette pour saisir immédiatement des volumes élevés sans marteler la touche (+).</li>
+                <li><strong>Défilement par Inertie des Catégories :</strong> Barre de catégories <code>CategoryFilter.tsx</code> optimisée avec <code>touch-scroll-x</code> et hauteur tactile confortable (<code>min-h-[38px]</code>), supportant le glissement continu au doigt et la molette de souris.</li>
+                <li><strong>Pavé d'Encaissement et Numpad Agrandis :</strong> Cartes de paiement (Espèces, TPE, Crédit, Mixte) portées à <code>min-h-[58px]</code>, coupures rapides (+20, +50, +100, +200 MAD) à <code>min-h-[42px]</code>, et pavé numérique tactile à <code>min-h-[46px]</code> dans <code>UnifiedCheckoutModal.tsx</code>.</li>
+                <li><strong>Neutralisation des Sélections Parasites :</strong> Protection <code>user-select: none</code> sur toutes les cartes produits et touches d'encaissement, empêchant toute surbrillance bleue intempestive lors des frappes ultra-rapides.</li>
+              </ul>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--border-glass); margin: 2rem 0;">
+
+            <!-- ENGLISH SECTION (LTR) -->
+            <div class="lang-block-ltr" dir="ltr" style="direction: ltr; text-align: left; unicode-bidi: isolate;">
+              <h3 style="font-size: 1.25rem; color: #a855f7; margin-bottom: 1rem;">
+                🇬🇧 3. Hybrid Touch & Mouse Ergonomics for Retail Registers (English - LTR)
+              </h3>
+              <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
+                KASPI POS implements an adaptive dual-engine input architecture engineered to seamlessly support high-precision mouse/keyboard desktop setups alongside touchscreen registers and portable tablets:
+              </p>
+              <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: square;">
+                <li><strong>Zero Tap Latency Engine:</strong> Enforcing <code>touch-action: manipulation</code> globally across <code>globals.css</code> bypasses the mobile browser 300ms double-tap verification buffer, yielding true 0ms touch feedback.</li>
+                <li><strong>Coarse Finger Target Optimization:</strong> Cart quantity adjustments in <code>CartPanel.tsx</code> upgraded to comfortable finger-friendly hit targets with instant micro-scaling feedback (<code>active:scale-90</code>).</li>
+                <li><strong>Direct Touch Quantity Modification:</strong> Tapping directly on the item quantity badge triggers an inline numeric editor with <code>inputMode="decimal"</code>, automatically opening the tablet's native virtual numpad for immediate bulk quantity entry.</li>
+                <li><strong>Inertia-Driven Category Swiping:</strong> The category filter bar in <code>CategoryFilter.tsx</code> features fluid touch gestures (<code>touch-scroll-x</code>, <code>min-h-[38px]</code>) alongside native mouse wheel panning.</li>
+                <li><strong>Enlarged Checkout Touchpad:</strong> Payment method cards (Cash, Card, Karné Credit, Split) calibrated to <code>min-h-[58px]</code>, quick MAD bill presets to <code>min-h-[42px]</code>, and keycaps to <code>min-h-[46px]</code> in <code>UnifiedCheckoutModal.tsx</code>.</li>
+                <li><strong>Anti-Highlighting Guard:</strong> Strict <code>user-select: none</code> preventing accidental blue text selection rectangles during high-speed multi-item cashier scanning.</li>
+              </ul>
+            </div>
+
+            <!-- Real Code Mapping Table -->
+            <div style="margin-top: 2rem;">
+              <h4 style="font-size: 1.05rem; color: var(--text-main); margin-bottom: 0.75rem;">
+                📁 مصفوفة ربط معمارية اللمس والماوس بالكود المصدري الفعلي (Real Code Mapping)
+              </h4>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: inherit;">
+                  <thead>
+                    <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border-glass);">
+                      <th style="padding: 0.6rem 0.75rem;">الملف المصدري (Source File)</th>
+                      <th style="padding: 0.6rem 0.75rem;">الميزة الهندسية (Engineering Capability)</th>
+                      <th style="padding: 0.6rem 0.75rem;">فائدة الماوس (Desktop Mouse)</th>
+                      <th style="padding: 0.6rem 0.75rem;">فائدة اللمس (Touch & Tablet)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                      <td style="padding: 0.6rem 0.75rem;"><code>src/app/globals.css</code></td>
+                      <td style="padding: 0.6rem 0.75rem;">قواعد touch-action و -webkit-tap-highlight</td>
+                      <td style="padding: 0.6rem 0.75rem;">نقاء العرض دون وميض</td>
+                      <td style="padding: 0.6rem 0.75rem;">إلغاء تأخير 300ms + منع التحديد العرضي</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                      <td style="padding: 0.6rem 0.75rem;"><code>src/components/pos/CartPanel.tsx</code></td>
+                      <td style="padding: 0.6rem 0.75rem;">أزرار تحكم مريحة + تعديل كمية مباشر</td>
+                      <td style="padding: 0.6rem 0.75rem;">نقر فوري مع مؤشر دقيق</td>
+                      <td style="padding: 0.6rem 0.75rem;">نقر بالأصابع دون خطأ + كيبورد رقمي سريع</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                      <td style="padding: 0.6rem 0.75rem;"><code>src/components/pos/CategoryFilter.tsx</code></td>
+                      <td style="padding: 0.6rem 0.75rem;">شريط أقسام بالسحب الحر touch-scroll-x</td>
+                      <td style="padding: 0.6rem 0.75rem;">تمرير سلس بعجلة الماوس</td>
+                      <td style="padding: 0.6rem 0.75rem;">سحب انسيابي بالإصبع مع ارتفاع 38px</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                      <td style="padding: 0.6rem 0.75rem;"><code>src/components/pos/UnifiedCheckoutModal.tsx</code></td>
+                      <td style="padding: 0.6rem 0.75rem;">كروت دفع 58px + فئات كاش + Numpad 46px</td>
+                      <td style="padding: 0.6rem 0.75rem;">دعم مفتاح Enter الصامت</td>
+                      <td style="padding: 0.6rem 0.75rem;">إدخال نقدي وصرف فوري بدون كيبورد عتادي</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                      <td style="padding: 0.6rem 0.75rem;"><code>src/components/pos/grocery/SquarePluScalePanel.tsx</code></td>
+                      <td style="padding: 0.6rem 0.75rem;">أوزان مسبقة + لوحة أرقام للميزان 42px</td>
+                      <td style="padding: 0.6rem 0.75rem;">إدخال أرقام الكيلو بالماوس</td>
+                      <td style="padding: 0.6rem 0.75rem;">تصفير tare وإضافة وزن بلمسة واحدة</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 0.6rem 0.75rem;"><code>src/client/store/usePosStore.ts</code></td>
+                      <td style="padding: 0.6rem 0.75rem;">حالة موحدة: setItemQuantity & updateItemQuantity</td>
+                      <td style="padding: 0.6rem 0.75rem;">تزامن سلة الشراء مع مسدس الباركود</td>
+                      <td style="padding: 0.6rem 0.75rem;">تزامن فوري بين النقر واللمس والشاشات المتعددة</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
   <div class="lightbox" id="lightbox" onclick="closeLightbox()">
     <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
     <img src="" alt="Fullscreen Preview" class="lightbox-img" id="lightbox-img" onclick="event.stopPropagation()">
@@ -2218,6 +2515,7 @@ const htmlContent = `<!DOCTYPE html>
         tab11: "11. استكشاف محركات الذكاء (GEO & llms.txt Strategy)",
         tab12: "12. حماية المقاعد وقفل الأجهزة (Hardware Seat Lock & Grace)",
         tab13: "13. موسوعة الأمن السيبراني والتحصين الهندسي (Global Cybersecurity)",
+        tab14: "14. معمارية الماوس واللمس والتابليت (Hybrid Mouse & Touch)",
         downloadLabel: "تحميل نسخة HTML",
         printLabel: "حفظ PDF",
         execNavTitle: "خريطة التنقل التنفيذية الشاملة (Executive Architecture Map)",
@@ -2251,6 +2549,7 @@ const htmlContent = `<!DOCTYPE html>
         tab11: "11. Stratégie IA Fait-Maison (GEO & llms.txt)",
         tab12: "12. Intégrité des Postes & Verrouillage (1-Poste Hardware Binding)",
         tab13: "13. Encyclopédie Cybersécurité & Défense (Zero-Breach Architecture)",
+        tab14: "14. Architecture Hybride Tactile & Souris (Tablettes & PC)",
         downloadLabel: "Télécharger HTML",
         printLabel: "Exporter PDF",
         execNavTitle: "Carte de Navigation Exécutive Globale",
@@ -2284,6 +2583,7 @@ const htmlContent = `<!DOCTYPE html>
         tab11: "11. White-Hat AI Discovery (GEO Strategy)",
         tab12: "12. Seat Integrity & Hardware Lock (1-Poste Binding & Customer Grace)",
         tab13: "13. Global Cybersecurity & Vulnerability Encyclopedia (Zero-Breach Defense)",
+        tab14: "14. Hybrid Mouse & Touch Tablet Architecture (Ergonomics)",
         downloadLabel: "Download HTML Copy",
         printLabel: "Save PDF",
         execNavTitle: "Executive Architecture & Fast Navigation Map",
@@ -2332,6 +2632,7 @@ const htmlContent = `<!DOCTYPE html>
       if (document.getElementById("tab-11")) document.getElementById("tab-11").textContent = dict.tab11;
       if (document.getElementById("tab-12")) document.getElementById("tab-12").textContent = dict.tab12;
       if (document.getElementById("tab-13")) document.getElementById("tab-13").textContent = dict.tab13;
+      if (document.getElementById("tab-14")) document.getElementById("tab-14").textContent = dict.tab14;
       if (document.getElementById("download-label")) document.getElementById("download-label").textContent = dict.downloadLabel;
       if (document.getElementById("print-label")) document.getElementById("print-label").textContent = dict.printLabel;
       if (document.getElementById("dossier-search")) document.getElementById("dossier-search").placeholder = dict.searchPlaceholder;
@@ -2379,7 +2680,8 @@ const htmlContent = `<!DOCTYPE html>
         "10-runtime": "tab-10",
         "11-geo": "tab-11",
         "12-seat-lock": "tab-12",
-        "13-cybersecurity": "tab-13"
+        "13-cybersecurity": "tab-13",
+        "14-touch": "tab-14"
       };
       const activeTab = document.getElementById(idxMap[chapId]);
       if (activeTab) activeTab.classList.add("active");
@@ -2400,7 +2702,8 @@ const htmlContent = `<!DOCTYPE html>
           const chapMap = {
             "01": "01-legal", "02": "02-infra", "03": "03-audit", "04": "04-tpe",
             "05": "05-economics", "06": "06-simulator", "07": "07-marketing",
-            "08": "08-pentest", "09": "09-swarm", "10": "10-runtime", "11": "11-geo"
+            "08": "08-pentest", "09": "09-swarm", "10": "10-runtime", "11": "11-geo",
+            "12": "12-seat-lock", "13": "13-cybersecurity", "14": "14-touch"
           };
           switchChapter(chapMap[id] || "01-legal");
         }

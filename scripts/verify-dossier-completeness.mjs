@@ -53,6 +53,8 @@ if (fs.existsSync(HTML_FILE)) {
   check("HTML contains HARD_ADMIN_LOCK 3-strike escalation", html.includes("HARD_ADMIN_LOCK") && html.includes("3"));
   check("HTML contains Trilingual Seat Integrity Chapter 12 (AR, FR, EN)", html.includes("sec-12-seat-lock") && html.includes("حماية المقاعد") && html.includes("Verrouillage Matériel") && html.includes("Seat Integrity"));
   check("HTML contains Trilingual Cybersecurity Encyclopedia Chapter 13 (AR, FR, EN)", html.includes("sec-13-cybersecurity") && html.includes("الموسوعة الشاملة للأمن السيبراني") && html.includes("CVE-2025-29927") && html.includes("kaspi-ironclad-guard"));
+  check("HTML contains Trilingual Hybrid Touch & Mouse Chapter 14 (AR, FR, EN)", html.includes("sec-14-touch") && html.includes("معمارية نقطة البيع الهجينة") && html.includes("Architecture Hybride Tactile") && html.includes("Hybrid Touch & Mouse"));
+  check("Official Standalone PDF dossier exists", fs.existsSync(path.join(DOSSIER_DIR, "KASPI_POS_INTERACTIVE_MASTER_DOSSIER.pdf")));
 }
 
 // 2. Verify Companion Markdown Reports (All Required Files)
@@ -70,6 +72,7 @@ const requiredMarkdownFiles = [
   "03-universal-tpe-and-payments/PAYMENT_ORCHESTRATION_AND_ECONOMICS.md",
   "04-industry-pos-kds-and-receipts/INDUSTRY_MODES_KDS_AND_INVENTORY.md",
   "04-industry-pos-kds-and-receipts/ADAPTIVE_RECEIPTS_AND_CLIENT_CODES.md",
+  "04-industry-pos-kds-and-receipts/HYBRID_MOUSE_AND_TOUCH_TABLET_ARCHITECTURE.md",
   "05-ai-whatsapp-and-desktop/AI_ADVISOR_OCR_AND_WHATSAPP_AUTOMATION.md",
   "05-ai-whatsapp-and-desktop/TAURI_DESKTOP_AND_OFFLINE_SYNC.md",
   "06-marketing-and-agency-pack/SHOPIFY_MARKETING_AND_AGENCY_BRIEF.md",

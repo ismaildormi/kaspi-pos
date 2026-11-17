@@ -67,7 +67,7 @@ async function run() {
     }
 
     // Test Chapter navigation
-    for (const chap of ["01-legal", "03-audit", "04-tpe", "05-economics", "12-seat-lock", "13-cybersecurity"]) {
+    for (const chap of ["01-legal", "03-audit", "04-tpe", "05-economics", "12-seat-lock", "13-cybersecurity", "14-touch"]) {
       await deskPage.evaluate((c) => switchChapter(c), chap);
       const isVisible = await deskPage.evaluate((c) => {
         const el = document.getElementById("sec-" + c);
