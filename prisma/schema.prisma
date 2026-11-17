@@ -305,6 +305,8 @@ model Tenant {
   tpeDiagnosticLogs  TpeDiagnosticLog[]
   tpePluginAuditLogs TpePluginAuditLog[]
   paymentAuditLogs   PaymentAuditLog[]
+  posteBindings          PosteBinding[]
+  supportConflictTickets SupportConflictTicket[]
 
   @@map("tenants")
 }
@@ -451,6 +453,7 @@ model Store {
   stockPredictions   StockPrediction[]
   tpeTerminals       TpeTerminal[]
   tpeTransactions    TpeTransaction[]
+  posteBindings      PosteBinding[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, code])
@@ -1682,4 +1685,68 @@ model PaymentAuditLog {
   @@index([tenantId, flow, createdAt])
   @@map("payment_audit_logs")
 }
+
+// ==========================================
+// SEAT INTEGRITY & 1-POSTE HARDWARE BINDING
+// ==========================================
+
+model PosteBinding {
+  id                       String                  @id @default(uuid()) @db.Uuid
+  tenantId                 String                  @map("tenant_id") @db.Uuid
+  tenant                   Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  storeId                  String?                 @map("store_id") @db.Uuid
+  store                    Store?                  @relation(fields: [tenantId, storeId], references: [tenantId, id], onDelete: Restrict)
+  slotIndex                Int                     @default(1) @map("slot_index")
+  primaryFingerprint       String                  @map("primary_fingerprint")
+  primaryDeviceName        String?                 @map("primary_device_name")
+  primaryOs                String?                 @map("primary_os")
+  primaryBoundAt           DateTime                @default(now()) @map("primary_bound_at") @db.Timestamptz(6)
+  secondaryFingerprint     String?                 @map("secondary_fingerprint")
+  secondaryDeviceName      String?                 @map("secondary_device_name")
+  secondaryOs              String?                 @map("secondary_os")
+  status                   String                  @default("ACTIVE") // ACTIVE, DUAL_LOCKDOWN, HARD_ADMIN_LOCK, GRACE_RECOVERED
+  conflictStrikes          Int                     @default(0) @map("conflict_strikes")
+  lastConflictAt           DateTime?               @map("last_conflict_at") @db.Timestamptz(6)
+  lastPrimaryHeartbeatAt   DateTime?               @map("last_primary_heartbeat_at") @db.Timestamptz(6)
+  lastSecondaryHeartbeatAt DateTime?               @map("last_secondary_heartbeat_at") @db.Timestamptz(6)
+  primarySessionClosedAt   DateTime?               @map("primary_session_closed_at") @db.Timestamptz(6)
+  secondarySessionClosedAt DateTime?               @map("secondary_session_closed_at") @db.Timestamptz(6)
+  primaryNonce             String?                 @map("primary_nonce")
+  graceRecoveredAt         DateTime?               @map("grace_recovered_at") @db.Timestamptz(6)
+  createdAt                DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  conflictTickets          SupportConflictTicket[]
+
+  @@unique([tenantId, slotIndex])
+  @@index([tenantId, primaryFingerprint])
+  @@index([tenantId, status])
+  @@map("poste_bindings")
+}
+
+model SupportConflictTicket {
+  id               String        @id @default(uuid()) @db.Uuid
+  tenantId         String        @map("tenant_id") @db.Uuid
+  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  storeId          String?       @map("store_id") @db.Uuid
+  posteBindingId   String?       @map("poste_binding_id") @db.Uuid
+  posteBinding     PosteBinding? @relation(fields: [posteBindingId], references: [id], onDelete: SetNull)
+  conflictReason   String        @map("conflict_reason")
+  screenshotData   String?       @map("screenshot_data") @db.Text
+  primarySummary   Json?         @map("primary_summary")
+  secondarySummary Json?         @map("secondary_summary")
+  merchantNote     String?       @map("merchant_note") @db.Text
+  strikeCount      Int           @default(1) @map("strike_count")
+  status           String        @default("OPEN") // OPEN, RESOLVED, REJECTED, ESCALATED
+  resolutionAction String?       @map("resolution_action")
+  adminNotes       String?       @map("admin_notes") @db.Text
+  resolvedAt       DateTime?     @map("resolved_at") @db.Timestamptz(6)
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([tenantId, status])
+  @@index([createdAt])
+  @@map("support_conflict_tickets")
+}
+
 

@@ -1,7 +1,7 @@
 # KASPI POS (كسب) — Reverse-Engineering & Compliance Audit Report
 
 - **Audit Status:** ALL CHECKS PASSED (0 Failures)
-- **Total Rules Verified:** 15
+- **Total Rules Verified:** 16
 - **Pricing Rule Lock:** `200 MAD/month` (1st Poste, 100% features) + `150 MAD/month` per extra Poste
 - **Legal & Security Lock:** Bank Al-Maghrib Law 103-12 Software Separation + PCI-DSS 4.0.1 Tokenized-Only Storage
 
@@ -22,3 +22,4 @@
 | 13 | **Tax-Inclusive Retail Pricing** | taxDisplayMode defaults to INCLUSIVE_CLEAN; grand total displays clean TTC price without forced +20% TVA surcharge | **PASS** | `Default TTC clean pricing verified` |
 | 14 | **Thermal Receipt Integrity** | Zero demo tax IDs rendered on receipts, zero phone numbers on customer receipts, Western digits in ISO timestamps | **PASS** | `Zero phone, zero fake IDs, clean Western timestamps verified` |
 | 15 | **Live Data Sync & Catalog** | Sales API resolves storeId automatically, decrements stockLevel, revalidates dashboard cache, and marketing catalog covers 6 industry modes | **PASS** | `Atomic Postgres sync + 6-mode marketing catalog verified` |
+| 16 | **1-Poste Hardware Binding & Dual Lockdown** | PosteBinding & SupportConflictTicket models, WebCrypto/Tauri fingerprinting, DUAL_LOCKDOWN, Clean-Shutdown Grace Recovery, and /admin Support Conflict Inbox | **PASS** | `Hardware Binding + DUAL_LOCKDOWN + Customer Grace Recovery + Admin Inbox verified` |

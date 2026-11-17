@@ -47,14 +47,20 @@ if (fs.existsSync(HTML_FILE)) {
   check("HTML contains White-Hat GEO/AEO & llms.txt Discovery Strategy", html.includes("llms.txt") && html.includes("Schema.org"));
   check("HTML contains 1-Click Print PDF button & @media print styles", html.includes("window.print()") && html.includes("@media print"));
   check("HTML contains Instant Chapter Search Engine", html.includes("handleDossierSearch"));
+  check("HTML contains 1-Poste Hardware Binding & PosteBinding model", html.includes("PosteBinding") && html.includes("poste_bindings"));
+  check("HTML contains DUAL_LOCKDOWN & Dual Device Conflict Architecture", html.includes("DUAL_LOCKDOWN") && html.includes("Watchdog"));
+  check("HTML contains SupportConflictTicket & Screenshot Admin Inbox", html.includes("SupportConflictTicket") && html.includes("support_conflict_tickets"));
+  check("HTML contains HARD_ADMIN_LOCK 3-strike escalation", html.includes("HARD_ADMIN_LOCK") && html.includes("3"));
+  check("HTML contains Trilingual Seat Integrity Chapter 12 (AR, FR, EN)", html.includes("sec-12-seat-lock") && html.includes("حماية المقاعد") && html.includes("Verrouillage Matériel") && html.includes("Seat Integrity"));
 }
 
-// 2. Verify Companion Markdown Reports (All 14 Required Files)
+// 2. Verify Companion Markdown Reports (All 15 Required Files)
 const requiredMarkdownFiles = [
   "README.md",
   "01-corporate-legal-and-infra/COMPANY_INCORPORATION_AND_LAW_103_12_BRIEF.md",
   "01-corporate-legal-and-infra/SERVERS_CLOUD_AND_RUNTIME_STACK.md",
   "01-corporate-legal-and-infra/DATABASE_PRISMA_FULL_ATLAS.md",
+  "01-corporate-legal-and-infra/HARDWARE_POSTE_LOCK_AND_ANTI_PIRACY.md",
   "02-full-system-reverse-audit/EXHAUSTIVE_FEATURE_TRUTH_MATRIX.md",
   "02-full-system-reverse-audit/LANDING_PAGE_VS_CODEBASE_AUDIT.md",
   "02-full-system-reverse-audit/API_ROUTES_AND_SECURITY_AUDIT.md",

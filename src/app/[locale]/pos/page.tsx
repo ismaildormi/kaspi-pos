@@ -19,6 +19,8 @@ import { CatalogProgressLoader } from "@/components/pos/CatalogProgressLoader";
 import { GroceryScannerUtilityBar } from "@/components/pos/grocery/GroceryScannerUtilityBar";
 import { getSectorCssVariables } from "@/lib/sector/sector-blueprint";
 import { InAppPaywallModal, triggerPaywallModal } from "@/components/billing/InAppPaywallModal";
+import { PosteConflictLockModal, type ConflictData } from "@/components/pos/PosteConflictLockModal";
+import { getDeviceFingerprint, sendCleanShutdownBeacon } from "@/lib/auth/device-identity";
 import { Plus, LayoutGrid, Scale, ScanBarcode } from "lucide-react";
 import { SquarePluScalePanel } from "@/components/pos/grocery/SquarePluScalePanel";
 import { SquarePriceDlcModal } from "@/components/pos/grocery/SquarePriceDlcModal";
@@ -202,6 +204,7 @@ export default function PosPage() {
   const [isIndustryToolsOpen, setIsIndustryToolsOpen] = useState(false);
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
   const [isQuickProductModalOpen, setIsQuickProductModalOpen] = useState(false);
+  const [conflictData, setConflictData] = useState<ConflictData | null>(null);
   const [userName, setUserName] = useState("AYMANE");
   const [activeShift, setActiveShift] = useState<ShiftFinancialSummary | null>(null);
   const [recentShifts, setRecentShifts] = useState<ShiftFinancialSummary[]>([]);
@@ -294,6 +297,63 @@ export default function PosPage() {
       fetchCashShift();
     }
   }, [isPaymentModalOpen, fetchCashShift]);
+
+  // Seat Integrity: 1-Poste Hardware Binding & Dual-Device Conflict Watchdog
+  const checkPosteSeatIntegrity = React.useCallback(async () => {
+    try {
+      const hw = await getDeviceFingerprint();
+      const res = await fetch(getApiUrl("/api/v1/devices/poste-heartbeat"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fingerprint: hw.fingerprint,
+          deviceName: hw.deviceName,
+          os: hw.os,
+          platform: hw.platform,
+          action: "heartbeat",
+        }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.status === "DUAL_LOCKDOWN" || json.status === "HARD_ADMIN_LOCK") {
+          setConflictData({
+            status: json.status,
+            isPrimary: json.isPrimary,
+            strikes: json.strikes,
+            bindingId: json.bindingId,
+            fingerprint: hw.fingerprint,
+            primarySummary: json.primarySummary,
+            secondarySummary: json.secondarySummary,
+            message: json.message,
+          });
+        } else if (json.status === "ACTIVE") {
+          setConflictData(null);
+        }
+      }
+    } catch {
+      // Offline graceful fallback
+    }
+  }, []);
+
+  useEffect(() => {
+    checkPosteSeatIntegrity();
+    const interval = setInterval(checkPosteSeatIntegrity, 18000);
+
+    const handleBeforeUnload = () => {
+      try {
+        const cached = localStorage.getItem("kaspi_poste_hw_fp_v1") || "unknown";
+        sendCleanShutdownBeacon(getApiUrl("/api/v1/devices/poste-heartbeat"), {
+          fingerprint: cached,
+        });
+      } catch {}
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [checkPosteSeatIntegrity]);
 
   // Load products, categories, and tenant profile (with instant local-first hydration)
   useEffect(() => {
@@ -816,6 +876,17 @@ export default function PosPage() {
 
       {/* Enterprise In-App Paywall & Device Handover Modal */}
       <InAppPaywallModal />
+
+      {/* 1-Poste Hardware Seat Conflict Lock Modal */}
+      <PosteConflictLockModal
+        isOpen={Boolean(
+          conflictData &&
+            (conflictData.status === "DUAL_LOCKDOWN" || conflictData.status === "HARD_ADMIN_LOCK")
+        )}
+        conflictData={conflictData}
+        locale={locale}
+        onRefreshHeartbeat={checkPosteSeatIntegrity}
+      />
     </div>
     </AutonomousSelfHealingBoundary>
   );

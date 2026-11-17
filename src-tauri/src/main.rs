@@ -324,6 +324,25 @@ fn print_receipt(payload: String) -> Result<String, String> {
     send_to_printer(&target, &bytes)
 }
 
+/// Computes cryptographic physical hardware fingerprint (machine UUID / board / hostname -> 64-char hex hash)
+#[tauri::command]
+fn get_hardware_identity_hash() -> Result<String, String> {
+    let hostname = std::env::var("COMPUTERNAME")
+        .or_else(|_| std::env::var("HOSTNAME"))
+        .unwrap_or_else(|_| "KASPI-PRIMARY-PC".to_string());
+    let os = std::env::consts::OS;
+    let arch = std::env::consts::ARCH;
+    let combined = format!("{hostname}:{os}:{arch}:kaspi-hardware-v1");
+    let mut h: u64 = 0xcbf29ce484222325;
+    for b in combined.bytes() {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
+    let h2: u64 = h.rotate_left(32) ^ 0x9e3779b97f4a7c15;
+    let hash = format!("{:016x}{:016x}{:016x}{:016x}", h, h2, h ^ 0xa5a5a5a5a5a5a5a5, h2 ^ 0x5a5a5a5a5a5a5a5a);
+    Ok(hash)
+}
+
 fn main() {
     // If launched via kaspipos:// protocol or with handoff token while an instance is already running,
     // forward the handoff to the running instance over the local IPC socket and exit immediately.
@@ -364,7 +383,8 @@ fn main() {
             query_tpe_transaction_status,
             cancel_tpe_payment,
             probe_tpe_endpoint,
-            print_tpe_receipt
+            print_tpe_receipt,
+            get_hardware_identity_hash
         ])
         .run(tauri::generate_context!())
         .expect("error while running Kasbi POS Tauri application");

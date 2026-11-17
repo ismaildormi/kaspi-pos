@@ -383,6 +383,31 @@ async function runStaticReverseEngineeringChecks() {
       marketingCatalog.includes("BAM Law 103-12"),
     "Atomic Postgres sync + 6-mode marketing catalog verified"
   );
+
+  // 16. Strict 1-Poste Hardware Binding, Dual-Device Conflict Lockdown & Grace Recovery
+  const schemaPrisma = readFileSafe("prisma/schema.prisma");
+  const deviceIdentityCode = readFileSafe("src/lib/auth/device-identity.ts");
+  const posteEngineCode = readFileSafe("src/server/devices/poste-binding-engine.ts");
+  const heartbeatRoute = readFileSafe("src/app/api/v1/devices/poste-heartbeat/route.ts");
+  const conflictModalCode = readFileSafe("src/components/pos/PosteConflictLockModal.tsx");
+  const adminConflictTicketsPage = readFileSafe("src/app/admin/conflict-tickets/page.tsx");
+
+  record(
+    "1-Poste Hardware Binding & Dual Lockdown",
+    "PosteBinding & SupportConflictTicket models, WebCrypto/Tauri fingerprinting, DUAL_LOCKDOWN, Clean-Shutdown Grace Recovery, and /admin Support Conflict Inbox",
+    schemaPrisma.includes("model PosteBinding") &&
+      schemaPrisma.includes("model SupportConflictTicket") &&
+      deviceIdentityCode.includes("getDeviceFingerprint") &&
+      deviceIdentityCode.includes("sendCleanShutdownBeacon") &&
+      posteEngineCode.includes("verifyPosteSession") &&
+      posteEngineCode.includes("DUAL_LOCKDOWN") &&
+      posteEngineCode.includes("HARD_ADMIN_LOCK") &&
+      posteEngineCode.includes("POSTE_CONFLICT_GRACE_RECOVERED") &&
+      heartbeatRoute.includes("verifyPosteSession") &&
+      conflictModalCode.includes("data-kaspi-conflict-modal") &&
+      adminConflictTicketsPage.includes("UNLOCK_PRIMARY"),
+    "Hardware Binding + DUAL_LOCKDOWN + Customer Grace Recovery + Admin Inbox verified"
+  );
 }
 
 async function runLiveBrowserReverseEngineeringChecks() {

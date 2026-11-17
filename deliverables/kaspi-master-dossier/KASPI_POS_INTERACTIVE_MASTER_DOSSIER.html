@@ -741,6 +741,7 @@
     <button class="chapter-tab-btn" onclick="switchChapter('09-swarm')" id="tab-09">09. أسطول السرب الميتوزي (12-Agent Mitosis Swarm)</button>
     <button class="chapter-tab-btn" onclick="switchChapter('10-runtime')" id="tab-10">10. المحرك المحلي والسحابي (WebGPU / Trigger / Windows CI)</button>
     <button class="chapter-tab-btn" onclick="switchChapter('11-geo')" id="tab-11">11. استكشاف محركات الذكاء (GEO & llms.txt Strategy)</button>
+    <button class="chapter-tab-btn" onclick="switchChapter('12-seat-lock')" id="tab-12">12. حماية المقاعد وقفل الأجهزة (Seat Integrity & Hardware Lock)</button>
   </nav>
 
   <!-- ================= MAIN CONTAINER ================= -->
@@ -1554,6 +1555,175 @@
       </div>
     </section>
 
+    <!-- ================= CHAPTER 12: SEAT INTEGRITY, HARDWARE BINDING & GRACE RECOVERY ================= -->
+    <section class="section-container" id="sec-12-seat-lock">
+      <div class="section-header">
+        <h2 class="section-title">12. حماية المقاعد، الربط الفيزيائي للأجهزة، والاستعادة التلقائية الذكية (1-Poste Hardware Binding & Grace Recovery)</h2>
+        <p class="section-desc">
+          معمارية حماية الإيرادات ومكافحة مشاركة الحسابات: ربط العتاد التشفيري (Tauri OS UUID + WebCrypto ECDSA)، قفل النزاع الفوري (DUAL_LOCKDOWN)، استعادة التاجر النزيه عند الإغلاق النظيف، والتصعيد الصارم لـ HARD_ADMIN_LOCK بعد 3 محاولات.
+        </p>
+      </div>
+
+      <!-- Animated 2D SVG State Flowchart -->
+      <div class="glass-panel" style="padding: 2rem; margin-bottom: 2rem;">
+        <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem; color: #f59e0b;">
+          📊 المخطط الحركي لحالات ربط الأجهزة وقفل النزاع (Poste Seat Integrity & Conflict Lifecycle)
+        </h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+          رسم بياني حركي يوضح مسارات الانتقال بين الحالة النشطة، قفل النزاع DUAL_LOCKDOWN، الاستعادة النظيفة للتاجر الصادق، والتصعيد للقفل الإداري الدائم.
+        </p>
+
+        <div style="background: rgba(8, 9, 12, 0.9); border: 1px solid var(--border-glass); border-radius: 20px; padding: 1.5rem; overflow-x: auto;">
+          <svg viewBox="0 0 960 440" style="width: 100%; height: auto; min-width: 780px;">
+            <defs>
+              <linearGradient id="grad-active" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#10b981" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="#059669" stop-opacity="0.5" />
+              </linearGradient>
+              <linearGradient id="grad-lock" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ef4444" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="#b91c1c" stop-opacity="0.5" />
+              </linearGradient>
+              <linearGradient id="grad-grace" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#0284c7" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="#0369a1" stop-opacity="0.5" />
+              </linearGradient>
+              <linearGradient id="grad-hard" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="#dc2626" stop-opacity="0.6" />
+              </linearGradient>
+              <filter id="glow-gold" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="6" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+
+            <style>
+              .animated-flow-line {
+                stroke-dasharray: 8 6;
+                animation: dashFlow 2.5s linear infinite;
+              }
+              @keyframes dashFlow {
+                to { stroke-dashoffset: -28; }
+              }
+            </style>
+
+            <!-- State 1: PC #1 Primary Active -->
+            <g transform="translate(60, 40)">
+              <rect width="260" height="90" rx="16" fill="url(#grad-active)" stroke="#34d399" stroke-width="2" />
+              <text x="130" y="35" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">1. الجهاز الأصلي المرخص (PC #1)</text>
+              <text x="130" y="58" fill="#d1fae5" font-size="11" text-anchor="middle">ACTIVE • ربط فيزيائي دائم (200 MAD/mo)</text>
+              <text x="130" y="75" fill="#a7f3d0" font-size="10" font-family="monospace" text-anchor="middle">Tauri SHA-256 + WebCrypto ECDSA</text>
+            </g>
+
+            <!-- Connector: PC #2 Connects -->
+            <path d="M 190 130 L 190 190" stroke="#f59e0b" stroke-width="2.5" fill="none" class="animated-flow-line" />
+            <text x="270" y="165" fill="#fbbf24" font-size="11" font-weight="bold">محاولة دخول PC #2 (كوطة 1 بوست)</text>
+
+            <!-- State 2: DUAL_LOCKDOWN Triggered -->
+            <g transform="translate(60, 190)">
+              <rect width="260" height="100" rx="16" fill="url(#grad-lock)" stroke="#f87171" stroke-width="2.5" />
+              <text x="130" y="32" fill="#ffffff" font-size="15" font-weight="bold" text-anchor="middle">2. قفل النزاع المزدوج DUAL_LOCKDOWN</text>
+              <text x="130" y="55" fill="#fee2e2" font-size="11" text-anchor="middle">إيقاف الجهازين معاً + إنذار Watchdog Bot</text>
+              <text x="130" y="73" fill="#fecaca" font-size="10" text-anchor="middle">شاشة نزاع visionOS + نموذج تذكرة بالصورة</text>
+              <text x="130" y="88" fill="#ffffff" font-size="10" font-weight="bold" text-anchor="middle">conflict_strikes + 1</text>
+            </g>
+
+            <!-- Branch A Connector (Left to Grace) -->
+            <path d="M 60 240 L 20 240 L 20 370 L 60 370" stroke="#38bdf8" stroke-width="2.5" fill="none" class="animated-flow-line" />
+            <text x="35" y="320" fill="#38bdf8" font-size="10" font-weight="bold" transform="rotate(-90 35, 320)">إغلاق الجهازين + إقلاع PC #1 وحده</text>
+
+            <!-- State 3A: Clean Shutdown Customer Grace -->
+            <g transform="translate(60, 320)">
+              <rect width="260" height="90" rx="16" fill="url(#grad-grace)" stroke="#38bdf8" stroke-width="2" />
+              <text x="130" y="33" fill="#ffffff" font-size="13" font-weight="bold" text-anchor="middle">3-أ. استعادة التاجر الصادق (Grace Active)</text>
+              <text x="130" y="54" fill="#e0f2fe" font-size="10.5" text-anchor="middle">شرط: PC #2 مغلق تماماً + strikes &lt; 3</text>
+              <text x="130" y="73" fill="#bae6fd" font-size="10" text-anchor="middle">استئناف الكاشير فوراً دون إيقاف الزبائن</text>
+            </g>
+
+            <!-- Branch B Connector (Right to Repeated Reconnect) -->
+            <path d="M 320 240 L 440 240" stroke="#f87171" stroke-width="2.5" fill="none" class="animated-flow-line" />
+            <text x="380" y="230" fill="#fca5a5" font-size="10.5" font-weight="bold" text-anchor="middle">محاولة PC #2 مجدداً</text>
+
+            <!-- State 3B: Re-Lock & 3-Strike Hard Admin Lock -->
+            <g transform="translate(440, 190)">
+              <rect width="260" height="100" rx="16" fill="url(#grad-hard)" stroke="#c084fc" stroke-width="2.5" />
+              <text x="130" y="32" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">3-ب. القفل الإداري الصارم HARD_ADMIN_LOCK</text>
+              <text x="130" y="55" fill="#f3e8ff" font-size="11" text-anchor="middle">تكرار المخالفة &gt;= 3 مرات في 24 ساعة</text>
+              <text x="130" y="73" fill="#e9d5ff" font-size="10" text-anchor="middle">تجميد الاستعادة التلقائية نهائياً</text>
+              <text x="130" y="88" fill="#ffd1d1" font-size="10" font-weight="bold" text-anchor="middle">مطلوب تدخل الإدارة في /admin</text>
+            </g>
+
+            <!-- Branch C Connector (To Extra Poste Upgrade) -->
+            <path d="M 570 190 L 570 90 L 680 90" stroke="#10b981" stroke-width="2.5" fill="none" class="animated-flow-line" />
+            <text x="610" y="75" fill="#34d399" font-size="10.5" font-weight="bold">+150 MAD/شهر</text>
+
+            <!-- State 3C: Extra Poste Activated -->
+            <g transform="translate(680, 45)">
+              <rect width="250" height="90" rx="16" fill="url(#grad-active)" stroke="#34d399" stroke-width="2" />
+              <text x="125" y="33" fill="#ffffff" font-size="13" font-weight="bold" text-anchor="middle">3-ج. تفعيل بوست ثانٍ شرعي</text>
+              <text x="125" y="54" fill="#d1fae5" font-size="10.5" text-anchor="middle">maxDevices = 2 (+150 MAD/mo)</text>
+              <text x="125" y="73" fill="#a7f3d0" font-size="10" text-anchor="middle">عمل الجهازين معاً بشكل متزامن وقانوني</text>
+            </g>
+
+            <!-- Resolution from Admin to Primary -->
+            <path d="M 570 290 L 570 370 L 320 370" stroke="#c084fc" stroke-width="2" stroke-dasharray="4 4" fill="none" />
+            <text x="470" y="390" fill="#d8b4fe" font-size="10.5" text-anchor="middle">فك القفل من SuperAdmin (/admin)</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Trilingual Comprehensive Breakdown -->
+      <div class="tabs-container" style="margin-top: 2rem;">
+        <div class="glass-panel" style="padding: 2rem;">
+          <h3 style="font-size: 1.25rem; color: #10b981; margin-bottom: 1rem;">
+            🛡️ 1. التفاصيل التقنية والقانونية لربط المقاعد (العربية - RTL)
+          </h3>
+          <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-right: 1.5rem; list-style-type: disc;">
+            <li><strong>الربط الفيزيائي التشفيري (Hardware Fingerprinting):</strong> يولد التطبيق المكتبي (Tauri Rust) بصمة عتادية فريدة مشتقة من UUID الخاص بالجهاز واللوحة الأم واسم الجهاز مشفرة بـ SHA-256، بينما يولد المتصفح/PWA زوج مفاتيح ECDSA (P-256) غير قابل للاستخراج داخل IndexedDB.</li>
+            <li><strong>قفل المنصب الأول (PosteBinding Model):</strong> عند تفعيل حساب البوست الواحد (200 درهم/شهر)، يُربط المنصب الأول بـ PC #1 حصرياً في نموذج Prisma <code>PosteBinding</code> (جدول <code>poste_bindings</code>) في قاعدة بيانات PostgreSQL حتى ولو كان PC #1 مطفأ أو مفصولاً عن الإنترنت.</li>
+            <li><strong>قفل النزاع المزدوج الفوري (DUAL_LOCKDOWN):</strong> في اللحظة التي يحاول فيها PC #2 الدخول إلى النظام، يتم تجميد الجلسة على كلا الجهازين لمنع البيع غير المصرح به، وترسل روبوتات المراقبة (Watchdog Sentinel Bots) تنبيهاً أمنياً للإدارة، وتظهر شاشة النزاع المصقولة بالزجاج البلوري <code>&lt;PosteConflictLockModal /&gt;</code>.</li>
+            <li><strong>استعادة التاجر الصادق (Customer-First Grace Recovery):</strong> إذا كان التاجر صادقاً وحاول تجربة الدخول من جهاز ثانٍ دون نية احتيال، بمجرد إغلاق البرنامجين معاً، ثم إعادة تشغيل الجهاز الأصلي PC #1 وحده (مع تأكد الخادم من خمول PC #2 لأكثر من 90 ثانية أو استلام إشارة session_close)، يستأنف الجهاز الأصلي العمل فوراً دون انقطاع خدمة الزبائن في المحل.</li>
+            <li><strong>التصعيد للقفل الإداري الصارم (HARD_ADMIN_LOCK):</strong> إذا حاول PC #2 الدخول مجدداً، يسقط الجهازان فوراً في القفل، وعند بلوغ 3 محاولات مخالفة خلال 24 ساعة، يتم إيقاف الاستعادة التلقائية نهائياً ويتطلب الأمر موافقة المشرف الفني من لوحة الإدارة <code>/admin</code> أو الاشتراك في بوست إضافي (+150 درهم/شهر).</li>
+            <li><strong>تذاكر الدعم بلقطة الشاشة الحية (SupportConflictTicket Inbox):</strong> يتيح النموذج المدمج في شاشة القفل للتاجر إرسال استفسار مع لقطة شاشة مصغرة ومعلومات العتاد مباشرة إلى جدول ونموذج <code>SupportConflictTicket</code> (<code>support_conflict_tickets</code>) ليتمكن المدير من فك القفل بنقرة واحدة (Unlock Primary PC) أو اعتماد الجهاز الجديد (Authorize New PC).</li>
+          </ul>
+
+          <hr style="border: 0; border-top: 1px solid var(--border-glass); margin: 2rem 0;">
+
+          <h3 style="font-size: 1.25rem; color: #38bdf8; margin-bottom: 1rem;">
+            🇫🇷 2. Architecture de Verrouillage Matériel 1-Poste & Récupération Gracieuse (Français - LTR)
+          </h3>
+          <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
+            Le système KASPI POS applique une politique de tolérance zéro contre le partage abusif d'identifiants sur les licences 1-Poste (200 MAD/mois), tout en préservant la continuité d'activité du commerçant intègre :
+          </p>
+          <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: square;">
+            <li><strong>Empreinte Cryptographique Matérielle :</strong> Combinaison de l'identifiant matériel OS UUID signé en Rust (Tauri) et d'une paire de clés ECDSA non extractible stockée dans IndexedDB via WebCrypto.</li>
+            <li><strong>Verrouillage Instantané DUAL_LOCKDOWN :</strong> Dès qu'un PC secondaire tente d'opérer sur le quota 1-Poste, PostgreSQL déclenche l'état <code>DUAL_LOCKDOWN</code> et envoie une alerte Watchdog Sentinel. Les deux terminaux affichent la fenêtre modale visionOS expliquant le motif exact de suspension.</li>
+            <li><strong>Récupération Gracieuse sur Fermeture Propre :</strong> Si les deux terminaux sont fermés, et que le PC principal d'origine (#1) redémarre seul (PC #2 inactif depuis >90s ou balise beacon de fermeture reçue), la caisse se débloque automatiquement (<code>CONFLICT_GRACE_RECOVERED</code>) tant que les frappes sont inférieures à 3.</li>
+            <li><strong>Escalade HARD_ADMIN_LOCK :</strong> À la 3ème tentative de contournement, le mode gracieux est révoqué. La caisse reste figée jusqu'à validation manuelle dans le Command Center SuperAdmin (<code>/admin/conflict-tickets</code>) ou souscription d'un poste additionnel (+150 MAD/mois).</li>
+            <li><strong>Inbox des Conflits avec Capture d'Écran :</strong> Les tickets créés depuis l'écran de verrouillage incluent une capture du contexte matériel et sont traitables en 1 clic par le fondateur (Débloquer PC Principal, Agréer Nouveau PC, Forcer +150 MAD, Suspendre).</li>
+          </ul>
+
+          <hr style="border: 0; border-top: 1px solid var(--border-glass); margin: 2rem 0;">
+
+          <h3 style="font-size: 1.25rem; color: #a78bfa; margin-bottom: 1rem;">
+            🇬🇧 3. Seat Integrity, Hardware Binding & Clean Shutdown Recovery (English - LTR)
+          </h3>
+          <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
+            Mathematical zero-trust seat integrity preventing revenue cannibalization while providing friction-free recovery for honest retail operators:
+          </p>
+          <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: disc;">
+            <li><strong>Hardware Identity:</strong> Bound machine UUID (Tauri Rust bridge) + persistent non-extractable WebCrypto ECDSA keypair in IndexedDB.</li>
+            <li><strong>Slot #1 Binding:</strong> Irrevocably attached to PC #1's hardware fingerprint in PostgreSQL <code>poste_bindings</code> table, even during offline periods.</li>
+            <li><strong>Instant Dual-Device Lockdown:</strong> Secondary PC attempts trigger <code>DUAL_LOCKDOWN</code> on both devices, increment strike counters, and dispatch Watchdog Sentinel Bot alerts.</li>
+            <li><strong>Clean Shutdown Customer Grace:</strong> If both machines shut down and PC #1 restarts alone with PC #2 offline (>90s stale or beacon closed), <code>ACTIVE</code> status automatically restores without cashier downtime.</li>
+            <li><strong>Anti-Piracy Escalation:</strong> 3 strikes within 24 hours trigger <code>HARD_ADMIN_LOCK</code>, requiring Founder SuperAdmin approval or adding <code>+1 Extra Poste (+150 MAD/mo)</code>.</li>
+            <li><strong>Founder Console Actions:</strong> <code>/admin/conflict-tickets</code> displays sanitized screen snapshots and provides 1-click resolution actions: <code>UNLOCK_PRIMARY</code>, <code>AUTHORIZE_NEW_PC</code>, <code>REQUIRE_EXTRA_POSTE</code>, <code>SUSPEND</code>.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- LIGHTBOX MODAL -->
@@ -1585,6 +1755,7 @@
         tab9: "09. أسطول السرب الميتوزي (12-Agent Mitosis Swarm)",
         tab10: "10. المحرك المحلي والسحابي (WebGPU / Trigger / Windows CI)",
         tab11: "11. استكشاف محركات الذكاء (GEO & llms.txt Strategy)",
+        tab12: "12. حماية المقاعد وقفل الأجهزة (Hardware Seat Lock & Grace)",
         printLabel: "طباعة / PDF",
         searchPlaceholder: "بحث فوري في الملف... / Search...",
         sliderLabel: "عدد أجهزة الكاشير النشطة (Active Postes):",
@@ -1613,6 +1784,7 @@
         tab9: "09. Essaim Fractal & 12 Agents (Mitosis Swarm)",
         tab10: "10. Moteur Local & Cloud (WebGPU / Trigger)",
         tab11: "11. Stratégie IA Fait-Maison (GEO & llms.txt)",
+        tab12: "12. Intégrité des Postes & Verrouillage (1-Poste Hardware Binding)",
         printLabel: "Imprimer / PDF",
         searchPlaceholder: "Rechercher dans le dossier...",
         sliderLabel: "Nombre de Postes de Caisse Actifs :",
@@ -1641,6 +1813,7 @@
         tab9: "09. Planetary Mitosis Swarm (12 Agents)",
         tab10: "10. Local & Cloud Runtime (WebGPU / Trigger)",
         tab11: "11. White-Hat AI Discovery (GEO Strategy)",
+        tab12: "12. Seat Integrity & Hardware Lock (1-Poste Binding & Customer Grace)",
         printLabel: "Print / PDF",
         searchPlaceholder: "Search dossier...",
         sliderLabel: "Active POS Registers (Postes):",
@@ -1684,6 +1857,7 @@
       if (document.getElementById("tab-09")) document.getElementById("tab-09").textContent = dict.tab9;
       if (document.getElementById("tab-10")) document.getElementById("tab-10").textContent = dict.tab10;
       if (document.getElementById("tab-11")) document.getElementById("tab-11").textContent = dict.tab11;
+      if (document.getElementById("tab-12")) document.getElementById("tab-12").textContent = dict.tab12;
       if (document.getElementById("print-label")) document.getElementById("print-label").textContent = dict.printLabel;
       if (document.getElementById("dossier-search")) document.getElementById("dossier-search").placeholder = dict.searchPlaceholder;
 
@@ -1723,7 +1897,8 @@
         "08-pentest": "tab-08",
         "09-swarm": "tab-09",
         "10-runtime": "tab-10",
-        "11-geo": "tab-11"
+        "11-geo": "tab-11",
+        "12-seat-lock": "tab-12"
       };
       const activeTab = document.getElementById(idxMap[chapId]);
       if (activeTab) activeTab.classList.add("active");

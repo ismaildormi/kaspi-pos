@@ -21,6 +21,7 @@ import {
   Building2,
   Download,
   ShieldCheck,
+  ShieldAlert,
   CheckCircle2,
   HardDrive,
 } from "lucide-react";
@@ -73,6 +74,13 @@ export default async function AdminDashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/admin/conflict-tickets"
+            className="inline-flex items-center gap-2 rounded-xl bg-amber-500/20 border border-amber-500/40 px-4 py-2.5 text-xs font-bold text-amber-300 transition hover:bg-amber-500/30 shadow"
+          >
+            <ShieldAlert className="h-4 w-4" />
+            تذاكر الدعم وحماية لي بوست
+          </Link>
           <Link
             href="/admin/messages"
             className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-black transition hover:bg-zinc-200 shadow"
