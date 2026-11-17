@@ -6,6 +6,7 @@ import { AIChatWidget } from "@/components/ai/AIChatWidget";
 import { UpdateBanner } from "@/components/UpdateBanner";
 import { OfflineSyncBootstrap } from "@/client/sync-engine";
 import { KaspiThemeProvider } from "@/components/theme/KaspiThemeProvider";
+import { KaspiPullToRefresh } from "@/components/common/KaspiPullToRefresh";
 
 export const metadata = {
   title: "Kasbi POS — Système de Caisse & ERP Intelligent Maroc",
@@ -148,6 +149,7 @@ export default async function RootLayout({
       <body className="min-h-screen antialiased selection:bg-white/25 selection:text-white">
         <KaspiThemeProvider>
           <NextIntlClientProvider locale={locale} messages={messages}>
+            <KaspiPullToRefresh />
             <OfflineSyncBootstrap />
             {children}
             <AIChatWidget />
