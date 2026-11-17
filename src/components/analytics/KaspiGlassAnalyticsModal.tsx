@@ -53,7 +53,7 @@ export const KaspiGlassAnalyticsModal: React.FC<KaspiGlassAnalyticsModalProps> =
     >
       <div
         data-kaspi-analytics-modal="true"
-        className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-full max-w-4xl max-h-[90vh] overflow-y-auto my-auto rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5"
+        className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit kaspi-no-scrollbar w-full max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden my-auto rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5"
       >
         {/* Apple Header Row with Unified Back Pill */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 pb-4">
@@ -130,58 +130,58 @@ export const KaspiGlassAnalyticsModal: React.FC<KaspiGlassAnalyticsModalProps> =
         </div>
 
         {/* Organized Real Breakdown Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="kaspi-frosted-card rounded-2xl p-3.5 space-y-1">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full overflow-hidden kaspi-no-scrollbar">
+          <div className="kaspi-frosted-card rounded-2xl p-3.5 space-y-1 min-w-0 overflow-hidden">
             <div className="flex items-center justify-between text-[11px] text-[var(--kaspi-text-muted)]">
               <span>{locale === "ar" ? "الذروة" : locale === "en" ? "Peak Period" : "Pic d'Activité"}</span>
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             </div>
-            <div className="text-sm font-bold text-[var(--kaspi-text-primary)] tabular-nums">
+            <div className="text-sm font-bold text-[var(--kaspi-text-primary)] tabular-nums truncate">
               {unitLabel === "MAD"
                 ? `${(summary?.peakValue ?? 0).toFixed(2)} MAD`
                 : `${summary?.peakValue ?? 0} ${unitLabel}`}
             </div>
-            <div className="text-[10px] text-[var(--kaspi-text-muted)] tabular-nums">
+            <div className="text-[10px] text-[var(--kaspi-text-muted)] tabular-nums truncate">
               {summary?.peakLabel || "--"}
             </div>
           </div>
 
-          <div className="kaspi-frosted-card rounded-2xl p-3.5 space-y-1">
+          <div className="kaspi-frosted-card rounded-2xl p-3.5 space-y-1 min-w-0 overflow-hidden">
             <div className="flex items-center justify-between text-[11px] text-[var(--kaspi-text-muted)]">
               <span>{locale === "ar" ? "متوسط السلة" : locale === "en" ? "Avg Basket" : "Panier Moyen"}</span>
-              <ShoppingBag className="w-3.5 h-3.5 text-[var(--kaspi-text-muted)]" />
+              <ShoppingBag className="w-3.5 h-3.5 text-[var(--kaspi-text-muted)] shrink-0" />
             </div>
-            <div className="text-sm font-bold text-[var(--kaspi-text-primary)] tabular-nums">
+            <div className="text-sm font-bold text-[var(--kaspi-text-primary)] tabular-nums truncate">
               {(summary?.averageBasket ?? 0).toFixed(2)} MAD
             </div>
-            <div className="text-[10px] text-[var(--kaspi-text-muted)] tabular-nums">
+            <div className="text-[10px] text-[var(--kaspi-text-muted)] tabular-nums truncate">
               {summary?.transactionCount ?? 0}{" "}
               {locale === "ar" ? "فاتورة" : locale === "en" ? "orders" : "tickets"}
             </div>
           </div>
 
-          <div className="kaspi-frosted-card rounded-2xl p-3.5 space-y-1">
+          <div className="kaspi-frosted-card rounded-2xl p-3.5 space-y-1 min-w-0 overflow-hidden">
             <div className="flex items-center justify-between text-[11px] text-[var(--kaspi-text-muted)]">
               <span>{locale === "ar" ? "هامش المخزون" : locale === "en" ? "Stock Margin" : "Marge Stock"}</span>
-              <Layers className="w-3.5 h-3.5 text-emerald-400" />
+              <Layers className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             </div>
-            <div className="text-sm font-bold text-[var(--kaspi-text-primary)] tabular-nums">
+            <div className="text-sm font-bold text-[var(--kaspi-text-primary)] tabular-nums truncate">
               {(summary?.marginMad ?? 0).toFixed(2)} MAD
             </div>
-            <div className="text-[10px] text-[var(--kaspi-text-muted)] tabular-nums">
+            <div className="text-[10px] text-[var(--kaspi-text-muted)] tabular-nums truncate">
               {(summary?.marginPct ?? 0).toFixed(1)}% • {summary?.totalSkus ?? 0} SKUs
             </div>
           </div>
 
-          <div className="kaspi-frosted-card rounded-2xl p-3.5 space-y-1">
+          <div className="kaspi-frosted-card rounded-2xl p-3.5 space-y-1 min-w-0 overflow-hidden">
             <div className="flex items-center justify-between text-[11px] text-[var(--kaspi-text-muted)]">
               <span>{locale === "ar" ? "تفصيل الأداء" : locale === "en" ? "Payments" : "Encaissements"}</span>
-              <CreditCard className="w-3.5 h-3.5 text-[var(--kaspi-text-muted)]" />
+              <CreditCard className="w-3.5 h-3.5 text-[var(--kaspi-text-muted)] shrink-0" />
             </div>
             <div className="text-xs font-bold text-[var(--kaspi-text-primary)] tabular-nums truncate">
               Cash {(summary?.cashTotal ?? 0).toFixed(0)} · Card {(summary?.cardTotal ?? 0).toFixed(0)}
             </div>
-            <div className="text-[10px] text-[var(--kaspi-text-muted)] tabular-nums">
+            <div className="text-[10px] text-[var(--kaspi-text-muted)] tabular-nums truncate">
               Crédit {(summary?.creditTotal ?? 0).toFixed(2)} MAD
             </div>
           </div>

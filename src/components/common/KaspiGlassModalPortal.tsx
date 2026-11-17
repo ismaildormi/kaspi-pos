@@ -39,7 +39,7 @@ export const KaspiGlassModalPortal: React.FC<KaspiGlassModalPortalProps> = ({
       dir={dir}
       data-kaspi-modal-portal="true"
       onClick={onClose ? () => onClose() : undefined}
-      className={`kaspi-modal-portal-backdrop fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto select-none backdrop-blur-2xl bg-black/55 animate-in fade-in duration-200 ${className}`}
+      className={`kaspi-modal-portal-backdrop kaspi-no-scrollbar fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto overflow-x-hidden select-none backdrop-blur-2xl bg-black/55 animate-in fade-in duration-200 ${className}`}
     >
       <div
         onClick={(e) => e.stopPropagation()}

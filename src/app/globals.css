@@ -450,6 +450,34 @@ html[lang="ar"] label,
   background: #3f3f46;
 }
 
+/* Universal Clean Suppression of Unwanted Scrollbars & Sliders Across Cards, Modals & Panels */
+.kaspi-no-scrollbar,
+.scrollbar-none,
+.no-scrollbar,
+[data-kaspi-modal="true"],
+[data-kaspi-analytics-modal="true"],
+.kaspi-opaque-glass-modal,
+.kaspi-frosted-card,
+.kaspi-ai-assistant-shield,
+.kaspi-modal-portal-backdrop {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.kaspi-no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar,
+[data-kaspi-modal="true"]::-webkit-scrollbar,
+[data-kaspi-analytics-modal="true"]::-webkit-scrollbar,
+.kaspi-opaque-glass-modal::-webkit-scrollbar,
+.kaspi-frosted-card::-webkit-scrollbar,
+.kaspi-ai-assistant-shield::-webkit-scrollbar,
+.kaspi-modal-portal-backdrop::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 /* Universal Apple visionOS Translucent See-Through Glass + Rear-Moving Aurora */
 :is(
   .kaspi-frosted-glass,
@@ -766,6 +794,36 @@ html[lang="ar"] label,
     box-shadow:
       inset 0 1px 1px rgba(255, 255, 255, 0.92),
       0 24px 60px -12px rgba(6, 78, 59, 0.18) !important;
+  }
+
+  /* 2C-1. KASPI SMART AI ASSISTANT SHIELD (True visionOS Glass with Zero Background Bleed-Through) */
+  html[data-kaspi-theme="fjord-twilight"] .kaspi-ai-assistant-shield,
+  :root .kaspi-ai-assistant-shield {
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%),
+      rgba(10, 12, 18, 0.96) !important;
+    background-color: rgba(10, 12, 18, 0.96) !important;
+    backdrop-filter: blur(48px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(48px) saturate(190%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow:
+      0 32px 84px -12px rgba(0, 0, 0, 0.85),
+      0 0 0 1px rgba(255, 255, 255, 0.06),
+      inset 0 1px 1px rgba(255, 255, 255, 0.20) !important;
+  }
+
+  html[data-kaspi-theme="pearl-light"] .kaspi-ai-assistant-shield {
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(245, 245, 247, 0.92) 100%),
+      rgba(255, 255, 255, 0.98) !important;
+    background-color: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(48px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(48px) saturate(200%) !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    box-shadow:
+      0 32px 84px -12px rgba(6, 78, 59, 0.18),
+      0 0 0 1px rgba(0, 0, 0, 0.04),
+      inset 0 1px 1px rgba(255, 255, 255, 0.95) !important;
   }
 
   /* 2D. IMMUTABLE FULL-BLEED OFFICIAL 3D LOGO IN BOTH THEMES (ZERO BOX, 100% CHROME CONTRAST) */
