@@ -785,6 +785,7 @@ const htmlContent = `<!DOCTYPE html>
     <button class="chapter-tab-btn" onclick="switchChapter('10-runtime')" id="tab-10">10. المحرك المحلي والسحابي (WebGPU / Trigger / Windows CI)</button>
     <button class="chapter-tab-btn" onclick="switchChapter('11-geo')" id="tab-11">11. استكشاف محركات الذكاء (GEO & llms.txt Strategy)</button>
     <button class="chapter-tab-btn" onclick="switchChapter('12-seat-lock')" id="tab-12">12. حماية المقاعد وقفل الأجهزة (Seat Integrity & Hardware Lock)</button>
+    <button class="chapter-tab-btn" onclick="switchChapter('13-cybersecurity')" id="tab-13">13. موسوعة الأمن السيبراني والتحصين الهندسي (Global Cybersecurity)</button>
   </nav>
 
   <!-- ================= MAIN CONTAINER ================= -->
@@ -1767,7 +1768,205 @@ const htmlContent = `<!DOCTYPE html>
       </div>
     </section>
 
-  </main>
+    <!-- ================= CHAPTER 13: GLOBAL CYBERSECURITY & ZERO-BREACH DEFENSE ENCYCLOPEDIA ================= -->
+    <section class="section-container" id="sec-13-cybersecurity">
+      <div class="section-header">
+        <h2 class="section-title">13. الموسوعة الشاملة للأمن السيبراني والتحصين الهندسي ضد الثغرات (Global Cybersecurity & Zero-Breach Defense)</h2>
+        <p class="section-desc">
+          المرجع التقني والرقابي المعتمد: تفكيك وتحصين جميع متجهات الهجوم العالمية (OWASP API Top 10, CVE-2025-29927, CWE-1321, CWE-352, CWE-434, CWE-918, CWE-208/294, WebCrypto P-256, ESC/POS Injection, OWASP LLM01/06, وأبوتات الحماية المجانية Gitleaks / TruffleHog / CodeQL / Dependabot).
+        </p>
+      </div>
+
+      <!-- Animated 2D SVG Defense Pipeline Diagram -->
+      <div class="glass-panel" style="padding: 2rem; margin-bottom: 2rem;">
+        <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem; color: #10b981;">
+          🛡️ خط أنابيب الدفاع الشامل الخالي من الثغرات (Full-Spectrum Zero-Breach Defense Pipeline)
+        </h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+          مخطط تدفق حركي يعرض طبقات التحصين المتتالية من الحافة السحابية وحتى نواة قاعدة البيانات والتشفير المحلي في المتصفح.
+        </p>
+
+        <div style="background: rgba(8, 9, 12, 0.9); border: 1px solid var(--border-glass); border-radius: 20px; padding: 1.5rem; overflow-x: auto;">
+          <svg viewBox="0 0 1000 420" style="width: 100%; height: auto; min-width: 820px;">
+            <defs>
+              <linearGradient id="pipe-edge" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#0284c7" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="#0369a1" stop-opacity="0.5" />
+              </linearGradient>
+              <linearGradient id="pipe-mid" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="#d97706" stop-opacity="0.5" />
+              </linearGradient>
+              <linearGradient id="pipe-core" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#10b981" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="#059669" stop-opacity="0.5" />
+              </linearGradient>
+              <linearGradient id="pipe-crypto" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="#6d28d9" stop-opacity="0.5" />
+              </linearGradient>
+              <linearGradient id="pipe-bots" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ec4899" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="#be185d" stop-opacity="0.5" />
+              </linearGradient>
+              <filter id="glow-pipe" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="5" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+
+            <style>
+              .sec-flow-dash {
+                stroke-dasharray: 6 5;
+                animation: secDashFlow 2s linear infinite;
+              }
+              @keyframes secDashFlow {
+                to { stroke-dashoffset: -22; }
+              }
+            </style>
+
+            <!-- CONNECTOR LINES -->
+            <path d="M 180 180 L 250 180" stroke="#0284c7" stroke-width="3" class="sec-flow-dash" />
+            <path d="M 410 180 L 480 180" stroke="#f59e0b" stroke-width="3" class="sec-flow-dash" />
+            <path d="M 640 180 L 710 180" stroke="#10b981" stroke-width="3" class="sec-flow-dash" />
+            <path d="M 560 250 L 560 310" stroke="#8b5cf6" stroke-width="3" class="sec-flow-dash" />
+            <path d="M 330 250 L 330 310" stroke="#ec4899" stroke-width="3" class="sec-flow-dash" />
+
+            <!-- STAGE 1: Edge & Headers -->
+            <g transform="translate(30, 110)">
+              <rect width="150" height="140" rx="16" fill="url(#pipe-edge)" stroke="#38bdf8" stroke-width="2" filter="url(#glow-pipe)" />
+              <text x="75" y="35" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1. حافة السحابة (Edge)</text>
+              <text x="75" y="60" fill="#bae6fd" font-size="11" text-anchor="middle">Cloudflare WAF</text>
+              <text x="75" y="80" fill="#e0f2fe" font-size="10" text-anchor="middle">HSTS 63072000s</text>
+              <text x="75" y="100" fill="#e0f2fe" font-size="10" text-anchor="middle">COOP / CORP: same-origin</text>
+              <text x="75" y="120" fill="#e0f2fe" font-size="10" text-anchor="middle">X-Frame: DENY</text>
+            </g>
+
+            <!-- STAGE 2: Middleware CVE-2025-29927 Shield -->
+            <g transform="translate(250, 110)">
+              <rect width="160" height="140" rx="16" fill="url(#pipe-mid)" stroke="#fbbf24" stroke-width="2" filter="url(#glow-pipe)" />
+              <text x="80" y="35" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2. درع الوسيطة (Middleware)</text>
+              <text x="80" y="60" fill="#fef3c7" font-size="11" font-weight="bold" text-anchor="middle">CVE-2025-29927 Guard</text>
+              <text x="80" y="80" fill="#fef9c3" font-size="10" text-anchor="middle">حجب x-middleware-subrequest</text>
+              <text x="80" y="100" fill="#fef9c3" font-size="10" text-anchor="middle">عزل IPS التلقائي للبوتات</text>
+              <text x="80" y="120" fill="#fef9c3" font-size="10" text-anchor="middle">معدل صارم (Rate Limiting)</text>
+            </g>
+
+            <!-- STAGE 3: Ironclad Server Guard -->
+            <g transform="translate(480, 110)">
+              <rect width="160" height="140" rx="16" fill="url(#pipe-core)" stroke="#34d399" stroke-width="2" filter="url(#glow-pipe)" />
+              <text x="80" y="35" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3. الحارس الخادم (Ironclad)</text>
+              <text x="80" y="60" fill="#d1fae5" font-size="11" text-anchor="middle">CWE-1321 (تنظيف النماذج)</text>
+              <text x="80" y="80" fill="#d1fae5" font-size="10" text-anchor="middle">CWE-352 (تطابق CSRF Origin)</text>
+              <text x="80" y="100" fill="#d1fae5" font-size="10" text-anchor="middle">CWE-434 (بايتات الصور السحرية)</text>
+              <text x="80" y="120" fill="#d1fae5" font-size="10" text-anchor="middle">CWE-918 (درع حجب SSRF)</text>
+            </g>
+
+            <!-- STAGE 4: Database & Atomic BOLA Isolation -->
+            <g transform="translate(710, 110)">
+              <rect width="160" height="140" rx="16" fill="url(#pipe-edge)" stroke="#38bdf8" stroke-width="2" filter="url(#glow-pipe)" />
+              <text x="80" y="35" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4. العزل وقاعدة البيانات</text>
+              <text x="80" y="60" fill="#bae6fd" font-size="11" text-anchor="middle">BOLA / IDOR Neutralized</text>
+              <text x="80" y="80" fill="#e0f2fe" font-size="10" text-anchor="middle">حل متجر الجلسة الآمنة فقط</text>
+              <text x="80" y="100" fill="#e0f2fe" font-size="10" text-anchor="middle">معاملات Prisma $transaction</text>
+              <text x="80" y="120" fill="#e0f2fe" font-size="10" text-anchor="middle">منع التلاعب بالأسعار (TOCTOU)</text>
+            </g>
+
+            <!-- SUB-STAGE A: Free GitHub Security Bots -->
+            <g transform="translate(230, 290)">
+              <rect width="200" height="100" rx="14" fill="url(#pipe-bots)" stroke="#f472b6" stroke-width="2" />
+              <text x="100" y="30" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">أبوتات جيت هاب الأمنية ($0)</text>
+              <text x="100" y="52" fill="#fdf2f8" font-size="10" text-anchor="middle">Gitleaks + TruffleHog (مكافحة التسريب)</text>
+              <text x="100" y="72" fill="#fdf2f8" font-size="10" text-anchor="middle">CodeQL SAST + Dependabot (سلاسل الإمداد)</text>
+            </g>
+
+            <!-- SUB-STAGE B: WebCrypto Non-Extractable Offline Seal -->
+            <g transform="translate(460, 290)">
+              <rect width="200" height="100" rx="14" fill="url(#pipe-crypto)" stroke="#c084fc" stroke-width="2" />
+              <text x="100" y="30" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">الختم التشفيري المحلي (F12 Shield)</text>
+              <text x="100" y="52" fill="#f3e8ff" font-size="10" text-anchor="middle">WebCrypto ECDSA P-256 (غير قابل للاستخراج)</text>
+              <text x="100" y="72" fill="#f3e8ff" font-size="10" text-anchor="middle">سلسلة كتلية محلية: prevHash ➔ sha256 ➔ Sign</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Trilingual Comprehensive Breakdown -->
+      <div class="glass-panel" style="padding: 2rem;">
+        <div style="max-width: 1000px; margin: 0 auto;">
+          <h3 style="font-size: 1.3rem; color: #10b981; margin-bottom: 1rem;">
+            🇲🇦 1. الموسوعة التقنية الشاملة للأمن والتحصين الهندسي (العربية - RTL)
+          </h3>
+          <p style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-bottom: 1rem;">
+            يطبق نظام كسب لإدارة نقاط البيع والتجزئة (KASPI POS) مبدأ الدفاع المتعمق (Defense-in-Depth) مع تحصين صارم ضد كافة ثغرات الويب والتطبيقات السحابية:
+          </p>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 1.2rem;">
+              <h4 style="color: #38bdf8; font-size: 1.05rem; margin-bottom: 0.5rem;">🛡️ درع الوسيطة ومنع تجاوز الصلاحيات (CVE-2025-29927)</h4>
+              <p style="font-size: 0.88rem; line-height: 1.6; color: var(--text-muted);">
+                فحص وإسقاط فوري لأي ترويسات مشبوهة مثل <code>x-middleware-subrequest</code> أو <code>x-middleware-override-headers</code> على مستوى الحافة، مع فرض ترويسات HSTS صارمة (63,072,000 ثانية)، ومنع التضمين الخارجي (DENY)، وفصل الأصول (same-origin).
+              </p>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 1.2rem;">
+              <h4 style="color: #34d399; font-size: 1.05rem; margin-bottom: 0.5rem;">⚡ الحارس الخادم الموحد (kaspi-ironclad-guard.ts)</h4>
+              <p style="font-size: 0.88rem; line-height: 1.6; color: var(--text-muted);">
+                تطهير تلوث النماذج الأولي (CWE-1321)، التحقق الإلزامي من تطابق منشأ CSRF (CWE-352)، فحص البايتات السحرية الثنائية للملفات المرفوعة (CWE-434 لمنع اختراق الصور)، درع حجب العناوين الداخلية SSRF (CWE-918)، ومقارنة تواقيع الويب هوك بزمن ثابت (CWE-208/294).
+              </p>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 1.2rem;">
+              <h4 style="color: #c084fc; font-size: 1.05rem; margin-bottom: 0.5rem;">🔐 الختم التشفيري المحلي غير القابل للتفريغ (F12 Shield)</h4>
+              <p style="font-size: 0.88rem; line-height: 1.6; color: var(--text-muted);">
+                حماية طابور المبيعات في وضع عدم الاتصال (IndexedDB / Dexie.js) عبر توليد مفتاح ECDSA P-256 محلي غير قابل للاستخراج (non-extractable). يتم ربط كل معاملة بالكتلة السابقة عبر هاش رياضي وتوقيع تشفيري؛ أي تعديل في F12 يلغي صحة السلسلة ويرفضها الخادم فوراً.
+              </p>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 1.2rem;">
+              <h4 style="color: #f472b6; font-size: 1.05rem; margin-bottom: 0.5rem;">🤖 أسطول أبوتات الأمان المجانية (Free Security Bots)</h4>
+              <p style="font-size: 0.88rem; line-height: 1.6; color: var(--text-muted);">
+                فحص آلي مجاني مستمر عبر GitHub Actions: تدقيق كامل لتاريخ المستودع لمنع تسريب المفاتيح (Gitleaks + TruffleHog)، تحليل أمني ثابت للكود (CodeQL SAST)، ومراقبة دورية لثغرات مكتبات npm و cargo (Dependabot).
+              </p>
+            </div>
+          </div>
+
+          <hr style="border: 0; border-top: 1px solid var(--border-glass); margin: 2rem 0;">
+
+          <h3 style="font-size: 1.3rem; color: #38bdf8; margin-bottom: 1rem;">
+            🇫🇷 2. Encyclopédie Mondiale de la Cybersécurité & Défense Zéro-Faille (Français - LTR)
+          </h3>
+          <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
+            KASPI POS intègre une architecture de sécurité offensive et défensive conforme aux exigences bancaires les plus strictes :
+          </p>
+          <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: square;">
+            <li><strong>Mitigation CVE-2025-29927 :</strong> Neutralisation des tentatives de contournement de middleware Next.js via l'inspection et le rejet strict des en-têtes internes <code>x-middleware-subrequest</code> à l'entrée de <code>src/middleware.ts</code>.</li>
+            <li><strong>Protection Modulaire kaspi-ironclad-guard.ts :</strong> Éradication de la pollution de prototype (CWE-1321), validation CSRF d'origine stricte (CWE-352), vérification binaire des magic bytes (CWE-434), bouclier anti-SSRF (CWE-918), et masquage opaque des erreurs de production (CWE-209).</li>
+            <li><strong>Sceau Cryptographique Hors-Ligne WebCrypto P-256 :</strong> Génération de clés asymétriques ECDSA non extractibles dans IndexedDB. Chaque vente hors-ligne est chaînée cryptographiquement (<code>prevHash ➔ sha256 ➔ signature</code>), rendant toute falsification via les outils DevTools (F12) mathématiquement impossible.</li>
+            <li><strong>Neutralisation des Injections ESC/POS (CWE-74) :</strong> Filtrage systématique des séquences d'échappement matérielles (<code>\x00-\x1F, ESC 0x1B, GS 0x1D</code>) pour empêcher toute ouverture frauduleuse de tiroir-caisse ou altération de ticket thermique.</li>
+            <li><strong>Garde-Fous IA & Plafonds Budgétaires (OWASP LLM01/06) :</strong> Outils IA strictement limités à des lectures sécurisées, isolation des contextes par délimiteurs stricts, et quotas stricts par boutique pour bloquer tout déni de service financier.</li>
+            <li><strong>Flotte Gratuite de Sentinelles GitHub :</strong> Intégration continue sans surcoût de Gitleaks, TruffleHog, GitHub CodeQL SAST et Dependabot pour une couverture 360° du cycle de développement logiciel.</li>
+          </ul>
+
+          <hr style="border: 0; border-top: 1px solid var(--border-glass); margin: 2rem 0;">
+
+          <h3 style="font-size: 1.3rem; color: #a78bfa; margin-bottom: 1rem;">
+            🇬🇧 3. Global Threat & Active Countermeasure Matrix (English - LTR)
+          </h3>
+          <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 1rem;">
+            Exhaustive defense-in-depth specification mapping real threat vectors directly to verified code implementations:
+          </p>
+          <ul style="font-size: 0.95rem; line-height: 1.8; color: var(--text-secondary); margin-left: 1.5rem; list-style-type: disc;">
+            <li><strong>Middleware Bypass Defense (CVE-2025-29927):</strong> Edge inspection in <code>src/middleware.ts</code> rejecting forged internal subrequest headers with HTTP 403, backed by independent database session and role authorization on every single API endpoint.</li>
+            <li><strong>Proprietary Security Core:</strong> <code>src/server/security/kaspi-ironclad-guard.ts</code> provides native Node crypto sanitizers covering CWE-1321 (Prototype Pollution), CWE-352 (CSRF), CWE-434 (Binary Magic-Bytes), CWE-918 (SSRF), CWE-208/294 (Timing-Safe HMAC), and CWE-209 (Error Masking).</li>
+            <li><strong>Non-Extractable Offline Tamper Seal:</strong> <code>src/lib/security/offline-tamper-seal.ts</code> utilizes browser WebCrypto ECDSA P-256 non-extractable keys to cryptographically hash-chain offline queued sales, preventing client-side F12 local price/quantity manipulation.</li>
+            <li><strong>Hardware Command Injection Neutralization (CWE-74):</strong> Real-time sanitization of all thermal printer strings, purging control bytes (ESC <code>0x1B</code>, GS <code>0x1D</code>) before rasterization.</li>
+            <li><strong>AI Guardrails & Hard Spend Quotas (OWASP LLM01/LLM06):</strong> Read-only scoped server tools with strict per-tenant daily rate limits and quotas preventing denial-of-wallet cloud abuse.</li>
+            <li><strong>Automated $0 GitHub Bot Sentinel:</strong> <code>kaspi-secret-sentinel.yml</code> & <code>dependabot.yml</code> orchestrating Gitleaks, TruffleHog, GitHub CodeQL, and Dependabot scans on every commit, PR, and weekly schedule.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
 
   <!-- LIGHTBOX MODAL -->
   <div class="lightbox" id="lightbox" onclick="closeLightbox()">
@@ -1799,6 +1998,7 @@ const htmlContent = `<!DOCTYPE html>
         tab10: "10. المحرك المحلي والسحابي (WebGPU / Trigger / Windows CI)",
         tab11: "11. استكشاف محركات الذكاء (GEO & llms.txt Strategy)",
         tab12: "12. حماية المقاعد وقفل الأجهزة (Hardware Seat Lock & Grace)",
+        tab13: "13. موسوعة الأمن السيبراني والتحصين الهندسي (Global Cybersecurity)",
         printLabel: "طباعة / PDF",
         searchPlaceholder: "بحث فوري في الملف... / Search...",
         sliderLabel: "عدد أجهزة الكاشير النشطة (Active Postes):",
@@ -1828,6 +2028,7 @@ const htmlContent = `<!DOCTYPE html>
         tab10: "10. Moteur Local & Cloud (WebGPU / Trigger)",
         tab11: "11. Stratégie IA Fait-Maison (GEO & llms.txt)",
         tab12: "12. Intégrité des Postes & Verrouillage (1-Poste Hardware Binding)",
+        tab13: "13. Encyclopédie Cybersécurité & Défense (Zero-Breach Architecture)",
         printLabel: "Imprimer / PDF",
         searchPlaceholder: "Rechercher dans le dossier...",
         sliderLabel: "Nombre de Postes de Caisse Actifs :",
@@ -1857,6 +2058,7 @@ const htmlContent = `<!DOCTYPE html>
         tab10: "10. Local & Cloud Runtime (WebGPU / Trigger)",
         tab11: "11. White-Hat AI Discovery (GEO Strategy)",
         tab12: "12. Seat Integrity & Hardware Lock (1-Poste Binding & Customer Grace)",
+        tab13: "13. Global Cybersecurity & Vulnerability Encyclopedia (Zero-Breach Defense)",
         printLabel: "Print / PDF",
         searchPlaceholder: "Search dossier...",
         sliderLabel: "Active POS Registers (Postes):",
@@ -1901,6 +2103,7 @@ const htmlContent = `<!DOCTYPE html>
       if (document.getElementById("tab-10")) document.getElementById("tab-10").textContent = dict.tab10;
       if (document.getElementById("tab-11")) document.getElementById("tab-11").textContent = dict.tab11;
       if (document.getElementById("tab-12")) document.getElementById("tab-12").textContent = dict.tab12;
+      if (document.getElementById("tab-13")) document.getElementById("tab-13").textContent = dict.tab13;
       if (document.getElementById("print-label")) document.getElementById("print-label").textContent = dict.printLabel;
       if (document.getElementById("dossier-search")) document.getElementById("dossier-search").placeholder = dict.searchPlaceholder;
 
@@ -1941,7 +2144,8 @@ const htmlContent = `<!DOCTYPE html>
         "09-swarm": "tab-09",
         "10-runtime": "tab-10",
         "11-geo": "tab-11",
-        "12-seat-lock": "tab-12"
+        "12-seat-lock": "tab-12",
+        "13-cybersecurity": "tab-13"
       };
       const activeTab = document.getElementById(idxMap[chapId]);
       if (activeTab) activeTab.classList.add("active");

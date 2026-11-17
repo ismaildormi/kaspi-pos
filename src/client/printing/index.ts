@@ -110,6 +110,15 @@ function resolvePrintedStoreName(candidate?: string | null): string {
 }
 
 /**
+ * CWE-74: Strips raw ESC/POS control bytes (\x00-\x1F, ESC 0x1B, GS 0x1D)
+ * preventing rogue cash-drawer kicks or receipt printer command injection.
+ */
+export function sanitizeThermalReceiptText(text: string): string {
+  if (!text) return "";
+  return text.replace(/[\x00-\x1F\x7F\x1B\x1D]/g, "").trim();
+}
+
+/**
  * Isolated Hidden <iframe /> Thermal Receipt Spooler.
  * Never calls window.print() on the main Next.js window!
  * Prints Store Name in bold header (ZERO logo image) in pure #000000 ink on #FFFFFF thermal paper.
@@ -128,16 +137,19 @@ export async function printThermalReceipt(
       : { ...stored, ...payload };
 
   const widthMm = data.paperWidthMm === 58 ? 58 : 80;
-  const storeName = resolvePrintedStoreName(data.storeName || data.shopName || stored.shopName);
-  const receiptNumber = toWesternNumerals(
+  const storeName = sanitizeThermalReceiptText(resolvePrintedStoreName(data.storeName || data.shopName || stored.shopName));
+  const receiptNumber = sanitizeThermalReceiptText(toWesternNumerals(
     data.receiptNumber || `REC-${Date.now().toString().slice(-6)}`
-  );
+  ));
   const rawCreatedAt = data.createdAt || (data as any).date;
   const formattedDateTime = formatReceiptIsoDateTime(rawCreatedAt);
 
-  const cashierName = data.cashierName || "Caisse 1";
-  const currency = toWesternNumerals(data.currency || "MAD");
-  const items = Array.isArray(data.items) ? data.items : [];
+  const cashierName = sanitizeThermalReceiptText(data.cashierName || "Caisse 1");
+  const currency = sanitizeThermalReceiptText(toWesternNumerals(data.currency || "MAD"));
+  const items = (Array.isArray(data.items) ? data.items : []).map((item) => ({
+    ...item,
+    name: sanitizeThermalReceiptText(item.name || ""),
+  }));
   const lang: ReceiptLanguage = data.receiptLanguage || stored.receiptLanguage || "ar";
   const dict = getReceiptTranslation(lang);
   const isRtl = dict.dir === "rtl";

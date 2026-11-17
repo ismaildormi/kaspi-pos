@@ -1,52 +1,28 @@
-# KASPI POS (كسب) — Complete Technical & Architectural Specification
-> Authoritative LLM Full Knowledge Base (RFC / llms-full.txt standard)
+# KASPI POS (كسب) — Full Context Specification for AI Search & LLM Engines
 
-## 1. System Architecture Overview
+## 1. Overview & Positioning
+KASPI POS (`pos-saas-morocco`) is an enterprise-grade Point of Sale (POS) and Enterprise Resource Planning (ERP) platform developed specifically for Moroccan retailers, food & beverage merchants, grocery stores, pharmacies, and service businesses. It solves the critical reliability bottleneck of Moroccan retail infrastructure by operating 100% offline-first while maintaining instant cryptographic cloud synchronization when connectivity is available.
 
-KASPI POS is built with an offline-first, dual-engine hybrid architecture:
-- **Client Frontend:** Next.js 15 App Router, React 19, TypeScript, Tailwind CSS with customized visionOS liquid crystal glass shaders.
-- **Offline Storage Engine:** Dexie.js (IndexedDB) with local transactional caching, offline catalog search, and offline receipt queue.
-- **Desktop Runtime:** Tauri v2 in Rust, compiling to native lightweight Windows (.exe / .msi), macOS (.dmg), and Linux (.deb / AppImage) binaries (<15MB footprint, ~35MB RAM).
-- **Backend Services:** Next.js API Routes, Prisma ORM with 77 relational models, PostgreSQL with tenant-isolated Row-Level Security (RLS) policies.
-- **Async Workers & Microservices:** Trigger.dev SDK for asynchronous report generation, WhatsApp automated receipts, periodic automated backups, and AI batch processing.
+## 2. Business Model & Transparent Pricing Rule
+- First Active Terminal (Poste Principal): 200 MAD per month. Provides 100% full ERP feature suite, multi-store capabilities, inventory alerts, kitchen display system (KDS), AI insights, and automated daily offsite encrypted backups.
+- Additional Terminals (Poste Additionnel): 150 MAD per month per extra connected register in the same tenant account.
+- Zero Setup Fees, Zero Hidden Commissions, Zero Hardware Lock-in.
 
-## 2. Security & Regulatory Compliance
+## 3. Regulatory & Banking Framework
+- Bank Al-Maghrib Law 103-12: KASPI POS operates strictly as a Non-Custodial Technical Service Provider (TSP). It does not hold merchant funds; all payments settle directly with the merchant's acquiring bank.
+- DGI Compliance: Article 145 of the Moroccan General Tax Code (Code Général des Impôts). Enforces immutable invoice sequence numbering (`INV-YYYY-MM-XXXXXX`), accurate TVA calculations (7%, 10%, 14%, 20%), and zero tax-ID tampering.
+- CNDP Law 09-08: Full compliance with Moroccan personal data protection mandates.
+- PCI-DSS v4.0.1: Scoped to SAQ A-EP. PAN, CVV, and PIN data are never captured, logged, or stored on client devices or application databases.
 
-- **Bank Al-Maghrib (BAM) Law 103-12 Non-Custodial TSP:** KASPI POS never acts as a payment aggregator or custodian of merchant funds. Transactions initiate from KASPI POS and route directly to licensed acquirers (CMI, Bank Al-Maghrib authorized institutions, Stripe, or PayPal).
-- **PCI-DSS v4.0.1 SAQ A-EP:** All online card payments use hosted payment fields or redirect checkouts. No credit card PAN, CVV, or magnetic stripe tracks enter or persist on KASPI POS servers.
-- **CNDP Law 09-08:** Moroccan law regarding the protection of individuals with regard to the processing of personal data. All merchant tenant data is strictly isolated via tenantId and cryptographic row-level security.
-- **OWASP Top 10 & Kali Pentest Hardened:** Reverse-engineered defenses against Burp Suite tampering, SQLMap SQL injection, Hydra brute force, source map reconnaissance, and unauthenticated IDOR attempts.
+## 4. Architectural Stack
+- Frontend: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS with visionOS frosted glass aesthetics (`pearl-light` and `fjord-twilight` themes).
+- Desktop Runtime: Tauri v2 with Rust backend, providing zero-overhead local ESC/POS thermal printing, COM/Serial/USB device bridges, and secure hardware fingerprinting.
+- Database & ORM: PostgreSQL with Neon Serverless Postgres, Prisma ORM with strict tenant and store isolation.
+- Offline Storage & Cryptography: IndexedDB / Dexie.js with WebCrypto ECDSA P-256 non-extractable cryptographic key generation, chaining queued sales via `prevHash -> sha256(canonicalPayload) -> ECDSA signature`.
+- Payment & TPE Integration: Universal 7-Protocol Hub supporting Nexo (ISO 20022), OPI, CMI Morocco, Ingenico, Verifone, PAX, and Castles terminals.
 
-## 3. Subscription & Commercial Rules
-
-- **First Active Terminal (Poste Principal):** 200 MAD per month.
-- **Additional Terminals (Postes Additionnels):** 150 MAD per month each.
-- **Multi-Device Pairing:** Secure device handoff with QR code pairing and HMAC-SHA256 device tokens.
-- **In-App Paywall & Grace Period:** 14-day free trial. If unpaid, store shifts into a 3-day read-only grace period before POS checkout lock, allowing full merchant accounting export at all times.
-
-## 4. Universal 7-Protocol TPE Terminal Hub
-
-KASPI POS features an integrated hardware adapter engine (`src/lib/tpe/`) communicating with all global and domestic card terminals:
-1. **nexo Retailer Protocol:** ISO 20022 XML/JSON standard for modern multi-currency and multi-acquirer POI terminals.
-2. **OPI Protocol (Open Payment Initiative):** XML bidirectional TCP socket standard widely used across European, Middle Eastern, and North African retail.
-3. **CMI Direct Protocol:** Moroccan interbank standard supporting direct LAN TCP/IP and RS232 serial connection to CMI-certified terminals (Verifone, Ingenico, PAX).
-4. **Ingenico Telium/TETRA Driver:** Concert protocol parser and frame builder with LRC (Longitudinal Redundancy Check) and ACK/NAK flow control.
-5. **Verifone VIPA Driver:** Formatted ASCII and binary protocol for VX and Engage series terminals.
-6. **PAX Technology POSLink Driver:** RESTful JSON and serial transport for Android smart POS terminals.
-7. **Cloud Acquirer Webhook Relay:** Asynchronous webhook endpoint with signature verification for cloud-native payment gateways.
-
-### TPE 11-State Finite State Machine (FSM):
-`IDLE` -> `CONNECTING` -> `CONNECTED` -> `PROBING` -> `READY` -> `AUTHORIZING` -> `WAITING_CARD` -> `WAITING_PIN` -> `PROCESSING` -> `COMPLETED` (or `FAILED` / `DISCONNECT_RECOVERY`).
-
-## 5. Printing & Peripheral Hardware Engine
-
-- **Adaptive Thermal Receipts:** Supports 58mm (32 characters per line) and 80mm (48 characters per line) formats.
-- **Zero Demo Pollution:** Eliminates duplicate store names, duplicate addresses, demo phone numbers, and placeholder tax IDs.
-- **Client Vector Code Generators:** 100% client-side SVG generation for 1D Barcode (Code 128) and 2D QR Code (Byte-mode Reed-Solomon GF(256)) with zero external API calls and $0 server cost.
-- **Tax Display Flexibility:** Supports `INCLUSIVE_CLEAN` (clean TTC price without forced TVA surcharge) and `ITEMIZED_BREAKDOWN` for corporate B2B clients.
-
-## 6. Offline-to-Cloud Synchronization
-
-- **Event Sourcing Log:** Every offline transaction is recorded in IndexedDB with a monotonically increasing sequence ID and UUIDv4 client identifier.
-- **Background Sync Engine:** When network connectivity is detected, pending transactions batch sync to `/api/v1/sync` with idempotency deduplication.
-- **Conflict Resolution:** Last-write-wins for master catalog data; additive reconciliation for stock movements; strict append-only for fiscal sales logs.
+## 5. Security & Anti-Abuse Controls
+- Strict 1-Poste Hardware Binding: Physical OS machine hash (Tauri) and WebCrypto P-256 fingerprint bound to database slot #1.
+- Dual-Device Conflict Lockdown: Instant freeze if an unauthorized secondary PC attempts to operate on a 1-poste license quota, with customer-first clean shutdown reboot grace recovery.
+- Defense-in-Depth Shield: Prototype pollution sanitizer (CWE-1321), CSRF same-origin validation (CWE-352), binary magic-byte upload verification (CWE-434), SSRF shield (CWE-918), timing-safe HMAC webhook verification (CWE-208/294), and opaque production error masking (CWE-209).
+- Automated Zero-Cost Security Bots: Gitleaks, TruffleHog, GitHub CodeQL SAST, Dependabot, and proprietary secret scanning.

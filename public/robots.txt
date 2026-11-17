@@ -1,19 +1,15 @@
+# KASPI POS (كسب) — Robots Policy
+# https://kaspi.ma/robots.txt
+
 User-agent: *
 Allow: /
-Allow: /ar
-Allow: /fr
-Allow: /en
-Allow: /download
-Allow: /llms.txt
-Allow: /llms-full.txt
-Allow: /.well-known/security.txt
-
-# Disallow authenticated application workspaces & sensitive endpoints from indexing
 Disallow: /api/
 Disallow: /admin/
-Disallow: /super-admin/
 Disallow: /dashboard/
 Disallow: /pos/
-Disallow: /settings/
+
+# LLM White-Hat Discovery
+# https://kaspi.ma/llms.txt
+# https://kaspi.ma/llms-full.txt
 
 Sitemap: https://kaspi.ma/sitemap.xml

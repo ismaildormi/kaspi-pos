@@ -3,6 +3,7 @@ import { checkSuperAdminUser } from "@/server/admin/guard";
 import { prisma } from "@/server/db/prisma";
 import { resolveConflictTicket } from "@/server/devices/poste-binding-engine";
 import { z } from "zod";
+import { assertSafeOrigin, stripDangerousKeys } from "@/server/security/kaspi-ironclad-guard";
 
 const ResolveTicketSchema = z
   .object({
@@ -65,12 +66,19 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!assertSafeOrigin(req)) {
+      return NextResponse.json(
+        { error: "CSRF check failed: invalid origin" },
+        { status: 403 }
+      );
+    }
     const user = await checkSuperAdminUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized SuperAdmin access" }, { status: 401 });
     }
 
-    const body = await req.json().catch(() => ({}));
+    const rawBody = await req.json().catch(() => ({}));
+    const body = stripDangerousKeys(rawBody);
     const parsed = ResolveTicketSchema.safeParse(body);
 
     if (!parsed.success) {

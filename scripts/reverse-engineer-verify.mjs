@@ -408,6 +408,38 @@ async function runStaticReverseEngineeringChecks() {
       adminConflictTicketsPage.includes("UNLOCK_PRIMARY"),
     "Hardware Binding + DUAL_LOCKDOWN + Customer Grace Recovery + Admin Inbox verified"
   );
+
+  // 17. Proprietary Defense-in-Depth, CVE-2025-29927 Shield, WebCrypto Tamper Seal & Free GitHub Bots
+  const ironcladGuard = readFileSafe("src/server/security/kaspi-ironclad-guard.ts");
+  const offlineSeal = readFileSafe("src/lib/security/offline-tamper-seal.ts");
+  const middlewareCode = readFileSafe("src/middleware.ts");
+  const secretSentinelWorkflow = readFileSafe(".github/workflows/kaspi-secret-sentinel.yml");
+  const dependabotConfig = readFileSafe(".github/dependabot.yml");
+  const securityTxt = readFileSafe("public/.well-known/security.txt");
+  const robotsTxt = readFileSafe("public/robots.txt");
+  const llmsTxt = readFileSafe("public/llms.txt");
+
+  record(
+    "Proprietary Defense-in-Depth, WebCrypto Tamper Seal & Free Security Bots",
+    "kaspi-ironclad-guard (CWE-1321/352/434/918/208/209), offline-tamper-seal ECDSA P-256 chain, CVE-2025-29927 middleware guard, Gitleaks, TruffleHog, CodeQL, and Dependabot",
+    ironcladGuard.includes("stripDangerousKeys") &&
+      ironcladGuard.includes("assertSafeOrigin") &&
+      ironcladGuard.includes("validateImageMagicBytes") &&
+      ironcladGuard.includes("sanitizePublicUrl") &&
+      ironcladGuard.includes("verifySignedPayload") &&
+      ironcladGuard.includes("maskErrorForProduction") &&
+      offlineSeal.includes("getOrCreateOfflineKeyPair") &&
+      offlineSeal.includes("sealOfflineSalePayload") &&
+      middlewareCode.includes("CVE_2025_29927_BLOCKED") &&
+      secretSentinelWorkflow.includes("gitleaks/gitleaks-action") &&
+      secretSentinelWorkflow.includes("trufflesecurity/trufflehog") &&
+      secretSentinelWorkflow.includes("github/codeql-action") &&
+      dependabotConfig.includes("cargo") &&
+      securityTxt.includes("RFC 9116") &&
+      robotsTxt.includes("Disallow: /admin/") &&
+      llmsTxt.includes("KASPI POS"),
+    "Ironclad Guard + CVE-2025-29927 Shield + WebCrypto P-256 Seal + Free GitHub Bots verified"
+  );
 }
 
 async function runLiveBrowserReverseEngineeringChecks() {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
+import { maskErrorForProduction } from "@/server/security/kaspi-ironclad-guard";
 
 export interface ApiErrorPayload {
   code: string;
@@ -48,10 +49,10 @@ export function handleApiError(err: unknown) {
     return jsonError(err.code, err.message, err.status, err.details);
   }
   const isProd = process.env.NODE_ENV === "production";
-  const message = isProd
-    ? "An internal server error occurred"
-    : err instanceof Error
-    ? err.message
-    : "Internal server error";
+  if (isProd) {
+    const masked = maskErrorForProduction(err);
+    return jsonError(masked.code, masked.error, 500);
+  }
+  const message = err instanceof Error ? err.message : "Internal server error";
   return jsonError("INTERNAL_ERROR", message, 500);
 }

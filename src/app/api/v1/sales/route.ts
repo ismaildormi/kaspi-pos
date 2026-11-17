@@ -7,6 +7,7 @@ import { jsonOk, handleApiError, AppError } from "@/server/http/response";
 import { toDecimal, toPrismaDecimal, toPrismaQtyDecimal, roundMoney } from "@/domain/money";
 import { calculatePointsEarned } from "@/server/loyalty/engine";
 import { generateNextInvoiceNumber } from "@/server/db/invoice-sequence";
+import { assertSafeOrigin, stripDangerousKeys } from "@/server/security/kaspi-ironclad-guard";
 
 const SaleItemInputSchema = z.object({
   productId: z.string().uuid("Invalid product ID"),
@@ -36,8 +37,12 @@ const CreateSaleSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    if (!assertSafeOrigin(req)) {
+      throw new AppError("CSRF_FORBIDDEN", "Cross-site request rejected by security policy", 403);
+    }
     const ctx = await getRequestContext();
-    const body = await req.json();
+    const rawBody = await req.json();
+    const body = stripDangerousKeys(rawBody);
     const parsed = CreateSaleSchema.safeParse(body);
 
     if (!parsed.success) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRequestContext } from "@/server/auth/context";
 import { prisma } from "@/server/db/prisma";
 import { z } from "zod";
+import { assertSafeOrigin, stripDangerousKeys } from "@/server/security/kaspi-ironclad-guard";
 
 const ConflictTicketSchema = z
   .object({
@@ -18,6 +19,12 @@ const ConflictTicketSchema = z
 
 export async function POST(req: NextRequest) {
   try {
+    if (!assertSafeOrigin(req)) {
+      return NextResponse.json(
+        { error: "CSRF check failed: invalid origin" },
+        { status: 403 }
+      );
+    }
     let tenantId: string | null = null;
     let storeId: string | null = null;
 
@@ -31,7 +38,8 @@ export async function POST(req: NextRequest) {
       // Allow fallback from body
     }
 
-    const body = await req.json().catch(() => ({}));
+    const rawBody = await req.json().catch(() => ({}));
+    const body = stripDangerousKeys(rawBody);
     const parsed = ConflictTicketSchema.safeParse(body);
 
     if (!parsed.success) {

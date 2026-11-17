@@ -225,6 +225,17 @@ impl<'a> Fonts<'a> {
     }
 }
 
+/// CWE-74: Strips raw control bytes (\x00-\x1F, ESC 0x1B, GS 0x1D) preventing receipt command injection
+pub fn sanitize_escpos_text(input: &str) -> String {
+    input
+        .chars()
+        .filter(|c| {
+            let u = *c as u32;
+            u >= 0x20 || *c == '\n' || *c == '\t'
+        })
+        .collect()
+}
+
 /// Renders receipt rows onto a white 1-bit canvas `width_px` wide (384 = 58mm, 576 = 80mm).
 pub fn render_rows(fonts: &Fonts, rows: &[Row], width_px: u32) -> GrayImage {
     let usable = width_px as f32 - 2.0 * MARGIN_X;
@@ -235,11 +246,16 @@ pub fn render_rows(fonts: &Fonts, rows: &[Row], width_px: u32) -> GrayImage {
     for row in rows {
         match row {
             Row::Text { text, align, size } => {
-                for l in fonts.wrap(text, *size, usable) {
+                let clean_text = sanitize_escpos_text(text);
+                for l in fonts.wrap(&clean_text, *size, usable) {
                     ops.push(Op::Line { text: l, align: *align, size: *size });
                 }
             }
-            Row::Pair { left, right, size } => ops.push(Op::Pair { l: left.clone(), r: right.clone(), size: *size }),
+            Row::Pair { left, right, size } => {
+                let clean_l = sanitize_escpos_text(left);
+                let clean_r = sanitize_escpos_text(right);
+                ops.push(Op::Pair { l: clean_l, r: clean_r, size: *size });
+            }
             Row::Separator => ops.push(Op::Rule),
             Row::Feed(px) => ops.push(Op::Gap(*px)),
         }

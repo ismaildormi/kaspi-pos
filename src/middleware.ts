@@ -39,6 +39,24 @@ const PUBLIC_API_PATHS = [
 ];
 
 export async function middleware(request: NextRequest) {
+  // CVE-2025-29927 Defense-in-Depth: Explicitly inspect/strip untrusted subrequest bypass headers
+  if (
+    request.headers.has("x-middleware-subrequest") ||
+    request.headers.has("x-middleware-override-headers")
+  ) {
+    return applySecurityHeaders(
+      NextResponse.json(
+        {
+          error: {
+            code: "CVE_2025_29927_BLOCKED",
+            message: "Untrusted middleware internal header spoofing detected",
+          },
+        },
+        { status: 403 }
+      )
+    );
+  }
+
   const { pathname } = request.nextUrl;
 
   // 1. Bypass static assets, public download routes, desktop launch bridge, and next internals

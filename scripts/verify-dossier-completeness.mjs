@@ -52,15 +52,17 @@ if (fs.existsSync(HTML_FILE)) {
   check("HTML contains SupportConflictTicket & Screenshot Admin Inbox", html.includes("SupportConflictTicket") && html.includes("support_conflict_tickets"));
   check("HTML contains HARD_ADMIN_LOCK 3-strike escalation", html.includes("HARD_ADMIN_LOCK") && html.includes("3"));
   check("HTML contains Trilingual Seat Integrity Chapter 12 (AR, FR, EN)", html.includes("sec-12-seat-lock") && html.includes("حماية المقاعد") && html.includes("Verrouillage Matériel") && html.includes("Seat Integrity"));
+  check("HTML contains Trilingual Cybersecurity Encyclopedia Chapter 13 (AR, FR, EN)", html.includes("sec-13-cybersecurity") && html.includes("الموسوعة الشاملة للأمن السيبراني") && html.includes("CVE-2025-29927") && html.includes("kaspi-ironclad-guard"));
 }
 
-// 2. Verify Companion Markdown Reports (All 15 Required Files)
+// 2. Verify Companion Markdown Reports (All Required Files)
 const requiredMarkdownFiles = [
   "README.md",
   "01-corporate-legal-and-infra/COMPANY_INCORPORATION_AND_LAW_103_12_BRIEF.md",
   "01-corporate-legal-and-infra/SERVERS_CLOUD_AND_RUNTIME_STACK.md",
   "01-corporate-legal-and-infra/DATABASE_PRISMA_FULL_ATLAS.md",
   "01-corporate-legal-and-infra/HARDWARE_POSTE_LOCK_AND_ANTI_PIRACY.md",
+  "01-corporate-legal-and-infra/CYBERSECURITY_AND_VULNERABILITY_ENCYCLOPEDIA.md",
   "02-full-system-reverse-audit/EXHAUSTIVE_FEATURE_TRUTH_MATRIX.md",
   "02-full-system-reverse-audit/LANDING_PAGE_VS_CODEBASE_AUDIT.md",
   "02-full-system-reverse-audit/API_ROUTES_AND_SECURITY_AUDIT.md",
@@ -85,7 +87,16 @@ for (const relPath of requiredMarkdownFiles) {
   check(`Companion file: ${relPath}`, exists && lengthOk, exists ? `${fs.statSync(fullPath).size} bytes` : "MISSING");
 }
 
-// 3. Verify Screenshot Gallery
+// 3. Verify Security Modules & GitHub Workflows
+check("Ironclad Guard module exists", fs.existsSync(path.join(ROOT, "src/server/security/kaspi-ironclad-guard.ts")));
+check("Offline Tamper Seal module exists", fs.existsSync(path.join(ROOT, "src/lib/security/offline-tamper-seal.ts")));
+check("Kaspi Secret Sentinel workflow exists", fs.existsSync(path.join(ROOT, ".github/workflows/kaspi-secret-sentinel.yml")));
+check("Dependabot configuration exists", fs.existsSync(path.join(ROOT, ".github/dependabot.yml")));
+check("Public robots.txt exists", fs.existsSync(path.join(ROOT, "public/robots.txt")));
+check("Public llms.txt exists", fs.existsSync(path.join(ROOT, "public/llms.txt")));
+check("Public security.txt exists", fs.existsSync(path.join(ROOT, "public/.well-known/security.txt")));
+
+// 4. Verify Screenshot Gallery
 const screenDir = path.join(DOSSIER_DIR, "07-verified-screenshots");
 check("Screenshot directory exists", fs.existsSync(screenDir));
 if (fs.existsSync(screenDir)) {
@@ -95,7 +106,7 @@ if (fs.existsSync(screenDir)) {
 
 console.log("\n========================================================");
 if (failures === 0) {
-  console.log("🎉 [ZERO-OMISSION DOSSIER GATE PASSED] All 28 checks 100% compliant.");
+  console.log("🎉 [ZERO-OMISSION DOSSIER GATE PASSED] All checks 100% compliant.");
   process.exit(0);
 } else {
   console.error(`❌ [GATE FAILED] ${failures} violations detected.`);
