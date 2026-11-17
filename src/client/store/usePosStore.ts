@@ -14,12 +14,14 @@ export interface PosProduct {
   price?: number;
   salePrice: number;
   wholesalePrice?: number | null;
+  costPrice?: number | null;
   taxRate: number;
   trackStock: boolean;
   stockQuantity?: number;
   categoryId?: string | null;
   categoryName?: string | null;
   image?: string | null;
+  imageUrl?: string | null;
   isScaleItem?: boolean;
   scaleBarcodePrefix?: string | null;
   weightUnit?: string | null;

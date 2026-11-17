@@ -64,6 +64,131 @@ function isDemoProduct(p: { name?: string | null; sku?: string | null }) {
   return false;
 }
 
+const SHOWCASE_PRODUCTS: PosProduct[] = [
+  {
+    id: "kaspi-show-01",
+    name: "Adidas Originals Sweater",
+    sku: "KASPI-SHOW-01",
+    barcode: "6119990001112",
+    salePrice: 150.0,
+    wholesalePrice: 90.0,
+    taxRate: 20,
+    trackStock: true,
+    stockQuantity: 24,
+    categoryId: "fashion",
+    categoryName: "fashion",
+    image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=400&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=400&q=80",
+  },
+  {
+    id: "kaspi-show-02",
+    name: "iPhone 18 Pro Max 256GB",
+    sku: "KASPI-SHOW-02",
+    barcode: "6119990001129",
+    salePrice: 14500.0,
+    wholesalePrice: 11000.0,
+    taxRate: 20,
+    trackStock: true,
+    stockQuantity: 15,
+    categoryId: "electronics",
+    categoryName: "electronics",
+    image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=400&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=400&q=80",
+  },
+  {
+    id: "kaspi-show-03",
+    name: "لوز بلدي مغربي (Kg)",
+    sku: "KASPI-SHOW-03",
+    barcode: "6119990002225",
+    salePrice: 150.0,
+    wholesalePrice: 120.0,
+    taxRate: 0,
+    trackStock: true,
+    stockQuantity: 50,
+    isScaleItem: true,
+    weightUnit: "kg",
+    categoryId: "produce",
+    categoryName: "produce",
+    image: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?auto=format&fit=crop&w=400&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?auto=format&fit=crop&w=400&q=80",
+  },
+  {
+    id: "kaspi-show-04",
+    name: "Apple Watch Ultra 2 Titanium",
+    sku: "KASPI-SHOW-04",
+    barcode: "6119990001136",
+    salePrice: 8900.0,
+    wholesalePrice: 6800.0,
+    taxRate: 20,
+    trackStock: true,
+    stockQuantity: 8,
+    categoryId: "electronics",
+    categoryName: "electronics",
+    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80",
+  },
+  {
+    id: "kaspi-show-05",
+    name: "Adit Sport Zip Sweater",
+    sku: "KASPI-SHOW-05",
+    barcode: "6119990001143",
+    salePrice: 380.0,
+    wholesalePrice: 220.0,
+    taxRate: 20,
+    trackStock: true,
+    stockQuantity: 18,
+    categoryId: "fashion",
+    categoryName: "fashion",
+    image: "https://images.unsplash.com/photo-1578587018452-892bacefd3f2?auto=format&fit=crop&w=400&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1578587018452-892bacefd3f2?auto=format&fit=crop&w=400&q=80",
+  },
+  {
+    id: "kaspi-show-06",
+    name: "Chronograph Classic Silver Watch",
+    sku: "KASPI-SHOW-06",
+    barcode: "6119990001150",
+    salePrice: 1250.0,
+    wholesalePrice: 750.0,
+    taxRate: 20,
+    trackStock: true,
+    stockQuantity: 12,
+    categoryId: "fashion",
+    categoryName: "fashion",
+    image: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=400&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=400&q=80",
+  },
+  {
+    id: "kaspi-show-07",
+    name: "iPhone 18 Pro Natural Titanium",
+    sku: "KASPI-SHOW-07",
+    barcode: "6119990001167",
+    salePrice: 13900.0,
+    wholesalePrice: 10500.0,
+    taxRate: 20,
+    trackStock: true,
+    stockQuantity: 10,
+    categoryId: "electronics",
+    categoryName: "electronics",
+    image: "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=400&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=400&q=80",
+  },
+  {
+    id: "kaspi-show-08",
+    name: "iPhone 18 Pro Alpine White",
+    sku: "KASPI-SHOW-08",
+    barcode: "6119990001174",
+    salePrice: 13900.0,
+    wholesalePrice: 10500.0,
+    taxRate: 20,
+    trackStock: true,
+    stockQuantity: 14,
+    categoryId: "electronics",
+    categoryName: "electronics",
+    image: "https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?auto=format&fit=crop&w=400&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?auto=format&fit=crop&w=400&q=80",
+  },
+];
+
 export default function PosPage() {
   const { t, locale } = useAppDictionary();
   const [products, setProducts] = useState<PosProduct[]>([]);
@@ -189,18 +314,23 @@ export default function PosPage() {
               offlineDb.offlineProducts.bulkDelete(demoIds).catch(() => {});
             }
           }
-          if (isMounted && cleanProds.length > 0) {
+          if (isMounted) {
+            const prodsToSet = cleanProds.length > 0 ? cleanProds : SHOWCASE_PRODUCTS;
             setProducts(
-              cleanProds.map((p: any) => ({
+              prodsToSet.map((p: any) => ({
                 id: p.id,
                 name: p.name,
                 sku: p.sku,
                 barcode: p.barcode,
                 salePrice: Number(p.salePrice) || 0,
+                wholesalePrice: Number(p.wholesalePrice) || Number(p.costPrice) || 0,
+                costPrice: Number(p.costPrice) || 0,
                 taxRate: Number(p.taxRate) || 0,
-                stockQuantity: p.stockQuantity ?? 0,
+                stockQuantity: p.stockQuantity ?? 10,
                 trackStock: p.trackStock ?? true,
                 categoryId: p.categoryId,
+                unit: p.unit,
+                isScaleItem: p.isScaleItem,
                 image: p.imageUrl || p.image,
               }))
             );
@@ -309,23 +439,25 @@ export default function PosPage() {
           const rawItems: PosProduct[] = prodData.data?.products || [];
           const hasRealItems = rawItems.some((p) => !isDemoProduct(p));
           const items = hasRealItems ? rawItems.filter((p) => !isDemoProduct(p)) : rawItems;
-          setProducts(items);
+          const finalItems = items.length > 0 ? items : SHOWCASE_PRODUCTS;
+          setProducts(finalItems);
 
           // Cache in Dexie for offline lookup
           if (offlineDb?.offlineProducts) {
             await offlineDb.offlineProducts.bulkPut(
-              items.map((p) => ({
+              finalItems.map((p) => ({
                 id: p.id,
                 tenantId: "current",
                 name: p.name,
                 sku: p.sku,
                 barcode: p.barcode,
                 salePrice: p.salePrice,
+                wholesalePrice: p.wholesalePrice || (p as any).costPrice,
                 taxRate: p.taxRate,
-                stockQuantity: p.stockQuantity ?? 0,
+                stockQuantity: p.stockQuantity ?? 10,
                 trackStock: p.trackStock ?? true,
                 categoryId: p.categoryId,
-                imageUrl: p.image,
+                imageUrl: p.image || (p as any).imageUrl,
                 syncedAt: Date.now(),
               }))
             );
@@ -333,17 +465,21 @@ export default function PosPage() {
         } else if (offlineDb?.offlineProducts) {
           const cached = await offlineDb.offlineProducts.toArray();
           const cleanCached = (cached || []).filter((p: any) => !isDemoProduct(p));
+          const finalCached = cleanCached.length > 0 ? cleanCached : SHOWCASE_PRODUCTS;
           setProducts(
-            cleanCached.map((p: any) => ({
+            finalCached.map((p: any) => ({
               id: p.id,
               name: p.name,
               sku: p.sku,
               barcode: p.barcode,
               salePrice: p.salePrice,
+              wholesalePrice: p.wholesalePrice || p.costPrice,
               taxRate: p.taxRate,
-              stockQuantity: p.stockQuantity,
+              stockQuantity: p.stockQuantity ?? 10,
               trackStock: p.trackStock,
               categoryId: p.categoryId,
+              unit: p.unit,
+              isScaleItem: p.isScaleItem,
               image: p.imageUrl || p.image,
             }))
           );
@@ -358,17 +494,21 @@ export default function PosPage() {
         if (offlineDb?.offlineProducts) {
           const cached = await offlineDb.offlineProducts.toArray();
           const cleanCached = (cached || []).filter((p: any) => !isDemoProduct(p));
+          const finalCached = cleanCached.length > 0 ? cleanCached : SHOWCASE_PRODUCTS;
           setProducts(
-            cleanCached.map((p: any) => ({
+            finalCached.map((p: any) => ({
               id: p.id,
               name: p.name,
               sku: p.sku,
               barcode: p.barcode,
               salePrice: p.salePrice,
+              wholesalePrice: p.wholesalePrice || p.costPrice,
               taxRate: p.taxRate,
-              stockQuantity: p.stockQuantity,
+              stockQuantity: p.stockQuantity ?? 10,
               trackStock: p.trackStock,
               categoryId: p.categoryId,
+              unit: p.unit,
+              isScaleItem: p.isScaleItem,
               image: p.imageUrl || p.image,
             }))
           );
@@ -376,6 +516,7 @@ export default function PosPage() {
       } finally {
         if (isMounted) {
           setIsLoading(false);
+          setLoaderDone(true);
         }
       }
     }

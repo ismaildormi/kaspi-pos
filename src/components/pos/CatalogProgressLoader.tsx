@@ -15,6 +15,11 @@ export function CatalogProgressLoader({ isLoading = true, onReady }: CatalogProg
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasFinishedRef = useRef(false);
 
+  const onReadyRef = useRef(onReady);
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  });
+
   useEffect(() => {
     // Phase 1: Asymptotic smooth climb up to 88% while isLoading is true
     if (isLoading) {
@@ -31,21 +36,17 @@ export function CatalogProgressLoader({ isLoading = true, onReady }: CatalogProg
       return () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
       };
-    }
-  }, [isLoading]);
-
-  useEffect(() => {
-    // Phase 2: The exact millisecond isLoading becomes false, snap to 100% and unmount within <60ms
-    if (!isLoading && !hasFinishedRef.current) {
+    } else if (!hasFinishedRef.current) {
+      // Phase 2: The exact millisecond isLoading becomes false, snap to 100% and unmount cleanly
       hasFinishedRef.current = true;
       if (intervalRef.current) clearInterval(intervalRef.current);
       setProgress(100);
       const timer = setTimeout(() => {
-        onReady?.();
-      }, 50);
+        onReadyRef.current?.();
+      }, 40);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, onReady]);
+  }, [isLoading]);
 
   const subtitle =
     locale === "ar"
