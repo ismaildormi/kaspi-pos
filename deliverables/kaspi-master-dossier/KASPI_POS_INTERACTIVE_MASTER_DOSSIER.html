@@ -223,6 +223,29 @@
       transform: translateY(-1px);
     }
 
+    .download-doc-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.4rem 0.95rem;
+      border-radius: 9999px;
+      background: var(--emerald-accent);
+      border: 1px solid var(--emerald-accent);
+      color: #ffffff;
+      font-size: 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      box-shadow: 0 2px 8px var(--emerald-glow);
+    }
+
+    .download-doc-btn:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px var(--emerald-glow);
+    }
+
     .diagram-container {
       margin: 2rem 0;
       padding: 1.75rem;
@@ -241,7 +264,7 @@
 
     /* Clean Executive Print Stylesheet */
     @media print {
-      .glass-nav, .chapter-tabs, .dossier-search-wrapper, .print-doc-btn, .lang-pill-group, .theme-toggle-btn, .hero-metrics, .lightbox {
+      .glass-nav, .chapter-tabs, .dossier-search-wrapper, .print-doc-btn, .download-doc-btn, .lang-pill-group, .theme-toggle-btn, .hero-metrics, .lightbox, .exec-nav-map {
         display: none !important;
       }
       body {
@@ -708,10 +731,16 @@
     </div>
 
     <div class="nav-actions">
+      <!-- 1-Click Pure Offline Client-Side HTML Download (Blob) -->
+      <button class="download-doc-btn" id="btn-download-html" onclick="downloadDossierHtml()" title="تحميل نسخة مستقلة كاملة من هذا الملف / Download HTML Copy">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span id="download-label">تحميل نسخة HTML</span>
+      </button>
+
       <!-- 1-Click Print / Save Official PDF Button -->
-      <button class="print-doc-btn" onclick="window.print()" title="طباعة أو حفظ PDF رسمي">
+      <button class="print-doc-btn" id="btn-save-pdf" onclick="window.print()" title="طباعة أو حفظ PDF رسمي / Save PDF">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        <span id="print-label">طباعة / PDF</span>
+        <span id="print-label">حفظ PDF</span>
       </button>
 
       <!-- Trilingual Language Switcher -->
@@ -772,6 +801,99 @@
           <div class="metric-value">> 91%</div>
           <div class="metric-label" id="metric-4">هامش الربح الإجمالي (SaaS Gross Margin)</div>
         </div>
+      </div>
+    </section>
+
+    <!-- ================= EXECUTIVE ARCHITECTURE & FAST NAVIGATION MAP ================= -->
+    <section class="card exec-nav-map" style="margin-bottom: 2.5rem; background: var(--glass-panel); border: 1px solid var(--glass-border); border-radius: 24px; padding: 1.75rem 2rem;">
+      <div class="card-header" style="margin-bottom: 0.75rem;">
+        <h2 class="card-title" id="exec-nav-title" style="display:flex; align-items:center; gap:0.6rem; font-size:1.25rem;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--emerald-accent)" stroke-width="2.2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+          <span>خريطة التنقل التنفيذية الشاملة (Executive Architecture Map)</span>
+        </h2>
+        <span class="card-badge" style="background:var(--emerald-accent); color:#ffffff; font-weight:800; font-size:0.7rem; padding:0.2rem 0.6rem; border-radius:9999px;">Instant Deep Links</span>
+      </div>
+      <p id="exec-nav-sub" style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.5rem; line-height:1.5;">
+        انقر على أي قسم للانتقال الفوري إلى التفاصيل الهندسية، المخططات التفاعلية، ومحاكي الأرباح والتذاكر:
+      </p>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(270px, 1fr)); gap:1.2rem;">
+        
+        <!-- Group 1: Legal & Data -->
+        <div style="background:var(--glass-panel-hover); border:1px solid var(--glass-inner-border); border-radius:16px; padding:1.2rem;">
+          <div style="font-weight:800; font-size:0.85rem; color:var(--emerald-accent); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.4rem;">
+            <span>⚖️ القانون والبنية التحتية</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:0.45rem;">
+            <button onclick="switchChapter('01-legal')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
+              • الفصل 01: التكييف القانوني (قانون بنك المغرب 103-12 وPCI-DSS 4.0.1)
+            </button>
+            <button onclick="switchChapter('02-infra')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
+              • الفصل 02: معمارية السحابة وقاعدة البيانات (77 نموذج Prisma)
+            </button>
+            <button onclick="switchChapter('03-audit')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
+              • الفصل 03: مصفوفة التحقق البرمجي التام (Feature Truth Matrix)
+            </button>
+          </div>
+        </div>
+
+        <!-- Group 2: Payments & Economics -->
+        <div style="background:var(--glass-panel-hover); border:1px solid var(--glass-inner-border); border-radius:16px; padding:1.2rem;">
+          <div style="font-weight:800; font-size:0.85rem; color:var(--emerald-accent); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.4rem;">
+            <span>💳 الدفع والتذاكر والاقتصاد</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:0.45rem;">
+            <button onclick="switchChapter('04-tpe')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
+              • الفصل 04: محول TPE العالمي (7 بروتوكولات + آلة 11-State FSM)
+            </button>
+            <button onclick="switchChapter('05-economics')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
+              • الفصل 05: حاسبة وهوامش الأرباح (200 + 150 MAD مع هامش >91%)
+            </button>
+            <button onclick="switchChapter('06-simulator')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
+              • الفصل 06: محاكي التذاكر النظيفة والمعرض الحي (42 لقطة شاشة)
+            </button>
+            <button onclick="switchChapter('07-marketing')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
+              • الفصل 07: دليل التسويق ولوحات الموزعين وشركاء Shopify
+            </button>
+          </div>
+        </div>
+
+        <!-- Group 3: Defense & Security -->
+        <div style="background:var(--glass-panel-hover); border:1px solid var(--glass-inner-border); border-radius:16px; padding:1.2rem;">
+          <div style="font-weight:800; font-size:0.85rem; color:var(--emerald-accent); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.4rem;">
+            <span>🛡️ الأمن السيبراني والتحصين</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:0.45rem;">
+            <button onclick="switchChapter('08-pentest')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
+              • الفصل 08: تحصين كالي لينكس والطبقات الدفاعية التسع (Kali Wall)
+            </button>
+            <button onclick="switchChapter('12-seat-lock')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
+              • الفصل 12: قفل المقعد الفيزيائي وسماحية الاستعادة (1-Poste Hardware Lock)
+            </button>
+            <button onclick="switchChapter('13-cybersecurity')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
+              • الفصل 13: موسوعة الأمن السيبراني وبوتات الحراسة المجانية ($0 Bots)
+            </button>
+          </div>
+        </div>
+
+        <!-- Group 4: Autonomous & Local Engines -->
+        <div style="background:var(--glass-panel-hover); border:1px solid var(--glass-inner-border); border-radius:16px; padding:1.2rem;">
+          <div style="font-weight:800; font-size:0.85rem; color:var(--emerald-accent); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.4rem;">
+            <span>⚡ السرب الذكي والمحركات المحلية</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:0.45rem;">
+            <button onclick="switchChapter('09-swarm')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
+              • الفصل 09: السرب الميتوزي الذاتي (12-Agent Mitosis Swarm V2)
+            </button>
+            <button onclick="switchChapter('10-runtime')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
+              • الفصل 10: محركات WebGPU وTrigger.dev وتطبيق Tauri v2 المكتبي
+            </button>
+            <button onclick="switchChapter('11-geo')" style="text-align:inherit; background:transparent; border:none; color:var(--text-main); font-weight:700; font-size:0.82rem; cursor:pointer; padding:0.35rem 0.5rem; border-radius:8px; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='var(--glass-panel)'; this.style.color='var(--emerald-accent)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-main)';">
+              • الفصل 11: استكشاف محركات الذكاء (White-Hat GEO & llms.txt)
+            </button>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -971,14 +1093,14 @@
           <span class="card-badge">Zero Vaporware</span>
         </div>
         <p id="desc-03-1">
-          مقارنة حية لجميع الميزات المعلنة في الصفحة الرئيسية للتسويق مقابل الكود الفعلي المطبق في النظام:
+          مقارنة حية وشاملة لجميع الميزات والوعود التشغيلية المعلنة في صفحة التسويق وتطبيق سطح المكتب مقابل الكود المصدري الفعلي المطبق في النظام:
         </p>
 
         <div class="table-container">
           <table>
             <thead>
               <tr>
-                <th id="th-ft-claim">الميزة / الوعد التجاري</th>
+                <th id="th-ft-claim">الميزة / القدرة التشغيلية</th>
                 <th id="th-ft-file">ملف الكود المصدري المطبق</th>
                 <th id="th-ft-mech">الآلية الهندسية الفعلية</th>
                 <th id="th-ft-status">نتيجة الفحص الحي</th>
@@ -987,60 +1109,142 @@
             <tbody>
               <tr>
                 <td><strong>نظام كيس يشتغل دون إنترنت 100%</strong></td>
-                <td><code>src/client/db.ts</code>, <code>public/sw.js</code></td>
-                <td>قاعدة بيانات IndexedDB عبر Dexie.js + طابور مزامنة خلفي ذكي</td>
+                <td><code>src/client/db.ts</code>, <code>public/sw.js</code>, <code>offline-tamper-seal.ts</code></td>
+                <td>قاعدة بيانات IndexedDB عبر Dexie.js + طابور مزامنة خلفي مؤمن بختم ECDSA P-256</td>
                 <td><span class="status-pill">✓ PASS</span></td>
               </tr>
               <tr>
                 <td><strong>ربط TPE بدون إعادة إدخال المبلغ</strong></td>
                 <td><code>src/lib/tpe/TpeTransactionBridge.ts</code></td>
-                <td>آلة حالات 11-State FSM مع حماية انقطاع الشبكة وقفل المبلغ</td>
+                <td>آلة حالات 11-State FSM مع حماية انقطاع الشبكة وقفل المبلغ التلقائي</td>
                 <td><span class="status-pill">✓ PASS</span></td>
               </tr>
               <tr>
                 <td><strong>ميزان الخضر والفواكه الذكي (PLU)</strong></td>
-                <td><code>SquarePluScalePanel.tsx</code></td>
-                <td>لوحة أزرار لمسية مع صور المنتجات ومعدل الوزن <code>- 0.250kg +</code></td>
+                <td><code>SquarePluScalePanel.tsx</code>, <code>QuickProductModal.tsx</code></td>
+                <td>لوحة أزرار لمسية مصورة، تصفير الفارغ (Tare)، ومعدل وزن فوري <code>- 0.250kg +</code></td>
                 <td><span class="status-pill">✓ PASS</span></td>
               </tr>
               <tr>
                 <td><strong>تذاكر حرارية مطابقة للمعايير المغربية</strong></td>
-                <td><code>ThermalReceipt.tsx</code></td>
-                <td>عنوان واحد، اسم متجر واحد، إخفاء الهاتف، وأسعار صافية TTC</td>
+                <td><code>ThermalReceipt.tsx</code>, <code>src/client/printing/index.ts</code></td>
+                <td>عنوان واحد، اسم متجر واحد، إخفاء الهاتف، أسعار صافية TTC، وفرض <code>dir="ltr"</code></td>
                 <td><span class="status-pill">✓ PASS</span></td>
               </tr>
               <tr>
                 <td><strong>توليد باركود وQR دون تكلفة سحابية</strong></td>
                 <td><code>src/lib/tpe/client-codes.ts</code></td>
-                <td>خوارزمية pure TypeScript vector SVG لتوليد Code 128 وQR Code</td>
+                <td>خوارزمية pure TypeScript vector SVG لتوليد Code 128 وQR Code بحقل غالوا GF(256)</td>
                 <td><span class="status-pill">✓ PASS</span></td>
               </tr>
               <tr>
-                <td><strong>شاشات المطبخ الذكية (KDS)</strong></td>
-                <td><code>src/app/[locale]/restaurant/kds/</code></td>
-                <td>توزيع الطلبات حسب محطة الطبخ مع تنبيهات تأخير ملونة</td>
+                <td><strong>شاشات المطبخ الذكية (KDS) وصندوق النداء</strong></td>
+                <td><code>src/app/[locale]/restaurant/kds/</code>, <code>ThermalReceipt.tsx</code></td>
+                <td>توزيع الطلبات حسب محطة الطبخ مع تنبيهات تأخير ملونة وصندوق رقم النداء <code>#Order</code></td>
                 <td><span class="status-pill">✓ PASS</span></td>
               </tr>
               <tr>
                 <td><strong>مساعد كسب الذكي KASPI AI</strong></td>
-                <td><code>AIChatWidget.tsx</code></td>
-                <td>ذكاء اصطناعي صوتي ونصي مدمج لتحليل المبيعات والمخزون</td>
+                <td><code>AIChatWidget.tsx</code>, <code>src/app/api/ai/</code></td>
+                <td>ذكاء اصطناعي صوتي ونصي مدمج لتحليل المبيعات والمخزون مع حدود استهلاك صارمة</td>
                 <td><span class="status-pill">✓ PASS</span></td>
               </tr>
               <tr>
                 <td><strong>تطبيق مكتبي سريع وخفيف (Tauri 2.0)</strong></td>
                 <td><code>src-tauri/</code></td>
-                <td>كود Rust مدمج (<15MB RAM) مع طباعة مباشرة عبر منافذ COM وUSB</td>
+                <td>كود Rust مدمج (<15MB RAM) مع طباعة مباشرة عبر منافذ COM وUSB دون تعريفات معقدة</td>
                 <td><span class="status-pill">✓ PASS</span></td>
               </tr>
               <tr>
                 <td><strong>تسعير ثابت: 200 درهم + 150 للإضافي</strong></td>
-                <td><code>subscription-manager.ts</code></td>
-                <td>معادلة برمجية صارمة تمنع التكاليف الخفية وتضمن فتح كافة الميزات</td>
+                <td><code>subscription-manager.ts</code>, <code>schema.prisma</code></td>
+                <td>معادلة برمجية صارمة تمنع التكاليف الخفية وتضمن فتح كافة الميزات مع هامش >91%</td>
+                <td><span class="status-pill">✓ PASS</span></td>
+              </tr>
+              <tr>
+                <td><strong>إعدادات المتجر ونسب الضريبة المغربية</strong></td>
+                <td><code>src/lib/fiscal/morocco-tax.ts</code>, <code>settings/page.tsx</code></td>
+                <td>دعم كامل لنسب TVA المغربية (0%, 7%, 10%, 14%, 20%)، عملة MAD، وضبط الترويسة والتذييل</td>
+                <td><span class="status-pill">✓ PASS</span></td>
+              </tr>
+              <tr>
+                <td><strong>دورات الصندوق ومطابقة العهدة (Cash Shifts)</strong></td>
+                <td><code>src/app/api/v1/cash-sessions/</code>, <code>CashShiftModal.tsx</code></td>
+                <td>تسجيل العهدة الافتتاحية، حركات الإيداع والسحب، ومطابقة النقد الفعلي بالمحسوب مع تقرير Z</td>
+                <td><span class="status-pill">✓ PASS</span></td>
+              </tr>
+              <tr>
+                <td><strong>السلات المعلقة المتعددة (Held Carts)</strong></td>
+                <td><code>src/components/pos/HeldCartsDrawer.tsx</code>, <code>src/client/db.ts</code></td>
+                <td>تعليق سلات متعددة بأسماء الزبائن وتوقيتها لمنع تعطيل طابور الدفع مع استرجاعها بضغطة زر</td>
+                <td><span class="status-pill">✓ PASS</span></td>
+              </tr>
+              <tr>
+                <td><strong>المنتج السريع ومدقق الأسعار الفوري</strong></td>
+                <td><code>QuickProductModal.tsx</code>, <code>PriceVerifierModal.tsx</code></td>
+                <td>إنشاء منتج فوري من لوحة المفاتيح أثناء البيع، ومسح الباركود للاستعلام عن السعر والمخزون</td>
+                <td><span class="status-pill">✓ PASS</span></td>
+              </tr>
+              <tr>
+                <td><strong>قفل المقعد بجهاز واحد واستعادة الحاسوب الأصلي</strong></td>
+                <td><code>src/server/security/poste-guard.ts</code>, <code>conflict-ticket/</code></td>
+                <td>بصمة عتادية SHA-256، قفل فوري <code>DUAL_LOCKDOWN</code>، وسماحية استعادة بعد الإغلاق النظيف</td>
+                <td><span class="status-pill">✓ PASS</span></td>
+              </tr>
+              <tr>
+                <td><strong>مركز القيادة للمدير العام وتذاكر النزاع</strong></td>
+                <td><code>src/app/admin/</code>, <code>src/app/admin/conflict-tickets/</code></td>
+                <td>إدارة أسطول المتاجر والمقاعد، مراجعة لقطات الشاشة المرفقة للنزاع، وفك القفل فورياً</td>
+                <td><span class="status-pill">✓ PASS</span></td>
+              </tr>
+              <tr>
+                <td><strong>التحصين السيبراني وبوتات الحراسة المجانية</strong></td>
+                <td><code>kaspi-ironclad-guard.ts</code>, <code>.github/workflows/</code></td>
+                <td>صد Prototype Pollution وCSRF وSSRF وإغلاق ثغرة Next.js CVE-2025-29927 وبوتات $0</td>
                 <td><span class="status-pill">✓ PASS</span></td>
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Sector Blueprints Operational Grid -->
+      <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-header">
+          <h3 class="card-title" style="display:flex; align-items:center; gap:0.5rem; font-size:1.15rem;">
+            <span>🏪 المخططات التشغيلية للقطاعات التجارية (Sector Blueprints)</span>
+          </h3>
+          <span class="card-badge">Multi-Industry Engine</span>
+        </div>
+        <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.25rem;">
+          يتكيف محرك كسب فورياً مع طبيعة النشاط التجاري للمتجر دون الحاجة إلى تثبيت نسخ منفصلة:
+        </p>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:1.25rem;">
+          <div style="background:var(--glass-panel); border:1px solid var(--glass-inner-border); border-radius:14px; padding:1.25rem;">
+            <div style="font-weight:800; font-size:0.95rem; color:var(--emerald-accent); margin-bottom:0.5rem;">🥬 السوبرماركت ومحلات الخضر والفواكه</div>
+            <p style="font-size:0.83rem; color:var(--text-muted); line-height:1.5;">لوحة أزرار لمسية مصورة للأصناف الوزنية (PLU)، دعم تصفير وزن الإناء (Tare)، ومعدل وزن فوري بضغطة زر <code>- 0.250kg +</code> لسرعة الوزن والمحاسبة.</p>
+          </div>
+          <div style="background:var(--glass-panel); border:1px solid var(--glass-inner-border); border-radius:14px; padding:1.25rem;">
+            <div style="font-weight:800; font-size:0.95rem; color:var(--emerald-accent); margin-bottom:0.5rem;">☕ المقاهي والمطاعم الذكية</div>
+            <p style="font-size:0.83rem; color:var(--text-muted); line-height:1.5;">شاشات المطبخ الرقمية (KDS) لتوزيع الطلبات حسب محطة التحضير (مطبخ، بار، شواية)، تنبيهات تأخير ملونة، وطباعة صندوق رقم النداء العريض <code>#Order</code> على تذكرة الزبون.</p>
+          </div>
+          <div style="background:var(--glass-panel); border:1px solid var(--glass-inner-border); border-radius:14px; padding:1.25rem;">
+            <div style="font-weight:800; font-size:0.95rem; color:var(--emerald-accent); margin-bottom:0.5rem;">👗 محلات التجزئة والألبسة</div>
+            <p style="font-size:0.83rem; color:var(--text-muted); line-height:1.5;">مسح فوري بالباركود الضوئي، مصفوفة المقاسات والألوان متعددة المتغيرات، وتنبيهات إعادة طلب المخزون التلقائية عند الوصول إلى الحد الأدنى.</p>
+          </div>
+          <div style="background:var(--glass-panel); border:1px solid var(--glass-inner-border); border-radius:14px; padding:1.25rem;">
+            <div style="font-weight:800; font-size:0.95rem; color:var(--emerald-accent); margin-bottom:0.5rem;">💊 الصيدليات ومستحضرات التجميل</div>
+            <p style="font-size:0.83rem; color:var(--text-muted); line-height:1.5;">تتبع صارم لتاريخ نهاية الصلاحية (DLC)، تسجيل أرقام التشغيلات (Batch/Lot)، والتنبيه للأدوية المنتهية الصلاحية مع خانة توثيق الوصفة الطبية.</p>
+          </div>
+          <div style="background:var(--glass-panel); border:1px solid var(--glass-inner-border); border-radius:14px; padding:1.25rem;">
+            <div style="font-weight:800; font-size:0.95rem; color:var(--emerald-accent); margin-bottom:0.5rem;">🍔 مطاعم الوجبات السريعة (Fast-Food)</div>
+            <p style="font-size:0.83rem; color:var(--text-muted); line-height:1.5;">تجميع الوجبات السريعة المركبة، اختيار الإضافات والصلصات والمشروبات بلمسة واحدة، تجزئة الفاتورة (Split Bill)، ومحاسبة فائقة السرعة.</p>
+          </div>
+          <div style="background:var(--glass-panel); border:1px solid var(--glass-inner-border); border-radius:14px; padding:1.25rem;">
+            <div style="font-weight:800; font-size:0.95rem; color:var(--emerald-accent); margin-bottom:0.5rem;">🧾 معايير التذاكر والأسعار الصافية TTC</div>
+            <p style="font-size:0.83rem; color:var(--text-muted); line-height:1.5;">نمط <code>INCLUSIVE_CLEAN</code>: 100 درهم على الرف تبقى 100 درهم في التذكرة دون زيادات، مع اسم متجر واحد وعنوان واحد وإخفاء الهاتف لمنع الفوضى البصرية.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -1933,6 +2137,21 @@
 
   <!-- ================= JAVASCRIPT LOGIC & TRILINGUAL DICTIONARY ================= -->
   <script>
+    // 0. PURE CLIENT-SIDE OFFLINE DOSSIER DOWNLOAD (BLOB)
+    function downloadDossierHtml() {
+      const blob = new Blob(['<!DOCTYPE html>\n' + document.documentElement.outerHTML], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'KASPI_POS_INTERACTIVE_MASTER_DOSSIER.html';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 500);
+    }
+
     // 1. TRILINGUAL SYMMETRIC DICTIONARY
     const i18n = {
       ar: {
@@ -1956,7 +2175,10 @@
         tab11: "11. استكشاف محركات الذكاء (GEO & llms.txt Strategy)",
         tab12: "12. حماية المقاعد وقفل الأجهزة (Hardware Seat Lock & Grace)",
         tab13: "13. موسوعة الأمن السيبراني والتحصين الهندسي (Global Cybersecurity)",
-        printLabel: "طباعة / PDF",
+        downloadLabel: "تحميل نسخة HTML",
+        printLabel: "حفظ PDF",
+        execNavTitle: "خريطة التنقل التنفيذية الشاملة (Executive Architecture Map)",
+        execNavSub: "انقر على أي قسم للانتقال الفوري إلى التفاصيل الهندسية، المخططات التفاعلية، ومحاكي الأرباح والتذاكر:",
         searchPlaceholder: "بحث فوري في الملف... / Search...",
         sliderLabel: "عدد أجهزة الكاشير النشطة (Active Postes):",
         lblMrr: "الإيراد الشهري المتكرر (MRR)",
@@ -1986,7 +2208,10 @@
         tab11: "11. Stratégie IA Fait-Maison (GEO & llms.txt)",
         tab12: "12. Intégrité des Postes & Verrouillage (1-Poste Hardware Binding)",
         tab13: "13. Encyclopédie Cybersécurité & Défense (Zero-Breach Architecture)",
-        printLabel: "Imprimer / PDF",
+        downloadLabel: "Télécharger HTML",
+        printLabel: "Exporter PDF",
+        execNavTitle: "Carte de Navigation Exécutive Globale",
+        execNavSub: "Cliquez sur une section pour naviguer immédiatement vers les détails d'architecture, schémas et simulateur :",
         searchPlaceholder: "Rechercher dans le dossier...",
         sliderLabel: "Nombre de Postes de Caisse Actifs :",
         lblMrr: "Revenu Récurrent Mensuel (MRR)",
@@ -2016,7 +2241,10 @@
         tab11: "11. White-Hat AI Discovery (GEO Strategy)",
         tab12: "12. Seat Integrity & Hardware Lock (1-Poste Binding & Customer Grace)",
         tab13: "13. Global Cybersecurity & Vulnerability Encyclopedia (Zero-Breach Defense)",
-        printLabel: "Print / PDF",
+        downloadLabel: "Download HTML Copy",
+        printLabel: "Save PDF",
+        execNavTitle: "Executive Architecture & Fast Navigation Map",
+        execNavSub: "Click any section below to jump instantly to engineering specifications, interactive diagrams, and calculators:",
         searchPlaceholder: "Search dossier...",
         sliderLabel: "Active POS Registers (Postes):",
         lblMrr: "Monthly Recurring Revenue (MRR)",
@@ -2061,8 +2289,14 @@
       if (document.getElementById("tab-11")) document.getElementById("tab-11").textContent = dict.tab11;
       if (document.getElementById("tab-12")) document.getElementById("tab-12").textContent = dict.tab12;
       if (document.getElementById("tab-13")) document.getElementById("tab-13").textContent = dict.tab13;
+      if (document.getElementById("download-label")) document.getElementById("download-label").textContent = dict.downloadLabel;
       if (document.getElementById("print-label")) document.getElementById("print-label").textContent = dict.printLabel;
       if (document.getElementById("dossier-search")) document.getElementById("dossier-search").placeholder = dict.searchPlaceholder;
+      if (document.getElementById("exec-nav-title")) {
+        const titleSpan = document.getElementById("exec-nav-title").querySelector("span");
+        if (titleSpan) titleSpan.textContent = dict.execNavTitle;
+      }
+      if (document.getElementById("exec-nav-sub")) document.getElementById("exec-nav-sub").textContent = dict.execNavSub;
 
       document.getElementById("slider-label").textContent = dict.sliderLabel;
       document.getElementById("lbl-mrr").textContent = dict.lblMrr;

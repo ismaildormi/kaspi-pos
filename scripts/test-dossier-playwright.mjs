@@ -16,9 +16,9 @@ async function run() {
   let totalErrors = 0;
 
   try {
-    // 1. Desktop Check (1280x720)
-    console.log("\n[1] Testing Desktop Viewport (1280x720)...");
-    const deskContext = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    // 1. Desktop Check (1440x900)
+    console.log("\n[1] Testing Desktop Viewport (1440x900)...");
+    const deskContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const deskPage = await deskContext.newPage();
 
     const consoleErrors = [];
@@ -30,25 +30,54 @@ async function run() {
 
     await deskPage.goto(FILE_URL, { waitUntil: "load" });
 
+    // Verify Download HTML & Save PDF buttons exist
+    const btnDownload = await deskPage.locator("#btn-download-html");
+    const btnDownloadCount = await btnDownload.count();
+    console.log("Download HTML button exists:", btnDownloadCount === 1);
+    if (btnDownloadCount !== 1) {
+      consoleErrors.push("Download HTML button #btn-download-html missing");
+    }
+
+    const btnPdf = await deskPage.locator("#btn-save-pdf");
+    const btnPdfCount = await btnPdf.count();
+    console.log("Save PDF button exists:", btnPdfCount === 1);
+    if (btnPdfCount !== 1) {
+      consoleErrors.push("Save PDF button #btn-save-pdf missing");
+    }
+
+    // Verify Executive Navigation Map exists
+    const execMap = await deskPage.locator(".exec-nav-map");
+    const execMapCount = await execMap.count();
+    console.log("Executive Navigation Map exists:", execMapCount === 1);
+    if (execMapCount !== 1) {
+      consoleErrors.push("Executive Navigation Map .exec-nav-map missing");
+    }
+
     // Test Theme toggle
     await deskPage.evaluate(() => toggleTheme());
     const themeAfterToggle = await deskPage.evaluate(() => document.documentElement.getAttribute("data-theme"));
     console.log("Theme after toggle:", themeAfterToggle);
 
-    // Test Languages (ar, fr, en)
+    // Test Languages (ar, fr, en) and verify dir attribute
     for (const lang of ["ar", "fr", "en"]) {
       await deskPage.evaluate((l) => setLocale(l), lang);
       const title = await deskPage.textContent("#hero-title");
-      console.log(`Language [${lang}] title rendered:`, title.substring(0, 40) + "...");
+      const dir = await deskPage.evaluate(() => document.documentElement.getAttribute("dir"));
+      console.log(`Language [${lang}] (dir=${dir}) title rendered:`, title.substring(0, 40) + "...");
     }
 
-    // Test Chapter navigation to Chapter 13
-    await deskPage.evaluate(() => switchChapter("13-cybersecurity"));
-    const sec13Visible = await deskPage.evaluate(() => {
-      const el = document.getElementById("sec-13-cybersecurity");
-      return el && el.classList.contains("active");
-    });
-    console.log("Chapter 13 active status:", sec13Visible);
+    // Test Chapter navigation
+    for (const chap of ["01-legal", "03-audit", "04-tpe", "05-economics", "12-seat-lock", "13-cybersecurity"]) {
+      await deskPage.evaluate((c) => switchChapter(c), chap);
+      const isVisible = await deskPage.evaluate((c) => {
+        const el = document.getElementById("sec-" + c);
+        return el && el.classList.contains("active");
+      }, chap);
+      console.log(`Chapter ${chap} active status:`, isVisible);
+      if (!isVisible) {
+        consoleErrors.push(`Chapter sec-${chap} failed to activate`);
+      }
+    }
 
     // Test Screenshots presence
     const imgCount = await deskPage.evaluate(() => document.querySelectorAll("img").length);
@@ -58,7 +87,7 @@ async function run() {
       console.error("Desktop Console Errors:", consoleErrors);
       totalErrors += consoleErrors.length;
     } else {
-      console.log("[PASS] Desktop 1280x720 passed with 0 console errors.");
+      console.log("[PASS] Desktop 1440x900 passed with 0 console errors.");
     }
     await deskContext.close();
 
@@ -81,7 +110,7 @@ async function run() {
       const slider = document.getElementById("calc-slider");
       if (slider) {
         slider.value = 5;
-        updateCalculator();
+        updateCalculator(5);
       }
     });
     const mrrVal = await mobPage.textContent("#calc-mrr");
