@@ -23,8 +23,6 @@ import {
   MicOff,
   Volume2,
   VolumeX,
-  GripHorizontal,
-  Languages,
 } from "lucide-react";
 
 interface LocalChatMessage {
@@ -218,10 +216,10 @@ export function AIChatWidget() {
 
   // 100% Free Zero-Token Voice Engine States (Browser Web Speech API)
   const [isListening, setIsListening] = useState(false);
+  const isListeningRef = useRef(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [ttsSupported, setTtsSupported] = useState(false);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
-  const [autoSpeak, setAutoSpeak] = useState(false);
   const recognitionRef = useRef<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -232,14 +230,10 @@ export function AIChatWidget() {
   const [activeLocale, setActiveLocale] = useState<SupportedLocale>(() =>
     resolveCurrentLocale(pathname)
   );
-  const [voiceLocale, setVoiceLocale] = useState<SupportedLocale>(() =>
-    resolveCurrentLocale(pathname)
-  );
 
   useEffect(() => {
     const loc = resolveCurrentLocale(pathname);
     setActiveLocale(loc);
-    setVoiceLocale(loc);
   }, [pathname]);
 
   const t = AI_I18N[activeLocale] || AI_I18N.ar;
@@ -397,7 +391,7 @@ export function AIChatWidget() {
 
   const isLoading = status === "submitted" || status === "streaming" || isLocalThinking;
 
-  // Zero-Token Text-to-Speech (TTS) Reader
+  // Zero-Token Text-to-Speech (TTS) Reader with Automatic Language Detection
   const speakMessage = (messageId: string, rawText: string) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
 
@@ -419,15 +413,20 @@ export function AIChatWidget() {
     if (!cleanText) return;
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang =
-      voiceLocale === "ar" ? "ar-SA" : voiceLocale === "fr" ? "fr-FR" : "en-US";
+
+    // Intelligent Automatic Language Detection for Spoken Reply (Zero Manual Buttons)
+    const isArabic = /[\u0600-\u06FF]/.test(cleanText);
+    const isFrench = /\b(le|la|les|un|une|des|du|de|en|est|sont|pour|dans|avec|ventes|stock|facture|recette|aujourd'hui|dh|mad)\b/i.test(cleanText);
+    const detectedLangCode = isArabic ? "ar-SA" : (isFrench ? "fr-FR" : "en-US");
+    const langPrefix = isArabic ? "ar" : (isFrench ? "fr" : "en");
+
+    utterance.lang = detectedLangCode;
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
 
     try {
       const voices = window.speechSynthesis.getVoices();
-      const prefix = voiceLocale === "ar" ? "ar" : voiceLocale === "fr" ? "fr" : "en";
-      const matched = voices.find((v) => v.lang.toLowerCase().startsWith(prefix));
+      const matched = voices.find((v) => v.lang.toLowerCase().startsWith(langPrefix));
       if (matched) {
         utterance.voice = matched;
       }
@@ -441,7 +440,8 @@ export function AIChatWidget() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Zero-Token Speech-to-Text (STT) Voice Input Handler
+  // Zero-Token Continuous Speech-to-Text (STT) Voice Input Handler
+  // Stays open continuously without early cutoff; auto-detects multilingual speech (Darija, FR, EN)
   const toggleListening = () => {
     if (!speechSupported) {
       alert(t.voiceNotSupported);
@@ -449,6 +449,7 @@ export function AIChatWidget() {
     }
 
     if (isListening) {
+      isListeningRef.current = false;
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
@@ -464,40 +465,57 @@ export function AIChatWidget() {
       const recognition = new SpeechRec();
       recognitionRef.current = recognition;
 
-      // Map language: ar -> Moroccan Arabic 'ar-MA' (fallback ar-SA), fr -> 'fr-FR', en -> 'en-US'
-      recognition.lang =
-        voiceLocale === "ar" ? "ar-MA" : voiceLocale === "fr" ? "fr-FR" : "en-US";
-      recognition.continuous = false;
+      // Continuous mode: keeps listening without cutting off while user pauses or thinks
+      recognition.continuous = true;
       recognition.interimResults = true;
+
+      // Automatic speech detection: Moroccan Arabic / Darija base with seamless
+      // bilingual Arabic + French ("facture", "crédit", "DH") and English code-switching
+      const navLang = typeof navigator !== "undefined" ? navigator.language || "" : "";
+      recognition.lang = navLang.startsWith("fr") ? "fr-FR" : navLang.startsWith("en") ? "en-US" : "ar-MA";
+
+      isListeningRef.current = true;
 
       recognition.onstart = () => {
         setIsListening(true);
       };
 
       recognition.onresult = (event: any) => {
-        let finalTranscript = "";
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
-          } else {
-            setInput(event.results[i][0].transcript);
-          }
+        let fullTranscript = "";
+        for (let i = 0; i < event.results.length; ++i) {
+          fullTranscript += event.results[i][0].transcript;
         }
-        if (finalTranscript) {
-          setInput(finalTranscript);
+        if (fullTranscript) {
+          setInput(fullTranscript);
         }
       };
 
-      recognition.onerror = () => {
-        setIsListening(false);
+      recognition.onerror = (e: any) => {
+        // Do not abort on transient silence or pause
+        if (e.error !== "no-speech") {
+          isListeningRef.current = false;
+          setIsListening(false);
+        }
       };
 
       recognition.onend = () => {
-        setIsListening(false);
+        // If the browser times out on silence while user is still in listening mode,
+        // automatically restart listening seamlessly without interrupting the user!
+        if (isListeningRef.current) {
+          try {
+            recognition.start();
+          } catch {
+            isListeningRef.current = false;
+            setIsListening(false);
+          }
+        } else {
+          setIsListening(false);
+        }
       };
 
       recognition.start();
     } catch {
+      isListeningRef.current = false;
       setIsListening(false);
     }
   };
@@ -781,20 +799,14 @@ export function AIChatWidget() {
             }`}
           >
             <div className="relative w-full h-[590px] max-h-[calc(100vh-4.5rem)] kaspi-polar-aurora-orbit kaspi-ai-assistant-shield rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-              {/* Header with Grip Drag Handle, Voice Language Selector & Apple Back Button */}
+              {/* Header with Dragging on Header & Clean Apple Back Button */}
               <div
                 onMouseDown={handleDragStart}
                 onTouchStart={handleDragStart}
-                className="border-b border-white/15 text-[var(--kaspi-text-primary)] px-3.5 py-3 flex items-center justify-between shadow-xs shrink-0 cursor-grab active:cursor-grabbing select-none"
+                className="border-b border-white/15 text-[var(--kaspi-text-primary)] px-4 py-3 flex items-center justify-between shadow-xs shrink-0 cursor-grab active:cursor-grabbing select-none"
                 title={t.dragTooltip}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div
-                    className="p-1 rounded-lg text-zinc-400 hover:text-white kaspi-glass-surface flex items-center justify-center shrink-0"
-                    title={t.dragTooltip}
-                  >
-                    <GripHorizontal className="w-4 h-4" />
-                  </div>
                   <div className="w-8 h-8 rounded-full kaspi-glass-surface flex items-center justify-center shrink-0">
                     <Bot className="w-4 h-4 text-[var(--kaspi-text-primary)]" />
                   </div>
@@ -814,64 +826,7 @@ export function AIChatWidget() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {/* Free Voice Language Selector Pill */}
-                  <div className="inline-flex items-center gap-0.5 p-0.5 rounded-lg kaspi-glass-surface border border-white/10 text-[10px]">
-                    <button
-                      type="button"
-                      onClick={() => setVoiceLocale("ar")}
-                      className={`px-1.5 py-0.5 rounded font-semibold transition-colors cursor-pointer ${
-                        voiceLocale === "ar"
-                          ? "bg-emerald-500 text-white shadow-xs"
-                          : "text-zinc-400 hover:text-white"
-                      }`}
-                      title="العربية والدارجة المغربية"
-                    >
-                      AR
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setVoiceLocale("fr")}
-                      className={`px-1.5 py-0.5 rounded font-semibold transition-colors cursor-pointer ${
-                        voiceLocale === "fr"
-                          ? "bg-emerald-500 text-white shadow-xs"
-                          : "text-zinc-400 hover:text-white"
-                      }`}
-                      title="Français"
-                    >
-                      FR
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setVoiceLocale("en")}
-                      className={`px-1.5 py-0.5 rounded font-semibold transition-colors cursor-pointer ${
-                        voiceLocale === "en"
-                          ? "bg-emerald-500 text-white shadow-xs"
-                          : "text-zinc-400 hover:text-white"
-                      }`}
-                      title="English"
-                    >
-                      EN
-                    </button>
-                  </div>
-
-                  {/* Auto-Read Voice Toggle Button */}
-                  {ttsSupported && (
-                    <button
-                      type="button"
-                      onClick={() => setAutoSpeak((prev) => !prev)}
-                      className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                        autoSpeak
-                          ? "bg-emerald-500/25 border-emerald-500/40 text-emerald-400"
-                          : "kaspi-glass-surface border-white/10 text-zinc-400 hover:text-white"
-                      }`}
-                      title={t.voiceAutoSpeak}
-                      aria-label={t.voiceAutoSpeak}
-                    >
-                      {autoSpeak ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                    </button>
-                  )}
-
+                <div className="flex items-center gap-2 shrink-0">
                   {/* Strictly Closes Window Only on Explicit Click */}
                   <AppleBackButton
                     onClick={() => setIsOpen(false)}
