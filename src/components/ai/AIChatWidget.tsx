@@ -272,7 +272,12 @@ export function AIChatWidget() {
   const [speechSupported, setSpeechSupported] = useState(false);
   const [ttsSupported, setTtsSupported] = useState(false);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  const [micConnected, setMicConnected] = useState<boolean>(true);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const lastSpokenMessageIdRef = useRef<string | null>(null);
 
   // Real-time Audio Waveform Visualizer States (Web Audio API)
   const [audioWave, setAudioWave] = useState<number[]>([4, 6, 8, 12, 16, 20, 16, 12, 8, 14, 18, 12, 8, 6, 4, 3]);
@@ -499,15 +504,84 @@ export function AIChatWidget() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Real-time Audio Waveform Visualizer (Web Audio API - 100% Free Client-Side)
+  // Web Audio Synthesizer Sound Cue (Pleasant visionOS Tone Confirmation)
+  const playSoundCue = (type: "start" | "stop" | "success") => {
+    try {
+      if (typeof window === "undefined") return;
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      const now = ctx.currentTime;
+      if (type === "start") {
+        // Pleasant rising chime (520Hz -> 720Hz)
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(720, now + 0.12);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      } else if (type === "success") {
+        // Warm confirmation chord
+        osc.frequency.setValueAtTime(660, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else {
+        // Soft descending tone (440Hz -> 330Hz)
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(330, now + 0.1);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+      setTimeout(() => {
+        try {
+          ctx.close();
+        } catch {}
+      }, 300);
+    } catch {}
+  };
+
+  // Real-time Audio Waveform Visualizer & MediaRecorder (Web Audio API - 100% Free Client-Side)
   const startAudioVisualizer = async () => {
     try {
       if (typeof window === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+        setMicConnected(false);
         startSimulatedWave();
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       micStreamRef.current = stream;
+      setMicConnected(true);
+
+      // Initialize MediaRecorder for Whisper multilingual transcription
+      audioChunksRef.current = [];
+      try {
+        const mimeType =
+          typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+            ? "audio/webm;codecs=opus"
+            : typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("audio/webm")
+            ? "audio/webm"
+            : "audio/mp4";
+        const recorder = new MediaRecorder(stream, { mimeType });
+        recorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
+        recorder.start(250);
+        mediaRecorderRef.current = recorder;
+      } catch (recErr) {
+        console.warn("[KASPI MediaRecorder] Notice:", recErr);
+      }
 
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       const ctx = new AudioCtx();
@@ -539,7 +613,9 @@ export function AIChatWidget() {
       };
 
       animFrameRef.current = requestAnimationFrame(updateWave);
-    } catch {
+    } catch (err: any) {
+      console.warn("[KASPI Voice] Mic stream notice:", err);
+      setMicConnected(false);
       startSimulatedWave();
     }
   };
@@ -563,6 +639,11 @@ export function AIChatWidget() {
       cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = null;
     }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {}
+    }
     if (micStreamRef.current) {
       micStreamRef.current.getTracks().forEach((track) => track.stop());
       micStreamRef.current = null;
@@ -576,20 +657,78 @@ export function AIChatWidget() {
     setAudioWave([4, 6, 8, 12, 16, 20, 16, 12, 8, 14, 18, 12, 8, 6, 4, 3]);
   };
 
+  // Finalize voice recording, transcribe via Groq Whisper with multilingual code-switching, and submit or fill input
+  const finishVoiceInputAndTranscribe = async (autoSubmit = false) => {
+    isListeningRef.current = false;
+    setIsListening(false);
+    playSoundCue("stop");
+    stopAudioVisualizer();
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {}
+    }
+
+    const currentInputText = input.trim();
+
+    // If audio was captured, run Whisper multilingual transcription
+    if (audioChunksRef.current.length > 0) {
+      setIsTranscribing(true);
+      try {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const fd = new FormData();
+        fd.append("file", audioBlob, "audio.webm");
+
+        const res = await fetch("/api/ai/transcribe", {
+          method: "POST",
+          body: fd,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.text && data.text.trim()) {
+            const transcribed = data.text.trim();
+            setInput(transcribed);
+            if (autoSubmit) {
+              setAutoSpeak(true);
+              setTimeout(() => {
+                handleQuickPrompt(transcribed);
+              }, 60);
+              setIsTranscribing(false);
+              return;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[KASPI Transcribe] Notice:", err);
+      } finally {
+        setIsTranscribing(false);
+      }
+    }
+
+    if (autoSubmit) {
+      setAutoSpeak(true);
+      const query =
+        currentInputText ||
+        (activeLocale === "ar"
+          ? "كم مبيعات اليوم وما هي السلع المنخفضة في المخزون؟"
+          : "Quelles sont les ventes d'aujourd'hui et le stock faible ?");
+      handleQuickPrompt(query);
+    }
+  };
+
   // Zero-Token Continuous Voice Engine (Web Audio API + Resilient Speech-to-Text)
   // Guaranteed to open and visualize sound in any environment (Chrome, Safari, Edge, Tauri WebView)
   const toggleListening = async () => {
     if (isListening) {
-      isListeningRef.current = false;
-      stopAudioVisualizer();
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch {}
-      }
-      setIsListening(false);
+      await finishVoiceInputAndTranscribe(false);
       return;
     }
+
+    // Play pleasant activation sound cue so user hears it immediately
+    playSoundCue("start");
+    setAutoSpeak(true);
 
     // Immediately activate listening state and start real-time audio visualizer
     isListeningRef.current = true;
@@ -624,8 +763,6 @@ export function AIChatWidget() {
         };
 
         recognition.onerror = (e: any) => {
-          // Do not kill the voice session on transient network or silence errors!
-          // Keep audio visualizer alive so the merchant can still speak and submit.
           console.warn("[KASPI Voice] STT notice:", e?.error);
         };
 
@@ -633,9 +770,7 @@ export function AIChatWidget() {
           if (isListeningRef.current) {
             try {
               recognition.start();
-            } catch {
-              // Gracefully stay in audio recording mode without dropping the bar
-            }
+            } catch {}
           }
         };
 
@@ -1438,7 +1573,7 @@ export function AIChatWidget() {
                   {/* Right: Pause/Stop button [■] */}
                   <button
                     type="button"
-                    onClick={toggleListening}
+                    onClick={() => finishVoiceInputAndTranscribe(false)}
                     className="w-8 h-8 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-xs"
                     title={t.voiceStop}
                     aria-label={t.voiceStop}
@@ -1449,21 +1584,7 @@ export function AIChatWidget() {
                   {/* Far Right: Submit button [↑] */}
                   <button
                     type="button"
-                    onClick={() => {
-                      const textToSend =
-                        input.trim() ||
-                        (activeLocale === "ar"
-                          ? "كم مبيعات اليوم وما هي المنتجات الأكثر مبيعاً؟"
-                          : activeLocale === "fr"
-                          ? "Quelles sont les ventes du jour et les produits phares ?"
-                          : "What are today's sales and top-selling products?");
-                      setInput(textToSend);
-                      toggleListening();
-                      // Immediate trigger of user message and insight
-                      setTimeout(() => {
-                        handleQuickPrompt(textToSend);
-                      }, 50);
-                    }}
+                    onClick={() => finishVoiceInputAndTranscribe(true)}
                     className="w-8 h-8 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-md shadow-emerald-500/20 active:scale-95"
                     title={activeLocale === "ar" ? "إرسال الصوت" : "Envoyer"}
                     aria-label={activeLocale === "ar" ? "إرسال الصوت" : "Envoyer"}
@@ -1472,67 +1593,102 @@ export function AIChatWidget() {
                   </button>
                 </div>
               ) : (
-                <form
-                  onSubmit={handleSend}
-                  className="p-2.5 px-3 border-t border-white/10 flex items-center gap-2 shrink-0 bg-zinc-950/80 backdrop-blur-md"
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,application/pdf"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-
-                  {/* Left: [+] Attachment Button (ChatGPT style) */}
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isLoading}
-                    className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer flex items-center justify-center shrink-0"
-                    title={t.uploadTooltip}
-                    aria-label={t.uploadTooltip}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-
-                  {/* Center: Text Input Pill with [🎤] Mic on the right inside */}
-                  <div className="flex-1 relative flex items-center">
-                    <input
-                      type="text"
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      placeholder={t.inputPlaceholder}
-                      disabled={isLoading}
-                      className="w-full ps-3.5 pe-9 py-2 text-xs kaspi-translucent-input rounded-full focus:outline-none transition-all placeholder-zinc-500 bg-zinc-900/90 border border-zinc-700/60 text-zinc-100 focus:border-emerald-500/60"
-                    />
-
-                    {/* Right inside: Voice Mic Button [🎤] */}
+                <div className="flex flex-col shrink-0">
+                  {/* Interactive Microphone Connection Banner (when not connected or permitted yet) */}
+                  {!micConnected && (
                     <button
                       type="button"
                       onClick={toggleListening}
-                      className="absolute end-2 p-1 text-zinc-400 hover:text-emerald-400 transition-colors cursor-pointer"
-                      title={t.voiceInput}
-                      aria-label={t.voiceInput}
+                      className="mx-3 my-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 text-emerald-400 text-[11px] font-semibold flex items-center justify-between transition-all cursor-pointer shadow-xs animate-in fade-in"
                     >
-                      <Mic className="w-4 h-4" />
+                      <div className="flex items-center gap-2">
+                        <Mic className="w-3.5 h-3.5 animate-pulse text-emerald-400" />
+                        <span>
+                          {activeLocale === "ar"
+                            ? "الميكروفون غير متصل • اضغط هنا لتوصيل الصوت"
+                            : "Microphone non connecté • Cliquez pour autoriser le son"}
+                        </span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-black text-[10px] font-bold">
+                        {activeLocale === "ar" ? "توصيل" : "Connecter"}
+                      </span>
                     </button>
-                  </div>
+                  )}
 
-                  {/* Far Right: Circular [↑] Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={isLoading || (!input.trim() && !attachment)}
-                    className="w-8 h-8 rounded-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-30 disabled:cursor-not-allowed text-black transition-all shadow-md shadow-emerald-500/20 cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
-                    aria-label="Send Message"
+                  {/* Multilingual Transcription In-Progress Indicator */}
+                  {isTranscribing && (
+                    <div className="px-3 py-1 bg-emerald-950/80 border-t border-emerald-500/30 flex items-center justify-center gap-2 text-xs text-emerald-300">
+                      <Loader2 className="w-3 h-3 animate-spin text-emerald-400" />
+                      <span className="text-[10px] font-medium">
+                        {activeLocale === "ar"
+                          ? "جارٍ تحويل الصوت فورا بالذكاء الاصطناعي..."
+                          : "Transcription IA en cours..."}
+                      </span>
+                    </div>
+                  )}
+
+                  <form
+                    onSubmit={handleSend}
+                    className="p-2.5 px-3 border-t border-white/10 flex items-center gap-2 shrink-0 bg-zinc-950/80 backdrop-blur-md"
                   >
-                    {isLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-black" />
-                    ) : (
-                      <ArrowUp className="w-4 h-4 text-black stroke-[2.5]" />
-                    )}
-                  </button>
-                </form>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+
+                    {/* Left: [+] Attachment Button (ChatGPT style) */}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isLoading}
+                      className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer flex items-center justify-center shrink-0"
+                      title={t.uploadTooltip}
+                      aria-label={t.uploadTooltip}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+
+                    {/* Center: Text Input Pill with [🎤] Mic on the right inside */}
+                    <div className="flex-1 relative flex items-center">
+                      <input
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder={t.inputPlaceholder}
+                        disabled={isLoading}
+                        className="w-full ps-3.5 pe-9 py-2 text-xs kaspi-translucent-input rounded-full focus:outline-none transition-all placeholder-zinc-500 bg-zinc-900/90 border border-zinc-700/60 text-zinc-100 focus:border-emerald-500/60"
+                      />
+
+                      {/* Right inside: Voice Mic Button [🎤] */}
+                      <button
+                        type="button"
+                        onClick={toggleListening}
+                        className="absolute end-2 p-1 text-zinc-400 hover:text-emerald-400 transition-colors cursor-pointer"
+                        title={t.voiceInput}
+                        aria-label={t.voiceInput}
+                      >
+                        <Mic className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Far Right: Circular [↑] Submit Button */}
+                    <button
+                      type="submit"
+                      disabled={isLoading || (!input.trim() && !attachment)}
+                      className="w-8 h-8 rounded-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-30 disabled:cursor-not-allowed text-black transition-all shadow-md shadow-emerald-500/20 cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
+                      aria-label="Send Message"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-black" />
+                      ) : (
+                        <ArrowUp className="w-4 h-4 text-black stroke-[2.5]" />
+                      )}
+                    </button>
+                  </form>
+                </div>
               )}
             </div>
           </div>
