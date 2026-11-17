@@ -746,14 +746,14 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
               )}
 
               {/* Quick Presets Bar */}
-              <div className="grid grid-cols-4 gap-1 shrink-0">
+              <div className="grid grid-cols-4 gap-1.5 shrink-0 select-none">
                 {calcMode === "weight"
                   ? weightPresets.map((w) => (
                       <button
                         key={w}
                         type="button"
                         onClick={() => handleSelectWeightPreset(w)}
-                        className={`h-7 rounded-lg text-[10px] font-mono font-bold transition-colors cursor-pointer ${
+                        className={`h-8 sm:h-7 min-h-[34px] rounded-lg text-[10.5px] font-mono font-bold transition-all cursor-pointer active:scale-95 touch-manipulation ${
                           currentWeightKg === w
                             ? "kaspi-glass-btn kaspi-orbit-active font-black"
                             : "kaspi-frosted-glass text-zinc-300 hover:text-white"
@@ -767,7 +767,7 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
                         key={amt}
                         type="button"
                         onClick={() => handleSelectAmountPreset(amt)}
-                        className={`h-7 rounded-lg text-[10px] font-mono font-bold transition-colors cursor-pointer ${
+                        className={`h-8 sm:h-7 min-h-[34px] rounded-lg text-[10.5px] font-mono font-bold transition-all cursor-pointer active:scale-95 touch-manipulation ${
                           currentTargetAmount === amt
                             ? "kaspi-glass-btn kaspi-orbit-active font-black"
                             : "kaspi-frosted-glass text-zinc-300 hover:text-white"
@@ -779,13 +779,13 @@ export function SquarePluScalePanel({ onBack, products: propProducts }: SquarePl
               </div>
 
               {/* 3×4 Compact Touch Keypad */}
-              <div className="grid grid-cols-3 gap-1 shrink-0">
+              <div className="grid grid-cols-3 gap-1.5 shrink-0 select-none">
                 {["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "C"].map((key) => (
                   <button
                     key={key}
                     type="button"
                     onClick={() => handleKeypadPress(key)}
-                    className="h-9 rounded-xl kaspi-glass-btn font-mono font-bold text-sm flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                    className="h-10 sm:h-9 min-h-[42px] rounded-xl kaspi-glass-btn font-mono font-bold text-sm flex items-center justify-center transition-all cursor-pointer active:scale-90 touch-manipulation"
                   >
                     {key}
                   </button>

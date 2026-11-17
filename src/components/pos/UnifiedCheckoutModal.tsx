@@ -485,7 +485,7 @@ export function UnifiedCheckoutModal() {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("cash")}
-                  className={`keycap-3d flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-bold transition cursor-pointer ${
+                  className={`keycap-3d flex flex-col items-center justify-center p-3 min-h-[58px] rounded-2xl border text-xs font-bold transition cursor-pointer active:scale-95 touch-manipulation ${
                     selectedPaymentMethod === "cash"
                       ? "bg-white text-zinc-950 border-white shadow-sm"
                       : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
@@ -499,7 +499,7 @@ export function UnifiedCheckoutModal() {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("card")}
-                  className={`keycap-3d flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-bold transition cursor-pointer ${
+                  className={`keycap-3d flex flex-col items-center justify-center p-3 min-h-[58px] rounded-2xl border text-xs font-bold transition cursor-pointer active:scale-95 touch-manipulation ${
                     selectedPaymentMethod === "card"
                       ? "bg-white text-zinc-950 border-white shadow-sm"
                       : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
@@ -513,7 +513,7 @@ export function UnifiedCheckoutModal() {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("credit")}
-                  className={`keycap-3d flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-bold transition cursor-pointer ${
+                  className={`keycap-3d flex flex-col items-center justify-center p-3 min-h-[58px] rounded-2xl border text-xs font-bold transition cursor-pointer active:scale-95 touch-manipulation ${
                     selectedPaymentMethod === "credit"
                       ? "bg-white text-zinc-950 border-white shadow-sm"
                       : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
@@ -527,7 +527,7 @@ export function UnifiedCheckoutModal() {
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("transfer")}
-                  className={`keycap-3d flex flex-col items-center justify-center p-3 rounded-2xl border text-xs font-bold transition cursor-pointer ${
+                  className={`keycap-3d flex flex-col items-center justify-center p-3 min-h-[58px] rounded-2xl border text-xs font-bold transition cursor-pointer active:scale-95 touch-manipulation ${
                     selectedPaymentMethod === "transfer"
                       ? "bg-white text-zinc-950 border-white shadow-sm"
                       : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
@@ -562,11 +562,11 @@ export function UnifiedCheckoutModal() {
                 </div>
 
                 {/* Quick Cash Bills Pills */}
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5 select-none">
                   <button
                     type="button"
                     onClick={handleExactCash}
-                    className="keycap-3d px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-bold text-white hover:bg-zinc-850 cursor-pointer"
+                    className="keycap-3d px-3.5 py-2.5 min-h-[42px] rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-bold text-white hover:bg-zinc-850 cursor-pointer active:scale-95 touch-manipulation"
                   >
                     {locale === "ar" ? "المبلغ بالضبط" : "Montant Exact"}
                   </button>
@@ -575,7 +575,7 @@ export function UnifiedCheckoutModal() {
                       key={val}
                       type="button"
                       onClick={() => handleQuickCash(val)}
-                      className="keycap-3d px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-mono font-bold text-white hover:bg-zinc-850 cursor-pointer"
+                      className="keycap-3d px-3.5 py-2.5 min-h-[42px] rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-mono font-bold text-white hover:bg-zinc-850 cursor-pointer active:scale-95 touch-manipulation"
                     >
                       +{val} MAD
                     </button>
@@ -583,13 +583,13 @@ export function UnifiedCheckoutModal() {
                 </div>
 
                 {/* Touch Numpad */}
-                <div className="grid grid-cols-3 gap-1.5 pt-1">
+                <div className="grid grid-cols-3 gap-1.5 pt-1 select-none">
                   {["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "C"].map((d) => (
                     <button
                       key={d}
                       type="button"
                       onClick={() => handleNumpadPress(d)}
-                      className="keycap-3d py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-white font-mono font-black text-sm hover:border-zinc-700 cursor-pointer"
+                      className="keycap-3d py-3 min-h-[46px] rounded-xl bg-zinc-900 border border-zinc-800 text-white font-mono font-black text-base hover:border-zinc-700 cursor-pointer active:scale-95 touch-manipulation flex items-center justify-center"
                     >
                       {d}
                     </button>

@@ -37,6 +37,8 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
   const [couponCode, setCouponCode] = useState("");
   const [couponMsg, setCouponMsg] = useState<{ text: string; error?: boolean } | null>(null);
   const [orderMode, setOrderMode] = useState<"dine_in" | "takeaway" | "delivery">("dine_in");
+  const [editingQtyProductId, setEditingQtyProductId] = useState<string | null>(null);
+  const [editingQtyValue, setEditingQtyValue] = useState<string>("");
 
   const {
     cart,
@@ -491,11 +493,62 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
               </div>
 
               {/* Bottom Row: Unit & Qty on Left, Unit Price & Controls on Right */}
-              <div className="flex items-center justify-between text-[11.5px] text-zinc-400 font-mono mt-1">
-                <div className="flex items-center gap-2">
-                  <span>
-                    {(item as any).unit === "kg" || (item as any).isScaleItem ? "kg" : locale === "ar" ? "قطعة" : "Unité"} × {item.quantity}
-                  </span>
+              <div className="flex items-center justify-between text-[11.5px] text-zinc-400 font-mono mt-1 select-none">
+                <div className="flex items-center gap-1.5">
+                  {editingQtyProductId === item.productId ? (
+                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="any"
+                        autoFocus
+                        value={editingQtyValue}
+                        onChange={(e) => setEditingQtyValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            const val = parseFloat(editingQtyValue);
+                            if (!isNaN(val) && val > 0) {
+                              setItemQuantity(item.productId, val);
+                            }
+                            setEditingQtyProductId(null);
+                          } else if (e.key === "Escape") {
+                            setEditingQtyProductId(null);
+                          }
+                        }}
+                        className="w-16 h-7 px-1.5 text-center font-mono font-bold text-xs bg-white/10 border border-white/20 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = parseFloat(editingQtyValue);
+                          if (!isNaN(val) && val > 0) {
+                            setItemQuantity(item.productId, val);
+                          }
+                          setEditingQtyProductId(null);
+                        }}
+                        className="h-7 px-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer active:scale-95 touch-manipulation"
+                      >
+                        ✓
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingQtyProductId(item.productId);
+                        setEditingQtyValue(String(item.quantity));
+                      }}
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/[0.04] hover:bg-white/[0.10] active:scale-95 text-zinc-300 hover:text-white transition-all cursor-pointer touch-manipulation"
+                      title={locale === "ar" ? "انقر لتعديل الكمية" : "Toucher pour modifier la quantité"}
+                    >
+                      <span>
+                        {(item as any).unit === "kg" || (item as any).isScaleItem ? "kg" : locale === "ar" ? "قطعة" : "Unité"} ×
+                      </span>
+                      <span className="font-bold underline decoration-white/30 underline-offset-2 text-white">
+                        {item.quantity}
+                      </span>
+                    </button>
+                  )}
                   {item.taxRate > 0 && (
                     <span className="text-[9.5px] px-1 py-0.2 rounded bg-white/[0.04] text-zinc-400 border border-white/[0.06]">
                       TVA {item.taxRate}%
@@ -507,30 +560,30 @@ export const CartPanel: React.FC<CartPanelProps> = ({ onOpenCustomerModal }) => 
                   <span className="text-zinc-500 text-[11px]">
                     ({item.unitPrice.toFixed(2)} MAD)
                   </span>
-                  <div className="flex items-center gap-0.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 opacity-90 sm:opacity-80 sm:group-hover:opacity-100 transition-opacity">
                     <button
                       type="button"
                       onClick={() => updateItemQuantity(item.productId, -1)}
-                      className="w-5 h-5 rounded flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.12] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                      className="w-7 h-7 sm:w-6 sm:h-6 rounded-lg flex items-center justify-center bg-white/[0.06] hover:bg-white/[0.16] active:scale-90 text-zinc-300 hover:text-white transition-all cursor-pointer touch-manipulation"
                       title="-1"
                     >
-                      <Minus className="w-3 h-3" />
+                      <Minus className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
                       onClick={() => updateItemQuantity(item.productId, 1)}
-                      className="w-5 h-5 rounded flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.12] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                      className="w-7 h-7 sm:w-6 sm:h-6 rounded-lg flex items-center justify-center bg-white/[0.06] hover:bg-white/[0.16] active:scale-90 text-zinc-300 hover:text-white transition-all cursor-pointer touch-manipulation"
                       title="+1"
                     >
-                      <Plus className="w-3 h-3" />
+                      <Plus className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
                       onClick={() => removeItem(item.productId)}
-                      className="w-5 h-5 rounded flex items-center justify-center hover:bg-rose-500/20 text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer ml-0.5"
+                      className="w-7 h-7 sm:w-6 sm:h-6 rounded-lg flex items-center justify-center hover:bg-rose-500/20 active:scale-90 text-zinc-400 hover:text-rose-400 transition-all cursor-pointer ml-1 touch-manipulation"
                       title="Supprimer"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>

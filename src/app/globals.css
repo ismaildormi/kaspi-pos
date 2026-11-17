@@ -1060,6 +1060,63 @@ html[data-kaspi-theme="pearl-light"] .kaspi-preserve-metal-card .text-zinc-500 {
   color: #94a3b8 !important;
 }
 
+/* =========================================================================
+   HYBRID TOUCH & MOUSE POS ERGONOMIC OPTIMIZATIONS (PC + TABLET / TOUCHSCREEN)
+   ========================================================================= */
+
+/* Prevent 300ms tap delay and double-tap zoom delay on all interactive elements */
+html,
+body,
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+.kaspi-product-orbit-card,
+.kaspi-glass-btn,
+.kaspi-glass-surface {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent accidental text selection during rapid cashier taps on touchscreens */
+.pos-touch-select-none,
+.kaspi-product-orbit-card,
+[data-kaspi-product-menu-trigger] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Inertia touch scrolling on horizontal & vertical POS panels */
+.touch-scroll-x {
+  overflow-x: auto;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+.touch-scroll-y {
+  overflow-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* Responsive hit targets: ensure comfortable finger targets on touch devices */
+@media (pointer: coarse) {
+  /* Cashier touch targets: ensure buttons are at least 38-44px for finger precision */
+  .pos-touch-target {
+    min-height: 40px;
+    min-width: 40px;
+  }
+  
+  /* Never hide critical action buttons behind hover states on touch screens */
+  .touch-always-visible {
+    opacity: 0.95 !important;
+  }
+}
+
 /* Fallback @media print Guard (Forces Pure Black Ink on White Paper & Hides POS Chrome) */
 @media print {
   @page {

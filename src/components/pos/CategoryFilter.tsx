@@ -20,10 +20,10 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({ categories }) =>
   const { activeCategoryId, setActiveCategory } = usePosStore();
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none select-none">
+    <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none select-none touch-scroll-x">
       <button
         onClick={() => setActiveCategory(null)}
-        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+        className={`flex items-center gap-1.5 px-3.5 py-2 min-h-[38px] rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer active:scale-95 touch-manipulation ${
           activeCategoryId === null
             ? "kaspi-glass-btn kaspi-orbit-active text-[var(--kaspi-text-primary)] font-bold"
             : "kaspi-glass-surface text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
@@ -39,7 +39,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({ categories }) =>
           <button
             key={cat.id}
             onClick={() => setActiveCategory(cat.id)}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 min-h-[38px] rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer active:scale-95 touch-manipulation ${
               isActive
                 ? "kaspi-glass-btn kaspi-orbit-active text-[var(--kaspi-text-primary)] font-bold"
                 : "kaspi-glass-surface text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
