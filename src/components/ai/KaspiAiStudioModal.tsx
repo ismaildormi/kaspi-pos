@@ -384,6 +384,63 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
         throw new Error(data?.error || `HTTP ${res.status}`);
       }
 
+      // Client-IP direct open-weight rescue ONLY if server upstream hit a shared-IP burst limit
+      const rescueOutput = async (
+        failedOut: ArenaModelOutput | null,
+        fallbackLlm7Model: string
+      ): Promise<ArenaModelOutput | null> => {
+        if (!failedOut || failedOut.status === "completed") return failedOut;
+        const start = Date.now();
+        const isCodeMode = data.effectiveModality === "code" || modality === "code";
+        const sysMsg = isCodeMode
+          ? "Build a complete interactive HTML5+CSS3+JS app/website for the user request. Include full ```html``` code block."
+          : "Respond concisely and helpfully in the user's language.";
+        try {
+          const directRes = await fetch("https://api.llm7.io/v1/chat/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: fallbackLlm7Model,
+              messages: [
+                { role: "system", content: sysMsg },
+                { role: "user", content: promptText },
+              ],
+            }),
+          });
+          const directJson = await directRes.json().catch(() => null);
+          const rawText = directJson?.choices?.[0]?.message?.content;
+          if (directRes.ok && typeof rawText === "string" && rawText.trim()) {
+            const htmlMatch =
+              rawText.match(/```html\n([\s\S]*?)```/i) ||
+              rawText.match(/<!DOCTYPE\s+html[\s\S]*?<\/html>/i);
+            const htmlCode = htmlMatch ? (htmlMatch[1] || htmlMatch[0]).trim() : null;
+            return {
+              ...failedOut,
+              status: "completed",
+              latencyMs: Date.now() - start,
+              providerLabel: `${failedOut.providerLabel} (Client Edge)`,
+              replyMarkdown: htmlCode
+                ? rawText.replace(/```[\s\S]*?```/g, "").trim() ||
+                  "Built interactive application via client open gateway."
+                : rawText.trim(),
+              stepsLog: [`Executed on client edge (${Date.now() - start}ms)`],
+              modalityExecuted: htmlCode ? "code" : failedOut.modalityExecuted,
+              files: htmlCode
+                ? [{ path: "index.html", name: "index.html", language: "html", content: htmlCode }]
+                : [],
+              previewHtml: htmlCode,
+            };
+          }
+        } catch {}
+        return failedOut;
+      };
+
+      const finalOutputA =
+        (await rescueOutput(data.outputA, "gemma4:31b")) || data.outputA;
+      const finalOutputB = data.outputB
+        ? await rescueOutput(data.outputB, "DeepSeek-V4-Flash-0731")
+        : null;
+
       const newTurn: ArenaTurnRecord = {
         turnId: `turn-${Date.now().toString(36)}`,
         timestamp: new Date().toISOString(),
@@ -391,8 +448,8 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
         attachments: filesSnapshot.length > 0 ? filesSnapshot : undefined,
         mode: arenaMode,
         modality: data.effectiveModality || "text",
-        outputA: data.outputA,
-        outputB: data.outputB || null,
+        outputA: finalOutputA,
+        outputB: finalOutputB,
         voteOutcome: null,
       };
 

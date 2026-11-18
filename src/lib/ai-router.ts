@@ -97,17 +97,18 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
   geminiKeys.forEach((key, idx) => {
     if (!key.includes("mock")) {
       const googleProvider = createGoogleGenerativeAI({ apiKey: key });
-      const modelId = "gemini-2.5-flash";
-      candidates.push({
-        provider: "google",
-        providerName: "Google Gemini",
-        keyIndex: idx,
-        keyMasked: `...${key.slice(-6)}`,
-        apiKey: key,
-        modelId,
-        model: googleProvider(modelId) as unknown as LanguageModel,
-        supportsVision: true,
-      });
+      for (const modelId of ["gemini-3.8-flash", "gemini-3.5-flash-lite"]) {
+        candidates.push({
+          provider: "google",
+          providerName: "Google Gemini",
+          keyIndex: idx,
+          keyMasked: `...${key.slice(-6)}`,
+          apiKey: key,
+          modelId,
+          model: googleProvider(modelId) as unknown as LanguageModel,
+          supportsVision: true,
+        });
+      }
     }
   });
 
@@ -118,17 +119,18 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
   groqKeys.forEach((key, idx) => {
     if (!key.includes("mock")) {
       const groqProvider = createGroq({ apiKey: key });
-      const modelId = "llama-3.3-70b-versatile";
-      candidates.push({
-        provider: "groq",
-        providerName: "Groq",
-        keyIndex: idx,
-        keyMasked: `...${key.slice(-6)}`,
-        apiKey: key,
-        modelId,
-        model: groqProvider(modelId) as unknown as LanguageModel,
-        supportsVision: false,
-      });
+      for (const modelId of ["openai/gpt-oss-20b", "llama-3.1-8b-instant"]) {
+        candidates.push({
+          provider: "groq",
+          providerName: "Groq",
+          keyIndex: idx,
+          keyMasked: `...${key.slice(-6)}`,
+          apiKey: key,
+          modelId,
+          model: groqProvider(modelId) as unknown as LanguageModel,
+          supportsVision: false,
+        });
+      }
     }
   });
 
@@ -226,20 +228,26 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
     }
   });
 
-  // Priority 8: OpenRouter (Fallback to 100+ Free & Paid Models)
+  // Priority 8: OpenRouter (Zero-Credit Free Model Router + Free Tier Pool)
   const openRouterKey = process.env.OPENROUTER_API_KEY?.trim();
   if (openRouterKey && !openRouterKey.includes("mock")) {
     const orProvider = createOpenRouter({ apiKey: openRouterKey });
-    candidates.push({
-      provider: "openrouter",
-      providerName: "OpenRouter",
-      keyIndex: 0,
-      keyMasked: `...${openRouterKey.slice(-6)}`,
-      apiKey: openRouterKey,
-      modelId: "openrouter/auto",
-      model: orProvider("openrouter/auto") as unknown as LanguageModel,
-      supportsVision: true,
-    });
+    for (const orModel of [
+      "openrouter/free",
+      "meta-llama/llama-3.3-70b-instruct:free",
+      "google/gemma-3-27b-it:free",
+    ]) {
+      candidates.push({
+        provider: "openrouter",
+        providerName: "OpenRouter Free",
+        keyIndex: 0,
+        keyMasked: `...${openRouterKey.slice(-6)}`,
+        apiKey: openRouterKey,
+        modelId: orModel,
+        model: orProvider(orModel) as unknown as LanguageModel,
+        supportsVision: false,
+      });
+    }
   }
 
   // Priority 9: Self-Hosted Local GPU / Ollama / LitServe (Zero API Cost, Infinite Offline)

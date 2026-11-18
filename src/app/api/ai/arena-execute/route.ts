@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSafeServerContext } from "@/server/auth/context";
-import { generateTextWithRouter } from "@/lib/ai-router";
+import { generateTextWithRouter, getRouterCandidates } from "@/lib/ai-router";
+import { generateText } from "ai";
 import { prisma } from "@/server/db/prisma";
 import {
   ARENA_REAL_MODELS,
@@ -303,6 +304,154 @@ async function callSingleRealModel(params: {
   }
 
   const { spec, systemPrompt, messages } = params;
+
+  // Handle targeted configured provider pools (Google Gemini / OpenRouter Free / Groq)
+  if (
+    spec.upstream === "router_google" ||
+    spec.upstream === "router_openrouter" ||
+    spec.upstream === "router_groq"
+  ) {
+    const targetProvider =
+      spec.upstream === "router_google"
+        ? "google"
+        : spec.upstream === "router_openrouter"
+        ? "openrouter"
+        : "groq";
+
+    const allCandidates = await getRouterCandidates();
+    const matching = allCandidates.filter((c) => c.provider === targetProvider);
+
+    for (const candidate of matching) {
+      try {
+        const res = await generateText({
+          model: candidate.model as any,
+          system: systemPrompt,
+          messages,
+        });
+        const out = res.text?.trim();
+        if (out) {
+          return {
+            text: out,
+            usedModel: candidate.modelId,
+            usedProvider: candidate.providerName,
+          };
+        }
+      } catch {
+        // Try next candidate in this provider pool
+      }
+    }
+
+    // Dynamic model discovery for Google / Groq if hardcoded ID changed
+    if (targetProvider === "groq" && matching[0]?.apiKey) {
+      try {
+        const listRes = await fetch("https://api.groq.com/openai/v1/models", {
+          headers: { Authorization: `Bearer ${matching[0].apiKey}` },
+          signal: AbortSignal.timeout(8000),
+        });
+        const listJson = await listRes.json().catch(() => null);
+        const firstActiveModel = listJson?.data?.find(
+          (m: any) => m?.id && !String(m.id).includes("whisper") && !String(m.id).includes("guard")
+        )?.id;
+        if (firstActiveModel) {
+          const chatRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${matching[0].apiKey}`,
+            },
+            body: JSON.stringify({
+              model: firstActiveModel,
+              messages: [{ role: "system", content: systemPrompt }, ...messages],
+            }),
+            signal: AbortSignal.timeout(40000),
+          });
+          const chatJson = await chatRes.json().catch(() => null);
+          const text = chatJson?.choices?.[0]?.message?.content;
+          if (chatRes.ok && typeof text === "string" && text.trim()) {
+            return {
+              text: text.trim(),
+              usedModel: firstActiveModel,
+              usedProvider: "Groq LPU Inference",
+            };
+          }
+        }
+      } catch {}
+    }
+
+    if (targetProvider === "google" && matching[0]?.apiKey) {
+      try {
+        const listRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(matching[0].apiKey)}`,
+          { signal: AbortSignal.timeout(8000) }
+        );
+        const listJson = await listRes.json().catch(() => null);
+        const firstFlash = listJson?.models?.find(
+          (m: any) =>
+            Array.isArray(m.supportedGenerationMethods) &&
+            m.supportedGenerationMethods.includes("generateContent") &&
+            String(m.name).includes("flash")
+        )?.name;
+        if (firstFlash) {
+          const cleanName = String(firstFlash).replace(/^models\//, "");
+          const genRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+              cleanName
+            )}:generateContent?key=${encodeURIComponent(matching[0].apiKey)}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents: messages.map((m) => ({
+                  role: m.role === "assistant" ? "model" : "user",
+                  parts: [{ text: m.content }],
+                })),
+              }),
+              signal: AbortSignal.timeout(40000),
+            }
+          );
+          const genJson = await genRes.json().catch(() => null);
+          const text = genJson?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (genRes.ok && typeof text === "string" && text.trim()) {
+            return {
+              text: text.trim(),
+              usedModel: cleanName,
+              usedProvider: "Google Gemini",
+            };
+          }
+        }
+      } catch {}
+    }
+
+    // Fall through cleanly to open-weight LLM7 -> Router -> Pollinations below
+    const fallbackModel =
+      spec.upstream === "router_openrouter"
+        ? "DeepSeek-V4-Flash-0731"
+        : spec.upstream === "router_groq"
+        ? "gpt-oss:120b"
+        : "gemma4:31b";
+    try {
+      const lRes = await fetch("https://api.llm7.io/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: fallbackModel,
+          messages: [{ role: "system", content: systemPrompt }, ...messages],
+          temperature: 0.6,
+        }),
+        signal: AbortSignal.timeout(40000),
+      });
+      const lData = await lRes.json().catch(() => null);
+      const lText = lData?.choices?.[0]?.message?.content;
+      if (lRes.ok && typeof lText === "string" && lText.trim()) {
+        return {
+          text: lText.trim(),
+          usedModel: lData.model || fallbackModel,
+          usedProvider: `${spec.providerLabel} (Open-Weight Failover)`,
+        };
+      }
+    } catch {}
+  }
 
   if (spec.upstream === "llm7") {
     const payload = {
