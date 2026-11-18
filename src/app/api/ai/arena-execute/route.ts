@@ -128,12 +128,15 @@ async function callSingleRealModel(params: {
       .filter((c) => c.provider === targetProvider)
       .sort((a, b) => (a.modelId === spec.apiModelId ? -1 : b.modelId === spec.apiModelId ? 1 : 0));
 
-    for (const candidate of matching) {
+    for (let idx = 0; idx < Math.min(2, matching.length); idx++) {
+      const candidate = matching[idx];
+      const timeoutMs =
+        targetProvider === "openrouter" ? 9000 : idx === 0 ? 22000 : 12000;
       try {
         const res = await generateText({
           model: candidate.model as any,
           maxRetries: 0,
-          abortSignal: AbortSignal.timeout(targetProvider === "openrouter" ? 8500 : 12000),
+          abortSignal: AbortSignal.timeout(timeoutMs),
           system: systemPrompt,
           messages,
         });
@@ -155,7 +158,7 @@ async function callSingleRealModel(params: {
       try {
         const listRes = await fetch("https://api.groq.com/openai/v1/models", {
           headers: { Authorization: `Bearer ${matching[0].apiKey}` },
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(6000),
         });
         const listJson = await listRes.json().catch(() => null);
         const firstActiveModel = listJson?.data?.find(
@@ -172,7 +175,7 @@ async function callSingleRealModel(params: {
               model: firstActiveModel,
               messages: [{ role: "system", content: systemPrompt }, ...messages],
             }),
-            signal: AbortSignal.timeout(40000),
+            signal: AbortSignal.timeout(14000),
           });
           const chatJson = await chatRes.json().catch(() => null);
           const text = chatJson?.choices?.[0]?.message?.content;
@@ -216,7 +219,7 @@ async function callSingleRealModel(params: {
                   parts: [{ text: m.content }],
                 })),
               }),
-              signal: AbortSignal.timeout(40000),
+              signal: AbortSignal.timeout(12000),
             }
           );
           const genJson = await genRes.json().catch(() => null);
