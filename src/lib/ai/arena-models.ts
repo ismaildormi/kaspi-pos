@@ -129,6 +129,17 @@ export const ARENA_REAL_MODELS: ArenaRealModelSpec[] = [
     supportsClientDirect: false,
   },
   {
+    id: "groq-llama-instant",
+    displayName: "Groq-Llama-3.1-8B-Instant",
+    providerLabel: "Meta Llama 3.1 Fast via Groq LPU (Cloud Fallback)",
+    upstream: "router_groq",
+    apiModelId: "llama-3.1-8b-instant",
+    specialty: "fast",
+    supportsAnonymousBattle: true,
+    isFreeZeroKey: true,
+    supportsClientDirect: false,
+  },
+  {
     id: "groq-llama33",
     displayName: "Groq-Llama-3.3-70B",
     providerLabel: "Meta Llama 3.3 via Groq LPU (Cloud Fallback)",
@@ -217,8 +228,11 @@ export function selectBattleModelPair(
     return [mA, mB];
   }
 
-  // Server pool pairing: mix fast Groq LPU models reliably (<3s latency) with client open weights
+  // Server pool pairing: fast Groq LPU models (<=4s parallel response, never hits 504)
   const modelA = ARENA_REAL_MODELS.find((m) => m.id === "groq-gpt-oss") || ARENA_REAL_MODELS[0];
-  const modelB = ARENA_REAL_MODELS.find((m) => m.id === "groq-llama33") || ARENA_REAL_MODELS[1];
+  const modelB =
+    ARENA_REAL_MODELS.find((m) => m.id === "groq-llama-instant") ||
+    ARENA_REAL_MODELS.find((m) => m.id === "groq-llama33") ||
+    ARENA_REAL_MODELS[1];
   return Math.random() < 0.5 ? [modelA, modelB] : [modelB, modelA];
 }

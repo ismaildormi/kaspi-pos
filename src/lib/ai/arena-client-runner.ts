@@ -1155,7 +1155,7 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
   const staggerB = Boolean(specB && specA.supportsClientDirect && specB.supportsClientDirect);
   const [outA, outB] = await Promise.all([
     runSide(specA, 0, "groq-gpt-oss"),
-    specB ? runSide(specB, staggerB ? 1500 : 0, "groq-llama33") : Promise.resolve(null),
+    specB ? runSide(specB, staggerB ? 1500 : 0, "groq-llama-instant") : Promise.resolve(null),
   ]);
 
   return {

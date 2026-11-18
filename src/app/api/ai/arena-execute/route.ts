@@ -103,12 +103,16 @@ async function callSingleRealModel(params: {
   systemPrompt: string;
   messages: Array<{ role: "user" | "assistant"; content: string }>;
   delayBeforeMs?: number;
+  maxOutputTokens?: number;
 }): Promise<{ text: string; usedModel: string; usedProvider: string }> {
   if (params.delayBeforeMs && params.delayBeforeMs > 0) {
     await new Promise((r) => setTimeout(r, params.delayBeforeMs));
   }
 
   const { spec, systemPrompt, messages } = params;
+  const maxOutputTokens = params.maxOutputTokens ?? 3200;
+  const deadline = Date.now() + 26000;
+  const remainingMs = () => Math.max(0, deadline - Date.now());
 
   // Handle targeted configured provider pools (Google Gemini / OpenRouter Free / Groq)
   if (
@@ -128,14 +132,21 @@ async function callSingleRealModel(params: {
       .filter((c) => c.provider === targetProvider)
       .sort((a, b) => (a.modelId === spec.apiModelId ? -1 : b.modelId === spec.apiModelId ? 1 : 0));
 
+    let lastErr = "Upstream provider busy";
+
     for (let idx = 0; idx < Math.min(2, matching.length); idx++) {
+      if (remainingMs() < 3500) break;
       const candidate = matching[idx];
-      const timeoutMs =
-        targetProvider === "openrouter" ? 9000 : idx === 0 ? 22000 : 12000;
+      const timeoutMs = Math.min(
+        remainingMs(),
+        targetProvider === "openrouter" ? 9000 : idx === 0 ? 16000 : 10000
+      );
       try {
         const res = await generateText({
           model: candidate.model as any,
           maxRetries: 0,
+          maxOutputTokens,
+          temperature: 0.45,
           abortSignal: AbortSignal.timeout(timeoutMs),
           system: systemPrompt,
           messages,
@@ -148,23 +159,23 @@ async function callSingleRealModel(params: {
             usedProvider: candidate.providerName,
           };
         }
-      } catch {
-        // Try next candidate in this provider pool
+      } catch (err: any) {
+        lastErr = String(err?.message || err);
       }
     }
 
-    // Dynamic model discovery for Google / Groq if hardcoded ID changed
-    if (targetProvider === "groq" && matching[0]?.apiKey) {
+    // Dynamic model discovery for Google / Groq if hardcoded ID changed (only if time remains!)
+    if (targetProvider === "groq" && matching[0]?.apiKey && remainingMs() > 5000) {
       try {
         const listRes = await fetch("https://api.groq.com/openai/v1/models", {
           headers: { Authorization: `Bearer ${matching[0].apiKey}` },
-          signal: AbortSignal.timeout(6000),
+          signal: AbortSignal.timeout(Math.min(4500, remainingMs())),
         });
         const listJson = await listRes.json().catch(() => null);
         const firstActiveModel = listJson?.data?.find(
           (m: any) => m?.id && !String(m.id).includes("whisper") && !String(m.id).includes("guard")
         )?.id;
-        if (firstActiveModel) {
+        if (firstActiveModel && remainingMs() > 3500) {
           const chatRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -173,9 +184,11 @@ async function callSingleRealModel(params: {
             },
             body: JSON.stringify({
               model: firstActiveModel,
+              max_tokens: maxOutputTokens,
+              temperature: 0.45,
               messages: [{ role: "system", content: systemPrompt }, ...messages],
             }),
-            signal: AbortSignal.timeout(14000),
+            signal: AbortSignal.timeout(remainingMs()),
           });
           const chatJson = await chatRes.json().catch(() => null);
           const text = chatJson?.choices?.[0]?.message?.content;
@@ -235,44 +248,47 @@ async function callSingleRealModel(params: {
       } catch {}
     }
 
-    // Fall through cleanly to open-weight LLM7 -> Router -> Pollinations below
-    const fallbackModel =
-      spec.upstream === "router_openrouter"
-        ? "DeepSeek-V4-Flash-0731"
-        : spec.upstream === "router_groq"
-        ? "gpt-oss:120b"
-        : "gemma4:31b";
-    try {
-      const lRes = await fetch("https://api.llm7.io/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: fallbackModel,
-          messages: [{ role: "system", content: systemPrompt }, ...messages],
-          temperature: 0.6,
-        }),
-        signal: AbortSignal.timeout(14000),
-      });
-      const lData = await lRes.json().catch(() => null);
-      const lText = lData?.choices?.[0]?.message?.content;
-      if (lRes.ok && typeof lText === "string" && lText.trim()) {
-        return {
-          text: lText.trim(),
-          usedModel: lData.model || fallbackModel,
-          usedProvider: `${spec.providerLabel} (Open-Weight Failover)`,
-        };
-      }
-    } catch {}
+    // Fast open-weight failover ONLY if budget remains (>= 5s)
+    if (remainingMs() > 5000) {
+      const fallbackModel =
+        spec.upstream === "router_openrouter"
+          ? "DeepSeek-V4-Flash-0731"
+          : spec.upstream === "router_groq"
+          ? "gpt-oss:120b"
+          : "gemma4:31b";
+      try {
+        const lRes = await fetch("https://api.llm7.io/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: fallbackModel,
+            messages: [{ role: "system", content: systemPrompt }, ...messages],
+            temperature: 0.6,
+          }),
+          signal: AbortSignal.timeout(Math.min(10000, remainingMs())),
+        });
+        const lData = await lRes.json().catch(() => null);
+        const lText = lData?.choices?.[0]?.message?.content;
+        if (lRes.ok && typeof lText === "string" && lText.trim()) {
+          return {
+            text: lText.trim(),
+            usedModel: lData.model || fallbackModel,
+            usedProvider: `${spec.providerLabel} (Open-Weight Failover)`,
+          };
+        }
+      } catch {}
+    }
 
-    // Final fast Groq fallback so openrouter timeouts never stall Vercel!
-    if (targetProvider !== "groq") {
-      const groqCands = allCandidates.filter((c) => c.provider === "groq");
+    // Final fast Groq fallback for non-groq providers (ONLY if time remains!)
+    if (targetProvider !== "groq" && remainingMs() > 4000) {
+      const groqCands = allCandidates.filter((c) => c.provider === "groq").slice(0, 1);
       for (const candidate of groqCands) {
         try {
           const res = await generateText({
             model: candidate.model as any,
             maxRetries: 0,
-            abortSignal: AbortSignal.timeout(12000),
+            maxOutputTokens,
+            abortSignal: AbortSignal.timeout(remainingMs()),
             system: systemPrompt,
             messages,
           });
@@ -287,6 +303,9 @@ async function callSingleRealModel(params: {
         } catch {}
       }
     }
+
+    // CRITICAL: throw here instead of cascading into generateTextWithRouter()!
+    throw new Error(lastErr);
   }
 
   if (spec.upstream === "llm7") {
@@ -328,18 +347,24 @@ async function callSingleRealModel(params: {
     }
 
     // Failover 1: Configured Multi-Gateway Router (Gemini / Groq / Mistral / OpenRouter / Ollama)
-    try {
-      const routerRes = await generateTextWithRouter({
-        system: systemPrompt,
-        messages,
-      });
-      return {
-        text: routerRes.text,
-        usedModel: routerRes.activeModel,
-        usedProvider: `${routerRes.activeProvider} (Failover)`,
-      };
-    } catch {
-      // Failover 2: Pollinations OpenAI Gateway (ignore budget-exhausted banners)
+    if (remainingMs() > 4000) {
+      try {
+        const routerRes = await generateTextWithRouter({
+          system: systemPrompt,
+          messages,
+          maxOutputTokens,
+          temperature: 0.45,
+        });
+        return {
+          text: routerRes.text,
+          usedModel: routerRes.activeModel,
+          usedProvider: `${routerRes.activeProvider} (Failover)`,
+        };
+      } catch {}
+    }
+
+    // Failover 2: Pollinations OpenAI Gateway (ignore budget-exhausted banners)
+    if (remainingMs() > 3500) {
       const pRes = await fetch("https://text.pollinations.ai/openai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -347,7 +372,7 @@ async function callSingleRealModel(params: {
           model: "openai",
           messages: [{ role: "system", content: systemPrompt }, ...messages],
         }),
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(Math.min(6000, remainingMs())),
       });
       const pData = await pRes.json().catch(() => null);
       const pText = pData?.choices?.[0]?.message?.content;
@@ -363,8 +388,8 @@ async function callSingleRealModel(params: {
           usedProvider: "Open-Weight Failover (Pollinations)",
         };
       }
-      throw new Error(pData?.error?.message || "All open gateways busy");
     }
+    throw new Error("All open gateways busy or timed out");
   }
 
   // Fallback or explicit Configured Router (Gemini / Groq / OpenRouter / Local Ollama)
@@ -735,18 +760,19 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
         if (effectiveModality === "code" || /<!DOCTYPE html|<html|```html/i.test(res.text)) {
           let parsed = extractProjectFromResponse(res.text, prompt);
 
-          // Strict HTML enforcement: if model wrote Markdown prose instead of runnable HTML, convert cleanly
-          if (effectiveModality === "code" && !parsed.previewHtml) {
+          // Strict HTML enforcement: if model wrote Markdown prose instead of runnable HTML, convert cleanly (only if <= 14s elapsed)
+          if (effectiveModality === "code" && !parsed.previewHtml && Date.now() - start < 14000) {
             const compilerSpec =
               ARENA_REAL_MODELS.find(
-                (m) => m.id === (spec.id === "groq-gpt-oss" ? "groq-llama33" : "groq-gpt-oss")
+                (m) => m.id === (spec.id === "groq-gpt-oss" ? "groq-llama-instant" : "groq-gpt-oss")
               ) || spec;
             try {
               const retryRes = await callSingleRealModel({
                 spec: compilerSpec,
                 systemPrompt: STRICT_HTML_RECOVERY_SYSTEM_PROMPT,
                 messages: [{ role: "user", content: prompt }],
-                delayBeforeMs: 600,
+                delayBeforeMs: 300,
+                maxOutputTokens: 3000,
               });
               const retryParsed = extractProjectFromResponse(retryRes.text, prompt);
               if (retryParsed.previewHtml) {
