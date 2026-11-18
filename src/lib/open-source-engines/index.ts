@@ -141,104 +141,26 @@ export const OPEN_SOURCE_REPOS: OpenSourceRepoMeta[] = [
     order: "12",
     id: "arena-hard-auto",
     name: "arena-hard-auto",
-    githubUrl: "https://github.com/lm-sys/arena-hard-auto",
-    cloneUrl: "https://github.com/lm-sys/arena-hard-auto.git",
+    githubUrl: "https://github.com/lmarena/arena-hard-auto",
+    cloneUrl: "https://github.com/lmarena/arena-hard-auto.git",
     license: "Apache-2.0",
-    descriptionAr: "محرك التقييم وحساب الترتيب الرسمي (Bradley-Terry & Elo Rating) لنماذج Arena.",
+    descriptionAr: "محرك التقييم الآلي والمقارنة المعيارية (Benchmark Evaluation) لنماذج الذكاء الاصطناعي.",
+    status: "active",
+  },
+  {
+    order: "13",
+    id: "arena-rank",
+    name: "arena-rank",
+    githubUrl: "https://github.com/Arena-OSS/arena-rank",
+    cloneUrl: "https://github.com/Arena-OSS/arena-rank.git",
+    license: "Apache-2.0",
+    descriptionAr: "المحرك الرياضي الرسمي (Bradley-Terry & Contextual Ranking) لحساب تصنيفات نماذج Arena.",
     status: "active",
   },
 ];
 
-// ============================================================================
-// 11 & 12. ARENA AI ELO RATING & SIDE-BY-SIDE BATTLE ENGINE (FastChat + arena-hard-auto)
-// ============================================================================
-
-export interface ArenaModelStats {
-  id: string;
-  name: string;
-  provider: string;
-  elo: number;
-  wins: number;
-  losses: number;
-  ties: number;
-  battles: number;
-}
-
-const ARENA_ELO_STORAGE_KEY = "kaspi_arena_elo_leaderboard_v1";
-
-export const DEFAULT_ARENA_LEADERBOARD: ArenaModelStats[] = [
-  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash (Store Architect)", provider: "Google", elo: 1285, wins: 18, losses: 4, ties: 3, battles: 25 },
-  { id: "llama-3.3-70b", name: "Llama 3.3 70B Versatile (Commerce Pro)", provider: "Groq / Meta", elo: 1272, wins: 16, losses: 5, ties: 4, battles: 25 },
-  { id: "deepseek-r1", name: "DeepSeek R1 (Puck Schema Reasoner)", provider: "DeepSeek / Arena", elo: 1264, wins: 14, losses: 6, ties: 3, battles: 23 },
-  { id: "qwen-2.5-coder", name: "Qwen 2.5 72B (UI & Tailwind Specialist)", provider: "Alibaba / Open", elo: 1248, wins: 12, losses: 7, ties: 3, battles: 22 },
-];
-
-/**
- * Ported from FastChat/fastchat/serve/monitor/elo_analysis.py (compute_online_elo)
- * Computes updated Elo ratings after a head-to-head Arena battle.
- */
-export function computeArenaEloUpdate(
-  ratingA: number,
-  ratingB: number,
-  outcome: "model_a" | "model_b" | "tie",
-  K = 32
-): { nextA: number; nextB: number } {
-  const expectedA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
-  const expectedB = 1 / (1 + Math.pow(10, (ratingA - ratingB) / 400));
-  const actualA = outcome === "model_a" ? 1 : outcome === "model_b" ? 0 : 0.5;
-  const actualB = 1 - actualA;
-
-  return {
-    nextA: Math.round(ratingA + K * (actualA - expectedA)),
-    nextB: Math.round(ratingB + K * (actualB - expectedB)),
-  };
-}
-
-export function loadArenaLeaderboard(): ArenaModelStats[] {
-  if (typeof window === "undefined") return DEFAULT_ARENA_LEADERBOARD;
-  try {
-    const raw = localStorage.getItem(ARENA_ELO_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return DEFAULT_ARENA_LEADERBOARD;
-}
-
-export function recordArenaBattleVote(
-  modelAId: string,
-  modelBId: string,
-  outcome: "model_a" | "model_b" | "tie"
-): ArenaModelStats[] {
-  const list = [...loadArenaLeaderboard()];
-  const idxA = list.findIndex((m) => m.id === modelAId);
-  const idxB = list.findIndex((m) => m.id === modelBId);
-  if (idxA === -1 || idxB === -1) return list;
-
-  const { nextA, nextB } = computeArenaEloUpdate(list[idxA].elo, list[idxB].elo, outcome);
-  list[idxA] = {
-    ...list[idxA],
-    elo: nextA,
-    battles: list[idxA].battles + 1,
-    wins: list[idxA].wins + (outcome === "model_a" ? 1 : 0),
-    losses: list[idxA].losses + (outcome === "model_b" ? 1 : 0),
-    ties: list[idxA].ties + (outcome === "tie" ? 1 : 0),
-  };
-  list[idxB] = {
-    ...list[idxB],
-    elo: nextB,
-    battles: list[idxB].battles + 1,
-    wins: list[idxB].wins + (outcome === "model_b" ? 1 : 0),
-    losses: list[idxB].losses + (outcome === "model_a" ? 1 : 0),
-    ties: list[idxB].ties + (outcome === "tie" ? 1 : 0),
-  };
-
-  const sorted = list.sort((a, b) => b.elo - a.elo);
-  if (typeof window !== "undefined") {
-    try {
-      localStorage.setItem(ARENA_ELO_STORAGE_KEY, JSON.stringify(sorted));
-    } catch {}
-  }
-  return sorted;
-}
+export * from "./puck-engine";
+export * from "./arena-evaluation-engine";
 
 // ============================================================================
 // 04. pdfme REAL BINARY PDF GENERATOR (%PDF-1.4 Standard Byte Stream + Cache)

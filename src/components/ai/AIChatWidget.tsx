@@ -354,7 +354,8 @@ export function AIChatWidget() {
   // Listen for custom "open-master-ai", "open-ai-chat" and "open-ai-studio" events
   useEffect(() => {
     const handleOpenAi = (ev: Event) => {
-      setIsOpen((prev) => !prev);
+      setIsOpen(false);
+      setIsStudioOpen(true);
       const customEv = ev as CustomEvent<{ prompt?: string }>;
       if (customEv.detail?.prompt) {
         setInput(customEv.detail.prompt);

@@ -1,0 +1,19 @@
+{
+  "auditedAt": "2026-11-18T04:06:34Z",
+  "totalRepositories": 13,
+  "repositories": [
+    {"name": "morphic", "githubUrl": "https://github.com/miurla/morphic", "cloneUrl": "https://github.com/miurla/morphic.git", "localPath": "external_sources/morphic", "status": "VERIFIED", "commitHash": "244ea609ab0d604f6c7020fee214ac087f0129c9", "licenseFile": "LICENSE"},
+    {"name": "moonshine", "githubUrl": "https://github.com/moonshine-ai/moonshine", "cloneUrl": "https://github.com/moonshine-ai/moonshine.git", "localPath": "external_sources/moonshine", "status": "VERIFIED", "commitHash": "d8d8fa29d05ca67441a7719e70099f9f48917a93", "licenseFile": "LICENSE"},
+    {"name": "unstract", "githubUrl": "https://github.com/Zipstack/unstract", "cloneUrl": "https://github.com/Zipstack/unstract.git", "localPath": "external_sources/unstract", "status": "VERIFIED", "commitHash": "fbe349aec7362be9b54f361f69023c53acc9b9b7", "licenseFile": "LICENSE"},
+    {"name": "pdfme", "githubUrl": "https://github.com/pdfme/pdfme", "cloneUrl": "https://github.com/pdfme/pdfme.git", "localPath": "external_sources/pdfme", "status": "VERIFIED", "commitHash": "60d73ae0a0b707c241c14e3c70bcec9670c56113", "licenseFile": "LICENSE.md"},
+    {"name": "docetl", "githubUrl": "https://github.com/ucbepic/docetl", "cloneUrl": "https://github.com/ucbepic/docetl.git", "localPath": "external_sources/docetl", "status": "VERIFIED", "commitHash": "63c49b96f22290c4333d54e7caa6a02fb2607e66", "licenseFile": "LICENSE"},
+    {"name": "assistant-ui", "githubUrl": "https://github.com/assistant-ui/assistant-ui", "cloneUrl": "https://github.com/assistant-ui/assistant-ui.git", "localPath": "external_sources/assistant-ui", "status": "VERIFIED", "commitHash": "d9a7f68b5a38fcc3f68b5acf127f71dd5b8a6837", "licenseFile": "LICENSE"},
+    {"name": "OpnForm", "githubUrl": "https://github.com/OpnForm/OpnForm", "cloneUrl": "https://github.com/OpnForm/OpnForm.git", "localPath": "external_sources/OpnForm", "status": "VERIFIED", "commitHash": "6fc1996fe5fd5f9e854b8af03931f193742220ec", "licenseFile": "LICENSE"},
+    {"name": "LitServe", "githubUrl": "https://github.com/Lightning-AI/LitServe", "cloneUrl": "https://github.com/Lightning-AI/LitServe.git", "localPath": "external_sources/LitServe", "status": "VERIFIED", "commitHash": "68c4943be1eeabd18561ac6704b6043459d6fa40", "licenseFile": "LICENSE"},
+    {"name": "next-forge", "githubUrl": "https://github.com/vercel/next-forge", "cloneUrl": "https://github.com/vercel/next-forge.git", "localPath": "external_sources/next-forge", "status": "VERIFIED", "commitHash": "f189de79ceef7c1ef69f61f12e272f99b4cdb699", "licenseFile": "NOT_FOUND"},
+    {"name": "puck", "githubUrl": "https://github.com/puckeditor/puck", "cloneUrl": "https://github.com/puckeditor/puck.git", "localPath": "external_sources/puck", "status": "VERIFIED", "commitHash": "cb3ac63510ee9ff7aa024d50dbcc69ada77202f7", "licenseFile": "LICENSE"},
+    {"name": "FastChat", "githubUrl": "https://github.com/lm-sys/FastChat", "cloneUrl": "https://github.com/lm-sys/FastChat.git", "localPath": "external_sources/FastChat", "status": "VERIFIED", "commitHash": "587d5cfa1609a43d192cedb8441cac3c17db105d", "licenseFile": "LICENSE"},
+    {"name": "arena-hard-auto", "githubUrl": "https://github.com/lmarena/arena-hard-auto", "cloneUrl": "https://github.com/lmarena/arena-hard-auto.git", "localPath": "external_sources/arena-hard-auto", "status": "VERIFIED", "commitHash": "196f6b826783b3da7310e361a805fa36f0be83f3", "licenseFile": "LICENSE"},
+    {"name": "arena-rank", "githubUrl": "https://github.com/Arena-OSS/arena-rank", "cloneUrl": "https://github.com/Arena-OSS/arena-rank.git", "localPath": "external_sources/arena-rank", "status": "VERIFIED", "commitHash": "7ea56771d8c3acea463fea12edafcbd1d808bc96", "licenseFile": "LICENSE"}
+  ]
+}

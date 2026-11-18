@@ -6,18 +6,16 @@ import {
   Sparkles,
   Search,
   FileText,
-  Layout,
   Globe,
   Layers,
-  CheckSquare,
   Cpu,
   Mic,
   MicOff,
   Volume2,
   VolumeX,
-  Share2,
   Paperclip,
   ArrowUp,
+  ArrowRight,
   Loader2,
   Download,
   Copy,
@@ -25,20 +23,46 @@ import {
   ThumbsUp,
   ThumbsDown,
   RotateCcw,
-  Terminal,
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
   Trash2,
   ChevronDown,
-  ChevronRight,
+  ChevronUp,
   ExternalLink,
   Code2,
-  BookOpen,
   Swords,
+  Eye,
+  Monitor,
+  Tablet,
+  Smartphone,
+  MoreHorizontal,
+  Edit3,
+  Archive,
+  Trophy,
+  ShieldCheck,
+  Workflow,
+  TrendingUp,
+  Palette,
+  Image as ImageIcon,
+  Megaphone,
+  MessageSquare,
+  ShoppingCart,
+  Boxes,
+  Tag,
+  BarChart3,
+  PackageCheck,
+  Camera,
+  HelpCircle,
+  LogOut,
+  X,
+  Folder,
+  CheckCircle2,
+  Lock,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
 import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
+import { KaspiBrandMark } from "@/components/common/KaspiBrandMark";
 import { KaspiAiSearchEngine } from "./studio/KaspiAiSearchEngine";
 import { KaspiUnstractInvoiceParser } from "./studio/KaspiUnstractInvoiceParser";
 import { KaspiPdfmeDesigner } from "./studio/KaspiPdfmeDesigner";
@@ -46,18 +70,38 @@ import { KaspiPuckStorefrontBuilder } from "./studio/KaspiPuckStorefrontBuilder"
 import { KaspiDocEtlAnalyzer } from "./studio/KaspiDocEtlAnalyzer";
 import { KaspiOpnFormBuilder } from "./studio/KaspiOpnFormBuilder";
 import { KaspiArenaBuilder } from "./studio/KaspiArenaBuilder";
+import { moonshineVoice } from "@/lib/ai/moonshine-voice-engine";
 import {
-  moonshineVoice,
-  synthesizeRealWavBlob,
-  type VoiceNoteBrief,
-} from "@/lib/ai/moonshine-voice-engine";
+  aggregateMerchantStoreContext,
+  type AggregatedStoreContext,
+} from "@/lib/ai/store-context-builder";
 import {
+  ARENA_MODEL_REGISTRY,
+  computeBradleyTerryLeaderboard,
+  loadHumanPreferenceVotes,
+  saveHumanPreferenceVote,
+  saveBenchmarkScores,
+  loadBenchmarkScores,
+  applyDesignToPuckDraft,
+  publishApprovedPuckDesign,
   OPEN_SOURCE_REPOS,
-  generateRealPdfmeDocument,
-  runRealDocEtlPipeline,
+  type BattleOutcome,
+  type PuckData,
 } from "@/lib/open-source-engines";
+import {
+  KASPI_SPECIALIZED_AGENTS,
+  OPEN_SOURCE_CAPABILITY_REGISTRY,
+  executeAutonomousAgentCollective,
+  buildRealZipArchiveFromFiles,
+  loadTenantSharedMemory,
+  recordMissionIntoTenantMemory,
+  type OrchestratedMissionResult,
+  type GeneratedProjectFile,
+  type ApprovalRequestRecord,
+  type AgentAuditLogEntry,
+  type SpecializedAgentId,
+} from "@/lib/ai/arena-agent-orchestrator";
 import { usePosStore } from "@/client/store/usePosStore";
-import { offlineDb } from "@/client/db";
 import { getApiUrl } from "@/client/sync-engine";
 import { toast } from "sonner";
 
@@ -68,1267 +112,2742 @@ interface KaspiAiStudioModalProps {
   initialTab?: string;
 }
 
-type CanvasTool =
-  | "arena"
-  | "puck"
-  | "pdfme"
-  | "unstract"
-  | "search"
-  | "docetl"
-  | "opnform"
-  | "repos";
+type ArenaExecutionMode = "battle" | "agent" | "side_by_side" | "direct";
+type DomainFocusMode = "storefront_code" | "multi_agent_plan" | "sandbox_app" | "workflow_flow" | "marketing_campaign";
+type RightPanelTab = "option_a" | "option_b" | "architecture_agents" | "puck_editor" | "approvals_workflows" | "leaderboard" | "open_source_tools";
+type OpenSourceSubTool = "puck" | "arena" | "pdfme" | "unstract" | "search" | "docetl" | "opnform";
 
-interface StudioMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
+interface ArenaConversationTurn {
+  turnId: string;
   timestamp: string;
-  provider?: string;
-  model?: string;
-  latencyMs?: number;
-  thinkingSteps?: string[];
-  citations?: Array<{ title: string; url: string; snippet: string }>;
-  suggestedArtifact?: { type: CanvasTool; title: string } | null;
-  wavUrl?: string;
+  userPrompt: string;
+  mode: ArenaExecutionMode;
+  modelAId: string;
+  modelBId: string;
+  modelAName: string;
+  modelBName: string;
+  voteOutcome: BattleOutcome | null;
+  mission: OrchestratedMissionResult;
+  expandedStepsA?: boolean;
+  expandedStepsB?: boolean;
 }
 
-interface StudioThread {
+interface ArenaProjectThread {
   id: string;
   title: string;
+  createdAt: string;
   updatedAt: string;
-  messages: StudioMessage[];
+  archived?: boolean;
+  turns: ArenaConversationTurn[];
 }
 
-const STUDIO_THREADS_KEY = "kaspi_ai_studio_threads_v2";
+const ARENA_PROJECTS_STORAGE_KEY = "kaspi_arena_projects_v3";
 
-const BASH_CLONE_SCRIPT = `#!/bin/bash
-
-# إنشاء مجلد رئيسي يجمع جميع المصادر ومنصة Arena داخل مشروعك
-mkdir -p external_sources
-cd external_sources || exit
-
-# قائمة الروابط المباشرة للنقل (شاملة Arena AI + Puck + المصادر الـ 10)
-REPOS=(
-  "https://github.com/lm-sys/FastChat.git"
-  "https://github.com/lm-sys/arena-hard-auto.git"
-  "https://github.com/puckeditor/puck.git"
-  "https://github.com/miurla/morphic.git"
-  "https://github.com/moonshine-ai/moonshine.git"
-  "https://github.com/Zipstack/unstract.git"
-  "https://github.com/pdfme/pdfme.git"
-  "https://github.com/ucbepic/docetl.git"
-  "https://github.com/assistant-ui/assistant-ui.git"
-  "https://github.com/OpnForm/OpnForm.git"
-  "https://github.com/Lightning-AI/LitServe.git"
-  "https://github.com/vercel/next-forge.git"
-)
-
-# تنفيذ عملية النقل لكل مصدر
-for repo in "\${REPOS[@]}"; do
-  echo "----------------------------------------"
-  echo "نقل المصدر: \$repo"
-  git clone --depth 1 "\$repo"
-done
-
-echo "----------------------------------------"
-echo "تم نقل جميع المصادر ومنصة Arena AI بنجاح داخل مجلد external_sources!"`;
+const REQUIRED_SCENARIOS = [
+  {
+    code: "SCENARIO A",
+    label: "أنشئ متجراً إلكترونياً لهذا التاجر",
+    prompt: "أنشئ متجراً إلكترونياً متكاملاً لهذا التاجر مرتبطاً بمنتجات المتجر وأسعاره وطلب واتساب.",
+    mode: "battle" as ArenaExecutionMode,
+  },
+  {
+    code: "SCENARIO B",
+    label: "حلل مبيعاتي وحدد أفضل المنتجات",
+    prompt: "حلل مبيعاتي وهوامش الربح وحدد أفضل المنتجات أداءً في متجري.",
+    mode: "agent" as ArenaExecutionMode,
+  },
+  {
+    code: "SCENARIO C",
+    label: "أنشئ حملة تسويقية للمنتجات الأعلى أداءً",
+    prompt: "أريد إطلاق حملة تسويقية لمنتجاتي الأكثر ربحية هذا الأسبوع بـ 4 لغات مع البنرات وتحسين SEO.",
+    mode: "agent" as ArenaExecutionMode,
+  },
+  {
+    code: "SCENARIO D",
+    label: "أنشئ نظام تنبيه عند انخفاض المخزون",
+    prompt: "عندما ينخفض مخزون منتج إلى أقل من 5 وحدات: أنشئ تنبيهاً وأرسل إشعاراً للمسؤول وسجل الحدث واطلب مراجعة إعادة الطلب.",
+    mode: "agent" as ArenaExecutionMode,
+  },
+  {
+    code: "SCENARIO E",
+    label: "أجب عن سؤال عميل حول توفر منتج",
+    prompt: "أجب عن سؤال عميل حول توفر المنتجات وأسعارها الرسمية وسياسة التوصيل في المتجر.",
+    mode: "agent" as ArenaExecutionMode,
+  },
+  {
+    code: "SCENARIO F",
+    label: "ابحث عن فرص تجارية جديدة في مجال نشاطي",
+    prompt: "ابحث عن فرص تجارية جديدة واتجاهات السوق في مجال نشاط متجري.",
+    mode: "agent" as ArenaExecutionMode,
+  },
+  {
+    code: "SCENARIO G",
+    label: "أنشئ تطبيقاً صغيراً لإدارة حجوزات متجري",
+    prompt: "أنشئ تطبيقاً صغيراً لإدارة حجوزات وطلبات زبناء متجري داخل بيئة معزولة Sandbox.",
+    mode: "agent" as ArenaExecutionMode,
+  },
+  {
+    code: "SCENARIO H",
+    label: "اقترح خطة لتطوير المتجر خلال الشهر القادم",
+    prompt: "اقترح خطة شاملة لتطوير المتجر وزيادة المبيعات خلال الشهر القادم بمشاركة جميع الوكلاء.",
+    mode: "agent" as ArenaExecutionMode,
+  },
+];
 
 export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
   isOpen,
   onClose,
   locale = "ar",
 }) => {
-  const { tenantInfo } = usePosStore();
-  const shopName = tenantInfo?.shopName || "ASIMA";
+  const { tenantInfo, storeType } = usePosStore();
 
-  // Layout states (Google AI Studio / Antigravity Split IDE)
-  const [showLeftSidebar, setShowLeftSidebar] = useState(true);
-  const [activeCanvas, setActiveCanvas] = useState<CanvasTool>("arena");
-  const [showTerminal, setShowTerminal] = useState(true);
+  // Layout & Sidebar States (matching Arena Screenshots 3–15)
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarSearch, setSidebarSearch] = useState("");
+  const [showSeeMoreNav, setShowSeeMoreNav] = useState(false);
 
-  // Threads & History
-  const [threads, setThreads] = useState<StudioThread[]>([]);
-  const [activeThreadId, setActiveThreadId] = useState<string>("default-thread");
+  // Store Context & Multi-Level Memory
+  const [storeCtx, setStoreCtx] = useState<AggregatedStoreContext | null>(null);
+  const [approvals, setApprovals] = useState<ApprovalRequestRecord[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AgentAuditLogEntry[]>([]);
 
-  // Chat & Interaction states
-  const [chatInput, setChatInput] = useState("");
-  const [isAiThinking, setIsAiThinking] = useState(false);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [feedbackMap, setFeedbackMap] = useState<Record<string, "up" | "down" | null>>({});
-  const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({});
-  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
+  // Conversation / Project Threads
+  const [threads, setThreads] = useState<ArenaProjectThread[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [threadMenuOpenId, setThreadMenuOpenId] = useState<string | null>(null);
+  const [headerTitleMenuOpen, setHeaderTitleMenuOpen] = useState(false);
+  const [renamingThreadId, setRenamingThreadId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
-  // Voice Recording (Moonshine + Whisper)
-  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
-  const [autoReadAloud, setAutoReadAloud] = useState(true);
-  const [activeBrief, setActiveBrief] = useState<VoiceNoteBrief | null>(null);
-  const [isPlayingBrief, setIsPlayingBrief] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+  // Prompt Bar & Popover States (matching Screenshots 10 & 11)
+  const [promptInput, setPromptInput] = useState("");
+  const [arenaMode, setArenaMode] = useState<ArenaExecutionMode>("battle");
+  const [domainFocus, setDomainFocus] = useState<DomainFocusMode>("storefront_code");
+  const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
+  const [domainDropdownOpen, setDomainDropdownOpen] = useState(false);
+  const [plusMenuOpen, setPlusMenuOpen] = useState(false);
+  const [modelAId, setModelAId] = useState<string>(ARENA_MODEL_REGISTRY[0].id);
+  const [modelBId, setModelBId] = useState<string>(ARENA_MODEL_REGISTRY[1].id);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
-  // Built-in Terminal states
-  const [terminalLogs, setTerminalLogs] = useState<string[]>([
-    `[Kaspi Studio OS v2.0] جاهز. تم ربط 10 مصادر مفتوحة بنجاح (0 Token Cost • Local CPU Active).`,
-    `[LitServe Router] البوابات النشطة: Google Gemini 2.5 • Groq Llama-3.3-70B • Kaspi Free Open-Source Arena.`,
-    `[Terminal] اكتب 'help' لعرض الأوامر المتاحة أو 'repos' لعرض روابط الـ 10 مصادر.`,
-  ]);
-  const [terminalCmd, setTerminalCmd] = useState("");
-  const chatScrollRef = useRef<HTMLDivElement>(null);
-  const terminalScrollRef = useRef<HTMLDivElement>(null);
+  // Right Split-Screen Canvas States (matching Screenshots 3, 4, 7, 9, 14)
+  const [rightTab, setRightTab] = useState<RightPanelTab>("option_a");
+  const [previewOrCode, setPreviewOrCode] = useState<"preview" | "code">("preview");
+  const [viewportDevice, setViewportDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [viewportDropdownOpen, setViewportDropdownOpen] = useState(false);
+  const [selectedFilePath, setSelectedFilePath] = useState<string>("src/App.tsx");
+  const [selectedAgentFilter, setSelectedAgentFilter] = useState<SpecializedAgentId | null>(null);
+  const [openSourceSubTool, setOpenSourceSubTool] = useState<OpenSourceSubTool>("puck");
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const [accountModalOpen, setAccountModalOpen] = useState(false);
+  const [keepPostedChecked, setKeepPostedChecked] = useState(true);
+  const [downloadTooltipVisible, setDownloadTooltipVisible] = useState(false);
 
-  const appendLog = (line: string) => {
-    const ts = new Date().toLocaleTimeString("en-GB", { hour12: false });
-    setTerminalLogs((prev) => [...prev.slice(-80), `[${ts}] ${line}`]);
-  };
+  // Storefront interactive cart inside live preview
+  const [previewCart, setPreviewCart] = useState<Record<string, number>>({});
+  const [previewCategory, setPreviewCategory] = useState<string>("الكل");
 
-  // Load saved threads on mount
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 1. Load Authenticated Store Context + Threads + Leaderboard
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = localStorage.getItem(STUDIO_THREADS_KEY);
-      if (raw) {
-        const parsed: StudioThread[] = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setThreads(parsed);
-          setActiveThreadId(parsed[0].id);
-          return;
-        }
-      }
-    } catch {}
+    if (!isOpen) return;
 
-    const initialThread: StudioThread = {
-      id: `thread-${Date.now()}`,
-      title: "محادثة ومشروع جديد",
-      updatedAt: new Date().toISOString(),
-      messages: [
-        {
-          id: "welcome-1",
-          role: "assistant",
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          provider: "Kaspi Studio Core",
-          model: "multi-engine-v2",
-          content:
-            locale === "ar"
-              ? `مرحباً بك في **Kaspi AI** (${shopName})!\n\nأنا متصل مباشرة بجميع المصادر الـ 10 المفتوحة المصدر وبقاعدة بيانات متجرك الحية:\n- اسألني أي سؤال بالدارجة، العربية، الفرنسية أو الإنجليزية وسأجيبك فوراً.\n- اطلب مني **بناء أو تعديل موقع متجرك الإلكتروني (Puck)** أو **توليد فاتورة PDF حقيقية (pdfme)** أو **استخراج فاتورة مورد (Unstract)** أو **تحليل المبيعات والهوامش (DocETL)**.\n- يمكنك استعمالي بالصوت المباشر، نسخ الرسائل، التقييم، أو تنفيذ الأوامر من **التيرمينال (Terminal)** أسفله.`
-              : `Bienvenue dans **Kaspi AI Studio** (${shopName}) ! Posez vos questions, générez des PDF réels avec pdfme, extrayez vos factures avec Unstract ou créez votre boutique en ligne avec Puck.`,
-          thinkingSteps: [
-            "[System] تهيئة المصادر الـ 10 المفتوحة المصدر (Morphic, Moonshine, Unstract, pdfme, DocETL, assistant-ui, OpnForm, LitServe, next-forge, Puck)",
-            "[Database] ربط مباشر مع مخزون ومبيعات الكاسة المحلية والسحابية",
-          ],
-        },
-      ],
-    };
-    setThreads([initialThread]);
-    setActiveThreadId(initialThread.id);
-  }, [locale, shopName]);
+    aggregateMerchantStoreContext({
+      shopName: tenantInfo?.shopName || "ASIMA",
+      sector: storeType || "grocery",
+      phone: tenantInfo?.phone,
+      city: tenantInfo?.city,
+      ice: tenantInfo?.ice,
+    }).then((ctx) => {
+      setStoreCtx(ctx);
+      loadTenantSharedMemory(ctx);
 
-  // Save threads whenever updated
-  const saveThreadsToStorage = (updated: StudioThread[]) => {
-    setThreads(updated);
-    if (typeof window !== "undefined") {
       try {
-        localStorage.setItem(STUDIO_THREADS_KEY, JSON.stringify(updated));
+        const rawThreads = localStorage.getItem(`${ARENA_PROJECTS_STORAGE_KEY}_${ctx.tenantId}`);
+        if (rawThreads) {
+          const parsed = JSON.parse(rawThreads) as ArenaProjectThread[];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setThreads(parsed);
+          }
+        }
+      } catch {}
+    });
+  }, [isOpen, tenantInfo?.shopName, storeType]);
+
+  const saveThreadsToStorage = (nextThreads: ArenaProjectThread[]) => {
+    setThreads(nextThreads);
+    if (typeof window !== "undefined" && storeCtx) {
+      try {
+        localStorage.setItem(
+          `${ARENA_PROJECTS_STORAGE_KEY}_${storeCtx.tenantId}`,
+          JSON.stringify(nextThreads)
+        );
       } catch {}
     }
   };
 
-  const currentThread = threads.find((t) => t.id === activeThreadId) || threads[0];
-  const messages = currentThread?.messages || [];
+  const activeThread = threads.find((t) => t.id === activeThreadId && !t.archived) || null;
+  const latestTurn =
+    activeThread && activeThread.turns.length > 0
+      ? activeThread.turns[activeThread.turns.length - 1]
+      : null;
 
-  useEffect(() => {
-    if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
-    }
-  }, [messages.length, isAiThinking]);
-
-  useEffect(() => {
-    if (terminalScrollRef.current) {
-      terminalScrollRef.current.scrollTop = terminalScrollRef.current.scrollHeight;
-    }
-  }, [terminalLogs.length]);
-
-  const handleCreateNewThread = () => {
-    const newThread: StudioThread = {
-      id: `thread-${Date.now()}`,
-      title: `محادثة ${threads.length + 1}`,
-      updatedAt: new Date().toISOString(),
-      messages: [
-        {
-          id: `msg-${Date.now()}`,
-          role: "assistant",
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          provider: "Kaspi Studio Core",
-          content: "بدأت جلسة جديدة في Kaspi AI Studio. كيف يمكنني مساعدتك اليوم؟",
-        },
-      ],
-    };
-    const updated = [newThread, ...threads];
-    saveThreadsToStorage(updated);
-    setActiveThreadId(newThread.id);
-    appendLog(`[Studio] تم إنشاء جلسة محادثة جديدة: ${newThread.title}`);
+  // Start a new blank chat/project ("What would you like to do?" screen)
+  const handleStartNewChat = () => {
+    setActiveThreadId(null);
+    setPromptInput("");
+    setPlusMenuOpen(false);
+    setModeDropdownOpen(false);
+    setDomainDropdownOpen(false);
   };
 
-  const handleDeleteThread = (id: string) => {
-    if (threads.length <= 1) {
-      toast.info("يجب الإبقاء على محادثة واحدة على الأقل");
+  // Rename a conversation thread (Screenshot 5 & 6)
+  const handleConfirmRename = (threadId: string) => {
+    if (!renameValue.trim()) {
+      setRenamingThreadId(null);
       return;
     }
-    const remaining = threads.filter((t) => t.id !== id);
-    saveThreadsToStorage(remaining);
-    if (activeThreadId === id) {
-      setActiveThreadId(remaining[0].id);
-    }
-    appendLog(`[Studio] تم حذف المحادثة من السجل.`);
+    const updated = threads.map((t) =>
+      t.id === threadId ? { ...t, title: renameValue.trim(), updatedAt: new Date().toISOString() } : t
+    );
+    saveThreadsToStorage(updated);
+    setRenamingThreadId(null);
+    setThreadMenuOpenId(null);
+    setHeaderTitleMenuOpen(false);
+    toast.success("تم تغيير اسم المشروع بنجاح");
   };
 
-  // Gather live Dexie snapshot to pass to /api/ai/studio
-  const gatherStoreSnapshot = async () => {
-    let productsCount = 0;
-    let todaySalesCount = 0;
-    let todaySalesTotal = 0;
-    let totalDebtMAD = 0;
+  // Archive a conversation thread (Screenshot 5 & 6)
+  const handleArchiveThread = (threadId: string) => {
+    const updated = threads.map((t) => (t.id === threadId ? { ...t, archived: true } : t));
+    saveThreadsToStorage(updated);
+    if (activeThreadId === threadId) {
+      setActiveThreadId(null);
+    }
+    setThreadMenuOpenId(null);
+    setHeaderTitleMenuOpen(false);
+    toast.info("تمت أرشفة المحادثة");
+  };
 
-    if (offlineDb) {
+  // Execute Arena Battle / Autonomous Agent Collective Mission
+  const handleExecutePrompt = async (customText?: string, overrideMode?: ArenaExecutionMode) => {
+    const rawText = (customText ?? promptInput).trim();
+    if (!rawText && !customText) return;
+    if (isExecuting) return;
+
+    const effectiveMode = overrideMode || arenaMode;
+    setIsExecuting(true);
+    setPromptInput("");
+    setPlusMenuOpen(false);
+    setModeDropdownOpen(false);
+    setDomainDropdownOpen(false);
+
+    try {
+      const ctx =
+        storeCtx ||
+        (await aggregateMerchantStoreContext({
+          shopName: tenantInfo?.shopName || "ASIMA",
+          sector: storeType || "grocery",
+          phone: tenantInfo?.phone,
+          city: tenantInfo?.city,
+          ice: tenantInfo?.ice,
+        }));
+      if (!storeCtx) setStoreCtx(ctx);
+
+      // Run local + server hybrid Arena Battle & Multi-Agent Orchestrator
+      let mission = executeAutonomousAgentCollective(rawText, ctx, effectiveMode);
+
       try {
-        const [prods, sales, custs] = await Promise.all([
-          offlineDb.offlineProducts.toArray().catch(() => []),
-          offlineDb.offlineSales.toArray().catch(() => []),
-          offlineDb.offlineCustomers.toArray().catch(() => []),
-        ]);
-        productsCount = prods.length;
-        const todayStart = new Date().setHours(0, 0, 0, 0);
-        const todaySales = sales.filter((s: any) => Number(s.createdAt || 0) >= todayStart);
-        todaySalesCount = todaySales.length;
-        todaySalesTotal = todaySales.reduce((a: number, s: any) => a + Number(s.grandTotal || 0), 0);
-        totalDebtMAD = custs.reduce((a: number, c: any) => a + Number(c.currentCreditBalance || 0), 0);
-      } catch {}
-    }
+        const res = await fetch(getApiUrl("/api/ai/studio"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "arena_battle",
+            customGoal: rawText,
+            arenaMode: effectiveMode,
+            modelAId,
+            modelBId,
+            storeContext: ctx,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.orchestratedMission) {
+            mission = data.orchestratedMission;
+          } else if (data?.candidateA?.puckData && data?.candidateB?.puckData) {
+            mission = executeAutonomousAgentCollective(
+              rawText,
+              ctx,
+              effectiveMode,
+              data.candidateA.puckData,
+              data.candidateB.puckData
+            );
+          }
+        }
+      } catch {
+        // Offline / local deterministic fallback already computed in `mission`
+      }
 
-    return {
-      shopName,
-      productsCount,
-      todaySalesCount,
-      todaySalesTotal,
-      totalDebtMAD,
-    };
+      // Persist benchmarks, memory, approvals, and audit logs
+      saveBenchmarkScores(ctx.tenantId, {
+        [modelAId]: mission.benchmarkA.totalScorePct,
+        [modelBId]: mission.benchmarkB.totalScorePct,
+      });
+      recordMissionIntoTenantMemory(ctx, mission);
+      setApprovals((prev) => [...mission.pendingApprovals, ...prev]);
+      setAuditLogs((prev) => [...mission.auditLogs, ...prev]);
+
+      const descriptorA = ARENA_MODEL_REGISTRY.find((m) => m.id === modelAId) || ARENA_MODEL_REGISTRY[0];
+      const descriptorB = ARENA_MODEL_REGISTRY.find((m) => m.id === modelBId) || ARENA_MODEL_REGISTRY[1];
+
+      const newTurn: ArenaConversationTurn = {
+        turnId: `turn-${Date.now().toString(36)}`,
+        timestamp: new Date().toISOString(),
+        userPrompt: rawText,
+        mode: effectiveMode,
+        modelAId: descriptorA.id,
+        modelBId: descriptorB.id,
+        modelAName: descriptorA.displayName,
+        modelBName: descriptorB.displayName,
+        voteOutcome: null,
+        mission,
+      };
+
+      if (activeThread) {
+        const updatedThreads = threads.map((t) =>
+          t.id === activeThread.id
+            ? {
+                ...t,
+                updatedAt: new Date().toISOString(),
+                turns: [...t.turns, newTurn],
+              }
+            : t
+        );
+        saveThreadsToStorage(updatedThreads);
+      } else {
+        const newThreadId = `proj-${Date.now().toString(36)}`;
+        const cleanTitle =
+          mission.effectiveBusinessPrompt.slice(0, 42) || `${ctx.storeName} — Storefront`;
+        const newThread: ArenaProjectThread = {
+          id: newThreadId,
+          title: cleanTitle,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          turns: [newTurn],
+        };
+        saveThreadsToStorage([newThread, ...threads]);
+        setActiveThreadId(newThreadId);
+      }
+
+      if (effectiveMode === "agent" && domainFocus === "multi_agent_plan") {
+        setRightTab("architecture_agents");
+      } else {
+        setRightTab("option_a");
+      }
+
+      if (mission.guardrailNoticeAr) {
+        toast.warning("تم توجيه الطلب تلقائياً لخدمة متجرك التجاري (KASPI Business Guardrail)");
+      }
+    } finally {
+      setIsExecuting(false);
+    }
   };
 
-  // Send real chat message to /api/ai/studio
-  const sendStudioMessage = async (promptText: string) => {
-    const trimmed = promptText.trim();
-    if (!trimmed || isAiThinking) return;
+  // Record Human Preference Vote (A is better / B is better / Both are good / Both are bad)
+  const handleVoteOnTurn = (turnId: string, outcome: BattleOutcome) => {
+    if (!activeThread || !storeCtx) return;
 
-    const userMsg: StudioMessage = {
-      id: `usr-${Date.now()}`,
-      role: "user",
-      content: trimmed,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
+    const targetTurn = activeThread.turns.find((t) => t.turnId === turnId);
+    if (!targetTurn) return;
 
-    const updatedMsgs = [...messages, userMsg];
-    const nextTitle =
-      currentThread.messages.length <= 1 ? trimmed.slice(0, 32) : currentThread.title;
+    saveHumanPreferenceVote({
+      tenantId: storeCtx.tenantId,
+      promptSummary: targetTurn.userPrompt.slice(0, 120),
+      modelAId: targetTurn.modelAId,
+      modelBId: targetTurn.modelBId,
+      outcome,
+    });
+
+    fetch(getApiUrl("/api/ai/studio"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "arena_vote",
+        modelAId: targetTurn.modelAId,
+        modelBId: targetTurn.modelBId,
+        outcome,
+        promptSummary: targetTurn.userPrompt,
+      }),
+    }).catch(() => {});
 
     const updatedThreads = threads.map((t) =>
-      t.id === currentThread.id
-        ? { ...t, title: nextTitle, updatedAt: new Date().toISOString(), messages: updatedMsgs }
+      t.id === activeThread.id
+        ? {
+            ...t,
+            turns: t.turns.map((turn) =>
+              turn.turnId === turnId ? { ...turn, voteOutcome: outcome } : turn
+            ),
+          }
         : t
     );
     saveThreadsToStorage(updatedThreads);
-    setChatInput("");
-    setIsAiThinking(true);
-    appendLog(`[User Prompt] "${trimmed.slice(0, 60)}" -> إرسال إلى /api/ai/studio...`);
 
-    try {
-      const storeSnapshot = await gatherStoreSnapshot();
-      const res = await fetch(getApiUrl("/api/ai/studio"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "chat",
-          locale,
-          prompt: trimmed,
-          history: updatedMsgs.slice(-10).map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-          storeSnapshot,
-        }),
-      });
-
-      const data = await res.json();
-      const replyText =
-        data?.reply ||
-        "تم استلام طلبك ومعالجته بنجاح في Kaspi AI Studio.";
-
-      const assistantMsg: StudioMessage = {
-        id: `asst-${Date.now()}`,
-        role: "assistant",
-        content: replyText,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        provider: data?.provider || "Kaspi AI Router",
-        model: data?.model || "auto",
-        latencyMs: data?.latencyMs || 120,
-        thinkingSteps: data?.thinkingSteps || [],
-        citations: data?.citations || [],
-        suggestedArtifact: data?.suggestedArtifact || null,
-        wavUrl: synthesizeRealWavBlob(4),
-      };
-
-      const finalThreads = updatedThreads.map((t) =>
-        t.id === currentThread.id
-          ? {
-              ...t,
-              updatedAt: new Date().toISOString(),
-              messages: [...updatedMsgs, assistantMsg],
-            }
-          : t
-      );
-      saveThreadsToStorage(finalThreads);
-
-      if (Array.isArray(data?.thinkingSteps)) {
-        data.thinkingSteps.forEach((step: string) => appendLog(step));
-      }
-
-      if (data?.suggestedArtifact?.type) {
-        setActiveCanvas(data.suggestedArtifact.type as CanvasTool);
-        appendLog(`[Canvas Auto-Switch] فتح أداة: ${data.suggestedArtifact.title}`);
-      }
-
-      if (autoReadAloud) {
-        setSpeakingMsgId(assistantMsg.id);
-        moonshineVoice.speak(
-          replyText,
-          locale,
-          () => setSpeakingMsgId(assistantMsg.id),
-          () => setSpeakingMsgId(null)
-        );
-      }
-    } catch (err: any) {
-      appendLog(`[Error] تعذر الاتصال بالخادم، استخدام المحرك المحلي.`);
-      toast.error("حدث خطأ في الاتصال، يرجى المحاولة مرة أخرى");
-    } finally {
-      setIsAiThinking(false);
+    if (outcome === "model_a") {
+      setRightTab("option_a");
+      toast.success(`تم تسجيل التصويت لصالح ${targetTurn.modelAName} وتحديث تصنيف Bradley-Terry Elo!`);
+    } else if (outcome === "model_b") {
+      setRightTab("option_b");
+      toast.success(`تم تسجيل التصويت لصالح ${targetTurn.modelBName} وتحديث تصنيف Bradley-Terry Elo!`);
+    } else if (outcome === "tie") {
+      toast.info("تم تسجيل تعادل إيجابي (Both are good) في سجل تقييم Arena!");
+    } else {
+      toast.info("تم تسجيل (Both are bad) في سجل تقييم Arena!");
     }
   };
 
-  // Real Microphone Recording -> /api/ai/transcribe (Groq Whisper + Web Speech API)
-  const toggleVoiceRecording = async () => {
-    if (isRecordingVoice) {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-        mediaRecorderRef.current.stop();
-      }
-      setIsRecordingVoice(false);
-      return;
-    }
+  // Download Project as Real .ZIP Archive (Screenshot 4)
+  const handleDownloadProjectZip = () => {
+    if (!latestTurn || !storeCtx) return;
+    const files: GeneratedProjectFile[] =
+      rightTab === "option_b"
+        ? latestTurn.mission.projectFilesB
+        : latestTurn.mission.projectFilesA;
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioChunksRef.current = [];
-      const recorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = recorder;
-
-      recorder.ondataavailable = (ev) => {
-        if (ev.data.size > 0) audioChunksRef.current.push(ev.data);
-      };
-
-      recorder.onstop = async () => {
-        stream.getTracks().forEach((tr) => tr.stop());
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        appendLog(`[Moonshine STT] جاري تحويل التسجيل الصوتي (${(audioBlob.size / 1024).toFixed(1)} KB) إلى نص...`);
-
-        const formData = new FormData();
-        formData.append("file", audioBlob, "voice.webm");
-
-        try {
-          const res = await fetch(getApiUrl("/api/ai/transcribe"), {
-            method: "POST",
-            body: formData,
-          });
-          const data = await res.json();
-          if (data?.text && data.text.trim()) {
-            appendLog(`[Moonshine STT] ✔ النص المفرغ: "${data.text}"`);
-            await sendStudioMessage(data.text);
-          } else {
-            toast.info("لم يتم التقاط كلام واضح، حاول التحدث مرة أخرى");
-          }
-        } catch {
-          toast.error("تعذر تفريغ الصوت");
-        }
-      };
-
-      recorder.start();
-      setIsRecordingVoice(true);
-      appendLog(`[Moonshine Mic] 🎙️ التسجيل الصوتي نشط — تحدث بأي لغة...`);
-      toast.success("الميكروفون يستمع إليك الآن — تحدث بحرية ثم اضغط لإرسال الصوت");
-    } catch {
-      toast.error("يرجى السماح بصلاحية الميكروفون للتحدث الصوتي");
-    }
+    const zipBytes = buildRealZipArchiveFromFiles(files);
+    const blob = new Blob([zipBytes.buffer as ArrayBuffer], { type: "application/zip" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${storeCtx.slug || "kaspi-store"}-${rightTab === "option_b" ? "option-b" : "option-a"}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("تم تحميل ملف المشروع الكامل (Download Project as Zip File) بنجاح!");
   };
 
-  // Handle Voice Note Brief Generation
-  const handleGenerateVoiceBrief = async (type: "daily_sales" | "low_stock" | "shift_close") => {
-    const snap = await gatherStoreSnapshot();
-    const brief = moonshineVoice.generateStoreBrief(type, {
-      storeName: snap.shopName,
-      totalSales: snap.todaySalesTotal,
-      ordersCount: snap.todaySalesCount,
-      lowStockItems: ["حليب UHT", "زيت المائدة", "سكر"],
-      cashTotal: snap.todaySalesTotal,
-      locale,
-    });
-    setActiveBrief(brief);
-    appendLog(`[Moonshine WAV] ✔ تم توليد ملف صوتي WAV (${brief.title}) جاهز للتحميل أو الإرسال عبر واتساب`);
-    moonshineVoice.speak(
-      brief.textScript,
-      locale,
-      () => setIsPlayingBrief(true),
-      () => setIsPlayingBrief(false)
+  // Apply selected Option A / Option B design to Puck Draft & open Puck Editor
+  const handleApplyCurrentDesignToStore = () => {
+    if (!latestTurn || !storeCtx) return;
+    const chosenPuck: PuckData =
+      rightTab === "option_b" ? latestTurn.mission.puckDataB : latestTurn.mission.puckDataA;
+    const label =
+      rightTab === "option_b"
+        ? `Option B (${latestTurn.modelBName})`
+        : `Option A (${latestTurn.modelAName})`;
+
+    applyDesignToPuckDraft(chosenPuck, storeCtx, label);
+    setRightTab("puck_editor");
+    toast.success(`تم نقل تصميم ${label} إلى محرر المتجر (Puck Draft) للمعاينة والتعديل!`);
+  };
+
+  // Approve or Reject a Level 3 Sensitive Action
+  const handleDecisionOnApproval = (approvalId: string, decision: "approved_executed" | "rejected") => {
+    if (!storeCtx) return;
+    setApprovals((prev) =>
+      prev.map((item) =>
+        item.approvalId === approvalId
+          ? { ...item, status: decision, decidedAt: new Date().toISOString() }
+          : item
+      )
     );
+
+    const target = approvals.find((a) => a.approvalId === approvalId);
+    if (decision === "approved_executed" && target?.actionType === "PUBLISH_STOREFRONT" && latestTurn) {
+      publishApprovedPuckDesign(latestTurn.mission.puckDataA, storeCtx);
+      toast.success(`تم اعتماد ونشر متجر "${storeCtx.storeName}" رسمياً بموافقتك الصريحة!`);
+    } else if (decision === "approved_executed") {
+      toast.success(`تمت الموافقة وتنفيذ العملية (${target?.title || approvalId}) وتسجيلها في سجل التدقيق.`);
+    } else {
+      toast.info(`تم رفض العملية الحساسة (${target?.title || approvalId}).`);
+    }
   };
 
-  // Handle Interactive Terminal Commands
-  const handleTerminalSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const raw = terminalCmd.trim();
-    if (!raw) return;
-    setTerminalCmd("");
-    appendLog(`kaspi@studio:~$ ${raw}`);
-
-    const cmd = raw.toLowerCase();
-    if (cmd === "help") {
-      appendLog(`الأوامر المتاحة في تيرمينال Kaspi Studio:`);
-      appendLog(`  repos        : عرض جميع المصادر الـ 10 المفتوحة وروابط GitHub`);
-      appendLog(`  sales        : عرض مبيعات اليوم الحقيقية من الصندوق`);
-      appendLog(`  stock        : فحص عدد السلع في المخزون`);
-      appendLog(`  docetl       : تشغيل خط أنابيب DocETL لتحليل الهوامش`);
-      appendLog(`  pdf          : توليد وتحميل تقرير PDF فوري عبر pdfme`);
-      appendLog(`  store        : فتح محرر المتجر الإلكتروني Puck`);
-      appendLog(`  clear        : مسح شاشة التيرمينال`);
+  // Voice Input Toggle (Moonshine)
+  const toggleVoiceInput = () => {
+    if (isListening) {
+      moonshineVoice.stopListening();
+      setIsListening(false);
       return;
     }
-
-    if (cmd === "clear") {
-      setTerminalLogs([]);
-      return;
+    const started = moonshineVoice.startListening(
+      "auto",
+      (text) => setPromptInput(text),
+      () => setIsListening(false),
+      () => {
+        setIsListening(false);
+        toast.error("يرجى السماح بصلاحية الميكروفون للتحدث");
+      }
+    );
+    if (started) {
+      setIsListening(true);
+      toast.info("Moonshine Voice نشط: تحدث الآن بخصوص متجرك...");
     }
-
-    if (cmd === "repos" || cmd === "sources") {
-      setActiveCanvas("repos");
-      OPEN_SOURCE_REPOS.forEach((r) => {
-        appendLog(`  [${r.order}] ${r.name.padEnd(13, " ")} -> ${r.githubUrl}`);
-      });
-      return;
-    }
-
-    if (cmd === "sales" || cmd === "stock") {
-      const snap = await gatherStoreSnapshot();
-      appendLog(
-        `[POS Live DB] المتجر: ${snap.shopName} | السلع: ${snap.productsCount} | مبيعات اليوم: ${snap.todaySalesTotal.toFixed(2)} MAD (${snap.todaySalesCount} فاتورة) | الكريدي: ${snap.totalDebtMAD.toFixed(2)} MAD`
-      );
-      return;
-    }
-
-    if (cmd === "docetl") {
-      setActiveCanvas("docetl");
-      const prods = offlineDb ? await offlineDb.offlineProducts.toArray().catch(() => []) : [];
-      const sales = offlineDb ? await offlineDb.offlineSales.toArray().catch(() => []) : [];
-      const custs = offlineDb ? await offlineDb.offlineCustomers.toArray().catch(() => []) : [];
-      const res = runRealDocEtlPipeline({ products: prods, sales, customers: custs });
-      appendLog(`[DocETL] ✔ تمت معالجة ${res.documentsProcessed} سجل في ${res.executionTimeMs}ms.`);
-      return;
-    }
-
-    if (cmd === "pdf") {
-      setActiveCanvas("pdfme");
-      const snap = await gatherStoreSnapshot();
-      const doc = generateRealPdfmeDocument({
-        templateType: "z_report",
-        title: `تقرير Z-Report اليومي (${snap.shopName})`,
-        shopName: snap.shopName,
-        ice: tenantInfo?.ice || "003291823000045",
-        date: new Date().toISOString().slice(0, 10),
-        accentColor: "#10b981",
-        includeQr: true,
-        items: [
-          {
-            designation: `إجمالي مبيعات اليوم (${snap.todaySalesCount} فاتورة)`,
-            qty: 1,
-            unitPrice: snap.todaySalesTotal,
-            total: snap.todaySalesTotal,
-          },
-        ],
-      });
-      const a = document.createElement("a");
-      a.href = doc.pdfDataUri;
-      a.download = `kaspi-z-report-${doc.date}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      appendLog(`[pdfme] ✔ تم توليد وتحميل ملف ${a.download} بنجاح.`);
-      return;
-    }
-
-    if (cmd === "store") {
-      setActiveCanvas("puck");
-      appendLog(`[Puck] تم فتح محرر المتجر الإلكتروني في اللوحة الجانبية.`);
-      return;
-    }
-
-    // Otherwise execute as an AI Studio prompt
-    await sendStudioMessage(raw);
   };
 
   if (!isOpen) return null;
 
-  return (
-    <KaspiGlassModalPortal isOpen={isOpen} onClose={onClose} dir={locale === "ar" ? "rtl" : "ltr"}>
-      <div
-        data-kaspi-ai-studio="true"
-        className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit w-[96vw] max-w-[1440px] h-[90vh] max-h-[90vh] rounded-3xl shadow-2xl border border-white/20 flex flex-col overflow-hidden font-sans"
-      >
-        {/* ================================================================
-            TOP GOOGLE-STUDIO STYLE HEADER BAR (Fixed, Never Clipped)
-        ================================================================ */}
-        <div className="px-4 sm:px-6 py-3 border-b border-white/15 flex items-center justify-between gap-3 shrink-0 bg-black/30 backdrop-blur-xl">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              type="button"
-              onClick={() => setShowLeftSidebar(!showLeftSidebar)}
-              className="p-2 rounded-xl kaspi-glass-surface border border-white/10 text-zinc-300 hover:text-white transition-all cursor-pointer"
-              title="إظهار/إخفاء سجل المحادثات والمصادر"
-            >
-              {showLeftSidebar ? (
-                <PanelLeftClose className="w-4 h-4" />
-              ) : (
-                <PanelLeftOpen className="w-4 h-4" />
-              )}
-            </button>
+  // Active PuckData & Project Files for the Right Preview/Code Panel
+  const activeOptionPuck: PuckData | null = latestTurn
+    ? rightTab === "option_b"
+      ? latestTurn.mission.puckDataB
+      : latestTurn.mission.puckDataA
+    : null;
 
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-xl kaspi-glass-btn flex items-center justify-center shrink-0">
-                <Bot className="w-4 h-4 text-emerald-400" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm sm:text-base font-extrabold text-white tracking-wide truncate">
-                    Kaspi AI
-                  </h2>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 shrink-0">
-                    <Cpu className="w-3 h-3" />
-                    <span>Studio • 10 Engines Active</span>
+  const activeProjectFiles: GeneratedProjectFile[] = latestTurn
+    ? rightTab === "option_b"
+      ? latestTurn.mission.projectFilesB
+      : latestTurn.mission.projectFilesA
+    : [];
+
+  const activeCodeFile =
+    activeProjectFiles.find((f) => f.path === selectedFilePath) || activeProjectFiles[0] || null;
+
+  const activeStoreSlug = storeCtx?.slug || "asima-store";
+  const simulatedPreviewUrl = `${activeThread?.id || "01a12a3a-280f-72d0"}.${activeStoreSlug}.kaspi.site/`;
+  const liveStorefrontRoute = `/${locale}/store/${encodeURIComponent(activeStoreSlug)}`;
+
+  // Filter threads for TODAY vs OLDER (Screenshots 3, 5, 6, 8)
+  const visibleThreads = threads.filter(
+    (t) =>
+      !t.archived &&
+      (!sidebarSearch.trim() || t.title.toLowerCase().includes(sidebarSearch.toLowerCase()))
+  );
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayThreads = visibleThreads.filter((t) => t.updatedAt.startsWith(todayStr));
+  const olderThreads = visibleThreads.filter((t) => !t.updatedAt.startsWith(todayStr));
+
+  // Compute real-time Bradley-Terry Leaderboard
+  const votes = loadHumanPreferenceVotes(storeCtx?.tenantId || "default");
+  const benchmarks = loadBenchmarkScores(storeCtx?.tenantId || "default");
+  const leaderboard = computeBradleyTerryLeaderboard(votes, benchmarks);
+
+  return (
+    <KaspiGlassModalPortal>
+      <div
+        dir="ltr"
+        className="fixed top-0 bottom-0 left-0 right-0 z-[9999] bg-[#161616]/95 backdrop-blur-2xl flex flex-col overflow-hidden font-sans text-zinc-100 select-none"
+      >
+        <div className="flex-1 flex overflow-hidden relative">
+          {/* ================================================================
+              1. LEFT COLLAPSIBLE SIDEBAR (Exact Arena Structure + KASPI AI Brand)
+             ================================================================ */}
+          {sidebarOpen && (
+            <aside className="w-64 bg-[#141414]/95 border-r border-white/10 flex flex-col shrink-0 z-20">
+              {/* Top Brand Row: KASPI AI (replaces Arena column logo) + Collapse Toggle */}
+              <div className="h-13 px-3.5 flex items-center justify-between border-b border-white/5">
+                <div className="flex items-center gap-2.5">
+                  <KaspiBrandMark size="sm" className="shrink-0" />
+                  <span className="font-serif text-lg font-bold tracking-tight text-white">
+                    KASPI AI
                   </span>
                 </div>
-                <p className="text-[10px] text-zinc-400 truncate hidden sm:block">
-                  Morphic • Moonshine • Unstract • pdfme • DocETL • assistant-ui • OpnForm • LitServe • next-forge • Puck
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Canvas Mode Switcher in Top Bar */}
-          <div className="hidden xl:flex items-center gap-1 p-1 rounded-xl kaspi-glass-surface border border-white/10">
-            {[
-              { id: "arena", label: "Arena AI (توليد المتجر)", icon: Swords },
-              { id: "puck", label: "محرر المتجر Puck", icon: Globe },
-              { id: "pdfme", label: "مولد PDF", icon: Layout },
-              { id: "unstract", label: "استخراج الفواتير", icon: FileText },
-              { id: "docetl", label: "تحليل DocETL", icon: Layers },
-              { id: "search", label: "بحث Morphic", icon: Search },
-              { id: "opnform", label: "نماذج OpnForm", icon: CheckSquare },
-              { id: "repos", label: "المصادر (Git)", icon: Code2 },
-            ].map((item) => {
-              const Icon = item.icon;
-              const active = activeCanvas === item.id;
-              return (
                 <button
-                  key={item.id}
                   type="button"
-                  onClick={() => setActiveCanvas(item.id as CanvasTool)}
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    active
-                      ? "kaspi-glass-btn text-white font-bold shadow-xs"
-                      : "text-zinc-400 hover:text-white"
+                  onClick={() => setSidebarOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                  title="Collapse Sidebar"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Primary Navigation Links (Matching Arena Screenshots 3, 10, 13) */}
+              <div className="p-2 space-y-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={handleStartNewChat}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                    !activeThreadId && rightTab !== "leaderboard" && rightTab !== "architecture_agents"
+                      ? "bg-white/10 text-white font-semibold"
+                      : "text-zinc-300 hover:bg-white/5 hover:text-white"
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>{item.label}</span>
+                  <Edit3 className="w-4 h-4 text-emerald-400" />
+                  <span>New Chat</span>
                 </button>
-              );
-            })}
-          </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => setShowTerminal(!showTerminal)}
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-mono flex items-center gap-1.5 border transition-all cursor-pointer ${
-                showTerminal
-                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                  : "kaspi-glass-surface text-zinc-400 border-white/10 hover:text-white"
-              }`}
-              title="إظهار/إخفاء التيرمينال"
-            >
-              <Terminal className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Terminal</span>
-            </button>
-
-            <AppleBackButton onClick={onClose} locale={locale} />
-          </div>
-        </div>
-
-        {/* ================================================================
-            MAIN 3-PANE GOOGLE STUDIO BODY
-        ================================================================ */}
-        <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
-          {/* PANE 1: LEFT SIDEBAR (Threads + 10 Open-Source Engines) */}
-          {showLeftSidebar && (
-            <aside className="w-full lg:w-64 border-b lg:border-b-0 lg:border-e border-white/10 bg-black/25 p-3 flex flex-col justify-between gap-3 shrink-0 overflow-y-auto kaspi-no-scrollbar">
-              <div className="space-y-3">
                 <button
                   type="button"
-                  onClick={handleCreateNewThread}
-                  className="w-full py-2 px-3 rounded-xl kaspi-glass-btn text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md cursor-pointer active:scale-95"
+                  onClick={() => setRightTab("leaderboard")}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                    rightTab === "leaderboard"
+                      ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold"
+                      : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                  }`}
                 >
-                  <Plus className="w-4 h-4 text-emerald-400" />
-                  <span>محادثة ومشروع جديد</span>
+                  <BarChart3 className="w-4 h-4 text-emerald-400" />
+                  <span>Leaderboard</span>
                 </button>
 
-                {/* Saved Conversations */}
-                <div className="space-y-1">
-                  <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider px-1 block">
-                    سجل المحادثات ({threads.length}):
+                <button
+                  type="button"
+                  onClick={() => setRightTab("architecture_agents")}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                    rightTab === "architecture_agents"
+                      ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold"
+                      : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Cpu className="w-4 h-4 text-emerald-400" />
+                    <span>Autonomous Agents</span>
                   </span>
-                  <div className="space-y-1 max-h-44 overflow-y-auto kaspi-no-scrollbar">
-                    {threads.map((th) => {
-                      const isCurr = th.id === currentThread?.id;
-                      return (
-                        <div
-                          key={th.id}
-                          className={`group flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-all cursor-pointer border ${
-                            isCurr
-                              ? "kaspi-glass-surface border-emerald-500/40 text-white font-bold"
-                              : "border-transparent text-zinc-400 hover:bg-white/[0.04] hover:text-white"
-                          }`}
-                          onClick={() => setActiveThreadId(th.id)}
-                        >
-                          <span className="truncate">{th.title}</span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteThread(th.id);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 p-0.5 transition-opacity"
-                            title="حذف المحادثة"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      );
-                    })}
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">
+                    14
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRightTab("approvals_workflows")}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                    rightTab === "approvals_workflows"
+                      ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold"
+                      : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>Approvals & Flow</span>
+                  </span>
+                  {approvals.filter((a) => a.status === "pending_approval").length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono">
+                      {approvals.filter((a) => a.status === "pending_approval").length}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRightTab("open_source_tools")}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                    rightTab === "open_source_tools"
+                      ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold"
+                      : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Layers className="w-4 h-4 text-emerald-400" />
+                    <span>Open-Source Engines</span>
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded bg-white/10 text-zinc-300 text-[10px] font-mono">
+                    13
+                  </span>
+                </button>
+
+                {/* Search Input in Sidebar */}
+                <div className="pt-1">
+                  <div className="relative flex items-center">
+                    <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={sidebarSearch}
+                      onChange={(e) => setSidebarSearch(e.target.value)}
+                      placeholder="Search projects..."
+                      className="w-full pl-8 pr-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/10 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500/40"
+                    />
                   </div>
                 </div>
 
-                {/* All 10 Open-Source Engines Quick Launchers */}
-                <div className="space-y-1 pt-2 border-t border-white/10">
-                  <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
-                      المصادر الـ 10 المدمجة:
-                    </span>
+                {/* Expandable Help Center / FAQ (Matching Screenshots 3, 5, 6, 8) */}
+                <button
+                  type="button"
+                  onClick={() => setShowSeeMoreNav(!showSeeMoreNav)}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                >
+                  {showSeeMoreNav ? (
+                    <>
+                      <ChevronUp className="w-3.5 h-3.5" />
+                      <span>See less</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                      <span>See more</span>
+                    </>
+                  )}
+                </button>
+
+                {showSeeMoreNav && (
+                  <div className="space-y-0.5 pl-1 border-l border-white/10 ml-2 text-[11px] text-zinc-400">
                     <button
                       type="button"
-                      onClick={() => setActiveCanvas("repos")}
-                      className="text-[10px] text-emerald-400 hover:underline font-mono cursor-pointer"
+                      onClick={() => setRightTab("architecture_agents")}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded hover:bg-white/5 hover:text-white cursor-pointer"
                     >
-                      عرض الروابط
+                      <HelpCircle className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Help Center & Architecture</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRightTab("open_source_tools")}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded hover:bg-white/5 hover:text-white cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>FAQ & Licenses (13 Repos)</span>
                     </button>
                   </div>
-                  <div className="space-y-1">
-                    {OPEN_SOURCE_REPOS.map((repo) => (
-                      <div
-                        key={repo.id}
-                        onClick={() => {
-                          if (repo.id === "fastchat-arena" || repo.id === "arena-hard-auto")
-                            setActiveCanvas("arena");
-                          else if (repo.id === "puck") setActiveCanvas("puck");
-                          else if (repo.id === "pdfme") setActiveCanvas("pdfme");
-                          else if (repo.id === "unstract") setActiveCanvas("unstract");
-                          else if (repo.id === "docetl") setActiveCanvas("docetl");
-                          else if (repo.id === "morphic") setActiveCanvas("search");
-                          else if (repo.id === "opnform") setActiveCanvas("opnform");
-                          else setActiveCanvas("repos");
-                        }}
-                        className="px-2.5 py-1.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 flex items-center justify-between text-[11px] cursor-pointer transition-all"
-                      >
-                        <div className="flex items-center gap-1.5 truncate">
-                          <span className="text-[9px] font-mono text-emerald-400">{repo.order}</span>
-                          <span className="text-zinc-200 font-semibold truncate">{repo.name}</span>
-                        </div>
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                )}
+              </div>
+
+              {/* Conversation History Grouped by TODAY and OLDER with Rename & Archive (Screenshots 5 & 6) */}
+              <div className="flex-1 overflow-y-auto px-2 py-2 space-y-4 kaspi-no-scrollbar">
+                {/* TODAY */}
+                <div>
+                  <div className="px-2.5 pb-1 text-[10px] font-bold tracking-wider text-zinc-500 uppercase">
+                    TODAY
+                  </div>
+                  <div className="space-y-0.5">
+                    {todayThreads.length === 0 ? (
+                      <div className="px-2.5 py-2 text-[11px] text-zinc-500">
+                        {storeCtx ? `${storeCtx.storeName} — Ready` : "No active chats today"}
                       </div>
+                    ) : (
+                      todayThreads.map((thread) => (
+                        <div key={thread.id} className="relative group">
+                          {renamingThreadId === thread.id ? (
+                            <div className="flex items-center gap-1 px-2 py-1 bg-[#222] rounded-lg border border-emerald-500/50">
+                              <input
+                                type="text"
+                                value={renameValue}
+                                onChange={(e) => setRenameValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handleConfirmRename(thread.id);
+                                  if (e.key === "Escape") setRenamingThreadId(null);
+                                }}
+                                autoFocus
+                                className="w-full bg-transparent text-xs text-white focus:outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleConfirmRename(thread.id)}
+                                className="text-emerald-400 hover:text-emerald-300 cursor-pointer"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div
+                              onClick={() => {
+                                setActiveThreadId(thread.id);
+                                setRightTab("option_a");
+                              }}
+                              className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs cursor-pointer transition-colors ${
+                                activeThreadId === thread.id
+                                  ? "bg-white/10 text-white font-semibold"
+                                  : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Code2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                <span className="truncate" dir="auto">
+                                  {thread.title}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setThreadMenuOpenId(
+                                    threadMenuOpenId === thread.id ? null : thread.id
+                                  );
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white cursor-pointer"
+                              >
+                                <MoreHorizontal className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Rename / Archive Context Menu (Exact Match to Screenshot 6) */}
+                          {threadMenuOpenId === thread.id && (
+                            <div className="absolute right-2 top-8 z-40 w-36 rounded-xl bg-[#1e1e1e] border border-white/15 shadow-2xl py-1 text-xs">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRenamingThreadId(thread.id);
+                                  setRenameValue(thread.title);
+                                  setThreadMenuOpenId(null);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-zinc-200 hover:bg-white/10 cursor-pointer"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>Rename</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleArchiveThread(thread.id);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:bg-red-500/10 cursor-pointer"
+                              >
+                                <Archive className="w-3.5 h-3.5" />
+                                <span>Archive</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* OLDER / QUICK STORE TEMPLATES */}
+                <div>
+                  <div className="px-2.5 pb-1 text-[10px] font-bold tracking-wider text-zinc-500 uppercase">
+                    OLDER & STORE SCENARIOS
+                  </div>
+                  <div className="space-y-0.5">
+                    {olderThreads.map((thread) => (
+                      <div
+                        key={thread.id}
+                        onClick={() => {
+                          setActiveThreadId(thread.id);
+                          setRightTab("option_a");
+                        }}
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs cursor-pointer ${
+                          activeThreadId === thread.id
+                            ? "bg-white/10 text-white font-semibold"
+                            : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                        }`}
+                      >
+                        <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span className="truncate" dir="auto">
+                          {thread.title}
+                        </span>
+                      </div>
+                    ))}
+
+                    {REQUIRED_SCENARIOS.slice(0, 5).map((scen) => (
+                      <button
+                        key={scen.code}
+                        type="button"
+                        onClick={() => handleExecutePrompt(scen.prompt, scen.mode)}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] text-zinc-400 hover:bg-white/5 hover:text-emerald-300 transition-colors cursor-pointer text-left"
+                      >
+                        <Sparkles className="w-3 h-3 text-emerald-400 shrink-0" />
+                        <span className="truncate" dir="rtl">
+                          {scen.label}
+                        </span>
+                      </button>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Voice Auto-Speak Toggle */}
-              <div className="pt-2 border-t border-white/10">
-                <label className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03] border border-white/10 text-[11px] text-zinc-300 cursor-pointer">
-                  <span className="flex items-center gap-1.5">
-                    {autoReadAloud ? (
-                      <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
-                    ) : (
-                      <VolumeX className="w-3.5 h-3.5 text-zinc-500" />
-                    )}
-                    <span>الرد الصوتي التلقائي</span>
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={autoReadAloud}
-                    onChange={(e) => setAutoReadAloud(e.target.checked)}
-                    className="accent-emerald-500 rounded cursor-pointer"
-                  />
-                </label>
+              {/* Bottom Merchant Profile Pill & Footer Links (Exact Match to Screenshot 13) */}
+              <div className="p-2.5 border-t border-white/10 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setAccountModalOpen(true)}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-[10px] font-bold text-emerald-300 shrink-0">
+                      {(storeCtx?.storeName || "AS").slice(0, 2).toUpperCase()}
+                    </div>
+                    <span className="text-xs text-zinc-200 truncate">
+                      {storeCtx?.storeName || tenantInfo?.shopName || "ASIMA"} • KASPI POS
+                    </span>
+                  </div>
+                  <ChevronUp className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                </button>
+
+                <div className="flex items-center justify-between px-1 text-[10px] text-zinc-500">
+                  <span>Tenant Isolated</span>
+                  <span>•</span>
+                  <span>Zero-Leak Guard</span>
+                  <span>•</span>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="text-emerald-400 hover:underline cursor-pointer font-semibold"
+                  >
+                    Back to POS
+                  </button>
+                </div>
               </div>
             </aside>
           )}
 
-          {/* PANE 2: CENTER STREAM (Assistant-UI Chat + Moonshine Voice + Message Actions) */}
-          <div className="flex-1 min-w-0 flex flex-col border-b lg:border-b-0 lg:border-e border-white/10 bg-black/10 overflow-hidden">
-            {/* Moonshine Quick Voice Briefs Strip */}
-            <div className="px-4 py-2 border-b border-white/10 bg-white/[0.02] flex items-center justify-between gap-2 flex-wrap shrink-0">
-              <span className="text-[11px] font-bold text-zinc-300 flex items-center gap-1.5">
-                <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Moonshine Audio (توليد أوديو WAV للواتساب):</span>
-              </span>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => handleGenerateVoiceBrief("daily_sales")}
-                  className="px-2.5 py-1 rounded-lg kaspi-glass-surface border border-white/10 hover:border-emerald-500/40 text-[11px] text-white cursor-pointer"
-                >
-                  🎙️ موجز المبيعات
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleGenerateVoiceBrief("low_stock")}
-                  className="px-2.5 py-1 rounded-lg kaspi-glass-surface border border-white/10 hover:border-emerald-500/40 text-[11px] text-white cursor-pointer"
-                >
-                  🎙️ تنبيه السلع
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleGenerateVoiceBrief("shift_close")}
-                  className="px-2.5 py-1 rounded-lg kaspi-glass-surface border border-white/10 hover:border-emerald-500/40 text-[11px] text-white cursor-pointer"
-                >
-                  🎙️ إغلاق الصندوق
-                </button>
-              </div>
-            </div>
-
-            {/* Active Voice Note Player */}
-            {activeBrief && (
-              <div className="mx-4 mt-2 p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between gap-2 text-xs shrink-0">
-                <div className="min-w-0">
-                  <p className="font-bold text-white truncate">{activeBrief.title}</p>
-                  <p className="text-[10px] text-zinc-300 truncate">{activeBrief.textScript}</p>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
+          {/* ================================================================
+              2. MAIN WORKSPACE AREA (EMPTY STATE OR SPLIT-SCREEN STUDIO)
+             ================================================================ */}
+          <div className="flex-1 flex flex-col overflow-hidden bg-[#1b1b1b]">
+            {/* Top Bar when Sidebar is collapsed */}
+            {!sidebarOpen && (
+              <div className="h-12 px-4 border-b border-white/10 flex items-center justify-between bg-[#141414]">
+                <div className="flex items-center gap-2.5">
                   <button
                     type="button"
-                    onClick={() => {
-                      if (isPlayingBrief) {
-                        moonshineVoice.stopSpeaking();
-                        setIsPlayingBrief(false);
-                      } else {
-                        moonshineVoice.speak(
-                          activeBrief.textScript,
-                          locale,
-                          () => setIsPlayingBrief(true),
-                          () => setIsPlayingBrief(false)
-                        );
-                      }
-                    }}
-                    className="px-2.5 py-1 rounded-lg kaspi-glass-btn text-[11px] font-bold text-white cursor-pointer"
+                    onClick={() => setSidebarOpen(true)}
+                    className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white cursor-pointer"
+                    title="Open Sidebar"
                   >
-                    {isPlayingBrief ? "إيقاف" : "استماع"}
+                    <PanelLeftOpen className="w-4 h-4" />
                   </button>
-                  {activeBrief.wavBlobUrl && (
-                    <a
-                      href={activeBrief.wavBlobUrl}
-                      download={`${activeBrief.id}.wav`}
-                      className="px-2 py-1 rounded-lg kaspi-glass-surface border border-white/15 text-[11px] text-white flex items-center gap-1"
-                      title="تحميل ملف الصوت WAV"
-                    >
-                      <Download className="w-3 h-3 text-emerald-400" />
-                      <span>WAV</span>
-                    </a>
-                  )}
-                  <a
-                    href={moonshineVoice.formatWhatsAppShareUrl("", activeBrief.textScript)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1"
-                  >
-                    <Share2 className="w-3 h-3" />
-                    <span>واتساب</span>
-                  </a>
+                  <KaspiBrandMark size="sm" />
+                  <span className="font-serif text-base font-bold text-white">KASPI AI</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white cursor-pointer"
+                >
+                  ← رجوع إلى KASPI POS
+                </button>
               </div>
             )}
 
-            {/* Chat Messages Scroll Container */}
-            <div
-              ref={chatScrollRef}
-              className="flex-1 min-h-0 overflow-y-auto kaspi-no-scrollbar p-4 space-y-4 text-start"
-            >
-              {messages.map((m) => {
-                const isUser = m.role === "user";
-                const isCopied = copiedId === m.id;
-                const fb = feedbackMap[m.id] || null;
-                const isThinkingOpen = expandedThinking[m.id] || false;
-
-                return (
-                  <div
-                    key={m.id}
-                    className={`flex flex-col ${isUser ? "items-end" : "items-start"} space-y-1.5`}
+            {/* ==============================================================
+                CASE A: EMPTY / NEW CHAT STATE ("What would you like to do?" — Screenshots 10 & 11)
+               ============================================================== */}
+            {!activeThread &&
+            rightTab !== "architecture_agents" &&
+            rightTab !== "leaderboard" &&
+            rightTab !== "approvals_workflows" &&
+            rightTab !== "open_source_tools" &&
+            rightTab !== "puck_editor" ? (
+              <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 overflow-y-auto relative">
+                {/* Top-right Close / Back to POS button */}
+                <div className="absolute top-4 right-4 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRightTab("architecture_agents")}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold hover:bg-emerald-500/25 transition-colors cursor-pointer"
                   >
-                    {/* Thinking Steps Accordion (For Assistant) */}
-                    {!isUser && m.thinkingSteps && m.thinkingSteps.length > 0 && (
-                      <div className="max-w-[90%]">
+                    🕸️ المعمارية والوكلاء الـ 14 (Autonomous Commerce)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-xs font-bold text-white cursor-pointer"
+                  >
+                    ← Back to POS
+                  </button>
+                </div>
+
+                {/* Centered Title (Screenshot 10 & 11) */}
+                <div className="text-center mb-6 space-y-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>
+                      متصل ببيانات متجر {storeCtx?.storeName || "ASIMA"} ({storeCtx?.products.length || 0} سلعة نشطة •{" "}
+                      {storeCtx?.currency || "MAD"})
+                    </span>
+                  </div>
+                  <h1 className="font-serif text-3xl sm:text-4xl font-normal text-zinc-100 tracking-tight">
+                    What would you like to do?
+                  </h1>
+                  <p className="text-xs text-zinc-400" dir="rtl">
+                    صف المتجر الإلكتروني، الحملة التسويقية، التحليل، أو الأداة المخصصة التي تريد بناءها لمشروعك في KASPI POS
+                  </p>
+                </div>
+
+                {/* Center Prompt Box with `+` Menu, `⚔️ Battle v` Dropdown & `</> Code v` Dropdown (Screenshots 10 & 11) */}
+                <div className="w-full max-w-2xl relative">
+                  <div className="rounded-2xl bg-[#232323]/95 border border-white/15 shadow-2xl p-4 focus-within:border-emerald-500/50 transition-colors">
+                    <textarea
+                      rows={3}
+                      dir="auto"
+                      value={promptInput}
+                      onChange={(e) => setPromptInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleExecutePrompt();
+                        }
+                      }}
+                      placeholder={`Describe the website, storefront, marketing campaign, or business tool you want to build for ${
+                        storeCtx?.storeName || "your store"
+                      }...`}
+                      className="w-full bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none resize-none"
+                    />
+
+                    {/* Bottom Control Bar inside Prompt Box */}
+                    <div className="flex items-center justify-between pt-3 mt-2 border-t border-white/10">
+                      <div className="flex items-center gap-2 relative">
+                        {/* 1. `+` Attachment & Voice Button (Screenshot 11) */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPlusMenuOpen(!plusMenuOpen);
+                              setModeDropdownOpen(false);
+                              setDomainDropdownOpen(false);
+                            }}
+                            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white cursor-pointer"
+                            title="Add files, screenshot, or voice"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+
+                          {plusMenuOpen && (
+                            <div className="absolute left-0 bottom-10 z-50 w-56 rounded-xl bg-[#252525] border border-white/15 shadow-2xl py-1.5 text-xs">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPlusMenuOpen(false);
+                                  fileInputRef.current?.click();
+                                }}
+                                className="w-full flex items-center justify-between px-3.5 py-2.5 hover:bg-white/10 text-zinc-200 cursor-pointer"
+                              >
+                                <div className="text-left">
+                                  <div className="font-semibold text-white">Add files</div>
+                                  <div className="text-[10px] text-zinc-400">Up to 15MB per file</div>
+                                </div>
+                                <Paperclip className="w-4 h-4 text-zinc-400" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPlusMenuOpen(false);
+                                  setRightTab("open_source_tools");
+                                  setOpenSourceSubTool("unstract");
+                                }}
+                                className="w-full flex items-center justify-between px-3.5 py-2.5 hover:bg-white/10 text-zinc-200 cursor-pointer"
+                              >
+                                <span className="font-semibold text-white">Take a screenshot / OCR</span>
+                                <Camera className="w-4 h-4 text-zinc-400" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPlusMenuOpen(false);
+                                  toggleVoiceInput();
+                                }}
+                                className="w-full flex items-center justify-between px-3.5 py-2.5 hover:bg-white/10 text-emerald-300 cursor-pointer"
+                              >
+                                <span className="font-semibold">
+                                  {isListening ? "Stop Voice Input" : "Moonshine Voice Input"}
+                                </span>
+                                <Mic className="w-4 h-4 text-emerald-400" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 2. Mode Dropdown (`⚔️ Battle v` — Exact Match to Screenshot 10!) */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setModeDropdownOpen(!modeDropdownOpen);
+                              setPlusMenuOpen(false);
+                              setDomainDropdownOpen(false);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-zinc-200 cursor-pointer"
+                          >
+                            <Swords className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>
+                              {arenaMode === "battle"
+                                ? "Battle"
+                                : arenaMode === "agent"
+                                ? "Agent Mode"
+                                : arenaMode === "side_by_side"
+                                ? "Side by Side"
+                                : "Direct"}
+                            </span>
+                            <ChevronDown className="w-3 h-3 text-zinc-400" />
+                          </button>
+
+                          {modeDropdownOpen && (
+                            <div className="absolute left-0 top-10 z-50 w-64 rounded-xl bg-[#252525] border border-white/15 shadow-2xl py-1.5 text-xs">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setArenaMode("battle");
+                                  setModeDropdownOpen(false);
+                                }}
+                                className={`w-full flex items-start gap-3 px-3.5 py-2.5 hover:bg-white/10 cursor-pointer text-left ${
+                                  arenaMode === "battle" ? "bg-white/10" : ""
+                                }`}
+                              >
+                                <Swords className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                                <div>
+                                  <div className="font-semibold text-white">Battle Mode</div>
+                                  <div className="text-[11px] text-zinc-400">
+                                    Battle 2 anonymous models
+                                  </div>
+                                </div>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setArenaMode("agent");
+                                  setModeDropdownOpen(false);
+                                }}
+                                className={`w-full flex items-start gap-3 px-3.5 py-2.5 hover:bg-white/10 cursor-pointer text-left ${
+                                  arenaMode === "agent" ? "bg-white/10" : ""
+                                }`}
+                              >
+                                <Cpu className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                                <div>
+                                  <div className="font-semibold text-white">Agent Mode</div>
+                                  <div className="text-[11px] text-zinc-400">
+                                    Built for complex tasks (14 Agents)
+                                  </div>
+                                </div>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setArenaMode("side_by_side");
+                                  setModeDropdownOpen(false);
+                                }}
+                                className={`w-full flex items-start gap-3 px-3.5 py-2.5 hover:bg-white/10 cursor-pointer text-left ${
+                                  arenaMode === "side_by_side" ? "bg-white/10" : ""
+                                }`}
+                              >
+                                <MessageSquare className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                                <div>
+                                  <div className="font-semibold text-white">Side by Side</div>
+                                  <div className="text-[11px] text-zinc-400">
+                                    Compare 2 models of your choice
+                                  </div>
+                                </div>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setArenaMode("direct");
+                                  setModeDropdownOpen(false);
+                                }}
+                                className={`w-full flex items-start gap-3 px-3.5 py-2.5 hover:bg-white/10 cursor-pointer text-left ${
+                                  arenaMode === "direct" ? "bg-white/10" : ""
+                                }`}
+                              >
+                                <Bot className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                                <div>
+                                  <div className="font-semibold text-white">Direct</div>
+                                  <div className="text-[11px] text-zinc-400">
+                                    Chat with 1 model at a time
+                                  </div>
+                                </div>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 3. Output Domain Selector (`</> Code v` — Scoped Strictly to Merchant Business) */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDomainDropdownOpen(!domainDropdownOpen);
+                              setPlusMenuOpen(false);
+                              setModeDropdownOpen(false);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-zinc-200 cursor-pointer"
+                          >
+                            <Code2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>
+                              {domainFocus === "storefront_code"
+                                ? "Code & Storefront"
+                                : domainFocus === "multi_agent_plan"
+                                ? "14 Agents Plan"
+                                : domainFocus === "sandbox_app"
+                                ? "Business App"
+                                : domainFocus === "workflow_flow"
+                                ? "Kaspi Flow"
+                                : "Campaign"}
+                            </span>
+                            <ChevronDown className="w-3 h-3 text-zinc-400" />
+                          </button>
+
+                          {domainDropdownOpen && (
+                            <div className="absolute left-0 top-10 z-50 w-60 rounded-xl bg-[#252525] border border-white/15 shadow-2xl py-1.5 text-xs">
+                              {[
+                                {
+                                  id: "storefront_code" as const,
+                                  title: "Storefront & Web Code",
+                                  desc: "14-Section Puck + React/TS Zip",
+                                },
+                                {
+                                  id: "multi_agent_plan" as const,
+                                  title: "Autonomous 14-Agent Collective",
+                                  desc: "BI + SEO + Marketing + Inventory",
+                                },
+                                {
+                                  id: "sandbox_app" as const,
+                                  title: "Custom Business Tool (Sandbox)",
+                                  desc: "Reservations, Calculators, Forms",
+                                },
+                                {
+                                  id: "workflow_flow" as const,
+                                  title: "Workflow Automation (Kaspi Flow)",
+                                  desc: "Trigger → Condition → Action",
+                                },
+                                {
+                                  id: "marketing_campaign" as const,
+                                  title: "Marketing & Growth Studio",
+                                  desc: "AR / Darija / FR / EN Ads",
+                                },
+                              ].map((opt) => (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setDomainFocus(opt.id);
+                                    setDomainDropdownOpen(false);
+                                  }}
+                                  className={`w-full flex flex-col px-3.5 py-2 hover:bg-white/10 cursor-pointer text-left ${
+                                    domainFocus === opt.id ? "bg-white/10" : ""
+                                  }`}
+                                >
+                                  <span className="font-semibold text-white">{opt.title}</span>
+                                  <span className="text-[10px] text-zinc-400">{opt.desc}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Submit Button `[->]` */}
+                      <button
+                        type="button"
+                        onClick={() => handleExecutePrompt()}
+                        disabled={isExecuting}
+                        className="w-8 h-8 rounded-lg bg-[#10b981] hover:bg-emerald-400 text-black flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {isExecuting ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Side-by-Side Model Chooser when Side-by-Side is selected */}
+                  {arenaMode === "side_by_side" && (
+                    <div className="mt-3 grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs">
+                      <div>
+                        <label className="block text-[10px] text-zinc-400 mb-1">Model A:</label>
+                        <select
+                          value={modelAId}
+                          onChange={(e) => setModelAId(e.target.value)}
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#1e1e1e] border border-white/10 text-white text-xs"
+                        >
+                          {ARENA_MODEL_REGISTRY.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.displayName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-zinc-400 mb-1">Model B:</label>
+                        <select
+                          value={modelBId}
+                          onChange={(e) => setModelBId(e.target.value)}
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#1e1e1e] border border-white/10 text-white text-xs"
+                        >
+                          {ARENA_MODEL_REGISTRY.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.displayName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 8 Real-World Scenarios Quick Chips (Section 11: Scenarios A through H) */}
+                  <div className="mt-6">
+                    <div className="text-[11px] font-bold text-zinc-400 mb-2.5 text-center" dir="rtl">
+                      سيناريوهات التاجر الذكية الجاهزة للتشغيل الفوري (Scenarios A – H):
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" dir="rtl">
+                      {REQUIRED_SCENARIOS.map((scen) => (
+                        <button
+                          key={scen.code}
+                          type="button"
+                          onClick={() => handleExecutePrompt(scen.prompt, scen.mode)}
+                          className="flex items-center justify-between p-2.5 rounded-xl bg-[#222]/90 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/40 text-xs text-zinc-200 transition-all cursor-pointer text-right group"
+                        >
+                          <span className="truncate font-medium group-hover:text-white">
+                            {scen.label}
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[9px] font-mono shrink-0 mr-2">
+                            {scen.code}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* ==============================================================
+                 CASE B: ACTIVE SPLIT-SCREEN WORKSPACE (Chat Column + Right Preview/Code/Agents Panel)
+                 Matches Screenshots 3, 4, 5, 6, 7, 8, 9, 12, 14, 15
+                 ============================================================== */
+              <div className="flex-1 flex overflow-hidden">
+                {/* ------------------------------------------------------------
+                    LEFT / MIDDLE CHAT & OPTION CARDS COLUMN (Screenshots 3, 5, 6, 8, 9, 12, 15)
+                   ------------------------------------------------------------ */}
+                {activeThread && (
+                  <div className="w-[370px] sm:w-[400px] border-r border-white/10 bg-[#181818] flex flex-col shrink-0">
+                    {/* Top Project Header Dropdown with Rename & Archive (Screenshot 5 & 6) */}
+                    <div className="h-12 px-3.5 border-b border-white/10 flex items-center justify-between relative">
+                      <div className="relative min-w-0">
                         <button
                           type="button"
-                          onClick={() =>
-                            setExpandedThinking((prev) => ({ ...prev, [m.id]: !isThinkingOpen }))
-                          }
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/10 text-[10px] font-mono text-zinc-400 hover:text-emerald-400 cursor-pointer"
+                          onClick={() => setHeaderTitleMenuOpen(!headerTitleMenuOpen)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-white/10 text-xs font-semibold text-zinc-100 max-w-[270px] cursor-pointer"
+                          title={activeThread.title}
                         >
-                          {isThinkingOpen ? (
-                            <ChevronDown className="w-3 h-3" />
-                          ) : (
-                            <ChevronRight className="w-3 h-3" />
-                          )}
-                          <span>خطوات المعالجة والمصادر ({m.thinkingSteps.length})</span>
-                          {m.latencyMs && <span>• {m.latencyMs}ms</span>}
+                          <span className="truncate" dir="auto">
+                            {activeThread.title}
+                          </span>
+                          <ChevronDown className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
                         </button>
-                        {isThinkingOpen && (
-                          <div className="mt-1 p-2.5 rounded-xl bg-black/50 border border-white/10 space-y-1 text-[10px] font-mono text-emerald-300">
-                            {m.thinkingSteps.map((st, idx) => (
-                              <div key={idx}>• {st}</div>
-                            ))}
+
+                        {headerTitleMenuOpen && (
+                          <div className="absolute left-0 top-9 z-50 w-44 rounded-xl bg-[#222] border border-white/15 shadow-2xl py-1 text-xs">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRenamingThreadId(activeThread.id);
+                                setRenameValue(activeThread.title);
+                                setHeaderTitleMenuOpen(false);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-zinc-200 hover:bg-white/10 cursor-pointer"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                              <span>Rename</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleArchiveThread(activeThread.id)}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:bg-red-500/10 cursor-pointer"
+                            >
+                              <Archive className="w-3.5 h-3.5" />
+                              <span>Archive</span>
+                            </button>
                           </div>
                         )}
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={handleStartNewChat}
+                        className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white cursor-pointer"
+                        title="New Chat"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Scrollable Conversation Turns & Option A / Option B Cards */}
+                    <div className="flex-1 overflow-y-auto p-3.5 space-y-4 kaspi-no-scrollbar">
+                      {activeThread.turns.map((turn) => {
+                        const isVoted = Boolean(turn.voteOutcome);
+                        const optionALabel = isVoted ? turn.modelAName : "Option A";
+                        const optionBLabel = isVoted ? turn.modelBName : "Option B";
+
+                        return (
+                          <div key={turn.turnId} className="space-y-3">
+                            {/* User Prompt Bubble */}
+                            <div className="flex justify-end">
+                              <div
+                                dir="auto"
+                                className="max-w-[88%] px-3.5 py-2.5 rounded-2xl bg-[#2a2a2a] border border-white/10 text-xs text-zinc-100 leading-relaxed"
+                              >
+                                {turn.userPrompt}
+                              </div>
+                            </div>
+
+                            {/* Guardrail Notice if Off-Topic Request was Reframed */}
+                            {turn.mission.guardrailNoticeAr && (
+                              <div
+                                dir="rtl"
+                                className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-[11px] text-amber-200 leading-relaxed"
+                              >
+                                {turn.mission.guardrailNoticeAr}
+                              </div>
+                            )}
+
+                            {/* OPTION A CARD (Exact Match to Screenshots 3, 5, 6, 8, 9, 12, 15) */}
+                            <div
+                              onClick={() => setRightTab("option_a")}
+                              className={`rounded-xl p-3 border transition-all cursor-pointer ${
+                                rightTab === "option_a"
+                                  ? "bg-[#222] border-[#10b981]/60 shadow-lg"
+                                  : "bg-[#1e1e1e] border-white/10 hover:border-white/25"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className="text-[11px] font-mono font-bold text-emerald-400">
+                                    AI\
+                                  </span>
+                                  <span className="text-xs font-bold text-white truncate">
+                                    {optionALabel}
+                                  </span>
+                                  {turn.voteOutcome === "model_a" && (
+                                    <Trophy className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleExecutePrompt(turn.userPrompt, turn.mode);
+                                    }}
+                                    className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white cursor-pointer"
+                                    title="Regenerate"
+                                  >
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleVoteOnTurn(turn.turnId, "model_a");
+                                    }}
+                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border cursor-pointer transition-colors ${
+                                      turn.voteOutcome === "model_a"
+                                        ? "bg-emerald-500 text-black border-emerald-400"
+                                        : "bg-white/5 hover:bg-white/10 text-zinc-200 border-white/15"
+                                    }`}
+                                  >
+                                    A is better
+                                  </button>
+                                </div>
+                              </div>
+
+                              <p
+                                dir="rtl"
+                                className="text-xs text-zinc-200 leading-relaxed mb-2.5 text-right"
+                              >
+                                تم — المتجر الإلكتروني ومنظومة الوكلاء لـ &quot;
+                                {storeCtx?.storeName || "متجرك"}&quot; جاهزة للتشغيل والمعاينة المباشرة (
+                                {turn.mission.benchmarkA.totalScorePct}% Benchmark).
+                              </p>
+
+                              <div className="flex items-center justify-between text-[11px] text-zinc-400">
+                                <span className="inline-flex items-center gap-1.5 text-zinc-300">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                  <span>
+                                    Built the project ({turn.mission.routedAgents.length} Agents • 14 Sections)
+                                  </span>
+                                </span>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const updated = threads.map((t) =>
+                                    t.id === activeThread.id
+                                      ? {
+                                          ...t,
+                                          turns: t.turns.map((tr) =>
+                                            tr.turnId === turn.turnId
+                                              ? { ...tr, expandedStepsA: !tr.expandedStepsA }
+                                              : tr
+                                          ),
+                                        }
+                                      : t
+                                  );
+                                  saveThreadsToStorage(updated);
+                                }}
+                                className="mt-2 inline-flex items-center gap-1 text-[11px] text-zinc-400 hover:text-white cursor-pointer"
+                              >
+                                <span>Show More</span>
+                                <ChevronDown className="w-3 h-3" />
+                              </button>
+
+                              {turn.expandedStepsA && (
+                                <div
+                                  dir="rtl"
+                                  className="mt-2 pt-2 border-t border-white/10 space-y-1.5 text-[11px] text-zinc-300"
+                                >
+                                  {turn.mission.agentOutputs.map((ao) => (
+                                    <div
+                                      key={ao.agentId}
+                                      className="p-2 rounded-lg bg-black/30 border border-white/5"
+                                    >
+                                      <div className="font-bold text-emerald-400">
+                                        [{ao.agentCode}] {ao.agentNameAr} ({ao.shortLabel})
+                                      </div>
+                                      <div className="text-zinc-300 mt-0.5">{ao.summaryAr}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* OPTION B CARD (Exact Match to Screenshots 3, 5, 6, 8, 9, 12, 15) */}
+                            {turn.mode !== "direct" && (
+                              <div
+                                onClick={() => setRightTab("option_b")}
+                                className={`rounded-xl p-3 border transition-all cursor-pointer ${
+                                  rightTab === "option_b"
+                                    ? "bg-[#222] border-[#10b981]/60 shadow-lg"
+                                    : "bg-[#1e1e1e] border-white/10 hover:border-white/25"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="text-[11px] font-mono font-bold text-emerald-400">
+                                      AI\
+                                    </span>
+                                    <span className="text-xs font-bold text-white truncate">
+                                      {optionBLabel}
+                                    </span>
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                                    {turn.voteOutcome === "model_b" && (
+                                      <Trophy className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleExecutePrompt(turn.userPrompt, turn.mode);
+                                      }}
+                                      className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white cursor-pointer"
+                                      title="Regenerate"
+                                    >
+                                      <RotateCcw className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleVoteOnTurn(turn.turnId, "model_b");
+                                      }}
+                                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border cursor-pointer transition-colors ${
+                                        turn.voteOutcome === "model_b"
+                                          ? "bg-emerald-500 text-black border-emerald-400"
+                                          : "bg-white/5 hover:bg-white/10 text-zinc-200 border-white/15"
+                                      }`}
+                                    >
+                                      B is better
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[11px] text-zinc-300 mb-1.5">
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                    <span>
+                                      Explored {storeCtx?.products.length || 0} products & built direct WhatsApp catalog
+                                    </span>
+                                  </span>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const updated = threads.map((t) =>
+                                      t.id === activeThread.id
+                                        ? {
+                                            ...t,
+                                            turns: t.turns.map((tr) =>
+                                              tr.turnId === turn.turnId
+                                                ? { ...tr, expandedStepsB: !tr.expandedStepsB }
+                                                : tr
+                                            ),
+                                          }
+                                        : t
+                                    );
+                                    saveThreadsToStorage(updated);
+                                  }}
+                                  className="inline-flex items-center gap-1 text-[11px] text-zinc-400 hover:text-white cursor-pointer"
+                                >
+                                  <span>Show More</span>
+                                  <ChevronDown className="w-3 h-3" />
+                                </button>
+
+                                {turn.expandedStepsB && (
+                                  <div
+                                    dir="rtl"
+                                    className="mt-2 pt-2 border-t border-white/10 text-[11px] text-zinc-300 whitespace-pre-line"
+                                  >
+                                    {turn.mission.unifiedExecutiveSummaryAr}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Voting Bar ("Both are good" / "Both are bad" — Exact Match to Screenshots 6, 8, 9, 12, 15) */}
+                    {latestTurn && (
+                      <div className="px-3.5 pt-2 pb-1 flex items-center justify-center gap-2 border-t border-white/5">
+                        <button
+                          type="button"
+                          onClick={() => handleVoteOnTurn(latestTurn.turnId, "tie")}
+                          className={`flex-1 py-1.5 px-3 rounded-lg border text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+                            latestTurn.voteOutcome === "tie"
+                              ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
+                              : "bg-[#222] hover:bg-white/10 border-white/10 text-zinc-300"
+                          }`}
+                        >
+                          <ThumbsUp className="w-3.5 h-3.5" />
+                          <span>Both are good</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleVoteOnTurn(latestTurn.turnId, "both_bad")}
+                          className={`flex-1 py-1.5 px-3 rounded-lg border text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+                            latestTurn.voteOutcome === "both_bad"
+                              ? "bg-red-500/20 border-red-500/50 text-red-300"
+                              : "bg-[#222] hover:bg-white/10 border-white/10 text-zinc-300"
+                          }`}
+                        >
+                          <ThumbsDown className="w-3.5 h-3.5" />
+                          <span>Both are bad</span>
+                        </button>
+                      </div>
                     )}
 
-                    {/* Message Bubble */}
-                    <div
-                      className={`max-w-[90%] rounded-2xl p-3.5 text-xs leading-relaxed ${
-                        isUser
-                          ? "bg-emerald-600 text-white rounded-br-xs shadow-md"
-                          : "kaspi-frosted-card text-zinc-100 border border-white/15 rounded-bl-xs shadow-lg"
-                      }`}
-                    >
-                      <p className="whitespace-pre-line">{m.content}</p>
+                    {/* Bottom Follow-Up Input Box ("Ask a follow up..." — Screenshots 3, 6, 8, 9, 12, 15) */}
+                    <div className="p-3 border-t border-white/10">
+                      <div className="rounded-xl bg-[#232323] border border-white/15 p-2.5">
+                        <input
+                          type="text"
+                          dir="auto"
+                          value={promptInput}
+                          onChange={(e) => setPromptInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleExecutePrompt();
+                            }
+                          }}
+                          placeholder="Ask a follow up..."
+                          className="w-full bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none mb-2.5"
+                        />
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={toggleVoiceInput}
+                              className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white cursor-pointer"
+                              title="Voice / Add Files"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setArenaMode(arenaMode === "battle" ? "agent" : "battle")
+                              }
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 text-[11px] text-zinc-300 cursor-pointer"
+                            >
+                              <Swords className="w-3 h-3 text-emerald-400" />
+                              <span>{arenaMode === "agent" ? "Agent" : "Battle"}</span>
+                              <ChevronDown className="w-2.5 h-2.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPreviewOrCode(previewOrCode === "preview" ? "code" : "preview")
+                              }
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 text-[11px] text-zinc-300 cursor-pointer"
+                            >
+                              <Code2 className="w-3 h-3 text-emerald-400" />
+                              <span>Code</span>
+                              <ChevronDown className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleExecutePrompt()}
+                            disabled={isExecuting}
+                            className="w-7 h-7 rounded-lg bg-[#10b981] hover:bg-emerald-400 text-black flex items-center justify-center cursor-pointer disabled:opacity-50"
+                          >
+                            {isExecuting ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                      {/* Citations from Morphic */}
-                      {!isUser && m.citations && m.citations.length > 0 && (
-                        <div className="mt-3 pt-2.5 border-t border-white/10 space-y-1.5">
-                          <span className="text-[10px] font-mono text-zinc-400 flex items-center gap-1">
-                            <BookOpen className="w-3 h-3 text-emerald-400" />
-                            <span>المصادر المرجعية (Morphic Citations):</span>
-                          </span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {m.citations.map((cit, cIdx) => (
-                              <div
-                                key={cIdx}
-                                className="px-2 py-1 rounded-lg bg-white/[0.04] border border-white/10 text-[10px] text-zinc-300 max-w-xs truncate"
-                                title={cit.snippet}
-                              >
-                                {cit.title}
+                {/* ------------------------------------------------------------
+                    RIGHT INTERACTIVE CANVAS:
+                    - Top Option A / Option B / Agents / Puck / Approvals Tabs
+                    - Browser Address Bar + Viewport Dropdown + Download Zip + Apply to Store
+                    - Preview Mode vs Code & Files Mode vs Architecture View (Screenshots 1, 2, 3, 4, 7, 9, 14)
+                   ------------------------------------------------------------ */}
+                <div className="flex-1 flex flex-col overflow-hidden bg-[#141414]">
+                  {/* Top Tab Bar (Exact Match to Screenshots 3, 6, 8, 9, 12, 14, 15) */}
+                  <div className="h-12 px-3 border-b border-white/10 flex items-center justify-between bg-[#191919] overflow-x-auto kaspi-no-scrollbar">
+                    <div className="flex items-center gap-1">
+                      {latestTurn && (
+                        <>
+                          {/* Option A Tab */}
+                          <div
+                            onClick={() => setRightTab("option_a")}
+                            className={`flex items-center gap-3 px-3.5 py-2 rounded-t-lg cursor-pointer border-b-2 transition-colors ${
+                              rightTab === "option_a"
+                                ? "bg-[#141414] border-[#10b981] text-white"
+                                : "border-transparent text-zinc-400 hover:text-zinc-200"
+                            }`}
+                          >
+                            <span className="text-xs font-bold">
+                              {latestTurn.voteOutcome ? latestTurn.modelAName : "Option A"}
+                            </span>
+                            {latestTurn.voteOutcome === "model_a" && (
+                              <Trophy className="w-3.5 h-3.5 text-emerald-400" />
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleVoteOnTurn(latestTurn.turnId, "model_a");
+                              }}
+                              className="px-2 py-0.5 rounded bg-white/10 hover:bg-emerald-500 hover:text-black text-[10px] font-semibold transition-colors cursor-pointer"
+                            >
+                              A is better
+                            </button>
+                          </div>
+
+                          {/* Option B Tab */}
+                          <div
+                            onClick={() => setRightTab("option_b")}
+                            className={`flex items-center gap-3 px-3.5 py-2 rounded-t-lg cursor-pointer border-b-2 transition-colors ${
+                              rightTab === "option_b"
+                                ? "bg-[#141414] border-[#10b981] text-white"
+                                : "border-transparent text-zinc-400 hover:text-zinc-200"
+                            }`}
+                          >
+                            <span className="text-xs font-bold flex items-center gap-1.5">
+                              <span>
+                                {latestTurn.voteOutcome ? latestTurn.modelBName : "Option B"}
+                              </span>
+                              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleVoteOnTurn(latestTurn.turnId, "model_b");
+                              }}
+                              className="px-2 py-0.5 rounded bg-white/10 hover:bg-emerald-500 hover:text-black text-[10px] font-semibold transition-colors cursor-pointer"
+                            >
+                              B is better
+                            </button>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Architecture & 14 Agents Tab (Screenshots 1 & 2) */}
+                      <button
+                        type="button"
+                        onClick={() => setRightTab("architecture_agents")}
+                        className={`px-3 py-2 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
+                          rightTab === "architecture_agents"
+                            ? "border-[#10b981] text-emerald-400 bg-[#141414]"
+                            : "border-transparent text-zinc-400 hover:text-white"
+                        }`}
+                      >
+                        🕸️ KASPI AI — 14 Agents
+                      </button>
+
+                      {/* Puck Visual Editor Tab */}
+                      <button
+                        type="button"
+                        onClick={() => setRightTab("puck_editor")}
+                        className={`px-3 py-2 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
+                          rightTab === "puck_editor"
+                            ? "border-[#10b981] text-emerald-400 bg-[#141414]"
+                            : "border-transparent text-zinc-400 hover:text-white"
+                        }`}
+                      >
+                        🎨 Puck Store Builder
+                      </button>
+
+                      {/* Approvals & Workflows Tab */}
+                      <button
+                        type="button"
+                        onClick={() => setRightTab("approvals_workflows")}
+                        className={`px-3 py-2 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
+                          rightTab === "approvals_workflows"
+                            ? "border-[#10b981] text-emerald-400 bg-[#141414]"
+                            : "border-transparent text-zinc-400 hover:text-white"
+                        }`}
+                      >
+                        🔒 Approvals & Flow ({approvals.filter((a) => a.status === "pending_approval").length})
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-bold text-white cursor-pointer shrink-0"
+                    >
+                      ← Back to POS
+                    </button>
+                  </div>
+
+                  {/* ==========================================================
+                      BROWSER & CODE TOOLBAR (Exact Match to Screenshots 3, 4, 9, 14)
+                     ========================================================== */}
+                  {(rightTab === "option_a" || rightTab === "option_b") && latestTurn && (
+                    <div className="h-12 px-3 border-b border-white/10 bg-[#1c1c1c] flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        {/* Preview [👁️] vs Code [</>] Toggle Pill */}
+                        <div className="inline-flex items-center p-0.5 rounded-lg bg-[#121212] border border-white/10">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewOrCode("preview")}
+                            className={`px-2.5 py-1 rounded-md text-xs cursor-pointer transition-colors ${
+                              previewOrCode === "preview"
+                                ? "bg-white/15 text-white"
+                                : "text-zinc-400 hover:text-white"
+                            }`}
+                            title="Preview Storefront"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewOrCode("code")}
+                            className={`px-2.5 py-1 rounded-md text-xs cursor-pointer transition-colors ${
+                              previewOrCode === "code"
+                                ? "bg-white/15 text-white"
+                                : "text-zinc-400 hover:text-white"
+                            }`}
+                            title="Inspect Generated Project Files & Code"
+                          >
+                            <Code2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Viewport Switcher Dropdown: Desktop / Tablet / Mobile (Screenshot 14) */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setViewportDropdownOpen(!viewportDropdownOpen)}
+                            className="p-1.5 rounded-lg bg-[#121212] hover:bg-white/10 border border-white/10 text-zinc-300 hover:text-white cursor-pointer"
+                            title="Responsive Viewport"
+                          >
+                            {viewportDevice === "desktop" ? (
+                              <Monitor className="w-3.5 h-3.5" />
+                            ) : viewportDevice === "tablet" ? (
+                              <Tablet className="w-3.5 h-3.5" />
+                            ) : (
+                              <Smartphone className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+
+                          {viewportDropdownOpen && (
+                            <div className="absolute left-0 top-9 z-50 w-36 rounded-xl bg-[#222] border border-white/15 shadow-2xl py-1 text-xs">
+                              {[
+                                { id: "desktop" as const, label: "Desktop", Icon: Monitor },
+                                { id: "tablet" as const, label: "Tablet", Icon: Tablet },
+                                { id: "mobile" as const, label: "Mobile", Icon: Smartphone },
+                              ].map(({ id, label, Icon }) => (
+                                <button
+                                  key={id}
+                                  type="button"
+                                  onClick={() => {
+                                    setViewportDevice(id);
+                                    setViewportDropdownOpen(false);
+                                  }}
+                                  className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-white/10 cursor-pointer ${
+                                    viewportDevice === id
+                                      ? "bg-white/10 text-white font-semibold"
+                                      : "text-zinc-300"
+                                  }`}
+                                >
+                                  <Icon className="w-3.5 h-3.5" />
+                                  <span>{label}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Address Bar (`01a12a3a...kaspi.site/`) + Copy + Open in New Tab */}
+                      <div className="flex-1 max-w-md flex items-center justify-between px-3 py-1.5 rounded-lg bg-[#121212] border border-white/10 text-xs text-zinc-300 font-mono">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => toast.info("تم تحديث المعاينة الحية للمتجر")}
+                            className="text-zinc-400 hover:text-white cursor-pointer"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="truncate">{simulatedPreviewUrl}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard?.writeText(
+                                `${window.location.origin}${liveStorefrontRoute}`
+                              );
+                              setCopiedUrl(true);
+                              setTimeout(() => setCopiedUrl(false), 1800);
+                              toast.success("تم نسخ رابط المتجر الإلكتروني!");
+                            }}
+                            className="text-zinc-400 hover:text-white cursor-pointer"
+                            title="Copy Storefront Link"
+                          >
+                            {copiedUrl ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                          <a
+                            href={liveStorefrontRoute}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-zinc-400 hover:text-emerald-400"
+                            title="Open Live Storefront in New Tab"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Right Actions: Apply Design to Store + Download Zip (Screenshot 4) */}
+                      <div className="flex items-center gap-2 relative">
+                        <button
+                          type="button"
+                          onClick={handleApplyCurrentDesignToStore}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Apply Design to Store</span>
+                        </button>
+
+                        <div
+                          className="relative"
+                          onMouseEnter={() => setDownloadTooltipVisible(true)}
+                          onMouseLeave={() => setDownloadTooltipVisible(false)}
+                        >
+                          <button
+                            type="button"
+                            onClick={handleDownloadProjectZip}
+                            className="px-3 py-1.5 rounded-lg bg-white text-black hover:bg-zinc-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Download</span>
+                          </button>
+
+                          {downloadTooltipVisible && (
+                            <div className="absolute right-0 top-9 z-50 whitespace-nowrap px-3 py-1.5 rounded-lg bg-white text-blue-600 text-xs font-semibold shadow-xl border border-zinc-200">
+                              Download Project as Zip File
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ==========================================================
+                      PANEL CONTENT 1: OPTION A / OPTION B PREVIEW OR CODE VIEW
+                     ========================================================== */}
+                  {(rightTab === "option_a" || rightTab === "option_b") && latestTurn && (
+                    <div className="flex-1 overflow-hidden flex flex-col">
+                      {previewOrCode === "preview" && activeOptionPuck ? (
+                        /* LIVE INTERACTIVE STOREFRONT & MULTI-AGENT DELIVERABLES PREVIEW */
+                        <div className="flex-1 overflow-y-auto p-4 flex justify-center bg-[#0f0f10] relative">
+                          <div
+                            dir="rtl"
+                            className={`w-full transition-all duration-300 rounded-2xl border border-white/10 bg-[#1a1a1a] overflow-y-auto shadow-2xl ${
+                              viewportDevice === "mobile"
+                                ? "max-w-[390px]"
+                                : viewportDevice === "tablet"
+                                ? "max-w-[768px]"
+                                : "max-w-full"
+                            }`}
+                          >
+                            {/* 1. Store Header */}
+                            <header className="px-6 py-4 border-b border-white/10 bg-[#141414]/90 backdrop-blur-md flex items-center justify-between sticky top-0 z-10">
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className="w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-black text-sm"
+                                  style={{
+                                    backgroundColor:
+                                      activeOptionPuck.root.props.accentColor || "#10b981",
+                                  }}
+                                >
+                                  {activeOptionPuck.root.props.title.slice(0, 2)}
+                                </div>
+                                <div>
+                                  <h2 className="text-base font-extrabold text-white">
+                                    {activeOptionPuck.root.props.title}
+                                  </h2>
+                                  <p className="text-[11px] text-zinc-400">
+                                    {activeOptionPuck.root.props.slogan}
+                                  </p>
+                                </div>
                               </div>
-                            ))}
+                              <div className="flex items-center gap-2">
+                                <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-mono">
+                                  {Object.values(previewCart).reduce((a, b) => a + b, 0)} سلع في السلة
+                                </span>
+                                <a
+                                  href={liveStorefrontRoute}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="px-3 py-1.5 rounded-xl bg-[#10b981] text-black text-xs font-extrabold hover:bg-emerald-400 transition-colors"
+                                >
+                                  فتح المتجر الكامل ↗
+                                </a>
+                              </div>
+                            </header>
+
+                            {/* 2. Storefront Hero Banner */}
+                            <section className="px-6 py-10 text-center bg-gradient-to-b from-emerald-950/30 to-transparent border-b border-white/10">
+                              <span className="inline-block px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold mb-3">
+                                متجر رسمي مرتبط بقاعدة بيانات KASPI POS • {storeCtx?.sector}
+                              </span>
+                              <h1 className="text-2xl sm:text-4xl font-black text-white mb-3">
+                                {activeOptionPuck.root.props.title}
+                              </h1>
+                              <p className="text-xs sm:text-sm text-zinc-300 max-w-xl mx-auto mb-6">
+                                {activeOptionPuck.root.props.slogan}
+                              </p>
+
+                              {/* Category Pills */}
+                              <div className="flex items-center justify-center gap-2 flex-wrap">
+                                {["الكل", ...(storeCtx?.categories || [])].map((cat) => (
+                                  <button
+                                    key={cat}
+                                    type="button"
+                                    onClick={() => setPreviewCategory(cat)}
+                                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
+                                      previewCategory === cat
+                                        ? "bg-[#10b981] text-black"
+                                        : "bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10"
+                                    }`}
+                                  >
+                                    {cat}
+                                  </button>
+                                ))}
+                              </div>
+                            </section>
+
+                            {/* 3. Verified Store Products Grid */}
+                            <section className="p-6 space-y-4">
+                              <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-extrabold text-white">
+                                  المنتجات المتوفرة ({storeCtx?.products.length || 0} سلعة موثقة)
+                                </h3>
+                                <span className="text-xs text-emerald-400 font-mono">
+                                  العملة الرسمية: {storeCtx?.currency || "MAD"}
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {(storeCtx?.products || [])
+                                  .filter(
+                                    (p) =>
+                                      previewCategory === "الكل" || p.category === previewCategory
+                                  )
+                                  .slice(0, 12)
+                                  .map((prod) => (
+                                    <div
+                                      key={prod.id}
+                                      className="p-4 rounded-2xl bg-[#222] border border-white/10 flex flex-col justify-between hover:border-emerald-500/40 transition-colors"
+                                    >
+                                      <div>
+                                        <div className="flex items-center justify-between text-[10px] text-zinc-400 mb-2">
+                                          <span>{prod.category}</span>
+                                          <span
+                                            className={`px-2 py-0.5 rounded-full font-bold ${
+                                              prod.availabilityStatus === "IN_STOCK"
+                                                ? "bg-emerald-500/20 text-emerald-300"
+                                                : prod.availabilityStatus === "LOW_STOCK"
+                                                ? "bg-amber-500/20 text-amber-300"
+                                                : "bg-red-500/20 text-red-300"
+                                            }`}
+                                          >
+                                            {prod.availabilityStatus === "IN_STOCK"
+                                              ? `متوفر (${prod.stockQuantity})`
+                                              : prod.availabilityStatus === "LOW_STOCK"
+                                              ? `كمية محدودة (${prod.stockQuantity})`
+                                              : "نافد حالياً"}
+                                          </span>
+                                        </div>
+                                        <h4 className="text-sm font-bold text-white mb-1">
+                                          {prod.name}
+                                        </h4>
+                                        <p className="text-[11px] text-zinc-400 font-mono mb-3">
+                                          SKU: {prod.sku}
+                                        </p>
+                                      </div>
+
+                                      <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                                        <span className="text-base font-black text-emerald-400 font-mono">
+                                          {prod.price.toFixed(2)} {storeCtx?.currency || "MAD"}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          disabled={prod.stockQuantity <= 0}
+                                          onClick={() =>
+                                            setPreviewCart((prev) => ({
+                                              ...prev,
+                                              [prod.id]: (prev[prod.id] || 0) + 1,
+                                            }))
+                                          }
+                                          className="px-3 py-1.5 rounded-xl bg-[#10b981] hover:bg-emerald-400 text-black text-xs font-extrabold cursor-pointer disabled:opacity-40"
+                                        >
+                                          + أضف للسلة
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            </section>
+
+                            {/* 4. Sandbox Custom Business App Preview (if generated by Agent N) */}
+                            {latestTurn.mission.generatedCustomApp && (
+                              <section className="mx-6 mb-6 p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-extrabold text-emerald-300">
+                                    🛠️ {latestTurn.mission.generatedCustomApp.title} (Sandbox Isolated)
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">
+                                    Tests Passed ✔
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                  {latestTurn.mission.generatedCustomApp.fields.map((f) => (
+                                    <div
+                                      key={f.name}
+                                      className="p-2 rounded-xl bg-black/40 border border-white/10 text-xs"
+                                    >
+                                      <div className="text-[10px] text-zinc-400 mb-1">
+                                        {f.labelAr}
+                                      </div>
+                                      <input
+                                        type={f.type === "number" ? "number" : "text"}
+                                        placeholder={f.labelAr}
+                                        className="w-full bg-transparent text-white text-xs focus:outline-none"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </section>
+                            )}
+
+                            {/* 5. Multi-Agent Deliverables Summary Footer */}
+                            <section className="mx-6 mb-8 p-4 rounded-2xl bg-[#141414] border border-white/10 space-y-2">
+                              <div className="text-xs font-extrabold text-emerald-400">
+                                نتائج الوكلاء المتخصصين المشاركين في هذه المهمة ({latestTurn.mission.agentOutputs.length} وكلاء):
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {latestTurn.mission.agentOutputs.map((ao) => (
+                                  <div
+                                    key={ao.agentId}
+                                    className="p-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs"
+                                  >
+                                    <div className="font-bold text-white mb-0.5">
+                                      [{ao.agentCode}] {ao.agentNameAr}
+                                    </div>
+                                    <p className="text-[11px] text-zinc-400">{ao.summaryAr}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </section>
+                          </div>
+
+                          {/* Floating "Built with KASPI AI" Badge (Exact Match to Screenshot 7!) */}
+                          <div className="fixed bottom-5 right-5 z-30 flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-white text-black shadow-2xl border border-zinc-200 text-xs">
+                            <KaspiBrandMark size="sm" />
+                            <div>
+                              <div className="font-bold text-xs leading-tight">
+                                Built with KASPI AI
+                              </div>
+                              <div className="text-[10px] text-zinc-600">
+                                Verified Merchant Storefront • {storeCtx?.storeName}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        /* ======================================================
+                           CODE & FILES TREE EXPLORER VIEW (Exact Match to Screenshot 9!)
+                           ====================================================== */
+                        <div className="flex-1 flex overflow-hidden bg-[#141414]">
+                          {/* Left FILES Tree Column */}
+                          <div className="w-56 border-r border-white/10 bg-[#181818] flex flex-col shrink-0">
+                            <div className="px-3.5 py-2.5 border-b border-white/10 text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+                              FILES
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-2 space-y-1 text-xs font-mono">
+                              <div className="flex items-center gap-1.5 px-2 py-1 text-zinc-400">
+                                <Folder className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>src</span>
+                              </div>
+                              {activeProjectFiles.map((file) => (
+                                <button
+                                  key={file.path}
+                                  type="button"
+                                  onClick={() => setSelectedFilePath(file.path)}
+                                  className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left cursor-pointer transition-colors ${
+                                    activeCodeFile?.path === file.path
+                                      ? "bg-white/10 text-white font-bold"
+                                      : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                                  }`}
+                                >
+                                  <span className="text-[10px] font-bold px-1 rounded bg-emerald-500/20 text-emerald-300 uppercase">
+                                    {file.language}
+                                  </span>
+                                  <span className="truncate">{file.name}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Right Syntax Code Viewer with Line Numbers */}
+                          <div className="flex-1 flex flex-col overflow-hidden bg-[#141414]">
+                            <div className="h-9 px-4 border-b border-white/10 flex items-center justify-between bg-[#1a1a1a] text-xs font-mono text-zinc-300">
+                              <span>{activeCodeFile?.path || "src/App.tsx"}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (activeCodeFile) {
+                                    navigator.clipboard?.writeText(activeCodeFile.content);
+                                    toast.success(`تم نسخ كود ${activeCodeFile.name}`);
+                                  }
+                                }}
+                                className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:underline cursor-pointer"
+                              >
+                                <Copy className="w-3 h-3" />
+                                <span>Copy File</span>
+                              </button>
+                            </div>
+                            <div className="flex-1 overflow-auto p-4 font-mono text-xs leading-relaxed">
+                              {activeCodeFile?.content.split("\n").map((line, idx) => (
+                                <div key={idx} className="flex hover:bg-white/[0.02] px-1">
+                                  <span className="w-10 text-right pr-4 text-zinc-600 select-none shrink-0">
+                                    {idx + 1}
+                                  </span>
+                                  <span className="text-zinc-200 whitespace-pre">{line}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       )}
+                    </div>
+                  )}
 
-                      {/* Suggested Artifact Button */}
-                      {!isUser && m.suggestedArtifact && (
-                        <div className="mt-3 pt-2 border-t border-white/10">
-                          <button
-                            type="button"
-                            onClick={() => setActiveCanvas(m.suggestedArtifact!.type)}
-                            className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <Sparkles className="w-3.5 h-3.5" />
-                            <span>فتح في مساحة العمل: {m.suggestedArtifact.title}</span>
-                          </button>
+                  {/* ==========================================================
+                      PANEL CONTENT 2: KASPI AI — AUTONOMOUS COMMERCE ARCHITECTURE
+                      & THE 14 SPECIALIZED AGENTS (Exact Match to Screenshots 1 & 2!)
+                     ========================================================== */}
+                  {rightTab === "architecture_agents" && (
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#121212]" dir="rtl">
+                      <div className="max-w-4xl mx-auto rounded-3xl bg-[#181818] border border-white/10 p-6 shadow-2xl space-y-5">
+                        {/* Header Row matching Screenshot 1 */}
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight" dir="ltr">
+                            KASPI AI — Autonomous Commerce
+                          </h2>
+                          <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+                            التصميم المعماري المستهدف • مفعّل بالكامل
+                          </span>
                         </div>
-                      )}
-                    </div>
 
-                    {/* Google Studio / ChatGPT Action Bar Under Every Message */}
-                    <div className="flex items-center gap-1.5 px-1 text-[10px] text-zinc-400">
-                      <span className="font-mono">{m.timestamp}</span>
-                      {!isUser && m.provider && (
-                        <span className="font-mono text-emerald-400/80">• {m.provider}</span>
-                      )}
+                        {/* Layer 1: بيانات التاجر و KASPI POS */}
+                        <div className="p-5 rounded-2xl bg-[#222] border border-white/10 text-center space-y-1.5">
+                          <div className="text-base font-extrabold text-white">
+                            🏪 بيانات التاجر و KASPI POS ({storeCtx?.storeName || "ASIMA"})
+                          </div>
+                          <div className="text-xs text-zinc-400 font-mono" dir="ltr">
+                            Products ({storeCtx?.products.length || 0}) · Orders ({storeCtx?.todayOrdersCount || 0}) · Customers · Inventory · Store Settings ({storeCtx?.currency || "MAD"})
+                          </div>
+                        </div>
 
-                      {/* Copy Button */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard?.writeText(m.content);
-                          setCopiedId(m.id);
-                          toast.success("تم نسخ الرسالة!");
-                          setTimeout(() => setCopiedId(null), 1800);
-                        }}
-                        className="p-1 rounded hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
-                        title="نسخ الرسالة"
-                      >
-                        {isCopied ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                      </button>
+                        <div className="text-center text-zinc-500 text-lg">↓</div>
 
-                      {/* Speak / Stop Audio Button */}
-                      {!isUser && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (speakingMsgId === m.id) {
-                              moonshineVoice.stopSpeaking();
-                              setSpeakingMsgId(null);
-                            } else {
-                              setSpeakingMsgId(m.id);
-                              moonshineVoice.speak(
-                                m.content,
-                                locale,
-                                () => setSpeakingMsgId(m.id),
-                                () => setSpeakingMsgId(null)
-                              );
-                            }
-                          }}
-                          className={`p-1 rounded hover:bg-white/10 transition-colors cursor-pointer ${
-                            speakingMsgId === m.id ? "text-emerald-400" : "hover:text-white"
-                          }`}
-                          title="قراءة صوتية"
-                        >
-                          <Volume2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                        {/* Layer 2: ARENA AI — Master Orchestrator */}
+                        <div className="p-5 rounded-2xl bg-[#14241d] border-2 border-[#10b981]/60 text-center space-y-1.5 shadow-lg">
+                          <div className="text-lg font-black text-[#10b981] tracking-wide" dir="ltr">
+                            ARENA AI
+                          </div>
+                          <div className="text-base font-extrabold text-white" dir="ltr">
+                            Master Orchestrator
+                          </div>
+                          <div className="text-xs text-zinc-300 font-mono" dir="ltr">
+                            Planning · Routing · Evaluation · Memory (6 Levels) · Permissions (Level 1/2/3)
+                          </div>
+                        </div>
 
-                      {/* Like Button */}
-                      {!isUser && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFeedbackMap((prev) => ({
-                              ...prev,
-                              [m.id]: prev[m.id] === "up" ? null : "up",
-                            }));
-                            toast.success("شكراً لتقييمك الإيجابي!");
-                          }}
-                          className={`p-1 rounded hover:bg-white/10 transition-colors cursor-pointer ${
-                            fb === "up" ? "text-emerald-400" : "hover:text-white"
-                          }`}
-                          title="إعجاب بالرد"
-                        >
-                          <ThumbsUp className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                        <div className="text-center text-zinc-500 text-lg">↓</div>
 
-                      {/* Dislike Button */}
-                      {!isUser && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFeedbackMap((prev) => ({
-                              ...prev,
-                              [m.id]: prev[m.id] === "down" ? null : "down",
-                            }));
-                          }}
-                          className={`p-1 rounded hover:bg-white/10 transition-colors cursor-pointer ${
-                            fb === "down" ? "text-red-400" : "hover:text-white"
-                          }`}
-                          title="عدم إعجاب"
-                        >
-                          <ThumbsDown className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-
-                      {/* Regenerate Button */}
-                      {!isUser && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const lastUser = [...messages]
-                              .reverse()
-                              .find((msg) => msg.role === "user");
-                            if (lastUser) sendStudioMessage(lastUser.content);
-                          }}
-                          className="p-1 rounded hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
-                          title="إعادة التوليد"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {isAiThinking && (
-                <div className="flex items-center gap-2 text-xs text-emerald-400 kaspi-frosted-card px-4 py-2.5 rounded-2xl w-fit border border-emerald-500/30 animate-pulse">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Kaspi AI يعالج طلبك عبر المصادر المفتوحة...</span>
-                </div>
-              )}
-            </div>
-
-            {/* Bottom Multimodal Input Bar */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                sendStudioMessage(chatInput);
-              }}
-              className="p-3 border-t border-white/10 bg-black/30 flex items-center gap-2 shrink-0"
-            >
-              <label
-                className="w-10 h-10 rounded-xl kaspi-glass-surface border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white cursor-pointer shrink-0"
-                title="إرفاق فاتورة أو مستند (يفتح Unstract تلقائياً)"
-              >
-                <input
-                  type="file"
-                  accept=".pdf,.png,.jpg,.jpeg,.csv"
-                  onChange={() => {
-                    setActiveCanvas("unstract");
-                    toast.info("تم فتح أداة Unstract لاستخراج بيانات الملف المرفق");
-                  }}
-                  className="hidden"
-                />
-                <Paperclip className="w-4 h-4" />
-              </label>
-
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder={
-                    isRecordingVoice
-                      ? "🎙️ جاري الاستماع لصوتك... اضغط على الميكروفون للإرسال"
-                      : "اكتب رسالتك أو تحدث صوتياً (اسأل عن المبيعات، ابنِ موقعاً، ولّد PDF)..."
-                  }
-                  className="w-full ps-3.5 pe-10 py-2.5 rounded-xl kaspi-glass-surface border border-white/15 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
-                />
-                <button
-                  type="button"
-                  onClick={toggleVoiceRecording}
-                  className={`absolute end-2 top-2 p-1 rounded-lg transition-all cursor-pointer ${
-                    isRecordingVoice
-                      ? "bg-red-500 text-white animate-pulse"
-                      : "text-zinc-400 hover:text-emerald-400"
-                  }`}
-                  title={isRecordingVoice ? "إيقاف التسجيل وإرسال الصوت" : "تحدث صوتياً (Moonshine + Whisper)"}
-                >
-                  {isRecordingVoice ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </button>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isAiThinking || !chatInput.trim()}
-                className="w-10 h-10 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-30 text-black font-bold flex items-center justify-center shrink-0 cursor-pointer shadow-md"
-              >
-                <ArrowUp className="w-4 h-4 stroke-[2.5]" />
-              </button>
-            </form>
-          </div>
-
-          {/* PANE 3: RIGHT SPLIT WORKSPACE (Top: Active Open-Source Engine Canvas / Bottom: Interactive Terminal) */}
-          <div className="w-full lg:w-[52%] flex flex-col min-h-0 overflow-hidden bg-black/20">
-            {/* Mobile/Tablet Canvas Switcher */}
-            <div className="flex xl:hidden items-center gap-1 p-2 border-b border-white/10 overflow-x-auto scrollbar-none shrink-0">
-              {[
-                { id: "arena", label: "Arena AI متجر" },
-                { id: "puck", label: "Puck محرر" },
-                { id: "pdfme", label: "pdfme مستندات" },
-                { id: "unstract", label: "Unstract فواتير" },
-                { id: "docetl", label: "DocETL تحليل" },
-                { id: "search", label: "Morphic بحث" },
-                { id: "opnform", label: "OpnForm نماذج" },
-                { id: "repos", label: "المصادر (Git)" },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setActiveCanvas(t.id as CanvasTool)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap cursor-pointer ${
-                    activeCanvas === t.id ? "kaspi-glass-btn text-white" : "text-zinc-400"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            {/* TOP RIGHT: ACTIVE INTERACTIVE CANVAS */}
-            <div className="flex-1 min-h-0 overflow-y-auto kaspi-no-scrollbar p-4">
-              {activeCanvas === "arena" && (
-                <KaspiArenaBuilder
-                  locale={locale}
-                  onLog={appendLog}
-                  onApplyToPuck={() => setActiveCanvas("puck")}
-                />
-              )}
-              {activeCanvas === "puck" && (
-                <KaspiPuckStorefrontBuilder locale={locale} onLog={appendLog} />
-              )}
-              {activeCanvas === "pdfme" && (
-                <KaspiPdfmeDesigner locale={locale} onLog={appendLog} />
-              )}
-              {activeCanvas === "unstract" && (
-                <KaspiUnstractInvoiceParser locale={locale} onLog={appendLog} />
-              )}
-              {activeCanvas === "docetl" && (
-                <KaspiDocEtlAnalyzer locale={locale} onLog={appendLog} />
-              )}
-              {activeCanvas === "search" && <KaspiAiSearchEngine locale={locale} />}
-              {activeCanvas === "opnform" && <KaspiOpnFormBuilder locale={locale} />}
-
-              {activeCanvas === "repos" && (
-                <div className="space-y-4 text-start">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-3 flex-wrap gap-2">
-                    <div>
-                      <h4 className="text-sm font-bold text-white">
-                        قائمة المصادر المفتوحة الـ 10 والروابط المباشرة (Git Clone)
-                      </h4>
-                      <p className="text-[11px] text-zinc-400">
-                        جميع الروابط الكاملة للمشاريع الـ 10 وسكريبت النقل المباشر إلى مجلد external_sources
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard?.writeText(BASH_CLONE_SCRIPT);
-                        toast.success("تم نسخ سكريبت Bash لنقل جميع المصادر الـ 10!");
-                        appendLog(`[Git Clone Script] تم نسخ سكريبت نقل المصادر الـ 10 إلى الحافظة.`);
-                      }}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>نسخ سكريبت النقل (Bash)</span>
-                    </button>
-                  </div>
-
-                  <div className="rounded-2xl overflow-hidden border border-white/10 kaspi-glass-surface">
-                    <table className="w-full text-xs text-start">
-                      <thead className="bg-white/[0.04] text-zinc-400 text-[10px] font-mono border-b border-white/10">
-                        <tr>
-                          <th className="py-2 px-2.5 text-start">#</th>
-                          <th className="py-2 px-2.5 text-start">المشروع</th>
-                          <th className="py-2 px-2.5 text-start">رابط GitHub المباشر</th>
-                          <th className="py-2 px-2.5 text-start">الوظيفة المدمجة</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/[0.06]">
-                        {OPEN_SOURCE_REPOS.map((r) => (
-                          <tr key={r.id} className="hover:bg-white/[0.02]">
-                            <td className="py-2 px-2.5 font-mono text-emerald-400 font-bold">
-                              {r.order}
-                            </td>
-                            <td className="py-2 px-2.5 font-bold text-white">{r.name}</td>
-                            <td className="py-2 px-2.5 font-mono text-[11px]">
-                              <a
-                                href={r.githubUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-emerald-400 hover:underline inline-flex items-center gap-1"
+                        {/* Layer 3: The 14 Specialized AI Agents Grid (Screenshots 1 & 2) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" dir="ltr">
+                          {KASPI_SPECIALIZED_AGENTS.map((agent) => {
+                            const isSelected = selectedAgentFilter === agent.id;
+                            return (
+                              <button
+                                key={agent.id}
+                                type="button"
+                                onClick={() =>
+                                  setSelectedAgentFilter(isSelected ? null : agent.id)
+                                }
+                                className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border transition-all cursor-pointer text-left ${
+                                  isSelected
+                                    ? "bg-emerald-500/20 border-emerald-400 text-white shadow-lg"
+                                    : "bg-[#222] hover:bg-[#282828] border-white/10 text-zinc-100"
+                                }`}
                               >
-                                <span>{r.githubUrl.replace("https://", "")}</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            </td>
-                            <td className="py-2 px-2.5 text-[11px] text-zinc-300">
-                              {r.descriptionAr}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                                <div>
+                                  <div className="text-sm font-bold text-white">
+                                    {agent.shortLabel}{" "}
+                                    <span className="text-[10px] font-mono text-emerald-400">
+                                      [{agent.code}]
+                                    </span>
+                                  </div>
+                                  <div className="text-[11px] text-zinc-400 mt-0.5" dir="rtl">
+                                    {agent.nameAr}
+                                  </div>
+                                </div>
+                                <span className="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 text-[10px] font-mono">
+                                  {agent.maxPermissionLevel.replace("LEVEL_", "L")}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
 
-                  <pre
-                    className="p-3 rounded-xl bg-black/70 border border-white/10 text-[11px] font-mono text-emerald-300 overflow-x-auto max-h-48"
-                    dir="ltr"
-                  >
-                    {BASH_CLONE_SCRIPT}
-                  </pre>
-                </div>
-              )}
-            </div>
+                        {/* Selected Agent Inspector Drawer */}
+                        {selectedAgentFilter && (
+                          <div className="p-4 rounded-2xl bg-black/50 border border-emerald-500/40 space-y-2 text-xs">
+                            {(() => {
+                              const ag = KASPI_SPECIALIZED_AGENTS.find(
+                                (a) => a.id === selectedAgentFilter
+                              );
+                              if (!ag) return null;
+                              return (
+                                <>
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-extrabold text-emerald-400 text-sm">
+                                      [{ag.code}] {ag.nameAr} ({ag.nameEn})
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleExecutePrompt(
+                                          `تشغيل ${ag.nameAr}: ${ag.specialtyAr}`,
+                                          "agent"
+                                        )
+                                      }
+                                      className="px-3 py-1 rounded-xl bg-[#10b981] text-black font-extrabold cursor-pointer"
+                                    >
+                                      تشغيل هذا الوكيل الآن ⚡
+                                    </button>
+                                  </div>
+                                  <p className="text-zinc-300">{ag.specialtyAr}</p>
+                                  <div className="text-[11px] text-zinc-400 font-mono" dir="ltr">
+                                    Allowed Tools: {ag.allowedTools.join(", ")} | Max Permission:{" "}
+                                    {ag.maxPermissionLevel}
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        )}
 
-            {/* BOTTOM RIGHT: REAL INTERACTIVE STUDIO TERMINAL */}
-            {showTerminal && (
-              <div
-                className="h-44 border-t border-white/15 bg-[#07090c] flex flex-col shrink-0 font-mono"
-                dir="ltr"
-              >
-                <div className="px-3 py-1.5 border-b border-white/10 bg-white/[0.03] flex items-center justify-between text-[10px] text-zinc-400">
-                  <div className="flex items-center gap-2">
-                    <Terminal className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="font-bold text-zinc-200">
-                      KASPI AI STUDIO TERMINAL — Background Tasks & CLI
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setTerminalLogs([])}
-                      className="hover:text-white cursor-pointer"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                </div>
+                        <div className="text-center text-zinc-500 text-lg">↓</div>
 
-                <div
-                  ref={terminalScrollRef}
-                  className="flex-1 overflow-y-auto p-2.5 space-y-1 text-[11px] text-emerald-400/90 kaspi-no-scrollbar"
-                >
-                  {terminalLogs.map((ln, idx) => (
-                    <div key={idx} className="leading-relaxed break-all">
-                      {ln}
+                        {/* Layer 4: Execution & Approval Layer (Screenshot 2) */}
+                        <div className="p-5 rounded-2xl bg-[#222] border border-white/10 text-center space-y-1.5">
+                          <div className="text-base font-extrabold text-white" dir="ltr">
+                            Execution & Approval Layer
+                          </div>
+                          <div className="text-xs text-zinc-400 font-mono" dir="ltr">
+                            Validation · Security · Human Approval · Audit
+                          </div>
+                        </div>
+
+                        <div className="text-center text-zinc-500 text-lg">↓</div>
+
+                        {/* Layer 5: نتائج حقيقية داخل متجر التاجر (Screenshot 2) */}
+                        <div className="p-5 rounded-2xl bg-[#181818] border border-emerald-500/30 text-center space-y-1.5">
+                          <div className="text-base font-extrabold text-white">
+                            نتائج حقيقية داخل متجر التاجر ({storeCtx?.storeName})
+                          </div>
+                          <div className="text-xs text-zinc-400 font-mono" dir="ltr">
+                            Store · Campaigns · Customer Support · Reports · Automation
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  )}
 
-                <form
-                  onSubmit={handleTerminalSubmit}
-                  className="px-3 py-1.5 border-t border-white/10 bg-black flex items-center gap-2"
-                >
-                  <span className="text-[11px] text-emerald-400 font-bold shrink-0">
-                    kaspi@studio:~$
-                  </span>
-                  <input
-                    type="text"
-                    value={terminalCmd}
-                    onChange={(e) => setTerminalCmd(e.target.value)}
-                    placeholder="Type 'help', 'repos', 'sales', 'stock', 'docetl', 'pdf', 'store' or any prompt..."
-                    className="flex-1 bg-transparent text-[11px] text-white focus:outline-none placeholder-zinc-600"
-                  />
-                </form>
+                  {/* ==========================================================
+                      PANEL CONTENT 3: PUCK VISUAL STOREFRONT BUILDER (14 Sections)
+                     ========================================================== */}
+                  {rightTab === "puck_editor" && (
+                    <div className="flex-1 overflow-y-auto p-5 bg-[#141414]" dir="rtl">
+                      <KaspiPuckStorefrontBuilder locale={locale} />
+                    </div>
+                  )}
+
+                  {/* ==========================================================
+                      PANEL CONTENT 4: APPROVAL CENTER, KASPI FLOW & AUDIT LOG
+                     ========================================================== */}
+                  {rightTab === "approvals_workflows" && (
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#141414]" dir="rtl">
+                      <div className="max-w-4xl mx-auto space-y-6">
+                        <div className="p-5 rounded-2xl bg-[#1e1e1e] border border-white/10 space-y-3">
+                          <h3 className="text-base font-extrabold text-white">
+                            🔒 مركز الموافقات الصريحة (Level 3 — Execute Human Approval Center)
+                          </h3>
+                          <p className="text-xs text-zinc-400">
+                            أي عملية حساسة (نشر المتجر، إطلاق حملة، تعديل أسعار أو مخزون، أو تثبيت تطبيق مخصص) تتوقف هنا حتى توافق عليها.
+                          </p>
+
+                          {approvals.length === 0 ? (
+                            <div className="p-4 rounded-xl bg-black/30 border border-white/5 text-xs text-zinc-400">
+                              لا توجد طلبات معلقة حالياً. قم بتشغيل أي مهمة عبر الوكلاء لتظهر المسودات هنا.
+                            </div>
+                          ) : (
+                            <div className="space-y-2.5">
+                              {approvals.map((app) => (
+                                <div
+                                  key={app.approvalId}
+                                  className="p-4 rounded-xl bg-[#252525] border border-white/10 flex items-center justify-between gap-4 flex-wrap"
+                                >
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono">
+                                        {app.permissionLevel}
+                                      </span>
+                                      <span className="text-sm font-bold text-white">
+                                        {app.title}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-zinc-300">{app.description}</p>
+                                    <div className="text-[10px] text-zinc-400 font-mono">
+                                      الوكيل: {app.agentName} • البيانات: {app.groundedDataSummary}
+                                    </div>
+                                  </div>
+
+                                  {app.status === "pending_approval" ? (
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleDecisionOnApproval(
+                                            app.approvalId,
+                                            "approved_executed"
+                                          )
+                                        }
+                                        className="px-3.5 py-1.5 rounded-xl bg-[#10b981] text-black text-xs font-extrabold cursor-pointer"
+                                      >
+                                        ✓ موافقة وتنفيذ
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleDecisionOnApproval(app.approvalId, "rejected")
+                                        }
+                                        className="px-3 py-1.5 rounded-xl bg-red-500/20 text-red-300 border border-red-500/40 text-xs font-bold cursor-pointer"
+                                      >
+                                        ✕ رفض
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span
+                                      className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                        app.status === "approved_executed"
+                                          ? "bg-emerald-500/20 text-emerald-300"
+                                          : "bg-red-500/20 text-red-300"
+                                      }`}
+                                    >
+                                      {app.status === "approved_executed"
+                                        ? "تمت الموافقة والتنفيذ ✔"
+                                        : "مرفوض"}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Audit Log */}
+                        <div className="p-5 rounded-2xl bg-[#1e1e1e] border border-white/10 space-y-3">
+                          <h3 className="text-base font-extrabold text-white">
+                            📋 سجل التدقيق الأمني للوكلاء (Multi-Tenant Agent Audit Log)
+                          </h3>
+                          <div className="space-y-2 max-h-80 overflow-y-auto">
+                            {auditLogs.length === 0 ? (
+                              <div className="text-xs text-zinc-400">
+                                سجل التدقيق جاهز ويسجل كل أداة يستدعيها أي وكيل.
+                              </div>
+                            ) : (
+                              auditLogs.map((log) => (
+                                <div
+                                  key={log.auditId}
+                                  className="p-3 rounded-xl bg-black/40 border border-white/5 text-xs flex items-center justify-between gap-2"
+                                >
+                                  <div>
+                                    <span className="font-bold text-emerald-400">
+                                      {log.agentName}
+                                    </span>{" "}
+                                    • الأداة: <code className="text-zinc-200">{log.toolInvoked}</code>
+                                    <div className="text-[11px] text-zinc-400 mt-0.5">
+                                      {log.reason} ({log.groundedDataSummary})
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] font-mono text-zinc-500">
+                                    {log.permissionLevel}
+                                  </span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ==========================================================
+                      PANEL CONTENT 5: ARENA LEADERBOARD (Bradley-Terry Elo + Benchmark)
+                     ========================================================== */}
+                  {rightTab === "leaderboard" && (
+                    <div className="flex-1 overflow-y-auto p-6 bg-[#141414]" dir="rtl">
+                      <div className="max-w-4xl mx-auto p-5 rounded-2xl bg-[#1e1e1e] border border-white/10 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-base font-extrabold text-white">
+                              🏆 جدول تصنيف نماذج Arena الرسمي (Arena-Rank Bradley-Terry MLE)
+                            </h3>
+                            <p className="text-xs text-zinc-400">
+                              يفصل بشكل صارم بين تصويت التاجر البشري (Human Votes)، نقاط Bradley-Terry Elo، نسبة الفوز، والتقييم المعياري الآلي (0–100%).
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-right border-collapse">
+                            <thead>
+                              <tr className="border-b border-white/10 text-zinc-400">
+                                <th className="py-2.5 px-3">النموذج</th>
+                                <th className="py-2.5 px-3">Bradley-Terry Elo</th>
+                                <th className="py-2.5 px-3">Win Rate (%)</th>
+                                <th className="py-2.5 px-3">تقييم التاجر (Wins/Losses/Ties)</th>
+                                <th className="py-2.5 px-3">Benchmark الآلي (14 قسماً)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {leaderboard.map((row) => (
+                                <tr key={row.modelId} className="border-b border-white/5">
+                                  <td className="py-3 px-3 font-bold text-white">
+                                    {row.displayName}
+                                  </td>
+                                  <td className="py-3 px-3 font-mono text-emerald-400 font-bold">
+                                    {row.bradleyTerryElo}{" "}
+                                    {row.isProvisionalElo && (
+                                      <span className="text-[10px] text-zinc-400">
+                                        (Baseline)
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-3 px-3 font-mono">
+                                    {row.winRatePct !== null ? `${row.winRatePct}%` : "—"}
+                                  </td>
+                                  <td className="py-3 px-3 font-mono text-zinc-300">
+                                    {row.humanBattles} جولات ({row.humanWins}W / {row.humanLosses}L /{" "}
+                                    {row.humanTies}T)
+                                  </td>
+                                  <td className="py-3 px-3 font-mono text-emerald-300">
+                                    {row.lastBenchmarkScorePct !== null
+                                      ? `${row.lastBenchmarkScorePct}%`
+                                      : "100%"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ==========================================================
+                      PANEL CONTENT 6: 13 OPEN-SOURCE ENGINES & CAPABILITY REGISTRY
+                     ========================================================== */}
+                  {rightTab === "open_source_tools" && (
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#141414]" dir="rtl">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {[
+                          { id: "puck" as const, label: "Puck Builder" },
+                          { id: "arena" as const, label: "Arena Studio" },
+                          { id: "pdfme" as const, label: "pdfme Designer" },
+                          { id: "unstract" as const, label: "Unstract OCR" },
+                          { id: "search" as const, label: "Morphic Search" },
+                          { id: "docetl" as const, label: "DocETL Pipeline" },
+                          { id: "opnform" as const, label: "OpnForm Builder" },
+                        ].map((t) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => setOpenSourceSubTool(t.id)}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer ${
+                              openSourceSubTool === t.id
+                                ? "bg-[#10b981] text-black"
+                                : "bg-[#222] text-zinc-300 hover:text-white border border-white/10"
+                            }`}
+                          >
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="p-5 rounded-2xl bg-[#1e1e1e] border border-white/10">
+                        {openSourceSubTool === "puck" && (
+                          <KaspiPuckStorefrontBuilder locale={locale} />
+                        )}
+                        {openSourceSubTool === "arena" && (
+                          <KaspiArenaBuilder
+                            locale={locale}
+                            onApplyToPuck={() => setOpenSourceSubTool("puck")}
+                          />
+                        )}
+                        {openSourceSubTool === "pdfme" && <KaspiPdfmeDesigner locale={locale} />}
+                        {openSourceSubTool === "unstract" && (
+                          <KaspiUnstractInvoiceParser locale={locale} />
+                        )}
+                        {openSourceSubTool === "search" && <KaspiAiSearchEngine locale={locale} />}
+                        {openSourceSubTool === "docetl" && <KaspiDocEtlAnalyzer locale={locale} />}
+                        {openSourceSubTool === "opnform" && <KaspiOpnFormBuilder locale={locale} />}
+                      </div>
+
+                      {/* Capability Registry Table (Section 8) */}
+                      <div className="p-5 rounded-2xl bg-[#1e1e1e] border border-white/10 space-y-3">
+                        <h3 className="text-sm font-extrabold text-white">
+                          📦 سجل قدرات المحركات المفتوحة المصدر الـ 13 (Open-Source Capability Registry)
+                        </h3>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-right border-collapse">
+                            <thead>
+                              <tr className="border-b border-white/10 text-zinc-400">
+                                <th className="py-2 px-2">المحرك</th>
+                                <th className="py-2 px-2">الترخيص</th>
+                                <th className="py-2 px-2">يعمل محلياً؟</th>
+                                <th className="py-2 px-2">القدرات المدمجة</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {OPEN_SOURCE_CAPABILITY_REGISTRY.map((cap) => (
+                                <tr key={cap.engineId} className="border-b border-white/5">
+                                  <td className="py-2 px-2 font-bold text-white">{cap.name}</td>
+                                  <td className="py-2 px-2 font-mono text-emerald-400">
+                                    {cap.license}
+                                  </td>
+                                  <td className="py-2 px-2">
+                                    {cap.runsLocally ? "نعم (Local-First ✔)" : "اختياري"}
+                                  </td>
+                                  <td className="py-2 px-2 text-zinc-300">
+                                    {cap.capabilities.join(" • ")}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
         </div>
+
+        {/* Hidden File Upload Input for `+ -> Add files` */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) {
+              toast.success(`تم إرفاق الملف "${f.name}" لتحليله ضمن سياق المتجر.`);
+              setPromptInput((prev) => `${prev} [ملف مرفق: ${f.name}]`.trim());
+            }
+          }}
+        />
+
+        {/* ================================================================
+            MERCHANT ACCOUNT POPOVER MODAL (Exact Match to Screenshot 13!)
+           ================================================================ */}
+        {accountModalOpen && (
+          <div className="fixed top-0 bottom-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-full max-w-sm rounded-2xl bg-[#232323] border border-white/15 p-5 shadow-2xl relative space-y-4">
+              <button
+                type="button"
+                onClick={() => setAccountModalOpen(false)}
+                className="absolute top-3.5 right-3.5 text-zinc-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-base font-extrabold text-emerald-300">
+                  {(storeCtx?.storeName || "AS").slice(0, 2).toUpperCase()}
+                </div>
+                <div className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-zinc-200 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span>{storeCtx?.storeName || "ASIMA"} • KASPI Merchant</span>
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={keepPostedChecked}
+                  onChange={(e) => setKeepPostedChecked(e.target.checked)}
+                  className="rounded accent-emerald-500"
+                />
+                <span>Yes, keep me posted on what&apos;s new in KASPI AI</span>
+              </label>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setAccountModalOpen(false);
+                  onClose();
+                }}
+                className="w-full py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Exit KASPI AI Studio</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </KaspiGlassModalPortal>
   );
 };
-
 export default KaspiAiStudioModal;

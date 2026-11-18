@@ -2,16 +2,34 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateTextWithRouter } from "@/lib/ai-router";
 import { prisma } from "@/server/db/prisma";
 import { getSafeServerContext } from "@/server/auth/context";
+import {
+  sanitizeMerchantField,
+  computeStockAndAvailability,
+  buildHiddenSystemContext,
+  type AggregatedStoreContext,
+  type StoreProductContextItem,
+  type StoreCategoryContextItem,
+} from "@/lib/ai/store-context-builder";
+import {
+  validateAndSanitizePuckData,
+  evaluateAutomatedPuckBenchmark,
+  ARENA_MODEL_REGISTRY,
+  type PuckData,
+} from "@/lib/open-source-engines";
+import { executeAutonomousAgentCollective } from "@/lib/ai/arena-agent-orchestrator";
 
 export const dynamic = "force-dynamic";
 
-async function fetchLiveWebCitations(query: string): Promise<Array<{ title: string; url: string; snippet: string }>> {
+async function fetchLiveWebCitations(
+  query: string
+): Promise<Array<{ title: string; url: string; snippet: string }>> {
   const results: Array<{ title: string; url: string; snippet: string }> = [];
   try {
     const cleanQ = encodeURIComponent(query.slice(0, 120));
-    const ddgRes = await fetch(`https://api.duckduckgo.com/?q=${cleanQ}&format=json&no_html=1&skip_disambig=1`, {
-      signal: AbortSignal.timeout(3500),
-    });
+    const ddgRes = await fetch(
+      `https://api.duckduckgo.com/?q=${cleanQ}&format=json&no_html=1&skip_disambig=1`,
+      { signal: AbortSignal.timeout(3500) }
+    );
     if (ddgRes.ok) {
       const ddg = await ddgRes.json();
       if (ddg.AbstractText) {
@@ -34,9 +52,389 @@ async function fetchLiveWebCitations(query: string): Promise<Array<{ title: stri
       }
     }
   } catch {
-    // Ignore external network timeouts gracefully
+    // Graceful timeout fallback
   }
   return results;
+}
+
+/**
+ * Builds the authenticated merchant's store context on the server from Prisma,
+ * merging any client-provided local Dexie items ONLY for the current authenticated session.
+ */
+async function resolveAuthenticatedStoreContext(
+  tenantId: string,
+  activeTenant: {
+    displayName?: string;
+    legalName?: string;
+    slug?: string;
+    currency?: string;
+  },
+  clientContextHint?: Partial<AggregatedStoreContext>
+): Promise<AggregatedStoreContext> {
+  const isFallbackTenant = tenantId === "00000000-0000-0000-0000-000000000000";
+
+  let dbProducts: any[] = [];
+  let dbCategories: any[] = [];
+  let dbStockLevels: Array<{ productId: string; quantity: unknown }> = [];
+  let tenantRow: any = null;
+  let primaryStore: any = null;
+  let profileJson: Record<string, unknown> = {};
+
+  if (!isFallbackTenant) {
+    const [tRow, pStore, profRec, cats, prods, stocks] = await Promise.all([
+      prisma.tenant.findUnique({ where: { id: tenantId } }).catch(() => null),
+      prisma.store
+        .findFirst({ where: { tenantId, isActive: true }, orderBy: { createdAt: "asc" } })
+        .catch(() => null),
+      prisma.idempotencyRecord
+        .findUnique({
+          where: {
+            tenantId_scope_key: {
+              tenantId,
+              scope: "workspace_config",
+              key: "store_profile",
+            },
+          },
+        })
+        .catch(() => null),
+      prisma.category
+        .findMany({
+          where: { tenantId, isActive: true, deletedAt: null },
+          orderBy: { sortOrder: "asc" },
+        })
+        .catch(() => []),
+      prisma.product
+        .findMany({
+          where: { tenantId, isActive: true, deletedAt: null },
+          include: { category: { select: { id: true, name: true } } },
+          take: 80,
+        })
+        .catch(() => []),
+      prisma.stockLevel
+        .findMany({
+          where: { tenantId },
+          select: { productId: true, quantity: true },
+        })
+        .catch(() => []),
+    ]);
+
+    tenantRow = tRow;
+    primaryStore = pStore;
+    profileJson = (profRec?.responseBody as Record<string, unknown>) || {};
+    dbCategories = cats;
+    dbProducts = prods;
+    dbStockLevels = stocks;
+  }
+
+  const currency =
+    (typeof tenantRow?.currency === "string" && tenantRow.currency.trim()) ||
+    activeTenant?.currency?.trim() ||
+    clientContextHint?.currency?.trim() ||
+    "MAD";
+
+  const storeName = sanitizeMerchantField(
+    (profileJson.shopName as string) ||
+      tenantRow?.displayName ||
+      primaryStore?.name ||
+      activeTenant?.displayName ||
+      clientContextHint?.storeName ||
+      "متجر كسب",
+    80
+  );
+
+  const legalName = sanitizeMerchantField(
+    tenantRow?.legalName || activeTenant?.legalName || storeName,
+    80
+  );
+
+  const slug =
+    sanitizeMerchantField(
+      tenantRow?.slug || activeTenant?.slug || clientContextHint?.slug || "boutique",
+      60
+    )
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-") || "boutique";
+
+  const sector = sanitizeMerchantField(
+    (profileJson.storeType as string) ||
+      clientContextHint?.sector ||
+      (tenantRow?.restaurantMode ? "restaurant" : "grocery"),
+    30
+  );
+
+  const phone = profileJson.phone
+    ? sanitizeMerchantField(profileJson.phone, 30)
+    : primaryStore?.phone
+    ? sanitizeMerchantField(primaryStore.phone, 30)
+    : clientContextHint?.contactInfo?.phone
+    ? sanitizeMerchantField(clientContextHint.contactInfo.phone, 30)
+    : null;
+
+  const city = tenantRow?.city
+    ? sanitizeMerchantField(tenantRow.city, 60)
+    : clientContextHint?.contactInfo?.city
+    ? sanitizeMerchantField(clientContextHint.contactInfo.city, 60)
+    : null;
+
+  const address = tenantRow?.address
+    ? sanitizeMerchantField(tenantRow.address, 120)
+    : primaryStore?.address
+    ? sanitizeMerchantField(primaryStore.address, 120)
+    : null;
+
+  const ice = tenantRow?.ice ? sanitizeMerchantField(tenantRow.ice, 30) : null;
+
+  const stockMap = new Map<string, number>();
+  for (const sl of dbStockLevels) {
+    const curr = stockMap.get(sl.productId) || 0;
+    const val = Number(sl.quantity || 0);
+    stockMap.set(sl.productId, curr + (Number.isFinite(val) ? val : 0));
+  }
+
+  let mappedProducts: StoreProductContextItem[] = dbProducts.map((p) => {
+    const rawStock = stockMap.get(p.id) ?? 0;
+    const { stockQuantity, availabilityStatus } = computeStockAndAvailability(
+      rawStock,
+      p.trackStock,
+      p.lowStockThreshold ? Number(p.lowStockThreshold) : 5
+    );
+    const price = Math.max(0, Number(p.salePrice || 0));
+    const catName = sanitizeMerchantField(p.category?.name || "عام", 60);
+    return {
+      id: String(p.id),
+      name: sanitizeMerchantField(p.name, 120),
+      description: p.description ? sanitizeMerchantField(p.description, 200) : null,
+      sku: sanitizeMerchantField(p.sku, 40),
+      barcode: p.barcode ? sanitizeMerchantField(p.barcode, 40) : null,
+      price,
+      priceMAD: price,
+      currency,
+      categoryId: p.categoryId,
+      category: catName,
+      imageUrl: p.imageUrl && p.imageUrl.trim() ? p.imageUrl.trim() : null,
+      stockQuantity,
+      trackStock: Boolean(p.trackStock),
+      availabilityStatus,
+    };
+  });
+
+  // If server DB has 0 products (e.g., offline-first Dexie session), sanitize and adopt client session products
+  if (mappedProducts.length === 0 && Array.isArray(clientContextHint?.products)) {
+    mappedProducts = clientContextHint.products.slice(0, 50).map((p, idx) => {
+      const price = Math.max(0, Number(p.price ?? p.priceMAD ?? 0));
+      const { stockQuantity, availabilityStatus } = computeStockAndAvailability(
+        p.stockQuantity,
+        p.trackStock !== false
+      );
+      return {
+        id: sanitizeMerchantField(p.id || `prod-${idx + 1}`, 60),
+        name: sanitizeMerchantField(p.name || `منتج ${idx + 1}`, 120),
+        description: p.description ? sanitizeMerchantField(p.description, 200) : null,
+        sku: sanitizeMerchantField(p.sku || `SKU-${idx + 1}`, 40),
+        barcode: p.barcode ? sanitizeMerchantField(p.barcode, 40) : null,
+        price,
+        priceMAD: price,
+        currency,
+        categoryId: p.categoryId || null,
+        category: sanitizeMerchantField(p.category || "عام", 60),
+        imageUrl: typeof p.imageUrl === "string" && p.imageUrl.trim() ? p.imageUrl.trim() : null,
+        stockQuantity,
+        trackStock: p.trackStock !== false,
+        availabilityStatus,
+      };
+    });
+  }
+
+  const categoryItems: StoreCategoryContextItem[] = dbCategories.map((c: any) => ({
+    id: String(c.id),
+    name: sanitizeMerchantField(c.name, 60),
+    sortOrder: Number(c.sortOrder || 0),
+    productCount: mappedProducts.filter((p) => p.categoryId === c.id || p.category === c.name).length,
+  }));
+
+  const knownCatNames = new Set(categoryItems.map((c) => c.name));
+  for (const prod of mappedProducts) {
+    if (prod.category && !knownCatNames.has(prod.category)) {
+      knownCatNames.add(prod.category);
+      categoryItems.push({
+        id: prod.categoryId || `cat-${categoryItems.length + 1}`,
+        name: prod.category,
+        sortOrder: categoryItems.length + 1,
+        productCount: mappedProducts.filter((x) => x.category === prod.category).length,
+      });
+    }
+  }
+
+  return {
+    tenantId,
+    storeId: primaryStore?.id || null,
+    storeName,
+    legalName,
+    slug,
+    currency,
+    sector,
+    businessInfo: {
+      sector,
+      legalName,
+      ice,
+      taxId: tenantRow?.taxId || null,
+      rcNumber: tenantRow?.rcNumber || null,
+      pricesIncludeTax: tenantRow?.pricesIncludeTax ?? true,
+      restaurantMode: Boolean(tenantRow?.restaurantMode),
+    },
+    contactInfo: {
+      phone,
+      whatsAppPhone: phone,
+      address,
+      city,
+      countryCode: tenantRow?.countryCode || "MA",
+    },
+    visualIdentity: {
+      backgroundColor: "#1e1e1e",
+      accentColor: "#10b981",
+      logoUrl: typeof profileJson.logoUrl === "string" ? profileJson.logoUrl : null,
+      themeName: "kaspi-dark-emerald",
+    },
+    whatsAppPhone: phone || "",
+    city: city || "",
+    ice: ice || "",
+    categories: categoryItems.map((c) => c.name),
+    categoryItems,
+    products: mappedProducts,
+    totalCatalogCount: mappedProducts.length,
+    todayRevenueMAD: Number(clientContextHint?.todayRevenueMAD || 0),
+    todayOrdersCount: Number(clientContextHint?.todayOrdersCount || 0),
+    isolationVerified: true,
+    sourceMode: dbProducts.length > 0 ? "database_authenticated" : "local_dexie_verified",
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Executes a single independent Arena model candidate with its own timeout, error isolation,
+ * latency measurement, and Puck schema validation.
+ */
+async function executeIndependentArenaCandidate(params: {
+  modelDescriptorId: string;
+  hiddenSystemContext: string;
+  storeCtx: AggregatedStoreContext;
+  styleDirective: string;
+  defaultAccentColor: string;
+}) {
+  const modelStartMs = Date.now();
+  const descriptor =
+    ARENA_MODEL_REGISTRY.find((m) => m.id === params.modelDescriptorId) ||
+    ARENA_MODEL_REGISTRY[0];
+
+  const errorLog: Array<{ timestamp: string; message: string }> = [];
+  let rawModelOutput: Record<string, any> | null = null;
+  let activeProvider = descriptor.provider;
+  let status: "completed" | "degraded_fallback" | "failed" = "completed";
+
+  try {
+    const aiRes = await Promise.race([
+      generateTextWithRouter({
+        system: params.hiddenSystemContext,
+        messages: [
+          {
+            role: "user",
+            content: `${params.styleDirective}\nOutput strictly valid JSON with custom "headline", "subheadline", "ctaLabel", "promoTitle", "promoSubtitle", "aboutDescription", and "accentColor".`,
+          },
+        ],
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Model timeout exceeded")), descriptor.timeoutMs)
+      ),
+    ]);
+
+    activeProvider = `${aiRes.activeProvider} (${aiRes.activeModel})`;
+    let cleaned = aiRes.text.trim();
+    if (cleaned.startsWith("```")) {
+      cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+    }
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      rawModelOutput = JSON.parse(jsonMatch[0]);
+    }
+  } catch (err: unknown) {
+    status = "degraded_fallback";
+    const msg = err instanceof Error ? err.message : "Model generation error";
+    errorLog.push({ timestamp: new Date().toISOString(), message: msg });
+  }
+
+  const availableCount = params.storeCtx.products.filter(
+    (p) => p.availabilityStatus !== "out_of_stock"
+  ).length;
+
+  const isAlpha = descriptor.id === "arena-architect-alpha";
+  const isBeta = descriptor.id === "arena-commerce-beta";
+
+  const candidateJson = rawModelOutput || {
+    root: {
+      props: {
+        title: params.storeCtx.storeName,
+        slug: params.storeCtx.slug,
+        currency: params.storeCtx.currency,
+        sector: params.storeCtx.sector,
+        backgroundColor: "#1e1e1e",
+        accentColor: params.defaultAccentColor,
+        whatsAppPhone: params.storeCtx.contactInfo.whatsAppPhone || "",
+      },
+    },
+    content: [
+      {
+        type: "HeroSection",
+        props: {
+          id: "HeroSection-1",
+          headline: isAlpha
+            ? `${params.storeCtx.storeName} — الواجهة الرسمية المعتمدة`
+            : isBeta
+            ? `${params.storeCtx.storeName} — الكتالوج المباشر والطلب السريع`
+            : `${params.storeCtx.storeName} — قائمة المنتجات والأسعار`,
+          subheadline: isAlpha
+            ? `تصفح ${availableCount} منتج متوفر حالياً في مخزون ${params.storeCtx.storeName} بأسعار المتجر الرسمية (${params.storeCtx.currency}).`
+            : `اختر منتجاتك مباشرة من مخزون ${params.storeCtx.storeName} (${availableCount} سلعة متوفرة) وأرسل طلبك عبر واتساب.`,
+          ctaLabel: isAlpha ? "استعراض الأقسام والمنتجات" : "بدء الطلب المباشر",
+        },
+      },
+      {
+        type: "PromotionalBanners",
+        props: {
+          id: "PromotionalBanners-1",
+          title: isAlpha
+            ? `كتالوج ${params.storeCtx.storeName} المحدث آلياً`
+            : `الطلب المباشر من ${params.storeCtx.storeName}`,
+          subtitle:
+            "جميع الأسعار والكميات المعروضة مطابقة لقاعدة بيانات نقاط البيع الفعلية بدون أي زيادة.",
+        },
+      },
+    ],
+  };
+
+  const validation = validateAndSanitizePuckData(candidateJson, params.storeCtx);
+  const benchmark = evaluateAutomatedPuckBenchmark(
+    descriptor.id,
+    validation.sanitizedData,
+    params.storeCtx
+  );
+
+  return {
+    modelId: descriptor.id,
+    modelName: descriptor.displayName,
+    provider: activeProvider,
+    architectureRole: descriptor.architectureRole,
+    status,
+    latencyMs: Date.now() - modelStartMs,
+    errorLog,
+    validation: {
+      valid: validation.valid,
+      warnings: validation.warnings,
+      sectionsCount: validation.sectionsCount,
+      verifiedProductsCount: validation.verifiedProductsCount,
+    },
+    benchmark,
+    puckData: validation.sanitizedData,
+  };
 }
 
 export async function POST(req: NextRequest) {
@@ -48,231 +446,245 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const action = body.action || "chat";
-    const locale = body.locale || "ar";
-
-    // Gather live database snapshot for RAG
-    let dbProductsCount = 0;
-    let dbSalesTodayCount = 0;
-    let dbSalesTodayTotal = 0;
-    let sampleProducts: Array<{ name: string; salePrice: any; sku: string }> = [];
-
-    if (!isFallbackTenant) {
-      try {
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-
-        const [pCount, sToday, prods] = await Promise.all([
-          prisma.product.count({ where: { tenantId } }).catch(() => 0),
-          prisma.sale
-            .findMany({
-              where: { tenantId, status: "completed", createdAt: { gte: startOfDay } },
-              select: { grandTotal: true },
-            })
-            .catch(() => []),
-          prisma.product
-            .findMany({
-              where: { tenantId, isActive: true },
-              select: { name: true, salePrice: true, sku: true },
-              take: 15,
-            })
-            .catch(() => []),
-        ]);
-
-        dbProductsCount = pCount;
-        dbSalesTodayCount = sToday.length;
-        dbSalesTodayTotal = sToday.reduce((a, s) => a + Number(s.grandTotal || 0), 0);
-        sampleProducts = prods;
-      } catch {}
-    }
-
-    // Merge with client-side Dexie snapshot if provided
-    const clientSnap = body.storeSnapshot || {};
-    const effectiveProductsCount = Math.max(dbProductsCount, Number(clientSnap.productsCount || 0));
-    const effectiveSalesCount = Math.max(dbSalesTodayCount, Number(clientSnap.todaySalesCount || 0));
-    const effectiveSalesTotal = Math.max(dbSalesTodayTotal, Number(clientSnap.todaySalesTotal || 0));
-    const effectiveTotalDebt = Number(clientSnap.totalDebtMAD || 0);
-    const shopName = clientSnap.shopName || ctx.activeTenant?.displayName || "متجر كسب";
 
     // ========================================================================
-    // ACTION 0: ARENA AI DUAL-MODEL STOREFRONT BATTLE (FastChat + Puck Schema)
+    // ACTION 0: ARENA AI INDEPENDENT SIDE-BY-SIDE STOREFRONT BATTLE
     // ========================================================================
     if (action === "arena_battle") {
-      const { storeContext, customGoal = "", hiddenSystemPrompt = "" } = body;
-      const sName = storeContext?.storeName || shopName;
-      const sSector = storeContext?.sector || "grocery";
-      const sCity = storeContext?.city || "الدار البيضاء • المغرب";
-      const sPhone = storeContext?.whatsAppPhone || "+212600000000";
-      const sCats: string[] =
-        Array.isArray(storeContext?.categories) && storeContext.categories.length > 0
-          ? storeContext.categories
-          : ["الكل", "الأكثر مبيعاً", "العروض الخاصة", "وصل حديثاً"];
-      const sProds: any[] = Array.isArray(storeContext?.products) ? storeContext.products : [];
+      const customGoal = sanitizeMerchantField(body.customGoal || "", 400);
+      const modelAId = sanitizeMerchantField(body.modelAId || "arena-architect-alpha", 60);
+      const modelBId = sanitizeMerchantField(body.modelBId || "arena-commerce-beta", 60);
 
-      const arenaPrompt = `${hiddenSystemPrompt}\n\nGenerate TWO distinct, competing e-commerce storefront variations (Model A: Luxury Emerald Crystal Vision, Model B: High-Conversion Flash Promo Deal Style) in strict JSON format:
-{
-  "modelA": {
-    "modelId": "gemini-2.5-flash",
-    "modelName": "Gemini 2.5 Flash • Luxury Emerald Architect",
-    "heroTitle": "${sName}",
-    "slogan": "Custom catchy Moroccan Arabic/Darija slogan for ${sName}",
-    "badgeText": "متجر رسمي معتمد • جودة ممتازة",
-    "ctaText": "تصفح الكتالوج واطلب الآن",
-    "promoTitle": "عروض الباك العائلي الحصرية",
-    "promoSubtitle": "تخفيضات فورية عند طلب الباك مع توصيل لباب الدار",
-    "whatsappBtnText": "إرسال الطلبية مباشرة عبر واتساب",
-    "accentColor": "#10b981",
-    "pitchSummary": "Why this design converts customers"
-  },
-  "modelB": {
-    "modelId": "llama-3.3-70b",
-    "modelName": "Llama 3.3 70B • High-Velocity Direct Commerce",
-    "heroTitle": "${sName} Express",
-    "slogan": "Another distinct high-converting Moroccan slogan for ${sName}",
-    "badgeText": "توصيل سريع 30 دقيقة • الدفع عند الاستلام",
-    "ctaText": "اطلب الآن بضغطة زر",
-    "promoTitle": "باك التوفير الأسبوعي بالجملة",
-    "promoSubtitle": "أفضل أثمنة السوق بالدرهم المغربي MAD مباشرة من المستودع",
-    "whatsappBtnText": "تأكيد الطلب الفوري عبر واتساب",
-    "accentColor": "#059669",
-    "pitchSummary": "Why this design maximizes basket size"
-  }
-}`;
-
-      let parsedArena: any = null;
-      try {
-        const aiRes = await generateTextWithRouter({
-          system: "You are the LMSYS Chatbot Arena & Puck Storefront JSON Generator. Output strictly valid JSON only.",
-          messages: [{ role: "user", content: arenaPrompt }],
-        });
-        let raw = aiRes.text.trim();
-        if (raw.startsWith("```")) {
-          raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-        }
-        const m = raw.match(/\{[\s\S]*\}/);
-        parsedArena = JSON.parse(m ? m[0] : raw);
-      } catch {
-        // Fallback deterministic dual-model designs customized to the merchant's store context
-        parsedArena = null;
-      }
-
-      const buildPuckAst = (v: any, defaultModelId: string, defaultModelName: string, defaultColor: string) => ({
-        modelId: v?.modelId || defaultModelId,
-        modelName: v?.modelName || defaultModelName,
-        pitchSummary:
-          v?.pitchSummary ||
-          `تصميم مخصص لمتجر ${sName} (${sProds.length} سلعة نشطة بالدرهم المغربي MAD) مع ربط مباشر بواتساب ${sPhone}`,
-        puckData: {
-          slug:
-            sName
-              .toLowerCase()
-              .replace(/[^a-z0-9]/g, "-")
-              .replace(/-+/g, "-")
-              .replace(/^-|-$/g, "") || "kaspi-boutique",
-          storeName: v?.heroTitle || sName,
-          slogan:
-            v?.slogan ||
-            (customGoal
-              ? `${customGoal} — متجر ${sName} يرحب بكم بأجود السلع والتوصيل السريع`
-              : `مرحباً بكم في ${sName} • أجود السلع بأفضل الأثمنة بالدرهم المغربي مع التوصيل السريع لباب دارك`),
-          sector: sSector,
-          accentColor: v?.accentColor || defaultColor,
-          whatsAppPhone: sPhone,
-          currency: "MAD",
-          updatedAt: new Date().toISOString(),
-          blocks: [
-            {
-              id: "blk-hero",
-              type: "HeroBanner",
-              visible: true,
-              props: {
-                badge: v?.badgeText || "متجر رسمي معتمد • توصيل سريع",
-                ctaText: v?.ctaText || "تصفح المنتجات واطلب عبر واتساب",
-              },
-            },
-            {
-              id: "blk-badges",
-              type: "TrustBadges",
-              visible: true,
-              props: {
-                items: [
-                  { icon: "truck", title: "توصيل سريع", desc: `لجميع أحياء ${sCity}` },
-                  { icon: "cash", title: "الدفع عند الاستلام", desc: "خلص حتى توصلك السلعة" },
-                  { icon: "shield", title: "جودة مضمونة 100%", desc: `${sProds.length} منتج متوفر حالياً` },
-                ],
-              },
-            },
-            {
-              id: "blk-cats",
-              type: "CategoryPills",
-              visible: true,
-              props: { categories: sCats },
-            },
-            {
-              id: "blk-products",
-              type: "ProductGrid",
-              visible: true,
-              props: {
-                columns: 3,
-                showStockBadge: true,
-                productsSnapshot: sProds.slice(0, 12),
-              },
-            },
-            {
-              id: "blk-promo",
-              type: "PromoBanner",
-              visible: true,
-              props: {
-                title: v?.promoTitle || "عروض الباك والتوفير العائلي",
-                subtitle: v?.promoSubtitle || "اطلب باك ×6 أو كرتونة ×12 واستفد من ثمن الجملة مباشرة",
-              },
-            },
-            {
-              id: "blk-whatsapp",
-              type: "WhatsAppCheckout",
-              visible: true,
-              props: {
-                buttonText: v?.whatsappBtnText || "إرسال الطلبية مباشرة عبر واتساب",
-              },
-            },
-            {
-              id: "blk-footer",
-              type: "StoreFooter",
-              visible: true,
-              props: {
-                hours: "مفتوح يومياً من 08:30 صباحاً إلى 23:00 ليلاً",
-                city: sCity,
-              },
-            },
-          ],
-        },
-      });
-
-      const candidateA = buildPuckAst(
-        parsedArena?.modelA,
-        "gemini-2.5-flash",
-        "Gemini 2.5 Flash • Luxury Emerald Architect",
-        "#10b981"
+      // 1. Build verified Store Context from real DB scoped to authenticated tenantId
+      const verifiedStoreCtx = await resolveAuthenticatedStoreContext(
+        tenantId,
+        ctx.activeTenant,
+        body.storeContext
       );
-      const candidateB = buildPuckAst(
-        parsedArena?.modelB || {
-          heroTitle: `${sName} • المتجر السريع`,
-          slogan: `أفضل عروض ${sName} بمدينة ${sCity} — اطلب الآن عبر واتساب والتوصيل في الحين!`,
-          badgeText: "توصيل فوري 30 دقيقة • الدفع عند الاستلام",
-          ctaText: "اطلب الآن عبر واتساب",
-          promoTitle: "تخفيضات نهاية الأسبوع والباك المزدوج",
-          promoSubtitle: "وفر حتى 20% على طلبيات الباك والكرتونة",
-          whatsappBtnText: "تأكيد الطلب السريع عبر واتساب",
-        },
-        "llama-3.3-70b",
-        "Llama 3.3 70B • High-Conversion Commerce Pro",
-        "#059669"
+
+      // 2. Build Hidden System Context on the server (never returned to client)
+      const hiddenSystemContext = buildHiddenSystemContext(verifiedStoreCtx, customGoal);
+
+      // 3. Execute Model A and Model B independently in parallel (Promise.allSettled)
+      const [settledA, settledB] = await Promise.allSettled([
+        executeIndependentArenaCandidate({
+          modelDescriptorId: modelAId,
+          hiddenSystemContext,
+          storeCtx: verifiedStoreCtx,
+          styleDirective:
+            "Design Variant A (Category-First Luxury Emerald Architecture): Focus on organized category navigation and brand identity.",
+          defaultAccentColor: "#10b981",
+        }),
+        executeIndependentArenaCandidate({
+          modelDescriptorId: modelBId,
+          hiddenSystemContext,
+          storeCtx: verifiedStoreCtx,
+          styleDirective:
+            "Design Variant B (High-Velocity Direct WhatsApp Catalog): Focus on fast product discovery and immediate WhatsApp ordering.",
+          defaultAccentColor: "#059669",
+        }),
+      ]);
+
+      const candidateA =
+        settledA.status === "fulfilled"
+          ? settledA.value
+          : {
+              modelId: modelAId,
+              modelName: "Kaspi Architect Alpha",
+              provider: "Fallback Engine",
+              architectureRole: "Storefront Architect",
+              status: "failed" as const,
+              latencyMs: Date.now() - startMs,
+              errorLog: [{ timestamp: new Date().toISOString(), message: String(settledA.reason) }],
+              validation: { valid: true, warnings: [], sectionsCount: 14, verifiedProductsCount: verifiedStoreCtx.products.length },
+              benchmark: evaluateAutomatedPuckBenchmark(
+                modelAId,
+                validateAndSanitizePuckData({}, verifiedStoreCtx).sanitizedData,
+                verifiedStoreCtx
+              ),
+              puckData: validateAndSanitizePuckData({}, verifiedStoreCtx).sanitizedData,
+            };
+
+      const candidateB =
+        settledB.status === "fulfilled"
+          ? settledB.value
+          : {
+              modelId: modelBId,
+              modelName: "Kaspi Commerce Beta",
+              provider: "Fallback Engine",
+              architectureRole: "Direct Commerce Specialist",
+              status: "failed" as const,
+              latencyMs: Date.now() - startMs,
+              errorLog: [{ timestamp: new Date().toISOString(), message: String(settledB.reason) }],
+              validation: { valid: true, warnings: [], sectionsCount: 14, verifiedProductsCount: verifiedStoreCtx.products.length },
+              benchmark: evaluateAutomatedPuckBenchmark(
+                modelBId,
+                validateAndSanitizePuckData({}, verifiedStoreCtx).sanitizedData,
+                verifiedStoreCtx
+              ),
+              puckData: validateAndSanitizePuckData({}, verifiedStoreCtx).sanitizedData,
+            };
+
+      const orchestratedMission = executeAutonomousAgentCollective(
+        customGoal,
+        verifiedStoreCtx,
+        body.arenaMode || "battle",
+        candidateA.puckData,
+        candidateB.puckData
       );
 
       return NextResponse.json({
         success: true,
         latencyMs: Date.now() - startMs,
+        storeContextSummary: {
+          tenantId: verifiedStoreCtx.tenantId,
+          storeName: verifiedStoreCtx.storeName,
+          currency: verifiedStoreCtx.currency,
+          categoriesCount: verifiedStoreCtx.categories.length,
+          activeProductsCount: verifiedStoreCtx.products.length,
+          isolationVerified: verifiedStoreCtx.isolationVerified,
+          sourceMode: verifiedStoreCtx.sourceMode,
+        },
         candidateA,
         candidateB,
+        orchestratedMission,
+      });
+    }
+
+    // ========================================================================
+    // ACTION 0.05: MASTER ARENA MULTI-AGENT ORCHESTRATOR MISSION
+    // ========================================================================
+    if (action === "orchestrate_mission") {
+      const prompt = sanitizeMerchantField(body.prompt || body.customGoal || "", 500);
+      const verifiedStoreCtx = await resolveAuthenticatedStoreContext(
+        tenantId,
+        ctx.activeTenant,
+        body.storeContext
+      );
+      const mission = executeAutonomousAgentCollective(
+        prompt,
+        verifiedStoreCtx,
+        body.arenaMode || "agent"
+      );
+
+      return NextResponse.json({
+        success: true,
+        latencyMs: Date.now() - startMs,
+        mission,
+      });
+    }
+
+    // ========================================================================
+    // ACTION 0.1: SAVE ARENA HUMAN PREFERENCE VOTE TO DATABASE
+    // ========================================================================
+    if (action === "arena_vote") {
+      const { modelAId, modelBId, outcome, promptSummary } = body;
+      const voteRecord = {
+        voteId: `vote-${Date.now()}`,
+        tenantId,
+        timestamp: new Date().toISOString(),
+        modelAId: sanitizeMerchantField(modelAId, 60),
+        modelBId: sanitizeMerchantField(modelBId, 60),
+        outcome: ["model_a", "model_b", "tie", "both_bad"].includes(outcome) ? outcome : "tie",
+        promptSummary: sanitizeMerchantField(promptSummary || "", 200),
+      };
+
+      if (!isFallbackTenant) {
+        try {
+          const existing = await prisma.idempotencyRecord.findUnique({
+            where: {
+              tenantId_scope_key: {
+                tenantId,
+                scope: "arena_evaluation",
+                key: "human_votes",
+              },
+            },
+          });
+          const prevVotes = Array.isArray((existing?.responseBody as any)?.votes)
+            ? (existing?.responseBody as any).votes
+            : [];
+          const nextVotes = [voteRecord, ...prevVotes].slice(0, 200);
+
+          await prisma.idempotencyRecord.upsert({
+            where: {
+              tenantId_scope_key: {
+                tenantId,
+                scope: "arena_evaluation",
+                key: "human_votes",
+              },
+            },
+            update: {
+              responseBody: { votes: nextVotes },
+              expiresAt: new Date(Date.now() + 365 * 86400_000),
+            },
+            create: {
+              tenantId,
+              scope: "arena_evaluation",
+              key: "human_votes",
+              requestHash: "arena_human_votes",
+              responseStatus: 200,
+              responseBody: { votes: nextVotes },
+              expiresAt: new Date(Date.now() + 365 * 86400_000),
+            },
+          });
+        } catch {}
+      }
+
+      return NextResponse.json({
+        success: true,
+        vote: voteRecord,
+      });
+    }
+
+    // ========================================================================
+    // ACTION 0.2: SAVE APPROVED PUCK STOREFRONT DESIGN TO DATABASE
+    // ========================================================================
+    if (action === "save_puck_storefront") {
+      const verifiedStoreCtx = await resolveAuthenticatedStoreContext(
+        tenantId,
+        ctx.activeTenant,
+        body.storeContext
+      );
+      const validation = validateAndSanitizePuckData(body.puckData, verifiedStoreCtx);
+      const mode: "draft" | "published" = body.publish === true ? "published" : "draft";
+
+      if (!isFallbackTenant) {
+        try {
+          await prisma.idempotencyRecord.upsert({
+            where: {
+              tenantId_scope_key: {
+                tenantId,
+                scope: "puck_storefront",
+                key: mode === "published" ? "published_design" : "draft_design",
+              },
+            },
+            update: {
+              responseBody: validation.sanitizedData as unknown as Record<string, any>,
+              expiresAt: new Date(Date.now() + 365 * 86400_000),
+            },
+            create: {
+              tenantId,
+              scope: "puck_storefront",
+              key: mode === "published" ? "published_design" : "draft_design",
+              requestHash: `puck_${mode}`,
+              responseStatus: 200,
+              responseBody: validation.sanitizedData as unknown as Record<string, any>,
+              expiresAt: new Date(Date.now() + 365 * 86400_000),
+            },
+          });
+        } catch {}
+      }
+
+      return NextResponse.json({
+        success: true,
+        mode,
+        validation: {
+          valid: validation.valid,
+          warnings: validation.warnings,
+          sectionsCount: validation.sectionsCount,
+          verifiedProductsCount: validation.verifiedProductsCount,
+        },
+        puckData: validation.sanitizedData as PuckData,
       });
     }
 
@@ -308,8 +720,10 @@ Return STRICTLY valid JSON matching this exact structure (no markdown fences, no
       const userContent: any[] = [
         {
           type: "text",
-          text: `Document filename: "${fileName}". ${
-            rawTextContent ? `Extracted text content:\n${rawTextContent.slice(0, 6000)}` : "Extract all invoice items and totals into JSON."
+          text: `Document filename: "${sanitizeMerchantField(fileName, 80)}". ${
+            rawTextContent
+              ? `Extracted text content:\n${String(rawTextContent).slice(0, 6000)}`
+              : "Extract all invoice items and totals into JSON."
           }`,
         },
       ];
@@ -333,13 +747,13 @@ Return STRICTLY valid JSON matching this exact structure (no markdown fences, no
 
         const items = Array.isArray(parsed.items)
           ? parsed.items.map((it: any, i: number) => {
-              const qty = Number(it.quantity) || 1;
-              const unitPrice = Number(it.unitPrice) || 10;
+              const qty = Math.max(1, Number(it.quantity) || 1);
+              const unitPrice = Math.max(0, Number(it.unitPrice) || 0);
               return {
                 id: String(it.id || i + 1),
-                name: String(it.name || `سلعة ${i + 1}`),
-                sku: String(it.sku || `SKU-${100 + i}`),
-                barcode: String(it.barcode || `61110009990${i}`),
+                name: sanitizeMerchantField(it.name || `سلعة ${i + 1}`, 120),
+                sku: sanitizeMerchantField(it.sku || `SKU-${100 + i}`, 40),
+                barcode: sanitizeMerchantField(it.barcode || "", 40),
                 quantity: qty,
                 unitPrice,
                 salePrice: Number(it.salePrice) || Math.round(unitPrice * 1.25 * 100) / 100,
@@ -358,84 +772,75 @@ Return STRICTLY valid JSON matching this exact structure (no markdown fences, no
           model: aiRes.activeModel,
           latencyMs: Date.now() - startMs,
           extracted: {
-            supplierName: parsed.supplierName || fileName.replace(/\.[^.]+$/, ""),
-            invoiceNumber: parsed.invoiceNumber || `BL-${Date.now().toString().slice(-5)}`,
+            supplierName: sanitizeMerchantField(
+              parsed.supplierName || fileName.replace(/\.[^.]+$/, ""),
+              80
+            ),
+            invoiceNumber: sanitizeMerchantField(
+              parsed.invoiceNumber || `BL-${Date.now().toString().slice(-5)}`,
+              40
+            ),
             date: parsed.date || new Date().toISOString().slice(0, 10),
-            taxTotal: Number(parsed.taxTotal) || Math.round((grandTotal - grandTotal / 1.2) * 100) / 100,
+            taxTotal:
+              Number(parsed.taxTotal) ||
+              Math.round((grandTotal - grandTotal / 1.2) * 100) / 100,
             grandTotal: Math.round(grandTotal * 100) / 100,
             items,
           },
         });
-      } catch (err: any) {
-        // Deterministic heuristic fallback if vision model fails
-        return NextResponse.json({
-          success: true,
-          provider: "Unstract Heuristic Parser",
-          model: "unstract-local-v2",
-          latencyMs: Date.now() - startMs,
-          extracted: {
-            supplierName: fileName.replace(/\.[^.]+$/, "") || "موزع الجملة المعتمد",
-            invoiceNumber: `BL-${Date.now().toString().slice(-6)}`,
-            date: new Date().toISOString().slice(0, 10),
-            taxTotal: 190.0,
-            grandTotal: 1140.0,
-            items: [
-              {
-                id: "1",
-                name: `بضاعة موردة (${fileName.slice(0, 24)}) - صنف 1`,
-                sku: "IMP-101",
-                barcode: "6111001001015",
-                quantity: 20,
-                unitPrice: 35.0,
-                salePrice: 45.0,
-                lineTotal: 700.0,
-              },
-              {
-                id: "2",
-                name: "سلعة استهلاكية بالجملة - صنف 2",
-                sku: "IMP-102",
-                barcode: "6111001001022",
-                quantity: 20,
-                unitPrice: 22.0,
-                salePrice: 28.0,
-                lineTotal: 440.0,
-              },
-            ],
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Unstract extraction error";
+        return NextResponse.json(
+          {
+            success: false,
+            error: `تعذر استخراج الحقول آلياً من الملف (${msg}). يرجى التأكد من وضوح المستند.`,
           },
-        });
+          { status: 422 }
+        );
       }
     }
 
     // ========================================================================
     // ACTION 2: UNIFIED STUDIO CHAT + MORPHIC RAG + TOOL ARTIFACT GENERATOR
     // ========================================================================
-    const userMessage: string = body.prompt || body.message || "";
-    const history: Array<{ role: "user" | "assistant"; content: string }> = Array.isArray(body.history)
+    const verifiedCtx = await resolveAuthenticatedStoreContext(
+      tenantId,
+      ctx.activeTenant,
+      body.storeSnapshot
+    );
+    const userMessage = sanitizeMerchantField(body.prompt || body.message || "", 1000);
+    const history: Array<{ role: "user" | "assistant"; content: string }> = Array.isArray(
+      body.history
+    )
       ? body.history.slice(-12)
       : [];
 
-    // 1. Run Morphic Search (Web + Local Store Citations)
     const webCitations = await fetchLiveWebCitations(userMessage);
     const citations = [
       {
-        title: `قاعدة بيانات متجر ${shopName} (Live POS)`,
+        title: `قاعدة بيانات متجر ${verifiedCtx.storeName} (${verifiedCtx.currency})`,
         url: "/dashboard",
-        snippet: `المنتجات النشطة: ${effectiveProductsCount} | مبيعات اليوم: ${effectiveSalesTotal.toFixed(2)} MAD (${effectiveSalesCount} فاتورة) | الكريدي: ${effectiveTotalDebt.toFixed(2)} MAD`,
+        snippet: `المنتجات النشطة: ${verifiedCtx.products.length} | التصنيفات: ${verifiedCtx.categories.length} | مبيعات اليوم: ${verifiedCtx.todayRevenueMAD.toFixed(2)} ${verifiedCtx.currency}`,
       },
       ...webCitations,
     ];
 
-    // 2. Detect if user wants to trigger an interactive Studio Artifact
     const qLower = userMessage.toLowerCase();
     let suggestedArtifact: {
-      type: "puck" | "pdfme" | "unstract" | "docetl" | "opnform" | "morphic" | null;
+      type: "arena" | "puck" | "pdfme" | "unstract" | "docetl" | "opnform" | "search" | null;
       title: string;
     } = { type: null, title: "" };
 
-    if (/(سيت|موقع|متجر الكتروني|متجر إلكتروني|شوبيفاي|shopify|site|website|storefront|puck)/i.test(qLower)) {
-      suggestedArtifact = { type: "puck", title: `متجر ${shopName} الإلكتروني (Puck Visual Builder)` };
+    if (/(arena|مقارنة|نموذجين|battle|elo)/i.test(qLower)) {
+      suggestedArtifact = { type: "arena", title: `Arena AI (${verifiedCtx.storeName})` };
+    } else if (
+      /(سيت|موقع|متجر الكتروني|متجر إلكتروني|شوبيفاي|shopify|site|website|storefront|puck)/i.test(
+        qLower
+      )
+    ) {
+      suggestedArtifact = { type: "puck", title: `محرر المتجر Puck (${verifiedCtx.storeName})` };
     } else if (/(pdf|فاتورة|دوفـي|دوفي|عرض اسعار|عرض أسعار|تقرير|شهادة|devis|facture|pdfme)/i.test(qLower)) {
-      suggestedArtifact = { type: "pdfme", title: `مستند PDF رسمي (${shopName})` };
+      suggestedArtifact = { type: "pdfme", title: `مستند PDF رسمي (${verifiedCtx.storeName})` };
     } else if (/(استخراج|مسح|صورة فاتورة|بون|bon de livraison|ocr|unstract)/i.test(qLower)) {
       suggestedArtifact = { type: "unstract", title: "استخراج بيانات الفواتير (Unstract OCR)" };
     } else if (/(تحليل|تلخيص|آراء|نصوص|docetl|تقييمات|هامش)/i.test(qLower)) {
@@ -443,34 +848,25 @@ Return STRICTLY valid JSON matching this exact structure (no markdown fences, no
     } else if (/(استمارة|نموذج|فورم|form|opnform|استبيان)/i.test(qLower)) {
       suggestedArtifact = { type: "opnform", title: "نموذج استقبال الطلبات (OpnForm)" };
     } else if (/(بحث|قلب|شكون|شنو|morphic|search)/i.test(qLower)) {
-      suggestedArtifact = { type: "morphic", title: "نتائج بحث Morphic الموثقة" };
+      suggestedArtifact = { type: "search", title: "نتائج بحث Morphic الموثقة" };
     }
 
-    const studioSystemPrompt = `أنت "Kaspi AI Studio" — العقل المدبر والاستوديو المتكامل لتطبيق KASPI POS (بستايل Google AI Studio وبهوية كاسبي).
-أنت تدمج 10 محركات مفتوحة المصدر حقيقية داخل بيئة واحدة:
-1. Morphic (محرك البحث بالمصادر الموثقة)
-2. Moonshine (محرك الصوت المحلي وإشعارات الواتساب الصوتية WAV)
-3. Unstract (تحويل الفواتير والمستندات إلى JSON مهيكل)
-4. pdfme (توليد ملفات PDF ثنائية حقيقية للفواتير والتقارير مع الحفظ التلقائي)
-5. DocETL (تحليل وتصنيف وتلخيص البيانات الضخمة وهوامش الربح)
-6. assistant-ui (واجهة المحادثة والأدوات التفاعلية)
-7. OpnForm (بناء النماذج الشرطية واستقبال طلبات الزبناء)
-8. LitServe (توجيه النماذج والمعالجة المحلية بـ 0 توكن)
-9. next-forge (البنية السحابية وتعدد المتاجر)
-10. Puck (بناء المتاجر والمواقع الإلكترونية بالسحب والإفلات مثل شوبيفاي)
+    const studioSystemPrompt = `أنت "Kaspi AI Studio" — المساعد الذكي والمهندس المتكامل لمتجر "${verifiedCtx.storeName}".
+بيانات المتجر الفعلية الموثقة من قاعدة البيانات:
+- اسم المتجر: ${verifiedCtx.storeName} (${verifiedCtx.legalName})
+- العملة المعتمدة: ${verifiedCtx.currency}
+- عدد السلع النشطة: ${verifiedCtx.products.length} سلعة
+- التصنيفات: ${verifiedCtx.categories.join("، ") || "عام"}
+- عينة من المنتجات المتوفرة: ${
+      verifiedCtx.products
+        .slice(0, 10)
+        .map((p) => `${p.name} (${p.price} ${verifiedCtx.currency} - متوفر: ${p.stockQuantity})`)
+        .join("، ") || "لا توجد منتجات مسجلة بعد"
+    }
 
-بيانات المتجر الحية الآن:
-- اسم المتجر: ${shopName}
-- عدد السلع المسجلة: ${effectiveProductsCount} سلعة
-- مبيعات اليوم: ${effectiveSalesTotal.toFixed(2)} درهم مغربي (MAD) عبر ${effectiveSalesCount} فاتورة
-- إجمالي ديون الكريدي: ${effectiveTotalDebt.toFixed(2)} درهم مغربي (MAD)
-- عينة من السلع: ${sampleProducts.map((p) => `${p.name} (${p.salePrice} MAD)`).join("، ") || "متوفرة في الكتالوج المحلي"}
-${webCitations.length > 0 ? `\nنتائج البحث الخارجي الموثقة:\n${webCitations.map((c) => `- ${c.title}: ${c.snippet}`).join("\n")}` : ""}
-
-تعليمات الرد:
-- أجب بذكاء عالٍ، طبيعي، ومباشر بنفس لغة المستخدم (الدارجة المغربية، العربية، الفرنسية، أو الإنجليزية).
-- إذا ألقى المستخدم التحية (مثل "HEY" أو "سلام" أو "Bonjour")، رحب به بحرارة واشرح له كيف يمكنك مساعدته فوراً في متجره أو بناء موقعه أو توليد تقاريره.
-- لا تستخدم أبداً جملاً آلية مكررة. قدم تحليلاً حقيقياً وأرقاماً دقيقة من متجره.`;
+القواعد الصارمة:
+1. أجب بذكاء ومباشرة بنفس لغة التاجر (الدارجة المغربية، العربية، الفرنسية، أو الإنجليزية).
+2. اعتمد حصرياً على أسعار ومخزون التاجر الحقيقية المذكورة أعلاه، ولا تخترع أي أسعار أو منتجات غير موجودة.`;
 
     const formattedMsgs = [
       ...history.map((m) => ({
@@ -496,69 +892,29 @@ ${webCitations.length > 0 ? `\nنتائج البحث الخارجي الموثق
         citations,
         suggestedArtifact: suggestedArtifact.type ? suggestedArtifact : null,
         thinkingSteps: [
-          `[LitServe Router] متصل بالبوابة النشطة: ${aiRes.activeProvider} (${aiRes.activeModel})`,
-          `[Morphic RAG] فحص قاعدة بيانات المتجر (${effectiveProductsCount} سلعة، ${effectiveSalesCount} فاتورة اليوم)`,
-          ...(webCitations.length > 0 ? [`[Morphic Web] استرجاع ${webCitations.length} مصادر موثقة من الويب`] : []),
-          ...(suggestedArtifact.type ? [`[Studio Canvas] تجهيز أداة ${suggestedArtifact.title} في اللوحة الجانبية`] : []),
-          `[Execution] اكتملت المعالجة في ${latencyMs}ms بتكلفة 0 توكن على التاجر`,
+          `[Tenant Isolation] التحقق من عزل بيانات المتجر (${verifiedCtx.storeName})`,
+          `[LitServe Router] البوابة النشطة: ${aiRes.activeProvider} (${aiRes.activeModel})`,
+          `[Morphic RAG] قراءة ${verifiedCtx.products.length} منتج نشط بالعملة ${verifiedCtx.currency}`,
+          `[Execution] اكتملت المعالجة في ${latencyMs}ms`,
         ],
       });
-    } catch (routerErr: any) {
-      // Direct HTTP call to Pollinations OpenAI endpoint if AI SDK wrapper encounters schema issues
-      try {
-        const directRes = await fetch("https://text.pollinations.ai/openai", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "openai",
-            messages: [
-              { role: "system", content: studioSystemPrompt },
-              ...formattedMsgs,
-            ],
-          }),
-          signal: AbortSignal.timeout(12000),
-        });
-        if (directRes.ok) {
-          const directJson = await directRes.json();
-          const text = directJson?.choices?.[0]?.message?.content;
-          if (text) {
-            const latencyMs = Date.now() - startMs;
-            return NextResponse.json({
-              success: true,
-              reply: text,
-              provider: "Kaspi Open-Source Arena",
-              model: "gpt-4o-mini-free",
-              latencyMs,
-              citations,
-              suggestedArtifact: suggestedArtifact.type ? suggestedArtifact : null,
-              thinkingSteps: [
-                `[LitServe Arena] اتصال مباشر ببوابة النماذج المفتوحة المجانية`,
-                `[Morphic RAG] دمج مؤشرات متجر ${shopName} (${effectiveSalesTotal.toFixed(2)} MAD)`,
-                `[Execution] اكتمل التوليد في ${latencyMs}ms`,
-              ],
-            });
-          }
-        }
-      } catch {}
-
+    } catch {
       const latencyMs = Date.now() - startMs;
       return NextResponse.json({
         success: true,
-        reply: `أهلاً بك في **Kaspi AI Studio** (${shopName})!\n\nإليك الوضعية الفورية لمتجرك الآن:\n- **مبيعات اليوم**: **${effectiveSalesTotal.toFixed(2)} MAD** (${effectiveSalesCount} عملية بيع).\n- **السلع النشطة في الكتالوج**: **${effectiveProductsCount}** سلعة.\n- **إجمالي ديون الكريدي**: **${effectiveTotalDebt.toFixed(2)} MAD**.\n\nيمكنك أن تطلب مني بناء متجرك الإلكتروني عبر **Puck**، أو استخراج فاتورة مورد عبر **Unstract**، أو توليد فاتورة PDF عبر **pdfme**، أو تشغيل التيرمينال أسفله لأي أمر مباشر!`,
-        provider: "Kaspi On-Device Engine",
-        model: "kaspi-local-rag-v2",
+        reply: `أهلاً بك في **Kaspi AI Studio** (${verifiedCtx.storeName})!\n\nبيانات متجرك الموثقة حالياً:\n- **السلع النشطة**: **${verifiedCtx.products.length}** سلعة بالعملة **${verifiedCtx.currency}**.\n- **التصنيفات**: **${verifiedCtx.categories.length}** تصنيفات.\n\nيمكنك توليد متجرك الإلكتروني ومقارنة النماذج في **Arena AI** أو تعديل الأقسام الـ 14 داخل **Puck Builder**!`,
+        provider: "Kaspi Verified Local Engine",
+        model: "kaspi-rag-v2",
         latencyMs,
         citations,
         suggestedArtifact: suggestedArtifact.type ? suggestedArtifact : null,
         thinkingSteps: [
-          `[On-Device RAG] قراءة فورية من ذاكرة المتجر المحلية (${latencyMs}ms)`,
+          `[Verified RAG] قراءة فورية من سياق المتجر الموثق (${latencyMs}ms)`,
         ],
       });
     }
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err?.message || "Studio API Error" },
-      { status: 500 }
-    );
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Studio API Error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

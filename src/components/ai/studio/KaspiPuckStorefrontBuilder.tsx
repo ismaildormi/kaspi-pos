@@ -5,21 +5,36 @@ import {
   Globe,
   Smartphone,
   Monitor,
-  ShoppingBag,
   MessageCircle,
   Sparkles,
   Check,
   ArrowUp,
   ArrowDown,
   ExternalLink,
+  RotateCcw,
+  Save,
+  Code2,
+  Eye,
+  History,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { usePosStore } from "@/client/store/usePosStore";
-import { offlineDb } from "@/client/db";
+import { getApiUrl } from "@/client/sync-engine";
 import {
-  loadPuckStorefront,
-  savePuckStorefront,
-  type PuckStorefrontData,
+  aggregateMerchantStoreContext,
+  type AggregatedStoreContext,
+} from "@/lib/ai/store-context-builder";
+import {
+  KASPI_PUCK_CONFIG,
+  loadPuckDraftOrPublished,
+  applyDesignToPuckDraft,
+  publishApprovedPuckDesign,
+  restorePuckVersionToDraft,
+  validateAndSanitizePuckData,
+  type PuckData,
+  type PuckVersionSnapshot,
+  type PuckStoreSectionType,
 } from "@/lib/open-source-engines";
 
 export const KaspiPuckStorefrontBuilder: React.FC<{
@@ -27,324 +42,675 @@ export const KaspiPuckStorefrontBuilder: React.FC<{
   onLog?: (msg: string) => void;
 }> = ({ locale = "ar", onLog }) => {
   const { tenantInfo, storeType } = usePosStore();
-  const [deviceView, setDeviceView] = useState<"mobile" | "desktop">("mobile");
-  const [config, setConfig] = useState<PuckStorefrontData>(() =>
-    loadPuckStorefront(tenantInfo?.shopName || "ASIMA", storeType || "grocery")
-  );
-  const [realProducts, setRealProducts] = useState<any[]>([]);
-  const [isPublished, setIsPublished] = useState(false);
+  const [deviceView, setDeviceView] = useState<"mobile" | "desktop">("desktop");
+  const [viewMode, setViewMode] = useState<"visual" | "json" | "versions">("visual");
+
+  const [storeCtx, setStoreCtx] = useState<AggregatedStoreContext | null>(null);
+  const [puckData, setPuckData] = useState<PuckData | null>(null);
+  const [selectedSectionIdx, setSelectedSectionIdx] = useState<number>(1); // Default HeroSection
+  const [publishStatus, setPublishStatus] = useState<"draft" | "published">("draft");
+  const [versions, setVersions] = useState<PuckVersionSnapshot[]>([]);
 
   useEffect(() => {
-    const loaded = loadPuckStorefront(tenantInfo?.shopName || "ASIMA", storeType || "grocery");
-    setConfig(loaded);
-
-    if (offlineDb) {
-      offlineDb.offlineProducts
-        .toArray()
-        .then((prods) => {
-          if (prods && prods.length > 0) setRealProducts(prods.slice(0, 6));
-        })
-        .catch(() => {});
-    }
+    aggregateMerchantStoreContext({
+      shopName: tenantInfo?.shopName || "متجر كسب",
+      sector: storeType || "grocery",
+      phone: tenantInfo?.phone,
+      city: tenantInfo?.city,
+      ice: tenantInfo?.ice,
+    }).then((ctx) => {
+      setStoreCtx(ctx);
+      const loaded = loadPuckDraftOrPublished(ctx);
+      setPuckData(loaded.activeData);
+      setPublishStatus(loaded.status);
+      setVersions(loaded.versions);
+    });
   }, [tenantInfo?.shopName, storeType]);
 
-  const toggleBlockVisibility = (id: string) => {
-    const next = {
-      ...config,
-      blocks: config.blocks.map((b) => (b.id === id ? { ...b, visible: !b.visible } : b)),
-    };
-    setConfig(savePuckStorefront(next));
-  };
-
-  const moveBlock = (idx: number, dir: -1 | 1) => {
-    const targetIdx = idx + dir;
-    if (targetIdx < 0 || targetIdx >= config.blocks.length) return;
-    const copy = [...config.blocks];
-    const [removed] = copy.splice(idx, 1);
-    copy.splice(targetIdx, 0, removed);
-    const next = { ...config, blocks: copy };
-    setConfig(savePuckStorefront(next));
-    onLog?.(`[Puck Editor] تم تحريك مكون ${removed.type} وحفظ التخطيط الجديد`);
-  };
-
-  const handlePublishStore = () => {
-    const saved = savePuckStorefront(config);
-    setConfig(saved);
-    setIsPublished(true);
-    onLog?.(
-      `[Puck Storefront Engine] ✔ تم حفظ ونشر المتجر الإلكتروني على المسار الحي: /${locale}/store/${saved.slug}`
+  if (!puckData || !storeCtx) {
+    return (
+      <div className="p-6 rounded-2xl bg-[#1e1e1e] border border-white/10 text-xs text-zinc-400">
+        جاري تحميل محرر Puck وبيانات المتجر الموثقة...
+      </div>
     );
-    toast.success("تم حفظ ونشر متجرك الإلكتروني بنجاح! يمكنك فتحه الآن.");
+  }
+
+  const updateRootProp = (key: string, val: string) => {
+    setPuckData({
+      ...puckData,
+      root: {
+        props: {
+          ...puckData.root.props,
+          [key]: val,
+        },
+      },
+    });
+    setPublishStatus("draft");
   };
 
-  const liveRoute = `/${locale}/store/${encodeURIComponent(config.slug || "boutique")}`;
+  const updateSectionProp = (idx: number, key: string, val: unknown) => {
+    const nextContent = [...puckData.content];
+    nextContent[idx] = {
+      ...nextContent[idx],
+      props: {
+        ...nextContent[idx].props,
+        [key]: val,
+      },
+    };
+    setPuckData({ ...puckData, content: nextContent });
+    setPublishStatus("draft");
+  };
+
+  const moveSection = (idx: number, dir: -1 | 1) => {
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= puckData.content.length) return;
+    const nextContent = [...puckData.content];
+    const [removed] = nextContent.splice(idx, 1);
+    nextContent.splice(targetIdx, 0, removed);
+    setPuckData({ ...puckData, content: nextContent });
+    setSelectedSectionIdx(targetIdx);
+    setPublishStatus("draft");
+    onLog?.(`[Puck Visual Editor] تم تحريك قسم ${removed.type} إلى الموضع ${targetIdx + 1}`);
+  };
+
+  const handleSaveDraft = () => {
+    const { validation, draft, versions: nextVers } = applyDesignToPuckDraft(
+      puckData,
+      storeCtx,
+      "تعديل يدوي في محرر Puck (Draft)"
+    );
+    setPuckData(draft);
+    setVersions(nextVers);
+    setPublishStatus("draft");
+
+    fetch(getApiUrl("/api/ai/studio"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "save_puck_storefront",
+        publish: false,
+        puckData: draft,
+        storeContext: storeCtx,
+      }),
+    }).catch(() => {});
+
+    onLog?.(
+      `[Puck Save Draft] ✔ تم التحقق من المخطط (${validation.sectionsCount} قسم) وحفظ المسودة بنجاح.`
+    );
+    toast.success("تم حفظ المسودة (Draft) وحفظ نسخة في سجل التعديلات!");
+  };
+
+  const handleConfirmAndPublish = () => {
+    const { published, versions: nextVers } = publishApprovedPuckDesign(
+      puckData,
+      storeCtx
+    );
+    setPuckData(published);
+    setVersions(nextVers);
+    setPublishStatus("published");
+
+    fetch(getApiUrl("/api/ai/studio"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "save_puck_storefront",
+        publish: true,
+        puckData: published,
+        storeContext: storeCtx,
+      }),
+    }).catch(() => {});
+
+    onLog?.(
+      `[Puck Merchant Approval] ✔ تم اعتماد ونشر المتجر رسمياً على الرابط: /${locale}/store/${published.root.props.slug}`
+    );
+    toast.success("تم اعتماد ونشر المتجر الإلكتروني رسمياً بموافقتك!");
+  };
+
+  const handleRestoreVersion = (ver: PuckVersionSnapshot) => {
+    const { restoredDraft, versions: nextVers } = restorePuckVersionToDraft(ver, storeCtx);
+    setPuckData(restoredDraft);
+    setVersions(nextVers);
+    setPublishStatus("draft");
+    setViewMode("visual");
+    onLog?.(`[Puck Version Restore] ✔ تم استرجاع النسخة: ${ver.label} (${ver.createdAt})`);
+    toast.info(`تم استرجاع النسخة السابقة كمسودة: ${ver.label}`);
+  };
+
+  const activeSection = puckData.content[selectedSectionIdx] || puckData.content[0];
+  const liveRoute = `/${locale}/store/${encodeURIComponent(puckData.root.props.slug || "boutique")}`;
 
   return (
     <div className="space-y-4 text-start">
+      {/* Top Toolbar */}
       <div className="flex items-center justify-between border-b border-white/10 pb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl kaspi-glass-btn flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
             <Globe className="w-4 h-4 text-emerald-400" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-[var(--kaspi-text-primary)]">
-              Puck — محرر المواقع والمتاجر الإلكترونية المرئي (Shopify-Grade Builder)
-            </h4>
-            <p className="text-[11px] text-[var(--kaspi-text-muted)]">
-              github.com/puckeditor/puck • مربوط مباشرة مع سلع الكاسة الحية ومسار المتجر الفعلي
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-extrabold text-white">
+                Puck Visual Storefront Editor (@measured/puck • 14 Sections)
+              </h4>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-mono border ${
+                  publishStatus === "published"
+                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                    : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                }`}
+              >
+                {publishStatus === "published" ? "منشور (Published)" : "مسودة قيد التعديل (Draft)"}
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-400">
+              مبني على بيانات متجرك الحقيقية ({storeCtx.products.length} سلعة • العملة {puckData.root.props.currency})
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="inline-flex items-center gap-1 p-1 rounded-xl kaspi-glass-surface border border-white/10 text-xs">
+        {/* Mode & Action Buttons */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-[#1e1e1e] border border-white/10 text-xs">
             <button
               type="button"
-              onClick={() => setDeviceView("mobile")}
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                deviceView === "mobile" ? "kaspi-glass-btn text-white" : "text-zinc-400 hover:text-white"
+              onClick={() => setViewMode("visual")}
+              className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 cursor-pointer ${
+                viewMode === "visual" ? "bg-[#10b981] text-black" : "text-zinc-400 hover:text-white"
               }`}
-              title="عرض الهاتف"
             >
-              <Smartphone className="w-3.5 h-3.5" />
+              <Eye className="w-3.5 h-3.5" />
+              <span>المحرر المرئي</span>
             </button>
             <button
               type="button"
-              onClick={() => setDeviceView("desktop")}
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                deviceView === "desktop" ? "kaspi-glass-btn text-white" : "text-zinc-400 hover:text-white"
+              onClick={() => setViewMode("json")}
+              className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 cursor-pointer ${
+                viewMode === "json" ? "bg-[#10b981] text-black" : "text-zinc-400 hover:text-white"
               }`}
-              title="عرض الحاسوب"
             >
-              <Monitor className="w-3.5 h-3.5" />
+              <Code2 className="w-3.5 h-3.5" />
+              <span>Puck JSON</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("versions")}
+              className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 cursor-pointer ${
+                viewMode === "versions" ? "bg-[#10b981] text-black" : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>النسخ ({versions.length})</span>
             </button>
           </div>
 
           <button
             type="button"
-            onClick={handlePublishStore}
-            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+            onClick={handleSaveDraft}
+            className="px-3 py-1.5 rounded-xl bg-[#1e1e1e] hover:bg-white/10 border border-white/15 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>حفظ ونشر المتجر</span>
+            <Save className="w-3.5 h-3.5 text-emerald-400" />
+            <span>حفظ المسودة</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleConfirmAndPublish}
+            className="px-3.5 py-1.5 rounded-xl bg-[#10b981] hover:bg-emerald-400 text-black text-xs font-extrabold flex items-center gap-1.5 shadow-md cursor-pointer"
+          >
+            <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>اعتماد ونشر المتجر</span>
           </button>
 
           <a
             href={liveRoute}
             target="_blank"
             rel="noreferrer"
-            className="px-3 py-1.5 rounded-xl kaspi-glass-btn text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-[#1e1e1e] border border-emerald-500/40 text-emerald-300 hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
           >
-            <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
-            <span>فتح المتجر الحي</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span>معاينة المتجر</span>
           </a>
         </div>
       </div>
 
-      {isPublished && (
-        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 truncate">
-            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span className="text-zinc-300">رابط متجرك الحي الجاهز للزبائن:</span>
-            <a href={liveRoute} target="_blank" rel="noreferrer" className="text-emerald-400 underline font-mono truncate">
-              {liveRoute}
-            </a>
-          </div>
-          <a
-            href={liveRoute}
-            target="_blank"
-            rel="noreferrer"
-            className="px-2.5 py-1 rounded-lg bg-emerald-500 text-black text-[11px] font-bold shrink-0"
-          >
-            معاينة المتجر الكامل ↗
-          </a>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-5 space-y-3 kaspi-glass-surface p-3.5 rounded-2xl border border-white/10">
-          <div className="space-y-1">
-            <label className="text-[10px] text-zinc-400 font-mono">اسم المتجر التجاري:</label>
-            <input
-              type="text"
-              value={config.storeName}
-              onChange={(e) => setConfig({ ...config, storeName: e.target.value })}
-              className="w-full px-3 py-1.5 rounded-xl kaspi-glass-surface border border-white/10 text-xs text-white focus:outline-none"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] text-zinc-400 font-mono">الشعار التسويقي:</label>
-            <input
-              type="text"
-              value={config.slogan}
-              onChange={(e) => setConfig({ ...config, slogan: e.target.value })}
-              className="w-full px-3 py-1.5 rounded-xl kaspi-glass-surface border border-white/10 text-xs text-white focus:outline-none"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] text-zinc-400 font-mono">رقم واتساب لاستقبال الطلبات:</label>
-            <input
-              type="text"
-              value={config.whatsAppPhone}
-              onChange={(e) => setConfig({ ...config, whatsAppPhone: e.target.value })}
-              className="w-full px-3 py-1.5 rounded-xl kaspi-glass-surface border border-white/10 text-xs text-white font-mono focus:outline-none"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] text-zinc-400 font-mono">قطاع النشاط (قالب القطاع المعتمد):</label>
-            <select
-              value={config.sector}
-              onChange={(e) => setConfig({ ...config, sector: e.target.value as any })}
-              className="w-full px-3 py-1.5 rounded-xl kaspi-glass-surface border border-white/10 text-xs text-white focus:outline-none"
-            >
-              <option value="grocery">بقالة وسوبرماركت (Supermarché & Epicerie)</option>
-              <option value="fashion">ألبسة وموضة (Mode & Prêt-à-porter)</option>
-              <option value="restaurant">مطعم ومقهى (Snack, Restaurant, Café)</option>
-              <option value="electronics">إلكترونيات وتكنولوجيا (High-Tech & Accessoires)</option>
-              <option value="butchery">جزارة ولحوم طازجة (Boucherie & Volaille)</option>
-              <option value="wholesale">تجارة الجملة والتوزيع (Grossiste & B2B)</option>
-            </select>
-          </div>
-
-          <div className="space-y-1.5 pt-2 border-t border-white/10">
-            <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider block">
-              ترتيب وتخصيص المكونات (Drag & Reorder Blocks):
-            </span>
-            <div className="space-y-1.5">
-              {config.blocks.map((b, idx) => (
-                <div
-                  key={b.id}
-                  className="flex items-center justify-between p-2 rounded-xl kaspi-glass-surface border border-white/10 text-xs"
-                >
-                  <span className={b.visible ? "text-white font-medium" : "text-zinc-500 line-through"}>
-                    {b.type}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => moveBlock(idx, -1)}
-                      className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white cursor-pointer"
-                      title="لأعلى"
-                    >
-                      <ArrowUp className="w-3 h-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveBlock(idx, 1)}
-                      className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white cursor-pointer"
-                      title="لأسفل"
-                    >
-                      <ArrowDown className="w-3 h-3" />
-                    </button>
-                    <input
-                      type="checkbox"
-                      checked={b.visible}
-                      onChange={() => toggleBlockVisibility(b.id)}
-                      className="accent-emerald-500 rounded cursor-pointer ms-1"
-                    />
-                  </div>
+      {/* VIEW MODE 1: VISUAL PUCK EDITOR & LIVE PREVIEW */}
+      {viewMode === "visual" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          {/* Left Column: 14 Sections Outline + Selected Section Inspector (5 cols) */}
+          <div className="lg:col-span-5 space-y-3 bg-[#1e1e1e] p-3.5 rounded-2xl border border-white/10">
+            {/* Root Store Settings */}
+            <div className="space-y-2 pb-3 border-b border-white/10">
+              <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider block">
+                إعدادات الجذر (Puck Root Props):
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-zinc-400 font-mono">اسم المتجر:</label>
+                  <input
+                    type="text"
+                    value={puckData.root.props.title}
+                    onChange={(e) => updateRootProp("title", e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white focus:outline-none"
+                  />
                 </div>
-              ))}
+                <div>
+                  <label className="text-[10px] text-zinc-400 font-mono">العملة (من الإعدادات):</label>
+                  <input
+                    type="text"
+                    value={puckData.root.props.currency}
+                    onChange={(e) => updateRootProp("currency", e.target.value.toUpperCase())}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/10 text-xs text-emerald-400 font-mono focus:outline-none"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Live Canvas Preview (7 cols) */}
-        <div className="lg:col-span-7 flex justify-center items-start bg-black/40 rounded-2xl p-4 border border-white/10 min-h-[440px]">
-          <div
-            className={`transition-all duration-300 rounded-3xl overflow-hidden shadow-2xl border-4 border-zinc-800 bg-[#0f1115] text-white ${
-              deviceView === "mobile" ? "w-[330px] max-w-full" : "w-full"
-            }`}
-          >
-            <div className="space-y-3.5 p-4 text-start font-sans">
-              {config.blocks.map((b) => {
-                if (!b.visible) return null;
-                if (b.type === "HeroBanner") {
+            {/* 14 Sections List */}
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider block">
+                أقسام المتجر الـ 14 (Puck Content Array):
+              </span>
+              <div className="space-y-1 max-h-52 overflow-y-auto kaspi-no-scrollbar">
+                {puckData.content.map((sec, idx) => {
+                  const cfg = KASPI_PUCK_CONFIG.components[sec.type as PuckStoreSectionType];
+                  const isSel = idx === selectedSectionIdx;
+                  const isVis = sec.props.visible !== false;
                   return (
                     <div
-                      key={b.id}
-                      className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/60 via-zinc-900 to-black border border-emerald-500/30 text-center space-y-2"
+                      key={sec.props.id}
+                      onClick={() => setSelectedSectionIdx(idx)}
+                      className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs cursor-pointer border transition-all ${
+                        isSel
+                          ? "bg-emerald-500/15 border-emerald-500/50 text-white font-bold"
+                          : "bg-black/30 border-white/5 text-zinc-300 hover:text-white"
+                      }`}
                     >
-                      <div className="w-9 h-9 rounded-2xl bg-emerald-500 text-black font-extrabold flex items-center justify-center mx-auto text-sm">
-                        {config.storeName.slice(0, 1).toUpperCase()}
-                      </div>
-                      <h3 className="text-sm font-bold text-white">{config.storeName}</h3>
-                      <p className="text-[11px] text-zinc-300 leading-relaxed">{config.slogan}</p>
-                    </div>
-                  );
-                }
-                if (b.type === "TrustBadges") {
-                  return (
-                    <div key={b.id} className="grid grid-cols-3 gap-1.5 text-center text-[9px] text-zinc-300 font-mono">
-                      <div className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
-                        <p className="text-emerald-400 font-bold">🚚 سريع</p>
-                        <p>توصيل فوري</p>
-                      </div>
-                      <div className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
-                        <p className="text-emerald-400 font-bold">💵 نقداً</p>
-                        <p>عند الاستلام</p>
-                      </div>
-                      <div className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
-                        <p className="text-emerald-400 font-bold">✨ أصلي</p>
-                        <p>جودة مضمونة</p>
-                      </div>
-                    </div>
-                  );
-                }
-                if (b.type === "ProductGrid") {
-                  const displayList =
-                    realProducts.length > 0
-                      ? realProducts.slice(0, 4)
-                      : [
-                          { name: "منتج المتجر الأول", salePrice: 120 },
-                          { name: "منتج المتجر الثاني", salePrice: 45 },
-                        ];
-                  return (
-                    <div key={b.id} className="space-y-1.5">
-                      <span className="text-[10px] font-bold text-zinc-400">
-                        منتجات الكاسة الحية ({displayList.length}):
+                      <span className={isVis ? "truncate" : "line-through text-zinc-500 truncate"}>
+                        {cfg?.label || sec.type}
                       </span>
-                      <div className="grid grid-cols-2 gap-2">
-                        {displayList.map((p, idx) => (
-                          <div key={idx} className="p-2 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-1">
-                            <p className="text-[11px] font-bold text-white truncate">{p.name}</p>
-                            <div className="flex items-center justify-between text-[10px]">
-                              <span className="text-emerald-400 font-bold font-mono">
-                                {Number(p.salePrice ?? p.price ?? 0).toFixed(2)} MAD
-                              </span>
-                              <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
-                                + سلة
-                              </span>
-                            </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveSection(idx, -1);
+                          }}
+                          className="p-0.5 hover:text-emerald-400"
+                          title="تحريك لأعلى"
+                        >
+                          <ArrowUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveSection(idx, 1);
+                          }}
+                          className="p-0.5 hover:text-emerald-400"
+                          title="تحريك لأسفل"
+                        >
+                          <ArrowDown className="w-3 h-3" />
+                        </button>
+                        <input
+                          type="checkbox"
+                          checked={isVis}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            updateSectionProp(idx, "visible", e.target.checked);
+                          }}
+                          className="accent-emerald-500 rounded cursor-pointer ms-1"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Active Section Field Editor */}
+            {activeSection && (
+              <div className="space-y-2 pt-2 border-t border-white/10">
+                <span className="text-[10px] font-mono text-emerald-400 block">
+                  تعديل خصائص القسم: {activeSection.type} ({activeSection.props.id})
+                </span>
+                {Object.entries(activeSection.props)
+                  .filter(
+                    ([k, v]) =>
+                      k !== "id" &&
+                      k !== "visible" &&
+                      (typeof v === "string" || typeof v === "number")
+                  )
+                  .map(([propKey, propVal]) => (
+                    <div key={propKey} className="space-y-0.5">
+                      <label className="text-[10px] text-zinc-400 font-mono">{propKey}:</label>
+                      <input
+                        type={typeof propVal === "number" ? "number" : "text"}
+                        value={String(propVal)}
+                        onChange={(e) =>
+                          updateSectionProp(
+                            selectedSectionIdx,
+                            propKey,
+                            typeof propVal === "number"
+                              ? Number(e.target.value)
+                              : e.target.value
+                          )
+                        }
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/10 text-xs text-white focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Live 14-Section Storefront Canvas (7 cols) */}
+          <div className="lg:col-span-7 bg-[#14161a] rounded-2xl p-4 border border-white/10 flex flex-col gap-3">
+            <div className="flex items-center justify-between text-xs border-b border-white/10 pb-2">
+              <span className="text-zinc-400 font-mono text-[11px]">
+                Live Canvas • Background {puckData.root.props.backgroundColor} • Accent{" "}
+                {puckData.root.props.accentColor}
+              </span>
+              <div className="inline-flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setDeviceView("mobile")}
+                  className={`p-1 rounded ${
+                    deviceView === "mobile" ? "bg-[#10b981] text-black" : "text-zinc-400"
+                  }`}
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeviceView("desktop")}
+                  className={`p-1 rounded ${
+                    deviceView === "desktop" ? "bg-[#10b981] text-black" : "text-zinc-400"
+                  }`}
+                >
+                  <Monitor className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div
+              className={`mx-auto transition-all rounded-2xl overflow-hidden border border-white/15 bg-[#1e1e1e] text-white p-4 space-y-3.5 ${
+                deviceView === "mobile" ? "w-[330px] max-w-full" : "w-full"
+              }`}
+            >
+              {puckData.content.map((sec) => {
+                if (sec.props.visible === false) return null;
+
+                switch (sec.type) {
+                  case "Header":
+                    return (
+                      <div
+                        key={sec.props.id}
+                        className="flex items-center justify-between border-b border-white/10 pb-2.5"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-[#10b981] text-black font-black flex items-center justify-center text-xs">
+                            {String(sec.props.storeName || puckData.root.props.title)
+                              .slice(0, 1)
+                              .toUpperCase()}
                           </div>
+                          <span className="text-xs font-extrabold">
+                            {String(sec.props.storeName || puckData.root.props.title)}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-emerald-400">
+                          {puckData.root.props.currency}
+                        </span>
+                      </div>
+                    );
+
+                  case "HeroSection":
+                    return (
+                      <div
+                        key={sec.props.id}
+                        className="p-4 rounded-xl bg-gradient-to-br from-emerald-950/70 via-[#181a1f] to-black border border-emerald-500/30 text-center space-y-1.5"
+                      >
+                        <h3 className="text-sm font-black text-white">
+                          {String(sec.props.headline || puckData.root.props.title)}
+                        </h3>
+                        <p className="text-[11px] text-zinc-300">
+                          {String(sec.props.subheadline || "")}
+                        </p>
+                      </div>
+                    );
+
+                  case "StoreIdentity":
+                    return (
+                      <div
+                        key={sec.props.id}
+                        className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-black/30 border border-white/10 text-[10px]"
+                      >
+                        <span className="font-bold text-zinc-200">
+                          {String(sec.props.legalName || puckData.root.props.title)}
+                        </span>
+                        <span className="text-emerald-400 font-mono">
+                          {String(sec.props.badgeText || "")}
+                        </span>
+                      </div>
+                    );
+
+                  case "ProductCategories": {
+                    const cats = Array.isArray(sec.props.categories)
+                      ? (sec.props.categories as Array<{ name: string; productCount: number }>)
+                      : [];
+                    if (cats.length === 0) return null;
+                    return (
+                      <div key={sec.props.id} className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                        {cats.map((c, i) => (
+                          <span
+                            key={i}
+                            className="px-2.5 py-1 rounded-full text-[10px] bg-black/40 border border-white/10 text-zinc-200 whitespace-nowrap"
+                          >
+                            {c.name} ({c.productCount})
+                          </span>
                         ))}
                       </div>
-                    </div>
-                  );
-                }
-                if (b.type === "WhatsAppCheckout") {
-                  return (
-                    <div
-                      key={b.id}
-                      className="p-2.5 rounded-xl bg-emerald-600 text-white flex items-center justify-between text-xs font-bold"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <MessageCircle className="w-4 h-4" />
-                        <span>طلب مباشر عبر واتساب</span>
+                    );
+                  }
+
+                  case "ProductCards": {
+                    const prods = Array.isArray(sec.props.products)
+                      ? (sec.props.products as any[])
+                      : [];
+                    return (
+                      <div key={sec.props.id} className="space-y-2">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-zinc-300">
+                          <span>المنتجات المتوفرة ({prods.length}):</span>
+                          <span className="text-[10px] font-mono text-emerald-400">
+                            {puckData.root.props.currency}
+                          </span>
+                        </div>
+                        {prods.length === 0 ? (
+                          <div className="p-3 rounded-xl bg-black/30 text-center text-[11px] text-zinc-400">
+                            لا توجد منتجات متوفرة حالياً في قاعدة البيانات.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2">
+                            {prods.slice(0, 6).map((p: any) => (
+                              <div
+                                key={p.id}
+                                className="p-2.5 rounded-xl bg-black/40 border border-white/10 space-y-1"
+                              >
+                                <p className="text-[11px] font-bold text-white truncate">
+                                  {p.name}
+                                </p>
+                                <div className="flex items-center justify-between text-[10px]">
+                                  <span className="text-emerald-400 font-black font-mono">
+                                    {Number(p.price || 0).toFixed(2)}{" "}
+                                    {puckData.root.props.currency}
+                                  </span>
+                                  <span className="text-[9px] text-zinc-400 font-mono">
+                                    {p.availabilityStatus === "in_stock"
+                                      ? `متوفر (${p.stockQuantity})`
+                                      : p.availabilityStatus === "low_stock"
+                                      ? `كمية محدودة (${p.stockQuantity})`
+                                      : "متاح"}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <span className="text-[10px] font-mono">24/7</span>
-                    </div>
-                  );
+                    );
+                  }
+
+                  case "PromotionalBanners":
+                    return (
+                      <div
+                        key={sec.props.id}
+                        className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-0.5"
+                      >
+                        <p className="text-xs font-bold text-emerald-300">
+                          {String(sec.props.title || "")}
+                        </p>
+                        <p className="text-[10px] text-zinc-300">
+                          {String(sec.props.subtitle || "")}
+                        </p>
+                      </div>
+                    );
+
+                  case "TrustBadges":
+                    return (
+                      <div
+                        key={sec.props.id}
+                        className="grid grid-cols-3 gap-1.5 text-center text-[10px] font-bold text-zinc-300"
+                      >
+                        <div className="p-2 rounded-lg bg-black/40 border border-white/10">
+                          {String(sec.props.badge1 || "أسعار رسمية")}
+                        </div>
+                        <div className="p-2 rounded-lg bg-black/40 border border-white/10">
+                          {String(sec.props.badge2 || "تحديث آلي")}
+                        </div>
+                        <div className="p-2 rounded-lg bg-black/40 border border-white/10">
+                          {String(sec.props.badge3 || "طلب مباشر")}
+                        </div>
+                      </div>
+                    );
+
+                  case "AboutStore":
+                    return (
+                      <div
+                        key={sec.props.id}
+                        className="p-2.5 rounded-xl bg-black/30 border border-white/5 text-[10px] text-zinc-300"
+                      >
+                        <strong className="text-white block mb-0.5">
+                          {String(sec.props.title || "")}
+                        </strong>
+                        <span>{String(sec.props.description || "")}</span>
+                      </div>
+                    );
+
+                  case "ContactInformation":
+                    if (!sec.props.city && !sec.props.address && !sec.props.phone)
+                      return null;
+                    return (
+                      <div
+                        key={sec.props.id}
+                        className="p-2.5 rounded-xl bg-black/30 border border-white/5 text-[10px] text-zinc-300 flex flex-wrap gap-3"
+                      >
+                        {Boolean(sec.props.city) && <span>📍 {String(sec.props.city)}</span>}
+                        {Boolean(sec.props.phone) && <span>📞 {String(sec.props.phone)}</span>}
+                      </div>
+                    );
+
+                  case "WhatsAppOrdering":
+                    return (
+                      <div
+                        key={sec.props.id}
+                        className="p-2.5 rounded-xl bg-[#10b981] text-black text-xs font-extrabold flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <MessageCircle className="w-4 h-4" />
+                          <span>{String(sec.props.buttonLabel || "إرسال الطلب عبر واتساب")}</span>
+                        </div>
+                        <span className="text-[10px] font-mono">WhatsApp</span>
+                      </div>
+                    );
+
+                  case "Footer":
+                    return (
+                      <div
+                        key={sec.props.id}
+                        className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-zinc-500 font-mono"
+                      >
+                        <span>{String(sec.props.copyright || "")}</span>
+                        {Boolean(sec.props.legalIce) && (
+                          <span>ICE: {String(sec.props.legalIce)}</span>
+                        )}
+                      </div>
+                    );
+
+                  default:
+                    return null;
                 }
-                return null;
               })}
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* VIEW MODE 2: PUCK DATA JSON VALIDATOR */}
+      {viewMode === "json" && (
+        <div className="space-y-2 bg-[#1e1e1e] p-4 rounded-2xl border border-white/10">
+          <div className="flex items-center justify-between text-xs text-emerald-400 font-mono">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4" />
+              <span>
+                @measured/puck Schema Verified ({puckData.content.length} Sections • Root + Content + Zones)
+              </span>
+            </span>
+          </div>
+          <pre
+            className="p-3 rounded-xl bg-black/80 border border-emerald-500/30 text-[11px] font-mono text-emerald-300 overflow-x-auto max-h-96"
+            dir="ltr"
+          >
+            {JSON.stringify(puckData, null, 2)}
+          </pre>
+        </div>
+      )}
+
+      {/* VIEW MODE 3: VERSION HISTORY & ROLLBACK */}
+      {viewMode === "versions" && (
+        <div className="space-y-2 bg-[#1e1e1e] p-4 rounded-2xl border border-white/10">
+          <h5 className="text-xs font-bold text-white">
+            سجل النسخ والتعديلات السابقة (Version History & Instant Rollback)
+          </h5>
+          {versions.length === 0 ? (
+            <p className="text-xs text-zinc-400">
+              لا توجد نسخ محفوظة بعد. اضغط على &quot;حفظ المسودة&quot; أو &quot;Apply Design to Store&quot; لحفظ نسخة.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {versions.map((v) => (
+                <div
+                  key={v.versionId}
+                  className="p-3 rounded-xl bg-black/40 border border-white/10 flex items-center justify-between gap-2 text-xs"
+                >
+                  <div>
+                    <p className="font-bold text-white">{v.label}</p>
+                    <p className="text-[10px] font-mono text-zinc-400">
+                      {v.createdAt} • الحالة: {v.status === "published" ? "منشور" : "مسودة"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRestoreVersion(v)}
+                    className="px-3 py-1.5 rounded-xl bg-[#10b981] text-black font-bold text-xs flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>استرجاع هذه النسخة</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
