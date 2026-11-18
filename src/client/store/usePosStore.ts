@@ -124,6 +124,7 @@ interface PosState {
   pricingTier: "retail" | "wholesale";
   discountPercent: number; // 0 to 100
   discountFixed: number;
+  scanMultiplier: number; // Pack / Carton / Crate multiplier (x1, x2, x6, x12, x24, custom)
 
   // Navigation & Filtering
   searchQuery: string;
@@ -162,6 +163,7 @@ interface PosState {
   updateItemNotes: (productId: string, notes: string) => void;
   addProductByBarcode: (product: PosProduct, quantity?: number) => void;
   setPricingTier: (tier: "retail" | "wholesale") => void;
+  setScanMultiplier: (multiplier: number) => void;
   updateItemQuantity: (productId: string, delta: number) => void;
   setItemQuantity: (productId: string, quantity: number) => void;
   removeItem: (productId: string) => void;
@@ -223,6 +225,11 @@ export const usePosStore = create<PosState>()(
       pricingTier: "retail",
       discountPercent: 0,
       discountFixed: 0,
+      scanMultiplier: 1,
+      setScanMultiplier: (multiplier: number) => {
+        const val = Math.max(1, Math.floor(multiplier));
+        set({ scanMultiplier: val });
+      },
 
       searchQuery: "",
       activeCategoryId: null,
@@ -342,7 +349,8 @@ export const usePosStore = create<PosState>()(
         });
       },
 
-      addToCart: (product, quantity = 1, notes) => {
+      addToCart: (product, quantity, notes) => {
+        const effectiveQty = quantity !== undefined ? quantity : (get().scanMultiplier || 1);
         // Stock Availability Check
         if (product.trackStock && (product.stockQuantity ?? 0) <= 0) {
           toast.warning(`Warning: ${product.name} is out of stock!`, {
@@ -367,7 +375,7 @@ export const usePosStore = create<PosState>()(
 
           if (existingIndex > -1) {
             const current = state.cart[existingIndex];
-            const newQty = toDecimal(current.quantity).plus(quantity).toDecimalPlaces(3).toNumber();
+            const newQty = toDecimal(current.quantity).plus(effectiveQty).toDecimalPlaces(3).toNumber();
             const netAmount = (current.unitPrice * newQty) - current.discountAmount;
             const taxAmount = (netAmount * current.taxRate) / 100;
             const lineTotal = roundMoney(toDecimal(netAmount).plus(taxAmount)).toNumber();
@@ -388,7 +396,7 @@ export const usePosStore = create<PosState>()(
           }
 
           const unitPrice = resolvedUnitPrice;
-          const net = unitPrice * quantity;
+          const net = unitPrice * effectiveQty;
           const tax = (net * resolvedTaxRate) / 100;
           const lineTotal = roundMoney(toDecimal(net).plus(tax)).toNumber();
 
@@ -400,7 +408,7 @@ export const usePosStore = create<PosState>()(
             unitPrice,
             retailPrice,
             wholesalePrice,
-            quantity,
+            quantity: effectiveQty,
             taxRate: resolvedTaxRate,
             discountAmount: 0,
             lineTotal,
@@ -425,7 +433,8 @@ export const usePosStore = create<PosState>()(
         }));
       },
 
-      addProductByBarcode: (product, quantity = 1) => {
+      addProductByBarcode: (product, quantity) => {
+        const effectiveQty = quantity !== undefined ? quantity : (get().scanMultiplier || 1);
         // 1. Stock Availability Check
         if (product.trackStock && (product.stockQuantity ?? 0) <= 0) {
           toast.warning(`Warning: ${product.name} is out of stock!`, {
@@ -459,7 +468,7 @@ export const usePosStore = create<PosState>()(
 
           if (existingIndex > -1) {
             const current = state.cart[existingIndex];
-            const newQty = toDecimal(current.quantity).plus(quantity).toDecimalPlaces(3).toNumber();
+            const newQty = toDecimal(current.quantity).plus(effectiveQty).toDecimalPlaces(3).toNumber();
             const netAmount = (current.unitPrice * newQty) - current.discountAmount;
             const taxAmount = (netAmount * current.taxRate) / 100;
             const lineTotal = roundMoney(toDecimal(netAmount).plus(taxAmount)).toNumber();
@@ -478,7 +487,7 @@ export const usePosStore = create<PosState>()(
             };
           }
 
-          const net = resolvedUnitPrice * quantity;
+          const net = resolvedUnitPrice * effectiveQty;
           const tax = (net * resolvedTaxRate) / 100;
           const lineTotal = roundMoney(toDecimal(net).plus(tax)).toNumber();
 
@@ -490,7 +499,7 @@ export const usePosStore = create<PosState>()(
             unitPrice: resolvedUnitPrice,
             retailPrice,
             wholesalePrice,
-            quantity,
+            quantity: effectiveQty,
             taxRate: resolvedTaxRate,
             discountAmount: 0,
             lineTotal,

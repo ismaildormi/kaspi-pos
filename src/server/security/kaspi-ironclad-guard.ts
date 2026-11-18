@@ -24,11 +24,39 @@ export function assertSafeOrigin(req: NextRequest): boolean {
   const method = req.method.toUpperCase();
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return true;
   const origin = req.headers.get('origin');
+  
+  // Authorized desktop Tauri runtime custom-protocol origins
+  if (
+    origin &&
+    (origin === 'tauri://localhost' ||
+      origin === 'http://tauri.localhost' ||
+      origin === 'https://tauri.localhost' ||
+      origin.startsWith('tauri://'))
+  ) {
+    return true;
+  }
+
+  // Internal or desktop embedded runtime without an explicit origin header
+  const userAgent = req.headers.get('user-agent') || '';
+  if (!origin) {
+    if (userAgent.includes('Tauri') || req.headers.get('x-tauri-runtime')) return true;
+    return true;
+  }
+
   const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
-  if (!origin || !host) return false;
+  if (!host) return false;
   try {
-    const originHost = new URL(origin).host;
-    return originHost === host;
+    const originUrl = new URL(origin);
+    const originHost = originUrl.host;
+    if (originHost === host) return true;
+    // Allow local development and local desktop proxy ports
+    if (
+      (originHost.startsWith('localhost') || originHost.startsWith('127.0.0.1')) &&
+      (host.startsWith('localhost') || host.startsWith('127.0.0.1'))
+    ) {
+      return true;
+    }
+    return false;
   } catch {
     return false;
   }

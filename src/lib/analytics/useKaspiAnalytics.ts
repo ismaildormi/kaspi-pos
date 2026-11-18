@@ -231,6 +231,15 @@ export function useKaspiAnalytics(
         const json = await res.json();
         const payload = (json?.data || json) as AnalyticsTimeseriesPayload;
         if (payload && Array.isArray(payload.points)) {
+          // If server totalValue is 0 or low, but offline sales exist in local Dexie ledger, prefer/merge local sales!
+          if (offlineDb) {
+            const localCount = await offlineDb.offlineSales.count().catch(() => 0);
+            if (localCount > 0 && (payload.summary?.totalValue ?? 0) === 0) {
+              const fallback = await buildOfflineFallback(metric, range);
+              setData(fallback);
+              return;
+            }
+          }
           setData(payload);
           return;
         }

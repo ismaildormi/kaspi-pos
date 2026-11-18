@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { PosHeader } from "@/components/pos/PosHeader";
 import { ProductSearch } from "@/components/pos/ProductSearch";
 import { CategoryFilter, type PosCategory } from "@/components/pos/CategoryFilter";
+import { PackQuantityPopover } from "@/components/pos/PackQuantityPopover";
 import { ProductGrid } from "@/components/pos/ProductGrid";
 import { CartPanel } from "@/components/pos/CartPanel";
 import { UnifiedCheckoutModal } from "@/components/pos/UnifiedCheckoutModal";
@@ -729,38 +730,14 @@ export default function PosPage() {
             </button>
           </div>
 
-          {/* Zone L2: Flush Department Tabs & Scan Multiplier Bar */}
-          <div className="flex items-center justify-between gap-2 h-10 pb-1 border-b border-white/[0.06]">
+          {/* Zone L2: Flush Department Tabs & Expandable Pack Multiplier Popover */}
+          <div className="flex items-center justify-between gap-2 min-h-[46px] py-1 border-b border-white/[0.06]">
             <div className="flex-1 min-w-0 overflow-x-auto scrollbar-none">
               <CategoryFilter categories={categories} />
             </div>
 
-            {/* Scan Multiplier Bar (Always Active) */}
-            <div className="h-8 p-0.5 rounded-lg kaspi-glass-surface flex items-center gap-0.5 shrink-0">
-              <span className="font-mono text-[10px] font-bold text-zinc-400 px-2">
-                {locale === "ar" ? "الكمية:" : locale === "fr" ? "QTÉ:" : "QTY:"}
-              </span>
-              {[
-                { m: 1, labelAr: "×1", labelFr: "×1", labelEn: "×1" },
-                { m: 2, labelAr: "×2", labelFr: "×2", labelEn: "×2" },
-                { m: 6, labelAr: "×6 باك", labelFr: "×6 Pack", labelEn: "×6 Pack" },
-                { m: 12, labelAr: "×12 كرتونة", labelFr: "×12 Carton", labelEn: "×12 Carton" },
-                { m: 24, labelAr: "×24 صندوق", labelFr: "×24 Caisse", labelEn: "×24 Crate" },
-              ].map((item) => (
-                <button
-                  key={item.m}
-                  type="button"
-                  onClick={() => handleSetScanMultiplier(item.m)}
-                  className={`h-7 px-2 rounded-md font-mono text-[11px] transition-colors cursor-pointer ${
-                    scanMultiplier === item.m
-                      ? "kaspi-glass-btn text-white font-black shadow-xs"
-                      : "text-zinc-400 hover:text-white font-bold hover:bg-white/[0.06]"
-                  }`}
-                >
-                  {locale === "ar" ? item.labelAr : locale === "en" ? item.labelEn : item.labelFr}
-                </button>
-              ))}
-            </div>
+            {/* Expandable Pack & Box Multiplier Popover (Compact by default, click to expand) */}
+            <PackQuantityPopover locale={locale} />
           </div>
 
           {/* Main Workspace (Smart Grid or PLU Scale Touch Keypad) */}

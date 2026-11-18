@@ -6,6 +6,7 @@ import { KaspiMiniSparkline } from "./KaspiMiniSparkline";
 import { KaspiGlassAnalyticsModal } from "./KaspiGlassAnalyticsModal";
 import { useKaspiAnalytics } from "@/lib/analytics/useKaspiAnalytics";
 import type { AnalyticsMetric } from "@/lib/analytics/types";
+import { offlineDb } from "@/client/db";
 
 export interface DashboardInteractiveKpisProps {
   locale: string;
@@ -85,8 +86,45 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
 
   const [liveSalesAdded, setLiveSalesAdded] = useState(0);
   const [liveOrdersCount, setLiveOrdersCount] = useState(0);
+  const [localTodaySales, setLocalTodaySales] = useState(0);
+  const [localTodayOrders, setLocalTodayOrders] = useState(0);
+  const [localStreak, setLocalStreak] = useState(0);
+
+  const readLocalDexieSales = React.useCallback(async () => {
+    if (!offlineDb || typeof window === "undefined") return;
+    try {
+      const sales = await offlineDb.offlineSales.toArray();
+      if (sales && sales.length > 0) {
+        const now = new Date();
+        const todayStartMs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
+        let sum = 0;
+        let count = 0;
+        const days = new Set<string>();
+
+        for (const s of sales) {
+          const ts = Number(s.createdAt || 0);
+          if (ts >= todayStartMs) {
+            sum += Number(s.grandTotal || 0);
+            count += 1;
+          }
+          if (ts > 0) {
+            days.add(new Date(ts).toISOString().slice(0, 10));
+          }
+        }
+        setLocalTodaySales(sum);
+        setLocalTodayOrders(count);
+        if (days.size > 0) {
+          setLocalStreak(days.size);
+        }
+      }
+    } catch (err) {
+      console.warn("Could not read local offlineSales in DashboardInteractiveKpis:", err);
+    }
+  }, []);
 
   React.useEffect(() => {
+    readLocalDexieSales();
+
     if (typeof window === "undefined") return;
 
     const handleSync = (e: any) => {
@@ -95,9 +133,12 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
         setLiveSalesAdded((prev) => prev + added);
         setLiveOrdersCount((prev) => prev + 1);
       }
+      readLocalDexieSales();
     };
 
     window.addEventListener("kaspi-pos-sync", handleSync);
+    window.addEventListener("kaspi_stock_updated", handleSync);
+
     let bc: BroadcastChannel | null = null;
     try {
       bc = new BroadcastChannel("kaspi-pos-sync");
@@ -107,22 +148,36 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
           setLiveSalesAdded((prev) => prev + added);
           setLiveOrdersCount((prev) => prev + 1);
         }
+        readLocalDexieSales();
       };
     } catch {}
 
     return () => {
       window.removeEventListener("kaspi-pos-sync", handleSync);
+      window.removeEventListener("kaspi_stock_updated", handleSync);
       if (bc) bc.close();
     };
-  }, []);
+  }, [readLocalDexieSales]);
 
   const { data: analytics } = useKaspiAnalytics("sales", "7d", true);
   const sparks = analytics?.sparklines;
-  const nextMilestone = streakDays < 7 ? 7 : streakDays < 14 ? 14 : streakDays < 30 ? 30 : 60;
 
   const parsedBaseTotal = parseFloat(totalSalesMad.replace(/,/g, "")) || 0;
-  const displayTotalMad = (parsedBaseTotal + liveSalesAdded).toFixed(2);
-  const displaySalesCount = salesCount + liveOrdersCount;
+  const effectiveBaseSales = Math.max(parsedBaseTotal, localTodaySales);
+  const displayTotalMad = (effectiveBaseSales + liveSalesAdded).toFixed(2);
+  const effectiveBaseCount = Math.max(salesCount, localTodayOrders);
+  const displaySalesCount = effectiveBaseCount + liveOrdersCount;
+  const displayAvgBasket =
+    displaySalesCount > 0
+      ? (parseFloat(displayTotalMad) / displaySalesCount).toFixed(2)
+      : avgBasketMad;
+  const displayStreak = Math.max(streakDays, localStreak, displaySalesCount > 0 ? 1 : 0);
+  const nextMilestone = displayStreak < 7 ? 7 : displayStreak < 14 ? 14 : displayStreak < 30 ? 30 : 60;
+
+  const displayConsistency = [...weeklyConsistency];
+  if (displaySalesCount > 0 || localStreak > 0) {
+    displayConsistency[displayConsistency.length - 1] = true;
+  }
 
   const salesTitle =
     locale === "ar"
@@ -174,10 +229,10 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
             <div className="text-xs font-bold text-[var(--kaspi-text-primary)] flex items-center gap-2">
               <span>
                 {locale === "ar"
-                  ? `سلسلة النشاط اليومي: ${streakDays} ${streakDays === 1 ? "يوم" : "أيام متتالية"}`
+                  ? `سلسلة النشاط اليومي: ${displayStreak} ${displayStreak === 1 ? "يوم" : "أيام متتالية"}`
                   : locale === "en"
-                  ? `Daily Store Streak: ${streakDays} consecutive ${streakDays === 1 ? "day" : "days"}`
-                  : `Série d'Activité Quotidienne : ${streakDays} ${streakDays <= 1 ? "jour" : "jours"} consécutifs`}
+                  ? `Daily Store Streak: ${displayStreak} consecutive ${displayStreak === 1 ? "day" : "days"}`
+                  : `Série d'Activité Quotidienne : ${displayStreak} ${displayStreak <= 1 ? "jour" : "jours"} consécutifs`}
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                 {locale === "ar"
@@ -202,7 +257,7 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
           <span className="text-[10px] font-mono text-[var(--kaspi-text-muted)] mr-1">
             7d:
           </span>
-          {weeklyConsistency.map((activeDay, idx) => (
+          {displayConsistency.map((activeDay, idx) => (
             <div
               key={idx}
               title={activeDay ? "Active Day" : "No Activity"}
@@ -239,10 +294,10 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
               </div>
               <p className="text-[11px] text-zinc-400 mt-0.5">
                 {locale === "ar"
-                  ? `متوسط سلة المشتريات: ${avgBasketMad} MAD`
+                  ? `متوسط سلة المشتريات: ${displayAvgBasket} MAD`
                   : locale === "en"
-                  ? `Average Basket: ${avgBasketMad} MAD`
-                  : `Panier Moyen : ${avgBasketMad} MAD`}
+                  ? `Average Basket: ${displayAvgBasket} MAD`
+                  : `Panier Moyen : ${displayAvgBasket} MAD`}
               </p>
             </div>
             <KaspiMiniSparkline
