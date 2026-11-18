@@ -1,15 +1,18 @@
 #!/bin/bash
 
 # ==============================================================================
-# KASPI POS — Open-Source AI Studio & Retail Engines Synchronizer
-# نقل ومزامنة جميع المصادر المفتوحة الـ 10 داخل مجلد external_sources
+# KASPI POS — Open-Source AI Studio, Arena AI & Retail Engines Synchronizer
+# نقل ومزامنة جميع المصادر المفتوحة (10 مصادر أساسية + منصات Arena AI الرسمية)
 # ==============================================================================
 
 mkdir -p external_sources
 cd external_sources || exit
 
-# قائمة الروابط المباشرة للنقل (10 مصادر مفتوحة كاملة)
+# قائمة الروابط المباشرة للنقل (شاملة Arena AI + Puck + المصادر الـ 10)
 REPOS=(
+  "https://github.com/lm-sys/FastChat.git"
+  "https://github.com/lm-sys/arena-hard-auto.git"
+  "https://github.com/puckeditor/puck.git"
   "https://github.com/miurla/morphic.git"
   "https://github.com/moonshine-ai/moonshine.git"
   "https://github.com/Zipstack/unstract.git"
@@ -19,7 +22,6 @@ REPOS=(
   "https://github.com/OpnForm/OpnForm.git"
   "https://github.com/Lightning-AI/LitServe.git"
   "https://github.com/vercel/next-forge.git"
-  "https://github.com/puckeditor/puck.git"
 )
 
 # تنفيذ عملية النقل لكل مصدر مع تحسين الحجم (--depth 1 --filter=blob:none)
@@ -28,7 +30,7 @@ for repo in "${REPOS[@]}"; do
   echo "----------------------------------------"
   echo "نقل المصدر: $name ($repo)"
   if [ -d "$name/.git" ]; then
-    echo "المصدر موجود مسبقاً، جاري التحديث..."
+    echo "المصدر $name موجود مسبقاً، جاري التحديث..."
     (cd "$name" && git pull --depth 1)
   else
     git clone --depth 1 --filter=blob:none "$repo" "$name"
@@ -36,4 +38,4 @@ for repo in "${REPOS[@]}"; do
 done
 
 echo "----------------------------------------"
-echo "تم نقل جميع المصادر الـ 10 بنجاح داخل مجلد external_sources!"
+echo "تم نقل جميع المصادر ومنصة Arena AI بنجاح داخل مجلد external_sources!"

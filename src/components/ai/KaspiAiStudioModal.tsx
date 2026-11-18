@@ -35,6 +35,7 @@ import {
   ExternalLink,
   Code2,
   BookOpen,
+  Swords,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
 import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
@@ -44,6 +45,7 @@ import { KaspiPdfmeDesigner } from "./studio/KaspiPdfmeDesigner";
 import { KaspiPuckStorefrontBuilder } from "./studio/KaspiPuckStorefrontBuilder";
 import { KaspiDocEtlAnalyzer } from "./studio/KaspiDocEtlAnalyzer";
 import { KaspiOpnFormBuilder } from "./studio/KaspiOpnFormBuilder";
+import { KaspiArenaBuilder } from "./studio/KaspiArenaBuilder";
 import {
   moonshineVoice,
   synthesizeRealWavBlob,
@@ -67,6 +69,7 @@ interface KaspiAiStudioModalProps {
 }
 
 type CanvasTool =
+  | "arena"
   | "puck"
   | "pdfme"
   | "unstract"
@@ -100,12 +103,15 @@ const STUDIO_THREADS_KEY = "kaspi_ai_studio_threads_v2";
 
 const BASH_CLONE_SCRIPT = `#!/bin/bash
 
-# إنشاء مجلد رئيسي يجمع جميع المصادر داخل مشروعك
+# إنشاء مجلد رئيسي يجمع جميع المصادر ومنصة Arena داخل مشروعك
 mkdir -p external_sources
 cd external_sources || exit
 
-# قائمة الروابط المباشرة للنقل (10 مصادر مفتوحة كاملة)
+# قائمة الروابط المباشرة للنقل (شاملة Arena AI + Puck + المصادر الـ 10)
 REPOS=(
+  "https://github.com/lm-sys/FastChat.git"
+  "https://github.com/lm-sys/arena-hard-auto.git"
+  "https://github.com/puckeditor/puck.git"
   "https://github.com/miurla/morphic.git"
   "https://github.com/moonshine-ai/moonshine.git"
   "https://github.com/Zipstack/unstract.git"
@@ -115,7 +121,6 @@ REPOS=(
   "https://github.com/OpnForm/OpnForm.git"
   "https://github.com/Lightning-AI/LitServe.git"
   "https://github.com/vercel/next-forge.git"
-  "https://github.com/puckeditor/puck.git"
 )
 
 # تنفيذ عملية النقل لكل مصدر
@@ -126,7 +131,7 @@ for repo in "\${REPOS[@]}"; do
 done
 
 echo "----------------------------------------"
-echo "تم نقل جميع المصادر الـ 10 بنجاح داخل مجلد external_sources!"`;
+echo "تم نقل جميع المصادر ومنصة Arena AI بنجاح داخل مجلد external_sources!"`;
 
 export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
   isOpen,
@@ -138,7 +143,7 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
 
   // Layout states (Google AI Studio / Antigravity Split IDE)
   const [showLeftSidebar, setShowLeftSidebar] = useState(true);
-  const [activeCanvas, setActiveCanvas] = useState<CanvasTool>("puck");
+  const [activeCanvas, setActiveCanvas] = useState<CanvasTool>("arena");
   const [showTerminal, setShowTerminal] = useState(true);
 
   // Threads & History
@@ -624,13 +629,14 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
           {/* Quick Canvas Mode Switcher in Top Bar */}
           <div className="hidden xl:flex items-center gap-1 p-1 rounded-xl kaspi-glass-surface border border-white/10">
             {[
-              { id: "puck", label: "منشئ المتجر Puck", icon: Globe },
+              { id: "arena", label: "Arena AI (توليد المتجر)", icon: Swords },
+              { id: "puck", label: "محرر المتجر Puck", icon: Globe },
               { id: "pdfme", label: "مولد PDF", icon: Layout },
               { id: "unstract", label: "استخراج الفواتير", icon: FileText },
               { id: "docetl", label: "تحليل DocETL", icon: Layers },
               { id: "search", label: "بحث Morphic", icon: Search },
               { id: "opnform", label: "نماذج OpnForm", icon: CheckSquare },
-              { id: "repos", label: "المصادر الـ 10 (Git)", icon: Code2 },
+              { id: "repos", label: "المصادر (Git)", icon: Code2 },
             ].map((item) => {
               const Icon = item.icon;
               const active = activeCanvas === item.id;
@@ -743,7 +749,9 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                       <div
                         key={repo.id}
                         onClick={() => {
-                          if (repo.id === "puck") setActiveCanvas("puck");
+                          if (repo.id === "fastchat-arena" || repo.id === "arena-hard-auto")
+                            setActiveCanvas("arena");
+                          else if (repo.id === "puck") setActiveCanvas("puck");
                           else if (repo.id === "pdfme") setActiveCanvas("pdfme");
                           else if (repo.id === "unstract") setActiveCanvas("unstract");
                           else if (repo.id === "docetl") setActiveCanvas("docetl");
@@ -1146,13 +1154,14 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
             {/* Mobile/Tablet Canvas Switcher */}
             <div className="flex xl:hidden items-center gap-1 p-2 border-b border-white/10 overflow-x-auto scrollbar-none shrink-0">
               {[
-                { id: "puck", label: "Puck متجر" },
+                { id: "arena", label: "Arena AI متجر" },
+                { id: "puck", label: "Puck محرر" },
                 { id: "pdfme", label: "pdfme مستندات" },
                 { id: "unstract", label: "Unstract فواتير" },
                 { id: "docetl", label: "DocETL تحليل" },
                 { id: "search", label: "Morphic بحث" },
                 { id: "opnform", label: "OpnForm نماذج" },
-                { id: "repos", label: "المصادر الـ 10" },
+                { id: "repos", label: "المصادر (Git)" },
               ].map((t) => (
                 <button
                   key={t.id}
@@ -1169,6 +1178,13 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
 
             {/* TOP RIGHT: ACTIVE INTERACTIVE CANVAS */}
             <div className="flex-1 min-h-0 overflow-y-auto kaspi-no-scrollbar p-4">
+              {activeCanvas === "arena" && (
+                <KaspiArenaBuilder
+                  locale={locale}
+                  onLog={appendLog}
+                  onApplyToPuck={() => setActiveCanvas("puck")}
+                />
+              )}
               {activeCanvas === "puck" && (
                 <KaspiPuckStorefrontBuilder locale={locale} onLog={appendLog} />
               )}
