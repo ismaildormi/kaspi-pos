@@ -163,7 +163,13 @@ export const ARENA_REAL_MODELS: ArenaRealModelSpec[] = [
   },
 ];
 
-export type ArenaExecutionMode = "battle" | "agent" | "side_by_side" | "direct";
+export type ArenaExecutionMode =
+  | "battle"
+  | "agent"
+  | "side_by_side"
+  | "direct"
+  | "autonomous"
+  | "integration";
 export type ArenaModality = "auto" | "code" | "text" | "search" | "image" | "video";
 
 export interface ArenaProjectFileItem {

@@ -22,11 +22,58 @@ export async function GET(req: NextRequest) {
     const isFallbackTenant = tenantId === "00000000-0000-0000-0000-000000000000";
 
     const searchParams = req.nextUrl.searchParams;
+    const format = (searchParams.get("format") || "json").toLowerCase();
     const query = sanitizeMerchantField(searchParams.get("q") || "", 120).toLowerCase();
     const aiReferralChannel = sanitizeMerchantField(
       searchParams.get("utm_source") || searchParams.get("ai_agent") || "direct_discovery",
       60
     );
+
+    if (format === "openapi") {
+      const origin = req.nextUrl.origin;
+      return NextResponse.json({
+        openapi: "3.1.0",
+        info: {
+          title: "KASPI Agentic Commerce Discovery API",
+          version: "1.0.0",
+          description:
+            "Authorized product catalog & recommendations feed for ChatGPT Actions, Microsoft Copilot, Gemini, and shopping agents.",
+        },
+        servers: [{ url: origin }],
+        paths: {
+          "/api/ai/agentic-storefront": {
+            get: {
+              operationId: "discoverStoreProducts",
+              summary: "Search verified merchant products, prices, currency, and availability",
+              parameters: [
+                { name: "q", in: "query", required: false, schema: { type: "string" } },
+                { name: "ai_agent", in: "query", required: false, schema: { type: "string" } },
+              ],
+              responses: { "200": { description: "JSON-LD & product discovery response" } },
+            },
+          },
+        },
+      });
+    }
+
+    if (format === "mcp") {
+      return NextResponse.json({
+        protocol: "model-context-protocol",
+        version: "2025-03",
+        serverName: "kaspi-agentic-commerce",
+        tools: [
+          {
+            name: "kaspi_search_products",
+            description: "Search merchant products, stock, pricing, and cross-sell bundles.",
+            inputSchema: {
+              type: "object",
+              properties: { q: { type: "string", description: "Product search query" } },
+            },
+          },
+        ],
+        endpoint: `${req.nextUrl.origin}/api/ai/agentic-storefront`,
+      });
+    }
 
     let storeName = sanitizeMerchantField(ctx.activeTenant?.displayName || "متجر كسب", 80);
     let legalName = sanitizeMerchantField(ctx.activeTenant?.legalName || storeName, 80);

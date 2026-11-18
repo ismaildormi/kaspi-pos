@@ -351,19 +351,33 @@ export function extractProjectFromResponse(
 export function buildArenaSystemPrompt(params: {
   modality: "code" | "text" | "search" | "image" | "video";
   storeContextSnippet?: string;
+  libraryContextSnippet?: string;
   attachmentContext?: string;
   searchContextText?: string;
+  mode?: ArenaExecutionMode;
 }): string {
   const {
     modality,
     storeContextSnippet = "",
+    libraryContextSnippet = "",
     attachmentContext = "",
     searchContextText = "",
+    mode = "battle",
   } = params;
 
+  const operatingModeHint =
+    mode === "autonomous"
+      ? "\n[Autonomous Mode] Structure actionable recurring schedules, monitoring thresholds, and approval checkpoints."
+      : mode === "integration"
+      ? "\n[Integration Mode] Explain exact external API / OAuth / Webhook / Screenshot onboarding steps clearly and never invent credentials."
+      : "";
+
+  const safeMemory = `${storeContextSnippet}${libraryContextSnippet}${operatingModeHint}${attachmentContext}${searchContextText}`;
+
   if (modality === "code") {
-    return `You are an expert Senior Full-Stack & Creative Web Developer inside KASPI AI Arena.
-Build ANYTHING requested by the user: interactive websites, 2D/3D HTML5 Canvas games, web applications, e-commerce storefronts (fashion, abaya, food, SaaS, etc.), dashboards, calculators, portfolios, or custom utilities. Respond in the user's language (Arabic, Moroccan Darija, French, or English).${storeContextSnippet}${attachmentContext}${searchContextText}
+    return `You are an expert Senior Full-Stack & Creative Web Developer inside KASPI AI Arena (Independent Global Business OS).
+Build ANYTHING requested by the user: complete e-commerce stores (catalog, cart, variants, checkout, multi-currency), websites, landing pages, SaaS apps, dashboards, 2D/3D HTML5 Canvas games, or custom tools.
+If [Verified Real Store Location (Maps)] is present in memory, embed their real city, street address, OpenStreetMap iframe, and Directions link cleanly in the generated website/storefront! Never claim an unverified external platform connection succeeded. Respond in the user's language (Arabic, Moroccan Darija, French, English, Spanish, German, Portuguese, etc.).${safeMemory}
 
 CRITICAL OUTPUT FORMAT RULES (STRICTLY REQUIRED):
 1. Write ONLY 1–2 short sentences describing what you built. NEVER write technical architecture plans, stack comparisons, or Markdown tables!
@@ -373,11 +387,11 @@ CRITICAL OUTPUT FORMAT RULES (STRICTLY REQUIRED):
 
   if (modality === "search") {
     return `You are KASPI AI Research Assistant powered by live web search.
-Answer the user's question accurately in the same language as the prompt using the Live Web Search Results provided below. Cite source numbers like [1], [2].${storeContextSnippet}${attachmentContext}${searchContextText}`;
+Answer the user's question accurately in the same language as the prompt using the Live Web Search Results provided below. Cite source numbers like [1], [2].${safeMemory}`;
   }
 
-  return `You are KASPI AI, a versatile, helpful, unrestricted frontier AI assistant.
-Respond clearly, thoughtfully, and accurately in the exact language used by the user (Arabic, Moroccan Darija, French, English, etc.). If answering follow-ups on earlier code/designs, give concrete guidance.${storeContextSnippet}${attachmentContext}`;
+  return `You are KASPI AI, an independent global AI Business Operating System & unrestricted frontier assistant.
+Respond clearly, thoughtfully, and accurately in the exact language used by the user (Arabic, Moroccan Darija, French, English, Spanish, German, Portuguese, Chinese, Japanese, etc.). If the user needs to connect an external service (Instagram, WhatsApp, LinkedIn, GitHub, Vercel, Stripe, etc.), explain how to connect it in KASPI Plugins or request a screenshot to guide them click-by-click.${safeMemory}`;
 }
 
 export const STRICT_HTML_RECOVERY_SYSTEM_PROMPT = `You are a frontend compiler. Your ONLY job is to output ONE complete runnable single-file web application inside a single \`\`\`html code block starting with <!DOCTYPE html> and ending with </html>.
@@ -760,6 +774,7 @@ export async function executeArenaTurnClientFirst(params: {
   history: Array<{ role: "user" | "assistant"; content: string }>;
   previousTurnModality?: "code" | "text" | "search" | "image" | "video";
   includeStoreContext: boolean;
+  libraryContextSnippet?: string;
   attachments: Array<{ name: string; type: string; textExcerpt?: string }>;
   serverExecuteUrl: string;
   signal?: AbortSignal;
@@ -789,6 +804,7 @@ export async function executeArenaTurnClientFirst(params: {
         modelBId: params.modelBId,
         history: params.history,
         includeStoreContext: true,
+        libraryContextSnippet: params.libraryContextSnippet || "",
         attachments: params.attachments,
       }),
     });
@@ -996,8 +1012,10 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
   // BRANCH 4: CODE / TEXT / SEARCH — CLIENT-FIRST WITH STRICT HTML RECOVERY & SERVER FALLBACK
   const systemPrompt = buildArenaSystemPrompt({
     modality: effectiveModality,
+    libraryContextSnippet: params.libraryContextSnippet || "",
     attachmentContext,
     searchContextText,
+    mode: params.mode,
   });
 
   const historyMsgs = params.history.slice(-8);
@@ -1018,6 +1036,7 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
         modelBId: targetModelId,
         history: historyMsgs,
         includeStoreContext: false,
+        libraryContextSnippet: params.libraryContextSnippet || "",
         attachments: params.attachments,
         citationsOverride: citations,
       }),

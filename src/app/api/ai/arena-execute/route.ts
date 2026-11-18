@@ -500,9 +500,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
     }
 
-    const mode: ArenaExecutionMode = ["battle", "agent", "side_by_side", "direct"].includes(
-      body.mode
-    )
+    const mode: ArenaExecutionMode = [
+      "battle",
+      "agent",
+      "side_by_side",
+      "direct",
+      "autonomous",
+      "integration",
+    ].includes(body.mode)
       ? body.mode
       : "battle";
     const requestedModality: ArenaModality = ["auto", "code", "text", "search", "image", "video"].includes(
@@ -730,11 +735,16 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
     // ------------------------------------------------------------------------
     // SYSTEM PROMPTS BY MODALITY (Unrestricted — builds whatever user asked!)
     // ------------------------------------------------------------------------
+    const libraryContextSnippet = body.libraryContextSnippet
+      ? String(body.libraryContextSnippet).slice(0, 2600)
+      : "";
     const systemPrompt = buildArenaSystemPrompt({
       modality: effectiveModality,
       storeContextSnippet,
+      libraryContextSnippet,
       attachmentContext,
       searchContextText,
+      mode,
     });
 
     const messagesForModel = [...historyMsgs, { role: "user" as const, content: prompt }];

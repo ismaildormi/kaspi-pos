@@ -101,6 +101,7 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
         "openai/gpt-oss-20b",
         "llama-3.3-70b-versatile",
         "llama-3.1-8b-instant",
+        "meta-llama/llama-4-scout-17b-16e-instruct",
       ]) {
         candidates.push({
           provider: "groq",
@@ -110,7 +111,7 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
           apiKey: key,
           modelId,
           model: groqProvider(modelId) as unknown as LanguageModel,
-          supportsVision: false,
+          supportsVision: modelId.includes("llama-4-scout"),
         });
       }
     }

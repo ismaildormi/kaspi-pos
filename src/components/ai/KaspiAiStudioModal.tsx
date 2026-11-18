@@ -46,6 +46,12 @@ import {
   Store,
   BarChart3,
   Layers,
+  MapPin,
+  AtSign,
+  Library as LibraryIcon,
+  LayoutGrid,
+  Activity,
+  MousePointerClick,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
 import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
@@ -80,6 +86,28 @@ import {
   buildRealZipArchiveFromFiles,
   type GeneratedProjectFile,
 } from "@/lib/ai/arena-agent-orchestrator";
+import {
+  UNIVERSAL_INTEGRATIONS_CATALOG,
+  detectIntegrationsMentionedInText,
+} from "@/lib/ai/integrations-registry";
+import {
+  appendArtifactToLibrary,
+  buildUnifiedLibraryContextSummary,
+  loadKaspiLibrary,
+  saveKaspiLibrary,
+  saveLocationToLibrary,
+  saveSkillToLibrary,
+  syncConnectedPluginsToLibrary,
+  type KaspiLocalLibraryState,
+  type LibraryArtifactItem,
+  type LibraryBusinessKnowledge,
+  type StoreMapsLocation,
+} from "@/lib/ai/kaspi-library-memory";
+import { KaspiPluginsCenter, type VaultConnectionItem } from "./os/KaspiPluginsCenter";
+import { KaspiMapsLocationPanel } from "./os/KaspiMapsLocationPanel";
+import { KaspiLibraryView } from "./os/KaspiLibraryView";
+import { KaspiBusinessOsPanel } from "./os/KaspiBusinessOsPanel";
+import { KaspiVisualSetupModal } from "./os/KaspiVisualSetupModal";
 import { usePosStore } from "@/client/store/usePosStore";
 import { getApiUrl } from "@/client/sync-engine";
 import { toast } from "sonner";
@@ -91,7 +119,17 @@ interface KaspiAiStudioModalProps {
   initialTab?: string;
 }
 
-type ActiveCanvasView = "arena" | "leaderboard" | "puck_builder" | "open_tools" | "help";
+type ActiveCanvasView =
+  | "arena"
+  | "leaderboard"
+  | "library"
+  | "plugins"
+  | "maps"
+  | "business_os"
+  | "visual_setup"
+  | "puck_builder"
+  | "open_tools"
+  | "help";
 type OpenSourceSubTool = "puck" | "arena" | "pdfme" | "unstract" | "search" | "docetl" | "opnform";
 
 interface AttachedClientFile {
@@ -113,6 +151,7 @@ interface ArenaTurnRecord {
   voteOutcome: BattleOutcome | null;
   expandedA?: boolean;
   expandedB?: boolean;
+  suggestedPluginIds?: string[];
 }
 
 interface ArenaConversationThread {
@@ -146,8 +185,15 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarSearch, setSidebarSearch] = useState("");
   const [showSeeMoreNav, setShowSeeMoreNav] = useState(false);
+  const [exploreMenuOpen, setExploreMenuOpen] = useState(false);
   const [activeView, setActiveView] = useState<ActiveCanvasView>("arena");
   const [openToolTab, setOpenToolTab] = useState<OpenSourceSubTool>("puck");
+  const [focusPluginServiceId, setFocusPluginServiceId] = useState<string | null>(null);
+  const [openPluginVisualSetup, setOpenPluginVisualSetup] = useState(false);
+  const [vaultConnections, setVaultConnections] = useState<VaultConnectionItem[]>([]);
+  const [libraryState, setLibraryState] = useState<KaspiLocalLibraryState>(() =>
+    loadKaspiLibrary("default")
+  );
 
   // Conversations & Active Chat
   const [threads, setThreads] = useState<ArenaConversationThread[]>([]);
@@ -213,9 +259,34 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
       .catch(() => {});
   }, [isOpen]);
 
-  // 2. Load Threads Scoped to Active User Email / Tenant
+  // 2. Load Threads & Local On-Device Library + Encrypted Integration Metadata
   useEffect(() => {
     if (!isOpen) return;
+    setLibraryState(loadKaspiLibrary(storageScopeKey));
+
+    fetch(getApiUrl("/api/ai/integrations"))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data?.success) return;
+        if (Array.isArray(data.connections)) {
+          setVaultConnections(data.connections);
+          const summaries = data.connections.map((c: VaultConnectionItem) => ({
+            serviceId: c.serviceId,
+            name: UNIVERSAL_INTEGRATIONS_CATALOG.find((x) => x.id === c.serviceId)?.name || c.serviceId,
+            verificationStatus: c.verificationStatus,
+            permissionPreset: c.permissionPreset,
+            approvalPolicy: c.approvalPolicy,
+            verifiedIdentity: c.verifiedIdentity,
+            updatedAt: c.updatedAt,
+          }));
+          setLibraryState(syncConnectedPluginsToLibrary(storageScopeKey, summaries));
+        }
+        if (data.location && typeof data.location.lat === "number") {
+          setLibraryState(saveLocationToLibrary(storageScopeKey, data.location));
+        }
+      })
+      .catch(() => {});
+
     try {
       const raw = localStorage.getItem(`${ARENA_HISTORY_PREFIX}${storageScopeKey}`);
       if (raw) {
@@ -230,6 +301,85 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
       setThreads([]);
     }
   }, [isOpen, storageScopeKey]);
+
+  const handleConnectionsUpdated = (nextConns: VaultConnectionItem[]) => {
+    setVaultConnections(nextConns);
+    const summaries = nextConns.map((c) => ({
+      serviceId: c.serviceId,
+      name: UNIVERSAL_INTEGRATIONS_CATALOG.find((x) => x.id === c.serviceId)?.name || c.serviceId,
+      verificationStatus: c.verificationStatus,
+      permissionPreset: c.permissionPreset,
+      approvalPolicy: c.approvalPolicy,
+      verifiedIdentity: c.verifiedIdentity,
+      updatedAt: c.updatedAt,
+    }));
+    setLibraryState(syncConnectedPluginsToLibrary(storageScopeKey, summaries));
+  };
+
+  const handleSaveLocation = (loc: StoreMapsLocation) => {
+    setLibraryState(saveLocationToLibrary(storageScopeKey, loc));
+  };
+
+  const handleSaveSkill = (skill: {
+    name: string;
+    description: string;
+    instructionPrompt: string;
+    category: string;
+  }) => {
+    setLibraryState(saveSkillToLibrary(storageScopeKey, skill));
+  };
+
+  const handleUpdateKnowledge = (knowledge: LibraryBusinessKnowledge) => {
+    const cur = loadKaspiLibrary(storageScopeKey);
+    const next = { ...cur, knowledge };
+    saveKaspiLibrary(storageScopeKey, next);
+    setLibraryState(next);
+  };
+
+  const handleDeleteArtifact = (id: string) => {
+    const cur = loadKaspiLibrary(storageScopeKey);
+    const next = { ...cur, artifacts: cur.artifacts.filter((a) => a.id !== id) };
+    saveKaspiLibrary(storageScopeKey, next);
+    setLibraryState(next);
+  };
+
+  const handleOpenArtifactInCanvas = (item: LibraryArtifactItem) => {
+    const synthTurn: ArenaTurnRecord = {
+      turnId: `lib-view-${item.id}`,
+      timestamp: item.createdAt,
+      userPrompt: item.prompt,
+      mode: "direct",
+      modality: item.kind === "video" ? "video" : item.kind === "image" ? "image" : "code",
+      outputA: {
+        modelId: "library-restored",
+        modelName: item.modelName || "Library Saved Project",
+        providerLabel: "Local Machine Library",
+        status: "completed",
+        latencyMs: 10,
+        replyMarkdown: `Restored "${item.title}" from your local machine Library memory.`,
+        stepsLog: ["Loaded cleanly from on-device Library"],
+        modalityExecuted: item.kind === "video" ? "video" : item.kind === "image" ? "image" : "code",
+        files: item.files || [],
+        previewHtml: item.previewHtml || null,
+        imageUrl: item.imageUrl || null,
+      },
+      outputB: null,
+      voteOutcome: null,
+    };
+    const newId = `chat-lib-${Date.now().toString(36)}`;
+    const thread: ArenaConversationThread = {
+      id: newId,
+      title: item.title,
+      createdAt: item.createdAt,
+      updatedAt: new Date().toISOString(),
+      turns: [synthTurn],
+    };
+    persistThreads([thread, ...threads]);
+    setActiveThreadId(newId);
+    setSelectedSide("A");
+    setPreviewOrCode("preview");
+    setActiveView("arena");
+  };
 
   const persistThreads = (next: ArenaConversationThread[]) => {
     setThreads(next);
@@ -370,6 +520,7 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
     abortCtrlRef.current = controller;
 
     try {
+      const libraryContextSnippet = buildUnifiedLibraryContextSummary(storageScopeKey);
       const result = await executeArenaTurnClientFirst({
         prompt: promptText,
         mode: arenaMode,
@@ -379,6 +530,7 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
         history,
         previousTurnModality: latestTurn?.modality,
         includeStoreContext,
+        libraryContextSnippet,
         attachments: filesSnapshot.map((f) => ({
           name: f.name,
           type: f.type,
@@ -391,6 +543,40 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
       const finalOutputA = result.outputA;
       const finalOutputB = result.outputB;
 
+      // Detect external integrations needed/mentioned so ChatGPT-style Connect Cards show inline!
+      const connectedIds = [
+        ...vaultConnections.map((c) => c.serviceId),
+        ...(libraryState.location ? ["maps_location"] : []),
+      ];
+      const suggested = detectIntegrationsMentionedInText(
+        `${promptText}\n${finalOutputA.replyMarkdown}\n${finalOutputB?.replyMarkdown || ""}`,
+        connectedIds
+      );
+
+      // Save created sites/apps/stores/videos into user's persistent On-Device Library!
+      if (finalOutputA.previewHtml) {
+        const kind: LibraryArtifactItem["kind"] =
+          result.effectiveModality === "video"
+            ? "video"
+            : /(store|shop|boutique|متجر|عبايات)/i.test(promptText)
+            ? "store"
+            : /(game|arcade|لعبة)/i.test(promptText)
+            ? "game"
+            : /(website|landing|موقع|صفحة)/i.test(promptText)
+            ? "website"
+            : "app";
+        setLibraryState(
+          appendArtifactToLibrary(storageScopeKey, {
+            kind,
+            title: promptText.slice(0, 48),
+            prompt: promptText,
+            modelName: finalOutputA.modelName,
+            previewHtml: finalOutputA.previewHtml,
+            files: finalOutputA.files,
+          })
+        );
+      }
+
       const newTurn: ArenaTurnRecord = {
         turnId: `turn-${Date.now().toString(36)}`,
         timestamp: new Date().toISOString(),
@@ -401,6 +587,7 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
         outputA: finalOutputA,
         outputB: finalOutputB,
         voteOutcome: null,
+        suggestedPluginIds: suggested.map((s) => s.id),
       };
 
       if (activeThread) {
@@ -789,6 +976,10 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                 ? "Agent Mode"
                 : arenaMode === "side_by_side"
                 ? "Side by Side"
+                : arenaMode === "autonomous"
+                ? "Autonomous"
+                : arenaMode === "integration"
+                ? "Integration"
                 : "Direct"}
             </span>
             <ChevronDown className="w-3 h-3 text-zinc-400" />
@@ -796,18 +987,30 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
 
           {modeDropdownOpen && (
             <div
-              className={`absolute left-0 ${posClass} z-50 w-64 rounded-xl bg-[#252525] border border-white/15 shadow-2xl py-1.5 text-xs`}
+              className={`absolute left-0 ${posClass} z-50 w-68 rounded-xl bg-[#252525] border border-white/15 shadow-2xl py-1.5 text-xs`}
             >
               {[
                 { id: "battle" as const, title: "Battle Mode", desc: "Battle 2 anonymous models", Icon: Swords },
-                { id: "agent" as const, title: "Agent Mode", desc: "Built for complex tasks", Icon: Cpu },
+                { id: "agent" as const, title: "Agent Mode", desc: "Multi-step planning & execution", Icon: Cpu },
                 {
                   id: "side_by_side" as const,
                   title: "Side by Side",
                   desc: "Compare 2 models of your choice",
                   Icon: MessageSquare,
                 },
-                { id: "direct" as const, title: "Direct", desc: "Chat with 1 model at a time", Icon: Bot },
+                { id: "direct" as const, title: "Direct", desc: "Single-model chat & authorized tools", Icon: Bot },
+                {
+                  id: "autonomous" as const,
+                  title: "Autonomous Mode",
+                  desc: "Recurring workflows, monitoring & alerts",
+                  Icon: Activity,
+                },
+                {
+                  id: "integration" as const,
+                  title: "Integration Mode",
+                  desc: "Connect apps, APIs & Visual Screenshot Setup",
+                  Icon: AtSign,
+                },
               ].map(({ id, title, desc, Icon }) => (
                 <button
                   key={id}
@@ -986,8 +1189,8 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                 </button>
               </div>
 
-              {/* Clean Arena Sidebar Nav */}
-              <div className="p-2 space-y-0.5 text-xs">
+              {/* Clean Arena + Business OS Sidebar Nav (Matches Uploaded Screenshots!) */}
+              <div className="p-2 space-y-0.5 text-xs relative">
                 <button
                   type="button"
                   onClick={handleStartNewChat}
@@ -1003,7 +1206,134 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => setActiveView("leaderboard")}
+                  onClick={() => {
+                    setActiveView("library");
+                    setExploreMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                    activeView === "library"
+                      ? "bg-white/10 text-white font-semibold"
+                      : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <LibraryIcon className="w-4 h-4 text-emerald-400" />
+                    <span>Library</span>
+                  </span>
+                  {libraryState.artifacts.length > 0 && (
+                    <span className="text-[10px] font-mono text-zinc-400">
+                      {libraryState.artifacts.length}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFocusPluginServiceId(null);
+                    setOpenPluginVisualSetup(false);
+                    setActiveView("plugins");
+                    setExploreMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                    activeView === "plugins"
+                      ? "bg-white/10 text-white font-semibold"
+                      : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <AtSign className="w-4 h-4 text-emerald-400" />
+                    <span>Plugins</span>
+                  </span>
+                  {vaultConnections.length > 0 && (
+                    <span className="text-[10px] font-mono text-emerald-400">
+                      {vaultConnections.length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Explore Button + Floating Popover (`Maps`, `Business Manager`, `Visual Setup`) matching Screenshot 2! */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setExploreMenuOpen(!exploreMenuOpen)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+                      exploreMenuOpen || activeView === "maps" || activeView === "business_os" || activeView === "visual_setup"
+                        ? "bg-white/10 text-white font-semibold ring-1 ring-emerald-500/40"
+                        : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <LayoutGrid className="w-4 h-4 text-zinc-300" />
+                      <span>Explore</span>
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+                  </button>
+
+                  {exploreMenuOpen && (
+                    <div className="mt-1 ml-2 p-1.5 rounded-2xl bg-[#242424] border border-white/15 shadow-2xl space-y-0.5 text-xs z-50">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveView("maps");
+                          setExploreMenuOpen(false);
+                        }}
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/10 text-white font-semibold cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <MapPin className="w-4 h-4 text-emerald-400" />
+                          <span>Maps</span>
+                        </span>
+                        {libraryState.location && (
+                          <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveView("business_os");
+                          setExploreMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/10 text-zinc-200 cursor-pointer"
+                      >
+                        <Activity className="w-4 h-4 text-emerald-400" />
+                        <span>Business OS &amp; Workflows</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveView("visual_setup");
+                          setExploreMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/10 text-zinc-200 cursor-pointer"
+                      >
+                        <MousePointerClick className="w-4 h-4 text-emerald-400" />
+                        <span>Visual Screenshot Setup</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveView("puck_builder");
+                          setExploreMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/10 text-zinc-200 cursor-pointer"
+                      >
+                        <Store className="w-4 h-4 text-emerald-400" />
+                        <span>Puck Store Builder</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveView("leaderboard");
+                    setExploreMenuOpen(false);
+                  }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
                     activeView === "leaderboard"
                       ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold"
@@ -1325,6 +1655,16 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                   <span className="text-xs font-semibold text-zinc-300">
                     {activeView === "leaderboard"
                       ? "Arena Leaderboard (Bradley-Terry MLE)"
+                      : activeView === "plugins"
+                      ? "KASPI AI — Universal Plugins & Permissions"
+                      : activeView === "library"
+                      ? "KASPI AI — Local Business Memory Library"
+                      : activeView === "maps"
+                      ? "KASPI AI — Real Store Geolocation (Maps)"
+                      : activeView === "business_os"
+                      ? "KASPI AI — Business Manager & Workflows OS"
+                      : activeView === "visual_setup"
+                      ? "KASPI AI — Visual Screenshot Setup Assistant"
                       : activeView === "puck_builder"
                       ? "Puck Storefront Builder"
                       : activeView === "open_tools"
@@ -1408,6 +1748,73 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                       </tbody>
                     </table>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeView === "plugins" && (
+              <div className="flex-1 overflow-y-auto p-6 bg-[#141414]">
+                <KaspiPluginsCenter
+                  connections={vaultConnections}
+                  libraryState={libraryState}
+                  initialFocusServiceId={focusPluginServiceId}
+                  initialOpenVisualSetup={openPluginVisualSetup}
+                  onConnectionsUpdated={handleConnectionsUpdated}
+                  onSaveSkill={handleSaveSkill}
+                  onOpenMapsPanel={() => setActiveView("maps")}
+                />
+              </div>
+            )}
+
+            {activeView === "library" && (
+              <div className="flex-1 overflow-y-auto p-6 bg-[#141414]">
+                <KaspiLibraryView
+                  libraryState={libraryState}
+                  onUpdateKnowledge={handleUpdateKnowledge}
+                  onDeleteArtifact={handleDeleteArtifact}
+                  onOpenArtifactInCanvas={handleOpenArtifactInCanvas}
+                  onOpenMapsPanel={() => setActiveView("maps")}
+                />
+              </div>
+            )}
+
+            {activeView === "maps" && (
+              <div className="flex-1 overflow-y-auto p-6 bg-[#141414]">
+                <KaspiMapsLocationPanel
+                  currentLocation={libraryState.location}
+                  onSaveLocation={handleSaveLocation}
+                />
+              </div>
+            )}
+
+            {activeView === "business_os" && (
+              <div className="flex-1 overflow-y-auto p-6 bg-[#141414]">
+                <KaspiBusinessOsPanel />
+              </div>
+            )}
+
+            {activeView === "visual_setup" && (
+              <div className="flex-1 overflow-y-auto p-6 bg-[#141414]">
+                <div className="max-w-4xl mx-auto">
+                  <KaspiVisualSetupModal
+                    onClose={() => setActiveView("arena")}
+                    onQuickConnectCredentials={async (serviceId, fields) => {
+                      const res = await fetch(getApiUrl("/api/ai/integrations"), {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "connect", serviceId, fields }),
+                      });
+                      const d = await res.json();
+                      if (d?.success && d.connection) {
+                        const nextList =
+                          Array.isArray(d.connections) && d.connections.length > 0
+                            ? d.connections
+                            : [d.connection, ...vaultConnections.filter((c) => c.serviceId !== serviceId)];
+                        handleConnectionsUpdated(nextList);
+                        toast.success(d.connection.verificationMessage || "Connected!");
+                      }
+                    }}
+                  />
                 </div>
               </div>
             )}
@@ -1836,6 +2243,88 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                                 ))}
                               </div>
                             </div>
+                          )}
+
+                          {/* ChatGPT-style Inline Plugin Connection Cards + Screenshot Setup Button */}
+                          {turn.suggestedPluginIds && turn.suggestedPluginIds.length > 0 && (
+                            <div className="p-3 rounded-xl bg-[#191b1c] border border-emerald-500/30 space-y-2">
+                              <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <AtSign className="w-3.5 h-3.5" />
+                                <span>Connect Required Plugins or Guide Setup</span>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {turn.suggestedPluginIds
+                                  .map((pid) => UNIVERSAL_INTEGRATIONS_CATALOG.find((x) => x.id === pid))
+                                  .filter(Boolean)
+                                  .map((plugin) => (
+                                    <div
+                                      key={plugin!.id}
+                                      className="flex items-center justify-between gap-2.5 px-3 py-2 rounded-xl bg-[#141414] border border-white/10"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <span
+                                          style={{ backgroundColor: plugin!.brandColor }}
+                                          className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-extrabold text-[10px]"
+                                        >
+                                          {plugin!.monogram}
+                                        </span>
+                                        <div>
+                                          <div className="text-[11px] font-bold text-white">
+                                            {plugin!.name}
+                                          </div>
+                                          <div className="text-[9px] text-zinc-400">
+                                            {plugin!.authMethod === "geolocation" ? "Real GPS Pin" : plugin!.authMethod.toUpperCase()}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (plugin!.id === "maps_location") {
+                                              setActiveView("maps");
+                                              return;
+                                            }
+                                            setFocusPluginServiceId(plugin!.id);
+                                            setOpenPluginVisualSetup(false);
+                                            setActiveView("plugins");
+                                          }}
+                                          className="px-2.5 py-1 rounded-lg bg-[#10b981] hover:bg-emerald-400 text-black font-bold text-[10px] cursor-pointer"
+                                        >
+                                          Connect
+                                        </button>
+                                        {plugin!.id !== "maps_location" && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setFocusPluginServiceId(plugin!.id);
+                                              setOpenPluginVisualSetup(true);
+                                              setActiveView("plugins");
+                                            }}
+                                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-emerald-300 cursor-pointer"
+                                            title="Guide me with screenshots"
+                                          >
+                                            <MousePointerClick className="w-3 h-3" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Quick Visual Setup Launch if screenshot image was attached */}
+                          {turn.attachments?.some((a) => a.dataUrl?.startsWith("data:image/")) && (
+                            <button
+                              type="button"
+                              onClick={() => setActiveView("visual_setup")}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-[11px] font-bold text-emerald-300 cursor-pointer"
+                            >
+                              <MousePointerClick className="w-3.5 h-3.5" />
+                              <span>Open Annotated Screenshot Setup Assistant</span>
+                            </button>
                           )}
                         </div>
                       );
