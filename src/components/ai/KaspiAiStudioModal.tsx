@@ -2177,16 +2177,16 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                                           <span>{prod.category}</span>
                                           <span
                                             className={`px-2 py-0.5 rounded-full font-bold ${
-                                              prod.availabilityStatus === "IN_STOCK"
+                                              prod.availabilityStatus === "in_stock"
                                                 ? "bg-emerald-500/20 text-emerald-300"
-                                                : prod.availabilityStatus === "LOW_STOCK"
+                                                : prod.availabilityStatus === "low_stock"
                                                 ? "bg-amber-500/20 text-amber-300"
                                                 : "bg-red-500/20 text-red-300"
                                             }`}
                                           >
-                                            {prod.availabilityStatus === "IN_STOCK"
+                                            {prod.availabilityStatus === "in_stock"
                                               ? `متوفر (${prod.stockQuantity})`
-                                              : prod.availabilityStatus === "LOW_STOCK"
+                                              : prod.availabilityStatus === "low_stock"
                                               ? `كمية محدودة (${prod.stockQuantity})`
                                               : "نافد حالياً"}
                                           </span>

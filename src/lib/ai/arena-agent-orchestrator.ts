@@ -969,7 +969,7 @@ export function buildSandboxCustomBusinessApp(
           { name: "estimatedCost", labelAr: `التكلفة التقديرية (${ctx.currency})`, type: "number" },
           { name: "discountPct", labelAr: "نسبة الخصم المقترحة (%)", type: "number" },
         ],
-    sampleRecordsGroundedInStore: sampleProducts.map((prod, idx) =>
+    sampleRecordsGroundedInStore: sampleProducts.map((prod, idx): Record<string, string | number> =>
       isReservation
         ? {
             id: `RES-${101 + idx}`,
@@ -1425,9 +1425,9 @@ export function executeAutonomousAgentCollective(
   const pendingApprovals: ApprovalRequestRecord[] = [];
   const auditLogs: AgentAuditLogEntry[] = [];
 
-  const inStockProducts = ctx.products.filter((p) => p.availabilityStatus === "IN_STOCK");
-  const lowStockProducts = ctx.products.filter((p) => p.availabilityStatus === "LOW_STOCK");
-  const outOfStockProducts = ctx.products.filter((p) => p.availabilityStatus === "OUT_OF_STOCK");
+  const inStockProducts = ctx.products.filter((p) => p.availabilityStatus === "in_stock");
+  const lowStockProducts = ctx.products.filter((p) => p.availabilityStatus === "low_stock");
+  const outOfStockProducts = ctx.products.filter((p) => p.availabilityStatus === "out_of_stock");
   const topProducts = [...ctx.products].sort((a, b) => b.price - a.price).slice(0, 5);
   const avgPrice =
     ctx.products.length > 0
@@ -1599,7 +1599,7 @@ export function executeAutonomousAgentCollective(
           lowStockItems: lowStockProducts.map((p) => ({
             name: p.name,
             currentStock: p.stockQuantity,
-            suggestedReorderQty: Math.max(15, (p.reorderLevel || 5) * 3),
+            suggestedReorderQty: 15,
           })),
           outOfStockItems: outOfStockProducts.map((p) => ({
             name: p.name,

@@ -232,11 +232,11 @@ export const KaspiArenaBuilder: React.FC<{
     side: "A" | "B"
   ) => {
     const p = candidate.puckData;
-    const heroProps =
+    const heroProps: Record<string, unknown> =
       p.content.find((c) => c.type === "HeroSection")?.props || {};
-    const cardsProps =
+    const cardsProps: Record<string, unknown> =
       p.content.find((c) => c.type === "ProductCards")?.props || {};
-    const waProps =
+    const waProps: Record<string, unknown> =
       p.content.find((c) => c.type === "WhatsAppOrdering")?.props || {};
     const prods = Array.isArray(cardsProps.products)
       ? (cardsProps.products as any[])

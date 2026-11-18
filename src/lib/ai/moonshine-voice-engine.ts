@@ -209,6 +209,57 @@ export class MoonshineLocalVoiceEngine {
     window.speechSynthesis.cancel();
   }
 
+  private recognition: any = null;
+
+  public startListening(
+    lang = "auto",
+    onResult?: (transcript: string) => void,
+    onEnd?: () => void,
+    onError?: (err: unknown) => void
+  ): boolean {
+    if (typeof window === "undefined") return false;
+    const SpeechRec =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      if (onError) onError(new Error("SpeechRecognition not supported"));
+      return false;
+    }
+    try {
+      const rec = new SpeechRec();
+      this.recognition = rec;
+      rec.continuous = false;
+      rec.interimResults = true;
+      rec.lang = lang === "fr" ? "fr-FR" : lang === "en" ? "en-US" : "ar-MA";
+      rec.onresult = (event: any) => {
+        let full = "";
+        for (let i = 0; i < event.results.length; i++) {
+          full += event.results[i][0].transcript;
+        }
+        if (full && onResult) onResult(full);
+      };
+      rec.onerror = (e: any) => {
+        if (onError) onError(e);
+      };
+      rec.onend = () => {
+        if (onEnd) onEnd();
+      };
+      rec.start();
+      return true;
+    } catch (err) {
+      if (onError) onError(err);
+      return false;
+    }
+  }
+
+  public stopListening(): void {
+    if (this.recognition) {
+      try {
+        this.recognition.stop();
+      } catch {}
+      this.recognition = null;
+    }
+  }
+
   public formatWhatsAppShareUrl(phoneNumber: string, briefText: string): string {
     const cleanPhone = phoneNumber.replace(/[^0-9]/g, "");
     const encoded = encodeURIComponent(

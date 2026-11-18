@@ -4,6 +4,7 @@ import { getSafeServerContext } from "@/server/auth/context";
 import {
   sanitizeMerchantField,
   computeStockAndAvailability,
+  type ProductAvailabilityStatus,
 } from "@/lib/ai/store-context-builder";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +45,7 @@ export async function GET(req: NextRequest) {
       price: number;
       currency: string;
       stockQuantity: number;
-      availabilityStatus: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
+      availabilityStatus: ProductAvailabilityStatus;
       schemaOrgAvailability: string;
     }> = [];
 
@@ -74,7 +75,7 @@ export async function GET(req: NextRequest) {
       if (tenantRow?.slug) slug = sanitizeMerchantField(tenantRow.slug, 60);
       if (tenantRow?.currency) currency = sanitizeMerchantField(tenantRow.currency, 10);
       if (primaryStore?.phone) whatsAppPhone = sanitizeMerchantField(primaryStore.phone, 30);
-      if (primaryStore?.city) city = sanitizeMerchantField(primaryStore.city, 60);
+      if (primaryStore?.address) city = sanitizeMerchantField(primaryStore.address, 60);
 
       const stockMap = new Map<string, number>();
       for (const s of dbStocks) {
@@ -86,9 +87,9 @@ export async function GET(req: NextRequest) {
         const rawQty = stockMap.has(p.id) ? stockMap.get(p.id)! : 0;
         const { stockQuantity, availabilityStatus } = computeStockAndAvailability(
           rawQty,
-          Number(p.reorderLevel || 5)
+          true
         );
-        const pName = sanitizeMerchantField(p.nameAr || p.nameFr || p.name || "منتج", 120);
+        const pName = sanitizeMerchantField(p.name || "منتج", 120);
         const pCat = sanitizeMerchantField(p.category?.name || "عام", 60);
 
         if (

@@ -78,6 +78,7 @@ export interface PuckComponentConfig {
 
 export interface PuckRootProps {
   title: string;
+  slogan?: string;
   slug: string;
   currency: string;
   sector: string;
