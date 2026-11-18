@@ -129,6 +129,17 @@ export const ARENA_REAL_MODELS: ArenaRealModelSpec[] = [
     supportsClientDirect: false,
   },
   {
+    id: "groq-llama33",
+    displayName: "Groq-Llama-3.3-70B",
+    providerLabel: "Meta Llama 3.3 via Groq LPU (Cloud Fallback)",
+    upstream: "router_groq",
+    apiModelId: "llama-3.3-70b-versatile",
+    specialty: "coding",
+    supportsAnonymousBattle: true,
+    isFreeZeroKey: true,
+    supportsClientDirect: false,
+  },
+  {
     id: "openrouter-free",
     displayName: "OpenRouter-Free-Pool",
     providerLabel: "OpenRouter Free Tier (Cloud Fallback)",
@@ -206,17 +217,8 @@ export function selectBattleModelPair(
     return [mA, mB];
   }
 
-  // Server pool pairing: mix fast Groq LPU with client open-weight LLM7 / OpenRouter
-  const poolPrimary = ["groq-gpt-oss", "kimi-k2.7-code"];
-  const poolSecondary = isCode
-    ? ["gemma4-31b", "gpt-oss-120b", "deepseek-v4-flash", "codestral-latest"]
-    : ["gemma4-31b", "deepseek-v4-flash", "gpt-oss-120b"];
-
-  const pickA = poolPrimary[Math.floor(Math.random() * poolPrimary.length)];
-  const filteredSec = poolSecondary.filter((id) => id !== pickA);
-  const pickB = filteredSec[Math.floor(Math.random() * filteredSec.length)] || "gemma4-31b";
-
-  const modelA = ARENA_REAL_MODELS.find((m) => m.id === pickA) || ARENA_REAL_MODELS[0];
-  const modelB = ARENA_REAL_MODELS.find((m) => m.id === pickB) || ARENA_REAL_MODELS[1];
-  return [modelA, modelB];
+  // Server pool pairing: mix fast Groq LPU models reliably (<3s latency) with client open weights
+  const modelA = ARENA_REAL_MODELS.find((m) => m.id === "groq-gpt-oss") || ARENA_REAL_MODELS[0];
+  const modelB = ARENA_REAL_MODELS.find((m) => m.id === "groq-llama33") || ARENA_REAL_MODELS[1];
+  return Math.random() < 0.5 ? [modelA, modelB] : [modelB, modelA];
 }

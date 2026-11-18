@@ -611,7 +611,7 @@ async function callClientLlm7(params: {
   const res = await fetch("https://api.llm7.io/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    signal: params.signal || AbortSignal.timeout(45000),
+    signal: params.signal || AbortSignal.timeout(18000),
     body: JSON.stringify({
       model: params.modelId,
       temperature: 0.55,
@@ -1014,7 +1014,13 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
         citationsOverride: citations,
       }),
     });
-    const data = await res.json();
+    const rawBody = await res.text();
+    let data: any = null;
+    try {
+      data = JSON.parse(rawBody);
+    } catch {
+      throw new Error(`Cloud gateway returned HTTP ${res.status} (non-JSON timeout/error)`);
+    }
     if (!res.ok || !data?.success || !data?.outputA) {
       throw new Error(data?.error || `HTTP ${res.status}`);
     }
@@ -1104,14 +1110,10 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
           executedOn: "client-device",
         };
       } catch {
-        // Silent failover to fast cloud relay (`Groq` / `OpenRouter Free`) ONLY if client direct call hit 429 or blocked
+        // Silent failover to fast Groq LPU cloud relay (`groq-gpt-oss` / `groq-llama33`)
         try {
           const relayOut = await callServerDirectSide(fallbackCloudModelId);
-          return {
-            ...relayOut,
-            modelId: spec.id,
-            modelName: spec.displayName,
-          };
+          return relayOut;
         } catch (err: any) {
           return {
             modelId: spec.id,
@@ -1153,7 +1155,7 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
   const staggerB = Boolean(specB && specA.supportsClientDirect && specB.supportsClientDirect);
   const [outA, outB] = await Promise.all([
     runSide(specA, 0, "groq-gpt-oss"),
-    specB ? runSide(specB, staggerB ? 1500 : 0, "openrouter-free") : Promise.resolve(null),
+    specB ? runSide(specB, staggerB ? 1500 : 0, "groq-llama33") : Promise.resolve(null),
   ]);
 
   return {

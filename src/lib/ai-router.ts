@@ -97,7 +97,11 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
   groqKeys.forEach((key, idx) => {
     if (!key.includes("mock")) {
       const groqProvider = createGroq({ apiKey: key });
-      for (const modelId of ["openai/gpt-oss-20b", "llama-3.1-8b-instant"]) {
+      for (const modelId of [
+        "openai/gpt-oss-20b",
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+      ]) {
         candidates.push({
           provider: "groq",
           providerName: "Groq",
@@ -374,7 +378,9 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
       const result = await generateText({
         model: candidate.model as any,
         maxRetries: 0,
-        abortSignal: AbortSignal.timeout(18000),
+        abortSignal: AbortSignal.timeout(
+          candidate.provider === "openrouter" ? 8500 : 12000
+        ),
         ...(options as any),
       });
 

@@ -124,14 +124,16 @@ async function callSingleRealModel(params: {
         : "groq";
 
     const allCandidates = await getRouterCandidates();
-    const matching = allCandidates.filter((c) => c.provider === targetProvider);
+    const matching = allCandidates
+      .filter((c) => c.provider === targetProvider)
+      .sort((a, b) => (a.modelId === spec.apiModelId ? -1 : b.modelId === spec.apiModelId ? 1 : 0));
 
     for (const candidate of matching) {
       try {
         const res = await generateText({
           model: candidate.model as any,
           maxRetries: 0,
-          abortSignal: AbortSignal.timeout(18000),
+          abortSignal: AbortSignal.timeout(targetProvider === "openrouter" ? 8500 : 12000),
           system: systemPrompt,
           messages,
         });
@@ -246,7 +248,7 @@ async function callSingleRealModel(params: {
           messages: [{ role: "system", content: systemPrompt }, ...messages],
           temperature: 0.6,
         }),
-        signal: AbortSignal.timeout(40000),
+        signal: AbortSignal.timeout(14000),
       });
       const lData = await lRes.json().catch(() => null);
       const lText = lData?.choices?.[0]?.message?.content;
@@ -258,6 +260,30 @@ async function callSingleRealModel(params: {
         };
       }
     } catch {}
+
+    // Final fast Groq fallback so openrouter timeouts never stall Vercel!
+    if (targetProvider !== "groq") {
+      const groqCands = allCandidates.filter((c) => c.provider === "groq");
+      for (const candidate of groqCands) {
+        try {
+          const res = await generateText({
+            model: candidate.model as any,
+            maxRetries: 0,
+            abortSignal: AbortSignal.timeout(12000),
+            system: systemPrompt,
+            messages,
+          });
+          const out = res.text?.trim();
+          if (out) {
+            return {
+              text: out,
+              usedModel: candidate.modelId,
+              usedProvider: `Groq Failover (${spec.displayName})`,
+            };
+          }
+        } catch {}
+      }
+    }
   }
 
   if (spec.upstream === "llm7") {
@@ -273,7 +299,7 @@ async function callSingleRealModel(params: {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-          signal: AbortSignal.timeout(40000),
+          signal: AbortSignal.timeout(14000),
         });
 
         const data = await res.json().catch(() => null);
@@ -318,7 +344,7 @@ async function callSingleRealModel(params: {
           model: "openai",
           messages: [{ role: "system", content: systemPrompt }, ...messages],
         }),
-        signal: AbortSignal.timeout(40000),
+        signal: AbortSignal.timeout(6000),
       });
       const pData = await pRes.json().catch(() => null);
       const pText = pData?.choices?.[0]?.message?.content;
@@ -710,7 +736,7 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
           if (effectiveModality === "code" && !parsed.previewHtml) {
             const compilerSpec =
               ARENA_REAL_MODELS.find(
-                (m) => m.id === (spec.id === "kimi-k2.7-code" ? "groq-gpt-oss" : "kimi-k2.7-code")
+                (m) => m.id === (spec.id === "groq-gpt-oss" ? "groq-llama33" : "groq-gpt-oss")
               ) || spec;
             try {
               const retryRes = await callSingleRealModel({
