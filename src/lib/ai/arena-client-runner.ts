@@ -89,21 +89,24 @@ export function sanitizeExplanationFromCodeLeaks(
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<script[\s\S]*/gi, "");
 
-  // Strip leaked un-fenced CSS blocks (e.g. `.products { padding: 4rem 3rem; }`)
+  // Strip leaked un-fenced CSS blocks cleanly in strict linear O(N) time (no nested quantifiers)
   cleaned = cleaned
-    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\*[^*]{0,2000}\*\//g, "")
     .replace(
-      /(?:^|\n)[ \t]*(?:[.*#:@a-zA-Z0-9_,-]+[ \t]*)+\{[^}]*(?:padding|margin|display|grid-template|background|border-radius|transition|font-size|color|width|height|position|flex)[^}]*\}/gim,
+      /^[ \t]*[.*#:@a-zA-Z0-9_, \t-]{1,120}\{[^}]{0,2000}(?:padding|margin|display|grid-template|background|border-radius|transition|font-size|color|width|height|position|flex)[^}]{0,2000}\}/gim,
       ""
     )
-    .replace(/^\s*(?:padding|margin|display|gap|grid-template-columns|background|border-radius|overflow|transition|font-size|object-fit)\s*:[^\n;]+;?\s*$/gim, "")
-    .replace(/^\s*[.*#]?[a-zA-Z0-9_-]+(?:\s+[.*#]?[a-zA-Z0-9_-]+)*\s*\{\s*$/gm, "")
-    .replace(/^\s*\}\s*$/gm, "")
+    .replace(
+      /^[ \t;]*(?:padding|margin|display|gap|grid-template-columns|background|border-radius|overflow|transition|font-size|object-fit)[ \t]*:[^\n;]{1,200};?[ \t]*$/gim,
+      ""
+    )
+    .replace(/^[ \t]*[.*#][a-zA-Z0-9_., \t-]{1,100}\{[ \t]*$/gm, "")
+    .replace(/^[ \t]*\}[ \t]*$/gm, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
   if (hasFiles) {
-    if (cleaned.length < 18 || /\{[\s\S]*:[\s\S]*;/.test(cleaned)) {
+    if (cleaned.length < 18 || /\{[^}]{1,500}:[^}]{1,500};/.test(cleaned)) {
       return isArabicText(originalPrompt || rawText)
         ? "تم تصميم وبناء التطبيق التفاعلي بالكامل، يمكنك تجربته مباشرة في نافذة المعاينة أو فحص ملفاته وتحميلها."
         : "Built the complete interactive application — ready in Live Preview & Files explorer.";
@@ -201,9 +204,14 @@ export function extractProjectFromResponse(
   const files: ArenaProjectFileItem[] = [];
   let explanationRaw = rawText;
 
-  // 1. JSON envelope check (`{"explanation": ..., "files": [...]}`)
-  const jsonFence = rawText.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const rawBraceMatch = rawText.match(/\{[\s\S]*"files"\s*:\s*\[[\s\S]*\}/);
+  // 1. JSON envelope check (`{"explanation": ..., "files": [...]}`) — guard before brace regex!
+  const jsonFence = rawText.includes('"files"')
+    ? rawText.match(/```(?:json)?[ \t]*\r?\n([\s\S]*?)```/i)
+    : null;
+  const rawBraceMatch =
+    !jsonFence && rawText.includes('"files"')
+      ? rawText.match(/\{[\s\S]*?"files"[ \t]*:[ \t]*\[[\s\S]*\}/)
+      : null;
   const candidateJsonStr = jsonFence
     ? jsonFence[1].trim()
     : rawBraceMatch
