@@ -42,6 +42,7 @@ import {
   Folder,
   CheckCircle2,
   Image as ImageIcon,
+  Film,
   Store,
   BarChart3,
   Layers,
@@ -64,6 +65,11 @@ import {
   type ArenaModelOutput,
   type ArenaProjectFileItem,
 } from "@/lib/ai/arena-models";
+import {
+  checkClientAiHordeJobStatus,
+  executeArenaTurnClientFirst,
+  sanitizeExplanationFromCodeLeaks,
+} from "@/lib/ai/arena-client-runner";
 import {
   computeBradleyTerryLeaderboard,
   loadHumanPreferenceVotes,
@@ -101,7 +107,7 @@ interface ArenaTurnRecord {
   userPrompt: string;
   attachments?: AttachedClientFile[];
   mode: ArenaExecutionMode;
-  modality: "code" | "text" | "search" | "image";
+  modality: "code" | "text" | "search" | "image" | "video";
   outputA: ArenaModelOutput;
   outputB: ArenaModelOutput | null;
   voteOutcome: BattleOutcome | null;
@@ -259,12 +265,17 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
     const timer = setInterval(async () => {
       for (const job of pendingPolls) {
         try {
-          const res = await fetch(
-            getApiUrl(`/api/ai/arena-execute?action=image_status&id=${encodeURIComponent(job.jobId)}`)
-          );
-          if (!res.ok) continue;
-          const data = await res.json();
+          let data: { done?: boolean; imgUrl?: string | null } | null = null;
+          try {
+            data = await checkClientAiHordeJobStatus(job.jobId);
+          } catch {
+            const res = await fetch(
+              getApiUrl(`/api/ai/arena-execute?action=image_status&id=${encodeURIComponent(job.jobId)}`)
+            );
+            if (res.ok) data = await res.json();
+          }
           if (data?.done && data?.imgUrl) {
+            const resolvedUrl = data.imgUrl;
             setThreads((prev) => {
               const updated = prev.map((th) =>
                 th.id !== activeThread.id
@@ -274,10 +285,10 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                       turns: th.turns.map((tn) => {
                         if (tn.turnId !== job.turnId) return tn;
                         if (job.side === "A") {
-                          return { ...tn, outputA: { ...tn.outputA, imageUrl: data.imgUrl } };
+                          return { ...tn, outputA: { ...tn.outputA, imageUrl: resolvedUrl } };
                         }
                         if (tn.outputB) {
-                          return { ...tn, outputB: { ...tn.outputB, imageUrl: data.imgUrl } };
+                          return { ...tn, outputB: { ...tn.outputB, imageUrl: resolvedUrl } };
                         }
                         return tn;
                       }),
@@ -359,87 +370,26 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
     abortCtrlRef.current = controller;
 
     try {
-      const res = await fetch(getApiUrl("/api/ai/arena-execute"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const result = await executeArenaTurnClientFirst({
+        prompt: promptText,
+        mode: arenaMode,
+        modality,
+        modelAId,
+        modelBId,
+        history,
+        previousTurnModality: latestTurn?.modality,
+        includeStoreContext,
+        attachments: filesSnapshot.map((f) => ({
+          name: f.name,
+          type: f.type,
+          textExcerpt: f.textExcerpt,
+        })),
+        serverExecuteUrl: getApiUrl("/api/ai/arena-execute"),
         signal: controller.signal,
-        body: JSON.stringify({
-          prompt: promptText,
-          mode: arenaMode,
-          modality,
-          modelAId,
-          modelBId,
-          history,
-          includeStoreContext,
-          attachments: filesSnapshot.map((f) => ({
-            name: f.name,
-            type: f.type,
-            textExcerpt: f.textExcerpt,
-          })),
-        }),
       });
 
-      const data = await res.json();
-      if (!res.ok || !data?.success || !data?.outputA) {
-        throw new Error(data?.error || `HTTP ${res.status}`);
-      }
-
-      // Client-IP direct open-weight rescue ONLY if server upstream hit a shared-IP burst limit
-      const rescueOutput = async (
-        failedOut: ArenaModelOutput | null,
-        fallbackLlm7Model: string
-      ): Promise<ArenaModelOutput | null> => {
-        if (!failedOut || failedOut.status === "completed") return failedOut;
-        const start = Date.now();
-        const isCodeMode = data.effectiveModality === "code" || modality === "code";
-        const sysMsg = isCodeMode
-          ? "Build a complete interactive HTML5+CSS3+JS app/website for the user request. Include full ```html``` code block."
-          : "Respond concisely and helpfully in the user's language.";
-        try {
-          const directRes = await fetch("https://api.llm7.io/v1/chat/completions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              model: fallbackLlm7Model,
-              messages: [
-                { role: "system", content: sysMsg },
-                { role: "user", content: promptText },
-              ],
-            }),
-          });
-          const directJson = await directRes.json().catch(() => null);
-          const rawText = directJson?.choices?.[0]?.message?.content;
-          if (directRes.ok && typeof rawText === "string" && rawText.trim()) {
-            const htmlMatch =
-              rawText.match(/```html\n([\s\S]*?)```/i) ||
-              rawText.match(/<!DOCTYPE\s+html[\s\S]*?<\/html>/i);
-            const htmlCode = htmlMatch ? (htmlMatch[1] || htmlMatch[0]).trim() : null;
-            return {
-              ...failedOut,
-              status: "completed",
-              latencyMs: Date.now() - start,
-              providerLabel: `${failedOut.providerLabel} (Client Edge)`,
-              replyMarkdown: htmlCode
-                ? rawText.replace(/```[\s\S]*?```/g, "").trim() ||
-                  "Built interactive application via client open gateway."
-                : rawText.trim(),
-              stepsLog: [`Executed on client edge (${Date.now() - start}ms)`],
-              modalityExecuted: htmlCode ? "code" : failedOut.modalityExecuted,
-              files: htmlCode
-                ? [{ path: "index.html", name: "index.html", language: "html", content: htmlCode }]
-                : [],
-              previewHtml: htmlCode,
-            };
-          }
-        } catch {}
-        return failedOut;
-      };
-
-      const finalOutputA =
-        (await rescueOutput(data.outputA, "gemma4:31b")) || data.outputA;
-      const finalOutputB = data.outputB
-        ? await rescueOutput(data.outputB, "DeepSeek-V4-Flash-0731")
-        : null;
+      const finalOutputA = result.outputA;
+      const finalOutputB = result.outputB;
 
       const newTurn: ArenaTurnRecord = {
         turnId: `turn-${Date.now().toString(36)}`,
@@ -447,7 +397,7 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
         userPrompt: promptText,
         attachments: filesSnapshot.length > 0 ? filesSnapshot : undefined,
         mode: arenaMode,
-        modality: data.effectiveModality || "text",
+        modality: result.effectiveModality || "text",
         outputA: finalOutputA,
         outputB: finalOutputB,
         voteOutcome: null,
@@ -715,6 +665,295 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
       return `Option ${side}`;
     }
     return out.modelName;
+  };
+
+  const handleToggleExpandSteps = (turnId: string, side: "A" | "B") => {
+    const updated = threads.map((th) =>
+      th.id !== activeThreadId
+        ? th
+        : {
+            ...th,
+            turns: th.turns.map((tr) =>
+              tr.turnId !== turnId
+                ? tr
+                : side === "A"
+                ? { ...tr, expandedA: !tr.expandedA }
+                : { ...tr, expandedB: !tr.expandedB }
+            ),
+          }
+    );
+    persistThreads(updated);
+  };
+
+  const renderArenaControlsBar = (opts: { openUpwards: boolean; compact?: boolean }) => {
+    const posClass = opts.openUpwards ? "bottom-10" : "top-10";
+    const plusPosClass = opts.openUpwards ? "bottom-10" : "bottom-10";
+    return (
+      <div className="flex items-center gap-1.5 flex-wrap relative">
+        {/* + Add Files / Screenshot / Voice / Store Context */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              setPlusMenuOpen(!plusMenuOpen);
+              setModeDropdownOpen(false);
+              setModalityDropdownOpen(false);
+            }}
+            className={`${
+              opts.compact ? "w-7 h-7" : "w-8 h-8"
+            } rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white cursor-pointer`}
+            title="Add files, screenshot, voice, or POS Store Data"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+
+          {plusMenuOpen && (
+            <div
+              className={`absolute left-0 ${plusPosClass} z-50 w-60 rounded-xl bg-[#252525] border border-white/15 shadow-2xl py-1.5 text-xs`}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setPlusMenuOpen(false);
+                  fileInputRef.current?.click();
+                }}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 hover:bg-white/10 text-zinc-200 cursor-pointer"
+              >
+                <div className="text-left">
+                  <div className="font-semibold text-white">Add files</div>
+                  <div className="text-[10px] text-zinc-400">Up to 15MB per file</div>
+                </div>
+                <Paperclip className="w-4 h-4 text-zinc-400" />
+              </button>
+              <button
+                type="button"
+                onClick={handleTakeScreenshot}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 hover:bg-white/10 text-zinc-200 cursor-pointer"
+              >
+                <span className="font-semibold text-white">Take a screenshot</span>
+                <Camera className="w-4 h-4 text-zinc-400" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPlusMenuOpen(false);
+                  toggleVoiceInput();
+                }}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 hover:bg-white/10 text-emerald-300 cursor-pointer"
+              >
+                <span className="font-semibold">
+                  {isListening ? "Stop Voice" : "Voice Input (Moonshine)"}
+                </span>
+                <Mic className="w-4 h-4 text-emerald-400" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIncludeStoreContext(!includeStoreContext);
+                  setPlusMenuOpen(false);
+                  toast.info(
+                    !includeStoreContext
+                      ? "Store Context Attached: models can now read your POS products & currency"
+                      : "Store Context Detached: pure client Arena mode"
+                  );
+                }}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 hover:bg-white/10 text-zinc-200 cursor-pointer border-t border-white/10"
+              >
+                <span className="font-semibold text-white">
+                  {includeStoreContext ? "POS Store Data: ON" : "Attach POS Store Data"}
+                </span>
+                <Store className="w-4 h-4 text-emerald-400" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Mode Dropdown (`Battle Mode`, `Agent Mode`, `Side by Side`, `Direct`) */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              setModeDropdownOpen(!modeDropdownOpen);
+              setPlusMenuOpen(false);
+              setModalityDropdownOpen(false);
+            }}
+            className={`inline-flex items-center gap-1.5 ${
+              opts.compact ? "px-2 py-1 text-[11px]" : "px-2.5 py-1.5 text-xs"
+            } rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 font-medium text-zinc-200 cursor-pointer`}
+          >
+            <Swords className="w-3.5 h-3.5 text-emerald-400" />
+            <span>
+              {arenaMode === "battle"
+                ? "Battle"
+                : arenaMode === "agent"
+                ? "Agent Mode"
+                : arenaMode === "side_by_side"
+                ? "Side by Side"
+                : "Direct"}
+            </span>
+            <ChevronDown className="w-3 h-3 text-zinc-400" />
+          </button>
+
+          {modeDropdownOpen && (
+            <div
+              className={`absolute left-0 ${posClass} z-50 w-64 rounded-xl bg-[#252525] border border-white/15 shadow-2xl py-1.5 text-xs`}
+            >
+              {[
+                { id: "battle" as const, title: "Battle Mode", desc: "Battle 2 anonymous models", Icon: Swords },
+                { id: "agent" as const, title: "Agent Mode", desc: "Built for complex tasks", Icon: Cpu },
+                {
+                  id: "side_by_side" as const,
+                  title: "Side by Side",
+                  desc: "Compare 2 models of your choice",
+                  Icon: MessageSquare,
+                },
+                { id: "direct" as const, title: "Direct", desc: "Chat with 1 model at a time", Icon: Bot },
+              ].map(({ id, title, desc, Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => {
+                    setArenaMode(id);
+                    setModeDropdownOpen(false);
+                  }}
+                  className={`w-full flex items-start gap-3 px-3.5 py-2.5 hover:bg-white/10 cursor-pointer text-left ${
+                    arenaMode === id ? "bg-white/10" : ""
+                  }`}
+                >
+                  <Icon className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="font-semibold text-white">{title}</div>
+                    <div className="text-[11px] text-zinc-400">{desc}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Capability Selector (`Auto`, `Code`, `Text`, `Search`, `Image`, `Video`) */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              setModalityDropdownOpen(!modalityDropdownOpen);
+              setPlusMenuOpen(false);
+              setModeDropdownOpen(false);
+            }}
+            className={`inline-flex items-center gap-1.5 ${
+              opts.compact ? "px-2 py-1 text-[11px]" : "px-2.5 py-1.5 text-xs"
+            } rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 font-medium text-zinc-200 cursor-pointer`}
+          >
+            {modality === "search" ? (
+              <Globe className="w-3.5 h-3.5 text-emerald-400" />
+            ) : modality === "image" ? (
+              <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
+            ) : modality === "video" ? (
+              <Film className="w-3.5 h-3.5 text-emerald-400" />
+            ) : (
+              <Code2 className="w-3.5 h-3.5 text-emerald-400" />
+            )}
+            <span>
+              {modality === "auto"
+                ? "Auto"
+                : modality === "code"
+                ? "Code"
+                : modality === "search"
+                ? "Web Search"
+                : modality === "image"
+                ? "Image Gen"
+                : modality === "video"
+                ? "Video (.webm)"
+                : "Text Chat"}
+            </span>
+            <ChevronDown className="w-3 h-3 text-zinc-400" />
+          </button>
+
+          {modalityDropdownOpen && (
+            <div
+              className={`absolute left-0 ${posClass} z-50 w-60 rounded-xl bg-[#252525] border border-white/15 shadow-2xl py-1.5 text-xs`}
+            >
+              {[
+                { id: "auto" as const, title: "Auto", desc: "Smart routing (Code / Search / Image / Chat)" },
+                { id: "code" as const, title: "Code", desc: "Live Web Apps, Sites, Games + Preview + Zip" },
+                { id: "text" as const, title: "Text Chat", desc: "Reasoning, Q&A & Copywriting" },
+                { id: "search" as const, title: "Web Search", desc: "Direct DuckDuckGo + Wikipedia citations" },
+                { id: "image" as const, title: "Image Gen", desc: "AI Horde Stable Diffusion Generator" },
+                { id: "video" as const, title: "Motion Video", desc: "Local 60fps HTML5 Canvas .webm Export" },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    setModality(opt.id);
+                    setModalityDropdownOpen(false);
+                  }}
+                  className={`w-full flex flex-col px-3.5 py-2 hover:bg-white/10 cursor-pointer text-left ${
+                    modality === opt.id ? "bg-white/10" : ""
+                  }`}
+                >
+                  <span className="font-semibold text-white">{opt.title}</span>
+                  <span className="text-[10px] text-zinc-400">{opt.desc}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {includeStoreContext && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-[10px] text-emerald-300 font-semibold">
+            <Store className="w-3 h-3" />
+            <span>POS</span>
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  const renderModelPickers = (compact?: boolean) => {
+    if (arenaMode === "battle") return null;
+    const isSingle = arenaMode === "direct";
+    return (
+      <div
+        className={`grid gap-2 ${compact ? "p-2 mt-2" : "p-3"} rounded-xl bg-white/[0.03] border border-white/10 text-xs ${
+          isSingle ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"
+        }`}
+      >
+        <div>
+          <label className="block text-[10px] text-zinc-400 mb-1">
+            {isSingle ? "Model:" : "Model A:"}
+          </label>
+          <select
+            value={modelAId}
+            onChange={(e) => setModelAId(e.target.value)}
+            className="w-full px-2 py-1.5 rounded-lg bg-[#1e1e1e] border border-white/10 text-white text-[11px]"
+          >
+            {ARENA_REAL_MODELS.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.displayName} {m.supportsClientDirect ? "• Direct" : "• Cloud"}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {!isSingle && (
+          <div>
+            <label className="block text-[10px] text-zinc-400 mb-1">Model B:</label>
+            <select
+              value={modelBId}
+              onChange={(e) => setModelBId(e.target.value)}
+              className="w-full px-2 py-1.5 rounded-lg bg-[#1e1e1e] border border-white/10 text-white text-[11px]"
+            >
+              {ARENA_REAL_MODELS.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.displayName} {m.supportsClientDirect ? "• Direct" : "• Cloud"}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -1225,9 +1464,11 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
             {activeView === "help" && (
               <div className="flex-1 overflow-y-auto p-6 bg-[#141414]">
                 <div className="max-w-3xl mx-auto p-6 rounded-2xl bg-[#1e1e1e] border border-white/10 space-y-4 text-xs text-zinc-300 leading-relaxed">
-                  <h2 className="text-lg font-bold text-white">KASPI AI Arena — Active Real Models & Sources</h2>
+                  <h2 className="text-lg font-bold text-white">
+                    KASPI AI Arena — Client-First Open Execution &amp; Models
+                  </h2>
                   <p>
-                    Every prompt in KASPI AI Arena executes live across real open-weight & frontier gateways with zero hardcoded/fake outputs:
+                    Open-weight models run <strong className="text-emerald-400">directly from your device/browser</strong> via CORS open gateways (<code className="text-zinc-200">api.llm7.io</code>, <code className="text-zinc-200">aihorde.net</code>, DuckDuckGo + Wikipedia) without loading KASPI servers, with automatic cloud fallback (<code className="text-zinc-200">Groq</code> / <code className="text-zinc-200">OpenRouter :free</code>) when needed:
                   </p>
                   <ul className="list-disc pl-5 space-y-1.5">
                     {ARENA_REAL_MODELS.map((m) => (
@@ -1237,9 +1478,15 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                       </li>
                     ))}
                   </ul>
-                  <p className="text-zinc-400">
-                    Web Search uses DuckDuckGo + Wikipedia REST API. Image Generation uses decentralized Stable Diffusion workers via AI Horde. Code Mode renders live runnable apps/websites/games directly in a sandboxed iframe and exports real `.zip` archives.
-                  </p>
+                  <div className="p-3.5 rounded-xl bg-black/30 border border-white/10 space-y-1.5 text-[11px] text-zinc-400">
+                    <div>
+                      <strong className="text-zinc-200">Why not embed arena.ai directly?</strong>{" "}
+                      <code>arena.ai</code> enforces Cloudflare anti-bot Turnstile challenges (HTTP 403) and <code>X-Frame-Options: SAMEORIGIN</code>, blocking direct iframe/proxy embedding. Instead, KASPI AI delivers native multi-model Arena parity locally.
+                    </div>
+                    <div>
+                      <strong className="text-zinc-200">Motion Video (.webm):</strong> Cloud video APIs (Kling v3.0, Seedance 2.0, Gemini Omni) require paid per-second tokens (<code>usage_based_only</code>). Selecting Video in KASPI builds an authentic 60fps HTML5 Canvas Motion Studio that records &amp; downloads real <code>.webm</code> video locally.
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -1295,224 +1542,9 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                       className="w-full bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none resize-none"
                     />
 
-                    {/* Composer Toolbar (`+`, `Battle v`, `Auto/Code/Search/Image v`, Send) */}
+                    {/* Composer Toolbar (`+`, `Battle v`, `Auto/Code/Search/Image/Video v`, Send) */}
                     <div className="flex items-center justify-between pt-3 mt-2 border-t border-white/10">
-                      <div className="flex items-center gap-2 flex-wrap relative">
-                        {/* + Add Files / Screenshot / Voice / Store Context */}
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPlusMenuOpen(!plusMenuOpen);
-                              setModeDropdownOpen(false);
-                              setModalityDropdownOpen(false);
-                            }}
-                            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white cursor-pointer"
-                            title="Add files, screenshot, or voice"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-
-                          {plusMenuOpen && (
-                            <div className="absolute left-0 bottom-10 z-50 w-60 rounded-xl bg-[#252525] border border-white/15 shadow-2xl py-1.5 text-xs">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setPlusMenuOpen(false);
-                                  fileInputRef.current?.click();
-                                }}
-                                className="w-full flex items-center justify-between px-3.5 py-2.5 hover:bg-white/10 text-zinc-200 cursor-pointer"
-                              >
-                                <div className="text-left">
-                                  <div className="font-semibold text-white">Add files</div>
-                                  <div className="text-[10px] text-zinc-400">Up to 15MB per file</div>
-                                </div>
-                                <Paperclip className="w-4 h-4 text-zinc-400" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleTakeScreenshot}
-                                className="w-full flex items-center justify-between px-3.5 py-2.5 hover:bg-white/10 text-zinc-200 cursor-pointer"
-                              >
-                                <span className="font-semibold text-white">Take a screenshot</span>
-                                <Camera className="w-4 h-4 text-zinc-400" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setPlusMenuOpen(false);
-                                  toggleVoiceInput();
-                                }}
-                                className="w-full flex items-center justify-between px-3.5 py-2.5 hover:bg-white/10 text-emerald-300 cursor-pointer"
-                              >
-                                <span className="font-semibold">
-                                  {isListening ? "Stop Voice" : "Voice Input (Moonshine)"}
-                                </span>
-                                <Mic className="w-4 h-4 text-emerald-400" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setIncludeStoreContext(!includeStoreContext);
-                                  setPlusMenuOpen(false);
-                                  toast.info(
-                                    !includeStoreContext
-                                      ? "Store Context Attached: models can now read your POS products & currency"
-                                      : "Store Context Detached: pure Arena mode"
-                                  );
-                                }}
-                                className="w-full flex items-center justify-between px-3.5 py-2.5 hover:bg-white/10 text-zinc-200 cursor-pointer border-t border-white/10"
-                              >
-                                <span className="font-semibold text-white">
-                                  {includeStoreContext ? "POS Store Data: ON" : "Attach POS Store Data"}
-                                </span>
-                                <Store className="w-4 h-4 text-emerald-400" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Mode Dropdown (`Battle`, `Agent Mode`, `Side by Side`, `Direct`) */}
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setModeDropdownOpen(!modeDropdownOpen);
-                              setPlusMenuOpen(false);
-                              setModalityDropdownOpen(false);
-                            }}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-zinc-200 cursor-pointer"
-                          >
-                            <Swords className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>
-                              {arenaMode === "battle"
-                                ? "Battle"
-                                : arenaMode === "agent"
-                                ? "Agent Mode"
-                                : arenaMode === "side_by_side"
-                                ? "Side by Side"
-                                : "Direct"}
-                            </span>
-                            <ChevronDown className="w-3 h-3 text-zinc-400" />
-                          </button>
-
-                          {modeDropdownOpen && (
-                            <div className="absolute left-0 top-10 z-50 w-64 rounded-xl bg-[#252525] border border-white/15 shadow-2xl py-1.5 text-xs">
-                              {[
-                                {
-                                  id: "battle" as const,
-                                  title: "Battle Mode",
-                                  desc: "Battle 2 anonymous models",
-                                  Icon: Swords,
-                                },
-                                {
-                                  id: "agent" as const,
-                                  title: "Agent Mode",
-                                  desc: "Built for complex tasks",
-                                  Icon: Cpu,
-                                },
-                                {
-                                  id: "side_by_side" as const,
-                                  title: "Side by Side",
-                                  desc: "Compare 2 models of your choice",
-                                  Icon: MessageSquare,
-                                },
-                                {
-                                  id: "direct" as const,
-                                  title: "Direct",
-                                  desc: "Chat with 1 model at a time",
-                                  Icon: Bot,
-                                },
-                              ].map(({ id, title, desc, Icon }) => (
-                                <button
-                                  key={id}
-                                  type="button"
-                                  onClick={() => {
-                                    setArenaMode(id);
-                                    setModeDropdownOpen(false);
-                                  }}
-                                  className={`w-full flex items-start gap-3 px-3.5 py-2.5 hover:bg-white/10 cursor-pointer text-left ${
-                                    arenaMode === id ? "bg-white/10" : ""
-                                  }`}
-                                >
-                                  <Icon className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                                  <div>
-                                    <div className="font-semibold text-white">{title}</div>
-                                    <div className="text-[11px] text-zinc-400">{desc}</div>
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Capability Selector (`Auto`, `Code`, `Search`, `Image`, `Text`) */}
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setModalityDropdownOpen(!modalityDropdownOpen);
-                              setPlusMenuOpen(false);
-                              setModeDropdownOpen(false);
-                            }}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-zinc-200 cursor-pointer"
-                          >
-                            {modality === "search" ? (
-                              <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                            ) : modality === "image" ? (
-                              <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
-                            ) : (
-                              <Code2 className="w-3.5 h-3.5 text-emerald-400" />
-                            )}
-                            <span>
-                              {modality === "auto"
-                                ? "Auto"
-                                : modality === "code"
-                                ? "Code"
-                                : modality === "search"
-                                ? "Web Search"
-                                : modality === "image"
-                                ? "Image Gen"
-                                : "Text Chat"}
-                            </span>
-                            <ChevronDown className="w-3 h-3 text-zinc-400" />
-                          </button>
-
-                          {modalityDropdownOpen && (
-                            <div className="absolute left-0 top-10 z-50 w-56 rounded-xl bg-[#252525] border border-white/15 shadow-2xl py-1.5 text-xs">
-                              {[
-                                { id: "auto" as const, title: "Auto", desc: "Smart routing (Code / Search / Chat / Image)" },
-                                { id: "code" as const, title: "Code", desc: "Live Web Apps, Sites, Games + Preview + Zip" },
-                                { id: "text" as const, title: "Text Chat", desc: "Reasoning, Q&A & Copywriting" },
-                                { id: "search" as const, title: "Web Search", desc: "Live DuckDuckGo + Wikipedia citations" },
-                                { id: "image" as const, title: "Image Gen", desc: "AI Horde Stable Diffusion Generator" },
-                              ].map((opt) => (
-                                <button
-                                  key={opt.id}
-                                  type="button"
-                                  onClick={() => {
-                                    setModality(opt.id);
-                                    setModalityDropdownOpen(false);
-                                  }}
-                                  className={`w-full flex flex-col px-3.5 py-2 hover:bg-white/10 cursor-pointer text-left ${
-                                    modality === opt.id ? "bg-white/10" : ""
-                                  }`}
-                                >
-                                  <span className="font-semibold text-white">{opt.title}</span>
-                                  <span className="text-[10px] text-zinc-400">{opt.desc}</span>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {includeStoreContext && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-[10px] text-emerald-300 font-semibold">
-                            <Store className="w-3 h-3" />
-                            <span>POS Connected</span>
-                          </span>
-                        )}
-                      </div>
+                      {renderArenaControlsBar({ openUpwards: false, compact: false })}
 
                       <button
                         type="button"
@@ -1529,48 +1561,8 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Explicit Model Pickers for Side-by-Side or Direct Modes */}
-                  {(arenaMode === "side_by_side" || arenaMode === "direct") && (
-                    <div
-                      className={`grid gap-2.5 p-3 rounded-xl bg-white/[0.03] border border-white/10 text-xs ${
-                        arenaMode === "side_by_side" ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
-                      }`}
-                    >
-                      <div>
-                        <label className="block text-[10px] text-zinc-400 mb-1">
-                          {arenaMode === "direct" ? "Select Model:" : "Model A:"}
-                        </label>
-                        <select
-                          value={modelAId}
-                          onChange={(e) => setModelAId(e.target.value)}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#1e1e1e] border border-white/10 text-white text-xs"
-                        >
-                          {ARENA_REAL_MODELS.map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.displayName} — {m.providerLabel}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {arenaMode === "side_by_side" && (
-                        <div>
-                          <label className="block text-[10px] text-zinc-400 mb-1">Model B:</label>
-                          <select
-                            value={modelBId}
-                            onChange={(e) => setModelBId(e.target.value)}
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-[#1e1e1e] border border-white/10 text-white text-xs"
-                          >
-                            {ARENA_REAL_MODELS.map((m) => (
-                              <option key={m.id} value={m.id}>
-                                {m.displayName} — {m.providerLabel}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* Explicit Model Pickers for Agent / Side-by-Side / Direct Modes */}
+                  {renderModelPickers(false)}
 
                   {isExecuting && (
                     <div className="flex items-center justify-center gap-2 text-xs text-emerald-400">
@@ -1670,20 +1662,52 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                               </div>
 
                               <div dir="auto" className="text-xs text-zinc-200 leading-relaxed whitespace-pre-wrap">
-                                {turn.outputA.replyMarkdown}
+                                {sanitizeExplanationFromCodeLeaks(
+                                  turn.outputA.replyMarkdown,
+                                  Boolean(turn.outputA.previewHtml),
+                                  turn.userPrompt
+                                )}
                               </div>
 
                               {turn.outputA.stepsLog.length > 0 && (
-                                <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-zinc-400">
-                                  <span className="inline-flex items-center gap-1.5 text-zinc-300">
-                                    <CheckCircle2
-                                      className={`w-3.5 h-3.5 ${
-                                        turn.outputA.status === "completed" ? "text-emerald-400" : "text-amber-400"
-                                      }`}
-                                    />
-                                    <span>{turn.outputA.stepsLog[turn.outputA.stepsLog.length - 1]}</span>
-                                  </span>
-                                  <span className="font-mono text-[10px]">{turn.outputA.latencyMs}ms</span>
+                                <div className="mt-2 pt-2 border-t border-white/5 space-y-1 text-[11px] text-zinc-400">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="inline-flex items-center gap-1.5 text-zinc-300 min-w-0">
+                                      <CheckCircle2
+                                        className={`w-3.5 h-3.5 shrink-0 ${
+                                          turn.outputA.status === "completed" ? "text-emerald-400" : "text-amber-400"
+                                        }`}
+                                      />
+                                      <span className="truncate">
+                                        {turn.outputA.stepsLog[turn.outputA.stepsLog.length - 1]}
+                                      </span>
+                                    </span>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      {turn.outputA.stepsLog.length > 1 && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleToggleExpandSteps(turn.turnId, "A");
+                                          }}
+                                          className="text-[10px] text-emerald-400 hover:underline cursor-pointer"
+                                        >
+                                          {turn.expandedA ? "Hide" : "Show More"}
+                                        </button>
+                                      )}
+                                      <span className="font-mono text-[10px]">
+                                        {turn.outputA.executedOn === "client-device" ? "Device • " : ""}
+                                        {turn.outputA.latencyMs}ms
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {turn.expandedA && (
+                                    <div className="pl-5 text-[10px] text-zinc-400 space-y-0.5">
+                                      {turn.outputA.stepsLog.map((st, idx) => (
+                                        <div key={idx}>• {st}</div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -1739,20 +1763,52 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                                 </div>
 
                                 <div dir="auto" className="text-xs text-zinc-200 leading-relaxed whitespace-pre-wrap">
-                                  {turn.outputB.replyMarkdown}
+                                  {sanitizeExplanationFromCodeLeaks(
+                                    turn.outputB.replyMarkdown,
+                                    Boolean(turn.outputB.previewHtml),
+                                    turn.userPrompt
+                                  )}
                                 </div>
 
                                 {turn.outputB.stepsLog.length > 0 && (
-                                  <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-zinc-400">
-                                    <span className="inline-flex items-center gap-1.5 text-zinc-300">
-                                      <CheckCircle2
-                                        className={`w-3.5 h-3.5 ${
-                                          turn.outputB.status === "completed" ? "text-emerald-400" : "text-amber-400"
-                                        }`}
-                                      />
-                                      <span>{turn.outputB.stepsLog[turn.outputB.stepsLog.length - 1]}</span>
-                                    </span>
-                                    <span className="font-mono text-[10px]">{turn.outputB.latencyMs}ms</span>
+                                  <div className="mt-2 pt-2 border-t border-white/5 space-y-1 text-[11px] text-zinc-400">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="inline-flex items-center gap-1.5 text-zinc-300 min-w-0">
+                                        <CheckCircle2
+                                          className={`w-3.5 h-3.5 shrink-0 ${
+                                            turn.outputB.status === "completed" ? "text-emerald-400" : "text-amber-400"
+                                          }`}
+                                        />
+                                        <span className="truncate">
+                                          {turn.outputB.stepsLog[turn.outputB.stepsLog.length - 1]}
+                                        </span>
+                                      </span>
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        {turn.outputB.stepsLog.length > 1 && (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleToggleExpandSteps(turn.turnId, "B");
+                                            }}
+                                            className="text-[10px] text-emerald-400 hover:underline cursor-pointer"
+                                          >
+                                            {turn.expandedB ? "Hide" : "Show More"}
+                                          </button>
+                                        )}
+                                        <span className="font-mono text-[10px]">
+                                          {turn.outputB.executedOn === "client-device" ? "Device • " : ""}
+                                          {turn.outputB.latencyMs}ms
+                                        </span>
+                                      </div>
+                                    </div>
+                                    {turn.expandedB && (
+                                      <div className="pl-5 text-[10px] text-zinc-400 space-y-0.5">
+                                        {turn.outputB.stepsLog.map((st, idx) => (
+                                          <div key={idx}>• {st}</div>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -1816,8 +1872,31 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                     </div>
                   )}
 
-                  {/* Follow-up Composer */}
+                  {/* Follow-up Composer (Full Arena Tools, Modes, & Models!) */}
                   <div className="p-3 border-t border-white/10">
+                    {attachedFiles.length > 0 && (
+                      <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                        {attachedFiles.map((f, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-[10px] text-emerald-200"
+                          >
+                            <Paperclip className="w-2.5 h-2.5" />
+                            <span className="truncate max-w-[120px]">{f.name}</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAttachedFiles((prev) => prev.filter((_, i) => i !== idx))
+                              }
+                              className="hover:text-white cursor-pointer"
+                            >
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="rounded-xl bg-[#232323] border border-white/15 p-2.5">
                       <input
                         type="text"
@@ -1833,42 +1912,14 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                         placeholder="Ask a follow up..."
                         className="w-full bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none mb-2.5"
                       />
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white cursor-pointer"
-                            title="Add files"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setArenaMode(arenaMode === "battle" ? "agent" : "battle")
-                            }
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 text-[11px] text-zinc-300 cursor-pointer"
-                          >
-                            <Swords className="w-3 h-3 text-emerald-400" />
-                            <span>{arenaMode === "agent" ? "Agent" : "Battle"}</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setModality(modality === "code" ? "auto" : "code")
-                            }
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 text-[11px] text-zinc-300 cursor-pointer"
-                          >
-                            <Code2 className="w-3 h-3 text-emerald-400" />
-                            <span>{modality === "code" ? "Code" : "Auto"}</span>
-                          </button>
-                        </div>
+                      <div className="flex items-center justify-between gap-2">
+                        {renderArenaControlsBar({ openUpwards: true, compact: true })}
+
                         <button
                           type="button"
                           onClick={() => handleSendPrompt()}
                           disabled={isExecuting || !promptInput.trim()}
-                          className="w-7 h-7 rounded-lg bg-[#10b981] hover:bg-emerald-400 text-black flex items-center justify-center cursor-pointer disabled:opacity-40"
+                          className="w-7 h-7 rounded-lg bg-[#10b981] hover:bg-emerald-400 text-black flex items-center justify-center cursor-pointer disabled:opacity-40 shrink-0"
                         >
                           {isExecuting ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1877,6 +1928,7 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                           )}
                         </button>
                       </div>
+                      {renderModelPickers(true)}
                     </div>
                   </div>
                 </div>
@@ -2136,14 +2188,33 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                             <iframe
                               key={`${latestTurn.turnId}-${selectedSide}-${iframeRefreshKey}`}
                               srcDoc={activeOutput.previewHtml}
-                              sandbox="allow-scripts allow-forms allow-modals"
+                              sandbox="allow-scripts allow-forms allow-modals allow-downloads"
                               title={`Live Preview Option ${selectedSide}`}
                               className="w-full h-full border-0 bg-white"
                             />
                           </div>
                         ) : (
-                          <div className="p-6 text-xs text-zinc-300 whitespace-pre-wrap max-w-2xl">
-                            {activeOutput.replyMarkdown}
+                          <div className="p-6 max-w-2xl w-full rounded-2xl bg-[#181818] border border-white/10 space-y-4 my-4">
+                            <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/10">
+                              <span className="text-xs font-bold text-emerald-400">
+                                {activeOutput.modelName} — Text Response
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setModality("code");
+                                  handleSendPrompt(
+                                    `${latestTurn.userPrompt}\n\nBuild the complete live runnable HTML5 website/app now.`
+                                  );
+                                }}
+                                className="px-3 py-1.5 rounded-lg bg-[#10b981] hover:bg-emerald-400 text-black text-[11px] font-bold cursor-pointer"
+                              >
+                                Compile to Live Preview
+                              </button>
+                            </div>
+                            <div dir="auto" className="text-xs text-zinc-200 whitespace-pre-wrap leading-relaxed">
+                              {activeOutput.replyMarkdown}
+                            </div>
                           </div>
                         )}
 

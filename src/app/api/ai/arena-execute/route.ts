@@ -9,10 +9,17 @@ import {
   type ArenaExecutionMode,
   type ArenaModality,
   type ArenaModelOutput,
-  type ArenaProjectFileItem,
   type ArenaRealModelSpec,
   type ArenaWebCitation,
 } from "@/lib/ai/arena-models";
+import {
+  buildArenaSystemPrompt,
+  buildMotionVideoStudioHtml,
+  detectEffectiveModality,
+  extractProjectFromResponse,
+  sanitizeExplanationFromCodeLeaks,
+  STRICT_HTML_RECOVERY_SYSTEM_PROMPT,
+} from "@/lib/ai/arena-client-runner";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -88,209 +95,7 @@ async function performLiveWebSearch(query: string): Promise<ArenaWebCitation[]> 
 }
 
 // ============================================================================
-// 2. REAL MODALITY CLASSIFIER & RUNTIME FILE EXTRACTOR
-// ============================================================================
-
-function detectEffectiveModality(
-  requested: ArenaModality,
-  prompt: string
-): "code" | "text" | "search" | "image" {
-  if (requested === "code" || requested === "text" || requested === "search" || requested === "image") {
-    return requested;
-  }
-
-  const p = prompt.toLowerCase();
-  if (
-    /(\bdraw\b|\bgenerate\s+(an?\s+)?image\b|\bcreate\s+(a\s+)?(photo|picture|logo|illustration|art)\b|ارسم|توليد صورة|صورة لـ|انشئ صورة|صمم شعار)/i.test(
-      p
-    )
-  ) {
-    return "image";
-  }
-
-  if (
-    /(\bsearch\s+(the\s+)?web\b|\bfetch\b|https?:\/\/|\blatest\s+news\b|ابحث في الانترنت|بحث في الويب|معلومات محدثة)/i.test(
-      p
-    )
-  ) {
-    return "search";
-  }
-
-  if (
-    /(build\s+|create\s+|make\s+|design\s+|develop\s+|write\s+(a\s+)?(game|website|web\s*app|site|page|html|dashboard|app|store|shop|calculator|portfolio|landing)|website|web\s*app|landing\s*page|racing\s*game|arcade|three\.?js|tetris|snake|chess|puzzle|block\s*blast|html5|canvas|صفحة|موقع|متجر|تطبيق|لعبة|صمم|أنشئ|برمج|واجهة|منصة|حاسبة|نظام)/i.test(
-      p
-    )
-  ) {
-    return "code";
-  }
-
-  return "text";
-}
-
-function bundlePreviewHtml(files: ArenaProjectFileItem[], rawText: string): string | null {
-  const htmlFile = files.find((f) => f.name.toLowerCase().endsWith(".html"));
-  const cssFiles = files.filter((f) => f.name.toLowerCase().endsWith(".css"));
-  const jsFiles = files.filter(
-    (f) => f.name.toLowerCase().endsWith(".js") && !f.name.includes("config")
-  );
-
-  let html = htmlFile?.content || "";
-  if (!html) {
-    const htmlMatch = rawText.match(/<!DOCTYPE\s+html[\s\S]*?<\/html>/i) || rawText.match(/<html[\s\S]*?<\/html>/i);
-    if (htmlMatch) html = htmlMatch[0];
-  }
-
-  if (!html.trim()) return null;
-
-  // Inject CSS files inline if index.html references them cleanly or lacks styles
-  const combinedCss = cssFiles.map((c) => c.content).join("\n\n");
-  if (combinedCss.trim()) {
-    const styleTag = `<style>\n${combinedCss}\n</style>`;
-    if (/<\/head>/i.test(html)) {
-      html = html.replace(/<\/head>/i, `${styleTag}\n</head>`);
-    } else {
-      html = `${styleTag}\n${html}`;
-    }
-  }
-
-  // Inject JS files inline if separated
-  const combinedJs = jsFiles.map((j) => j.content).join("\n\n");
-  if (combinedJs.trim()) {
-    const scriptTag = `<script>\n${combinedJs}\n</script>`;
-    if (/<\/body>/i.test(html)) {
-      html = html.replace(/<\/body>/i, `${scriptTag}\n</body>`);
-    } else {
-      html = `${html}\n${scriptTag}`;
-    }
-  }
-
-  // Strip external stylesheet links to styles.css or external script src app.js to prevent 404 console errors inside srcDoc
-  html = html.replace(/<link[^>]+href=["'](?:\.\/)?styles?\.css["'][^>]*>/gi, "");
-  html = html.replace(/<script[^>]+src=["'](?:\.\/)?(?:app|main|script)\.js["'][^>]*><\/script>/gi, "");
-
-  return html;
-}
-
-function extractProjectFromResponse(rawText: string): {
-  explanation: string;
-  files: ArenaProjectFileItem[];
-  previewHtml: string | null;
-} {
-  const files: ArenaProjectFileItem[] = [];
-  let explanation = rawText;
-
-  // 1. Try parsing JSON block (either inside ```json ... ``` or embedded object)
-  const jsonFence = rawText.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const rawBraceMatch = rawText.match(/\{[\s\S]*"files"\s*:\s*\[[\s\S]*\}/);
-  const candidateJsonStr = jsonFence
-    ? jsonFence[1].trim()
-    : rawBraceMatch
-    ? rawBraceMatch[0].trim()
-    : "";
-
-  if (candidateJsonStr.startsWith("{")) {
-    try {
-      const parsed = JSON.parse(candidateJsonStr);
-      if (typeof parsed.explanation === "string" && parsed.explanation.trim()) {
-        explanation = parsed.explanation.trim();
-      }
-      if (Array.isArray(parsed.files)) {
-        for (const f of parsed.files) {
-          if (f?.path && typeof f.content === "string") {
-            const name = String(f.path).split("/").pop() || String(f.path);
-            files.push({
-              path: String(f.path),
-              name,
-              language: String(f.language || name.split(".").pop() || "txt"),
-              content: f.content,
-            });
-          }
-        }
-      }
-    } catch {
-      // Fallback to fenced block extraction below
-    }
-  }
-
-  // 2. If no JSON files parsed, extract fenced code blocks (html, css, js/ts/tsx)
-  if (files.length === 0) {
-    const fenceRegex = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g;
-    let match: RegExpExecArray | null;
-    let codeBlockIdx = 0;
-
-    while ((match = fenceRegex.exec(rawText)) !== null) {
-      const lang = (match[1] || "txt").toLowerCase();
-      const content = match[2].trim();
-      if (!content) continue;
-      codeBlockIdx++;
-
-      if (lang === "html" || content.includes("<!DOCTYPE html") || content.includes("<html")) {
-        files.push({
-          path: "index.html",
-          name: "index.html",
-          language: "html",
-          content,
-        });
-      } else if (lang === "css") {
-        files.push({
-          path: "styles.css",
-          name: "styles.css",
-          language: "css",
-          content,
-        });
-      } else if (lang === "js" || lang === "javascript") {
-        files.push({
-          path: "app.js",
-          name: "app.js",
-          language: "javascript",
-          content,
-        });
-      } else if (lang === "tsx" || lang === "ts" || lang === "jsx") {
-        files.push({
-          path: `src/App.${lang}`,
-          name: `App.${lang}`,
-          language: lang,
-          content,
-        });
-      } else {
-        files.push({
-          path: `snippet-${codeBlockIdx}.${lang || "txt"}`,
-          name: `snippet-${codeBlockIdx}.${lang || "txt"}`,
-          language: lang || "txt",
-          content,
-        });
-      }
-    }
-
-    // Remove giant raw code blocks from the conversational explanation bubble cleanly
-    const stripped = rawText.replace(/```[\s\S]*?```/g, "").trim();
-    if (stripped.length > 20) {
-      explanation = stripped;
-    } else if (files.length > 0) {
-      explanation = "تم بناء التطبيق البرمجي بالكامل وجاهز للتشغيل والمعاينة المباشرة.";
-    }
-  }
-
-  // 3. Also check inline <!DOCTYPE html> if raw text wasn't fenced
-  if (files.length === 0 && /<!DOCTYPE\s+html|<html[\s>]/i.test(rawText)) {
-    const htmlMatch = rawText.match(/<!DOCTYPE\s+html[\s\S]*?<\/html>/i) || rawText.match(/<html[\s\S]*?<\/html>/i);
-    if (htmlMatch) {
-      files.push({
-        path: "index.html",
-        name: "index.html",
-        language: "html",
-        content: htmlMatch[0],
-      });
-      explanation = "تم بناء المشروع وتشغيله في بيئة المعاينة المباشرة.";
-    }
-  }
-
-  const previewHtml = bundlePreviewHtml(files, rawText);
-  return { explanation, files, previewHtml };
-}
-
-// ============================================================================
-// 3. REAL OPEN-WEIGHT MODEL RUNNER WITH RETRY & FAILOVER
+// 2. REAL OPEN-WEIGHT MODEL RUNNER WITH RETRY & FAILOVER
 // ============================================================================
 
 async function callSingleRealModel(params: {
@@ -505,7 +310,7 @@ async function callSingleRealModel(params: {
         usedProvider: `${routerRes.activeProvider} (Failover)`,
       };
     } catch {
-      // Failover 2: Pollinations OpenAI Gateway
+      // Failover 2: Pollinations OpenAI Gateway (ignore budget-exhausted banners)
       const pRes = await fetch("https://text.pollinations.ai/openai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -517,7 +322,12 @@ async function callSingleRealModel(params: {
       });
       const pData = await pRes.json().catch(() => null);
       const pText = pData?.choices?.[0]?.message?.content;
-      if (pRes.ok && typeof pText === "string" && pText.trim()) {
+      if (
+        pRes.ok &&
+        typeof pText === "string" &&
+        pText.trim() &&
+        !pText.includes("reached its budget")
+      ) {
         return {
           text: pText.trim(),
           usedModel: pData.model || "gpt-oss-20b",
@@ -526,39 +336,6 @@ async function callSingleRealModel(params: {
       }
       throw new Error(pData?.error?.message || "All open gateways busy");
     }
-  }
-
-  if (spec.upstream === "pollinations") {
-    try {
-      const res = await fetch("https://text.pollinations.ai/openai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "openai",
-          messages: [{ role: "system", content: systemPrompt }, ...messages],
-        }),
-        signal: AbortSignal.timeout(40000),
-      });
-      const data = await res.json().catch(() => null);
-      const text = data?.choices?.[0]?.message?.content;
-      if (res.ok && typeof text === "string" && text.trim()) {
-        return {
-          text: text.trim(),
-          usedModel: data.model || "gpt-oss-20b",
-          usedProvider: spec.providerLabel,
-        };
-      }
-    } catch {}
-    // Failover to Gemma-4-31B on LLM7 or Configured Router
-    const routerRes = await generateTextWithRouter({
-      system: systemPrompt,
-      messages,
-    });
-    return {
-      text: routerRes.text,
-      usedModel: routerRes.activeModel,
-      usedProvider: `${routerRes.activeProvider} (Failover)`,
-    };
   }
 
   // Fallback or explicit Configured Router (Gemini / Groq / OpenRouter / Local Ollama)
@@ -674,19 +451,28 @@ export async function POST(req: NextRequest) {
     )
       ? body.mode
       : "battle";
-    const requestedModality: ArenaModality = ["auto", "code", "text", "search", "image"].includes(
+    const requestedModality: ArenaModality = ["auto", "code", "text", "search", "image", "video"].includes(
       body.modality
     )
       ? body.modality
       : "auto";
-    const effectiveModality = detectEffectiveModality(requestedModality, prompt);
+    const previousTurnModality = ["code", "text", "search", "image", "video"].includes(
+      body.previousTurnModality
+    )
+      ? body.previousTurnModality
+      : undefined;
+    const effectiveModality = detectEffectiveModality(
+      requestedModality,
+      prompt,
+      previousTurnModality
+    );
 
     // Pick models according to mode
     let specA: ArenaRealModelSpec;
     let specB: ArenaRealModelSpec | null = null;
 
     if (mode === "battle") {
-      const [mA, mB] = selectBattleModelPair(prompt);
+      const [mA, mB] = selectBattleModelPair(prompt, false);
       specA = mA;
       specB = mB;
     } else if (mode === "direct") {
@@ -791,8 +577,10 @@ Catalog Sample: ${prods.map((p) => `${p.name} (${p.salePrice} ${tenantRow.curren
     // ------------------------------------------------------------------------
     // BRANCH 2: WEB SEARCH (Real Live DuckDuckGo + Wikipedia Citations)
     // ------------------------------------------------------------------------
-    let citations: ArenaWebCitation[] = [];
-    if (effectiveModality === "search") {
+    let citations: ArenaWebCitation[] = Array.isArray(body.citationsOverride)
+      ? body.citationsOverride
+      : [];
+    if (effectiveModality === "search" && citations.length === 0) {
       citations = await performLiveWebSearch(prompt);
     }
 
@@ -817,22 +605,83 @@ Catalog Sample: ${prods.map((p) => `${p.name} (${p.salePrice} ${tenantRow.curren
       : [];
 
     // ------------------------------------------------------------------------
+    // BRANCH 3: CANVAS MOTION VIDEO STUDIO (Local Real .WEBM Exporter)
+    // ------------------------------------------------------------------------
+    if (effectiveModality === "video") {
+      const videoPrompt = `Create 4 short promo video storyboard slides for: "${prompt}".
+Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scenes":[{"badge":"...","headline":"...","subline":"...","metric":"..."}]}.`;
+      const isAr = /[\u0600-\u06FF]/.test(prompt);
+
+      const runVideoSide = async (spec: ArenaRealModelSpec, delayMs: number): Promise<ArenaModelOutput> => {
+        const start = Date.now();
+        let parsedScenes: any = null;
+        let usedModel = spec.apiModelId;
+        try {
+          const r = await callSingleRealModel({
+            spec,
+            systemPrompt: "Return ONLY a raw JSON object with title, accentColor, and scenes array.",
+            messages: [{ role: "user", content: videoPrompt }],
+            delayBeforeMs: delayMs,
+          });
+          usedModel = r.usedModel;
+          const m = r.text.match(/\{[\s\S]*\}/);
+          if (m) parsedScenes = JSON.parse(m[0]);
+        } catch {}
+
+        const html = buildMotionVideoStudioHtml({
+          title: parsedScenes?.title || prompt.slice(0, 42),
+          accentColor: parsedScenes?.accentColor || "#10b981",
+          scenes: parsedScenes?.scenes || [
+            {
+              badge: "KASPI STUDIO",
+              headline: prompt.slice(0, 32),
+              subline: "Dynamic HTML5 Motion Video Engine",
+              metric: "1280 × 720 HD",
+            },
+          ],
+          rtl: isAr,
+        });
+
+        return {
+          modelId: spec.id,
+          modelName: spec.displayName,
+          providerLabel: spec.providerLabel,
+          status: "completed",
+          latencyMs: Date.now() - start,
+          replyMarkdown: isAr
+            ? `تم بناء استوديو فيديو متحرك (60fps Canvas) مع تحميل مباشر بصيغة **.webm**. (ملاحظة: نماذج الفيديو السحابية مثل Kling/Seedance تتطلب رصيداً مدفوعاً).`
+            : `Built a live 60fps HTML5 Canvas Motion Video Studio with direct **.webm** download. (Cloud video APIs like Kling/Seedance require paid credits).`,
+          stepsLog: [`Rendered local Canvas .webm studio via ${usedModel}`],
+          modalityExecuted: "video",
+          files: [{ path: "motion-video.html", name: "motion-video.html", language: "html", content: html }],
+          previewHtml: html,
+          executedOn: "cloud-relay",
+        };
+      };
+
+      const [vA, vB] = await Promise.all([
+        runVideoSide(specA, 0),
+        specB ? runVideoSide(specB, 900) : Promise.resolve(null),
+      ]);
+
+      return NextResponse.json({
+        success: true,
+        effectiveModality: "video",
+        citations: [],
+        outputA: vA,
+        outputB: vB,
+      });
+    }
+
+    // ------------------------------------------------------------------------
     // SYSTEM PROMPTS BY MODALITY (Unrestricted — builds whatever user asked!)
     // ------------------------------------------------------------------------
-    const systemPrompt =
-      effectiveModality === "code"
-        ? `You are an expert Senior Full-Stack & Creative Web Developer inside KASPI AI Arena.
-The user can ask you to build ANYTHING: interactive websites, 2D/3D HTML5 Canvas games, web applications, e-commerce storefronts (fashion, abaya, food, SaaS, etc.), dashboards, utilities, calculators, portfolios, animations, or custom tools. Fulfill their exact request completely and creatively in their requested language (Arabic, French, English, or Darija).${storeContextSnippet}${attachmentContext}${searchContextText}
-
-CRITICAL TECHNICAL OUTPUT FORMAT (MUST FOLLOW FOR LIVE SANDBOX RENDERING):
-1. Write a brief 2-3 sentence summary explaining what you built in the user's language.
-2. Output the complete working code using clean fenced code blocks (` + "```html" + `, ` + "```css" + `, ` + "```javascript" + `).
-3. Use pure HTML5 + CSS3 + modern ES6 JavaScript (plus HTML5 Canvas / inline SVG icons if needed) with ZERO external unbundled npm imports so it executes immediately inside a sandboxed iframe.`
-        : effectiveModality === "search"
-        ? `You are KASPI AI Research Assistant powered by live web search.
-Answer the user's question accurately in the same language as the prompt using the Live Web Search Results provided below. Cite source numbers like [1], [2].${storeContextSnippet}${attachmentContext}${searchContextText}`
-        : `You are KASPI AI, a versatile, helpful, unrestricted frontier AI assistant.
-Respond clearly, thoughtfully, and accurately in the exact language used by the user (Arabic, Moroccan Darija, French, English, etc.). If the user asks follow-up questions about previously generated code or ideas, help them directly.${storeContextSnippet}${attachmentContext}`;
+    const systemPrompt = buildArenaSystemPrompt({
+      modality: effectiveModality,
+      storeContextSnippet,
+      attachmentContext,
+      searchContextText,
+    });
 
     const messagesForModel = [...historyMsgs, { role: "user" as const, content: prompt }];
 
@@ -847,16 +696,42 @@ Respond clearly, thoughtfully, and accurately in the exact language used by the 
     ): Promise<ArenaModelOutput> => {
       const start = Date.now();
       try {
-        const res = await callSingleRealModel({
+        let res = await callSingleRealModel({
           spec,
           systemPrompt,
           messages: messagesForModel,
           delayBeforeMs: delayMs,
         });
-        const latencyMs = Date.now() - start;
 
         if (effectiveModality === "code" || /<!DOCTYPE html|<html|```html/i.test(res.text)) {
-          const parsed = extractProjectFromResponse(res.text);
+          let parsed = extractProjectFromResponse(res.text, prompt);
+
+          // Strict HTML enforcement: if model wrote Markdown prose instead of runnable HTML, convert cleanly
+          if (effectiveModality === "code" && !parsed.previewHtml) {
+            const compilerSpec =
+              ARENA_REAL_MODELS.find(
+                (m) => m.id === (spec.id === "kimi-k2.7-code" ? "groq-gpt-oss" : "kimi-k2.7-code")
+              ) || spec;
+            try {
+              const retryRes = await callSingleRealModel({
+                spec: compilerSpec,
+                systemPrompt: STRICT_HTML_RECOVERY_SYSTEM_PROMPT,
+                messages: [{ role: "user", content: prompt }],
+                delayBeforeMs: 600,
+              });
+              const retryParsed = extractProjectFromResponse(retryRes.text, prompt);
+              if (retryParsed.previewHtml) {
+                parsed = retryParsed;
+                res = {
+                  text: retryRes.text,
+                  usedModel: `${res.usedModel}→${retryRes.usedModel}`,
+                  usedProvider: res.usedProvider,
+                };
+              }
+            } catch {}
+          }
+
+          const latencyMs = Date.now() - start;
           const steps =
             mode === "agent"
               ? [
@@ -882,16 +757,18 @@ Respond clearly, thoughtfully, and accurately in the exact language used by the 
             files: parsed.files,
             previewHtml: parsed.previewHtml,
             citations: citations.length > 0 ? citations : undefined,
+            executedOn: "cloud-relay",
           };
         }
 
+        const latencyMs = Date.now() - start;
         return {
           modelId: spec.id,
           modelName: spec.displayName,
           providerLabel: res.usedProvider,
           status: "completed",
           latencyMs,
-          replyMarkdown: res.text,
+          replyMarkdown: sanitizeExplanationFromCodeLeaks(res.text, false, prompt),
           stepsLog:
             citations.length > 0
               ? [`Explored ${citations.length} live web sources`, `Synthesized reply via ${res.usedModel}`]
@@ -900,6 +777,7 @@ Respond clearly, thoughtfully, and accurately in the exact language used by the 
           files: [],
           previewHtml: null,
           citations: citations.length > 0 ? citations : undefined,
+          executedOn: "cloud-relay",
         };
       } catch (err: any) {
         return {

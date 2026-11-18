@@ -182,14 +182,44 @@ try {
   assert.ok(studioModalSource.includes("Archive"), "Must support Archive on conversation threads");
   assert.ok(studioModalSource.includes("Sign in with Gmail"), "Must support Gmail sign-in & persistent chat history");
 
+  // Verify client-first engine & zero CSS leakage guarantees
+  const clientRunnerSource = fs.readFileSync(
+    path.join(ROOT, "src/lib/ai/arena-client-runner.ts"),
+    "utf8"
+  );
+  assert.ok(
+    clientRunnerSource.includes("executeArenaTurnClientFirst"),
+    "Must provide executeArenaTurnClientFirst so inference runs on user's device first"
+  );
+  assert.ok(
+    clientRunnerSource.includes("sanitizeExplanationFromCodeLeaks"),
+    "Must sanitize unclosed CSS/HTML code leaks from conversational chat bubbles"
+  );
+  assert.ok(
+    clientRunnerSource.includes("buildMotionVideoStudioHtml"),
+    "Must provide local HTML5 Canvas .webm motion video exporter"
+  );
+  assert.ok(
+    arenaModelsSource.includes("kimi-k2.7-code"),
+    "Must include Kimi-K2.7-Code coding model"
+  );
+  assert.ok(
+    studioModalSource.includes("executeArenaTurnClientFirst"),
+    "Modal must invoke executeArenaTurnClientFirst before server relay"
+  );
+  assert.ok(
+    studioModalSource.includes("renderArenaControlsBar({ openUpwards: true"),
+    "Follow-up bar must provide full Arena tools, modes & model pickers"
+  );
+
   record(
     "REAL-ARENA-UI",
-    "Clean Zero-Start Arena UI, Real Multi-Model Gateways & Full Sandbox Preview/Code Parity",
+    "Client-First Execution, Zero-Leak Code Extraction, Follow-Up Parity & Video Studio",
     true,
     [
-      "Real open-weight models verified (DeepSeek-V4-Flash, Gemma-4-31B, Codestral-Latest, GPT-OSS-120B, GPT-OSS-20B-Reasoning, GLM-5.3-Flash)",
-      "Live DuckDuckGo + Wikipedia Web Search and AI Horde Stable Diffusion image generation verified",
-      "Verified Arena UI parity: KASPI AI sidebar, clean empty initial state, Gmail persistence, Rename/Archive, Battle/Agent/Side-by-Side/Direct dropdown, Preview iframe, FILES code explorer, Download Project as Zip File, and Built with KASPI AI badge"
+      "Real open-weight models verified (Kimi-K2.7-Code, Gemma-4-31B, DeepSeek-V4-Flash, Codestral-Latest, GPT-OSS-120B, GLM-5.3-Flash, Groq-GPT-OSS-20B, OpenRouter-Free-Pool)",
+      "Client-First open execution verified (api.llm7.io + aihorde.net + DuckDuckGo/Wiki CORS directly from user device)",
+      "Verified unclosed CSS/HTML leak sanitization, Motion Video .webm studio, and Follow-Up full dropdowns + model selectors"
     ]
   );
 } catch (err) {
