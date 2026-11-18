@@ -354,8 +354,7 @@ export function AIChatWidget() {
   // Listen for custom "open-master-ai", "open-ai-chat" and "open-ai-studio" events
   useEffect(() => {
     const handleOpenAi = (ev: Event) => {
-      setIsOpen(false);
-      setIsStudioOpen(true);
+      setIsOpen((prev) => !prev);
       const customEv = ev as CustomEvent<{ prompt?: string }>;
       if (customEv.detail?.prompt) {
         setInput(customEv.detail.prompt);
@@ -1164,10 +1163,11 @@ export function AIChatWidget() {
                       setIsOpen(false);
                       setIsStudioOpen(true);
                     }}
-                    className="p-1.5 rounded-xl kaspi-glass-surface hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-                    title="تكبير إلى Kaspi AI Studio الكامل"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-xl kaspi-glass-surface hover:bg-emerald-500/20 border border-white/15 hover:border-emerald-500/40 text-zinc-200 hover:text-emerald-300 transition-colors cursor-pointer text-[10px] font-bold"
+                    title="تكبير إلى منصة KASPI AI (Arena) الكاملة"
                   >
-                    <Maximize2 className="w-3.5 h-3.5" />
+                    <Maximize2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Arena</span>
                   </button>
 
                   {/* Strictly Closes Window Only on Explicit Click */}

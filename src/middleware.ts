@@ -210,6 +210,12 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next());
   }
 
+  // All remaining /api/* routes (/api/ai/*, /api/webhooks/*, /api/billing/*, /api/sales, etc.)
+  // must NEVER be rewritten by next-intl locale middleware.
+  if (pathname.startsWith("/api/")) {
+    return applySecurityHeaders(NextResponse.next());
+  }
+
   // 4. Page routing with next-intl (Auth redirect bypassed for local UI testing except /admin above)
   const intlResponse = intlMiddleware(request);
   return applySecurityHeaders(intlResponse);

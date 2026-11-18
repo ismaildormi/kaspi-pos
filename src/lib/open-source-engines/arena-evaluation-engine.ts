@@ -21,6 +21,7 @@
 import type { PuckData } from "./puck-engine";
 import { ALL_PUCK_SECTION_TYPES } from "./puck-engine";
 import type { AggregatedStoreContext } from "@/lib/ai/store-context-builder";
+import { ARENA_REAL_MODELS } from "@/lib/ai/arena-models";
 
 export type BattleOutcome = "model_a" | "model_b" | "tie" | "both_bad";
 
@@ -205,7 +206,31 @@ export function computeBradleyTerryLeaderboard(
   votes: HumanPreferenceVoteRecord[],
   latestBenchmarks: Record<string, number> = {}
 ): ArenaModelEvaluationSummary[] {
-  const modelIds = ARENA_MODEL_REGISTRY.map((m) => m.id);
+  const catalogList = [
+    ...ARENA_REAL_MODELS.map((m) => ({
+      id: m.id,
+      displayName: m.displayName,
+      provider: m.providerLabel,
+    })),
+    ...ARENA_MODEL_REGISTRY.map((m) => ({
+      id: m.id,
+      displayName: m.displayName,
+      provider: m.provider,
+    })),
+  ];
+
+  // Include any voted model id not statically listed
+  const seen = new Set(catalogList.map((m) => m.id));
+  for (const v of votes) {
+    for (const id of [v.modelAId, v.modelBId]) {
+      if (id && !seen.has(id)) {
+        seen.add(id);
+        catalogList.push({ id, displayName: id, provider: "Arena Gateway" });
+      }
+    }
+  }
+
+  const modelIds = catalogList.map((m) => m.id);
   const n = modelIds.length;
   const idToIdx = new Map<string, number>();
   modelIds.forEach((id, i) => idToIdx.set(id, i));
@@ -272,7 +297,7 @@ export function computeBradleyTerryLeaderboard(
   }
 
   const alpha = 400.0 / Math.log(10.0);
-  const summaries: ArenaModelEvaluationSummary[] = ARENA_MODEL_REGISTRY.map(
+  const summaries: ArenaModelEvaluationSummary[] = catalogList.map(
     (m, idx) => {
       const bCount = battles[idx];
       const wCount = wins[idx];

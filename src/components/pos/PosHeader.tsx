@@ -212,14 +212,18 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
         </Link>
 
-        {/* AI Assistant Docked Trigger (Opens KASPI AI — Arena Autonomous Commerce Studio) */}
+        {/* AI Assistant Docked Trigger (Single click: Compact Assistant / Expand or Double click: KASPI AI Arena) */}
         <button
           type="button"
           onClick={() => {
+            window.dispatchEvent(new CustomEvent("open-ai-chat"));
+          }}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
             window.dispatchEvent(new CustomEvent("open-ai-studio"));
           }}
           className="group inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 hover:border-white/25 kaspi-frosted-glass hover:bg-white/[0.1] text-zinc-300 hover:text-white transition-all cursor-pointer"
-          title="فتح منصة KASPI AI — Autonomous Commerce & Arena Studio"
+          title="نقرة: المساعد المصغّر • زر التكبير أو نقرتان: منصة KASPI AI Arena"
         >
           <Bot className="w-3.5 h-3.5 text-zinc-300 group-hover:text-white group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
         </button>
