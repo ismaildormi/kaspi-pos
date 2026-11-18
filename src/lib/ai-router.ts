@@ -101,7 +101,6 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
         "openai/gpt-oss-20b",
         "llama-3.3-70b-versatile",
         "llama-3.1-8b-instant",
-        "meta-llama/llama-4-scout-17b-16e-instruct",
       ]) {
         candidates.push({
           provider: "groq",
@@ -111,19 +110,21 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
           apiKey: key,
           modelId,
           model: groqProvider(modelId) as unknown as LanguageModel,
-          supportsVision: modelId.includes("llama-4-scout"),
+          supportsVision: false,
         });
       }
     }
   });
 
-  // Priority 3: OpenRouter Free Tier Pool (Zero-Credit Free Router)
+  // Priority 3: OpenRouter Free Tier Pool (Zero-Credit Free Router + Free Vision Models)
   const openRouterPoolKey = process.env.OPENROUTER_API_KEY?.trim();
   if (openRouterPoolKey && !openRouterPoolKey.includes("mock")) {
     const orProvider = createOpenRouter({ apiKey: openRouterPoolKey });
     for (const orModel of [
       "openrouter/free",
       "meta-llama/llama-3.3-70b-instruct:free",
+      "google/gemma-4-31b-it:free",
+      "nvidia/nemotron-3.5-super-vl:free",
     ]) {
       candidates.push({
         provider: "openrouter",
@@ -133,7 +134,7 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
         apiKey: openRouterPoolKey,
         modelId: orModel,
         model: orProvider(orModel) as unknown as LanguageModel,
-        supportsVision: false,
+        supportsVision: orModel.includes("gemma-4") || orModel.includes("vl"),
       });
     }
   }
@@ -145,7 +146,7 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
   geminiKeys.forEach((key, idx) => {
     if (!key.includes("mock")) {
       const googleProvider = createGoogleGenerativeAI({ apiKey: key });
-      for (const modelId of ["gemini-3.8-flash", "gemini-2.0-flash"]) {
+      for (const modelId of ["gemini-2.5-flash", "gemini-2.5-flash-lite"]) {
         candidates.push({
           provider: "google",
           providerName: "Google Gemini",
@@ -203,7 +204,7 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
         model: togetherProvider(
           "meta-llama/Llama-3.3-70B-Instruct-Turbo"
         ) as unknown as LanguageModel,
-        supportsVision: true,
+        supportsVision: false,
       });
     }
   });
@@ -310,7 +311,7 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
     apiKey: "kaspi-free-open-source",
     modelId: "openai",
     model: freeOpenSourceGateway("openai") as unknown as LanguageModel,
-    supportsVision: true,
+    supportsVision: false,
   });
 
   return candidates;
@@ -380,7 +381,11 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
         model: candidate.model as any,
         maxRetries: 0,
         abortSignal: AbortSignal.timeout(
-          candidate.provider === "openrouter" ? 8500 : 12000
+          isMultimodal
+            ? 18000
+            : candidate.provider === "openrouter"
+            ? 9500
+            : 12000
         ),
         ...(options as any),
       });

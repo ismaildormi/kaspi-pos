@@ -1,11 +1,219 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateText } from "ai";
-import { generateTextWithRouter, getRouterCandidates } from "@/lib/ai-router";
+import { generateTextWithRouter, getRouterCandidates, parseKeyPool } from "@/lib/ai-router";
 import { getSafeServerContext } from "@/server/auth/context";
 import { UNIVERSAL_INTEGRATIONS_CATALOG } from "@/lib/ai/integrations-registry";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 45;
+
+function parseImageDataUrl(dataUrl: string): { mimeType: string; data: string } | null {
+  const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) return null;
+  return { mimeType: match[1], data: match[2] };
+}
+
+async function discoverAndCallGoogleVision(params: {
+  apiKeys: string[];
+  systemPrompt: string;
+  userPrompt: string;
+  images: string[];
+  errors: string[];
+}): Promise<{ text: string; modelUsed: string } | null> {
+  const parsedImages = params.images.map(parseImageDataUrl).filter(Boolean) as Array<{
+    mimeType: string;
+    data: string;
+  }>;
+  if (parsedImages.length === 0 || params.apiKeys.length === 0) return null;
+
+  for (const apiKey of params.apiKeys) {
+    let modelNames = ["models/gemini-2.5-flash", "models/gemini-2.5-flash-lite"];
+    try {
+      const listRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`,
+        { signal: AbortSignal.timeout(5000) }
+      );
+      if (listRes.ok) {
+        const listJson = await listRes.json();
+        const available: string[] = (listJson.models || [])
+          .filter(
+            (m: any) =>
+              Array.isArray(m.supportedGenerationMethods) &&
+              m.supportedGenerationMethods.includes("generateContent") &&
+              /gemini-(2\.5|3|2\.0-flash-exp)/i.test(String(m.name || "")) &&
+              !/(tts|image-generation|live|embedding|aqa|robotics|1\.5|gemini-2\.0-flash$)/i.test(String(m.name || ""))
+          )
+          .map((m: any) => String(m.name));
+        if (available.length > 0) {
+          const preferred = available.sort((a, b) => {
+            const score = (n: string) =>
+              n.includes("2.5-flash") && !n.includes("lite") ? 0 : n.includes("flash") ? 1 : 2;
+            return score(a) - score(b);
+          });
+          modelNames = preferred.slice(0, 3);
+        }
+      }
+    } catch {
+      // Keep default Gemini 2.5 list when discovery times out
+    }
+
+    for (const modelName of modelNames) {
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: AbortSignal.timeout(14000),
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: params.systemPrompt }] },
+              contents: [
+                {
+                  role: "user",
+                  parts: [
+                    { text: params.userPrompt },
+                    ...parsedImages.map((img) => ({
+                      inlineData: { mimeType: img.mimeType, data: img.data },
+                    })),
+                  ],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.2,
+                maxOutputTokens: 1600,
+                responseMimeType: "application/json",
+              },
+            }),
+          }
+        );
+        const data = await res.json();
+        const text = data?.candidates?.[0]?.content?.parts
+          ?.map((p: any) => p?.text || "")
+          .join("")
+          .trim();
+        if (res.ok && text) {
+          return { text, modelUsed: modelName.replace(/^models\//, "") };
+        }
+        params.errors.push(`Google (${modelName}): ${data?.error?.message || `HTTP ${res.status}`}`);
+      } catch (err: any) {
+        params.errors.push(`Google (${modelName}): ${String(err?.message || err)}`);
+      }
+    }
+  }
+  return null;
+}
+
+async function discoverAndCallGroqVision(params: {
+  apiKeys: string[];
+  systemPrompt: string;
+  userPrompt: string;
+  images: string[];
+  errors: string[];
+}): Promise<{ text: string; modelUsed: string } | null> {
+  if (params.apiKeys.length === 0) return null;
+  const openAiContent = [
+    { type: "text", text: params.userPrompt },
+    ...params.images.map((url) => ({ type: "image_url", image_url: { url } })),
+  ];
+
+  for (const apiKey of params.apiKeys) {
+    let visionModels: string[] = [];
+    try {
+      const mRes = await fetch("https://api.groq.com/openai/v1/models", {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(4500),
+      });
+      if (mRes.ok) {
+        const mJson = await mRes.json();
+        visionModels = (mJson.data || [])
+          .map((m: any) => String(m?.id || ""))
+          .filter((id: string) => /(vision|llama-4|maverick|scout)/i.test(id));
+      }
+    } catch {
+      visionModels = [];
+    }
+
+    for (const modelId of visionModels.slice(0, 2)) {
+      try {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          signal: AbortSignal.timeout(13000),
+          body: JSON.stringify({
+            model: modelId,
+            max_tokens: 1600,
+            temperature: 0.2,
+            messages: [
+              { role: "system", content: params.systemPrompt },
+              { role: "user", content: openAiContent },
+            ],
+          }),
+        });
+        const data = await res.json();
+        const text = String(data?.choices?.[0]?.message?.content || "").trim();
+        if (res.ok && text) return { text, modelUsed: modelId };
+        params.errors.push(`Groq (${modelId}): ${data?.error?.message || `HTTP ${res.status}`}`);
+      } catch (err: any) {
+        params.errors.push(`Groq (${modelId}): ${String(err?.message || err)}`);
+      }
+    }
+  }
+  return null;
+}
+
+async function callOpenRouterVisionPool(params: {
+  apiKeys: string[];
+  systemPrompt: string;
+  userPrompt: string;
+  images: string[];
+  errors: string[];
+}): Promise<{ text: string; modelUsed: string } | null> {
+  if (params.apiKeys.length === 0) return null;
+  const openAiContent = [
+    { type: "text", text: params.userPrompt },
+    ...params.images.map((url) => ({ type: "image_url", image_url: { url } })),
+  ];
+  const freeModels = [
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "nvidia/nemotron-3.5-super-vl:free",
+  ];
+
+  for (const apiKey of params.apiKeys) {
+    for (const modelId of freeModels) {
+      try {
+        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+            "HTTP-Referer": "https://kaspi-pos.vercel.app",
+            "X-Title": "KASPI Visual Setup Assistant",
+          },
+          signal: AbortSignal.timeout(14000),
+          body: JSON.stringify({
+            model: modelId,
+            max_tokens: 1500,
+            temperature: 0.2,
+            messages: [
+              { role: "system", content: params.systemPrompt },
+              { role: "user", content: openAiContent },
+            ],
+          }),
+        });
+        const data = await res.json();
+        const text = String(data?.choices?.[0]?.message?.content || "").trim();
+        if (res.ok && text) return { text, modelUsed: modelId };
+        params.errors.push(`OpenRouter (${modelId}): ${data?.error?.message || `HTTP ${res.status}`}`);
+      } catch (err: any) {
+        params.errors.push(`OpenRouter (${modelId}): ${String(err?.message || err)}`);
+      }
+    }
+  }
+  return null;
+}
 
 export interface ScreenshotMarker {
   number: number;
@@ -83,47 +291,94 @@ Output STRICTLY valid JSON matching this schema:
   "recommendedServiceId": "${serviceId || ""}"
 }`;
 
+    const userPrompt = `Analyze these ${images.length} screenshot(s) and guide the user step by step: ${goal}`;
     const contentParts: any[] = [
-      { type: "text", text: `Analyze these ${images.length} screenshot(s) and guide the user step by step: ${goal}` },
+      { type: "text", text: userPrompt },
       ...images.map((img) => ({ type: "image", image: img })),
     ];
 
     let rawResponseText = "";
     let usedModel = "vision-router";
+    const errors: string[] = [];
 
-    // Prefer Groq Llama 4 Scout Vision for ~1.5s speed, then fallback to Gemini / router
     const allCandidates = await getRouterCandidates();
-    const groqVision = allCandidates.find(
-      (c) => c.provider === "groq" && c.supportsVision
-    );
+    const googleKeys = Array.from(
+      new Set([
+        ...parseKeyPool(process.env.GOOGLE_API_KEYS || process.env.GOOGLE_GENERATIVE_AI_API_KEY),
+        ...allCandidates.filter((c) => c.provider === "google" && c.apiKey).map((c) => c.apiKey),
+      ])
+    ).filter((k) => !k.includes("mock"));
+    const groqKeys = Array.from(
+      new Set([
+        ...parseKeyPool(process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY),
+        ...allCandidates.filter((c) => c.provider === "groq" && c.apiKey).map((c) => c.apiKey),
+      ])
+    ).filter((k) => !k.includes("mock"));
+    const openRouterKeys = Array.from(
+      new Set([
+        ...parseKeyPool(process.env.OPENROUTER_API_KEY),
+        ...allCandidates.filter((c) => c.provider === "openrouter" && c.apiKey).map((c) => c.apiKey),
+      ])
+    ).filter((k) => !k.includes("mock"));
 
-    if (groqVision) {
-      try {
-        const res = await generateText({
-          model: groqVision.model as any,
-          maxRetries: 0,
-          maxOutputTokens: 1600,
-          temperature: 0.2,
-          abortSignal: AbortSignal.timeout(16000),
-          system: systemPrompt,
-          messages: [{ role: "user", content: contentParts }],
-        });
-        if (res.text?.trim()) {
-          rawResponseText = res.text.trim();
-          usedModel = groqVision.modelId;
-        }
-      } catch {}
+    // 1. Live-discovered Google Gemini Vision (gemini-2.5-flash / dynamic v1beta)
+    const googleHit = await discoverAndCallGoogleVision({
+      apiKeys: googleKeys,
+      systemPrompt,
+      userPrompt,
+      images,
+      errors,
+    });
+    if (googleHit) {
+      rawResponseText = googleHit.text;
+      usedModel = googleHit.modelUsed;
     }
 
+    // 2. Live-discovered Groq Vision (/openai/v1/models filter)
     if (!rawResponseText) {
-      const routerRes = await generateTextWithRouter({
-        system: systemPrompt,
-        maxOutputTokens: 1600,
-        temperature: 0.2,
-        messages: [{ role: "user", content: contentParts }],
+      const groqHit = await discoverAndCallGroqVision({
+        apiKeys: groqKeys,
+        systemPrompt,
+        userPrompt,
+        images,
+        errors,
       });
-      rawResponseText = routerRes.text.trim();
-      usedModel = routerRes.activeModel;
+      if (groqHit) {
+        rawResponseText = groqHit.text;
+        usedModel = groqHit.modelUsed;
+      }
+    }
+
+    // 3. OpenRouter Free Vision Pool (gemma-4-31b-it:free / nemotron-3.5-super-vl:free)
+    if (!rawResponseText) {
+      const orHit = await callOpenRouterVisionPool({
+        apiKeys: openRouterKeys,
+        systemPrompt,
+        userPrompt,
+        images,
+        errors,
+      });
+      if (orHit) {
+        rawResponseText = orHit.text;
+        usedModel = orHit.modelUsed;
+      }
+    }
+
+    // 4. Final Router Failover (BYOK / Mistral Pixtral / Local Ollama Vision)
+    if (!rawResponseText) {
+      try {
+        const routerRes = await generateTextWithRouter({
+          system: systemPrompt,
+          maxOutputTokens: 1600,
+          temperature: 0.2,
+          messages: [{ role: "user", content: contentParts }],
+        });
+        rawResponseText = routerRes.text.trim();
+        usedModel = routerRes.activeModel;
+      } catch (routerErr: any) {
+        errors.push(String(routerErr?.message || routerErr));
+        throw new Error(errors.join(" | "));
+      }
     }
 
     let parsed: VisualSetupAnalysisResult;

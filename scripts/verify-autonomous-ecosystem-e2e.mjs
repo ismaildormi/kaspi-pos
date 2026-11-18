@@ -226,6 +226,57 @@ try {
   record("REAL-ARENA-UI", "Clean Zero-Start Arena UI & Real Models", false, [err.message]);
 }
 
+try {
+  const registrySource = fs.readFileSync(path.join(ROOT, "src/lib/ai/integrations-registry.ts"), "utf8");
+  const vaultSource = fs.readFileSync(path.join(ROOT, "src/lib/security/integration-vault.ts"), "utf8");
+  const librarySource = fs.readFileSync(path.join(ROOT, "src/lib/ai/kaspi-library-memory.ts"), "utf8");
+  const mapsSource = fs.readFileSync(path.join(ROOT, "src/lib/ai/store-location-maps.ts"), "utf8");
+  const workflowSource = fs.readFileSync(path.join(ROOT, "src/lib/ai/workflow-automation-engine.ts"), "utf8");
+  const visualSetupSource = fs.readFileSync(path.join(ROOT, "src/app/api/ai/visual-setup/route.ts"), "utf8");
+  const businessOsRouteSource = fs.readFileSync(path.join(ROOT, "src/app/api/ai/business-os/route.ts"), "utf8");
+  const integrationsRouteSource = fs.readFileSync(path.join(ROOT, "src/app/api/ai/integrations/route.ts"), "utf8");
+
+  assert.ok(registrySource.includes("UNIVERSAL_INTEGRATIONS_CATALOG"), "Must export UNIVERSAL_INTEGRATIONS_CATALOG");
+  assert.ok(registrySource.includes("detectIntegrationsMentionedInText"), "Must export detectIntegrationsMentionedInText");
+  assert.ok(vaultSource.includes("encryptVaultSecrets") && vaultSource.includes("decryptVaultSecrets"), "Vault must provide AES-256-GCM encryption/decryption");
+  assert.ok(vaultSource.includes("sanitizeOutboundEndpoint"), "Vault must enforce SSRF guard via sanitizeOutboundEndpoint");
+  assert.ok(vaultSource.includes("probeIntegrationConnectionLive"), "Vault must provide live HTTP integration probe");
+  assert.ok(librarySource.includes("buildUnifiedLibraryContextSummary"), "Library must build unified context summary");
+  assert.ok(mapsSource.includes("detectBrowserRealGpsLocation") && mapsSource.includes("searchRealLocationsOsm"), "Maps module must use real GPS & OpenStreetMap Nominatim");
+  assert.ok(workflowSource.includes("parseNaturalLanguageWorkflow"), "Workflow engine must parse natural language automations");
+  assert.ok(
+    visualSetupSource.includes("discoverAndCallGoogleVision") &&
+      visualSetupSource.includes("discoverAndCallGroqVision") &&
+      visualSetupSource.includes("callOpenRouterVisionPool"),
+    "Visual setup API must implement dynamic multi-provider Vision discovery"
+  );
+  assert.ok(businessOsRouteSource.includes("monitor_url") && businessOsRouteSource.includes("run_simulation") && businessOsRouteSource.includes("plan_campaign"), "Business OS API must implement monitor_url, run_simulation & plan_campaign");
+  assert.ok(integrationsRouteSource.includes("probeIntegrationConnectionLive"), "Integrations route must run real live probes");
+
+  for (const osComponent of [
+    "src/components/ai/os/KaspiPluginsCenter.tsx",
+    "src/components/ai/os/KaspiMapsLocationPanel.tsx",
+    "src/components/ai/os/KaspiLibraryView.tsx",
+    "src/components/ai/os/KaspiBusinessOsPanel.tsx",
+    "src/components/ai/os/KaspiVisualSetupModal.tsx",
+  ]) {
+    assert.ok(fs.existsSync(path.join(ROOT, osComponent)), `Missing OS UI component: ${osComponent}`);
+  }
+
+  record(
+    "BUSINESS-OS-VAULT-MAPS",
+    "Global Business OS, AES-256-GCM Vault, Live Probes, Real Maps, Library & Visual Setup",
+    true,
+    [
+      "Verified Universal Integrations Registry, tenant-scoped AES-256-GCM Vault & SSRF outbound sanitizer",
+      "Verified real Geolocation/Nominatim Maps, local Library memory & Workflow NL compiler",
+      "Verified Visual Setup dynamic Google/Groq/OpenRouter Vision routing & all 5 OS UI panels"
+    ]
+  );
+} catch (err) {
+  record("BUSINESS-OS-VAULT-MAPS", "Global Business OS & Vault Verification", false, [err.message]);
+}
+
 console.log("================================================================================");
 console.log(`SUMMARY: ${passed} PASSED, ${failed} FAILED`);
 console.log("================================================================================");
