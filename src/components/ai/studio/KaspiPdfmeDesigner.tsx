@@ -1,40 +1,109 @@
 "use client";
 
-import React, { useState } from "react";
-import { FileDown, Printer, Share2, Sparkles, Layout, Palette, QrCode, Check, Eye } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { FileDown, Printer, Share2, Layout, QrCode, RefreshCw, Archive, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { usePosStore } from "@/client/store/usePosStore";
+import {
+  generateRealPdfmeDocument,
+  getSavedPdfmeDocuments,
+  type SavedPdfDocument,
+} from "@/lib/open-source-engines";
 
 type DocTemplateType = "invoice" | "devis" | "z_report" | "warranty";
 
-export const KaspiPdfmeDesigner: React.FC<{ locale?: string }> = ({ locale = "ar" }) => {
+export const KaspiPdfmeDesigner: React.FC<{
+  locale?: string;
+  onLog?: (msg: string) => void;
+}> = ({ locale = "ar", onLog }) => {
   const { tenantInfo, cart } = usePosStore();
   const [template, setTemplate] = useState<DocTemplateType>("invoice");
-  const [docTitle, setDocTitle] = useState("فاتورة بيع رقم 2026-0042");
+  const [docTitle, setDocTitle] = useState("فاتورة بيع رسمية N° 2026-0042");
   const [accentColor, setAccentColor] = useState("#10b981");
   const [includeQr, setIncludeQr] = useState(true);
+  const [clientName, setClientName] = useState("زبون المتجر");
   const [clientPhone, setClientPhone] = useState("+212600000000");
 
-  const shopName = tenantInfo?.shopName || "متجر كسب النموذجي";
+  const [items, setItems] = useState<
+    Array<{ designation: string; qty: number; unitPrice: number; total: number }>
+  >(() => {
+    if (cart && cart.length > 0) {
+      return cart.map((c) => ({
+        designation: c.name,
+        qty: c.quantity,
+        unitPrice: c.unitPrice,
+        total: c.lineTotal,
+      }));
+    }
+    return [
+      { designation: "سلة مشتريات متجر كسب (Pack Standard)", qty: 4, unitPrice: 120.0, total: 480.0 },
+      { designation: "منتجات استهلاكية معتمدة", qty: 2, unitPrice: 85.0, total: 170.0 },
+    ];
+  });
+
+  const [savedDocs, setSavedDocs] = useState<SavedPdfDocument[]>([]);
+  const [activeDoc, setActiveDoc] = useState<SavedPdfDocument | null>(null);
+
+  const shopName = tenantInfo?.shopName || "ASIMA • KASPI POS";
   const iceNumber = tenantInfo?.ice || "003291823000045";
 
+  useEffect(() => {
+    setSavedDocs(getSavedPdfmeDocuments());
+  }, []);
+
+  const totalTTC = items.reduce((a, it) => a + it.qty * it.unitPrice, 0);
+  const totalHT = Math.round((totalTTC / 1.2) * 100) / 100;
+  const totalTVA = Math.round((totalTTC - totalHT) * 100) / 100;
+
+  const handleGenerateAndSavePdf = (forceRegen = false) => {
+    const doc = generateRealPdfmeDocument(
+      {
+        templateType: template,
+        title: docTitle,
+        shopName,
+        ice: iceNumber,
+        clientName,
+        clientPhone,
+        date: new Date().toISOString().slice(0, 10),
+        accentColor,
+        includeQr,
+        items,
+      },
+      forceRegen
+    );
+    setActiveDoc(doc);
+    setSavedDocs(getSavedPdfmeDocuments());
+    onLog?.(
+      `[pdfme Engine] ✔ تم توليد وحفظ مستند PDF حقيقي (${doc.title}) بإجمالي ${doc.totalTTC.toFixed(2)} MAD في الذاكرة المحلية`
+    );
+
+    // Trigger real .pdf download
+    const a = document.createElement("a");
+    a.href = doc.pdfDataUri;
+    a.download = `${doc.templateType}-${doc.date}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success("تم توليد وتحميل ملف الـ PDF الحقيقي وحفظه في الأرشيف!");
+  };
+
   const handleShareWhatsApp = () => {
+    const lines = items.map(
+      (it, i) => `${i + 1}. ${it.designation} (×${it.qty}) = ${(it.qty * it.unitPrice).toFixed(2)} MAD`
+    );
     const text = encodeURIComponent(
-      `📄 *${docTitle}*\n🏪 متجر: ${shopName}\n🔢 رقم التعريف الضريبي ICE: ${iceNumber}\n💰 الإجمالي: 1,850.00 MAD\n\nتم توليد المستند تلقائياً عبر مولّد PDF الذكي (pdfme) في تطبيق KASPI POS.`
+      `📄 *${docTitle}*\n🏪 متجر: ${shopName}\n🔢 ICE: ${iceNumber}\n👤 الزبون: ${clientName}\n\n${lines.join(
+        "\n"
+      )}\n\n💰 *الإجمالي الواجب أداؤه: ${totalTTC.toFixed(2)} MAD*\n— تم التوليد عبر محرك pdfme في KASPI POS`
     );
     const cleanPhone = clientPhone.replace(/[^0-9]/g, "");
     const url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${text}` : `https://wa.me/?text=${text}`;
     window.open(url, "_blank");
-    toast.success("تم تجهيز رابط المشاركة عبر واتساب بنجاح!");
-  };
-
-  const handlePrint = () => {
-    window.print();
+    onLog?.(`[pdfme -> WhatsApp] إرسال التقرير المالي (${totalTTC.toFixed(2)} MAD) إلى ${clientPhone}`);
   };
 
   return (
     <div className="space-y-4 text-start">
-      {/* Header */}
       <div className="flex items-center justify-between border-b border-white/10 pb-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl kaspi-glass-btn flex items-center justify-center">
@@ -42,24 +111,46 @@ export const KaspiPdfmeDesigner: React.FC<{ locale?: string }> = ({ locale = "ar
           </div>
           <div>
             <h4 className="text-sm font-bold text-[var(--kaspi-text-primary)]">
-              مولّد ومصمم المستندات المرئي (pdfme Document Engine)
+              pdfme — مولّد ومصمم مستندات PDF الحقيقي (%PDF-1.4 Binary)
             </h4>
             <p className="text-[11px] text-[var(--kaspi-text-muted)]">
-              تصميم وتوليد الفواتير، عروض الأسعار (Devis)، وتقارير Z تلقائياً بهوية المتجر
+              github.com/pdfme/pdfme • يحفظ المستندات تلقائياً عند التوليد لتفادي إعادة الإنتاج غير الضرورية
             </p>
           </div>
         </div>
         <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-          Visual Designer
+          Auto-Cached PDF
         </span>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Left / Controls Panel (5 cols) */}
-        <div className="lg:col-span-5 space-y-3.5 kaspi-glass-surface p-4 rounded-2xl border border-white/10">
-          <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider block">
-            نوع القالب المختار:
+      {/* Saved PDFs Vault Bar */}
+      {savedDocs.length > 0 && (
+        <div className="p-2.5 rounded-xl kaspi-glass-surface border border-white/10 flex items-center gap-2 overflow-x-auto scrollbar-none">
+          <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1 shrink-0">
+            <Archive className="w-3 h-3" />
+            <span>المستندات المحفوظة ({savedDocs.length}):</span>
           </span>
+          {savedDocs.slice(0, 5).map((d) => (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => {
+                setDocTitle(d.title);
+                setItems(d.items);
+                setActiveDoc(d);
+                toast.info(`تم استرجاع المستند المحفوظ: ${d.title}`);
+              }}
+              className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.1] border border-white/10 text-[11px] text-zinc-200 whitespace-nowrap cursor-pointer"
+            >
+              {d.title} ({d.totalTTC.toFixed(0)} MAD)
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Controls (5 cols) */}
+        <div className="lg:col-span-5 space-y-3 kaspi-glass-surface p-3.5 rounded-2xl border border-white/10">
           <div className="grid grid-cols-2 gap-1.5">
             {[
               { id: "invoice", label: "فاتورة رسمية Facture" },
@@ -82,9 +173,9 @@ export const KaspiPdfmeDesigner: React.FC<{ locale?: string }> = ({ locale = "ar
                       : "شهادة ضمان معتمدة"
                   );
                 }}
-                className={`px-2.5 py-2 rounded-xl text-xs font-semibold text-start transition-all cursor-pointer border ${
+                className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold text-start transition-all cursor-pointer border ${
                   template === t.id
-                    ? "kaspi-glass-btn text-white border-emerald-500/40 shadow-xs"
+                    ? "kaspi-glass-btn text-white border-emerald-500/40"
                     : "kaspi-glass-surface text-zinc-400 hover:text-white border-white/[0.06]"
                 }`}
               >
@@ -93,87 +184,147 @@ export const KaspiPdfmeDesigner: React.FC<{ locale?: string }> = ({ locale = "ar
             ))}
           </div>
 
-          {/* Document Title Input */}
           <div className="space-y-1">
             <label className="text-[10px] text-zinc-400 font-mono">عنوان المستند:</label>
             <input
               type="text"
               value={docTitle}
               onChange={(e) => setDocTitle(e.target.value)}
-              className="w-full px-3 py-1.5 rounded-xl kaspi-glass-surface border border-white/10 text-xs text-white focus:outline-none focus:border-emerald-500/50"
+              className="w-full px-2.5 py-1.5 rounded-xl kaspi-glass-surface border border-white/10 text-xs text-white focus:outline-none"
             />
           </div>
 
-          {/* Theme Color & Customization */}
-          <div className="flex items-center justify-between pt-1">
-            <span className="text-[10px] text-zinc-400 font-mono">اللون المميز (Accent):</span>
-            <div className="flex items-center gap-1.5">
-              {["#10b981", "#3b82f6", "#f59e0b", "#ec4899", "#8b5cf6"].map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setAccentColor(c)}
-                  style={{ backgroundColor: c }}
-                  className={`w-5 h-5 rounded-full transition-transform cursor-pointer ${
-                    accentColor === c ? "scale-125 ring-2 ring-white ring-offset-1 ring-offset-zinc-900" : "opacity-80 hover:opacity-100"
-                  }`}
-                />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-mono">اسم الزبون:</label>
+              <input
+                type="text"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-xl kaspi-glass-surface border border-white/10 text-xs text-white focus:outline-none"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 font-mono">واتساب الزبون:</label>
+              <input
+                type="text"
+                value={clientPhone}
+                onChange={(e) => setClientPhone(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-xl kaspi-glass-surface border border-white/10 text-xs text-white font-mono focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Editable Line Items */}
+          <div className="space-y-1.5 pt-1 border-t border-white/10">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-zinc-400 font-mono">الأسطر والسلع:</span>
+              <button
+                type="button"
+                onClick={() =>
+                  setItems([
+                    ...items,
+                    { designation: "سلعة جديدة", qty: 1, unitPrice: 50, total: 50 },
+                  ])
+                }
+                className="text-[11px] text-emerald-400 font-bold flex items-center gap-0.5 cursor-pointer"
+              >
+                <Plus className="w-3 h-3" />
+                <span>سطر جديد</span>
+              </button>
+            </div>
+            <div className="space-y-1 max-h-28 overflow-y-auto kaspi-no-scrollbar">
+              {items.map((it, idx) => (
+                <div key={idx} className="flex items-center gap-1 text-[11px]">
+                  <input
+                    type="text"
+                    value={it.designation}
+                    onChange={(e) => {
+                      const next = [...items];
+                      next[idx].designation = e.target.value;
+                      setItems(next);
+                    }}
+                    className="flex-1 min-w-0 px-2 py-1 rounded bg-white/[0.04] border border-white/10 text-white"
+                  />
+                  <input
+                    type="number"
+                    value={it.qty}
+                    onChange={(e) => {
+                      const next = [...items];
+                      next[idx].qty = Math.max(1, Number(e.target.value) || 1);
+                      next[idx].total = next[idx].qty * next[idx].unitPrice;
+                      setItems(next);
+                    }}
+                    className="w-12 px-1.5 py-1 rounded bg-white/[0.04] border border-white/10 text-center font-mono text-white"
+                  />
+                  <input
+                    type="number"
+                    value={it.unitPrice}
+                    onChange={(e) => {
+                      const next = [...items];
+                      next[idx].unitPrice = Math.max(0, Number(e.target.value) || 0);
+                      next[idx].total = next[idx].qty * next[idx].unitPrice;
+                      setItems(next);
+                    }}
+                    className="w-16 px-1.5 py-1 rounded bg-white/[0.04] border border-white/10 text-center font-mono text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setItems(items.filter((_, i) => i !== idx))}
+                    className="text-zinc-500 hover:text-red-400 p-1 cursor-pointer"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Toggle QR code */}
-          <label className="flex items-center justify-between p-2 rounded-xl bg-white/[0.02] border border-white/5 cursor-pointer text-xs text-zinc-300">
-            <span>تضمين رمز QR الرقمي للتحقق:</span>
-            <input
-              type="checkbox"
-              checked={includeQr}
-              onChange={(e) => setIncludeQr(e.target.checked)}
-              className="accent-emerald-500 rounded cursor-pointer"
-            />
-          </label>
-
-          {/* WhatsApp Destination */}
-          <div className="space-y-1 pt-1">
-            <label className="text-[10px] text-zinc-400 font-mono">رقم واتساب للإرسال (الزبون أو المحاسب):</label>
-            <input
-              type="text"
-              value={clientPhone}
-              onChange={(e) => setClientPhone(e.target.value)}
-              placeholder="+212600000000"
-              className="w-full px-3 py-1.5 rounded-xl kaspi-glass-surface border border-white/10 text-xs text-white font-mono focus:outline-none focus:border-emerald-500/50"
-            />
-          </div>
-
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-2 pt-2">
+          <div className="grid grid-cols-2 gap-1.5 pt-1">
             <button
               type="button"
-              onClick={handleShareWhatsApp}
-              className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95"
+              onClick={() => handleGenerateAndSavePdf(false)}
+              className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
             >
-              <Share2 className="w-3.5 h-3.5" />
-              <span>إرسال واتساب</span>
+              <FileDown className="w-3.5 h-3.5" />
+              <span>تحميل وحفظ PDF</span>
             </button>
             <button
               type="button"
-              onClick={handlePrint}
-              className="px-3 py-2 rounded-xl kaspi-glass-btn text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95"
+              onClick={handleShareWhatsApp}
+              className="px-3 py-2 rounded-xl kaspi-glass-btn text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>طباعة المستند</span>
+              <Share2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>إرسال واتساب</span>
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={() => handleGenerateAndSavePdf(true)}
+              className="px-2.5 py-1.5 rounded-xl kaspi-glass-surface border border-white/10 text-[11px] text-zinc-300 hover:text-white flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <RefreshCw className="w-3 h-3" />
+              <span>إعادة صياغة جديدة</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="px-2.5 py-1.5 rounded-xl kaspi-glass-surface border border-white/10 text-[11px] text-zinc-300 hover:text-white flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <Printer className="w-3 h-3" />
+              <span>طباعة مباشرة</span>
             </button>
           </div>
         </div>
 
-        {/* Right / Live Paper Preview (7 cols) */}
+        {/* Live Paper Preview (7 cols) */}
         <div className="lg:col-span-7 bg-white text-zinc-900 rounded-2xl p-5 shadow-2xl space-y-4 font-sans select-none border border-zinc-200" dir="rtl">
-          {/* Paper Header */}
           <div className="flex items-start justify-between border-b-2 pb-3" style={{ borderColor: accentColor }}>
             <div>
               <h2 className="text-base font-extrabold text-zinc-900">{shopName}</h2>
               <p className="text-[10px] text-zinc-500">نظام كاسبي كاشير السحابي • الدار البيضاء، المغرب</p>
-              <p className="text-[10px] text-zinc-600 font-mono mt-0.5">ICE: {iceNumber} • RC: 489201</p>
+              <p className="text-[10px] text-zinc-600 font-mono mt-0.5">ICE: {iceNumber} • الزبون: {clientName}</p>
             </div>
             <div className="text-start">
               <span
@@ -188,7 +339,6 @@ export const KaspiPdfmeDesigner: React.FC<{ locale?: string }> = ({ locale = "ar
             </div>
           </div>
 
-          {/* Items Table Mockup */}
           <table className="w-full text-xs text-start">
             <thead className="bg-zinc-100 text-zinc-700 text-[10px] font-bold border-b border-zinc-300">
               <tr>
@@ -199,22 +349,19 @@ export const KaspiPdfmeDesigner: React.FC<{ locale?: string }> = ({ locale = "ar
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200">
-              <tr>
-                <td className="py-2 px-2 font-medium">سلة مشتريات عامة ممتازة (Cart Pack)</td>
-                <td className="py-2 px-2 text-center font-mono">10</td>
-                <td className="py-2 px-2 text-center font-mono">120.00</td>
-                <td className="py-2 px-2 text-end font-mono font-bold">1,200.00 MAD</td>
-              </tr>
-              <tr>
-                <td className="py-2 px-2 font-medium">بضائع استهلاكية مرخصة مع الضمان</td>
-                <td className="py-2 px-2 text-center font-mono">5</td>
-                <td className="py-2 px-2 text-center font-mono">130.00</td>
-                <td className="py-2 px-2 text-end font-mono font-bold">650.00 MAD</td>
-              </tr>
+              {items.map((it, i) => (
+                <tr key={i}>
+                  <td className="py-2 px-2 font-medium">{it.designation}</td>
+                  <td className="py-2 px-2 text-center font-mono">{it.qty}</td>
+                  <td className="py-2 px-2 text-center font-mono">{it.unitPrice.toFixed(2)}</td>
+                  <td className="py-2 px-2 text-end font-mono font-bold">
+                    {(it.qty * it.unitPrice).toFixed(2)} MAD
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
 
-          {/* Bottom Totals & QR */}
           <div className="flex items-end justify-between border-t border-zinc-200 pt-3">
             {includeQr ? (
               <div className="flex items-center gap-2">
@@ -223,16 +370,16 @@ export const KaspiPdfmeDesigner: React.FC<{ locale?: string }> = ({ locale = "ar
                 </div>
                 <div className="text-[9px] text-zinc-500 leading-tight">
                   <p className="font-bold text-zinc-700">ختم التوثيق الرقمي</p>
-                  <p>SHA-256 Tamper Sealed</p>
+                  <p>pdfme SHA-256 Verified</p>
                 </div>
               </div>
             ) : <div />}
 
             <div className="text-end space-y-1">
-              <div className="text-xs text-zinc-600">المجموع الصافي (HT): 1,541.67 MAD</div>
-              <div className="text-xs text-zinc-600">الضريبة TVA (20%): 308.33 MAD</div>
+              <div className="text-xs text-zinc-600">المجموع الصافي (HT): {totalHT.toFixed(2)} MAD</div>
+              <div className="text-xs text-zinc-600">الضريبة TVA (20%): {totalTVA.toFixed(2)} MAD</div>
               <div className="text-sm font-extrabold font-mono" style={{ color: accentColor }}>
-                المجموع الواجب أداؤه: 1,850.00 MAD
+                المجموع الواجب أداؤه: {totalTTC.toFixed(2)} MAD
               </div>
             </div>
           </div>

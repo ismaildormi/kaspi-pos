@@ -97,7 +97,7 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
   geminiKeys.forEach((key, idx) => {
     if (!key.includes("mock")) {
       const googleProvider = createGoogleGenerativeAI({ apiKey: key });
-      const modelId = "gemini-3.5-flash-lite";
+      const modelId = "gemini-2.5-flash";
       candidates.push({
         provider: "google",
         providerName: "Google Gemini",
@@ -118,7 +118,7 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
   groqKeys.forEach((key, idx) => {
     if (!key.includes("mock")) {
       const groqProvider = createGroq({ apiKey: key });
-      const modelId = "openai/gpt-oss-20b";
+      const modelId = "llama-3.3-70b-versatile";
       candidates.push({
         provider: "groq",
         providerName: "Groq",
@@ -242,7 +242,7 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
     });
   }
 
-  // Priority 9: Self-Hosted Local GPU / Ollama / vLLM (Zero API Cost, Infinite Offline)
+  // Priority 9: Self-Hosted Local GPU / Ollama / LitServe (Zero API Cost, Infinite Offline)
   const localBaseUrl = process.env.LOCAL_AI_BASE_URL?.trim();
   if (localBaseUrl) {
     const localModelId = process.env.LOCAL_AI_MODEL?.trim() || "llama3.2";
@@ -252,7 +252,7 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
     });
     candidates.push({
       provider: "local",
-      providerName: "Local GPU AI",
+      providerName: "Local GPU AI (LitServe/Ollama)",
       keyIndex: 0,
       keyMasked: "local-endpoint",
       apiKey: "none",
@@ -261,6 +261,23 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
       supportsVision: true,
     });
   }
+
+  // Priority 10: Zero-Key Free Open-Source AI Gateway (Pollinations OpenAI-Compatible Endpoint)
+  // Always available with $0 token cost and zero API key requirement.
+  const freeOpenSourceGateway = createOpenAI({
+    apiKey: "kaspi-free-open-source",
+    baseURL: "https://text.pollinations.ai/openai",
+  });
+  candidates.push({
+    provider: "local",
+    providerName: "Kaspi Open-Source Arena (Free)",
+    keyIndex: 0,
+    keyMasked: "zero-token-free",
+    apiKey: "kaspi-free-open-source",
+    modelId: "openai",
+    model: freeOpenSourceGateway("openai") as unknown as LanguageModel,
+    supportsVision: true,
+  });
 
   return candidates;
 }

@@ -1,0 +1,118 @@
+{
+  "version": "2.0.0",
+  "updatedAt": "2026-11-18T03:16:00Z",
+  "zeroTokenPolicy": true,
+  "localCpuExecution": true,
+  "repositories": [
+    {
+      "order": "01",
+      "id": "morphic",
+      "name": "Morphic",
+      "githubUrl": "https://github.com/miurla/morphic",
+      "cloneUrl": "https://github.com/miurla/morphic.git",
+      "license": "MIT",
+      "roleAr": "محرك بحث بالذكاء الاصطناعي مع إجابات مدعومة بمصادر موثقة (Web + Store RAG)",
+      "kaspiModule": "src/lib/open-source-engines/morphic-engine.ts",
+      "apiEndpoint": "/api/ai/studio"
+    },
+    {
+      "order": "02",
+      "id": "moonshine",
+      "name": "Moonshine",
+      "githubUrl": "https://github.com/moonshine-ai/moonshine",
+      "cloneUrl": "https://github.com/moonshine-ai/moonshine.git",
+      "license": "Apache-2.0",
+      "roleAr": "تحويل الكلام إلى نص وتوليد ملفات صوتية WAV حقيقية محلياً على بروسيسور الجهاز",
+      "kaspiModule": "src/lib/ai/moonshine-voice-engine.ts",
+      "apiEndpoint": "/api/ai/transcribe"
+    },
+    {
+      "order": "03",
+      "id": "unstract",
+      "name": "Unstract",
+      "githubUrl": "https://github.com/Zipstack/unstract",
+      "cloneUrl": "https://github.com/Zipstack/unstract.git",
+      "license": "Apache-2.0",
+      "roleAr": "تحويل المستندات والفواتير (PDF/صور/نصوص) إلى بيانات JSON منظمة وحقنها في المخزون",
+      "kaspiModule": "src/lib/open-source-engines/unstract-engine.ts",
+      "apiEndpoint": "/api/ai/studio"
+    },
+    {
+      "order": "04",
+      "id": "pdfme",
+      "name": "pdfme",
+      "githubUrl": "https://github.com/pdfme/pdfme",
+      "cloneUrl": "https://github.com/pdfme/pdfme.git",
+      "license": "MIT",
+      "roleAr": "مولّد مستندات PDF ثنائية حقيقية (%PDF-1.4) مع محرر قوالب مرئي وإرسال واتساب",
+      "kaspiModule": "src/lib/open-source-engines/pdfme-engine.ts",
+      "apiEndpoint": "/api/ai/studio"
+    },
+    {
+      "order": "05",
+      "id": "docetl",
+      "name": "DocETL",
+      "githubUrl": "https://github.com/ucbepic/docetl",
+      "cloneUrl": "https://github.com/ucbepic/docetl.git",
+      "license": "MIT",
+      "roleAr": "خط أنابيب ETL لاستخراج وتصنيف وتلخيص آلاف النصوص والمبيعات والديون والملاحظات",
+      "kaspiModule": "src/lib/open-source-engines/docetl-engine.ts",
+      "apiEndpoint": "/api/ai/studio"
+    },
+    {
+      "order": "06",
+      "id": "assistant-ui",
+      "name": "assistant-ui",
+      "githubUrl": "https://github.com/assistant-ui/assistant-ui",
+      "cloneUrl": "https://github.com/assistant-ui/assistant-ui.git",
+      "license": "Apache-2.0",
+      "roleAr": "واجهة محادثة متكاملة بالذكاء الاصطناعي بستايل Google AI Studio مع سجل محادثات وأدوات تفاعلية",
+      "kaspiModule": "src/components/ai/KaspiAiStudioModal.tsx",
+      "apiEndpoint": "/api/ai/chat"
+    },
+    {
+      "order": "07",
+      "id": "opnform",
+      "name": "OpnForm",
+      "githubUrl": "https://github.com/OpnForm/OpnForm",
+      "cloneUrl": "https://github.com/OpnForm/OpnForm.git",
+      "license": "MIT",
+      "roleAr": "بناء النماذج التفاعلية مع المنطق الشرطي ورفع الملفات والربط مع واتساب وWebhooks",
+      "kaspiModule": "src/lib/open-source-engines/opnform-engine.ts",
+      "apiEndpoint": "/api/ai/studio"
+    },
+    {
+      "order": "08",
+      "id": "litserve",
+      "name": "LitServe",
+      "githubUrl": "https://github.com/Lightning-AI/LitServe",
+      "cloneUrl": "https://github.com/Lightning-AI/LitServe.git",
+      "license": "Apache-2.0",
+      "roleAr": "تحويل نماذج الذكاء الاصطناعي المحلية والمجانية إلى واجهة API موحدة فائقة السرعة",
+      "kaspiModule": "src/lib/open-source-engines/litserve-arena-router.ts",
+      "apiEndpoint": "/api/ai/studio"
+    },
+    {
+      "order": "09",
+      "id": "next-forge",
+      "name": "next-forge",
+      "githubUrl": "https://github.com/vercel/next-forge",
+      "cloneUrl": "https://github.com/vercel/next-forge.git",
+      "license": "MIT",
+      "roleAr": "البنية المعمارية لنظام SaaS المتكامل (المصادقة، تعدد المتاجر، الفوترة، والأمان)",
+      "kaspiModule": "src/server/auth/context.ts",
+      "apiEndpoint": "/api/v1/me"
+    },
+    {
+      "order": "10",
+      "id": "puck",
+      "name": "Puck",
+      "githubUrl": "https://github.com/puckeditor/puck",
+      "cloneUrl": "https://github.com/puckeditor/puck.git",
+      "license": "MIT",
+      "roleAr": "محرر وباني المواقع والمتاجر الإلكترونية المرئي بالسحب والإفلات على غرار شوبيفاي",
+      "kaspiModule": "src/lib/open-source-engines/puck-storefront-engine.ts",
+      "apiEndpoint": "/[locale]/store/[slug]"
+    }
+  ]
+}

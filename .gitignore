@@ -36,3 +36,8 @@ deploy/.env
 
 # Rust target
 src-tauri/target/
+
+# Cloned external open-source monorepos (core engines extracted into src/lib/open-source-engines/)
+external_sources/*
+!external_sources/README.md
+!external_sources/manifest.json
