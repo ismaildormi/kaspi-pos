@@ -312,52 +312,102 @@ async function callSingleRealModel(params: {
     };
 
     for (let attempt = 0; attempt < 2; attempt++) {
-      const res = await fetch("https://api.llm7.io/v1/chat/completions", {
+      try {
+        const res = await fetch("https://api.llm7.io/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(40000),
+        });
+
+        const data = await res.json().catch(() => null);
+        const text = data?.choices?.[0]?.message?.content;
+        if (res.ok && typeof text === "string" && text.trim()) {
+          return {
+            text: text.trim(),
+            usedModel: data.model || spec.apiModelId,
+            usedProvider: spec.providerLabel,
+          };
+        }
+
+        const errMsg = String(data?.error?.message || `HTTP ${res.status}`);
+        // Only retry immediately if it's a short <= 2s rate-limit burst
+        if (res.status === 429 && attempt === 0 && !errMsg.includes("quota")) {
+          await new Promise((r) => setTimeout(r, 1400));
+          continue;
+        }
+        break;
+      } catch {
+        if (attempt === 1) break;
+      }
+    }
+
+    // Failover 1: Configured Multi-Gateway Router (Gemini / Groq / Mistral / OpenRouter / Ollama)
+    try {
+      const routerRes = await generateTextWithRouter({
+        system: systemPrompt,
+        messages,
+      });
+      return {
+        text: routerRes.text,
+        usedModel: routerRes.activeModel,
+        usedProvider: `${routerRes.activeProvider} (Failover)`,
+      };
+    } catch {
+      // Failover 2: Pollinations OpenAI Gateway
+      const pRes = await fetch("https://text.pollinations.ai/openai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(45000),
+        body: JSON.stringify({
+          model: "openai",
+          messages: [{ role: "system", content: systemPrompt }, ...messages],
+        }),
+        signal: AbortSignal.timeout(40000),
       });
-
-      if (res.status === 429 && attempt === 0) {
-        await new Promise((r) => setTimeout(r, 1500));
-        continue;
+      const pData = await pRes.json().catch(() => null);
+      const pText = pData?.choices?.[0]?.message?.content;
+      if (pRes.ok && typeof pText === "string" && pText.trim()) {
+        return {
+          text: pText.trim(),
+          usedModel: pData.model || "gpt-oss-20b",
+          usedProvider: "Open-Weight Failover (Pollinations)",
+        };
       }
+      throw new Error(pData?.error?.message || "All open gateways busy");
+    }
+  }
 
+  if (spec.upstream === "pollinations") {
+    try {
+      const res = await fetch("https://text.pollinations.ai/openai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "openai",
+          messages: [{ role: "system", content: systemPrompt }, ...messages],
+        }),
+        signal: AbortSignal.timeout(40000),
+      });
       const data = await res.json().catch(() => null);
       const text = data?.choices?.[0]?.message?.content;
       if (res.ok && typeof text === "string" && text.trim()) {
         return {
           text: text.trim(),
-          usedModel: data.model || spec.apiModelId,
+          usedModel: data.model || "gpt-oss-20b",
           usedProvider: spec.providerLabel,
         };
       }
-      const errMsg = data?.error?.message || `HTTP ${res.status}`;
-      if (attempt === 1) throw new Error(errMsg);
-    }
-  }
-
-  if (spec.upstream === "pollinations") {
-    const res = await fetch("https://text.pollinations.ai/openai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "openai",
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
-      }),
-      signal: AbortSignal.timeout(45000),
+    } catch {}
+    // Failover to Gemma-4-31B on LLM7 or Configured Router
+    const routerRes = await generateTextWithRouter({
+      system: systemPrompt,
+      messages,
     });
-    const data = await res.json().catch(() => null);
-    const text = data?.choices?.[0]?.message?.content;
-    if (res.ok && typeof text === "string" && text.trim()) {
-      return {
-        text: text.trim(),
-        usedModel: data.model || "gpt-oss-20b",
-        usedProvider: spec.providerLabel,
-      };
-    }
-    throw new Error(data?.error?.message || `Pollinations HTTP ${res.status}`);
+    return {
+      text: routerRes.text,
+      usedModel: routerRes.activeModel,
+      usedProvider: `${routerRes.activeProvider} (Failover)`,
+    };
   }
 
   // Fallback or explicit Configured Router (Gemini / Groq / OpenRouter / Local Ollama)

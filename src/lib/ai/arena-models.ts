@@ -162,24 +162,15 @@ export function selectBattleModelPair(prompt: string): [ArenaRealModelSpec, Aren
       prompt
     );
 
-  const poolA = isCode
-    ? ["deepseek-v4-flash", "codestral-latest", "gpt-oss-120b", "gemma4-31b"]
-    : ["deepseek-v4-flash", "gemma4-31b", "gpt-oss-120b", "glm-5.3-flash"];
+  // Pair two distinct upstream providers so Battle Mode avoids burst limits on a single host
+  const llm7Pool = isCode
+    ? ["gemma4-31b", "deepseek-v4-flash", "gpt-oss-120b"]
+    : ["deepseek-v4-flash", "gemma4-31b", "gpt-oss-120b"];
 
-  const pickAId = poolA[Math.floor(Math.random() * poolA.length)];
+  const pickAId = llm7Pool[Math.floor(Math.random() * llm7Pool.length)];
   const modelA = ARENA_REAL_MODELS.find((m) => m.id === pickAId) || ARENA_REAL_MODELS[0];
+  const modelB =
+    ARENA_REAL_MODELS.find((m) => m.id === "gpt-oss-20b-fast") || ARENA_REAL_MODELS[1];
 
-  // Pair with Pollinations GPT-OSS-20B or a second distinct LLM7 model
-  const usePollinationsForB = Math.random() < 0.5;
-  if (usePollinationsForB) {
-    const modelB =
-      ARENA_REAL_MODELS.find((m) => m.id === "gpt-oss-20b-fast") || ARENA_REAL_MODELS[1];
-    return Math.random() < 0.5 ? [modelA, modelB] : [modelB, modelA];
-  }
-
-  const remaining = ARENA_REAL_MODELS.filter(
-    (m) => m.supportsAnonymousBattle && m.id !== modelA.id
-  );
-  const modelB = remaining[Math.floor(Math.random() * remaining.length)] || ARENA_REAL_MODELS[2];
-  return [modelA, modelB];
+  return Math.random() < 0.5 ? [modelA, modelB] : [modelB, modelA];
 }
