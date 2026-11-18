@@ -8,7 +8,12 @@
  * ============================================================================
  */
 
-import type { ArenaProjectFileItem } from "./arena-models";
+export interface LibraryProjectFileItem {
+  name: string;
+  path: string;
+  language: string;
+  content: string;
+}
 
 export interface StoreMapsLocation {
   label: string;
@@ -32,7 +37,7 @@ export interface LibraryArtifactItem {
   createdAt: string;
   previewHtml?: string | null;
   imageUrl?: string | null;
-  files?: ArenaProjectFileItem[];
+  files?: LibraryProjectFileItem[];
   notes?: string;
 }
 

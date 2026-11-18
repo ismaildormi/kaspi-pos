@@ -6,6 +6,7 @@ import { prisma } from "@/server/db/prisma";
 import { getRequestContext } from "@/server/auth/context";
 import { auth } from "@/auth";
 import { toDecimal, roundMoney } from "@/domain/money";
+import { generateProductImageUrl } from "@/lib/pollinations";
 
 // ============================================================================
 // STANDARD MERCHANT TOOLS (Strict Tenant Isolation)
@@ -597,6 +598,55 @@ export async function POST(req: NextRequest) {
         execute: async ({ limit }: { limit?: number }) =>
           fetchTopSellingProducts(tenantId!, limit ?? 3),
       }),
+
+      generateProductImage: tool({
+        description:
+          "Generates a commercial product studio image URL using Pollinations.ai for a Moroccan retail product.",
+        inputSchema: z.object({
+          productPrompt: z.string().min(2),
+        }),
+        execute: async ({ productPrompt }: { productPrompt: string }) => {
+          const imageUrl = generateProductImageUrl(productPrompt);
+          return {
+            imageUrl,
+            proxyUrl: `/api/ai/media-tools?action=image_proxy&url=${encodeURIComponent(imageUrl)}`,
+            note: "Ready to preview or remove background cleanly.",
+          };
+        },
+      }),
+
+      searchWebImages: tool({
+        description:
+          "Searches Wikipedia & Wikimedia Commons for clean product photographs from the web.",
+        inputSchema: z.object({
+          query: z.string().min(2),
+        }),
+        execute: async ({ query }: { query: string }) => {
+          try {
+            const wRes = await fetch(
+              `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(
+                query
+              )}&gsrlimit=5&prop=imageinfo&iiprop=url|mime&iiurlwidth=500&format=json`,
+              {
+                headers: { "User-Agent": "KaspiPOS/1.0 (https://kaspi-pos.vercel.app)" },
+                signal: AbortSignal.timeout(5000),
+              }
+            );
+            const wJson = wRes.ok ? await wRes.json().catch(() => null) : null;
+            const pages = wJson?.query?.pages ? Object.values(wJson.query.pages) : [];
+            const images = (pages as any[])
+              .map((p) => ({
+                title: String(p?.title || query).replace(/^File:/i, ""),
+                url: String(p?.imageinfo?.[0]?.url || ""),
+                thumbnail: String(p?.imageinfo?.[0]?.thumburl || p?.imageinfo?.[0]?.url || ""),
+              }))
+              .filter((x) => x.url);
+            return { query, images };
+          } catch {
+            return { query, images: [] };
+          }
+        },
+      }),
     };
 
     const superAdminTools = {
@@ -734,66 +784,20 @@ ${languageDirective}`;
       });
     } catch (routerErr: any) {
       console.error(
-        "[KASPI AI] All Multi-Gateway router candidates exhausted:",
+        "[KASPI AI] Cloud gateways unavailable (no fabricated fallback returned):",
         routerErr
       );
-
-      let fallbackReply: string;
-      if (isSuperAdmin) {
-        const [pStats, pRev, aiUsage] = await Promise.all([
-          fetchPlatformStats(),
-          fetchPlatformRevenue(),
-          fetchAIUsageStats(),
-        ]);
-        fallbackReply = `**Master AI • Chief Data Officer (KASPI POS)**
-**إحصائيات المنصة الشاملة**:
-• إجمالي المتاجر المسجلة (Tenants): **${pStats.totalTenants}**
-• إجمالي المستخدمين: **${pStats.totalUsers}**
-• الاشتراكات النشطة: **${pStats.activeSubscriptions}**
-• **الإيرادات الشهرية المتكررة (MRR)**: **$${pRev.mrrUSD}** (≈ **${pRev.mrrMAD} MAD**) | إجمالي مبيعات المنصة (GMV): **${pRev.totalPlatformGmvMAD} MAD**
-• **استهلاك الذكاء الاصطناعي**: **${aiUsage.totalMessagesConsumed}** رسالة عبر **${aiUsage.totalChatSessions}** جلسة.`;
-      } else {
-        const sales = await fetchTodaySales(tenantId!);
-        const lowStock = await fetchLowStockProducts(tenantId!, 5);
-        fallbackReply = `مرحباً بك! أنا مساعد كسب الذكي (KASPI AI). 
-**مبيعات اليوم**: ${sales.completedSalesCount} مبيعات بمجموع ${sales.totalRevenueMAD} درهم.
-**المنتجات المنخفضة في المخزون**: ${
-          lowStock.length > 0
-            ? lowStock
-                .map((p) => p.name + ` (${p.currentQuantity} متبقية)`)
-                .join("، ")
-            : "المخزون ممتاز، لا توجد نواقص."
-        }`;
-      }
-
-      await prisma.aIChatMessage.create({
-        data: {
-          sessionId: chatSession.id,
-          role: "assistant",
-          content: fallbackReply,
-        },
-      });
-
-      if (!isSuperAdmin && tenantId) {
-        await prisma.tenant.update({
-          where: { id: tenantId },
-          data: {
-            aiMessagesUsedToday: { increment: 1 },
-          },
-        });
-      }
-
       return new Response(
-        `data: {"type":"text-delta","textDelta":${JSON.stringify(
-          fallbackReply
-        )}}\n\ndata: [DONE]\n\n`,
+        JSON.stringify({
+          error: "CLOUD_AI_UNAVAILABLE_USE_LOCAL_OLLAMA",
+          requiresLocalOllama: true,
+          message:
+            routerErr?.message ||
+            "No cloud AI route succeeded. Please start Local Ollama (127.0.0.1:11434) or connect an API key in Plugins.",
+        }),
         {
-          headers: {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            "x-kaspi-ai-session-id": chatSession.id,
-            "x-kaspi-ai-model": "local-fallback",
-          },
+          status: 503,
+          headers: { "Content-Type": "application/json" },
         }
       );
     }

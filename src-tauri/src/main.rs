@@ -7,7 +7,10 @@ mod tpe_bridge;
 mod desktop_handoff;
 
 use printer::{encode_escpos, render_rows, send_to_printer, to_western_numerals, Align, Fonts, Row};
-use local_ai::{get_local_ai_capabilities, run_local_ai_inference};
+use local_ai::{
+    check_ollama_status, get_local_ai_capabilities, run_local_ai_inference,
+    setup_local_ollama_background,
+};
 use tpe_bridge::{
     cancel_tpe_payment, discover_local_tpe_devices, initiate_tpe_payment,
     print_tpe_receipt, probe_tpe_endpoint, query_tpe_transaction_status,
@@ -377,7 +380,9 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             print_receipt,
             get_local_ai_capabilities,
+            check_ollama_status,
             run_local_ai_inference,
+            setup_local_ollama_background,
             discover_local_tpe_devices,
             initiate_tpe_payment,
             query_tpe_transaction_status,

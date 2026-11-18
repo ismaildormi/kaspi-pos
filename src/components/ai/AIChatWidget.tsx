@@ -36,8 +36,16 @@ import {
   ArrowDown,
   Square,
   Maximize2,
+  Scissors,
+  Image as ImageIcon,
+  Search,
+  Cpu,
+  ShieldCheck,
+  Download,
 } from "lucide-react";
-import { KaspiAiStudioModal } from "./KaspiAiStudioModal";
+import { KaspiAiStudioModal, type WorkspaceTab } from "./KaspiAiStudioModal";
+import { probeAndChatLocalOllama, probeLocalOllamaModels } from "@/lib/zebra-x/sovereign-brain";
+import { removeImageBackgroundLocal } from "@/lib/zebra-x/media-client";
 
 interface LocalChatMessage {
   id: string;
@@ -240,7 +248,12 @@ function resolveCurrentLocale(pathname: string): SupportedLocale {
 export function AIChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [isStudioOpen, setIsStudioOpen] = useState(false);
+  const [studioInitialTab, setStudioInitialTab] = useState<WorkspaceTab>("chat");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isOwnerSuperAdmin, setIsOwnerSuperAdmin] = useState(false);
+  const [ownerBrainActive, setOwnerBrainActive] = useState(false);
+  const [ollamaOnline, setOllamaOnline] = useState(false);
+  const [ollamaModelName, setOllamaModelName] = useState<string>("");
   const [input, setInput] = useState("");
   const [attachment, setAttachment] = useState<{
     name: string;
@@ -338,12 +351,26 @@ export function AIChatWidget() {
     }
     let active = true;
     fetch(getApiUrl("/api/v1/me"))
-      .then((res) => {
-        if (active) setIsAuthenticated(res.ok);
+      .then(async (res) => {
+        if (!active) return;
+        setIsAuthenticated(res.ok);
+        if (res.ok) {
+          const data = await res.json().catch(() => null);
+          const u = data?.user || data?.data || data;
+          const isOwner = Boolean(u?.isSuperAdmin || u?.role === "SUPER_ADMIN");
+          setIsOwnerSuperAdmin(isOwner);
+        }
       })
       .catch(() => {
         if (active) setIsAuthenticated(typeof navigator !== "undefined" && !navigator.onLine);
       });
+    probeLocalOllamaModels()
+      .then((p) => {
+        if (!active) return;
+        setOllamaOnline(p.reachable && p.models.length > 0);
+        if (p.models[0]) setOllamaModelName(p.models[0]);
+      })
+      .catch(() => {});
     return () => {
       active = false;
     };
@@ -845,87 +872,155 @@ export function AIChatWidget() {
     };
   }, []);
 
-  // Smart Built-in Local Business & Image Analyzer Fallback Engine
-  const generateLocalStoreInsight = async (
+  // Real Local Ollama + Real Media Tools (Image Gen, Web Photos, Background Removal)
+  // Zero hardcoded canned business answers.
+  const executeRealLocalOrMedia = async (
     query: string,
     attachedFile: { name: string; type: string; url: string } | null,
     targetLocale: SupportedLocale
-  ): Promise<string> => {
+  ): Promise<{ handled: boolean; text: string }> => {
+    const q = query.trim();
+    const lower = q.toLowerCase();
     const isAr = targetLocale === "ar";
-    const isEn = targetLocale === "en";
 
-    // 1. Image / Receipt Analysis
-    if (attachedFile?.type?.startsWith("image/")) {
-      if (isAr) {
-        return `قمت بتحليل الصورة المرفقة (${attachedFile.name}) بنجاح عبر محرك الرؤية المحلي:\n\n• نوع المستند: إيصال شراء / فاتورة تجارية مغربية.\n• معالجة الصورة: تم التدقيق بجودة عالية دون استهلاك بيانات السحابة.\n• التوجيه المقترح: المستند صالح، يمكنك استيراد عناصره مباشرة إلى كتالوج المنتجات أو تسجيله في ديون الموردين.`;
-      } else if (isEn) {
-        return `Successfully analyzed the attached image (${attachedFile.name}) via the local vision engine:\n\n• Document Type: Moroccan Commercial Receipt / Purchase Invoice.\n• Processing: Zero cloud bandwidth used.\n• Recommended Action: Document verified. You can import item lines directly into your catalog or record it under Supplier Invoices.`;
-      } else {
-        return `Analyse de l'image jointe (${attachedFile.name}) effectuée avec succès via le moteur de vision local :\n\n• Type de document : Reçu d'achat / Facture commerciale marocaine.\n• Traitement : 100% sécurisé en local sans latence.\n• Action suggérée : Document vérifié. Vous pouvez l'enregistrer dans votre grand livre fournisseurs ou catalogue.`;
+    // 1. Real In-Browser Background Removal on attached image
+    if (
+      attachedFile?.type?.startsWith("image/") &&
+      /(background|remove.*bg|transparent|cutout|خلفية|حيد\s*الخلفية|تفريغ|قص)/i.test(lower)
+    ) {
+      const cutout = await removeImageBackgroundLocal(attachedFile.url);
+      void fetch(getApiUrl("/api/ai/zebra-trace"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "MEDIA_OP",
+          outcomeStatus: "SUCCESS",
+          modelUsed: cutout.method,
+          userPrompt: q || "remove background",
+          assistantResponse: "Removed background locally",
+          toolNamesUsed: ["removeImageBackgroundLocal"],
+        }),
+      }).catch(() => {});
+      return {
+        handled: true,
+        text: `${
+          isAr ? "✅ تمت إزالة الخلفية محلياً بنجاح" : "✅ Background removed locally"
+        } (${cutout.method}):\n[KASPI_MEDIA_IMAGE:${cutout.dataUrl}|${attachedFile.name.replace(/\.[^.]+$/, "")}-cutout.png]`,
+      };
+    }
+
+    // 2. Real Product Image Generation
+    if (
+      !attachedFile &&
+      /(generate.*image|create.*image|product.*photo|رسم\s*صورة|صنع\s*صورة|توليد\s*صورة|صوب\s*لي\s*صورة|دير\s*صورة)/i.test(
+        lower
+      )
+    ) {
+      const res = await fetch(getApiUrl("/api/ai/media-tools"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "generate_image", prompt: q }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.imageUrl) {
+        const displayUrl = data.proxyImageUrl || data.imageUrl;
+        void fetch(getApiUrl("/api/ai/zebra-trace"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kind: "MEDIA_OP",
+            outcomeStatus: "SUCCESS",
+            modelUsed: "pollinations",
+            userPrompt: q,
+            assistantResponse: "Generated product image",
+            toolNamesUsed: ["generateProductImage"],
+          }),
+        }).catch(() => {});
+        return {
+          handled: true,
+          text: `${isAr ? "🎨 صورة المنتج المولدة:" : "🎨 Generated Product Photo:"}\n[KASPI_MEDIA_IMAGE:${displayUrl}|generated-product.png]`,
+        };
       }
     }
 
-    // 2. Query Live KPIs
-    let todaySalesMad = 0;
-    let transactions = 0;
-    let lowStockCount = 0;
+    // 3. Real Web Product Photo Search
+    if (
+      !attachedFile &&
+      /(search.*image|find.*photo|web.*image|جيب\s*صور|ابحث\s*عن\s*صور|صور\s*من\s*الويب)/i.test(lower)
+    ) {
+      const cleanQuery = q
+        .replace(/(search.*image|find.*photo|web.*image|جيب\s*صور|ابحث\s*عن\s*صور|صور\s*من\s*الويب)/gi, "")
+        .trim() || q;
+      const res = await fetch(
+        getApiUrl(`/api/ai/media-tools?action=web_images&q=${encodeURIComponent(cleanQuery)}`)
+      );
+      const data = await res.json().catch(() => null);
+      if (res.ok && Array.isArray(data?.results) && data.results.length > 0) {
+        const cards = data.results
+          .slice(0, 3)
+          .map(
+            (img: any, i: number) =>
+              `[KASPI_MEDIA_IMAGE:${img.thumbUrl || img.imageUrl}|web-${i + 1}.jpg]`
+          )
+          .join("\n");
+        return {
+          handled: true,
+          text: `${isAr ? "🔍 صور حقيقية من الويب:" : "🔍 Web Product Photos:"}\n${cards}`,
+        };
+      }
+    }
 
+    // 4. Local Ollama Inference grounded in real live DB KPIs (no fabricated prose)
+    let kpiContext = "";
     try {
-      const res = await fetch("/api/v1/dashboard/kpis");
+      const res = await fetch(getApiUrl("/api/v1/dashboard/kpis"));
       if (res.ok) {
         const data = await res.json();
-        todaySalesMad = data.data?.todaySales || 0;
-        transactions = data.data?.todayTransactions || 0;
-        lowStockCount = data.data?.lowStockItemsCount || 0;
+        const d = data?.data || {};
+        kpiContext = `\nLive POS KPIs (MAD): TodaySales=${Number(d.todaySales || 0).toFixed(2)}, TodayOrders=${Number(d.todayTransactions || 0)}, LowStockItems=${Number(d.lowStockItemsCount || 0)}.`;
       }
     } catch {}
 
-    const lower = query.toLowerCase();
+    const ownerDirective =
+      ownerBrainActive && isOwnerSuperAdmin
+        ? " You are currently speaking exclusively to the Sovereign Owner in X × Zebra Unified Mode."
+        : " Reply concisely as KASPI Local POS Assistant in the user's language (Darija/AR/FR/EN). Never fabricate sales metrics.";
 
-    // Sales query
-    if (
-      lower.includes("vente") ||
-      lower.includes("sales") ||
-      lower.includes("revenue") ||
-      query.includes("مبيعات") ||
-      query.includes("دخل") ||
-      query.includes("شحال")
-    ) {
-      if (isAr) {
-        return `مبيعات اليوم حتى هذه اللحظة:\n\n• إجمالي المعاملات: ${todaySalesMad.toFixed(2)} درهم مغربي.\n• عدد الإيصالات: ${transactions} عملية بيع.\n• ملخص الأداء: العمليات منتظمة، وسيصلك التقرير التنفيذي الشامل الليلة على WhatsApp في الموعد المحدد.`;
-      } else if (isEn) {
-        return `Today's Real-Time Sales Summary:\n\n• Gross Revenue: ${todaySalesMad.toFixed(2)} MAD.\n• Verified Orders: ${transactions} transactions.\n• Status: Operations are running smoothly. The nightly executive digest will be sent to your WhatsApp on schedule.`;
-      } else {
-        return `Synthèse des Ventes du Jour en Direct :\n\n• Chiffre d'affaires brut : ${todaySalesMad.toFixed(2)} MAD.\n• Transactions enregistrées : ${transactions} tickets.\n• Statut : Tout fonctionne parfaitement. Le récapitulatif exécutif vous parviendra ce soir sur WhatsApp.`;
-      }
+    const localRes = await probeAndChatLocalOllama({
+      preferredModel: ollamaModelName || undefined,
+      messages: [
+        {
+          role: "system",
+          content: `You are KASPI AI running locally via Ollama.${ownerDirective}${kpiContext}`,
+        },
+        { role: "user", content: q || t.analyzePrompt },
+      ],
+    });
+
+    if (localRes.ok && localRes.text) {
+      setOllamaOnline(true);
+      setOllamaModelName(localRes.model);
+      void fetch(getApiUrl("/api/ai/zebra-trace"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: ownerBrainActive && isOwnerSuperAdmin ? "OWNER_CORRECTION" : "MODEL_ROUTE",
+          outcomeStatus: "SUCCESS",
+          modelUsed: localRes.model,
+          routeSource:
+            localRes.backend === "tauri_ollama"
+              ? "tauri_local"
+              : ownerBrainActive && isOwnerSuperAdmin
+              ? "zebra_x_owner"
+              : "local_ollama",
+          userPrompt: q,
+          assistantResponse: localRes.text,
+        }),
+      }).catch(() => {});
+      return { handled: true, text: localRes.text };
     }
 
-    // Inventory query
-    if (
-      lower.includes("stock") ||
-      lower.includes("inventaire") ||
-      lower.includes("low") ||
-      query.includes("مخزون") ||
-      query.includes("سلع") ||
-      query.includes("ناقص")
-    ) {
-      if (isAr) {
-        return `تقرير حالة المخزون المحلي:\n\n• المنتجات الحرجة: ${lowStockCount > 0 ? `${lowStockCount} منتجات قاربت على النفاد` : "جميع المنتجات في مستويات آمنة وطبيعية"}.\n• نصيحة المساعد الذكي: راجع قائمة الموردين لتأكيد كميات الطلب المقترحة وتفادي أي نقص في سلعك الأكثر طلباً.`;
-      } else if (isEn) {
-        return `Live Inventory Health Report:\n\n• Low Stock Alert: ${lowStockCount > 0 ? `${lowStockCount} items below alert threshold` : "All catalog items are at healthy stock levels"}.\n• Smart Tip: Check your Suppliers tab to review suggested reorder quantities and prevent stockouts on fast-moving goods.`;
-      } else {
-        return `Rapport d'État des Stocks en Direct :\n\n• Alerte réapprovisionnement : ${lowStockCount > 0 ? `${lowStockCount} articles sous le seuil d'alerte` : "Tous les articles sont à un niveau de stock optimal"}.\n• Conseil de gestion : Consultez l'onglet Fournisseurs pour valider les réapprovisionnements recommandés.`;
-      }
-    }
-
-    // General intelligent response
-    if (isAr) {
-      return `مساعد كسب الذكي في خدمتك دائماً:\n\nأنا أراقب أداء متجرك ومبيعاتك لحظة بلحظة. يمكنك سؤالي صوتياً أو كتابياً عن مبيعات اليوم، حالة المخزون، أو إرفاق فواتير المشتريات لتحليلها فورياً بدون استهلاك توكنز.`;
-    } else if (isEn) {
-      return `KASPI AI Assistant is always online for your business:\n\nI continuously monitor your live store sales and stock levels. You can ask me via voice or text about today's revenue, low stock items, or attach purchase invoices for immediate zero-token analysis.`;
-    } else {
-      return `L'Assistant KASPI IA est toujours actif pour votre commerce :\n\nJe surveille vos ventes et votre stock en temps réel. Vous pouvez me poser vos questions à la voix ou par écrit, ou joindre des factures pour une analyse immédiate sans coût.`;
-    }
+    return { handled: false, text: localRes.error || "" };
   };
 
   // Auto-scroll to bottom of chat when new tokens or messages arrive
@@ -952,6 +1047,31 @@ export function AIChatWidget() {
     e.target.value = "";
   };
 
+  const appendLocalExchange = (
+    promptText: string,
+    replyText: string,
+    attachedFile?: { name: string; type: string; url: string } | null
+  ) => {
+    const userMsg: LocalChatMessage = {
+      id: `local-u-${Date.now()}`,
+      role: "user",
+      content: promptText || t.analyzePrompt,
+      parts: attachedFile
+        ? [{ type: "file", mediaType: attachedFile.type, url: attachedFile.url, name: attachedFile.name }]
+        : undefined,
+    };
+    const assistantId = `local-a-${Date.now() + 1}`;
+    const assistantMsg: LocalChatMessage = {
+      id: assistantId,
+      role: "assistant",
+      content: replyText,
+    };
+    setLocalFallbackMessages((prev) => [...prev, userMsg, assistantMsg]);
+    if (autoSpeak) {
+      speakMessage(assistantId, replyText);
+    }
+  };
+
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if ((!input.trim() && !attachment) || isLoading) return;
@@ -961,25 +1081,21 @@ export function AIChatWidget() {
     setInput("");
     setAttachment(null);
 
-    const userMessageId = `user-${Date.now()}`;
-    const userMsg: LocalChatMessage = {
-      id: userMessageId,
-      role: "user",
-      content: messageText || t.analyzePrompt,
-      parts: currentAttachment
-        ? [
-            {
-              type: "file",
-              mediaType: currentAttachment.type,
-              url: currentAttachment.url,
-              name: currentAttachment.name,
-            },
-          ]
-        : undefined,
-    };
+    // 1. Prefer real Local Media Tools or Local Ollama Qwen when active
+    setIsLocalThinking(true);
+    try {
+      const localAttempt = await executeRealLocalOrMedia(messageText, currentAttachment, activeLocale);
+      if (localAttempt.handled) {
+        setIsLocalThinking(false);
+        appendLocalExchange(messageText, localAttempt.text, currentAttachment);
+        return;
+      }
+    } catch (localErr: any) {
+      console.warn("[KASPI AI] Local attempt failed:", localErr);
+    }
+    setIsLocalThinking(false);
 
-    setLocalFallbackMessages((prev) => [...prev, userMsg]);
-
+    // 2. Try Cloud /api/ai/chat (POS DB tools)
     try {
       if (currentAttachment) {
         await sendMessage(
@@ -1008,33 +1124,29 @@ export function AIChatWidget() {
         );
       }
     } catch {
-      // Graceful instant fallback to local business engine (Zero dead errors)
-      setIsLocalThinking(true);
-      const insight = await generateLocalStoreInsight(messageText, currentAttachment, activeLocale);
-      setIsLocalThinking(false);
-      const assistantId = `assistant-${Date.now()}`;
-      setLocalFallbackMessages((prev) => [
-        ...prev,
-        {
-          id: assistantId,
-          role: "assistant",
-          content: insight,
-        },
-      ]);
-      if (autoSpeak) {
-        speakMessage(assistantId, insight);
-      }
+      // Honest offline notice — zero fabricated AI reply
+      const offlineMsg =
+        activeLocale === "ar"
+          ? "⚠️ محرك أولاما المحلي غير متصل حالياً (127.0.0.1:11434) ومزود السحابة متوقف. اضغط على أيقونة التوسيع بالأعلى لتثبيت/تشغيل أولاما على جهازك."
+          : activeLocale === "fr"
+          ? "⚠️ Ollama local (127.0.0.1:11434) et le routeur cloud sont indisponibles. Ouvrez l'espace complet pour installer/démarrer Ollama."
+          : "⚠️ Local Ollama (127.0.0.1:11434) and cloud gateways are offline. Click Expand above to set up Ollama on your PC.";
+      appendLocalExchange(messageText, offlineMsg, currentAttachment);
     }
   };
 
   const handleQuickPrompt = async (promptText: string) => {
     setInput(promptText);
-    const userMsg: LocalChatMessage = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      content: promptText,
-    };
-    setLocalFallbackMessages((prev) => [...prev, userMsg]);
+    setIsLocalThinking(true);
+    try {
+      const localAttempt = await executeRealLocalOrMedia(promptText, null, activeLocale);
+      if (localAttempt.handled) {
+        setIsLocalThinking(false);
+        appendLocalExchange(promptText, localAttempt.text, null);
+        return;
+      }
+    } catch {}
+    setIsLocalThinking(false);
 
     try {
       await sendMessage(
@@ -1045,27 +1157,16 @@ export function AIChatWidget() {
         }
       );
     } catch {
-      setIsLocalThinking(true);
-      const insight = await generateLocalStoreInsight(promptText, null, activeLocale);
-      setIsLocalThinking(false);
-      const assistantId = `assistant-${Date.now()}`;
-      setLocalFallbackMessages((prev) => [
-        ...prev,
-        {
-          id: assistantId,
-          role: "assistant",
-          content: insight,
-        },
-      ]);
-      if (autoSpeak) {
-        speakMessage(assistantId, insight);
-      }
+      const offlineMsg =
+        activeLocale === "ar"
+          ? "⚠️ أولاما المحلي غير مشغّل ومزود السحابة غير متاح. افتح لوحة التوسيع لتشغيل أولاما على جهازك."
+          : "⚠️ Local Ollama and cloud gateways are offline. Open Workspace above to start Ollama.";
+      appendLocalExchange(promptText, offlineMsg, null);
     }
   };
 
   const allDisplayMessages = useMemo(() => {
-    if (sdkMessages.length > 0) return sdkMessages;
-    return localFallbackMessages;
+    return [...sdkMessages, ...localFallbackMessages];
   }, [sdkMessages, localFallbackMessages]);
 
   const getMessageText = (m: any): string => {
@@ -1157,17 +1258,46 @@ export function AIChatWidget() {
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
+                  {isOwnerSuperAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setOwnerBrainActive((prev) => !prev)}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-xl border text-[10px] font-bold transition-colors cursor-pointer ${
+                        ownerBrainActive
+                          ? "bg-amber-500/20 border-amber-400/50 text-amber-200"
+                          : "kaspi-glass-surface border-white/15 text-zinc-300 hover:border-amber-500/40"
+                      }`}
+                      title="X × Zebra Owner Brain Mode (Owner Only)"
+                    >
+                      <ShieldCheck className="w-3 h-3 text-amber-300" />
+                      <span>X×Z</span>
+                    </button>
+                  )}
+
+                  <span
+                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[9px] font-semibold border ${
+                      ollamaOnline
+                        ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-300"
+                        : "bg-white/5 border-white/10 text-zinc-400"
+                    }`}
+                    title={ollamaOnline ? `Ollama Local (${ollamaModelName})` : "Local Ollama Offline"}
+                  >
+                    <Cpu className="w-2.5 h-2.5" />
+                    <span>{ollamaOnline ? "Qwen" : "Off"}</span>
+                  </span>
+
                   <button
                     type="button"
                     onClick={() => {
+                      setStudioInitialTab("chat");
                       setIsOpen(false);
                       setIsStudioOpen(true);
                     }}
                     className="inline-flex items-center gap-1 px-2 py-1 rounded-xl kaspi-glass-surface hover:bg-emerald-500/20 border border-white/15 hover:border-emerald-500/40 text-zinc-200 hover:text-emerald-300 transition-colors cursor-pointer text-[10px] font-bold"
-                    title="تكبير إلى منصة KASPI AI (Arena) الكاملة"
+                    title={activeLocale === "ar" ? "تكبير واجهة الإدارة والربط والأدوات" : "Expand Local AI & Store Workspace"}
                   >
                     <Maximize2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Arena</span>
+                    <span>{activeLocale === "ar" ? "توسيع" : "Expand"}</span>
                   </button>
 
                   {/* Strictly Closes Window Only on Explicit Click */}
@@ -1374,8 +1504,36 @@ export function AIChatWidget() {
                               </div>
                             )}
 
-                            {/* Message Text Content */}
-                            <div className="whitespace-pre-wrap">{textContent}</div>
+                            {/* Message Text & Inline Media Results */}
+                            <div className="whitespace-pre-wrap space-y-2">
+                              {textContent.split(/(\[KASPI_MEDIA_IMAGE:[^\]]+\])/g).map((part, pIdx) => {
+                                const mediaMatch = part.match(/^\[KASPI_MEDIA_IMAGE:([^|\]]+)\|([^\]]+)\]$/);
+                                if (!mediaMatch) {
+                                  return part ? <span key={pIdx}>{part}</span> : null;
+                                }
+                                const [, mediaUrl, fileName] = mediaMatch;
+                                return (
+                                  <div key={pIdx} className="rounded-xl border border-white/15 bg-zinc-950/70 p-2 space-y-1.5">
+                                    <img
+                                      src={mediaUrl}
+                                      alt={fileName}
+                                      className="max-h-40 w-full object-contain rounded-lg bg-zinc-900"
+                                    />
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="text-[10px] text-zinc-400 truncate">{fileName}</span>
+                                      <a
+                                        href={mediaUrl}
+                                        download={fileName}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-semibold"
+                                      >
+                                        <Download className="w-3 h-3" />
+                                        <span>Save</span>
+                                      </a>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
 
                             {/* ChatGPT Message Action Bar (Image 1, 2, 5) */}
                             {!isUser && (
@@ -1654,6 +1812,55 @@ export function AIChatWidget() {
                     </div>
                   )}
 
+                  {/* Quick Media & Responder Bar inside Compact Chat */}
+                  <div className="px-3 py-1.5 border-t border-white/10 bg-zinc-950/60 flex items-center gap-1.5 overflow-x-auto kaspi-no-scrollbar">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudioInitialTab("media");
+                        setIsOpen(false);
+                        setIsStudioOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] text-zinc-300 shrink-0 cursor-pointer"
+                    >
+                      <ImageIcon className="w-3 h-3 text-emerald-400" />
+                      <span>{activeLocale === "ar" ? "توليد صورة" : "AI Photo"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudioInitialTab("media");
+                        setIsOpen(false);
+                        setIsStudioOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] text-zinc-300 shrink-0 cursor-pointer"
+                    >
+                      <Scissors className="w-3 h-3 text-emerald-400" />
+                      <span>{activeLocale === "ar" ? "إزالة الخلفية" : "Remove BG"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInput(activeLocale === "ar" ? "جيب صور من الويب لمنتج " : "search image ");
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] text-zinc-300 shrink-0 cursor-pointer"
+                    >
+                      <Search className="w-3 h-3 text-emerald-400" />
+                      <span>{activeLocale === "ar" ? "صور الويب" : "Web Photos"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudioInitialTab("responder");
+                        setIsOpen(false);
+                        setIsStudioOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] text-zinc-300 shrink-0 cursor-pointer"
+                    >
+                      <span>{activeLocale === "ar" ? "الرد والروابط" : "Auto-Reply"}</span>
+                    </button>
+                  </div>
+
                   <form
                     onSubmit={handleSend}
                     className="p-2.5 px-3 border-t border-white/10 flex items-center gap-2 shrink-0 bg-zinc-950/80 backdrop-blur-md"
@@ -1722,11 +1929,12 @@ export function AIChatWidget() {
         </>
       )}
 
-      {/* Fullscreen Master Studio (Accessible via double-click on Bot or Maximize icon) */}
+      {/* Expanded Local AI, Comment Auto-Responder, Media Lab & Channels Workspace */}
       <KaspiAiStudioModal
         isOpen={isStudioOpen}
         onClose={() => setIsStudioOpen(false)}
         locale={activeLocale}
+        initialTab={studioInitialTab}
       />
     </>
   );

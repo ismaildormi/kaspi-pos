@@ -21,7 +21,6 @@
 import type { PuckData } from "./puck-engine";
 import { ALL_PUCK_SECTION_TYPES } from "./puck-engine";
 import type { AggregatedStoreContext } from "@/lib/ai/store-context-builder";
-import { ARENA_REAL_MODELS } from "@/lib/ai/arena-models";
 
 export type BattleOutcome = "model_a" | "model_b" | "tie" | "both_bad";
 
@@ -206,18 +205,11 @@ export function computeBradleyTerryLeaderboard(
   votes: HumanPreferenceVoteRecord[],
   latestBenchmarks: Record<string, number> = {}
 ): ArenaModelEvaluationSummary[] {
-  const catalogList = [
-    ...ARENA_REAL_MODELS.map((m) => ({
-      id: m.id,
-      displayName: m.displayName,
-      provider: m.providerLabel,
-    })),
-    ...ARENA_MODEL_REGISTRY.map((m) => ({
-      id: m.id,
-      displayName: m.displayName,
-      provider: m.provider,
-    })),
-  ];
+  const catalogList = ARENA_MODEL_REGISTRY.map((m) => ({
+    id: m.id,
+    displayName: m.displayName,
+    provider: m.provider,
+  }));
 
   // Include any voted model id not statically listed
   const seen = new Set(catalogList.map((m) => m.id));
