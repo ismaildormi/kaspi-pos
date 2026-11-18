@@ -118,31 +118,31 @@ export const ARENA_REAL_MODELS: ArenaRealModelSpec[] = [
     supportsClientDirect: true,
   },
   {
-    id: "groq-gpt-oss",
-    displayName: "Groq-GPT-OSS-20B",
-    providerLabel: "Groq LPU Inference (Cloud Fallback)",
-    upstream: "router_groq",
-    apiModelId: "openai/gpt-oss-20b",
-    specialty: "fast",
+    id: "gemini-2.5-flash",
+    displayName: "Gemini-2.5-Flash",
+    providerLabel: "Google Gemini Multimodal Engine",
+    upstream: "router_google",
+    apiModelId: "gemini-2.5-flash",
+    specialty: "coding",
     supportsAnonymousBattle: true,
     isFreeZeroKey: true,
     supportsClientDirect: false,
   },
   {
-    id: "groq-llama-instant",
-    displayName: "Groq-Llama-3.1-8B-Instant",
-    providerLabel: "Meta Llama 3.1 Fast via Groq LPU (Cloud Fallback)",
-    upstream: "router_groq",
-    apiModelId: "llama-3.1-8b-instant",
-    specialty: "fast",
+    id: "gemini-2.5-pro",
+    displayName: "Gemini-2.5-Pro",
+    providerLabel: "Google Gemini Pro Reasoning",
+    upstream: "router_google",
+    apiModelId: "gemini-2.5-pro",
+    specialty: "reasoning",
     supportsAnonymousBattle: true,
-    isFreeZeroKey: true,
+    isFreeZeroKey: false,
     supportsClientDirect: false,
   },
   {
     id: "groq-llama33",
-    displayName: "Groq-Llama-3.3-70B",
-    providerLabel: "Meta Llama 3.3 via Groq LPU (Cloud Fallback)",
+    displayName: "Llama-3.3-70B-Frontier",
+    providerLabel: "High-Throughput 70B Engine",
     upstream: "router_groq",
     apiModelId: "llama-3.3-70b-versatile",
     specialty: "coding",
@@ -152,12 +152,45 @@ export const ARENA_REAL_MODELS: ArenaRealModelSpec[] = [
   },
   {
     id: "openrouter-free",
-    displayName: "OpenRouter-Free-Pool",
-    providerLabel: "OpenRouter Free Tier (Cloud Fallback)",
+    displayName: "Frontier-Coder-Pool",
+    providerLabel: "OpenRouter Frontier Coding Pool",
     upstream: "router_openrouter",
-    apiModelId: "openrouter/free",
+    apiModelId: "nvidia/nemotron-3-ultra-550b-a55b:free",
     specialty: "coding",
     supportsAnonymousBattle: true,
+    isFreeZeroKey: true,
+    supportsClientDirect: false,
+  },
+  {
+    id: "openrouter-gemma4",
+    displayName: "Gemma-4-31B-OpenRouter",
+    providerLabel: "OpenRouter Gemma 4 Pool",
+    upstream: "router_openrouter",
+    apiModelId: "google/gemma-4-31b-it:free",
+    specialty: "general",
+    supportsAnonymousBattle: true,
+    isFreeZeroKey: true,
+    supportsClientDirect: false,
+  },
+  {
+    id: "groq-gpt-oss",
+    displayName: "GPT-OSS-Cloud",
+    providerLabel: "Fast Reasoning Engine",
+    upstream: "router_groq",
+    apiModelId: "openai/gpt-oss-20b",
+    specialty: "fast",
+    supportsAnonymousBattle: true,
+    isFreeZeroKey: true,
+    supportsClientDirect: false,
+  },
+  {
+    id: "groq-llama-instant",
+    displayName: "Llama-Instant-Edge",
+    providerLabel: "Ultra-Low Latency Text Engine",
+    upstream: "router_groq",
+    apiModelId: "llama-3.1-8b-instant",
+    specialty: "fast",
+    supportsAnonymousBattle: false,
     isFreeZeroKey: true,
     supportsClientDirect: false,
   },
@@ -189,7 +222,7 @@ export interface ArenaModelOutput {
   modelId: string;
   modelName: string;
   providerLabel: string;
-  status: "completed" | "failed";
+  status: "completed" | "failed" | "building";
   latencyMs: number;
   errorMessage?: string;
   replyMarkdown: string;
@@ -204,16 +237,16 @@ export interface ArenaModelOutput {
 }
 
 /**
- * Picks 2 distinct models reliably suited for the prompt.
- * When `preferClientDirect` is true, prefers open-weight client-edge models
- * so user prompts run on the user's machine/IP first (zero Vercel server load).
+ * Picks 2 distinct flagship models suited for the prompt.
+ * Prefers frontier 70B / 550B / Gemini 2.5 / open-weight coding models
+ * rather than tiny 8B instant models so websites & apps reach true Arena depth.
  */
 export function selectBattleModelPair(
   prompt: string,
   preferClientDirect = true
 ): [ArenaRealModelSpec, ArenaRealModelSpec] {
   const isCode =
-    /(build|create|make|design|develop|website|site|app|game|dashboard|store|shop|html|css|react|3d|three\.?js|calculator|landing|صفحة|موقع|سيت|متجر|تطبيق|لعبة|صوب|قاد|دير\s+لي|ابني|أبني|كريي|صمم|أنشئ|برمج|واجهة|نظام)/i.test(
+    /(build|create|make|design|develop|website|site|app|game|dashboard|store|shop|ecommerce|e-commerce|html|css|react|3d|three\.?js|calculator|landing|صفحة|موقع|سيت|متجر|تطبيق|لعبة|صوب|قاد|دير\s+لي|ابني|أبني|كريي|صمم|أنشئ|برمج|واجهة|نظام)/i.test(
       prompt
     );
 
@@ -234,11 +267,17 @@ export function selectBattleModelPair(
     return [mA, mB];
   }
 
-  // Server pool pairing: fast Groq LPU models (<=4s parallel response, never hits 504)
-  const modelA = ARENA_REAL_MODELS.find((m) => m.id === "groq-gpt-oss") || ARENA_REAL_MODELS[0];
-  const modelB =
-    ARENA_REAL_MODELS.find((m) => m.id === "groq-llama-instant") ||
+  // Flagship server pool pairing: strong 70B / Gemini 2.5 / OpenRouter 550B+31B / 120B (never 8B for complex builds)
+  const modelA =
+    ARENA_REAL_MODELS.find((m) => m.id === "gemini-2.5-flash") ||
     ARENA_REAL_MODELS.find((m) => m.id === "groq-llama33") ||
-    ARENA_REAL_MODELS[1];
+    ARENA_REAL_MODELS[0];
+  const modelB = isCode
+    ? ARENA_REAL_MODELS.find((m) => m.id === "groq-llama33") ||
+      ARENA_REAL_MODELS.find((m) => m.id === "openrouter-free") ||
+      ARENA_REAL_MODELS[1]
+    : ARENA_REAL_MODELS.find((m) => m.id === "openrouter-free") ||
+      ARENA_REAL_MODELS.find((m) => m.id === "groq-gpt-oss") ||
+      ARENA_REAL_MODELS[1];
   return Math.random() < 0.5 ? [modelA, modelB] : [modelB, modelA];
 }

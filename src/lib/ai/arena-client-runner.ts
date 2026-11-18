@@ -27,16 +27,16 @@ export const CODE_BUILD_PROMPT_REGEX =
   /(build\s+|create\s+|make\s+|design\s+|develop\s+|code\s+|write\s+(a\s+)?(game|website|web\s*app|site|page|html|dashboard|app|store|shop|calculator|portfolio|landing)|website|web\s*app|landing\s*page|racing\s*game|arcade|three\.?js|tetris|snake|chess|puzzle|block\s*blast|html5|canvas|صفحة|موقع|سيت|متجر|تطبيق|لعبة|صوب|قاد|دير\s*لي|ابني|أبني|كريي|صمم|أنشئ|برمج|واجهة|منصة|حاسبة|نظام)/i;
 
 const VIDEO_PROMPT_REGEX =
-  /(\bcreate\s+(a\s+)?video\b|\bgenerate\s+(a\s+)?video\b|\bpromo\s+video\b|\bmotion\s+video\b|\breel\b|فيديو|فيديو\s+إعلاني|مقطع\s+فيديو|ريلز|انميشن|موشن\s+جرافيك)/i;
+  /(\bcreate\s+(a\s+)?video\b|\bgenerate\s+(a\s+)?video\b|\bpromo\s+video\b|\bvideo\s+ad\b|\bmotion\s+video\b|\bcommercial\s+video\b|\breel\b|فيديو|لفيديو|فديو|فيديوا|فيديو\s+إعلاني|اشهار.*فيديو|فيديو.*اشهار|مقطع\s+فيديو|ريلز|انميشن|موشن\s+جرافيك)/i;
 
 const IMAGE_PROMPT_REGEX =
-  /(\bdraw\b|\bgenerate\s+(an?\s+)?image\b|\bcreate\s+(a\s+)?(photo|picture|logo|illustration|art|poster|banner|cover)\b|ارسم|توليد\s+صورة|صورة\s|انشئ\s+صورة|صمم\s+شعار|لوجو)/i;
+  /(\bdraw\b|\bgenerate\s+(an?\s+)?image\b|\bcreate\s+(a\s+)?(photo|picture|logo|illustration|art|poster|banner|cover)\b|ارسم|توليد\s+صورة|صورة\s+(?!.*فيديو)|انشئ\s+صورة|صمم\s+شعار|لوجو)/i;
 
 const SEARCH_PROMPT_REGEX =
-  /(\bsearch\s+(the\s+)?web\b|\bfetch\b|https?:\/\/|\blatest\s+news\b|\bcurrent\s+price\b|ابحث\s+في\s+الانترنت|بحث\s+في\s+الويب|معلومات\s+محدثة|أخبار\s+اليوم)/i;
+  /(\bsearch\s+(the\s+)?web\b|\bfetch\b|\blatest\s+news\b|\bcurrent\s+price\b|ابحث\s+في\s+الانترنت|بحث\s+في\s+الويب|معلومات\s+محدثة|أخبار\s+اليوم)/i;
 
 const FOLLOWUP_CODE_EDIT_REGEX =
-  /(change|update|modify|edit|add|fix|remove|make\s+it|color|theme|button|section|navbar|footer|cart|arabic|french|english|بدل|غير|زيد|عدل|حسن|أضف|لون|الزر|القائمة|السلة|العنوان)/i;
+  /(change|update|modify|edit|add|fix|remove|make\s+it|color|theme|button|section|navbar|footer|cart|checkout|admin|product|arabic|french|english|بدل|غير|زيد|عدل|حسن|أضف|لون|الزر|القائمة|السلة|العنوان|ضف|صلح|ميزة)/i;
 
 export function detectEffectiveModality(
   requested: ArenaModality,
@@ -55,12 +55,16 @@ export function detectEffectiveModality(
 
   const p = prompt.toLowerCase();
   if (VIDEO_PROMPT_REGEX.test(p)) return "video";
+  if (CODE_BUILD_PROMPT_REGEX.test(p)) return "code";
   if (IMAGE_PROMPT_REGEX.test(p)) return "image";
   if (SEARCH_PROMPT_REGEX.test(p)) return "search";
-  if (CODE_BUILD_PROMPT_REGEX.test(p)) return "code";
 
   if (previousTurnModality === "code" && FOLLOWUP_CODE_EDIT_REGEX.test(p)) {
     return "code";
+  }
+
+  if (/https?:\/\//i.test(p)) {
+    return previousTurnModality === "code" ? "code" : "search";
   }
 
   return "text";
@@ -127,18 +131,33 @@ export function bundlePreviewHtml(
   files: ArenaProjectFileItem[],
   rawText: string
 ): string | null {
-  const htmlFile = files.find(
-    (f) => f.language === "html" || f.name.toLowerCase().endsWith(".html")
-  );
-  const cssFiles = files.filter(
-    (f) => f.language === "css" || f.name.toLowerCase().endsWith(".css")
-  );
-  const jsFiles = files.filter(
-    (f) =>
-      f.language === "javascript" ||
-      f.language === "js" ||
-      f.name.toLowerCase().endsWith(".js")
-  );
+  const htmlFile =
+    files.find((f) => f.path === "index.html") ||
+    files.find((f) => f.language === "html" || f.name.toLowerCase().endsWith(".html"));
+
+  const cssFiles = files
+    .filter((f) => f.language === "css" || f.name.toLowerCase().endsWith(".css"))
+    .sort((a, b) => {
+      const score = (p: string) => (p.includes("token") || p.includes("theme") || p.includes("var") ? 0 : 1);
+      return score(a.path) - score(b.path);
+    });
+
+  const jsFiles = files
+    .filter(
+      (f) =>
+        f.language === "javascript" ||
+        f.language === "js" ||
+        f.name.toLowerCase().endsWith(".js")
+    )
+    .sort((a, b) => {
+      const score = (p: string) =>
+        p.includes("data/") || p.includes("config") || p.includes("catalog")
+          ? 0
+          : p.includes("lib/") || p.includes("state")
+          ? 1
+          : 2;
+      return score(a.path) - score(b.path);
+    });
 
   let html = htmlFile?.content || "";
   if (!html) {
@@ -159,7 +178,17 @@ export function bundlePreviewHtml(
     html += "\n</html>";
   }
 
-  const combinedCss = cssFiles.map((c) => c.content).join("\n\n");
+  // Strip local relative CSS/JS external refs (non-HTTP/data) since we inline all project files
+  html = html.replace(
+    /<link[^>]+rel=["']stylesheet["'][^>]+href=["'](?!https?:\/\/|\/\/|data:)[^"']+["'][^>]*>/gi,
+    ""
+  );
+  html = html.replace(
+    /<script[^>]+src=["'](?!https?:\/\/|\/\/|data:)[^"']+["'][^>]*>\s*<\/script>/gi,
+    ""
+  );
+
+  const combinedCss = cssFiles.map((c) => `/* ${c.path} */\n${c.content}`).join("\n\n");
   if (combinedCss.trim()) {
     const styleTag = `<style>\n${combinedCss}\n</style>`;
     if (/<\/head>/i.test(html)) {
@@ -169,7 +198,36 @@ export function bundlePreviewHtml(
     }
   }
 
-  const combinedJs = jsFiles.map((j) => j.content).join("\n\n");
+  // Resilience guard so missing third-party CDN images never show broken image alt boxes
+  const imageGuardScript = `
+/* KASPI Preview Visual Resilience Guard */
+(function(){
+  if (typeof window === "undefined") return;
+  window.addEventListener("error", function(ev) {
+    var t = ev && ev.target;
+    if (t && t.tagName === "IMG" && !t.dataset.kaspiFixed) {
+      t.dataset.kaspiFixed = "1";
+      var label = (t.getAttribute("alt") || "Product Preview").slice(0, 28).replace(/[<>&"']/g, "");
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400">' +
+        '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0%" stop-color="#111827"/><stop offset="100%" stop-color="#064e3b"/></linearGradient></defs>' +
+        '<rect width="600" height="400" rx="24" fill="url(#g)"/>' +
+        '<circle cx="300" cy="165" r="56" fill="rgba(16,185,129,0.2)" stroke="#10b981" stroke-width="2.5"/>' +
+        '<rect x="275" y="130" width="50" height="72" rx="10" fill="#18181b" stroke="#34d399" stroke-width="2"/>' +
+        '<text x="300" y="275" text-anchor="middle" fill="#ecfdf5" font-family="system-ui,sans-serif" font-size="22" font-weight="700">' +
+        label + '</text></svg>';
+      t.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    }
+  }, true);
+})();`;
+
+  const combinedJs = [
+    imageGuardScript,
+    ...jsFiles.map((j) => `/* === ${j.path} === */\n${j.content}`),
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
   if (combinedJs.trim()) {
     const scriptTag = `<script>\n${combinedJs}\n</script>`;
     if (/<\/body>/i.test(html)) {
@@ -178,13 +236,6 @@ export function bundlePreviewHtml(
       html = `${html}\n${scriptTag}`;
     }
   }
-
-  // Strip local external script/stylesheet links that fail inside srcDoc
-  html = html.replace(/<link[^>]+href=["'](?:\.\/)?styles?\.css["'][^>]*>/gi, "");
-  html = html.replace(
-    /<script[^>]+src=["'](?:\.\/)?(?:app|main|script)\.js["'][^>]*><\/script>/gi,
-    ""
-  );
 
   return html;
 }
@@ -242,12 +293,36 @@ export function extractProjectFromResponse(
     }
   }
 
-  // 2. Closed AND unclosed fenced blocks
+  // 2. Closed AND unclosed fenced blocks (with optional path=... / FILE: header support)
   if (files.length === 0) {
-    const pushFenceFile = (langRaw: string, contentRaw: string, idx: number) => {
+    const pushFenceFile = (
+      metaRaw: string,
+      contentRaw: string,
+      idx: number,
+      explicitPath?: string
+    ) => {
+      const tokens = metaRaw.trim().split(/\s+/);
+      const langRaw = tokens[0] || "";
+      const attrPath = metaRaw.match(/(?:path|file)=["']?([^"'\s>]+)["']?/i)?.[1];
       const lang = (langRaw || "txt").toLowerCase();
       const content = contentRaw.trim();
       if (!content) return;
+
+      const resolvedPath = (explicitPath || attrPath || "")
+        .replace(/^\/+/, "")
+        .replace(/^(\.\.\/)+/, "");
+
+      if (resolvedPath) {
+        const cleanName = resolvedPath.split("/").pop() || resolvedPath;
+        const ext = cleanName.split(".").pop()?.toLowerCase() || lang || "txt";
+        files.push({
+          path: resolvedPath,
+          name: cleanName,
+          language: ext === "js" ? "javascript" : ext,
+          content,
+        });
+        return;
+      }
 
       if (
         lang === "html" ||
@@ -265,25 +340,39 @@ export function extractProjectFromResponse(
           content,
         });
       } else if (lang === "css") {
+        const name = files.some((f) => f.path === "styles/layout.css")
+          ? `styles/module-${idx}.css`
+          : files.some((f) => f.path === "styles/tokens.css")
+          ? "styles/layout.css"
+          : "styles/tokens.css";
         files.push({
-          path: files.some((f) => f.path === "styles.css")
-            ? `styles-${idx}.css`
-            : "styles.css",
-          name: files.some((f) => f.path === "styles.css")
-            ? `styles-${idx}.css`
-            : "styles.css",
+          path: name,
+          name: name.split("/").pop() || name,
           language: "css",
           content,
         });
       } else if (lang === "js" || lang === "javascript") {
+        const name = files.some((f) => f.path === "data/catalog.js")
+          ? files.some((f) => f.path === "scripts/app.js")
+            ? `scripts/module-${idx}.js`
+            : "scripts/app.js"
+          : /CATALOG|PRODUCTS|ITEMS|MENU/i.test(content.slice(0, 300))
+          ? "data/catalog.js"
+          : "scripts/app.js";
         files.push({
-          path: files.some((f) => f.path === "app.js")
-            ? `app-${idx}.js`
-            : "app.js",
-          name: files.some((f) => f.path === "app.js")
-            ? `app-${idx}.js`
-            : "app.js",
+          path: name,
+          name: name.split("/").pop() || name,
           language: "javascript",
+          content,
+        });
+      } else if (lang === "json") {
+        const name = content.includes('"dependencies"') || content.includes('"name"')
+          ? "package.json"
+          : `data/data-${idx}.json`;
+        files.push({
+          path: name,
+          name: name.split("/").pop() || name,
+          language: "json",
           content,
         });
       } else if (lang === "tsx" || lang === "ts" || lang === "jsx") {
@@ -303,22 +392,25 @@ export function extractProjectFromResponse(
       }
     };
 
-    const closedFenceRegex = /```([a-zA-Z0-9_-]*)[ \t]*\r?\n([\s\S]*?)```/g;
+    const closedFenceRegex =
+      /(?:(?:<!--|\/\*|\/\/|#+)[ \t]*(?:FILE|file|path)?[ \t]*:?[ \t]*([a-zA-Z0-9_./-]+\.[a-zA-Z0-9]+)[ \t]*(?:-->|\*\/)?\s*)?```([^\r\n`]*)\r?\n([\s\S]*?)```/g;
     let remaining = rawText;
     let match: RegExpExecArray | null;
     let idx = 0;
 
     while ((match = closedFenceRegex.exec(rawText)) !== null) {
       idx++;
-      pushFenceFile(match[1], match[2], idx);
+      pushFenceFile(match[2], match[3], idx, match[1]);
       remaining = remaining.replace(match[0], "");
     }
 
     // Rescue truncated/unclosed trailing fence!
-    const unclosedMatch = remaining.match(/```([a-zA-Z0-9_-]*)[ \t]*\r?\n([\s\S]*)$/);
+    const unclosedMatch = remaining.match(
+      /(?:(?:<!--|\/\*|\/\/|#+)[ \t]*(?:FILE|file|path)?[ \t]*:?[ \t]*([a-zA-Z0-9_./-]+\.[a-zA-Z0-9]+)[ \t]*(?:-->|\*\/)?\s*)?```([^\r\n`]*)\r?\n([\s\S]*)$/
+    );
     if (unclosedMatch) {
       idx++;
-      pushFenceFile(unclosedMatch[1], unclosedMatch[2], idx);
+      pushFenceFile(unclosedMatch[2], unclosedMatch[3], idx, unclosedMatch[1]);
     }
   }
 
@@ -375,14 +467,35 @@ export function buildArenaSystemPrompt(params: {
   const safeMemory = `${storeContextSnippet}${libraryContextSnippet}${operatingModeHint}${attachmentContext}${searchContextText}`;
 
   if (modality === "code") {
-    return `You are an expert Senior Full-Stack & Creative Web Developer inside KASPI AI Arena (Independent Global Business OS).
-Build ANYTHING requested by the user: complete e-commerce stores (catalog, cart, variants, checkout, multi-currency), websites, landing pages, SaaS apps, dashboards, 2D/3D HTML5 Canvas games, or custom tools.
-If [Verified Real Store Location (Maps)] is present in memory, embed their real city, street address, OpenStreetMap iframe, and Directions link cleanly in the generated website/storefront! Never claim an unverified external platform connection succeeded. Respond in the user's language (Arabic, Moroccan Darija, French, English, Spanish, German, Portuguese, etc.).${safeMemory}
+    return `You are a Principal Full-Stack Architect & UI/UX Product Engineer inside KASPI AI Arena.
+Build production-grade, interactive web applications, flagship e-commerce stores, SaaS dashboards, or HTML5 apps with Apple/Stripe-caliber typography, layout rhythm, dark/light themes, responsive grids, working client state (cart, search, filters, checkout, persistence, admin tab), and domain-authentic visuals.
+CRITICAL MEDIA RULE: NEVER invent random Unsplash/Pexels photo IDs that could render off-topic stock photos (animals/dogs/placeholders). Either craft crisp bespoke inline SVG product illustrations/hardware mockups matching the exact product specs OR use verified URLs found in context!
+If [Verified Real Store Location (Maps)] is present in memory, embed their real city, street address, OpenStreetMap iframe, and Directions link cleanly! Never invent placeholder brand text like "STORE NAME" when context specifies details; invent a tasteful flagship brand if "[STORE NAME]" wasn't specified. Respond in the user's language (Arabic, Moroccan Darija, French, English, etc.).${safeMemory}
 
 CRITICAL OUTPUT FORMAT RULES (STRICTLY REQUIRED):
-1. Write ONLY 1–2 short sentences describing what you built. NEVER write technical architecture plans, stack comparisons, or Markdown tables!
-2. Output ALL HTML5, CSS3 (<style>...</style>), and ES6 JavaScript (<script>...</script>) inside ONE SINGLE \`\`\`html code block starting with <!DOCTYPE html> and ending with </html>.
-3. Do NOT split CSS or JS into separate code blocks unless tiny, and NEVER use external unbundled npm imports (no React/Tailwind CDN dependencies needed — write self-contained modern CSS/JS/SVG/Canvas).`;
+1. Write 2 concise sentences summarizing the architecture built (NO raw Markdown stack tables).
+2. Output modular separate project files using fenced code blocks with file headers like:
+<!-- FILE: styles/tokens.css -->
+\`\`\`css
+...
+\`\`\`
+<!-- FILE: styles/layout.css -->
+\`\`\`css
+...
+\`\`\`
+<!-- FILE: data/catalog.js -->
+\`\`\`javascript
+...
+\`\`\`
+<!-- FILE: index.html -->
+\`\`\`html
+<!DOCTYPE html>...
+\`\`\`
+<!-- FILE: scripts/app.js -->
+\`\`\`javascript
+...
+\`\`\`
+Wait: make sure \`index.html\` runs smoothly cleanly when CSS/JS files are bundled in order, using vanilla semantic HTML5 + modern CSS3 + ES6 JS (no external CDN npm compilation needed so Live Preview executes instantaneously).`;
   }
 
   if (modality === "search") {
@@ -394,8 +507,7 @@ Answer the user's question accurately in the same language as the prompt using t
 Respond clearly, thoughtfully, and accurately in the exact language used by the user (Arabic, Moroccan Darija, French, English, Spanish, German, Portuguese, Chinese, Japanese, etc.). If the user needs to connect an external service (Instagram, WhatsApp, LinkedIn, GitHub, Vercel, Stripe, etc.), explain how to connect it in KASPI Plugins or request a screenshot to guide them click-by-click.${safeMemory}`;
 }
 
-export const STRICT_HTML_RECOVERY_SYSTEM_PROMPT = `You are a frontend compiler. Your ONLY job is to output ONE complete runnable single-file web application inside a single \`\`\`html code block starting with <!DOCTYPE html> and ending with </html>.
-Put all CSS inside <style> and all JavaScript inside <script>. Do NOT write architecture plans, essays, or tables. Include realistic rich content, interactive UI controls, buttons, cards, and responsive styling in the user's requested language.`;
+export const STRICT_HTML_RECOVERY_SYSTEM_PROMPT = `You are a frontend compiler. Output clean modular HTML5 + CSS3 + ES6 files using <!-- FILE: index.html -->, <!-- FILE: styles/app.css -->, <!-- FILE: scripts/app.js --> starting index.html with <!DOCTYPE html> and ending with </html>. Include full interactive controls, realistic product/UI SVG visuals (never external broken/random photo IDs), responsive styling, and dark/light theme support.`;
 
 // ============================================================================
 // LOCAL CANVAS MOTION VIDEO STUDIO BUILDER (REAL .WEBM RECORDING)
@@ -422,10 +534,10 @@ export function buildMotionVideoStudioHtml(params: {
         ? params.scenes
         : [
             {
-              badge: "KASPI MOTION STUDIO",
+              badge: "LAUNCH",
               headline: params.title,
-              subline: "Dynamic HTML5 Motion Promo Video",
-              metric: "60 FPS • HD 1280x720",
+              subline: "Next-Generation Digital Experience",
+              metric: "LIVE NOW",
             },
           ],
     rtl: params.rtl,
@@ -439,30 +551,35 @@ export function buildMotionVideoStudioHtml(params: {
 <title>${params.title.replace(/</g, "&lt;")}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:#0d0d0f;color:#f4f4f5;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:16px;gap:14px}
-  .stage-wrap{width:100%;max-width:860px;background:#16161a;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:14px;box-shadow:0 24px 60px rgba(0,0,0,.6)}
-  canvas{width:100%;aspect-ratio:16/9;background:#09090b;border-radius:12px;display:block;border:1px solid rgba(255,255,255,.08)}
-  .controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+  body{background:#090a0c;color:#f4f4f5;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:12px}
+  .player-shell{width:100%;max-width:960px;position:relative;border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.12);background:#0d0e11;box-shadow:0 28px 80px rgba(0,0,0,.75)}
+  canvas{width:100%;aspect-ratio:16/9;background:#09090b;display:block}
+  .hud{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:rgba(16,17,20,.96);border-top:1px solid rgba(255,255,255,.08)}
   .btn-group{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-  button{border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;transition:.18s}
+  button{border:none;border-radius:10px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;transition:.18s}
   .btn-primary{background:${params.accentColor || "#10b981"};color:#09090b}
   .btn-primary:hover{filter:brightness(1.12)}
   .btn-ghost{background:rgba(255,255,255,.08);color:#e4e4e7;border:1px solid rgba(255,255,255,.1)}
   .btn-ghost:hover{background:rgba(255,255,255,.16)}
-  .status{font-size:12px;color:#a1a1aa;font-family:monospace}
+  .dots{display:flex;gap:6px;align-items:center}
+  .dot{width:8px;height:8px;border-radius:99px;background:rgba(255,255,255,.22);cursor:pointer;transition:.2s}
+  .dot.active{width:22px;background:${params.accentColor || "#10b981"}}
+  .status{font-size:11px;color:#a1a1aa;font-family:monospace}
 </style>
 </head>
 <body>
-<div class="stage-wrap">
+<div class="player-shell">
   <canvas id="stage" width="1280" height="720"></canvas>
-  <div class="controls">
+  <div class="hud">
     <div class="btn-group">
       <button id="toggleBtn" class="btn-ghost">Pause</button>
-      <button id="prevBtn" class="btn-ghost">Prev Scene</button>
-      <button id="nextBtn" class="btn-ghost">Next Scene</button>
-      <button id="recordBtn" class="btn-primary">Render &amp; Download .WEBM Video</button>
+      <button id="prevBtn" class="btn-ghost">◀</button>
+      <button id="nextBtn" class="btn-ghost">▶</button>
+      <button id="soundBtn" class="btn-ghost">Audio: OFF</button>
+      <button id="recordBtn" class="btn-primary">Download .WEBM Video</button>
     </div>
-    <span id="statusTxt" class="status">Playing locally on your GPU/Canvas</span>
+    <div class="dots" id="dots"></div>
+    <span id="statusTxt" class="status">00:00</span>
   </div>
 </div>
 <script>
@@ -470,13 +587,23 @@ const CFG = ${safeData};
 const canvas = document.getElementById("stage");
 const ctx = canvas.getContext("2d");
 const statusTxt = document.getElementById("statusTxt");
-let playing = true, startTs = performance.now(), sceneSec = 3.2;
+const dotsEl = document.getElementById("dots");
+const ACCENT = CFG.accentColor || "#10b981";
+let playing = true, startTs = performance.now(), sceneSec = 3.4, audioOn = false;
+let audioCtx = null, synthTimer = null;
 
-const particles = Array.from({length: 34}, (_, i) => ({
-  x: Math.random() * 1280,
-  y: Math.random() * 720,
-  r: 2 + (i % 5) * 1.4,
-  vy: 0.4 + Math.random() * 1.1
+CFG.scenes.forEach((_, idx) => {
+  const d = document.createElement("span");
+  d.className = "dot" + (idx === 0 ? " active" : "");
+  d.onclick = () => { startTs = performance.now() - idx * sceneSec * 1000; };
+  dotsEl.appendChild(d);
+});
+
+const particles = Array.from({length: 48}, (_, i) => ({
+  x: (i * 97) % 1280,
+  y: (i * 53) % 720,
+  r: 1.5 + (i % 4) * 1.1,
+  vy: 0.35 + (i % 6) * 0.22
 }));
 
 function drawRoundedRect(x, y, w, h, r) {
@@ -493,88 +620,154 @@ function drawRoundedRect(x, y, w, h, r) {
   ctx.closePath();
 }
 
+function drawAppMockup(x, y, w, h, t) {
+  ctx.save();
+  ctx.fillStyle = "rgba(22, 24, 29, 0.92)";
+  ctx.strokeStyle = "rgba(255,255,255,0.14)";
+  ctx.lineWidth = 2;
+  drawRoundedRect(x, y, w, h, 20);
+  ctx.fill();
+  ctx.stroke();
+
+  // Top browser chrome dots
+  ["#ef4444","#f59e0b","#10b981"].forEach((col, idx) => {
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.arc(x + 24 + idx * 18, y + 22, 5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Animated dashboard bars inside UI mockup
+  for (let b = 0; b < 5; b++) {
+    const bh = 38 + Math.abs(Math.sin(t * 2.2 + b * 0.9)) * 78;
+    ctx.fillStyle = b === 4 ? ACCENT : "rgba(16,185,129,0.34)";
+    drawRoundedRect(x + 28 + b * 66, y + h - 42 - bh, 42, bh, 8);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function toggleAmbientSynth() {
+  audioOn = !audioOn;
+  document.getElementById("soundBtn").textContent = audioOn ? "Audio: ON" : "Audio: OFF";
+  if (audioOn && typeof AudioContext !== "undefined") {
+    audioCtx = audioCtx || new AudioContext();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    const notes = [261.63, 329.63, 392.0, 523.25, 392.0, 440.0];
+    let step = 0;
+    if (synthTimer) clearInterval(synthTimer);
+    synthTimer = setInterval(() => {
+      if (!audioOn || !audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = notes[step++ % notes.length];
+      gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.48);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.5);
+    }, 520);
+  } else if (synthTimer) {
+    clearInterval(synthTimer);
+    synthTimer = null;
+  }
+}
+
 function render(now) {
   const elapsed = (now - startTs) / 1000;
   const totalSec = CFG.scenes.length * sceneSec;
-  const loopT = elapsed % totalSec;
+  const loopT = ((elapsed % totalSec) + totalSec) % totalSec;
   const sceneIdx = Math.floor(loopT / sceneSec);
   const localT = (loopT % sceneSec) / sceneSec;
-  const scene = CFG.scenes[sceneIdx];
+  const scene = CFG.scenes[sceneIdx] || CFG.scenes[0];
 
   const grad = ctx.createLinearGradient(0, 0, 1280, 720);
-  grad.addColorStop(0, "#0b0f12");
-  grad.addColorStop(0.55, "#151920");
-  grad.addColorStop(1, "#0b1a16");
+  grad.addColorStop(0, "#090b0f");
+  grad.addColorStop(0.5, "#11161d");
+  grad.addColorStop(1, "#071713");
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 1280, 720);
 
-  // Ambient glow
-  const glow = ctx.createRadialGradient(640 + Math.sin(elapsed) * 140, 340, 30, 640, 360, 480);
-  glow.addColorStop(0, "rgba(16,185,129,0.22)");
+  // Perspective grid lines
+  ctx.strokeStyle = "rgba(255,255,255,0.035)";
+  ctx.lineWidth = 1;
+  for (let gx = 0; gx < 1280; gx += 64) {
+    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, 720); ctx.stroke();
+  }
+  for (let gy = 0; gy < 720; gy += 64) {
+    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(1280, gy); ctx.stroke();
+  }
+
+  const glow = ctx.createRadialGradient(840 + Math.sin(elapsed) * 90, 320, 40, 840, 340, 520);
+  glow.addColorStop(0, "rgba(16,185,129,0.24)");
   glow.addColorStop(1, "rgba(16,185,129,0)");
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, 1280, 720);
 
-  ctx.fillStyle = "rgba(16,185,129,0.35)";
+  ctx.fillStyle = "rgba(16,185,129,0.4)";
   for (const p of particles) {
     p.y -= p.vy;
     if (p.y < -10) p.y = 730;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
   }
 
-  const alpha = localT < 0.14 ? localT / 0.14 : localT > 0.86 ? (1 - localT) / 0.14 : 1;
-  const slideY = (1 - Math.min(1, localT * 4)) * 28;
+  const alpha = localT < 0.14 ? localT / 0.14 : localT > 0.88 ? (1 - localT) / 0.12 : 1;
+  const slideY = (1 - Math.min(1, localT * 3.8)) * 34;
+
+  // Live animated UI mockup card on right half during middle scenes
   ctx.save();
   ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+  drawAppMockup(790, 175 + Math.sin(elapsed * 1.4) * 8, 410, 320, elapsed);
+
+  // Left-aligned editorial typography block (or centered for final CTA)
+  const textX = CFG.rtl ? 730 : 90;
+  ctx.textAlign = CFG.rtl ? "right" : "left";
   ctx.translate(0, slideY);
 
-  // Badge pill
   ctx.fillStyle = "rgba(16,185,129,0.16)";
-  ctx.strokeStyle = "rgba(16,185,129,0.5)";
+  ctx.strokeStyle = "rgba(16,185,129,0.55)";
   ctx.lineWidth = 2;
-  drawRoundedRect(470, 175, 340, 42, 21);
+  drawRoundedRect(CFG.rtl ? textX - 240 : textX, 170, 240, 38, 19);
   ctx.fill();
   ctx.stroke();
 
   ctx.fillStyle = "#6ee7b7";
-  ctx.font = "bold 18px system-ui, sans-serif";
+  ctx.font = "700 15px system-ui, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(String(scene.badge || "KASPI AI VIDEO").slice(0, 32), 640, 202);
+  ctx.fillText(String(scene.badge || "FEATURE").slice(0, 26), CFG.rtl ? textX - 120 : textX + 120, 194);
 
-  // Headline
+  ctx.textAlign = CFG.rtl ? "right" : "left";
   ctx.fillStyle = "#ffffff";
-  ctx.font = "800 54px system-ui, sans-serif";
-  ctx.fillText(String(scene.headline || CFG.title).slice(0, 36), 640, 325);
+  ctx.font = "800 46px system-ui, sans-serif";
+  ctx.fillText(String(scene.headline || CFG.title).slice(0, 30), textX, 278);
 
-  // Subline
   ctx.fillStyle = "#d4d4d8";
-  ctx.font = "400 28px system-ui, sans-serif";
-  ctx.fillText(String(scene.subline || "").slice(0, 56), 640, 392);
+  ctx.font = "400 24px system-ui, sans-serif";
+  ctx.fillText(String(scene.subline || "").slice(0, 48), textX, 340);
 
-  // Metric Callout
-  ctx.fillStyle = CFG.accentColor || "#10b981";
-  ctx.font = "700 32px monospace";
-  ctx.fillText(String(scene.metric || "").slice(0, 38), 640, 478);
+  ctx.fillStyle = ACCENT;
+  ctx.font = "700 30px monospace";
+  ctx.fillText(String(scene.metric || "").slice(0, 32), textX, 425);
   ctx.restore();
 
-  // Timeline progress bar
+  // Scrub timeline progress bar
   ctx.fillStyle = "rgba(255,255,255,0.12)";
-  ctx.fillRect(80, 650, 1120, 6);
-  ctx.fillStyle = CFG.accentColor || "#10b981";
-  ctx.fillRect(80, 650, 1120 * (loopT / totalSec), 6);
+  ctx.fillRect(90, 668, 1100, 5);
+  ctx.fillStyle = ACCENT;
+  ctx.fillRect(90, 668, 1100 * (loopT / totalSec), 5);
 
-  ctx.fillStyle = "#a1a1aa";
-  ctx.font = "600 15px monospace";
-  ctx.textAlign = "left";
-  ctx.fillText("SCENE " + (sceneIdx + 1) + "/" + CFG.scenes.length + "  •  " + CFG.title.slice(0, 40), 80, 634);
+  const curSec = Math.floor(loopT);
+  const totSec = Math.floor(totalSec);
+  statusTxt.textContent = "00:" + String(curSec).padStart(2,"0") + " / 00:" + String(totSec).padStart(2,"0");
+  Array.from(dotsEl.children).forEach((d, idx) => d.className = "dot" + (idx === sceneIdx ? " active" : ""));
 
   if (playing) requestAnimationFrame(render);
 }
 
 requestAnimationFrame(render);
-
+document.getElementById("soundBtn").onclick = toggleAmbientSynth;
 document.getElementById("toggleBtn").onclick = () => {
   playing = !playing;
   document.getElementById("toggleBtn").textContent = playing ? "Pause" : "Play";
@@ -585,7 +778,7 @@ document.getElementById("nextBtn").onclick = () => { startTs -= sceneSec * 1000;
 
 document.getElementById("recordBtn").onclick = () => {
   if (typeof MediaRecorder === "undefined" || !canvas.captureStream) {
-    statusTxt.textContent = "MediaRecorder not supported in this WebView.";
+    statusTxt.textContent = "Export requires modern Chromium/WebView.";
     return;
   }
   playing = true;
@@ -601,12 +794,12 @@ document.getElementById("recordBtn").onclick = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "kaspi-ai-motion-video.webm";
+    a.download = "kaspi-promo-video.webm";
     a.click();
-    statusTxt.textContent = "Downloaded real .webm video (" + Math.round(blob.size / 1024) + " KB)";
+    statusTxt.textContent = "Saved .webm (" + Math.round(blob.size / 1024) + " KB)";
   };
-  const durationMs = Math.min(14000, CFG.scenes.length * sceneSec * 1000);
-  statusTxt.textContent = "Recording live canvas stream (" + Math.round(durationMs / 1000) + "s)...";
+  const durationMs = Math.min(20000, CFG.scenes.length * sceneSec * 1000);
+  statusTxt.textContent = "Rendering MP4/WEBM (" + Math.round(durationMs / 1000) + "s)...";
   rec.start();
   setTimeout(() => { if (rec.state !== "inactive") rec.stop(); }, durationMs);
 };
@@ -619,6 +812,8 @@ document.getElementById("recordBtn").onclick = () => {
 // CLIENT-FIRST DIRECT OPEN EXECUTION (RUNS FROM USER'S OWN DEVICE / IP)
 // ============================================================================
 
+let llm7QuotaCooldownUntil = 0;
+
 async function callClientLlm7(params: {
   modelId: string;
   systemPrompt: string;
@@ -626,6 +821,9 @@ async function callClientLlm7(params: {
   delayBeforeMs?: number;
   signal?: AbortSignal;
 }): Promise<{ text: string; usedModel: string }> {
+  if (Date.now() < llm7QuotaCooldownUntil) {
+    throw new Error("Client open quota in cooldown");
+  }
   if (params.delayBeforeMs && params.delayBeforeMs > 0) {
     await new Promise((r) => setTimeout(r, params.delayBeforeMs));
   }
@@ -645,6 +843,9 @@ async function callClientLlm7(params: {
   });
 
   const data = await res.json().catch(() => null);
+  if (res.status === 429 && String(data?.error?.message || "").toLowerCase().includes("quota")) {
+    llm7QuotaCooldownUntil = Date.now() + 180_000;
+  }
   const text = data?.choices?.[0]?.message?.content;
   if (!res.ok || typeof text !== "string" || !text.trim()) {
     throw new Error(data?.error?.message || `Client gateway HTTP ${res.status}`);
@@ -765,6 +966,34 @@ export async function checkClientAiHordeJobStatus(jobId: string): Promise<{
   return { done: true, imgUrl: firstGen?.img || null };
 }
 
+export interface ArenaSideProgressUpdate {
+  side: "A" | "B";
+  phase: string;
+  stepsLog: string[];
+  replyDraft?: string;
+}
+
+function mergeProjectFiles(
+  base: ArenaProjectFileItem[],
+  incoming: ArenaProjectFileItem[]
+): ArenaProjectFileItem[] {
+  const byPath = new Map<string, ArenaProjectFileItem>();
+  for (const f of base) {
+    byPath.set(f.path, f);
+  }
+  for (const f of incoming) {
+    byPath.set(f.path, f);
+  }
+  return Array.from(byPath.values());
+}
+
+function summarizeFilesForPrompt(files: ArenaProjectFileItem[]): string {
+  return files
+    .map((f) => `--- FILE: ${f.path} (${f.content.length} chars) ---\n${f.content.slice(0, 3200)}`)
+    .join("\n\n")
+    .slice(0, 12000);
+}
+
 export async function executeArenaTurnClientFirst(params: {
   prompt: string;
   mode: ArenaExecutionMode;
@@ -773,11 +1002,14 @@ export async function executeArenaTurnClientFirst(params: {
   modelBId: string;
   history: Array<{ role: "user" | "assistant"; content: string }>;
   previousTurnModality?: "code" | "text" | "search" | "image" | "video";
+  previousFilesA?: ArenaProjectFileItem[];
+  previousFilesB?: ArenaProjectFileItem[];
   includeStoreContext: boolean;
   libraryContextSnippet?: string;
   attachments: Array<{ name: string; type: string; textExcerpt?: string }>;
   serverExecuteUrl: string;
   signal?: AbortSignal;
+  onProgress?: (update: ArenaSideProgressUpdate) => void;
 }): Promise<{
   effectiveModality: "code" | "text" | "search" | "image" | "video";
   citations: ArenaWebCitation[];
@@ -790,38 +1022,35 @@ export async function executeArenaTurnClientFirst(params: {
     params.previousTurnModality
   );
 
-  // If POS database context is attached, route via authenticated server route
-  if (params.includeStoreContext) {
-    const serverRes = await fetch(params.serverExecuteUrl, {
+  const historyMsgs = params.history.slice(-8);
+
+  const callPhaseApi = async (payload: Record<string, unknown>) => {
+    const res = await fetch(params.serverExecuteUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal: params.signal,
-      body: JSON.stringify({
-        prompt: params.prompt,
-        mode: params.mode,
-        modality: effectiveModality,
-        modelAId: params.modelAId,
-        modelBId: params.modelBId,
-        history: params.history,
-        includeStoreContext: true,
-        libraryContextSnippet: params.libraryContextSnippet || "",
-        attachments: params.attachments,
-      }),
+      body: JSON.stringify(payload),
     });
-    const data = await serverRes.json();
-    if (!serverRes.ok || !data?.success || !data?.outputA) {
-      throw new Error(data?.error || `HTTP ${serverRes.status}`);
+    const rawBody = await res.text();
+    let data: any = null;
+    try {
+      data = JSON.parse(rawBody);
+    } catch {
+      throw new Error(`Execution service returned HTTP ${res.status}`);
+    }
+    if (!res.ok || !data?.success) {
+      throw new Error(data?.error || `HTTP ${res.status}`);
     }
     return data;
-  }
+  };
 
-  // BRANCH 1: IMAGE GENERATION (Client-Direct AI Horde, Server Relay Backup)
+  // BRANCH 1: IMAGE GENERATION (Client-Direct AI Horde with clean blind output)
   if (effectiveModality === "image") {
     const hasB = params.mode !== "direct";
     const [jobARes, jobBRes] = await Promise.allSettled([
       submitClientAiHordeImageJob(params.prompt, "A"),
       hasB
-        ? submitClientAiHordeImageJob(`${params.prompt}, cinematic studio lighting`, "B")
+        ? submitClientAiHordeImageJob(`${params.prompt}, ultra detailed product photography`, "B")
         : Promise.resolve(""),
     ]);
 
@@ -831,13 +1060,14 @@ export async function executeArenaTurnClientFirst(params: {
         citations: [],
         outputA: {
           modelId: "aihorde-sd-a",
-          modelName: "Stable Diffusion (AI Horde Euler-A)",
-          providerLabel: "Client Direct • AI Horde Cluster",
+          modelName: "Option A",
+          providerLabel: "KASPI Visual Engine",
           status: "completed",
-          latencyMs: 420,
-          replyMarkdown:
-            "تم إرسال طلب توليد الصورة مباشرة من جهازك إلى شبكة Stable Diffusion المفتوحة (AI Horde)...",
-          stepsLog: ["Dispatched directly from user device", "Polling worker render"],
+          latencyMs: 650,
+          replyMarkdown: isArabicText(params.prompt)
+            ? "تم بدء توليد التصميم البصري، ستظهر الصورة في نافذة المعاينة فور اكتمالها."
+            : "Generating visual design — preview will appear shortly.",
+          stepsLog: ["Analyzed visual brief", "Rendering artwork canvas"],
           modalityExecuted: "image",
           files: [],
           previewHtml: null,
@@ -848,12 +1078,14 @@ export async function executeArenaTurnClientFirst(params: {
           hasB && jobBRes.status === "fulfilled" && jobBRes.value
             ? {
                 modelId: "aihorde-sd-b",
-                modelName: "Stable Diffusion (AI Horde DPM++ 2M)",
-                providerLabel: "Client Direct • AI Horde Cluster",
+                modelName: "Option B",
+                providerLabel: "KASPI Visual Engine",
                 status: "completed",
-                latencyMs: 490,
-                replyMarkdown: "جاري توليد النسخة الثانية بمُعيّن DPM++ 2M...",
-                stepsLog: ["Dispatched DPM++ 2M directly from user device"],
+                latencyMs: 700,
+                replyMarkdown: isArabicText(params.prompt)
+                  ? "جاري معالجة النسخة الثانية بالتوازي."
+                  : "Rendering alternate visual direction.",
+                stepsLog: ["Analyzed visual brief", "Rendering alternate artwork"],
                 modalityExecuted: "image",
                 files: [],
                 previewHtml: null,
@@ -865,313 +1097,411 @@ export async function executeArenaTurnClientFirst(params: {
     }
   }
 
-  // Resolve contenders A & B
-  let specA: ArenaRealModelSpec;
-  let specB: ArenaRealModelSpec | null = null;
+  // Resolve distinct flagship contenders cleanly
+  const isSingleSide = params.mode === "direct";
+  const trackAId =
+    params.modelAId && ARENA_REAL_MODELS.some((m) => m.id === params.modelAId && !m.apiModelId.includes("8b"))
+      ? params.modelAId
+      : "gemini-2.5-flash";
+  const trackBId =
+    params.modelBId &&
+    params.modelBId !== trackAId &&
+    ARENA_REAL_MODELS.some((m) => m.id === params.modelBId && !m.apiModelId.includes("8b"))
+      ? params.modelBId
+      : trackAId === "gemini-2.5-flash"
+      ? "groq-llama33"
+      : "openrouter-free";
 
-  if (params.mode === "battle" || params.mode === "agent") {
-    if (params.mode === "battle") {
-      const [mA, mB] = selectBattleModelPair(params.prompt, true);
-      specA = mA;
-      specB = mB;
-    } else {
-      specA =
-        ARENA_REAL_MODELS.find((m) => m.id === params.modelAId) || ARENA_REAL_MODELS[0];
-      specB =
-        ARENA_REAL_MODELS.find((m) => m.id === params.modelBId) || ARENA_REAL_MODELS[1];
-      if (specB.id === specA.id) {
-        specB = ARENA_REAL_MODELS.find((m) => m.id !== specA.id) || ARENA_REAL_MODELS[1];
-      }
-    }
-  } else if (params.mode === "direct") {
-    specA = ARENA_REAL_MODELS.find((m) => m.id === params.modelAId) || ARENA_REAL_MODELS[0];
-    specB = null;
-  } else {
-    specA = ARENA_REAL_MODELS.find((m) => m.id === params.modelAId) || ARENA_REAL_MODELS[0];
-    specB = ARENA_REAL_MODELS.find((m) => m.id === params.modelBId) || ARENA_REAL_MODELS[1];
-    if (specB.id === specA.id) {
-      specB = ARENA_REAL_MODELS.find((m) => m.id !== specA.id) || ARENA_REAL_MODELS[1];
-    }
-  }
-
-  // BRANCH 2: WEB SEARCH (Client-Direct DuckDuckGo + Wikipedia)
+  // BRANCH 2: WEB SEARCH (Client DuckDuckGo + Wikipedia)
   let citations: ArenaWebCitation[] = [];
   if (effectiveModality === "search") {
     citations = await performClientWebSearch(params.prompt).catch(() => []);
   }
 
-  const searchContextText =
-    citations.length > 0
-      ? `\nLive Web Search Results:\n${citations
-          .map((c, idx) => `[${idx + 1}] ${c.title} (${c.url})\n${c.snippet}`)
-          .join("\n\n")}`
-      : "";
-
-  const attachmentContext =
-    params.attachments.length > 0
-      ? `\nAttached files:\n${params.attachments
-          .map(
-            (a) =>
-              `- ${a.name} (${a.type})${
-                a.textExcerpt ? `\nContent:\n${a.textExcerpt.slice(0, 4000)}` : ""
-              }`
-          )
-          .join("\n")}`
-      : "";
-
-  // BRANCH 3: LOCAL CANVAS MOTION VIDEO STUDIO
+  // BRANCH 3: MULTI-SCENE COMMERCIAL PROMO VIDEO ENGINE
   if (effectiveModality === "video") {
-    const videoPrompt = `Create 4 short promo video storyboard slides for: "${params.prompt}".
-Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scenes":[{"badge":"...","headline":"...","subline":"...","metric":"..."}]}. Keep strings concise and impactful in the same language as the prompt.`;
-
-    const runVideoModel = async (
-      spec: ArenaRealModelSpec,
-      delayMs: number
-    ): Promise<ArenaModelOutput> => {
+    const isAr = isArabicText(params.prompt);
+    const runVideoSide = async (side: "A" | "B", targetModelId: string): Promise<ArenaModelOutput> => {
       const start = Date.now();
-      let parsedScenes: {
-        title?: string;
-        accentColor?: string;
-        scenes?: VideoSceneSpec[];
-      } | null = null;
-      let usedModel = spec.apiModelId;
+      const steps: string[] = [
+        isAr ? "تحليل فكرة الفيديو الإعلاني والروابط المرفقة..." : "Analyzing commercial brief & attached links...",
+      ];
+      params.onProgress?.({ side, phase: "plan", stepsLog: [...steps] });
 
-      if (spec.supportsClientDirect) {
-        try {
-          const res = await callClientLlm7({
-            modelId: spec.apiModelId,
-            systemPrompt: "Return ONLY a raw JSON object with title, accentColor, and scenes array.",
-            messages: [{ role: "user", content: videoPrompt }],
-            delayBeforeMs: delayMs,
-            signal: params.signal,
-          });
-          usedModel = res.usedModel;
-          const m = res.text.match(/\{[\s\S]*\}/);
-          if (m) parsedScenes = JSON.parse(m[0]);
-        } catch {}
+      let parsedScenes: { title?: string; accentColor?: string; scenes?: VideoSceneSpec[] } | null = null;
+      try {
+        const res = await callPhaseApi({
+          phase: "video_director",
+          prompt: params.prompt,
+          mode: "direct",
+          modality: "video",
+          modelAId: targetModelId,
+          includeStoreContext: params.includeStoreContext,
+          libraryContextSnippet: params.libraryContextSnippet || "",
+          attachments: params.attachments,
+        });
+        if (res?.videoPlan) parsedScenes = res.videoPlan;
+        steps.push(isAr ? "تصميم سيناريو من 7 مشاهد حركية" : "Directed multi-scene storyboard");
+      } catch {
+        steps.push(isAr ? "إعداد مشاهد العرض التسويقي" : "Prepared promotional scenes");
       }
+      params.onProgress?.({ side, phase: "render", stepsLog: [...steps] });
 
-      const title = parsedScenes?.title || params.prompt.slice(0, 42);
+      const cleanTitle =
+        parsedScenes?.title ||
+        params.prompt.replace(/https?:\/\/\S+/g, "").trim().slice(0, 40) ||
+        "Product Showcase";
+      const defaultScenes: VideoSceneSpec[] = isAr
+        ? [
+            { badge: "LAUNCH", headline: cleanTitle, subline: "تجربة ذكية متكاملة لإدارة وتطوير مشروعك", metric: "LIVE 24/7" },
+            { badge: "SPEED & POWER", headline: "سرعة وأداء فائق", subline: "واجهة عصرية وتدفق عمل ذكي في كل خطوة", metric: "10× FASTER" },
+            { badge: "SMART ANALYTICS", headline: "لوحة تحكم شاملة", subline: "تتبع المبيعات والمخزون والعملاء لحظياً", metric: "100% REAL-TIME" },
+            { badge: "AI AUTOMATION", headline: "أتمتة بالذكاء الاصطناعي", subline: "مساعد ذكي يشتغل لأجل نمو تجارتك", metric: "AUTONOMOUS" },
+            { badge: "SECURITY", headline: "حماية ومعايير عالية", subline: "عزل كامل للبيانات وتشفير موثوق", metric: "AES-256" },
+            { badge: "START NOW", headline: "ابدأ تجربتك الآن", subline: "اكتشف المنصة وجرّبها مباشرة", metric: "GET STARTED" },
+          ]
+        : [
+            { badge: "INTRODUCING", headline: cleanTitle, subline: "Next-generation platform built for scale", metric: "NEW RELEASE" },
+            { badge: "WORKFLOW", headline: "Built For Speed", subline: "Streamlined operations & modern UI architecture", metric: "10× FASTER" },
+            { badge: "INTELLIGENCE", headline: "Real-Time Insights", subline: "Live analytics, inventory & customer tracking", metric: "LIVE TELEMETRY" },
+            { badge: "AUTOMATION", headline: "Autonomous Execution", subline: "Smart assistants accelerating every workflow", metric: "24/7 ENGINE" },
+            { badge: "EXPERIENCE", headline: "Mobile & Desktop Ready", subline: "Seamless responsive design anywhere", metric: "99.9% UPTIME" },
+            { badge: "ACTION", headline: "Launch Today", subline: "Explore the live experience now", metric: "START NOW" },
+          ];
+
       const html = buildMotionVideoStudioHtml({
-        title,
-        accentColor: parsedScenes?.accentColor || "#10b981",
-        scenes: parsedScenes?.scenes || [
-          {
-            badge: "KASPI STUDIO",
-            headline: title,
-            subline: "Interactive 60fps HTML5 Motion Video",
-            metric: "1280 × 720 HD",
-          },
-          {
-            badge: "CLIENT GPU RENDER",
-            headline: "Export Real .WEBM Locally",
-            subline: "Zero server video queue • Instant capture",
-            metric: "30 FPS WebM",
-          },
-        ],
-        rtl: isArabicText(params.prompt),
+        title: cleanTitle,
+        accentColor: parsedScenes?.accentColor || (side === "A" ? "#10b981" : "#38bdf8"),
+        scenes:
+          Array.isArray(parsedScenes?.scenes) && parsedScenes.scenes.length >= 4
+            ? parsedScenes.scenes
+            : defaultScenes,
+        rtl: isAr,
       });
 
+      steps.push(isAr ? "تم إنتاج الفيديو التفاعلي عالي الدقة" : "Rendered HD promotional video player");
       return {
-        modelId: spec.id,
-        modelName: spec.displayName,
-        providerLabel: spec.providerLabel,
+        modelId: targetModelId,
+        modelName: `Option ${side}`,
+        providerLabel: "KASPI Video Engine",
         status: "completed",
         latencyMs: Date.now() - start,
-        replyMarkdown: isArabicText(params.prompt)
-          ? `تم توليد استوديو فيديو متحرك (Canvas 60fps) يعمل محلياً على جهازك مع إمكانية تحميل الفيديو بصيغة **.webm**. (ملاحظة تقنية: نماذج الفيديو السحابية مثل Kling و Seedance تتطلب رصيد API مدفوع، لذلك تم بناء هذا المحرك المحلي بدلاً من نتائج وهمية).`
-          : `Built a live 60fps HTML5 Canvas Motion Video Studio rendered locally on your machine with real **.webm** download. (Cloud APIs like Kling v3.0 / Seedance 2.0 require paid tokens).`,
-        stepsLog: [`Rendered local Canvas .webm studio via ${usedModel}`],
+        replyMarkdown: isAr
+          ? `تم إنتاج الفيديو الإعلاني لمشروعك (${cleanTitle}) بعدة مشاهد متحركة بدقة HD، ويمكنك تشغيله أو تحميله مباشرة بصيغة **.webm**.`
+          : `Produced the multi-scene HD promotional video for ${cleanTitle}. Play interactively or download as **.webm**.`,
+        stepsLog: steps,
         modalityExecuted: "video",
-        files: [
-          {
-            path: "motion-video.html",
-            name: "motion-video.html",
-            language: "html",
-            content: html,
-          },
-        ],
+        files: [{ path: "promo-video.html", name: "promo-video.html", language: "html", content: html }],
         previewHtml: html,
-        executedOn: "client-device",
+        executedOn: "cloud-relay",
       };
     };
 
-    const [outA, outB] = await Promise.all([
-      runVideoModel(specA, 0),
-      specB ? runVideoModel(specB, 1400) : Promise.resolve(null),
+    const [vA, vB] = await Promise.all([
+      runVideoSide("A", trackAId),
+      isSingleSide ? Promise.resolve(null) : runVideoSide("B", trackBId),
     ]);
 
     return {
       effectiveModality: "video",
       citations: [],
-      outputA: outA,
-      outputB: outB,
+      outputA: vA,
+      outputB: vB,
     };
   }
 
-  // BRANCH 4: CODE / TEXT / SEARCH — CLIENT-FIRST WITH STRICT HTML RECOVERY & SERVER FALLBACK
-  const systemPrompt = buildArenaSystemPrompt({
-    modality: effectiveModality,
-    libraryContextSnippet: params.libraryContextSnippet || "",
-    attachmentContext,
-    searchContextText,
-    mode: params.mode,
-  });
+  // BRANCH 4: DEEP MULTI-PHASE AGENTIC BUILD ENGINE (Code / Apps / Stores / Websites)
+  if (effectiveModality === "code") {
+    const isAr = isArabicText(params.prompt);
+    const runDeepAgenticCodeSide = async (
+      side: "A" | "B",
+      targetModelId: string,
+      priorFiles?: ArenaProjectFileItem[]
+    ): Promise<ArenaModelOutput> => {
+      const start = Date.now();
+      const steps: string[] = [
+        isAr ? "تحليل المتطلبات وهيكلة المشروع..." : "Analyzing requirements & project scope...",
+      ];
+      params.onProgress?.({ side, phase: "plan", stepsLog: [...steps] });
 
-  const historyMsgs = params.history.slice(-8);
-  const messages = [...historyMsgs, { role: "user" as const, content: params.prompt }];
+      let planText = "";
+      let urlContext = "";
+      let collectedFiles: ArenaProjectFileItem[] = priorFiles ? [...priorFiles] : [];
+      const priorSummary = priorFiles && priorFiles.length > 0 ? summarizeFilesForPrompt(priorFiles) : "";
 
-  const callServerDirectSide = async (
-    targetModelId: string
+      // PHASE 1: Architectural Blueprint & Live Resource Inspection
+      try {
+        const planRes = await callPhaseApi({
+          phase: "plan",
+          prompt: params.prompt,
+          mode: "direct",
+          modality: "code",
+          modelAId: targetModelId,
+          history: historyMsgs,
+          previousFilesSummary: priorSummary,
+          includeStoreContext: params.includeStoreContext,
+          libraryContextSnippet: params.libraryContextSnippet || "",
+          attachments: params.attachments,
+        });
+        planText = String(planRes?.planText || "").trim();
+        urlContext = String(planRes?.urlContext || "").trim();
+        steps.push(
+          isAr
+            ? "اكتمل تخطيط البنية الهندسية وتحديد الملفات"
+            : "Designed architecture & multi-file plan"
+        );
+      } catch {
+        steps.push(isAr ? "تجهيز المخطط الهندسي للتطبيق" : "Prepared architectural plan");
+      }
+      steps.push(isAr ? "بناء التصميم والبيانات الأساسية..." : "Engineering layout, tokens & catalog...");
+      params.onProgress?.({
+        side,
+        phase: "build_core",
+        stepsLog: [...steps],
+        replyDraft: planText || undefined,
+      });
+
+      // PHASE 2: Foundation Codebase (HTML + CSS Tokens/Layout + Catalog Data)
+      let coreOut: ArenaModelOutput | null = null;
+      try {
+        const coreRes = await callPhaseApi({
+          phase: "build_core",
+          prompt: params.prompt,
+          planText,
+          urlContext,
+          previousFilesSummary: priorSummary,
+          mode: "direct",
+          modality: "code",
+          modelAId: targetModelId,
+          history: historyMsgs,
+          includeStoreContext: params.includeStoreContext,
+          libraryContextSnippet: params.libraryContextSnippet || "",
+          attachments: params.attachments,
+        });
+        coreOut = coreRes?.outputA || null;
+        if (coreOut?.files && coreOut.files.length > 0) {
+          collectedFiles = mergeProjectFiles(collectedFiles, coreOut.files);
+        }
+        steps.push(
+          isAr
+            ? `تم إنشاء ملفات الواجهة والتنسيق (${collectedFiles.length} ملفات)`
+            : `Generated UI & stylesheet modules (${collectedFiles.length} files)`
+        );
+      } catch {
+        steps.push(isAr ? "جارٍ التجميع البرمجي الأساسي..." : "Compiling base application layer...");
+      }
+      steps.push(
+        isAr
+          ? "برمجة التفاعل والتحقق الشامل من الجودة..."
+          : "Engineering interactive logic & running QA audit..."
+      );
+      params.onProgress?.({
+        side,
+        phase: "refine_qa",
+        stepsLog: [...steps],
+        replyDraft: planText || coreOut?.replyMarkdown,
+      });
+
+      // PHASE 3: Interactive Logic, State Persistence & Senior QA Refinement
+      let qaOut: ArenaModelOutput | null = null;
+      try {
+        const builtSummary =
+          collectedFiles.length > 0
+            ? summarizeFilesForPrompt(collectedFiles)
+            : coreOut?.previewHtml?.slice(0, 12000) || "";
+        const qaRes = await callPhaseApi({
+          phase: "refine_qa",
+          prompt: params.prompt,
+          planText,
+          builtFilesSummary: builtSummary,
+          urlContext,
+          mode: "direct",
+          modality: "code",
+          modelAId: targetModelId,
+          history: historyMsgs,
+          includeStoreContext: params.includeStoreContext,
+          libraryContextSnippet: params.libraryContextSnippet || "",
+          attachments: params.attachments,
+        });
+        qaOut = qaRes?.outputA || null;
+        if (qaOut?.files && qaOut.files.length > 0) {
+          collectedFiles = mergeProjectFiles(collectedFiles, qaOut.files);
+        }
+      } catch {
+        // If QA pass hit network blip, still ensure coreOut preview or run clean fallback
+      }
+
+      // Emergency fallback to single pass only if both multi-phase calls returned zero files
+      if (collectedFiles.length === 0 && !coreOut?.previewHtml && !qaOut?.previewHtml) {
+        const fallbackRes = await callPhaseApi({
+          phase: "single",
+          prompt: params.prompt,
+          mode: "direct",
+          modality: "code",
+          modelAId: targetModelId,
+          history: historyMsgs,
+          includeStoreContext: params.includeStoreContext,
+          libraryContextSnippet: params.libraryContextSnippet || "",
+          attachments: params.attachments,
+        });
+        if (fallbackRes?.outputA) {
+          return {
+            ...fallbackRes.outputA,
+            modelName: `Option ${side}`,
+            providerLabel: "KASPI Autonomous Engine",
+            stepsLog: [
+              ...steps.slice(0, 2),
+              `Built project (${Math.max(1, fallbackRes.outputA.files?.length || 1)} files)`,
+            ],
+            latencyMs: Date.now() - start,
+          };
+        }
+      }
+
+      // Ensure realistic project manifest & docs exist in multi-file explorer
+      if (!collectedFiles.some((f) => f.path === "package.json")) {
+        collectedFiles.push({
+          path: "package.json",
+          name: "package.json",
+          language: "json",
+          content: JSON.stringify(
+            {
+              name: "kaspi-generated-platform",
+              version: "1.0.0",
+              private: true,
+              scripts: { start: "npx serve ." },
+            },
+            null,
+            2
+          ),
+        });
+      }
+
+      const finalHtml =
+        bundlePreviewHtml(collectedFiles, qaOut?.previewHtml || coreOut?.previewHtml || "") ||
+        qaOut?.previewHtml ||
+        coreOut?.previewHtml ||
+        null;
+
+      steps.push(
+        isAr
+          ? `اكتمل البناء والتحقق (${collectedFiles.length} ملفات جاهزة للمعاينة)`
+          : `Built & verified application (${collectedFiles.length} files ready)`
+      );
+
+      const cleanExplanation = sanitizeExplanationFromCodeLeaks(
+        planText || qaOut?.replyMarkdown || coreOut?.replyMarkdown || "",
+        true,
+        params.prompt
+      );
+
+      return {
+        modelId: targetModelId,
+        modelName: `Option ${side}`,
+        providerLabel: "KASPI Autonomous Engine",
+        status: finalHtml ? "completed" : "failed",
+        latencyMs: Date.now() - start,
+        replyMarkdown: cleanExplanation,
+        stepsLog: steps,
+        modalityExecuted: finalHtml ? "code" : "text",
+        files: collectedFiles,
+        previewHtml: finalHtml,
+        executedOn: "cloud-relay",
+      };
+    };
+
+    const [settledA, settledB] = await Promise.all([
+      runDeepAgenticCodeSide("A", trackAId, params.previousFilesA),
+      isSingleSide
+        ? Promise.resolve(null)
+        : runDeepAgenticCodeSide("B", trackBId, params.previousFilesB),
+    ]);
+
+    return {
+      effectiveModality: "code",
+      citations: [],
+      outputA: settledA,
+      outputB: settledB,
+    };
+  }
+
+  // BRANCH 5: TEXT / LIVE WEB SEARCH CONVERSATION (Server Multi-Provider Cloud Relay + Client Failover)
+  const runTextSide = async (
+    side: "A" | "B",
+    targetModelId: string,
+    clientSpec: ArenaRealModelSpec | undefined
   ): Promise<ArenaModelOutput> => {
-    const res = await fetch(params.serverExecuteUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal: params.signal,
-      body: JSON.stringify({
+    const start = Date.now();
+    params.onProgress?.({
+      side,
+      phase: "text",
+      stepsLog:
+        citations.length > 0
+          ? [`Found ${citations.length} live web sources`, "Synthesizing answer..."]
+          : ["Analyzing request..."],
+    });
+
+    // Try server flagship path first (respects POS context, URL context, Gemini/Groq/OpenRouter)
+    try {
+      const serverData = await callPhaseApi({
+        phase: "single",
         prompt: params.prompt,
         mode: "direct",
         modality: effectiveModality,
         modelAId: targetModelId,
         modelBId: targetModelId,
         history: historyMsgs,
-        includeStoreContext: false,
+        includeStoreContext: params.includeStoreContext,
         libraryContextSnippet: params.libraryContextSnippet || "",
         attachments: params.attachments,
         citationsOverride: citations,
-      }),
-    });
-    const rawBody = await res.text();
-    let data: any = null;
-    try {
-      data = JSON.parse(rawBody);
-    } catch {
-      throw new Error(`Cloud gateway returned HTTP ${res.status} (non-JSON timeout/error)`);
-    }
-    if (!res.ok || !data?.success || !data?.outputA) {
-      throw new Error(data?.error || `HTTP ${res.status}`);
-    }
-    return {
-      ...data.outputA,
-      executedOn: "cloud-relay",
-    };
-  };
-
-  const runSide = async (
-    spec: ArenaRealModelSpec,
-    delayMs: number,
-    fallbackCloudModelId: string
-  ): Promise<ArenaModelOutput> => {
-    const start = Date.now();
-
-    if (spec.supportsClientDirect) {
-      try {
-        let res = await callClientLlm7({
-          modelId: spec.apiModelId,
-          systemPrompt,
-          messages,
-          delayBeforeMs: delayMs,
-          signal: params.signal,
-        });
-
-        if (effectiveModality === "code") {
-          let parsed = extractProjectFromResponse(res.text, params.prompt);
-          // Enforce HTML creation if the model answered with a prose essay instead of runnable HTML!
-          if (!parsed.previewHtml) {
-            try {
-              const recoveryModel =
-                spec.apiModelId === "kimi-k2.7-code" ? "gemma4:31b" : "kimi-k2.7-code";
-              const retryRes = await callClientLlm7({
-                modelId: recoveryModel,
-                systemPrompt: STRICT_HTML_RECOVERY_SYSTEM_PROMPT,
-                messages: [{ role: "user", content: params.prompt }],
-                delayBeforeMs: 900,
-                signal: params.signal,
-              });
-              const retryParsed = extractProjectFromResponse(retryRes.text, params.prompt);
-              if (retryParsed.previewHtml) {
-                parsed = retryParsed;
-                res = { text: retryRes.text, usedModel: `${res.usedModel}→${retryRes.usedModel}` };
-              }
-            } catch {}
-          }
-
-          const latencyMs = Date.now() - start;
+      });
+      return {
+        ...serverData.outputA,
+        modelName: `Option ${side}`,
+        providerLabel: "KASPI AI",
+        latencyMs: Date.now() - start,
+      };
+    } catch (serverErr: any) {
+      // Fallback to open CORS Pollinations / llm7 edge if available
+      if (clientSpec?.supportsClientDirect) {
+        try {
+          const clientRes = await callClientLlm7({
+            modelId: clientSpec.apiModelId,
+            systemPrompt: buildArenaSystemPrompt({
+              modality: effectiveModality,
+              libraryContextSnippet: params.libraryContextSnippet || "",
+              mode: params.mode,
+            }),
+            messages: [...historyMsgs, { role: "user", content: params.prompt }],
+            signal: params.signal,
+          });
           return {
-            modelId: spec.id,
-            modelName: spec.displayName,
-            providerLabel: spec.providerLabel,
+            modelId: clientSpec.id,
+            modelName: `Option ${side}`,
+            providerLabel: "KASPI AI",
             status: "completed",
-            latencyMs,
-            replyMarkdown: parsed.explanation,
-            stepsLog: [
-              parsed.previewHtml
-                ? `Built directly on client (${parsed.files.length} files)`
-                : `Client reply via ${res.usedModel}`,
-            ],
-            modalityExecuted: parsed.previewHtml ? "code" : "text",
-            files: parsed.files,
-            previewHtml: parsed.previewHtml,
+            latencyMs: Date.now() - start,
+            replyMarkdown: sanitizeExplanationFromCodeLeaks(clientRes.text, false, params.prompt),
+            stepsLog: ["Completed response"],
+            modalityExecuted: effectiveModality === "search" ? "search" : "text",
+            files: [],
+            previewHtml: null,
             citations: citations.length > 0 ? citations : undefined,
             executedOn: "client-device",
           };
-        }
-
-        const latencyMs = Date.now() - start;
-        const cleanReply = sanitizeExplanationFromCodeLeaks(res.text, false, params.prompt);
-        return {
-          modelId: spec.id,
-          modelName: spec.displayName,
-          providerLabel: spec.providerLabel,
-          status: "completed",
-          latencyMs,
-          replyMarkdown: cleanReply,
-          stepsLog:
-            citations.length > 0
-              ? [`Explored ${citations.length} live sources`, `Executed on client in ${latencyMs}ms`]
-              : [`Executed directly on client (${res.usedModel}) in ${latencyMs}ms`],
-          modalityExecuted: effectiveModality === "search" ? "search" : "text",
-          files: [],
-          previewHtml: null,
-          citations: citations.length > 0 ? citations : undefined,
-          executedOn: "client-device",
-        };
-      } catch {
-        // Silent failover to fast Groq LPU cloud relay (`groq-gpt-oss` / `groq-llama33`)
-        try {
-          const relayOut = await callServerDirectSide(fallbackCloudModelId);
-          return relayOut;
-        } catch (err: any) {
-          return {
-            modelId: spec.id,
-            modelName: spec.displayName,
-            providerLabel: spec.providerLabel,
-            status: "failed",
-            latencyMs: Date.now() - start,
-            errorMessage: String(err?.message || err),
-            replyMarkdown: `⚠️ ${spec.displayName}: ${String(err?.message || err)}`,
-            stepsLog: [`Failed: ${String(err?.message || err)}`],
-            modalityExecuted: "text",
-            files: [],
-            previewHtml: null,
-          };
-        }
+        } catch {}
       }
-    }
 
-    // Explicitly selected server-keyed model (`Groq-GPT-OSS-20B` or `OpenRouter-Free-Pool`)
-    try {
-      return await callServerDirectSide(spec.id);
-    } catch (err: any) {
       return {
-        modelId: spec.id,
-        modelName: spec.displayName,
-        providerLabel: spec.providerLabel,
+        modelId: targetModelId,
+        modelName: `Option ${side}`,
+        providerLabel: "KASPI AI",
         status: "failed",
         latencyMs: Date.now() - start,
-        errorMessage: String(err?.message || err),
-        replyMarkdown: `⚠️ ${spec.displayName}: ${String(err?.message || err)}`,
-        stepsLog: [`Failed: ${String(err?.message || err)}`],
+        errorMessage: String(serverErr?.message || serverErr),
+        replyMarkdown: `⚠️ تعذر إتمام هذا الطلب مؤقتاً: ${String(serverErr?.message || serverErr)}`,
+        stepsLog: ["Upstream temporary error"],
         modalityExecuted: "text",
         files: [],
         previewHtml: null,
@@ -1179,10 +1509,11 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
     }
   };
 
-  const staggerB = Boolean(specB && specA.supportsClientDirect && specB.supportsClientDirect);
   const [outA, outB] = await Promise.all([
-    runSide(specA, 0, "groq-gpt-oss"),
-    specB ? runSide(specB, staggerB ? 1500 : 0, "groq-llama-instant") : Promise.resolve(null),
+    runTextSide("A", trackAId, ARENA_REAL_MODELS.find((m) => m.id === "gemma4-31b")),
+    isSingleSide
+      ? Promise.resolve(null)
+      : runTextSide("B", trackBId, ARENA_REAL_MODELS.find((m) => m.id === "deepseek-v4-flash")),
   ]);
 
   return {

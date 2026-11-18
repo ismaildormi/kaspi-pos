@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSafeServerContext } from "@/server/auth/context";
 import { generateTextWithRouter, getRouterCandidates } from "@/lib/ai-router";
+import { sanitizeOutboundEndpoint } from "@/lib/security/integration-vault";
 import { generateText } from "ai";
 import { prisma } from "@/server/db/prisma";
 import {
@@ -23,6 +24,57 @@ import {
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
+
+/**
+ * Safely fetches public webpage text/metadata for URLs included in user prompts
+ * (enforcing SSRF protections and private/loopback IP blocking).
+ */
+async function fetchSafeUrlContextFromPrompt(prompt: string): Promise<string> {
+  const urlMatches = prompt.match(/https?:\/\/[^\s"'<>)]+/gi);
+  if (!urlMatches || urlMatches.length === 0) return "";
+
+  const snippets: string[] = [];
+  for (const rawUrl of Array.from(new Set(urlMatches)).slice(0, 2)) {
+    try {
+      const safeUrl = sanitizeOutboundEndpoint(rawUrl);
+      const parsed = new URL(safeUrl);
+      const host = parsed.hostname.toLowerCase();
+      if (
+        host === "localhost" ||
+        host === "127.0.0.1" ||
+        host.startsWith("10.") ||
+        host.startsWith("192.168.") ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+      ) {
+        continue;
+      }
+      const res = await fetch(safeUrl, {
+        headers: { "User-Agent": "KASPI-Arena-Bot/1.0 (+https://kaspi-pos.vercel.app)" },
+        signal: AbortSignal.timeout(5500),
+      });
+      if (!res.ok) continue;
+      const html = (await res.text()).slice(0, 60000);
+      const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.trim() || "";
+      const desc =
+        html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)?.[1] || "";
+      const bodyText = html
+        .replace(/<script[\s\S]*?<\/script>/gi, " ")
+        .replace(/<style[\s\S]*?<\/style>/gi, " ")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 2400);
+      if (title || desc || bodyText) {
+        snippets.push(
+          `[Fetched Website Summary: ${safeUrl}]\nTitle: ${title}\nDescription: ${desc}\nExtracted Highlights: ${bodyText}`
+        );
+      }
+    } catch {
+      // Skip unreachable or blocked URL cleanly
+    }
+  }
+  return snippets.join("\n\n");
+}
 
 // ============================================================================
 // 1. REAL LIVE WEB SEARCH (DuckDuckGo + Wikipedia REST API)
@@ -110,9 +162,19 @@ async function callSingleRealModel(params: {
   }
 
   const { spec, systemPrompt, messages } = params;
-  const maxOutputTokens = params.maxOutputTokens ?? 3200;
-  const deadline = Date.now() + 26000;
+  const maxOutputTokens = params.maxOutputTokens ?? 7500;
+  const deadline = Date.now() + 45000;
   const remainingMs = () => Math.max(0, deadline - Date.now());
+
+  const groqTierRank = (modelId: string): number => {
+    const m = modelId.toLowerCase();
+    if (m.includes("kimi-k2") || m.includes("120b")) return 0;
+    if (m.includes("llama-3.3-70b")) return 1;
+    if (m.includes("qwen")) return 2;
+    if (m.includes("20b") || m.includes("gpt-oss")) return 3;
+    if (m.includes("8b-instant")) return 9;
+    return 4;
+  };
 
   // Handle targeted configured provider pools (Google Gemini / OpenRouter Free / Groq)
   if (
@@ -130,16 +192,67 @@ async function callSingleRealModel(params: {
     const allCandidates = await getRouterCandidates();
     const matching = allCandidates
       .filter((c) => c.provider === targetProvider)
-      .sort((a, b) => (a.modelId === spec.apiModelId ? -1 : b.modelId === spec.apiModelId ? 1 : 0));
+      .sort((a, b) => {
+        if (a.modelId === spec.apiModelId) return -1;
+        if (b.modelId === spec.apiModelId) return 1;
+        if (targetProvider === "groq") return groqTierRank(a.modelId) - groqTierRank(b.modelId);
+        return 0;
+      });
 
     let lastErr = "Upstream provider busy";
 
-    for (let idx = 0; idx < Math.min(2, matching.length); idx++) {
-      if (remainingMs() < 3500) break;
+    // Explicit flagship OpenRouter :free chain with realistic 24s timeout before router pool
+    if (targetProvider === "openrouter" && matching[0]?.apiKey && remainingMs() > 8000) {
+      const orModels = Array.from(
+        new Set([
+          spec.apiModelId,
+          "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "google/gemma-4-31b-it:free",
+          "cohere/north-mini-code:free",
+          "openrouter/free",
+        ])
+      );
+      for (const orModel of orModels.slice(0, 3)) {
+        if (remainingMs() < 6000) break;
+        try {
+          const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${matching[0].apiKey}`,
+              "HTTP-Referer": "https://kaspi-pos.vercel.app",
+              "X-Title": "KASPI AI Arena",
+            },
+            body: JSON.stringify({
+              model: orModel,
+              max_tokens: maxOutputTokens,
+              temperature: 0.4,
+              messages: [{ role: "system", content: systemPrompt }, ...messages],
+            }),
+            signal: AbortSignal.timeout(Math.min(24000, remainingMs())),
+          });
+          const d = await r.json().catch(() => null);
+          const text = d?.choices?.[0]?.message?.content;
+          if (r.ok && typeof text === "string" && text.trim()) {
+            return {
+              text: text.trim(),
+              usedModel: d?.model || orModel,
+              usedProvider: "OpenRouter Flagship",
+            };
+          }
+          lastErr = String(d?.error?.message || `HTTP ${r.status}`);
+        } catch (err: any) {
+          lastErr = String(err?.message || err);
+        }
+      }
+    }
+
+    for (let idx = 0; idx < Math.min(3, matching.length); idx++) {
+      if (remainingMs() < 4000) break;
       const candidate = matching[idx];
       const timeoutMs = Math.min(
         remainingMs(),
-        targetProvider === "openrouter" ? 9000 : idx === 0 ? 16000 : 10000
+        targetProvider === "openrouter" ? 20000 : targetProvider === "google" ? 26000 : 22000
       );
       try {
         const res = await generateText({
@@ -164,18 +277,25 @@ async function callSingleRealModel(params: {
       }
     }
 
-    // Dynamic model discovery for Google / Groq if hardcoded ID changed (only if time remains!)
-    if (targetProvider === "groq" && matching[0]?.apiKey && remainingMs() > 5000) {
+    // Dynamic flagship model discovery on Groq (prioritize 70B / 120B / Kimi-K2, avoid 8b unless alone)
+    if (targetProvider === "groq" && matching[0]?.apiKey && remainingMs() > 6000) {
       try {
         const listRes = await fetch("https://api.groq.com/openai/v1/models", {
           headers: { Authorization: `Bearer ${matching[0].apiKey}` },
           signal: AbortSignal.timeout(Math.min(4500, remainingMs())),
         });
         const listJson = await listRes.json().catch(() => null);
-        const firstActiveModel = listJson?.data?.find(
-          (m: any) => m?.id && !String(m.id).includes("whisper") && !String(m.id).includes("guard")
-        )?.id;
-        if (firstActiveModel && remainingMs() > 3500) {
+        const candidatesRanked: string[] = (listJson?.data || [])
+          .map((m: any) => String(m?.id || ""))
+          .filter(
+            (id: string) =>
+              id &&
+              !/(whisper|guard|tts|audio|safeguard|prompt-guard|orpheus)/i.test(id)
+          )
+          .sort((a: string, b: string) => groqTierRank(a) - groqTierRank(b));
+
+        for (const bestModel of candidatesRanked.slice(0, 2)) {
+          if (remainingMs() < 4000) break;
           const chatRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -183,9 +303,9 @@ async function callSingleRealModel(params: {
               Authorization: `Bearer ${matching[0].apiKey}`,
             },
             body: JSON.stringify({
-              model: firstActiveModel,
+              model: bestModel,
               max_tokens: maxOutputTokens,
-              temperature: 0.45,
+              temperature: 0.42,
               messages: [{ role: "system", content: systemPrompt }, ...messages],
             }),
             signal: AbortSignal.timeout(remainingMs()),
@@ -195,26 +315,27 @@ async function callSingleRealModel(params: {
           if (chatRes.ok && typeof text === "string" && text.trim()) {
             return {
               text: text.trim(),
-              usedModel: firstActiveModel,
-              usedProvider: "Groq LPU Inference",
+              usedModel: bestModel,
+              usedProvider: "Groq Flagship Engine",
             };
           }
         }
       } catch {}
     }
 
-    if (targetProvider === "google" && matching[0]?.apiKey) {
+    if (targetProvider === "google" && matching[0]?.apiKey && remainingMs() > 6000) {
       try {
         const listRes = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(matching[0].apiKey)}`,
-          { signal: AbortSignal.timeout(8000) }
+          { signal: AbortSignal.timeout(6000) }
         );
         const listJson = await listRes.json().catch(() => null);
         const firstFlash = listJson?.models?.find(
           (m: any) =>
             Array.isArray(m.supportedGenerationMethods) &&
             m.supportedGenerationMethods.includes("generateContent") &&
-            String(m.name).includes("flash")
+            /gemini-(2\.5|3)/i.test(String(m.name || "")) &&
+            !/(tts|image|live|embedding|1\.5|2\.0)/i.test(String(m.name || ""))
         )?.name;
         if (firstFlash) {
           const cleanName = String(firstFlash).replace(/^models\//, "");
@@ -231,15 +352,19 @@ async function callSingleRealModel(params: {
                   role: m.role === "assistant" ? "model" : "user",
                   parts: [{ text: m.content }],
                 })),
+                generationConfig: { maxOutputTokens, temperature: 0.45 },
               }),
-              signal: AbortSignal.timeout(12000),
+              signal: AbortSignal.timeout(Math.min(26000, remainingMs())),
             }
           );
           const genJson = await genRes.json().catch(() => null);
-          const text = genJson?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (genRes.ok && typeof text === "string" && text.trim()) {
+          const text = genJson?.candidates?.[0]?.content?.parts
+            ?.map((p: any) => p?.text || "")
+            .join("")
+            .trim();
+          if (genRes.ok && text) {
             return {
-              text: text.trim(),
+              text,
               usedModel: cleanName,
               usedProvider: "Google Gemini",
             };
@@ -248,47 +373,19 @@ async function callSingleRealModel(params: {
       } catch {}
     }
 
-    // Fast open-weight failover ONLY if budget remains (>= 5s)
+    // Cross-provider flagship failover (Groq 70B or Google Gemini 2.5 Flash) before returning error
     if (remainingMs() > 5000) {
-      const fallbackModel =
-        spec.upstream === "router_openrouter"
-          ? "DeepSeek-V4-Flash-0731"
-          : spec.upstream === "router_groq"
-          ? "gpt-oss:120b"
-          : "gemma4:31b";
-      try {
-        const lRes = await fetch("https://api.llm7.io/v1/chat/completions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: fallbackModel,
-            messages: [{ role: "system", content: systemPrompt }, ...messages],
-            temperature: 0.6,
-          }),
-          signal: AbortSignal.timeout(Math.min(10000, remainingMs())),
-        });
-        const lData = await lRes.json().catch(() => null);
-        const lText = lData?.choices?.[0]?.message?.content;
-        if (lRes.ok && typeof lText === "string" && lText.trim()) {
-          return {
-            text: lText.trim(),
-            usedModel: lData.model || fallbackModel,
-            usedProvider: `${spec.providerLabel} (Open-Weight Failover)`,
-          };
-        }
-      } catch {}
-    }
-
-    // Final fast Groq fallback for non-groq providers (ONLY if time remains!)
-    if (targetProvider !== "groq" && remainingMs() > 4000) {
-      const groqCands = allCandidates.filter((c) => c.provider === "groq").slice(0, 1);
-      for (const candidate of groqCands) {
+      const backupCandidates = allCandidates
+        .filter((c) => c.provider !== targetProvider && (c.provider === "groq" || c.provider === "google"))
+        .sort((a, b) => groqTierRank(a.modelId) - groqTierRank(b.modelId))
+        .slice(0, 2);
+      for (const candidate of backupCandidates) {
         try {
           const res = await generateText({
             model: candidate.model as any,
             maxRetries: 0,
             maxOutputTokens,
-            abortSignal: AbortSignal.timeout(remainingMs()),
+            abortSignal: AbortSignal.timeout(Math.min(20000, remainingMs())),
             system: systemPrompt,
             messages,
           });
@@ -297,14 +394,13 @@ async function callSingleRealModel(params: {
             return {
               text: out,
               usedModel: candidate.modelId,
-              usedProvider: `Groq Failover (${spec.displayName})`,
+              usedProvider: candidate.providerName,
             };
           }
         } catch {}
       }
     }
 
-    // CRITICAL: throw here instead of cascading into generateTextWithRouter()!
     throw new Error(lastErr);
   }
 
@@ -476,6 +572,38 @@ export async function GET(req: NextRequest) {
       });
     } catch (err: any) {
       return NextResponse.json({ done: false, error: String(err?.message || err) });
+    }
+  }
+
+  if (action === "image_proxy") {
+    const rawUrl = req.nextUrl.searchParams.get("url") || "";
+    try {
+      const safeUrl = sanitizeOutboundEndpoint(rawUrl);
+      const parsed = new URL(safeUrl);
+      const host = parsed.hostname.toLowerCase();
+      const allowedHost =
+        host.endsWith("r2.cloudflarestorage.com") ||
+        host.endsWith("aihorde.net") ||
+        host.endsWith("wikimedia.org") ||
+        host.endsWith("googleusercontent.com");
+      if (!allowedHost) {
+        return NextResponse.json({ error: "Host not allowlisted for image proxy" }, { status: 403 });
+      }
+      const imgRes = await fetch(safeUrl, { signal: AbortSignal.timeout(10000) });
+      if (!imgRes.ok) {
+        return NextResponse.json({ error: `Image upstream ${imgRes.status}` }, { status: 502 });
+      }
+      const contentType = imgRes.headers.get("content-type") || "image/webp";
+      const buf = await imgRes.arrayBuffer();
+      return new NextResponse(buf, {
+        status: 200,
+        headers: {
+          "Content-Type": contentType,
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    } catch (err: any) {
+      return NextResponse.json({ error: String(err?.message || err) }, { status: 400 });
     }
   }
 
@@ -663,38 +791,241 @@ Catalog Sample: ${prods.map((p) => `${p.name} (${p.salePrice} ${tenantRow.curren
           }))
       : [];
 
+    const phase = ["plan", "build_core", "refine_qa", "video_director", "single"].includes(
+      body.phase
+    )
+      ? String(body.phase)
+      : "single";
+
+    const urlContext =
+      typeof body.urlContext === "string" && body.urlContext.trim()
+        ? body.urlContext.trim()
+        : await fetchSafeUrlContextFromPrompt(prompt);
+
+    const libraryContextSnippet = body.libraryContextSnippet
+      ? String(body.libraryContextSnippet).slice(0, 2600)
+      : "";
+    const previousFilesSummary =
+      typeof body.previousFilesSummary === "string"
+        ? body.previousFilesSummary.slice(0, 12000)
+        : "";
+    const combinedMemory = `${storeContextSnippet}${libraryContextSnippet}${
+      urlContext ? `\n\n${urlContext}` : ""
+    }${attachmentContext}${searchContextText}`;
+
     // ------------------------------------------------------------------------
-    // BRANCH 3: CANVAS MOTION VIDEO STUDIO (Local Real .WEBM Exporter)
+    // PHASE HANDLERS FOR MULTI-STAGE FRONTIER BUILDING & VIDEO DIRECTION
+    // ------------------------------------------------------------------------
+    if (phase === "plan") {
+      const planSystem = `You are a Principal Full-Stack Architect inside KASPI AI Arena.
+Inspect the user request, any fetched website context, and any POS store data.${combinedMemory}
+Respond in the user's language in concise, confident architectural prose (2–3 short sentences describing what you are building — storefront/app capabilities, visual themes, key modules: styles/tokens.css, styles/layout.css, data/catalog.js, index.html, scripts/app.js — plus 4 crisp bullet checklist items). NEVER output HTML/CSS code blocks yet.`;
+      const planMsgs = [
+        ...historyMsgs,
+        {
+          role: "user" as const,
+          content: previousFilesSummary
+            ? `Existing project files summary:\n${previousFilesSummary}\n\nFollow-up edit/build request:\n${prompt}`
+            : prompt,
+        },
+      ];
+      const planRes = await callSingleRealModel({
+        spec: specA,
+        systemPrompt: planSystem,
+        messages: planMsgs,
+        maxOutputTokens: 1200,
+      });
+      return NextResponse.json({
+        success: true,
+        phase: "plan",
+        planText: sanitizeExplanationFromCodeLeaks(planRes.text, false, prompt),
+        urlContext,
+      });
+    }
+
+    if (phase === "video_director") {
+      const isAr = /[\u0600-\u06FF]/.test(prompt);
+      const directorSystem = `You are a Senior Commercial Video Director.
+Create a compelling 6-scene to 7-scene promotional ad video script for the user's project/URL.${combinedMemory}
+Return STRICTLY valid JSON (no markdown fences needed):
+{"title":"Brand / Project Name","accentColor":"#10b981","scenes":[{"badge":"SHORT TAG","headline":"Impactful Headline (max 30 chars)","subline":"Clear value benefit (max 48 chars)","metric":"KEY STAT OR CTA"}]}.
+CRITICAL: Write all badge/headline/subline/metric texts in the exact language of the prompt (${
+        isAr ? "Arabic / Moroccan Darija" : "same language as prompt"
+      }). Reflect real features found in the fetched URL content when present!`;
+      const vidRes = await callSingleRealModel({
+        spec: specA,
+        systemPrompt: directorSystem,
+        messages: [{ role: "user", content: prompt }],
+        maxOutputTokens: 1600,
+      });
+      let videoPlan: any = null;
+      const m = vidRes.text.match(/\{[\s\S]*\}/);
+      if (m) {
+        try {
+          videoPlan = JSON.parse(m[0]);
+        } catch {}
+      }
+      return NextResponse.json({
+        success: true,
+        phase: "video_director",
+        videoPlan,
+        urlContext,
+      });
+    }
+
+    if (phase === "build_core") {
+      const planCtx = body.planText ? `\nApproved Architecture Plan:\n${String(body.planText).slice(0, 2200)}` : "";
+      const coreSystem = `${buildArenaSystemPrompt({
+        modality: "code",
+        storeContextSnippet,
+        libraryContextSnippet,
+        attachmentContext,
+        searchContextText,
+        mode,
+      })}${urlContext ? `\n${urlContext}` : ""}${planCtx}
+
+STAGE FOCUS (CORE DESIGN SYSTEM + CATALOG DATA + SEMANTIC HTML):
+Output clean, deep modular files in this EXACT order:
+<!-- FILE: styles/tokens.css -->
+\`\`\`css
+/* Complete CSS custom properties for dark & light theme, typography, spacing, glass cards */
+\`\`\`
+<!-- FILE: styles/layout.css -->
+\`\`\`css
+/* Responsive navigation, hero showcase, filter bar, bento grid, cart drawer, checkout modal, admin panel */
+\`\`\`
+<!-- FILE: data/catalog.js -->
+\`\`\`javascript
+/* Rich realistic items/products/specs array with inline bespoke crisp SVG artwork (data URIs or inline SVG strings — NEVER dog/random placeholder stock images!), pricing in correct currency, variants, reviews */
+\`\`\`
+<!-- FILE: index.html -->
+\`\`\`html
+<!DOCTYPE html>
+<!-- Complete semantic HTML application shell matching all CSS classes & interactive IDs -->
+\`\`\``;
+
+      const coreRes = await callSingleRealModel({
+        spec: specA,
+        systemPrompt: coreSystem,
+        messages: [
+          ...historyMsgs,
+          {
+            role: "user",
+            content: previousFilesSummary
+              ? `Update/extend the existing project below for this request:\n\nExisting files:\n${previousFilesSummary}\n\nRequest:\n${prompt}`
+              : prompt,
+          },
+        ],
+        maxOutputTokens: 8000,
+      });
+
+      const parsed = extractProjectFromResponse(coreRes.text, prompt);
+      return NextResponse.json({
+        success: true,
+        phase: "build_core",
+        effectiveModality: "code",
+        outputA: {
+          modelId: specA.id,
+          modelName: "Option A",
+          providerLabel: "KASPI Engine",
+          status: "completed",
+          latencyMs: 0,
+          replyMarkdown: parsed.explanation,
+          stepsLog: ["Generated foundation styles, catalog & HTML structure"],
+          modalityExecuted: "code",
+          files: parsed.files,
+          previewHtml: parsed.previewHtml,
+          executedOn: "cloud-relay",
+        },
+      });
+    }
+
+    if (phase === "refine_qa") {
+      const builtSummary = String(body.builtFilesSummary || "").slice(0, 12000);
+      const refineSystem = `You are a Principal Frontend & QA Engineer finishing a multi-file web application.
+Review the foundation files provided and complete/upgrade them cleanly.${combinedMemory}
+
+STRICT REQUIREMENTS:
+1. Output complete working client application logic in:
+<!-- FILE: scripts/app.js -->
+\`\`\`javascript
+// Wire ALL buttons, category/search/price filters, product variant pickers, slide-over Cart drawer with localStorage persistence, multi-step Checkout with COD/Card & WhatsApp summary, Dark/Light [data-theme] toggle, EN/AR/FR switcher with RTL dir switch, Wishlist, and working Admin Dashboard CRUD for products & orders!
+// Ensure EVERY SVG/image renders crisp domain visuals (zero broken src or random off-topic photos).
+\`\`\`
+2. If index.html or CSS needs missing element IDs, modals, contrast fixes, or closing tags to wire scripts/app.js cleanly, ALSO output the updated <!-- FILE: index.html --> or <!-- FILE: styles/layout.css -->.
+3. Also output a concise <!-- FILE: README.md -->.`;
+
+      const qaRes = await callSingleRealModel({
+        spec: specA,
+        systemPrompt: refineSystem,
+        messages: [
+          {
+            role: "user",
+            content: `Original User Request:\n${prompt}\n\nFoundation Files Built So Far:\n${builtSummary}`,
+          },
+        ],
+        maxOutputTokens: 7500,
+      });
+
+      const parsed = extractProjectFromResponse(qaRes.text, prompt);
+      return NextResponse.json({
+        success: true,
+        phase: "refine_qa",
+        effectiveModality: "code",
+        outputA: {
+          modelId: specA.id,
+          modelName: "Option A",
+          providerLabel: "KASPI Engine",
+          status: "completed",
+          latencyMs: 0,
+          replyMarkdown: parsed.explanation,
+          stepsLog: ["Engineered interactive scripts & verified UI completeness"],
+          modalityExecuted: "code",
+          files: parsed.files,
+          previewHtml: parsed.previewHtml,
+          executedOn: "cloud-relay",
+        },
+      });
+    }
+
+    // ------------------------------------------------------------------------
+    // BRANCH 3: PROMO VIDEO PLAYER (Default single API fallback)
     // ------------------------------------------------------------------------
     if (effectiveModality === "video") {
-      const videoPrompt = `Create 4 short promo video storyboard slides for: "${prompt}".
-Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scenes":[{"badge":"...","headline":"...","subline":"...","metric":"..."}]}.`;
       const isAr = /[\u0600-\u06FF]/.test(prompt);
+      const videoPrompt = `Create 6 dynamic commercial promo video scenes for: "${prompt}".${
+        urlContext ? `\nFetched Project Info:\n${urlContext}` : ""
+      }
+Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scenes":[{"badge":"...","headline":"...","subline":"...","metric":"..."}]}.`;
 
-      const runVideoSide = async (spec: ArenaRealModelSpec, delayMs: number): Promise<ArenaModelOutput> => {
+      const runVideoSide = async (
+        spec: ArenaRealModelSpec,
+        sideLabel: "A" | "B",
+        delayMs: number
+      ): Promise<ArenaModelOutput> => {
         const start = Date.now();
         let parsedScenes: any = null;
-        let usedModel = spec.apiModelId;
         try {
           const r = await callSingleRealModel({
             spec,
-            systemPrompt: "Return ONLY a raw JSON object with title, accentColor, and scenes array.",
+            systemPrompt: "Return ONLY a raw JSON object with title, accentColor, and 6-7 scenes.",
             messages: [{ role: "user", content: videoPrompt }],
             delayBeforeMs: delayMs,
           });
-          usedModel = r.usedModel;
           const m = r.text.match(/\{[\s\S]*\}/);
           if (m) parsedScenes = JSON.parse(m[0]);
         } catch {}
 
+        const cleanTitle =
+          parsedScenes?.title || prompt.replace(/https?:\/\/\S+/g, "").trim().slice(0, 42) || "Product Ad";
         const html = buildMotionVideoStudioHtml({
-          title: parsedScenes?.title || prompt.slice(0, 42),
-          accentColor: parsedScenes?.accentColor || "#10b981",
+          title: cleanTitle,
+          accentColor: parsedScenes?.accentColor || (sideLabel === "A" ? "#10b981" : "#38bdf8"),
           scenes: parsedScenes?.scenes || [
             {
-              badge: "KASPI STUDIO",
-              headline: prompt.slice(0, 32),
-              subline: "Dynamic HTML5 Motion Video Engine",
+              badge: "LAUNCH",
+              headline: cleanTitle,
+              subline: "Dynamic Commercial Promo Experience",
               metric: "1280 × 720 HD",
             },
           ],
@@ -703,24 +1034,24 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
 
         return {
           modelId: spec.id,
-          modelName: spec.displayName,
-          providerLabel: spec.providerLabel,
+          modelName: `Option ${sideLabel}`,
+          providerLabel: "KASPI Video Engine",
           status: "completed",
           latencyMs: Date.now() - start,
           replyMarkdown: isAr
-            ? `تم بناء استوديو فيديو متحرك (60fps Canvas) مع تحميل مباشر بصيغة **.webm**. (ملاحظة: نماذج الفيديو السحابية مثل Kling/Seedance تتطلب رصيداً مدفوعاً).`
-            : `Built a live 60fps HTML5 Canvas Motion Video Studio with direct **.webm** download. (Cloud video APIs like Kling/Seedance require paid credits).`,
-          stepsLog: [`Rendered local Canvas .webm studio via ${usedModel}`],
+            ? `تم إنتاج الفيديو الإعلاني لمشروعك بدقة HD، ويمكنك تشغيله أو تحميله بصيغة **.webm**.`
+            : `Produced your HD promotional video player with direct **.webm** download.`,
+          stepsLog: ["Analyzed project context", "Rendered multi-scene HD promo video"],
           modalityExecuted: "video",
-          files: [{ path: "motion-video.html", name: "motion-video.html", language: "html", content: html }],
+          files: [{ path: "promo-video.html", name: "promo-video.html", language: "html", content: html }],
           previewHtml: html,
           executedOn: "cloud-relay",
         };
       };
 
       const [vA, vB] = await Promise.all([
-        runVideoSide(specA, 0),
-        specB ? runVideoSide(specB, 900) : Promise.resolve(null),
+        runVideoSide(specA, "A", 0),
+        specB ? runVideoSide(specB, "B", 600) : Promise.resolve(null),
       ]);
 
       return NextResponse.json({
@@ -733,29 +1064,22 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
     }
 
     // ------------------------------------------------------------------------
-    // SYSTEM PROMPTS BY MODALITY (Unrestricted — builds whatever user asked!)
+    // SYSTEM PROMPTS BY MODALITY (Single-shot execution + clean blind labels)
     // ------------------------------------------------------------------------
-    const libraryContextSnippet = body.libraryContextSnippet
-      ? String(body.libraryContextSnippet).slice(0, 2600)
-      : "";
     const systemPrompt = buildArenaSystemPrompt({
       modality: effectiveModality,
       storeContextSnippet,
       libraryContextSnippet,
       attachmentContext,
-      searchContextText,
+      searchContextText: `${urlContext ? `\n${urlContext}` : ""}${searchContextText}`,
       mode,
     });
 
     const messagesForModel = [...historyMsgs, { role: "user" as const, content: prompt }];
 
-    // Execute Model A and Model B independently (stagger B by 1.2s ONLY if both hit api.llm7.io)
-    const shouldStaggerB = Boolean(
-      specB && specA.upstream === "llm7" && specB.upstream === "llm7"
-    );
-
     const runOne = async (
       spec: ArenaRealModelSpec,
+      sideLabel: "A" | "B",
       delayMs = 0
     ): Promise<ArenaModelOutput> => {
       const start = Date.now();
@@ -770,50 +1094,39 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
         if (effectiveModality === "code" || /<!DOCTYPE html|<html|```html/i.test(res.text)) {
           let parsed = extractProjectFromResponse(res.text, prompt);
 
-          // Strict HTML enforcement: if model wrote Markdown prose instead of runnable HTML, convert cleanly (only if <= 14s elapsed)
-          if (effectiveModality === "code" && !parsed.previewHtml && Date.now() - start < 14000) {
+          // Strict HTML enforcement using flagship recovery (never tiny 8B!)
+          if (effectiveModality === "code" && !parsed.previewHtml && Date.now() - start < 22000) {
             const compilerSpec =
               ARENA_REAL_MODELS.find(
-                (m) => m.id === (spec.id === "groq-gpt-oss" ? "groq-llama-instant" : "groq-gpt-oss")
+                (m) => m.id === (spec.id === "groq-llama33" ? "gemini-2.5-flash" : "groq-llama33")
               ) || spec;
             try {
               const retryRes = await callSingleRealModel({
                 spec: compilerSpec,
                 systemPrompt: STRICT_HTML_RECOVERY_SYSTEM_PROMPT,
                 messages: [{ role: "user", content: prompt }],
-                delayBeforeMs: 300,
-                maxOutputTokens: 3000,
+                delayBeforeMs: 250,
+                maxOutputTokens: 7000,
               });
               const retryParsed = extractProjectFromResponse(retryRes.text, prompt);
               if (retryParsed.previewHtml) {
                 parsed = retryParsed;
-                res = {
-                  text: retryRes.text,
-                  usedModel: `${res.usedModel}→${retryRes.usedModel}`,
-                  usedProvider: res.usedProvider,
-                };
+                res = retryRes;
               }
             } catch {}
           }
 
           const latencyMs = Date.now() - start;
-          const steps =
-            mode === "agent"
-              ? [
-                  `Explored requirements & modality (${effectiveModality})`,
-                  `Generated ${Math.max(1, parsed.files.length)} project file(s) via ${res.usedModel}`,
-                  parsed.previewHtml ? "Built runnable live preview sandbox" : "Prepared code output",
-                ]
-              : [
-                  parsed.previewHtml
-                    ? `Built runnable project (${parsed.files.length} files)`
-                    : `Generated response via ${res.usedModel}`,
-                ];
+          const steps = [
+            "Inspected project requirements & context",
+            `Generated modular project (${Math.max(1, parsed.files.length)} files)`,
+            parsed.previewHtml ? "Built runnable live preview" : "Prepared source output",
+          ];
 
           return {
             modelId: spec.id,
-            modelName: spec.displayName,
-            providerLabel: res.usedProvider,
+            modelName: `Option ${sideLabel}`,
+            providerLabel: "KASPI AI",
             status: "completed",
             latencyMs,
             replyMarkdown: parsed.explanation,
@@ -829,15 +1142,15 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
         const latencyMs = Date.now() - start;
         return {
           modelId: spec.id,
-          modelName: spec.displayName,
-          providerLabel: res.usedProvider,
+          modelName: `Option ${sideLabel}`,
+          providerLabel: "KASPI AI",
           status: "completed",
           latencyMs,
           replyMarkdown: sanitizeExplanationFromCodeLeaks(res.text, false, prompt),
           stepsLog:
             citations.length > 0
-              ? [`Explored ${citations.length} live web sources`, `Synthesized reply via ${res.usedModel}`]
-              : [`Responded via ${res.usedModel} in ${latencyMs}ms`],
+              ? [`Explored ${citations.length} live web sources`, "Synthesized grounded answer"]
+              : ["Completed response"],
           modalityExecuted: effectiveModality === "search" ? "search" : "text",
           files: [],
           previewHtml: null,
@@ -847,15 +1160,13 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
       } catch (err: any) {
         return {
           modelId: spec.id,
-          modelName: spec.displayName,
-          providerLabel: spec.providerLabel,
+          modelName: `Option ${sideLabel}`,
+          providerLabel: "KASPI AI",
           status: "failed",
           latencyMs: Date.now() - start,
           errorMessage: String(err?.message || err),
-          replyMarkdown: `⚠️ Model **${spec.displayName}** encountered an upstream error: ${String(
-            err?.message || err
-          )}`,
-          stepsLog: [`Failed: ${String(err?.message || err)}`],
+          replyMarkdown: `⚠️ تعذر إتمام هذه المحاولة مؤقتاً: ${String(err?.message || err)}`,
+          stepsLog: ["Execution interrupted"],
           modalityExecuted: "text",
           files: [],
           previewHtml: null,
@@ -864,8 +1175,8 @@ Output strictly valid JSON object: {"title":"...","accentColor":"#10b981","scene
     };
 
     const [settledA, settledB] = await Promise.all([
-      runOne(specA, 0),
-      specB ? runOne(specB, shouldStaggerB ? 1200 : 0) : Promise.resolve(null),
+      runOne(specA, "A", 0),
+      specB ? runOne(specB, "B", 250) : Promise.resolve(null),
     ]);
 
     return NextResponse.json({

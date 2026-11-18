@@ -40,6 +40,8 @@ import {
   LogOut,
   X,
   Folder,
+  FolderOpen,
+  Square,
   CheckCircle2,
   Image as ImageIcon,
   Film,
@@ -73,6 +75,7 @@ import {
 } from "@/lib/ai/arena-models";
 import {
   checkClientAiHordeJobStatus,
+  detectEffectiveModality,
   executeArenaTurnClientFirst,
   sanitizeExplanationFromCodeLeaks,
 } from "@/lib/ai/arena-client-runner";
@@ -227,9 +230,27 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [downloadTooltipVisible, setDownloadTooltipVisible] = useState(false);
   const [showBuiltBadge, setShowBuiltBadge] = useState(true);
+  const [buildElapsedMs, setBuildElapsedMs] = useState<number>(0);
+  const [collapsedFolders, setCollapsedFolders] = useState<Record<string, boolean>>({});
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const homeTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const followTextareaRef = useRef<HTMLTextAreaElement>(null);
   const abortCtrlRef = useRef<AbortController | null>(null);
+
+  const autoResizeTextarea = (el: HTMLTextAreaElement | null, minPx: number, maxPx: number) => {
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(maxPx, Math.max(minPx, el.scrollHeight))}px`;
+  };
+
+  const formatElapsedArena = (ms: number): string => {
+    const secs = Math.max(0.1, ms / 1000);
+    if (secs < 60) return `${secs.toFixed(1)}s`;
+    const mins = Math.floor(secs / 60);
+    const rem = (secs % 60).toFixed(1);
+    return `${mins}m ${rem}s`;
+  };
 
   const storageScopeKey = userEmail || tenantInfo?.shopName || "default";
 
@@ -493,13 +514,51 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
     setHeaderTitleMenuOpen(false);
   };
 
-  // Send Prompt to Real Arena Multi-Model Backend (/api/ai/arena-execute)
+  // Live elapsed timer when active build is running
+  useEffect(() => {
+    if (!isExecuting) {
+      setBuildElapsedMs(0);
+      return;
+    }
+    const t0 = Date.now();
+    setBuildElapsedMs(100);
+    const id = setInterval(() => {
+      setBuildElapsedMs(Date.now() - t0);
+    }, 200);
+    return () => clearInterval(id);
+  }, [isExecuting]);
+
+  const updateTurnInThread = (
+    targetThreadId: string,
+    turnId: string,
+    updater: (turn: ArenaTurnRecord) => ArenaTurnRecord
+  ) => {
+    setThreads((prev) => {
+      const next = prev.map((t) =>
+        t.id !== targetThreadId
+          ? t
+          : {
+              ...t,
+              updatedAt: new Date().toISOString(),
+              turns: t.turns.map((tr) => (tr.turnId === turnId ? updater(tr) : tr)),
+            }
+      );
+      try {
+        localStorage.setItem(`${ARENA_HISTORY_PREFIX}${storageScopeKey}`, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  // Send Prompt to Multi-Stage Arena Engine (Immediate Live Split Building + Streaming Progress)
   const handleSendPrompt = async (customPrompt?: string) => {
     const promptText = (customPrompt ?? promptInput).trim();
     if (!promptText || isExecuting) return;
 
     setIsExecuting(true);
     setPromptInput("");
+    if (homeTextareaRef.current) homeTextareaRef.current.style.height = "auto";
+    if (followTextareaRef.current) followTextareaRef.current.style.height = "auto";
     setActiveView("arena");
     setPlusMenuOpen(false);
     setModeDropdownOpen(false);
@@ -508,13 +567,83 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
     const filesSnapshot = [...attachedFiles];
     setAttachedFiles([]);
 
-    // Build prior conversation history cleanly from current thread (for follow-ups!)
-    const history = activeThread
-      ? activeThread.turns.flatMap((t) => [
+    // Capture prior conversation & project files BEFORE appending optimistic building turn
+    const priorThread = activeThread;
+    const priorTurn = latestTurn;
+    const history = priorThread
+      ? priorThread.turns.flatMap((t) => [
           { role: "user" as const, content: t.userPrompt },
           { role: "assistant" as const, content: t.outputA.replyMarkdown },
         ])
       : [];
+
+    const predictedModality = detectEffectiveModality(
+      modality,
+      promptText,
+      priorTurn?.modality
+    );
+
+    const turnId = `turn-${Date.now().toString(36)}`;
+    const isSingle = arenaMode === "direct";
+    const buildingTurn: ArenaTurnRecord = {
+      turnId,
+      timestamp: new Date().toISOString(),
+      userPrompt: promptText,
+      attachments: filesSnapshot.length > 0 ? filesSnapshot : undefined,
+      mode: arenaMode,
+      modality: predictedModality,
+      outputA: {
+        modelId: modelAId,
+        modelName: "Option A",
+        providerLabel: "KASPI AI",
+        status: "building",
+        latencyMs: 0,
+        replyMarkdown: "",
+        stepsLog: ["Initializing workspace & analyzing requirements..."],
+        modalityExecuted: predictedModality,
+        files: [],
+        previewHtml: null,
+      },
+      outputB: isSingle
+        ? null
+        : {
+            modelId: modelBId,
+            modelName: "Option B",
+            providerLabel: "KASPI AI",
+            status: "building",
+            latencyMs: 0,
+            replyMarkdown: "",
+            stepsLog: ["Initializing workspace & analyzing requirements..."],
+            modalityExecuted: predictedModality,
+            files: [],
+            previewHtml: null,
+          },
+      voteOutcome: null,
+    };
+
+    const targetThreadId = priorThread?.id || `chat-${Date.now().toString(36)}`;
+    if (priorThread) {
+      persistThreads(
+        threads.map((t) =>
+          t.id === priorThread.id
+            ? { ...t, updatedAt: new Date().toISOString(), turns: [...t.turns, buildingTurn] }
+            : t
+        )
+      );
+    } else {
+      const newThread: ArenaConversationThread = {
+        id: targetThreadId,
+        title: promptText.slice(0, 48),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        turns: [buildingTurn],
+      };
+      persistThreads([newThread, ...threads]);
+      setActiveThreadId(targetThreadId);
+    }
+
+    setSelectedSide("A");
+    setPreviewOrCode("preview");
 
     const controller = new AbortController();
     abortCtrlRef.current = controller;
@@ -528,7 +657,9 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
         modelAId,
         modelBId,
         history,
-        previousTurnModality: latestTurn?.modality,
+        previousTurnModality: priorTurn?.modality,
+        previousFilesA: priorTurn?.outputA.files,
+        previousFilesB: priorTurn?.outputB?.files,
         includeStoreContext,
         libraryContextSnippet,
         attachments: filesSnapshot.map((f) => ({
@@ -538,6 +669,31 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
         })),
         serverExecuteUrl: getApiUrl("/api/ai/arena-execute"),
         signal: controller.signal,
+        onProgress: (upd) => {
+          updateTurnInThread(targetThreadId, turnId, (tr) => {
+            if (upd.side === "A") {
+              return {
+                ...tr,
+                outputA: {
+                  ...tr.outputA,
+                  stepsLog: upd.stepsLog,
+                  replyMarkdown: upd.replyDraft ?? tr.outputA.replyMarkdown,
+                },
+              };
+            }
+            if (upd.side === "B" && tr.outputB) {
+              return {
+                ...tr,
+                outputB: {
+                  ...tr.outputB,
+                  stepsLog: upd.stepsLog,
+                  replyMarkdown: upd.replyDraft ?? tr.outputB.replyMarkdown,
+                },
+              };
+            }
+            return tr;
+          });
+        },
       });
 
       const finalOutputA = result.outputA;
@@ -570,57 +726,55 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
             kind,
             title: promptText.slice(0, 48),
             prompt: promptText,
-            modelName: finalOutputA.modelName,
+            modelName: "KASPI AI",
             previewHtml: finalOutputA.previewHtml,
             files: finalOutputA.files,
           })
         );
       }
 
-      const newTurn: ArenaTurnRecord = {
-        turnId: `turn-${Date.now().toString(36)}`,
-        timestamp: new Date().toISOString(),
-        userPrompt: promptText,
-        attachments: filesSnapshot.length > 0 ? filesSnapshot : undefined,
-        mode: arenaMode,
-        modality: result.effectiveModality || "text",
+      updateTurnInThread(targetThreadId, turnId, (tr) => ({
+        ...tr,
+        modality: result.effectiveModality || tr.modality,
         outputA: finalOutputA,
         outputB: finalOutputB,
-        voteOutcome: null,
         suggestedPluginIds: suggested.map((s) => s.id),
-      };
-
-      if (activeThread) {
-        const updated = threads.map((t) =>
-          t.id === activeThread.id
-            ? {
-                ...t,
-                updatedAt: new Date().toISOString(),
-                turns: [...t.turns, newTurn],
-              }
-            : t
-        );
-        persistThreads(updated);
-      } else {
-        const newId = `chat-${Date.now().toString(36)}`;
-        const newThread: ArenaConversationThread = {
-          id: newId,
-          title: promptText.slice(0, 48),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          turns: [newTurn],
-        };
-        persistThreads([newThread, ...threads]);
-        setActiveThreadId(newId);
-      }
+      }));
 
       setSelectedSide("A");
       setPreviewOrCode("preview");
-      if (newTurn.outputA.files.length > 0) {
-        setSelectedFilePath(newTurn.outputA.files[0].path);
+      const preferredEntry =
+        finalOutputA.files.find((f) => f.path === "index.html") || finalOutputA.files[0];
+      if (preferredEntry) {
+        setSelectedFilePath(preferredEntry.path);
       }
       setShowBuiltBadge(true);
     } catch (err: any) {
+      updateTurnInThread(targetThreadId, turnId, (tr) => ({
+        ...tr,
+        outputA:
+          tr.outputA.status === "building"
+            ? {
+                ...tr.outputA,
+                status: "failed",
+                replyMarkdown:
+                  err?.name === "AbortError"
+                    ? "تم إيقاف البناء بناءً على طلبك."
+                    : `تعذر إكمال البناء: ${String(err?.message || err)}`,
+              }
+            : tr.outputA,
+        outputB:
+          tr.outputB && tr.outputB.status === "building"
+            ? {
+                ...tr.outputB,
+                status: "failed",
+                replyMarkdown:
+                  err?.name === "AbortError"
+                    ? "Stopped."
+                    : `Build interrupted: ${String(err?.message || err)}`,
+              }
+            : tr.outputB,
+      }));
       if (err?.name !== "AbortError") {
         toast.error(`تعذر تنفيذ الطلب في Arena: ${String(err?.message || err)}`);
       }
@@ -630,7 +784,7 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
     }
   };
 
-  // Real Human Preference Vote (Updates Leaderboard + Reveals Anonymous Battle Names)
+  // Real Human Preference Vote (Updates Leaderboard silently while keeping workspace blind & clean)
   const handleVote = (turnId: string, outcome: BattleOutcome) => {
     if (!activeThread) return;
     const turn = activeThread.turns.find((t) => t.turnId === turnId);
@@ -668,10 +822,10 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
 
     if (outcome === "model_a") {
       setSelectedSide("A");
-      toast.success(`Voted A: ${turn.outputA.modelName} won this round!`);
+      toast.success("Recorded preference: Option A");
     } else if (outcome === "model_b") {
       setSelectedSide("B");
-      toast.success(`Voted B: ${turn.outputB.modelName} won this round!`);
+      toast.success("Recorded preference: Option B");
     } else if (outcome === "tie") {
       toast.info("Recorded: Both are good");
     } else {
@@ -830,7 +984,9 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
         latestTurn.outputA.files.length > 0 ||
         latestTurn.outputB?.files.length ||
         latestTurn.outputA.modalityExecuted === "image" ||
-        latestTurn.outputB?.modalityExecuted === "image")
+        latestTurn.outputB?.modalityExecuted === "image" ||
+        (latestTurn.outputA.status === "building" &&
+          ["code", "video", "image"].includes(latestTurn.outputA.modalityExecuted)))
   );
 
   const visibleThreads = threads.filter(
@@ -848,10 +1004,8 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
   const getTabDisplayLabel = (turn: ArenaTurnRecord, side: "A" | "B"): string => {
     const out = side === "A" ? turn.outputA : turn.outputB;
     if (!out) return "";
-    if (turn.mode === "battle" && !turn.voteOutcome) {
-      return `Option ${side}`;
-    }
-    return out.modelName;
+    if (!turn.outputB) return "KASPI AI";
+    return `Option ${side}`;
   };
 
   const handleToggleExpandSteps = (turnId: string, side: "A" | "B") => {
@@ -1078,11 +1232,11 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
             >
               {[
                 { id: "auto" as const, title: "Auto", desc: "Smart routing (Code / Search / Image / Chat)" },
-                { id: "code" as const, title: "Code", desc: "Live Web Apps, Sites, Games + Preview + Zip" },
-                { id: "text" as const, title: "Text Chat", desc: "Reasoning, Q&A & Copywriting" },
-                { id: "search" as const, title: "Web Search", desc: "Direct DuckDuckGo + Wikipedia citations" },
-                { id: "image" as const, title: "Image Gen", desc: "AI Horde Stable Diffusion Generator" },
-                { id: "video" as const, title: "Motion Video", desc: "Local 60fps HTML5 Canvas .webm Export" },
+                { id: "code" as const, title: "Code", desc: "Live Web Apps, Sites, Stores + Files + Zip" },
+                { id: "text" as const, title: "Text Chat", desc: "Reasoning, Strategy & Copywriting" },
+                { id: "search" as const, title: "Web Search", desc: "Live Web Research & Verified Sources" },
+                { id: "image" as const, title: "Image Gen", desc: "Visual Artwork & Product Graphics" },
+                { id: "video" as const, title: "Promo Video", desc: "Multi-Scene HD Promo Video + .webm Export" },
               ].map((opt) => (
                 <button
                   key={opt.id}
@@ -1113,51 +1267,8 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
     );
   };
 
-  const renderModelPickers = (compact?: boolean) => {
-    if (arenaMode === "battle") return null;
-    const isSingle = arenaMode === "direct";
-    return (
-      <div
-        className={`grid gap-2 ${compact ? "p-2 mt-2" : "p-3"} rounded-xl bg-white/[0.03] border border-white/10 text-xs ${
-          isSingle ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"
-        }`}
-      >
-        <div>
-          <label className="block text-[10px] text-zinc-400 mb-1">
-            {isSingle ? "Model:" : "Model A:"}
-          </label>
-          <select
-            value={modelAId}
-            onChange={(e) => setModelAId(e.target.value)}
-            className="w-full px-2 py-1.5 rounded-lg bg-[#1e1e1e] border border-white/10 text-white text-[11px]"
-          >
-            {ARENA_REAL_MODELS.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.displayName} {m.supportsClientDirect ? "• Direct" : "• Cloud"}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {!isSingle && (
-          <div>
-            <label className="block text-[10px] text-zinc-400 mb-1">Model B:</label>
-            <select
-              value={modelBId}
-              onChange={(e) => setModelBId(e.target.value)}
-              className="w-full px-2 py-1.5 rounded-lg bg-[#1e1e1e] border border-white/10 text-white text-[11px]"
-            >
-              {ARENA_REAL_MODELS.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.displayName} {m.supportsClientDirect ? "• Direct" : "• Cloud"}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-    );
-  };
+  // Strict blind Arena policy: hide model picker dropdowns & internal providers completely so users see clean results only.
+  const renderModelPickers = (_compact?: boolean) => null;
 
   return (
     <KaspiGlassModalPortal>
@@ -1872,26 +1983,23 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
               <div className="flex-1 overflow-y-auto p-6 bg-[#141414]">
                 <div className="max-w-3xl mx-auto p-6 rounded-2xl bg-[#1e1e1e] border border-white/10 space-y-4 text-xs text-zinc-300 leading-relaxed">
                   <h2 className="text-lg font-bold text-white">
-                    KASPI AI Arena — Client-First Open Execution &amp; Models
+                    KASPI AI — Autonomous Multi-Agent Arena &amp; Business OS
                   </h2>
                   <p>
-                    Open-weight models run <strong className="text-emerald-400">directly from your device/browser</strong> via CORS open gateways (<code className="text-zinc-200">api.llm7.io</code>, <code className="text-zinc-200">aihorde.net</code>, DuckDuckGo + Wikipedia) without loading KASPI servers, with automatic cloud fallback (<code className="text-zinc-200">Groq</code> / <code className="text-zinc-200">OpenRouter :free</code>) when needed:
+                    KASPI AI executes multi-stage architectural planning, modular codebase generation, interactive storefront &amp; app engineering, live web research, promo video creation, and universal plugin orchestration — presenting clean blind outputs so you judge purely on result quality.
                   </p>
-                  <ul className="list-disc pl-5 space-y-1.5">
-                    {ARENA_REAL_MODELS.map((m) => (
-                      <li key={m.id}>
-                        <strong className="text-white">{m.displayName}</strong> — {m.providerLabel} (
-                        <code className="text-emerald-400">{m.apiModelId}</code>)
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="p-3.5 rounded-xl bg-black/30 border border-white/10 space-y-1.5 text-[11px] text-zinc-400">
-                    <div>
-                      <strong className="text-zinc-200">Why not embed arena.ai directly?</strong>{" "}
-                      <code>arena.ai</code> enforces Cloudflare anti-bot Turnstile challenges (HTTP 403) and <code>X-Frame-Options: SAMEORIGIN</code>, blocking direct iframe/proxy embedding. Instead, KASPI AI delivers native multi-model Arena parity locally.
+                  <div className="grid sm:grid-cols-2 gap-3 pt-2">
+                    <div className="p-3.5 rounded-xl bg-black/30 border border-white/10 space-y-1">
+                      <div className="font-bold text-emerald-400">Multi-Stage Builder (Code / Stores / Apps)</div>
+                      <p className="text-[11px] text-zinc-400">
+                        Automatically inspects links, plans architecture, generates separate stylesheets, data catalogs &amp; interactive logic, verifies output, and compiles live preview + ZIP.
+                      </p>
                     </div>
-                    <div>
-                      <strong className="text-zinc-200">Motion Video (.webm):</strong> Cloud video APIs (Kling v3.0, Seedance 2.0, Gemini Omni) require paid per-second tokens (<code>usage_based_only</code>). Selecting Video in KASPI builds an authentic 60fps HTML5 Canvas Motion Studio that records &amp; downloads real <code>.webm</code> video locally.
+                    <div className="p-3.5 rounded-xl bg-black/30 border border-white/10 space-y-1">
+                      <div className="font-bold text-emerald-400">Plugins, Maps, Library &amp; Visual Setup</div>
+                      <p className="text-[11px] text-zinc-400">
+                        Connect POS stores, WhatsApp, GitHub, Vercel, Stripe, verify real store GPS coordinates, and get click-by-click annotated guidance from screenshots.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1932,21 +2040,25 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                     </div>
                   )}
 
-                  {/* Clean Arena Prompt Box */}
+                  {/* Clean Expanding Arena Prompt Box */}
                   <div className="rounded-2xl bg-[#232323]/95 border border-white/15 shadow-2xl p-4 focus-within:border-emerald-500/50 transition-colors">
                     <textarea
+                      ref={homeTextareaRef}
                       rows={3}
                       dir="auto"
                       value={promptInput}
-                      onChange={(e) => setPromptInput(e.target.value)}
+                      onChange={(e) => {
+                        setPromptInput(e.target.value);
+                        autoResizeTextarea(e.currentTarget, 84, 280);
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault();
                           handleSendPrompt();
                         }
                       }}
-                      placeholder="Ask anything, describe the website, app, 3D game, image, or web search..."
-                      className="w-full bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none resize-none"
+                      placeholder="Ask anything, describe your e-commerce storefront, app, promo video, or web research..."
+                      className="w-full min-h-[84px] max-h-[280px] overflow-y-auto bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none resize-none leading-relaxed"
                     />
 
                     {/* Composer Toolbar (`+`, `Battle v`, `Auto/Code/Search/Image/Video v`, Send) */}
@@ -1968,17 +2080,7 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Explicit Model Pickers for Agent / Side-by-Side / Direct Modes */}
                   {renderModelPickers(false)}
-
-                  {isExecuting && (
-                    <div className="flex items-center justify-center gap-2 text-xs text-emerald-400">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>
-                        Running real AI models in parallel ({arenaMode === "direct" ? "1 model" : "Model A & Model B"})...
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
@@ -2000,44 +2102,37 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                       const labelA = getTabDisplayLabel(turn, "A");
                       const labelB = getTabDisplayLabel(turn, "B");
 
-                      return (
-                        <div key={turn.turnId} className="space-y-3">
-                          {/* User Message Bubble */}
-                          <div className="flex justify-end">
-                            <div
-                              dir="auto"
-                              className="max-w-[88%] px-3.5 py-2.5 rounded-2xl bg-[#2a2a2a] border border-white/10 text-xs text-zinc-100 leading-relaxed"
-                            >
-                              {turn.userPrompt}
-                            </div>
-                          </div>
-
-                          {/* Option Cards (Side by Side if no right iframe, stacked if split canvas) */}
+                      const renderOptionCard = (side: "A" | "B", out: ArenaModelOutput, label: string) => {
+                        const isExpanded = side === "A" ? turn.expandedA : turn.expandedB;
+                        const voteKey = side === "A" ? "model_a" : "model_b";
+                        const isBuildingSide = out.status === "building";
+                        return (
                           <div
-                            className={`grid gap-3 ${
-                              !hasSplitCanvas && turn.outputB ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"
+                            onClick={() => setSelectedSide(side)}
+                            className={`rounded-xl p-3 border transition-all cursor-pointer ${
+                              hasSplitCanvas && selectedSide === side
+                                ? "bg-[#222] border-[#10b981]/60 shadow-lg"
+                                : "bg-[#1e1e1e] border-white/10 hover:border-white/25"
                             }`}
                           >
-                            {/* OPTION A CARD */}
-                            <div
-                              onClick={() => setSelectedSide("A")}
-                              className={`rounded-xl p-3 border transition-all cursor-pointer ${
-                                hasSplitCanvas && selectedSide === "A"
-                                  ? "bg-[#222] border-[#10b981]/60 shadow-lg"
-                                  : "bg-[#1e1e1e] border-white/10 hover:border-white/25"
-                              }`}
-                            >
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  <span className="text-[11px] font-mono font-bold text-emerald-400">
-                                    AI\
-                                  </span>
-                                  <span className="text-xs font-bold text-white truncate">{labelA}</span>
-                                  {turn.voteOutcome === "model_a" && (
-                                    <Trophy className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-1.5 shrink-0">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span
+                                  className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                                    isBuildingSide
+                                      ? "bg-white animate-pulse"
+                                      : side === "B"
+                                      ? "bg-emerald-400"
+                                      : "bg-zinc-200"
+                                  }`}
+                                />
+                                <span className="text-xs font-bold text-white truncate">{label}</span>
+                                {turn.voteOutcome === voteKey && (
+                                  <Trophy className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {!isBuildingSide && (
                                   <button
                                     type="button"
                                     onClick={(e) => {
@@ -2049,177 +2144,119 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                                   >
                                     <RotateCcw className="w-3.5 h-3.5" />
                                   </button>
-                                  {turn.outputB && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleVote(turn.turnId, "model_a");
-                                      }}
-                                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border cursor-pointer transition-colors ${
-                                        turn.voteOutcome === "model_a"
-                                          ? "bg-emerald-500 text-black border-emerald-400"
-                                          : "bg-white/5 hover:bg-white/10 text-zinc-200 border-white/15"
-                                      }`}
-                                    >
-                                      A is better
-                                    </button>
-                                  )}
-                                </div>
+                                )}
+                                {turn.outputB && !isBuildingSide && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleVote(turn.turnId, voteKey);
+                                    }}
+                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border cursor-pointer transition-colors ${
+                                      turn.voteOutcome === voteKey
+                                        ? "bg-emerald-500 text-black border-emerald-400"
+                                        : "bg-white/5 hover:bg-white/10 text-zinc-200 border-white/15"
+                                    }`}
+                                  >
+                                    {side} is better
+                                  </button>
+                                )}
                               </div>
+                            </div>
 
+                            {out.replyMarkdown ? (
                               <div dir="auto" className="text-xs text-zinc-200 leading-relaxed whitespace-pre-wrap">
                                 {sanitizeExplanationFromCodeLeaks(
-                                  turn.outputA.replyMarkdown,
-                                  Boolean(turn.outputA.previewHtml),
+                                  out.replyMarkdown,
+                                  Boolean(out.previewHtml),
                                   turn.userPrompt
                                 )}
                               </div>
+                            ) : isBuildingSide ? (
+                              <div className="text-xs text-zinc-400 animate-pulse py-1">
+                                Generating...
+                              </div>
+                            ) : null}
 
-                              {turn.outputA.stepsLog.length > 0 && (
-                                <div className="mt-2 pt-2 border-t border-white/5 space-y-1 text-[11px] text-zinc-400">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span className="inline-flex items-center gap-1.5 text-zinc-300 min-w-0">
+                            {out.stepsLog.length > 0 && (
+                              <div className="mt-2 pt-2 border-t border-white/5 space-y-1 text-[11px] text-zinc-400">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="inline-flex items-center gap-1.5 text-zinc-300 min-w-0">
+                                    {isBuildingSide ? (
+                                      <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin shrink-0" />
+                                    ) : (
                                       <CheckCircle2
                                         className={`w-3.5 h-3.5 shrink-0 ${
-                                          turn.outputA.status === "completed" ? "text-emerald-400" : "text-amber-400"
+                                          out.status === "completed" ? "text-emerald-400" : "text-amber-400"
                                         }`}
                                       />
-                                      <span className="truncate">
-                                        {turn.outputA.stepsLog[turn.outputA.stepsLog.length - 1]}
-                                      </span>
-                                    </span>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                      {turn.outputA.stepsLog.length > 1 && (
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleToggleExpandSteps(turn.turnId, "A");
-                                          }}
-                                          className="text-[10px] text-emerald-400 hover:underline cursor-pointer"
-                                        >
-                                          {turn.expandedA ? "Hide" : "Show More"}
-                                        </button>
-                                      )}
-                                      <span className="font-mono text-[10px]">
-                                        {turn.outputA.executedOn === "client-device" ? "Device • " : ""}
-                                        {turn.outputA.latencyMs}ms
-                                      </span>
-                                    </div>
-                                  </div>
-                                  {turn.expandedA && (
-                                    <div className="pl-5 text-[10px] text-zinc-400 space-y-0.5">
-                                      {turn.outputA.stepsLog.map((st, idx) => (
-                                        <div key={idx}>• {st}</div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* OPTION B CARD */}
-                            {turn.outputB && (
-                              <div
-                                onClick={() => setSelectedSide("B")}
-                                className={`rounded-xl p-3 border transition-all cursor-pointer ${
-                                  hasSplitCanvas && selectedSide === "B"
-                                    ? "bg-[#222] border-[#10b981]/60 shadow-lg"
-                                    : "bg-[#1e1e1e] border-white/10 hover:border-white/25"
-                                }`}
-                              >
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-1.5 min-w-0">
-                                    <span className="text-[11px] font-mono font-bold text-emerald-400">
-                                      AI\
-                                    </span>
-                                    <span className="text-xs font-bold text-white truncate">{labelB}</span>
-                                    <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
-                                    {turn.voteOutcome === "model_b" && (
-                                      <Trophy className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                                     )}
-                                  </div>
-                                  <div className="flex items-center gap-1.5 shrink-0">
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleSendPrompt(turn.userPrompt);
-                                      }}
-                                      className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white cursor-pointer"
-                                      title="Regenerate"
-                                    >
-                                      <RotateCcw className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleVote(turn.turnId, "model_b");
-                                      }}
-                                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border cursor-pointer transition-colors ${
-                                        turn.voteOutcome === "model_b"
-                                          ? "bg-emerald-500 text-black border-emerald-400"
-                                          : "bg-white/5 hover:bg-white/10 text-zinc-200 border-white/15"
-                                      }`}
-                                    >
-                                      B is better
-                                    </button>
+                                    <span className="truncate">
+                                      {isBuildingSide ? "Building..." : out.stepsLog[out.stepsLog.length - 1]}
+                                    </span>
+                                  </span>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    {out.stepsLog.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleToggleExpandSteps(turn.turnId, side);
+                                        }}
+                                        className="text-[10px] text-emerald-400 hover:underline cursor-pointer"
+                                      >
+                                        {isExpanded ? "Hide" : "Show steps"}
+                                      </button>
+                                    )}
+                                    <span className="font-mono text-[10px] text-zinc-500">
+                                      {isBuildingSide
+                                        ? `(${formatElapsedArena(buildElapsedMs)})`
+                                        : out.latencyMs >= 1000
+                                        ? formatElapsedArena(out.latencyMs)
+                                        : ""}
+                                    </span>
                                   </div>
                                 </div>
-
-                                <div dir="auto" className="text-xs text-zinc-200 leading-relaxed whitespace-pre-wrap">
-                                  {sanitizeExplanationFromCodeLeaks(
-                                    turn.outputB.replyMarkdown,
-                                    Boolean(turn.outputB.previewHtml),
-                                    turn.userPrompt
-                                  )}
-                                </div>
-
-                                {turn.outputB.stepsLog.length > 0 && (
-                                  <div className="mt-2 pt-2 border-t border-white/5 space-y-1 text-[11px] text-zinc-400">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="inline-flex items-center gap-1.5 text-zinc-300 min-w-0">
-                                        <CheckCircle2
-                                          className={`w-3.5 h-3.5 shrink-0 ${
-                                            turn.outputB.status === "completed" ? "text-emerald-400" : "text-amber-400"
-                                          }`}
-                                        />
-                                        <span className="truncate">
-                                          {turn.outputB.stepsLog[turn.outputB.stepsLog.length - 1]}
-                                        </span>
-                                      </span>
-                                      <div className="flex items-center gap-2 shrink-0">
-                                        {turn.outputB.stepsLog.length > 1 && (
-                                          <button
-                                            type="button"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleToggleExpandSteps(turn.turnId, "B");
-                                            }}
-                                            className="text-[10px] text-emerald-400 hover:underline cursor-pointer"
-                                          >
-                                            {turn.expandedB ? "Hide" : "Show More"}
-                                          </button>
+                                {(isExpanded || isBuildingSide) && (
+                                  <div className="pl-5 text-[10px] text-zinc-400 space-y-1 pt-1">
+                                    {out.stepsLog.map((st, idx) => (
+                                      <div key={idx} className="flex items-center gap-1.5">
+                                        {isBuildingSide && idx === out.stepsLog.length - 1 ? (
+                                          <Loader2 className="w-2.5 h-2.5 animate-spin text-emerald-400 shrink-0" />
+                                        ) : (
+                                          <Check className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
                                         )}
-                                        <span className="font-mono text-[10px]">
-                                          {turn.outputB.executedOn === "client-device" ? "Device • " : ""}
-                                          {turn.outputB.latencyMs}ms
-                                        </span>
+                                        <span className="truncate">{st}</span>
                                       </div>
-                                    </div>
-                                    {turn.expandedB && (
-                                      <div className="pl-5 text-[10px] text-zinc-400 space-y-0.5">
-                                        {turn.outputB.stepsLog.map((st, idx) => (
-                                          <div key={idx}>• {st}</div>
-                                        ))}
-                                      </div>
-                                    )}
+                                    ))}
                                   </div>
                                 )}
                               </div>
                             )}
+                          </div>
+                        );
+                      };
+
+                      return (
+                        <div key={turn.turnId} className="space-y-3">
+                          {/* User Message Bubble */}
+                          <div className="flex justify-end">
+                            <div
+                              dir="auto"
+                              className="max-w-[88%] px-3.5 py-2.5 rounded-2xl bg-[#2a2a2a] border border-white/10 text-xs text-zinc-100 leading-relaxed whitespace-pre-wrap"
+                            >
+                              {turn.userPrompt}
+                            </div>
+                          </div>
+
+                          {/* Option Cards (Side by Side if no split canvas, stacked if split canvas) */}
+                          <div
+                            className={`grid gap-3 ${
+                              !hasSplitCanvas && turn.outputB ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"
+                            }`}
+                          >
+                            {renderOptionCard("A", turn.outputA, labelA)}
+                            {turn.outputB && renderOptionCard("B", turn.outputB, labelB)}
                           </div>
 
                           {/* Real Web Citations if Web Search Executed */}
@@ -2386,36 +2423,47 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                       </div>
                     )}
 
-                    <div className="rounded-xl bg-[#232323] border border-white/15 p-2.5">
-                      <input
-                        type="text"
+                    <div className="rounded-xl bg-[#232323] border border-white/15 p-2.5 focus-within:border-emerald-500/45 transition-colors">
+                      <textarea
+                        ref={followTextareaRef}
+                        rows={2}
                         dir="auto"
                         value={promptInput}
-                        onChange={(e) => setPromptInput(e.target.value)}
+                        onChange={(e) => {
+                          setPromptInput(e.target.value);
+                          autoResizeTextarea(e.currentTarget, 44, 220);
+                        }}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter") {
+                          if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
                             handleSendPrompt();
                           }
                         }}
-                        placeholder="Ask a follow up..."
-                        className="w-full bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none mb-2.5"
+                        placeholder="Ask a follow up... (Shift+Enter for new line)"
+                        className="w-full min-h-[44px] max-h-[220px] overflow-y-auto bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none mb-2 resize-none leading-relaxed"
                       />
                       <div className="flex items-center justify-between gap-2">
                         {renderArenaControlsBar({ openUpwards: true, compact: true })}
 
-                        <button
-                          type="button"
-                          onClick={() => handleSendPrompt()}
-                          disabled={isExecuting || !promptInput.trim()}
-                          className="w-7 h-7 rounded-lg bg-[#10b981] hover:bg-emerald-400 text-black flex items-center justify-center cursor-pointer disabled:opacity-40 shrink-0"
-                        >
-                          {isExecuting ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
+                        {isExecuting ? (
+                          <button
+                            type="button"
+                            onClick={() => abortCtrlRef.current?.abort()}
+                            className="w-7 h-7 rounded-lg bg-white text-black hover:bg-zinc-200 flex items-center justify-center cursor-pointer shrink-0"
+                            title="Stop generating"
+                          >
+                            <Square className="w-3 h-3 fill-current" />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSendPrompt()}
+                            disabled={!promptInput.trim()}
+                            className="w-7 h-7 rounded-lg bg-[#10b981] hover:bg-emerald-400 text-black flex items-center justify-center cursor-pointer disabled:opacity-40 shrink-0"
+                          >
                             <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-                          )}
-                        </button>
+                          </button>
+                        )}
                       </div>
                       {renderModelPickers(true)}
                     </div>
@@ -2632,13 +2680,47 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                     {/* Canvas Viewport Body */}
                     {previewOrCode === "preview" ? (
                       <div className="flex-1 overflow-auto p-3 flex justify-center items-start bg-[#0f0f10] relative">
-                        {activeOutput.modalityExecuted === "image" ? (
+                        {activeOutput.status === "building" && !activeOutput.previewHtml ? (
+                          <div className="m-auto text-center space-y-4 p-8 max-w-sm">
+                            {/* Animated Wireframe Masonry Bricks matching Arena Building UX */}
+                            <div className="grid grid-cols-3 gap-1.5 w-16 h-14 mx-auto opacity-80">
+                              <div className="col-span-2 bg-zinc-500/70 rounded animate-pulse" />
+                              <div className="col-span-1 bg-zinc-600/70 rounded animate-pulse" />
+                              <div className="col-span-1 bg-zinc-600/70 rounded animate-pulse" />
+                              <div className="col-span-2 bg-emerald-500/40 rounded animate-pulse" />
+                              <div className="col-span-2 bg-zinc-500/70 rounded animate-pulse" />
+                              <div className="col-span-1 bg-zinc-600/70 rounded animate-pulse" />
+                            </div>
+                            <div className="space-y-1.5">
+                              <div className="text-base font-bold text-white tracking-tight">
+                                Building...
+                              </div>
+                              <div className="text-xs text-zinc-400 leading-relaxed">
+                                Preview will appear when agent is done working
+                              </div>
+                              <div className="text-[11px] font-mono text-emerald-400 pt-1">
+                                {formatElapsedArena(buildElapsedMs)}
+                              </div>
+                            </div>
+                          </div>
+                        ) : activeOutput.modalityExecuted === "image" ? (
                           <div className="m-auto text-center space-y-4 p-6">
                             {activeOutput.imageUrl ? (
                               <div className="space-y-3">
                                 <img
                                   src={activeOutput.imageUrl}
                                   alt={latestTurn.userPrompt}
+                                  onError={(ev) => {
+                                    const imgEl = ev.currentTarget;
+                                    if (!imgEl.dataset.proxied && activeOutput.imageUrl) {
+                                      imgEl.dataset.proxied = "1";
+                                      imgEl.src = getApiUrl(
+                                        `/api/ai/arena-execute?action=image_proxy&url=${encodeURIComponent(
+                                          activeOutput.imageUrl
+                                        )}`
+                                      );
+                                    }
+                                  }}
                                   className="max-w-full max-h-[520px] rounded-2xl border border-white/15 shadow-2xl mx-auto"
                                 />
                                 <a
@@ -2656,10 +2738,10 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                               <div className="p-6 rounded-2xl bg-[#1e1e1e] border border-white/10 space-y-3">
                                 <Loader2 className="w-8 h-8 animate-spin text-emerald-400 mx-auto" />
                                 <div className="text-xs font-bold text-white">
-                                  Generating image via open Stable Diffusion cluster (AI Horde)...
+                                  Generating high-resolution artwork...
                                 </div>
                                 <div className="text-[11px] text-zinc-400">
-                                  Job ID: {activeOutput.imageJobId || "Initializing..."}
+                                  Preview will appear momentarily
                                 </div>
                               </div>
                             )}
@@ -2686,14 +2768,14 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                           <div className="p-6 max-w-2xl w-full rounded-2xl bg-[#181818] border border-white/10 space-y-4 my-4">
                             <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/10">
                               <span className="text-xs font-bold text-emerald-400">
-                                {activeOutput.modelName} — Text Response
+                                {getTabDisplayLabel(latestTurn, selectedSide)}
                               </span>
                               <button
                                 type="button"
                                 onClick={() => {
                                   setModality("code");
                                   handleSendPrompt(
-                                    `${latestTurn.userPrompt}\n\nBuild the complete live runnable HTML5 website/app now.`
+                                    `${latestTurn.userPrompt}\n\nBuild the complete live interactive application now.`
                                   );
                                 }}
                                 className="px-3 py-1.5 rounded-lg bg-[#10b981] hover:bg-emerald-400 text-black text-[11px] font-bold cursor-pointer"
@@ -2707,7 +2789,7 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                           </div>
                         )}
 
-                        {showBuiltBadge && (
+                        {showBuiltBadge && activeOutput.status !== "building" && (
                           <div className="fixed bottom-5 right-5 z-30 flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white text-black shadow-2xl border border-zinc-200 text-xs">
                             <KaspiBrandMark size="sm" />
                             <div>
@@ -2729,34 +2811,94 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                         )}
                       </div>
                     ) : (
-                      /* Source Files Tree & Code Inspector (Matches Screenshot 9) */
+                      /* Source Files Tree & Code Inspector (Nested Folder Tree matching Arena) */
                       <div className="flex-1 flex overflow-hidden bg-[#141414]">
-                        <div className="w-56 border-r border-white/10 bg-[#181818] flex flex-col shrink-0">
-                          <div className="px-3.5 py-2.5 border-b border-white/10 text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
-                            FILES
+                        <div className="w-60 border-r border-white/10 bg-[#181818] flex flex-col shrink-0">
+                          <div className="px-3.5 py-2.5 border-b border-white/10 text-[11px] font-bold tracking-wider text-zinc-400 uppercase flex items-center justify-between">
+                            <span>FILES</span>
+                            <span className="text-[10px] text-zinc-500 font-mono">
+                              {activeOutput.files.length}
+                            </span>
                           </div>
                           <div className="flex-1 overflow-y-auto p-2 space-y-1 text-xs font-mono">
-                            <div className="flex items-center gap-1.5 px-2 py-1 text-zinc-400">
-                              <Folder className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>project</span>
-                            </div>
-                            {activeOutput.files.map((file) => (
-                              <button
-                                key={file.path}
-                                type="button"
-                                onClick={() => setSelectedFilePath(file.path)}
-                                className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-left cursor-pointer ${
-                                  selectedFilePath === file.path
-                                    ? "bg-white/10 text-white font-bold"
-                                    : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
-                                }`}
-                              >
-                                <span className="text-[10px] font-bold px-1 rounded bg-emerald-500/20 text-emerald-300 uppercase">
-                                  {file.language}
-                                </span>
-                                <span className="truncate">{file.name}</span>
-                              </button>
-                            ))}
+                            {(() => {
+                              const folderMap = new Map<string, ArenaProjectFileItem[]>();
+                              const rootFiles: ArenaProjectFileItem[] = [];
+                              for (const file of activeOutput.files) {
+                                const slashIdx = file.path.lastIndexOf("/");
+                                if (slashIdx > 0) {
+                                  const dir = file.path.slice(0, slashIdx);
+                                  const arr = folderMap.get(dir) || [];
+                                  arr.push(file);
+                                  folderMap.set(dir, arr);
+                                } else {
+                                  rootFiles.push(file);
+                                }
+                              }
+                              return (
+                                <>
+                                  {Array.from(folderMap.entries()).map(([dir, dirFiles]) => {
+                                    const isCollapsed = Boolean(collapsedFolders[dir]);
+                                    return (
+                                      <div key={dir} className="space-y-0.5">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setCollapsedFolders((prev) => ({
+                                              ...prev,
+                                              [dir]: !prev[dir],
+                                            }))
+                                          }
+                                          className="w-full flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 text-zinc-300 text-left cursor-pointer"
+                                        >
+                                          {isCollapsed ? (
+                                            <Folder className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                          ) : (
+                                            <FolderOpen className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                          )}
+                                          <span className="truncate font-semibold">{dir}</span>
+                                        </button>
+                                        {!isCollapsed &&
+                                          dirFiles.map((file) => (
+                                            <button
+                                              key={file.path}
+                                              type="button"
+                                              onClick={() => setSelectedFilePath(file.path)}
+                                              className={`w-full flex items-center gap-2 pl-6 pr-2 py-1.5 rounded-lg text-left cursor-pointer ${
+                                                selectedFilePath === file.path
+                                                  ? "bg-white/10 text-white font-bold"
+                                                  : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                                              }`}
+                                            >
+                                              <span className="text-[9px] font-bold px-1 rounded bg-emerald-500/20 text-emerald-300 uppercase shrink-0">
+                                                {file.language.slice(0, 4)}
+                                              </span>
+                                              <span className="truncate">{file.name}</span>
+                                            </button>
+                                          ))}
+                                      </div>
+                                    );
+                                  })}
+                                  {rootFiles.map((file) => (
+                                    <button
+                                      key={file.path}
+                                      type="button"
+                                      onClick={() => setSelectedFilePath(file.path)}
+                                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left cursor-pointer ${
+                                        selectedFilePath === file.path
+                                          ? "bg-white/10 text-white font-bold"
+                                          : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                                      }`}
+                                    >
+                                      <span className="text-[9px] font-bold px-1 rounded bg-emerald-500/20 text-emerald-300 uppercase shrink-0">
+                                        {file.language.slice(0, 4)}
+                                      </span>
+                                      <span className="truncate">{file.name}</span>
+                                    </button>
+                                  ))}
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
 
@@ -2765,7 +2907,17 @@ export const KaspiAiStudioModal: React.FC<KaspiAiStudioModalProps> = ({
                             const f =
                               activeOutput.files.find((x) => x.path === selectedFilePath) ||
                               activeOutput.files[0];
-                            if (!f) return null;
+                            if (!f)
+                              return (
+                                <div className="m-auto text-center text-xs text-zinc-500 space-y-2 p-6">
+                                  <FileText className="w-8 h-8 mx-auto opacity-40" />
+                                  <div>
+                                    {activeOutput.status === "building"
+                                      ? "Files are being written by the agent..."
+                                      : "Select a generated file from the tree to inspect source code."}
+                                  </div>
+                                </div>
+                              );
                             return (
                               <>
                                 <div className="h-9 px-4 border-b border-white/10 flex items-center justify-between bg-[#1a1a1a] text-xs font-mono text-zinc-300">
