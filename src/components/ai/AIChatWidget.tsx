@@ -35,7 +35,9 @@ import {
   ArrowUp,
   ArrowDown,
   Square,
+  Maximize2,
 } from "lucide-react";
+import { KaspiAiStudioModal } from "./KaspiAiStudioModal";
 
 interface LocalChatMessage {
   id: string;
@@ -237,6 +239,7 @@ function resolveCurrentLocale(pathname: string): SupportedLocale {
 
 export function AIChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isStudioOpen, setIsStudioOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [input, setInput] = useState("");
   const [attachment, setAttachment] = useState<{
@@ -348,7 +351,7 @@ export function AIChatWidget() {
 
   const shouldRenderWidget = !isAuthPage && isAuthenticatedWorkspaceRoute && isAuthenticated;
 
-  // Listen for custom "open-master-ai" and "open-ai-chat" events
+  // Listen for custom "open-master-ai", "open-ai-chat" and "open-ai-studio" events
   useEffect(() => {
     const handleOpenAi = (ev: Event) => {
       setIsOpen((prev) => !prev);
@@ -357,11 +360,17 @@ export function AIChatWidget() {
         setInput(customEv.detail.prompt);
       }
     };
+    const handleOpenStudio = () => {
+      setIsOpen(false);
+      setIsStudioOpen(true);
+    };
     window.addEventListener("open-master-ai", handleOpenAi);
     window.addEventListener("open-ai-chat", handleOpenAi);
+    window.addEventListener("open-ai-studio", handleOpenStudio);
     return () => {
       window.removeEventListener("open-master-ai", handleOpenAi);
       window.removeEventListener("open-ai-chat", handleOpenAi);
+      window.removeEventListener("open-ai-studio", handleOpenStudio);
     };
   }, []);
 
@@ -1119,8 +1128,13 @@ export function AIChatWidget() {
               <div
                 onMouseDown={handleDragStart}
                 onTouchStart={handleDragStart}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
+                  setIsStudioOpen(true);
+                }}
                 className="border-b border-white/15 text-[var(--kaspi-text-primary)] px-4 py-3 flex items-center justify-between shadow-xs shrink-0 cursor-grab active:cursor-grabbing select-none"
-                title={t.dragTooltip}
+                title="اسحب النافذة أو انقر مرتين لفتح Kaspi AI Studio الكامل"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-8 h-8 rounded-full kaspi-glass-surface flex items-center justify-center shrink-0">
@@ -1142,7 +1156,19 @@ export function AIChatWidget() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOpen(false);
+                      setIsStudioOpen(true);
+                    }}
+                    className="p-1.5 rounded-xl kaspi-glass-surface hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                    title="تكبير إلى Kaspi AI Studio الكامل"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
+
                   {/* Strictly Closes Window Only on Explicit Click */}
                   <AppleBackButton
                     onClick={() => setIsOpen(false)}
@@ -1694,6 +1720,13 @@ export function AIChatWidget() {
           </div>
         </>
       )}
+
+      {/* Fullscreen Master Studio (Accessible via double-click on Bot or Maximize icon) */}
+      <KaspiAiStudioModal
+        isOpen={isStudioOpen}
+        onClose={() => setIsStudioOpen(false)}
+        locale={activeLocale}
+      />
     </>
   );
 }
