@@ -325,6 +325,8 @@ async function callSingleRealModel(params: {
       try {
         const res = await generateText({
           model: candidate.model as any,
+          maxRetries: 0,
+          abortSignal: AbortSignal.timeout(18000),
           system: systemPrompt,
           messages,
         });

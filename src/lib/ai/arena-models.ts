@@ -30,32 +30,22 @@ export interface ArenaRealModelSpec {
 
 export const ARENA_REAL_MODELS: ArenaRealModelSpec[] = [
   {
-    id: "gemini-3.8-flash",
-    displayName: "Gemini-3.8-Flash",
-    providerLabel: "Google Gemini",
-    upstream: "router_google",
-    apiModelId: "gemini-3.8-flash",
-    specialty: "general",
+    id: "groq-gpt-oss",
+    displayName: "Groq-GPT-OSS-20B",
+    providerLabel: "Groq LPU Inference",
+    upstream: "router_groq",
+    apiModelId: "openai/gpt-oss-20b",
+    specialty: "fast",
     supportsAnonymousBattle: true,
     isFreeZeroKey: true,
   },
   {
     id: "openrouter-free",
-    displayName: "OpenRouter-Free-Llama-3.3-70B",
+    displayName: "OpenRouter-Free-Pool",
     providerLabel: "OpenRouter (:free Tier)",
     upstream: "router_openrouter",
     apiModelId: "openrouter/free",
     specialty: "coding",
-    supportsAnonymousBattle: true,
-    isFreeZeroKey: true,
-  },
-  {
-    id: "deepseek-v4-flash",
-    displayName: "DeepSeek-V4-Flash",
-    providerLabel: "DeepSeek (LLM7 Open Gateway)",
-    upstream: "llm7",
-    apiModelId: "DeepSeek-V4-Flash-0731",
-    specialty: "reasoning",
     supportsAnonymousBattle: true,
     isFreeZeroKey: true,
   },
@@ -70,12 +60,12 @@ export const ARENA_REAL_MODELS: ArenaRealModelSpec[] = [
     isFreeZeroKey: true,
   },
   {
-    id: "codestral-latest",
-    displayName: "Codestral-Latest",
-    providerLabel: "Mistral Coding (LLM7)",
+    id: "deepseek-v4-flash",
+    displayName: "DeepSeek-V4-Flash",
+    providerLabel: "DeepSeek (LLM7 Open Gateway)",
     upstream: "llm7",
-    apiModelId: "codestral-latest",
-    specialty: "coding",
+    apiModelId: "DeepSeek-V4-Flash-0731",
+    specialty: "reasoning",
     supportsAnonymousBattle: true,
     isFreeZeroKey: true,
   },
@@ -90,22 +80,22 @@ export const ARENA_REAL_MODELS: ArenaRealModelSpec[] = [
     isFreeZeroKey: true,
   },
   {
+    id: "codestral-latest",
+    displayName: "Codestral-Latest",
+    providerLabel: "Mistral Coding (LLM7)",
+    upstream: "llm7",
+    apiModelId: "codestral-latest",
+    specialty: "coding",
+    supportsAnonymousBattle: false,
+    isFreeZeroKey: true,
+  },
+  {
     id: "gpt-oss-20b-fast",
-    displayName: "GPT-OSS-20B-Reasoning",
+    displayName: "GPT-OSS-20B-Pollinations",
     providerLabel: "Open-Weight OVH (Pollinations)",
     upstream: "pollinations",
     apiModelId: "openai",
     specialty: "reasoning",
-    supportsAnonymousBattle: true,
-    isFreeZeroKey: true,
-  },
-  {
-    id: "groq-gpt-oss",
-    displayName: "Groq-GPT-OSS-20B",
-    providerLabel: "Groq LPU Inference",
-    upstream: "router_groq",
-    apiModelId: "openai/gpt-oss-20b",
-    specialty: "fast",
     supportsAnonymousBattle: true,
     isFreeZeroKey: true,
   },
@@ -115,16 +105,6 @@ export const ARENA_REAL_MODELS: ArenaRealModelSpec[] = [
     providerLabel: "Zhipu Open Weights (LLM7)",
     upstream: "llm7",
     apiModelId: "glm-5.3-flash",
-    specialty: "fast",
-    supportsAnonymousBattle: false,
-    isFreeZeroKey: true,
-  },
-  {
-    id: "mistral-nemo-2407",
-    displayName: "Mistral-Nemo-2407",
-    providerLabel: "Mistral Open Weights (LLM7)",
-    upstream: "llm7",
-    apiModelId: "mistral-Nemo-Instruct-2407",
     specialty: "fast",
     supportsAnonymousBattle: false,
     isFreeZeroKey: true,
@@ -174,21 +154,20 @@ export function selectBattleModelPair(prompt: string): [ArenaRealModelSpec, Aren
       prompt
     );
 
-  // Diverse pools across distinct providers: Google Gemini / OpenRouter Free / LLM7
-  const poolPrimary = isCode
-    ? ["gemini-3.8-flash", "gemma4-31b", "deepseek-v4-flash"]
-    : ["gemini-3.8-flash", "deepseek-v4-flash", "gpt-oss-120b"];
-
+  // Pair across independent verified low-latency hosts: Groq LPU vs OpenRouter (:free) / LLM7
+  const poolPrimary = ["groq-gpt-oss", "openrouter-free"];
   const poolSecondary = isCode
-    ? ["openrouter-free", "gpt-oss-120b", "codestral-latest"]
-    : ["openrouter-free", "gemma4-31b", "groq-gpt-oss"];
+    ? ["gemma4-31b", "openrouter-free", "deepseek-v4-flash", "gpt-oss-120b"]
+    : ["gemma4-31b", "deepseek-v4-flash", "gpt-oss-120b"];
 
   const pickA = poolPrimary[Math.floor(Math.random() * poolPrimary.length)];
   let pickB = poolSecondary[Math.floor(Math.random() * poolSecondary.length)];
-  if (pickB === pickA) pickB = "openrouter-free";
+  if (pickB === pickA) {
+    pickB = "gemma4-31b";
+  }
 
   const modelA = ARENA_REAL_MODELS.find((m) => m.id === pickA) || ARENA_REAL_MODELS[0];
-  const modelB = ARENA_REAL_MODELS.find((m) => m.id === pickB) || ARENA_REAL_MODELS[1];
+  const modelB = ARENA_REAL_MODELS.find((m) => m.id === pickB) || ARENA_REAL_MODELS[2];
 
   return Math.random() < 0.5 ? [modelA, modelB] : [modelB, modelA];
 }

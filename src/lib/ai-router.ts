@@ -90,29 +90,7 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
     console.warn("[AI Router] Notice: Could not read SystemSetting from DB, skipping BYOK:", dbErr);
   }
 
-  // Priority 2: Google Gemini (Native Multimodal & Generous Free Tier Limits)
-  const geminiKeys = parseKeyPool(
-    process.env.GOOGLE_API_KEYS || process.env.GOOGLE_GENERATIVE_AI_API_KEY
-  );
-  geminiKeys.forEach((key, idx) => {
-    if (!key.includes("mock")) {
-      const googleProvider = createGoogleGenerativeAI({ apiKey: key });
-      for (const modelId of ["gemini-3.8-flash", "gemini-3.5-flash-lite"]) {
-        candidates.push({
-          provider: "google",
-          providerName: "Google Gemini",
-          keyIndex: idx,
-          keyMasked: `...${key.slice(-6)}`,
-          apiKey: key,
-          modelId,
-          model: googleProvider(modelId) as unknown as LanguageModel,
-          supportsVision: true,
-        });
-      }
-    }
-  });
-
-  // Priority 3: Groq (Ultra-Fast Text Inference Pool)
+  // Priority 2: Groq (Ultra-Fast Text Inference Pool — verified ~860ms latency)
   const groqKeys = parseKeyPool(
     process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY
   );
@@ -129,6 +107,49 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
           modelId,
           model: groqProvider(modelId) as unknown as LanguageModel,
           supportsVision: false,
+        });
+      }
+    }
+  });
+
+  // Priority 3: OpenRouter Free Tier Pool (Zero-Credit Free Router)
+  const openRouterPoolKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (openRouterPoolKey && !openRouterPoolKey.includes("mock")) {
+    const orProvider = createOpenRouter({ apiKey: openRouterPoolKey });
+    for (const orModel of [
+      "openrouter/free",
+      "meta-llama/llama-3.3-70b-instruct:free",
+    ]) {
+      candidates.push({
+        provider: "openrouter",
+        providerName: "OpenRouter Free",
+        keyIndex: 0,
+        keyMasked: `...${openRouterPoolKey.slice(-6)}`,
+        apiKey: openRouterPoolKey,
+        modelId: orModel,
+        model: orProvider(orModel) as unknown as LanguageModel,
+        supportsVision: false,
+      });
+    }
+  }
+
+  // Priority 3.5: Google Gemini (Multimodal Pool)
+  const geminiKeys = parseKeyPool(
+    process.env.GOOGLE_API_KEYS || process.env.GOOGLE_GENERATIVE_AI_API_KEY
+  );
+  geminiKeys.forEach((key, idx) => {
+    if (!key.includes("mock")) {
+      const googleProvider = createGoogleGenerativeAI({ apiKey: key });
+      for (const modelId of ["gemini-3.8-flash", "gemini-2.0-flash"]) {
+        candidates.push({
+          provider: "google",
+          providerName: "Google Gemini",
+          keyIndex: idx,
+          keyMasked: `...${key.slice(-6)}`,
+          apiKey: key,
+          modelId,
+          model: googleProvider(modelId) as unknown as LanguageModel,
+          supportsVision: true,
         });
       }
     }
@@ -352,6 +373,8 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
 
       const result = await generateText({
         model: candidate.model as any,
+        maxRetries: 0,
+        abortSignal: AbortSignal.timeout(18000),
         ...(options as any),
       });
 
