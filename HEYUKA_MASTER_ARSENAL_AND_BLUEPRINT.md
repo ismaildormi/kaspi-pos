@@ -224,3 +224,19 @@ flowchart TD
 - **Unified Token Families & Flagship Hub (`v14.0`):**
   - Supports `hk-live-...` (`hk_...`), `yk-live-...` (`yk_...`), and `zx-live-...` (`zk_...`) keys cleanly across `api-auth.ts`, `middleware.ts`, and `/api/v1/*`.
   - Published flagship GitHub landing hub [`README.md`](./README.md) and [`YUKA_MASTER_HUB.md`](./YUKA_MASTER_HUB.md).
+
+
+---
+
+## Chapter 41 (`v14.1` – `v15.2`): Long-Context Comprehension, Reasoning Datasets, Agent Frameworks & Autonomous Self-Healing QA (`reasoning-eval-catalog.ts`)
+
+- **Strict Zero-Duplicate Integration (`src/lib/zebra-x/core/reasoning-eval-catalog.ts`):**
+  - **`v15.1` Long-Context & Embeddings (`22` New Sources):** `Hugging Face Datasets`, `The Pile`, `OpenOrca`, `Stanford Alpaca`, `Databricks Dolly 15k`, `SQuAD 2.0`, `Natural Questions`, `MS MARCO`, `HotpotQA`, `CNN/DailyMail`, `BookCorpus`, `Reddit Pushshift Corpus`, `StackExchange Dump`, `OSCAR Corpus`, `C4`, `GSM8K`, `E5 Embeddings (Multilingual)`, `Nomic Embed (8192+ Context)`, `PEFT / LoRA`, `FlashAttention`, `YaRN / RoPE Scaling`, `NLTK`.
+  - **`v15.2` Reasoning, Coding & Agent Execution (`56` New Sources):**
+    - *Planning & Logical Reasoning (`25`):* `OpenMathInstruct`, `MetaMathQA`, `Orca-Math`, `PRM800K`, `LogiQA`, `ReClor`, `StrategyQA`, `ProofWriter`, `EntailmentBank`, `BIG-Bench Hard (BBH)`, `ARC`, `CommonsenseQA`, `PIQA`, `SocialIQA`, `CosmosQA`, `DROP`, `TAT-QA`, `FinQA`, `MuSiQue`, `2WikiMultihopQA`, `ALFWorld`, `WebShop Dataset`, `Mind2Web`, `OSWorld Dataset`, `ToolBench`.
+    - *Code & Creative Production (`23`):* `The Stack`, `StarCoderData`, `CodeAlpaca`, `WizardCoder Evol-Instruct`, `Magicoder OSS-Instruct`, `APPS Dataset`, `HumanEval`, `MBPP`, `CommitPack`, `WritingPrompts`, `OpenAssistant OASST2`, `UltraFeedback`, `HelpSteer`, `Capybara`, `SlimOrca`, `Platypus`, `Camel-AI Datasets`, `AutoGPT Datasets`, `Gorilla OpenFunctions`, `NexusRaven`, `WikiHow`, `MagicBrush`, `LAION-5B Metadata`.
+    - *Agent & Execution Frameworks (`8`):* `LangGraph`, `SuperAGI`, `AgentGPT`, `GPT-Engineer`, `Microsoft Guidance`, `Selenium WebDriver`, `Puppeteer`, `JupyterLab`.
+  - **`v14.1`–`v14.5` Autonomous QA, Property Fuzzing, Chaos & Self-Evolution Matrix (`66` Engines):** Covers `Promptfoo`, `DeepEval`, `Ragas`, `Grafana k6`, `Bruno`, `Giskard`, `TruLens`, `Inspect AI`, `Schemathesis`, `NVIDIA Garak`, `BackstopJS`, `Lost Pixel`, `ViSQOL`, `OpenCV`, `Khronos glTF-Validator`, `Robot Framework`, `Open-R1`, `veRL`, `PRIME`, `DataDreamer`, `Curator`, `Evol-Instruct`, `StrykerJS`, `mutmut`, `ExpeL`, `Reflexion`, `OpenRLHF`, `TRL`, `SPIN`, `ORPO`, `RewardBench`, `Distilabel`, `NeMo Curator`, `Magpie`, `Cosmopedia`, `WorkArena`, `AppWorld`, `Tau-bench`, `Hypothesis`, `fast-check`, `Atheris`, `Prometheus 2`, `VLM-Critic`, `LiveCodeBench`, `EvalPlus`, `SWE-gym`, `Chaos Mesh`, `Toxiproxy`, `LitmusChaos`, `Pumba`, `PyRIT`, `CyberSecEval`, `HarmBench`, `PromptMap`, `BFCL`, `API-Bank`, `ToolSandbox`, `MMMU`, `Video-MME`, `VBench`, `AudioBench`, `GPQA Diamond`, `OpenEvolve`, `ShinkaEvolve`, `PettingZoo`, `DSPy MIPROv2`.
+- **Runtime Helpers & Self-Healing Continuous E2E Suite (`tests/yuka-full-e2e/run-all-sources-forever.mjs`):**
+  - `chunkLongContextWithRopeWindow` + `recordReflexionExperience` (`memory-engine.ts`) enable multi-document sliding-window segmentation and ExpeL/Reflexion mistake prevention with strict `assertPosCoreImmutable`.
+  - Continuous verification & self-healing metrics archived in [`YUKA_FINAL_100_PERCENT_TEST_RESULTS.md`](./YUKA_FINAL_100_PERCENT_TEST_RESULTS.md).

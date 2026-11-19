@@ -186,6 +186,46 @@ async function resolveLatLon(query: string): Promise<{ lat: number; lon: number;
   return { lat: 33.5731, lon: -7.5898, label: "Casablanca, Morocco (default)" };
 }
 
+async function searchOsmPlacesFallback(
+  term: string,
+  loc: { lat: number; lon: number; label: string },
+  limit: number
+): Promise<{
+  sourceUrl: string;
+  provider: string;
+  places: Array<{ id?: string | number; name: string; address: string | null; lat: number; lon: number }>;
+}> {
+  const cleanTerm = term.split("|")[0]?.trim() || "pharmacy";
+  const nomUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanTerm)}&format=json&viewbox=${loc.lon - 0.12},${loc.lat + 0.12},${loc.lon + 0.12},${loc.lat - 0.12}&bounded=1&limit=${limit}`;
+  const nomRows = await fetchJsonWithTimeout<any[]>(nomUrl, {}, 6500).catch(() => []);
+  if (Array.isArray(nomRows) && nomRows.length > 0) {
+    return {
+      sourceUrl: nomUrl,
+      provider: "openstreetmap_nominatim",
+      places: nomRows.slice(0, limit).map((n: any) => ({
+        id: n.osm_id || n.place_id,
+        name: n.name || String(n.display_name || cleanTerm).split(",")[0],
+        address: n.display_name || null,
+        lat: Number(n.lat),
+        lon: Number(n.lon),
+      })),
+    };
+  }
+  const phUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(`${cleanTerm} ${loc.label}`)}&lat=${loc.lat}&lon=${loc.lon}&limit=${limit}`;
+  const phJson = await fetchJsonWithTimeout<any>(phUrl, {}, 6500).catch(() => ({ features: [] }));
+  return {
+    sourceUrl: phUrl,
+    provider: "photon_osm",
+    places: (phJson?.features || []).slice(0, limit).map((f: any) => ({
+      id: f.properties?.osm_id,
+      name: f.properties?.name || cleanTerm,
+      address: [f.properties?.street, f.properties?.city, f.properties?.country].filter(Boolean).join(", ") || null,
+      lat: Number(f.geometry?.coordinates?.[1] ?? loc.lat),
+      lon: Number(f.geometry?.coordinates?.[0] ?? loc.lon),
+    })),
+  };
+}
+
 async function executePublicQuery(
   category: PublicApiCategory,
   rawQuery: string,
@@ -312,20 +352,32 @@ async function executePublicQuery(
     case "b2b_overpass": {
       // Query B2B suppliers / shops / factories / warehouses around resolved city
       const [tagPart, placePart] = query.includes("|") ? query.split("|") : ["supermarket", query];
-      const osmVal = (tagPart || "supermarket").trim().toLowerCase().replace(/[^a-z_]/g, "");
+      const osmVal = (tagPart || "supermarket").trim().toLowerCase().replace(/[^a-z_\s]/g, "");
       const loc = await resolveLatLon(placePart || "Casablanca");
       const ql = `[out:json][timeout:8];(node["shop"~"${osmVal}"](around:4500,${loc.lat},${loc.lon});node["amenity"~"${osmVal}"](around:4500,${loc.lat},${loc.lon});node["craft"~"${osmVal}"](around:4500,${loc.lat},${loc.lon}););out body ${limit};`;
-      const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(ql)}`;
-      const json = await fetchJsonWithTimeout<any>(url, {}, 9000);
-      const elements = (json?.elements || []).slice(0, limit).map((e: any) => ({
-        id: e.id,
-        name: e.tags?.name || e.tags?.brand || osmVal,
-        phone: e.tags?.phone || e.tags?.["contact:phone"] || null,
-        address: e.tags?.["addr:street"] || null,
-        lat: e.lat,
-        lon: e.lon,
-      }));
-      return { sourceUrl: url, data: { area: loc.label, radiusMeters: 4500, results: elements } };
+      const ovUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(ql)}`;
+      try {
+        const json = await fetchJsonWithTimeout<any>(ovUrl, { headers: { Accept: "*/*" } }, 5500);
+        const elements = (json?.elements || []).slice(0, limit).map((e: any) => ({
+          id: e.id,
+          name: e.tags?.name || e.tags?.brand || osmVal,
+          phone: e.tags?.phone || e.tags?.["contact:phone"] || null,
+          address: e.tags?.["addr:street"] || null,
+          lat: e.lat,
+          lon: e.lon,
+        }));
+        if (elements.length > 0) {
+          return { sourceUrl: ovUrl, data: { area: loc.label, radiusMeters: 4500, results: elements } };
+        }
+      } catch {
+        // Fall through cleanly to Nominatim/Photon OSM search
+      }
+
+      const fb = await searchOsmPlacesFallback(osmVal || query, loc, limit);
+      return {
+        sourceUrl: fb.sourceUrl,
+        data: { area: loc.label, provider: fb.provider, results: fb.places },
+      };
     }
 
     case "gleif_company": {
@@ -396,17 +448,43 @@ async function executePublicQuery(
     case "world_bank": {
       // Expected e.g. "MA|NY.GDP.MKTP.CD" or "MA"
       const [country = "MA", indicator = "NY.GDP.MKTP.CD"] = query.split("|");
-      const url = `https://api.worldbank.org/v2/country/${encodeURIComponent(
+      const wbUrl = `https://api.worldbank.org/v2/country/${encodeURIComponent(
         country.trim()
       )}/indicator/${encodeURIComponent(indicator.trim())}?format=json&per_page=6`;
-      const json = await fetchJsonWithTimeout<any>(url);
-      const rows = (Array.isArray(json) && Array.isArray(json[1]) ? json[1] : []).map((r: any) => ({
-        year: r.date,
-        value: r.value,
-        indicator: r.indicator?.value,
-        country: r.country?.value,
+      try {
+        const json = await fetchJsonWithTimeout<any>(wbUrl, {}, 6000);
+        const rows = (Array.isArray(json) && Array.isArray(json[1]) ? json[1] : []).map((r: any) => ({
+          year: r.date,
+          value: r.value,
+          indicator: r.indicator?.value,
+          country: r.country?.value,
+        }));
+        if (rows.length > 0) return { sourceUrl: wbUrl, data: rows };
+      } catch {
+        // Fallback to live IMF DataMapper API when World Bank times out
+      }
+      const ISO2_TO_ISO3: Record<string, string> = {
+        MA: "MAR",
+        FR: "FRA",
+        US: "USA",
+        SA: "SAU",
+        AE: "ARE",
+        ES: "ESP",
+        DE: "DEU",
+        GB: "GBR",
+      };
+      const codeUpper = country.trim().toUpperCase();
+      const iso3 = ISO2_TO_ISO3[codeUpper] || (codeUpper.length === 3 ? codeUpper : "MAR");
+      const imfUrl = `https://www.imf.org/external/datamapper/api/v1/NGDP_RPCH/${encodeURIComponent(iso3)}?periods=2022,2023,2024,2025`;
+      const imfJson = await fetchJsonWithTimeout<any>(imfUrl, {}, 7500);
+      const series = imfJson?.values?.NGDP_RPCH?.[iso3] || {};
+      const imfRows = Object.entries(series).map(([year, value]) => ({
+        year,
+        value,
+        indicator: "Real GDP Growth % (IMF NGDP_RPCH)",
+        country: iso3,
       }));
-      return { sourceUrl: url, data: rows };
+      return { sourceUrl: imfUrl, data: imfRows };
     }
 
     case "openalex_science": {
@@ -416,18 +494,33 @@ async function executePublicQuery(
     }
 
     case "openfda_drug": {
-      const clean = query.replace(/["\\]/g, "");
-      const url = `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${encodeURIComponent(
-        clean
-      )}"+openfda.generic_name:"${encodeURIComponent(clean)}"&limit=3`;
-      const json = await fetchJsonWithTimeout<any>(url);
-      const hits = (json?.results || []).map((r: any) => ({
-        brandNames: r.openfda?.brand_name?.slice(0, 3),
-        genericNames: r.openfda?.generic_name?.slice(0, 3),
-        indications: String(r.indications_and_usage?.[0] || "").slice(0, 500),
-        warnings: String(r.warnings?.[0] || "").slice(0, 500),
-      }));
-      return { sourceUrl: url, data: hits };
+      const rawClean = query.replace(/["\\]/g, "").trim();
+      const normalizedDrug = /^paracetamol$/i.test(rawClean) ? "acetaminophen" : rawClean;
+      const fdaUrl = `https://api.fda.gov/drug/label.json?search=${encodeURIComponent(normalizedDrug)}&limit=3`;
+      try {
+        const json = await fetchJsonWithTimeout<any>(fdaUrl, {}, 5500);
+        const hits = (json?.results || []).map((r: any) => ({
+          brandNames: r.openfda?.brand_name?.slice(0, 3),
+          genericNames: r.openfda?.generic_name?.slice(0, 3),
+          indications: String(r.indications_and_usage?.[0] || "").slice(0, 500),
+          warnings: String(r.warnings?.[0] || "").slice(0, 500),
+        }));
+        if (hits.length > 0) return { sourceUrl: fdaUrl, data: hits };
+      } catch {
+        // Fall through cleanly to NLM Clinical Tables RxTerms
+      }
+      const nlmUrl = `https://clinicaltables.nlm.nih.gov/api/rxterms/v3/search?terms=${encodeURIComponent(normalizedDrug)}&maxList=${limit}`;
+      const nlm = await fetchJsonWithTimeout<any[]>(nlmUrl, {}, 6500);
+      const names = Array.isArray(nlm?.[1]) ? nlm[1] : [];
+      return {
+        sourceUrl: nlmUrl,
+        data: names.map((name: string) => ({
+          genericQuery: normalizedDrug,
+          originalQuery: rawClean,
+          rxTerm: name,
+          source: "NLM Clinical Tables RxTerms",
+        })),
+      };
     }
 
     case "pubmed_papers": {
@@ -453,9 +546,26 @@ async function executePublicQuery(
 
     case "soilgrids_agri": {
       const loc = await resolveLatLon(query || "33.89,-5.55");
-      const url = `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${loc.lon}&lat=${loc.lat}&property=phh2o&property=clay&property=sand&property=soc&depth=0-5cm&value=mean`;
-      const json = await fetchJsonWithTimeout<any>(url, {}, 8500);
-      return { sourceUrl: url, data: { location: loc, layers: json?.properties?.layers || [] } };
+      const sgUrl = `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${loc.lon}&lat=${loc.lat}&property=phh2o&property=clay&property=sand&property=soc&depth=0-5cm&value=mean`;
+      try {
+        const json = await fetchJsonWithTimeout<any>(sgUrl, {}, 6500);
+        if (Array.isArray(json?.properties?.layers) && json.properties.layers.length > 0) {
+          return { sourceUrl: sgUrl, data: { location: loc, provider: "isric_soilgrids", layers: json.properties.layers } };
+        }
+      } catch {
+        // Fallback to Open-Meteo Soil Telemetry when ISRIC REST TLS drops
+      }
+      const omUrl = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=soil_temperature_0cm,soil_moisture_0_to_1cm,precipitation`;
+      const omJson = await fetchJsonWithTimeout<any>(omUrl, {}, 6500);
+      return {
+        sourceUrl: omUrl,
+        data: {
+          location: loc,
+          provider: "open_meteo_soil_fallback",
+          currentSoil: omJson?.current || null,
+          units: omJson?.current_units || null,
+        },
+      };
     }
 
     case "nasa_power_agri": {
@@ -502,6 +612,29 @@ async function executePublicQuery(
     }
 
     case "nobel_prize": {
+      const catMap: Record<string, string> = {
+        physics: "phy",
+        chemistry: "che",
+        medicine: "med",
+        physiology: "med",
+        literature: "lit",
+        peace: "pea",
+        economics: "eco",
+      };
+      const catCode = catMap[query.toLowerCase()];
+      if (catCode) {
+        const pUrl = `https://api.nobelprize.org/2.1/nobelPrizes?nobelPrizeCategory=${catCode}&limit=${limit}`;
+        const json = await fetchJsonWithTimeout<any>(pUrl);
+        const rows = (json?.nobelPrizes || []).map((p: any) => ({
+          year: p.awardYear,
+          category: p.category?.en,
+          laureates: (p.laureates || []).map((l: any) => ({
+            name: l.knownName?.en || l.fullName?.en,
+            motivation: l.motivation?.en,
+          })),
+        }));
+        return { sourceUrl: pUrl, data: rows };
+      }
       const url = `https://api.nobelprize.org/2.1/laureates?name=${encodeURIComponent(query)}&limit=${limit}`;
       const json = await fetchJsonWithTimeout<any>(url);
       const rows = (json?.laureates || []).map((l: any) => ({
@@ -587,26 +720,42 @@ async function executePublicQuery(
     }
 
     case "met_museum": {
-      const url = `https://collectionapi.metmuseum.org/public/collection/v1/search?hasImages=true&q=${encodeURIComponent(
+      const metUrl = `https://collectionapi.metmuseum.org/public/collection/v1/search?hasImages=true&q=${encodeURIComponent(
         query || "ornament"
       )}`;
-      const search = await fetchJsonWithTimeout(url);
-      const ids: number[] = Array.isArray(search?.objectIDs) ? search.objectIDs.slice(0, Math.min(limit, 5)) : [];
-      const details = await Promise.allSettled(
-        ids.map((id) =>
-          fetchJsonWithTimeout(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`)
-        )
-      );
-      const items = details
-        .filter((d): d is PromiseFulfilledResult<any> => d.status === "fulfilled" && Boolean(d.value?.primaryImageSmall))
-        .map((d) => ({
-          id: d.value.objectID,
-          title: d.value.title,
-          artist: d.value.artistDisplayName,
-          image: d.value.primaryImageSmall,
-          objectUrl: d.value.objectURL,
-        }));
-      return { sourceUrl: url, data: { total: search?.total || 0, items } };
+      try {
+        const search = await fetchJsonWithTimeout(metUrl, {}, 5000);
+        const ids: number[] = Array.isArray(search?.objectIDs) ? search.objectIDs.slice(0, Math.min(limit, 5)) : [];
+        const details = await Promise.allSettled(
+          ids.map((id) =>
+            fetchJsonWithTimeout(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`)
+          )
+        );
+        const items = details
+          .filter((d): d is PromiseFulfilledResult<any> => d.status === "fulfilled" && Boolean(d.value?.primaryImageSmall))
+          .map((d) => ({
+            id: d.value.objectID,
+            title: d.value.title,
+            artist: d.value.artistDisplayName,
+            image: d.value.primaryImageSmall,
+            objectUrl: d.value.objectURL,
+          }));
+        if (items.length > 0) return { sourceUrl: metUrl, data: { total: search?.total || 0, items } };
+      } catch {
+        // Fallback to Art Institute of Chicago Open IIIF API if Met returns 410/403
+      }
+      const articUrl = `https://api.artic.edu/api/v1/artworks/search?q=${encodeURIComponent(
+        query || "ornament"
+      )}&fields=id,title,artist_display,image_id&limit=${limit}`;
+      const articJson = await fetchJsonWithTimeout<any>(articUrl, {}, 7000);
+      const items = (articJson?.data || []).map((row: any) => ({
+        id: row.id,
+        title: row.title,
+        artist: row.artist_display || "Public Collection",
+        image: row.image_id ? `https://www.artic.edu/iiif/2/${row.image_id}/full/843,/0/default.jpg` : null,
+        objectUrl: `https://www.artic.edu/artworks/${row.id}`,
+      }));
+      return { sourceUrl: articUrl, data: { total: articJson?.pagination?.total || items.length, provider: "artic_open_collection", items } };
     }
 
     case "polyhaven_3d": {
@@ -670,7 +819,11 @@ async function executePublicQuery(
         lat: e.lat,
         lon: e.lon,
       }));
-      return { sourceUrl: ovUrl, data: { source: "openstreetmap_transit", city: loc.label, stops } };
+      if (stops.length > 0) {
+        return { sourceUrl: ovUrl, data: { source: "openstreetmap_transit", city: loc.label, stops } };
+      }
+      const fb = await searchOsmPlacesFallback("bus station OR train station", loc, limit);
+      return { sourceUrl: fb.sourceUrl, data: { source: fb.provider, city: loc.label, stops: fb.places } };
     }
 
     case "smart_city_poi": {
@@ -679,16 +832,16 @@ async function executePublicQuery(
         : ["pharmacy|hospital|fuel|parking|police", query || "Casablanca"];
       const amenityRegex = amenityPart.trim().replace(/[^a-z_|]/gi, "") || "pharmacy|hospital|fuel|parking";
       const loc = await resolveLatLon(cityPart.trim() || "Casablanca");
-      const ovQuery = `[out:json][timeout:12];node["amenity"~"${amenityRegex}"](around:3500,${loc.lat},${loc.lon});out center ${limit};`;
+      const ovQuery = `[out:json][timeout:8];node["amenity"~"${amenityRegex}"](around:3500,${loc.lat},${loc.lon});out center ${limit};`;
       const ovUrl = "https://overpass-api.de/api/interpreter";
       const json = await fetchJsonWithTimeout<any>(
         ovUrl,
         {
           method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          headers: { Accept: "*/*", "Content-Type": "application/x-www-form-urlencoded" },
           body: `data=${encodeURIComponent(ovQuery)}`,
         },
-        10_000
+        6000
       ).catch(() => ({ elements: [] }));
       const pois = (Array.isArray(json?.elements) ? json.elements : []).slice(0, limit).map((e: any) => ({
         name: e.tags?.name || e.tags?.amenity || "City Service",
@@ -698,7 +851,9 @@ async function executePublicQuery(
         lat: e.lat,
         lon: e.lon,
       }));
-      return { sourceUrl: ovUrl, data: { city: loc.label, pois } };
+      if (pois.length > 0) return { sourceUrl: ovUrl, data: { city: loc.label, pois } };
+      const fb = await searchOsmPlacesFallback(amenityPart, loc, limit);
+      return { sourceUrl: fb.sourceUrl, data: { city: loc.label, provider: fb.provider, pois: fb.places } };
     }
 
     case "air_quality": {

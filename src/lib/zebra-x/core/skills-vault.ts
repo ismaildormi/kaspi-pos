@@ -432,13 +432,17 @@ export async function authorSkillFromSuccess(params: {
  * Converts external Fabric patterns (`system.md`) or Cursor rules (`.mdc`) into `.yuka-skill` packages.
  */
 export function convertPatternOrRuleToYukaSkill(params: {
-  title: string;
-  rawContent: string;
+  title?: string;
+  rawContent?: string;
   domain?: SkillDomainBucket;
-  sourceKind: "fabric" | "cursor_rule" | "skill_md";
+  sourceKind?: "fabric" | "cursor_rule" | "skill_md";
 }): YukaSkillBundle {
-  if (params.sourceKind === "skill_md") {
-    const parsed = parseSkillMarkdown(params.rawContent, params.title);
+  const safeTitle = String(params?.title || "custom-skill").trim() || "custom-skill";
+  const safeRawContent = String(params?.rawContent || "").trim();
+  const safeKind = params?.sourceKind || "cursor_rule";
+
+  if (safeKind === "skill_md") {
+    const parsed = parseSkillMarkdown(safeRawContent, safeTitle);
     return {
       format: "yuka-skill/v1",
       id: parsed.id,
@@ -453,13 +457,13 @@ export function convertPatternOrRuleToYukaSkill(params: {
     };
   }
 
-  const lines = scrubTraceText(params.rawContent)
+  const lines = scrubTraceText(safeRawContent)
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter(Boolean);
   const summary =
     lines.find((l) => !l.startsWith("#") && l.length > 18)?.slice(0, 170) ||
-    `Imported ${params.sourceKind} workflow for ${params.title}`;
+    `Imported ${safeKind} workflow for ${safeTitle}`;
   const steps = lines
     .filter((l) => /^(\d+\.|-|\*|#+)\s*/.test(l))
     .slice(0, 8)
@@ -467,14 +471,14 @@ export function convertPatternOrRuleToYukaSkill(params: {
     .filter(Boolean);
 
   const md = buildSkillMarkdownFromParts({
-    name: params.title,
+    name: safeTitle,
     domain: params.domain || "engineering",
     description: summary,
     steps: steps.length > 0 ? steps : [summary],
-    tags: [params.sourceKind, "imported"],
+    tags: [safeKind, "imported"],
     version: "1.0.0",
   });
-  const parsed = parseSkillMarkdown(md, params.title);
+  const parsed = parseSkillMarkdown(md, safeTitle);
   authoredSkillStore.set(parsed.id, { ...parsed, source: "imported" });
 
   return {

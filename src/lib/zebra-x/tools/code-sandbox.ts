@@ -22,7 +22,7 @@ export interface SandboxExecutionResult {
 
 const JUDGE0_LANGUAGES: Record<SandboxLanguage, { id: number; name: string; godbolt?: string }> = {
   python: { id: 109, name: "Python 3.13.2", godbolt: "python312" },
-  javascript: { id: 102, name: "Node.js 22.08.0", godbolt: "nodejs20" },
+  javascript: { id: 102, name: "Node.js 22.08.0" },
   typescript: { id: 101, name: "TypeScript 5.6.2" },
   bash: { id: 46, name: "Bash 5.0.0" },
   php: { id: 98, name: "PHP 8.3.11" },

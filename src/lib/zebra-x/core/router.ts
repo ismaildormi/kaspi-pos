@@ -27,6 +27,7 @@ export type XZebraIntentCategory =
   | "node_mesh_scale"
   | "skills_and_cowork"
   | "tool_discovery"
+  | "reasoning_and_eval"
   | "platform_owner";
 
 export interface RoutePlanDecision {
@@ -61,6 +62,13 @@ const TOOL_CATALOG_INDEX: Record<XZebraIntentCategory, string[]> = {
   node_mesh_scale: ["unrestrictedWebSearch", "executeCodeSandbox", "evaluateMathAndFinance", "createRichArtifactOrExport"],
   skills_and_cowork: ["lookupSkillOrAuthor", "runCoworkSubAgents", "executeCodeSandbox", "createRichArtifactOrExport"],
   tool_discovery: ["discoverOpenSourceTool", "lookupSkillOrAuthor", "unrestrictedWebSearch", "executeCodeSandbox"],
+  reasoning_and_eval: [
+    "evaluateMathAndFinance",
+    "executeCodeSandbox",
+    "lookupSkillOrAuthor",
+    "discoverOpenSourceTool",
+    "unrestrictedWebSearch",
+  ],
   platform_owner: [
     "getPlatformStats",
     "getPlatformRevenue",
@@ -113,6 +121,9 @@ export function planXZebraToolRoute(prompt: string, isOwner: boolean): RoutePlan
   }
   if (/(اكتشف|كتالوج|مكتبة|مفتوح المصدر|مستودع|github|microsoft|google|meta|xai|anthropic|hugging|sora|kling|runway|suno|open-source|discover)/i.test(p)) {
     intents.push("tool_discovery");
+  }
+  if (/(gsm8k|hotpotqa|prm800k|humaneval|mbpp|langgraph|promptfoo|ragas|deepeval|schemathesis|fast-check|toxiproxy|reflexion|expel|long context|rope|yarn|embeddings|benchmark|fuzz|reasoning|proof|deduction|تقييم|اختبار شامل|منطق|استدلال)/i.test(p)) {
+    intents.push("reasoning_and_eval");
   }
   if (isOwner && /(منصة|متاجر|mrr|gmv|tenants|platform|revenue|usage|اشتراك)/i.test(p)) {
     intents.push("platform_owner");

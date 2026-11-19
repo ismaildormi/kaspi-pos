@@ -2,6 +2,7 @@ import Dexie, { type Table } from "dexie";
 import { scrubTraceText } from "@/lib/zebra-x/learning-trace";
 import { assertPosCoreImmutable } from "@/lib/zebra-x/arsenal-vault";
 import { touchWasmResource } from "./wasm-watchdog";
+import { chunkLongContextWithRopeWindow } from "./reasoning-eval-catalog";
 
 /**
  * X × Zebra — Phase 3 Evolving Memory & Voyager Skill Library
@@ -509,4 +510,37 @@ export async function searchEvolvingMemory(
     totalMemories: memories.length,
     totalSkills: skills.length,
   };
+}
+
+/**
+ * Chunks long multi-document context using YaRN/RoPE sliding windows and NLTK sentence boundaries,
+ * returning structured segments for deep RAG retrieval without exceeding context budgets.
+ */
+export function chunkLongContextForRetrieval(
+  rawText: string,
+  options?: { maxWindowTokens?: number; overlapTokens?: number; ropeScaleFactor?: number }
+) {
+  return chunkLongContextWithRopeWindow(rawText, options);
+}
+
+/**
+ * ExpeL / Reflexion episodic self-reflection hook: records a verified fix or failure insight
+ * inside Yuka's FSRS memory bank while blocking any mutation of protected POS Core paths.
+ */
+export async function recordReflexionExperience(params: {
+  taskSummary: string;
+  lessonLearned: string;
+  outcome: "healed" | "verified" | "avoid";
+  language?: EvolvingMemoryEntry["language"];
+  targetPath?: string;
+}) {
+  if (params.targetPath) {
+    assertPosCoreImmutable(params.targetPath);
+  }
+  return recordOrReinforceMemory({
+    title: `[Reflexion:${params.outcome}] ${params.taskSummary}`.slice(0, 120),
+    content: params.lessonLearned,
+    tags: ["reflexion", "expel", params.outcome],
+    language: params.language || "mixed",
+  });
 }

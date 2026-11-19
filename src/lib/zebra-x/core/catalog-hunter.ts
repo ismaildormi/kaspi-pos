@@ -1,5 +1,10 @@
 import { executePolyglotCodeSandbox } from "@/lib/zebra-x/tools/code-sandbox";
 import { authorSkillFromSuccess, type SkillDomainBucket } from "./skills-vault";
+import {
+  REASONING_EVAL_CATALOG_COUNTS,
+  searchReasoningAndEvalCatalog,
+  type ReasoningEvalCatalogEntry,
+} from "./reasoning-eval-catalog";
 
 /**
  * HEYUKA / YUKA — Big-Tech Catalog Indexer, Frontier Engines & Autonomous Tool Hunter (`v12.8`–`v13.2`)
@@ -225,5 +230,34 @@ export async function autonomousToolHunt(params: {
     discoveries: discoveries.slice(0, 10),
     sandboxVerified,
     authoredSkillId,
+  };
+}
+
+export { REASONING_EVAL_CATALOG_COUNTS };
+
+/**
+ * Searches all local offline/zero-key open-source catalogs across Frontier Studios,
+ * Long-Context Datasets (v15.1), Reasoning/Coding Corpora (v15.2), and QA/Chaos Engines (v14.x).
+ */
+export function searchLocalCatalogPacks(query: string, limit = 12): {
+  frontierMatches: FrontierCapabilityEntry[];
+  reasoningAndEvalMatches: ReasoningEvalCatalogEntry[];
+  counts: typeof REASONING_EVAL_CATALOG_COUNTS & { frontierCount: number };
+} {
+  const q = String(query || "").trim().toLowerCase();
+  const frontierMatches = q
+    ? FRONTIER_OPEN_ECOSYSTEM_INDEX.filter((f) =>
+        `${f.name} ${f.ecosystem} ${f.category} ${f.summary}`.toLowerCase().includes(q)
+      ).slice(0, limit)
+    : FRONTIER_OPEN_ECOSYSTEM_INDEX.slice(0, Math.min(limit, 8));
+
+  const reasoningAndEvalMatches = searchReasoningAndEvalCatalog(q, limit);
+  return {
+    frontierMatches,
+    reasoningAndEvalMatches,
+    counts: {
+      ...REASONING_EVAL_CATALOG_COUNTS,
+      frontierCount: FRONTIER_OPEN_ECOSYSTEM_INDEX.length,
+    },
   };
 }

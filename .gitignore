@@ -42,3 +42,7 @@ external_sources/*
 !external_sources/README.md
 !external_sources/manifest.json
 !external_sources/audit-lock.json
+
+# Temporary generated E2E artifacts & build info
+tests/yuka-full-e2e/out/
+tsconfig.tsbuildinfo

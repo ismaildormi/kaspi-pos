@@ -64,6 +64,17 @@ export const PAID_OWNER_ENV_PROVIDERS = new Set([
   "deepseek",
 ]);
 
+const VALID_UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isUsableTenantUuid(tenantId: string): boolean {
+  return (
+    Boolean(tenantId) &&
+    tenantId !== "00000000-0000-0000-0000-000000000000" &&
+    VALID_UUID_RE.test(tenantId)
+  );
+}
+
 function getUtcDayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -76,7 +87,7 @@ export async function saveTenantByokProvider(params: {
   modelId: string;
   baseUrl?: string;
 }): Promise<TenantByokConfig> {
-  if (!params.tenantId || params.tenantId === "00000000-0000-0000-0000-000000000000") {
+  if (!isUsableTenantUuid(params.tenantId)) {
     throw new Error("AUTHENTICATED_TENANT_REQUIRED");
   }
 
@@ -130,29 +141,38 @@ export async function saveTenantByokProvider(params: {
 export async function listTenantByokProviders(
   tenantId: string
 ): Promise<TenantByokConfig[]> {
-  if (!tenantId || tenantId === "00000000-0000-0000-0000-000000000000") return [];
-  const rows = await prisma.idempotencyRecord.findMany({
-    where: { tenantId, scope: TENANT_BYOK_SCOPE },
-    orderBy: { createdAt: "desc" },
-  });
-  return rows
-    .map((r) => {
-      const raw = r.responseBody as any;
-      if (!raw || !raw.id) return null;
-      const { encryptedEnvelope: _omit, ...clean } = raw;
-      return clean as TenantByokConfig;
-    })
-    .filter((x): x is TenantByokConfig => Boolean(x));
+  if (!isUsableTenantUuid(tenantId)) return [];
+  try {
+    const rows = await prisma.idempotencyRecord.findMany({
+      where: { tenantId, scope: TENANT_BYOK_SCOPE },
+      orderBy: { createdAt: "desc" },
+    });
+    return rows
+      .map((r) => {
+        const raw = r.responseBody as any;
+        if (!raw || !raw.id) return null;
+        const { encryptedEnvelope: _omit, ...clean } = raw;
+        return clean as TenantByokConfig;
+      })
+      .filter((x): x is TenantByokConfig => Boolean(x));
+  } catch {
+    return [];
+  }
 }
 
 export async function getDecryptedTenantByokCredentials(tenantId: string): Promise<
   Array<TenantByokConfig & { apiKey: string }>
 > {
-  if (!tenantId || tenantId === "00000000-0000-0000-0000-000000000000") return [];
-  const rows = await prisma.idempotencyRecord.findMany({
-    where: { tenantId, scope: TENANT_BYOK_SCOPE },
-    orderBy: { createdAt: "desc" },
-  });
+  if (!isUsableTenantUuid(tenantId)) return [];
+  let rows: any[] = [];
+  try {
+    rows = await prisma.idempotencyRecord.findMany({
+      where: { tenantId, scope: TENANT_BYOK_SCOPE },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch {
+    return [];
+  }
   const out: Array<TenantByokConfig & { apiKey: string }> = [];
   for (const r of rows) {
     const raw = r.responseBody as any;
@@ -175,7 +195,7 @@ export async function deleteTenantByokProvider(
   tenantId: string,
   byokId: string
 ): Promise<boolean> {
-  if (!tenantId || !byokId) return false;
+  if (!isUsableTenantUuid(tenantId) || !byokId) return false;
   const deleted = await prisma.idempotencyRecord.deleteMany({
     where: { tenantId, scope: TENANT_BYOK_SCOPE, key: byokId },
   });
@@ -188,24 +208,28 @@ export async function getTenantDailyFreeUsage(tenantId: string): Promise<{
   limit: number;
 }> {
   const day = getUtcDayKey();
-  if (!tenantId || tenantId === "00000000-0000-0000-0000-000000000000") {
+  if (!isUsableTenantUuid(tenantId)) {
     return { day, count: 0, limit: DEFAULT_PUBLIC_DAILY_FREE_LIMIT };
   }
-  const row = await prisma.idempotencyRecord.findUnique({
-    where: {
-      tenantId_scope_key: {
-        tenantId,
-        scope: TENANT_BUDGET_SCOPE,
-        key: day,
+  try {
+    const row = await prisma.idempotencyRecord.findUnique({
+      where: {
+        tenantId_scope_key: {
+          tenantId,
+          scope: TENANT_BUDGET_SCOPE,
+          key: day,
+        },
       },
-    },
-  });
-  const count = Number((row?.responseBody as any)?.count || 0);
-  return { day, count, limit: DEFAULT_PUBLIC_DAILY_FREE_LIMIT };
+    });
+    const count = Number((row?.responseBody as any)?.count || 0);
+    return { day, count, limit: DEFAULT_PUBLIC_DAILY_FREE_LIMIT };
+  } catch {
+    return { day, count: 0, limit: DEFAULT_PUBLIC_DAILY_FREE_LIMIT };
+  }
 }
 
 export async function recordTenantFreeTierUsage(tenantId: string): Promise<number> {
-  if (!tenantId || tenantId === "00000000-0000-0000-0000-000000000000") return 0;
+  if (!isUsableTenantUuid(tenantId)) return 0;
   const day = getUtcDayKey();
   const current = await getTenantDailyFreeUsage(tenantId);
   const nextCount = current.count + 1;
