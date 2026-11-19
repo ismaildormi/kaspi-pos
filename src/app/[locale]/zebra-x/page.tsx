@@ -1,22 +1,21 @@
 import React from "react";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
-import { XZebraPlatformPortal } from "@/components/zebra-portal/XZebraPlatformPortal";
+import { HEYUKAPlatformShell } from "@/components/zebra-portal/HEYUKAPlatformShell";
+import { PlatformOverviewView } from "@/components/zebra-portal/PlatformOverviewView";
 
 export const metadata = {
-  title: "HEYUKA AI Platform (KASPI) • Sovereign Models, API Keys & Studio",
+  title: "HEYUKA AI Platform (KASPI) • Overview & Platform Comparison",
   description:
-    "Official HEYUKA developer platform by KASPI: issue cryptographically unique API Keys & Key IDs for OpenAI-compatible Chat, Vision, 3D, Code Sandbox, and Audio APIs.",
+    "Official KASPI VisionOS Crystal Glass developer platform for HEYUKA: models, SHA-256 API Keys, 7-point Live Debugger, and OpenAI/Microsoft comparison.",
 };
 
 export default function XZebraPortalPage() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex flex-col justify-between selection:bg-emerald-400 selection:text-black font-sans">
-      <Navbar />
-      <main className="flex-1">
-        <XZebraPlatformPortal />
-      </main>
-      <Footer />
-    </div>
+    <HEYUKAPlatformShell
+      activeNav="overview"
+      pageTitle="HEYUKA AI Platform"
+      pageSubtitle="Overview & OpenAI / Microsoft Benchmark"
+    >
+      <PlatformOverviewView />
+    </HEYUKAPlatformShell>
   );
 }

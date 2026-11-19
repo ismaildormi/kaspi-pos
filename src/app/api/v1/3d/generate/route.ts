@@ -1,13 +1,29 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { authenticateXZebraRequest } from "@/lib/zebra-x/api-auth";
+import {
+  apiErrorResponse,
+  apiJsonResponse,
+  createApiOptionsResponse,
+  createRequestId,
+} from "@/lib/zebra-x/api-response";
 import { executeThreeDGenerateTask } from "@/lib/zebra-x/sidecar-bridge";
 
 export const dynamic = "force-dynamic";
 
+export async function OPTIONS() {
+  return createApiOptionsResponse();
+}
+
 export async function POST(req: NextRequest) {
+  const requestId = createRequestId();
   const auth = await authenticateXZebraRequest(req, "3d:generate");
   if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+    return apiErrorResponse({
+      status: auth.status,
+      message: auth.error,
+      type: auth.status === 403 ? "permission_error" : "authentication_error",
+      requestId,
+    });
   }
 
   const body = await req.json().catch(() => ({}));
@@ -17,10 +33,12 @@ export async function POST(req: NextRequest) {
     body?.format === "fbx" || body?.format === "blend" ? body.format : "glb";
 
   if (!prompt && !imageUrl) {
-    return NextResponse.json(
-      { error: "Provide 'prompt' or public 'imageUrl' for 3D generation." },
-      { status: 400 }
-    );
+    return apiErrorResponse({
+      status: 400,
+      message: "Provide 'prompt' or public 'imageUrl' for 3D generation.",
+      type: "invalid_request_error",
+      requestId,
+    });
   }
 
   try {
@@ -30,14 +48,17 @@ export async function POST(req: NextRequest) {
       format,
       targetPath: typeof body?.targetPath === "string" ? body.targetPath : undefined,
     });
-    return NextResponse.json(
-      { ...result, authMode: auth.authMode },
-      { status: result.ok ? 200 : 400 }
+    return apiJsonResponse(
+      { ...result, requestId, authMode: auth.authMode },
+      result.ok ? 200 : 400,
+      { "X-Request-Id": requestId }
     );
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err?.message || "3D generation blocked or failed" },
-      { status: 403 }
-    );
+    return apiErrorResponse({
+      status: 403,
+      message: err?.message || "3D generation blocked or failed",
+      type: "permission_error",
+      requestId,
+    });
   }
 }

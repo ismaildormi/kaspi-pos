@@ -197,7 +197,11 @@ export async function authenticateXZebraRequest(
   requiredScope?: XZebraKeyScope
 ): Promise<XZebraAuthResult> {
   const authHeader = req.headers.get("authorization") || "";
-  const apiKeyHeader = req.headers.get("x-api-key") || "";
+  const apiKeyHeader =
+    req.headers.get("x-api-key") ||
+    req.headers.get("api-key") ||
+    req.headers.get("x-goog-api-key") ||
+    "";
   const keyIdHeader = (req.headers.get("x-api-key-id") || "").trim();
   const bearerToken = authHeader.toLowerCase().startsWith("bearer ")
     ? authHeader.slice(7).trim()

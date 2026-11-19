@@ -1,13 +1,29 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { authenticateXZebraRequest } from "@/lib/zebra-x/api-auth";
+import {
+  apiErrorResponse,
+  apiJsonResponse,
+  createApiOptionsResponse,
+  createRequestId,
+} from "@/lib/zebra-x/api-response";
 import { executeAudioTranscribeTask } from "@/lib/zebra-x/sidecar-bridge";
 
 export const dynamic = "force-dynamic";
 
+export async function OPTIONS() {
+  return createApiOptionsResponse();
+}
+
 export async function POST(req: NextRequest) {
+  const requestId = createRequestId();
   const auth = await authenticateXZebraRequest(req, "audio:transcribe");
   if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+    return apiErrorResponse({
+      status: auth.status,
+      message: auth.error,
+      type: auth.status === 403 ? "permission_error" : "authentication_error",
+      requestId,
+    });
   }
 
   const contentType = req.headers.get("content-type") || "";
@@ -15,7 +31,12 @@ export async function POST(req: NextRequest) {
     const fd = await req.formData().catch(() => null);
     const file = fd?.get("file") as Blob | null;
     if (!file) {
-      return NextResponse.json({ error: "No audio file uploaded under 'file'." }, { status: 400 });
+      return apiErrorResponse({
+        status: 400,
+        message: "No audio file uploaded under 'file'.",
+        type: "invalid_request_error",
+        requestId,
+      });
     }
     const audioBuffer = Buffer.from(await file.arrayBuffer());
     const result = await executeAudioTranscribeTask({
@@ -23,7 +44,11 @@ export async function POST(req: NextRequest) {
       mimeType: file.type || "audio/webm",
       language: typeof fd?.get("language") === "string" ? String(fd?.get("language")) : undefined,
     });
-    return NextResponse.json({ ...result, authMode: auth.authMode });
+    return apiJsonResponse(
+      { ...result, requestId, authMode: auth.authMode },
+      result.ok ? 200 : 400,
+      { "X-Request-Id": requestId }
+    );
   }
 
   const body = await req.json().catch(() => ({}));
@@ -31,8 +56,9 @@ export async function POST(req: NextRequest) {
   const language = typeof body?.language === "string" ? body.language.trim() : undefined;
 
   const result = await executeAudioTranscribeTask({ mediaUrl, language });
-  return NextResponse.json(
-    { ...result, authMode: auth.authMode },
-    { status: result.ok ? 200 : 400 }
+  return apiJsonResponse(
+    { ...result, requestId, authMode: auth.authMode },
+    result.ok ? 200 : 400,
+    { "X-Request-Id": requestId }
   );
 }

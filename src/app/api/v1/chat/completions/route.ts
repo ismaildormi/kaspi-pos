@@ -1,7 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { stepCountIs, tool } from "ai";
 import { z } from "zod";
 import { authenticateXZebraRequest } from "@/lib/zebra-x/api-auth";
+import {
+  apiErrorResponse,
+  apiJsonResponse,
+  createApiOptionsResponse,
+  createRequestId,
+  HEYUKA_API_CORS_HEADERS,
+} from "@/lib/zebra-x/api-response";
 import { generateTextWithRouter } from "@/lib/ai-router";
 import { runUnrestrictedWebResearch } from "@/lib/zebra-x/arsenal-vault";
 import { queryPublicApiHub } from "@/lib/zebra-x/tools/public-apis-hub";
@@ -21,31 +28,71 @@ import { planXZebraToolRoute } from "@/lib/zebra-x/core/router";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+export async function OPTIONS() {
+  return createApiOptionsResponse();
+}
+
+function normalizeOpenAiMessageContent(raw: any): any {
+  if (typeof raw === "string") return raw;
+  if (!Array.isArray(raw)) return String(raw ?? "");
+  const parts = raw
+    .map((part: any) => {
+      if (part?.type === "text" && typeof part.text === "string") {
+        return { type: "text", text: part.text };
+      }
+      if (part?.type === "input_text" && typeof part.text === "string") {
+        return { type: "text", text: part.text };
+      }
+      if (part?.type === "image_url" && part?.image_url?.url) {
+        return { type: "image", image: String(part.image_url.url) };
+      }
+      if (part?.type === "image" && part?.image) {
+        return { type: "image", image: String(part.image) };
+      }
+      return null;
+    })
+    .filter(Boolean);
+  return parts.length > 0 ? parts : "Analyze the attached content.";
+}
+
 export async function POST(req: NextRequest) {
+  const startedAt = Date.now();
+  const requestId = createRequestId();
   const auth = await authenticateXZebraRequest(req, "chat:universal");
   if (!auth.ok) {
-    return NextResponse.json(
-      { error: { message: auth.error, type: "authentication_error", code: auth.status } },
-      { status: auth.status }
-    );
+    return apiErrorResponse({
+      status: auth.status,
+      message: auth.error,
+      type: auth.status === 403 ? "permission_error" : "authentication_error",
+      code: auth.status,
+      requestId,
+      hint:
+        auth.status === 403
+          ? "Generate a Full Access API key or enable 'chat:universal' scope."
+          : "Pass header 'Authorization: Bearer hk-live-...' (or 'yk-live-...'). Optional: verify Key ID via 'X-API-Key-Id'.",
+    });
   }
 
   const body = await req.json().catch(() => null);
   const rawMessages = Array.isArray(body?.messages) ? body.messages : [];
   if (rawMessages.length === 0) {
-    return NextResponse.json(
-      { error: { message: "messages[] array is required.", type: "invalid_request_error" } },
-      { status: 400 }
-    );
+    return apiErrorResponse({
+      status: 400,
+      message: "messages[] array is required.",
+      type: "invalid_request_error",
+      code: "missing_messages",
+      requestId,
+      hint: "Provide JSON body: { model: 'heyuka-omni', messages: [{ role: 'user', content: 'Hello' }] }.",
+    });
   }
 
   const requestedModel = String(body?.model || "heyuka-omni").trim();
   const streamMode = Boolean(body?.stream);
   const enableTools = body?.enableTools !== false;
 
-  // Separate optional caller system directives & user/assistant turns cleanly
+  // Separate optional caller system/developer directives & normalize OpenAI multimodal content
   const callerSystem = rawMessages
-    .filter((m: any) => m?.role === "system")
+    .filter((m: any) => m?.role === "system" || m?.role === "developer")
     .map((m: any) => (typeof m.content === "string" ? m.content : JSON.stringify(m.content)))
     .join("\n")
     .trim();
@@ -55,19 +102,28 @@ export async function POST(req: NextRequest) {
     .slice(-16)
     .map((m: any) => ({
       role: m.role as "user" | "assistant",
-      content: m.content,
+      content: normalizeOpenAiMessageContent(m.content),
     }));
 
   if (chatMessages.length === 0) {
-    return NextResponse.json(
-      { error: { message: "At least one user message is required.", type: "invalid_request_error" } },
-      { status: 400 }
-    );
+    return apiErrorResponse({
+      status: 400,
+      message: "At least one user or assistant message is required.",
+      type: "invalid_request_error",
+      code: "empty_messages",
+      requestId,
+    });
   }
 
+  const lastUserRaw = chatMessages[chatMessages.length - 1]?.content;
   const lastUserText =
-    typeof chatMessages[chatMessages.length - 1]?.content === "string"
-      ? chatMessages[chatMessages.length - 1].content
+    typeof lastUserRaw === "string"
+      ? lastUserRaw
+      : Array.isArray(lastUserRaw)
+      ? lastUserRaw
+          .map((p: any) => (p?.type === "text" ? p.text : ""))
+          .join(" ")
+          .trim() || "Analyze media"
       : "help";
 
   const expectedLocale: "ar" | "fr" | "en" = /[\u0600-\u06FF]/.test(lastUserText)
@@ -146,7 +202,7 @@ export async function POST(req: NextRequest) {
 
     executeCodeSandbox: tool({
       description:
-        "Execute Python, JavaScript, TypeScript, Bash, PHP, Go, or C++ safely in an isolated Judge0 CE / Godbolt / V8 sandbox.",
+        "Execute Python, JavaScript, TypeScript, Bash, PHP, Go, or C++ cleanly inside an isolated HEYUKA sandbox.",
       inputSchema: z.object({
         language: z.enum(["python", "javascript", "typescript", "bash", "php", "go", "c++"]),
         code: z.string().min(1).max(16000),
@@ -157,7 +213,7 @@ export async function POST(req: NextRequest) {
     }),
 
     generateImage: tool({
-      description: "Generate an image URL via Pollinations Studio Flux/Diffusion.",
+      description: "Generate a studio visual image URL via HEYUKA Vision Diffusion.",
       inputSchema: z.object({ prompt: z.string().min(2) }),
       execute: async ({ prompt }) => {
         const imageUrl = generateProductImageUrl(prompt);
@@ -221,9 +277,9 @@ export async function POST(req: NextRequest) {
   };
 
   const baseSystem = `You are HEYUKA (${requestedModel}), the Sovereign Unified AI Model owned by KASPI.
-You have direct live access to Web Research (SearXNG/Jina), 34 No-Key Public APIs (including 20 Cyber Threat Feeds & Nador Marine), Piston Code Sandbox, Math/Finance/DAG engine, and Image Generation.
+You have direct live access to Web Research, Live Global Knowledge APIs, Isolated Polyglot Code Sandbox, Math/Finance/DAG engine, and Studio Image Generation.
 Always answer accurately, honestly, and cleanly in the user's language (Arabic/Darija/French/English). Never disclose internal provider names or third-party model brands.
-Planned Route: ${routePlan.complexity} | Suggested Tools: ${routePlan.selectedToolNames.join(", ")}${
+Planned Route: ${routePlan.complexity}${
     callerSystem ? `\n\nCaller Context:\n${callerSystem}` : ""
   }`;
 
@@ -287,53 +343,69 @@ Planned Route: ${routePlan.complexity} | Suggested Tools: ${routePlan.selectedTo
         },
       });
 
+      const latencyMs = Date.now() - startedAt;
       return new Response(sseStream, {
         status: 200,
         headers: {
+          ...HEYUKA_API_CORS_HEADERS,
           "Content-Type": "text/event-stream; charset=utf-8",
           "Cache-Control": "no-cache, no-transform",
+          "X-Request-Id": requestId,
+          "X-HEYUKA-Latency-Ms": String(latencyMs),
+          "X-HEYUKA-Model": requestedModel,
+          "X-HEYUKA-Key-Id": auth.keyId || "session",
           "x-kaspi-heyuka-key-id": auth.keyId || "session",
         },
       });
     }
 
-    return NextResponse.json({
-      id: completionId,
-      object: "chat.completion",
-      created: createdTs,
-      model: requestedModel,
-      choices: [
-        {
-          index: 0,
-          message: {
-            role: "assistant",
-            content: audited.cleanedText,
-          },
-          finish_reason: "stop",
-        },
-      ],
-      usage: (result as any).usage || {
-        prompt_tokens: lastUserText.length,
-        completion_tokens: audited.cleanedText.length,
-        total_tokens: lastUserText.length + audited.cleanedText.length,
-      },
-      kaspi_heyuka: {
-        authMode: auth.authMode,
-        keyId: auth.keyId || null,
-        tenantId: auth.tenantId,
-        provider: result.activeProvider,
-        toolsExecuted,
-      },
-    });
-  } catch (err: any) {
-    return NextResponse.json(
+    const latencyMs = Date.now() - startedAt;
+    return apiJsonResponse(
       {
-        error: {
-          message: err?.message || "HEYUKA completion gateways temporarily unavailable",
-          type: "server_error",
+        id: completionId,
+        object: "chat.completion",
+        created: createdTs,
+        model: requestedModel,
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: "assistant",
+              content: audited.cleanedText,
+            },
+            finish_reason: "stop",
+          },
+        ],
+        usage: (result as any).usage || {
+          prompt_tokens: lastUserText.length,
+          completion_tokens: audited.cleanedText.length,
+          total_tokens: lastUserText.length + audited.cleanedText.length,
+        },
+        kaspi_heyuka: {
+          requestId,
+          latencyMs,
+          authMode: auth.authMode,
+          keyId: auth.keyId || null,
+          tenantId: auth.tenantId,
+          toolsExecuted,
         },
       },
-      { status: 503 }
+      200,
+      {
+        "X-Request-Id": requestId,
+        "X-HEYUKA-Latency-Ms": String(latencyMs),
+        "X-HEYUKA-Model": requestedModel,
+        "X-HEYUKA-Key-Id": auth.keyId || "session",
+      }
     );
+  } catch (err: any) {
+    return apiErrorResponse({
+      status: 503,
+      message: err?.message || "HEYUKA completion gateways temporarily unavailable",
+      type: "server_error",
+      code: "gateway_unavailable",
+      requestId,
+      hint: "Run GET /api/v1/debug with your API key to verify gateway health and request headers.",
+    });
   }
 }

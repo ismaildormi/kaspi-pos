@@ -1,9 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import {
+  apiJsonResponse,
+  createApiOptionsResponse,
+  createRequestId,
+} from "@/lib/zebra-x/api-response";
 import { fetchThreeDAssetsCatalog } from "@/lib/zebra-x/sidecar-bridge";
 
 export const dynamic = "force-dynamic";
 
+export async function OPTIONS() {
+  return createApiOptionsResponse();
+}
+
 export async function GET(req: NextRequest) {
+  const requestId = createRequestId();
   const q = req.nextUrl.searchParams.get("q") || "";
   const rawType = req.nextUrl.searchParams.get("type") || "models";
   const type = rawType === "textures" || rawType === "hdris" ? rawType : "models";
@@ -14,5 +24,9 @@ export async function GET(req: NextRequest) {
     type,
     limit,
   });
-  return NextResponse.json(result, { status: result.ok ? 200 : 502 });
+  return apiJsonResponse(
+    { ...result, requestId },
+    result.ok ? 200 : 502,
+    { "X-Request-Id": requestId }
+  );
 }

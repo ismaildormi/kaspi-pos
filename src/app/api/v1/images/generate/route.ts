@@ -1,19 +1,40 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { authenticateXZebraRequest } from "@/lib/zebra-x/api-auth";
+import {
+  apiErrorResponse,
+  apiJsonResponse,
+  createApiOptionsResponse,
+  createRequestId,
+} from "@/lib/zebra-x/api-response";
 import { generateProductImageUrl } from "@/lib/pollinations";
 
 export const dynamic = "force-dynamic";
 
+export async function OPTIONS() {
+  return createApiOptionsResponse();
+}
+
 export async function POST(req: NextRequest) {
+  const requestId = createRequestId();
   const auth = await authenticateXZebraRequest(req, "images:generate");
   if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+    return apiErrorResponse({
+      status: auth.status,
+      message: auth.error,
+      type: auth.status === 403 ? "permission_error" : "authentication_error",
+      requestId,
+    });
   }
 
   const body = await req.json().catch(() => ({}));
   const prompt = String(body?.prompt || "").trim();
   if (!prompt) {
-    return NextResponse.json({ error: "Provide 'prompt' describing the image." }, { status: 400 });
+    return apiErrorResponse({
+      status: 400,
+      message: "Provide 'prompt' describing the image.",
+      type: "invalid_request_error",
+      requestId,
+    });
   }
 
   const action = String(body?.action || "generate");
@@ -42,27 +63,41 @@ export async function POST(req: NextRequest) {
             : "",
         }))
         .filter((x) => x.imageUrl);
-      return NextResponse.json({
-        ok: true,
-        mode: "web_images",
-        query: prompt,
-        results,
-        auth: { mode: auth.authMode, keyId: auth.keyId || null, tenantId: auth.tenantId },
-      });
+      return apiJsonResponse(
+        {
+          ok: true,
+          requestId,
+          mode: "web_images",
+          query: prompt,
+          results,
+          auth: { mode: auth.authMode, keyId: auth.keyId || null, tenantId: auth.tenantId },
+        },
+        200,
+        { "X-Request-Id": requestId }
+      );
     } catch {
-      return NextResponse.json({ ok: true, mode: "web_images", query: prompt, results: [] });
+      return apiJsonResponse(
+        { ok: true, requestId, mode: "web_images", query: prompt, results: [] },
+        200,
+        { "X-Request-Id": requestId }
+      );
     }
   }
 
   const imageUrl = generateProductImageUrl(prompt);
   const proxyUrl = `/api/ai/media-tools?action=image_proxy&url=${encodeURIComponent(imageUrl)}`;
 
-  return NextResponse.json({
-    ok: true,
-    mode: "heyuka_studio_diffusion",
-    prompt,
-    imageUrl,
-    proxyUrl,
-    auth: { mode: auth.authMode, keyId: auth.keyId || null, tenantId: auth.tenantId },
-  });
+  return apiJsonResponse(
+    {
+      ok: true,
+      requestId,
+      mode: "heyuka_studio_diffusion",
+      prompt,
+      imageUrl,
+      proxyUrl,
+      auth: { mode: auth.authMode, keyId: auth.keyId || null, tenantId: auth.tenantId },
+    },
+    200,
+    { "X-Request-Id": requestId }
+  );
 }

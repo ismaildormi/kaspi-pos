@@ -36,7 +36,7 @@ import { HEYUKAInstallWalkthrough } from "./HEYUKAInstallWalkthrough";
 const HEYUKACreatureCanvas = dynamic(() => import("./HEYUKACreatureCanvas"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[360px] sm:h-[440px] rounded-2xl border border-white/10 bg-slate-950/60 flex items-center justify-center text-xs font-mono text-zinc-400">
+    <div className="w-full h-[360px] sm:h-[440px] rounded-2xl kaspi-frosted-surface flex items-center justify-center text-xs font-mono text-[var(--kaspi-text-muted)]">
       Loading Authentic 3D Character Engine...
     </div>
   ),
@@ -262,27 +262,27 @@ console.log(completion.choices[0].message.content);`;
   return (
     <div
       dir={isAr ? "rtl" : "ltr"}
-      className="min-h-screen pt-20 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-14"
+      className="min-h-screen pt-10 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12"
     >
-      {/* Cinematic Official Flagship Hero (OpenAI / DeepSeek Product Launch Style) */}
-      <section className="relative overflow-hidden rounded-3xl border border-white/15 bg-slate-950/80 backdrop-blur-2xl p-6 sm:p-10 shadow-2xl">
+      {/* VisionOS Crystal Glass Flagship Hero */}
+      <section className="kaspi-glass-card kaspi-polar-aurora-orbit relative overflow-hidden rounded-3xl p-6 sm:p-10">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-4 max-w-3xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/35 text-xs font-bold text-emerald-300">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-bold text-emerald-500">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>HEYUKA • Owned &amp; Engineered by KASPI</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.06] border border-white/10 text-[11px] font-mono text-zinc-300">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full kaspi-frosted-surface text-[11px] font-mono text-[var(--kaspi-text-secondary)]">
                 Desktop App • 32 Interactive Characters • Sovereign API
               </span>
             </div>
 
             <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-white/[0.07] border border-white/15 flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-2xl kaspi-glass-surface flex items-center justify-center shrink-0">
                 <img src="/logo-mark.png" alt="KASPI HEYUKA" className="w-8 h-8 object-contain" />
               </div>
-              <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
+              <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-[var(--kaspi-text-primary)]">
                 {isAr
                   ? "تعرّف على HEYUKA — رفيقك الذكي من KASPI"
                   : locale === "fr"
@@ -291,7 +291,7 @@ console.log(completion.choices[0].message.content);`;
               </h1>
             </div>
 
-            <p className="text-sm sm:text-base text-zinc-300 leading-relaxed">
+            <p className="text-sm sm:text-base text-[var(--kaspi-text-secondary)] leading-relaxed">
               {isAr
                 ? "نموذج ذكاء اصطناعي متكامل وتطبيق تفاعلي ثلاثي الأبعاد يجمع بين التفكير العميق، البرمجة، الصور، 3D، والصوتيات بطلاقة عربية ودارجة وعالمية، مع مفاتيح API حقيقية ومستقلة للمطورين والشركات."
                 : locale === "fr"
@@ -303,7 +303,7 @@ console.log(completion.choices[0].message.content);`;
           <div className="flex flex-wrap gap-3 shrink-0">
             <a
               href="#heyuka-download-center"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs sm:text-sm font-extrabold transition-all shadow-lg shadow-emerald-500/20"
+              className="kaspi-primary-cta-btn inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-xs sm:text-sm font-extrabold"
             >
               <Download className="w-4 h-4" />
               <span>{isAr ? "تحميل تطبيق HEYUKA" : locale === "fr" ? "Télécharger HEYUKA" : "Download HEYUKA App"}</span>
@@ -312,9 +312,9 @@ console.log(completion.choices[0].message.content);`;
             <button
               type="button"
               onClick={() => setWalkthroughOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white text-black hover:bg-zinc-200 text-xs sm:text-sm font-extrabold cursor-pointer transition-all"
+              className="kaspi-glass-btn inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-xs sm:text-sm font-extrabold cursor-pointer"
             >
-              <Layers className="w-4 h-4" />
+              <Layers className="w-4 h-4 text-emerald-500" />
               <span>
                 {isAr
                   ? "مراحل التحميل والربط الكاملة"
@@ -326,10 +326,10 @@ console.log(completion.choices[0].message.content);`;
 
             <Link
               href={`/${locale}/zebra-x`}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 text-white text-xs sm:text-sm font-bold transition-colors"
+              className="kaspi-glass-btn inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-xs sm:text-sm font-bold"
             >
-              <KeyRound className="w-4 h-4 text-emerald-400" />
-              <span>{isAr ? "استوديو API و Key ID" : "API Key Studio"}</span>
+              <KeyRound className="w-4 h-4 text-emerald-500" />
+              <span>{isAr ? "منصة المطورين والـ API" : "Developer Console"}</span>
             </Link>
           </div>
         </div>
@@ -339,8 +339,8 @@ console.log(completion.choices[0].message.content);`;
       <section className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2">
-              <Wand2 className="w-5 h-5 text-emerald-400" />
+            <h2 className="text-xl sm:text-2xl font-extrabold text-[var(--kaspi-text-primary)] flex items-center gap-2">
+              <Wand2 className="w-5 h-5 text-emerald-500" />
               <span>
                 {isAr
                   ? "1. الشخصيات التفاعلية الأصلية لـ HEYUKA (32 شخصية ثلاثية الأبعاد)"
@@ -349,7 +349,7 @@ console.log(completion.choices[0].message.content);`;
                   : "1. Authentic 3D Character Lineup (32 Companions)"}
               </span>
             </h2>
-            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
+            <p className="text-xs sm:text-sm text-[var(--kaspi-text-muted)] mt-1">
               {isAr
                 ? "حرّك الفأرة أو المس الشاشة لتمشيط الفراء، اسحب للدوران 360°، واضغط على الشخصية للتفاعل المباشر."
                 : "Drag to orbit 360°, hover to part fur strands in real time, and tap the character for interactive Boop reactions."}
@@ -360,16 +360,16 @@ console.log(completion.choices[0].message.content);`;
             <button
               type="button"
               onClick={() => setSoundEnabled((v) => !v)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-xs font-semibold text-zinc-200 cursor-pointer"
+              className="kaspi-glass-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer"
             >
               {soundEnabled ? (
-                <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+                <Volume2 className="w-3.5 h-3.5 text-emerald-500" />
               ) : (
-                <VolumeX className="w-3.5 h-3.5 text-zinc-400" />
+                <VolumeX className="w-3.5 h-3.5 text-[var(--kaspi-text-muted)]" />
               )}
               <span>{soundEnabled ? "Audio On" : "Mute FX"}</span>
             </button>
-            <span className="px-2.5 py-1.5 rounded-xl bg-white/[0.05] border border-white/10 text-[11px] font-mono text-emerald-300">
+            <span className="px-2.5 py-1.5 rounded-xl kaspi-glass-surface text-[11px] font-mono text-emerald-500 font-semibold">
               Interactions: {boopCount}
             </span>
           </div>
@@ -377,12 +377,12 @@ console.log(completion.choices[0].message.content);`;
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Authentic 3D Canvas Stage */}
-          <div className="lg:col-span-5 rounded-3xl border border-white/15 bg-slate-950/75 p-4 space-y-4">
+          <div className="lg:col-span-5 rounded-3xl kaspi-glass-card p-4 space-y-4">
             <div className="flex items-center justify-between px-1">
-              <span className="px-2.5 py-1 rounded-full bg-white/[0.08] border border-white/10 text-[10px] font-bold uppercase text-zinc-200">
+              <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[10px] font-bold uppercase text-[var(--kaspi-text-primary)]">
                 {activeCharacter.badge}
               </span>
-              <span className="text-[11px] font-mono text-emerald-300">
+              <span className="text-[11px] font-mono text-emerald-500 font-semibold">
                 Real-Time 3D WebGL2
               </span>
             </div>
@@ -397,11 +397,11 @@ console.log(completion.choices[0].message.content);`;
             <div className="space-y-2.5 px-1">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <h3 className="text-lg font-extrabold text-white">{activeCharacter.name}</h3>
-                  <p className="text-xs text-zinc-400">{activeCharacter.tagline}</p>
+                  <h3 className="text-lg font-extrabold text-[var(--kaspi-text-primary)]">{activeCharacter.name}</h3>
+                  <p className="text-xs text-[var(--kaspi-text-muted)]">{activeCharacter.tagline}</p>
                 </div>
                 <span
-                  className="w-6 h-6 rounded-full border border-white/30 shrink-0"
+                  className="w-6 h-6 rounded-full border border-[var(--kaspi-border)] shrink-0"
                   style={{ backgroundColor: activeCharacter.furColor }}
                 />
               </div>
@@ -412,10 +412,10 @@ console.log(completion.choices[0].message.content);`;
                     key={preset.id}
                     type="button"
                     onClick={() => setSelectedLightingId(preset.id)}
-                    className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold border transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold transition-colors cursor-pointer ${
                       selectedLightingId === preset.id
-                        ? "bg-white text-black border-white font-bold"
-                        : "bg-white/[0.04] border-white/10 text-zinc-300 hover:bg-white/[0.1]"
+                        ? "kaspi-orbit-active text-emerald-500 font-bold"
+                        : "kaspi-glass-surface text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
                     }`}
                   >
                     {preset.name}
@@ -426,7 +426,7 @@ console.log(completion.choices[0].message.content);`;
           </div>
 
           {/* 32 Character Selector Grid */}
-          <div className="lg:col-span-7 rounded-3xl border border-white/15 bg-slate-950/75 p-5 space-y-4">
+          <div className="lg:col-span-7 rounded-3xl kaspi-glass-card p-5 space-y-4">
             <div className="flex flex-wrap gap-2">
               {(
                 [
@@ -442,10 +442,10 @@ console.log(completion.choices[0].message.content);`;
                   key={cat.id}
                   type="button"
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                     activeCategory === cat.id
-                      ? "bg-emerald-500 text-black border-emerald-400"
-                      : "bg-white/[0.05] border-white/10 text-zinc-300 hover:bg-white/[0.1]"
+                      ? "kaspi-orbit-active text-emerald-500"
+                      : "kaspi-glass-surface text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
                   }`}
                 >
                   {cat.label}
@@ -461,24 +461,24 @@ console.log(completion.choices[0].message.content);`;
                     key={char.id}
                     type="button"
                     onClick={() => setSelectedCharId(char.id)}
-                    className={`p-3 rounded-2xl border text-start transition-all cursor-pointer space-y-2 ${
+                    className={`p-3 rounded-2xl text-start transition-all cursor-pointer space-y-2 ${
                       isSelected
-                        ? "bg-emerald-500/20 border-emerald-400/70 shadow-md shadow-emerald-500/10"
-                        : "bg-white/[0.03] border-white/10 hover:bg-white/[0.08]"
+                        ? "kaspi-orbit-active"
+                        : "kaspi-frosted-surface hover:scale-[1.01]"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span
-                        className="w-6 h-6 rounded-full border border-white/30 shrink-0"
+                        className="w-6 h-6 rounded-full border border-[var(--kaspi-border)] shrink-0"
                         style={{
                           background: `radial-gradient(circle at 30% 30%, ${char.tipColor}, ${char.furColor})`,
                         }}
                       />
-                      <span className="text-[9px] font-mono text-zinc-400 truncate">
+                      <span className="text-[9px] font-mono text-[var(--kaspi-text-muted)] truncate">
                         {char.badge}
                       </span>
                     </div>
-                    <p className="text-xs font-bold text-white truncate">{char.name}</p>
+                    <p className="text-xs font-bold text-[var(--kaspi-text-primary)] truncate">{char.name}</p>
                   </button>
                 );
               })}
@@ -487,12 +487,12 @@ console.log(completion.choices[0].message.content);`;
         </div>
       </section>
 
-      {/* SECTION 2: Capabilities & Features Showcase (OpenAI / DeepSeek Confidential Style) */}
+      {/* SECTION 2: Capabilities & Features Showcase */}
       <section className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2">
-              <Cpu className="w-5 h-5 text-emerald-400" />
+            <h2 className="text-xl sm:text-2xl font-extrabold text-[var(--kaspi-text-primary)] flex items-center gap-2">
+              <Cpu className="w-5 h-5 text-emerald-500" />
               <span>
                 {isAr
                   ? "2. لماذا يختار المطورون والشركات منظومة HEYUKA؟"
@@ -501,7 +501,7 @@ console.log(completion.choices[0].message.content);`;
                   : "2. Why Developers & Teams Build on HEYUKA"}
               </span>
             </h2>
-            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
+            <p className="text-xs sm:text-sm text-[var(--kaspi-text-muted)] mt-1">
               {isAr
                 ? "قدرات متكاملة في الاستدلال والوسائط المتعددة وتطبيقات سطح المكتب مع خصوصية وأمان كاملين."
                 : "Unified multimodal reasoning, creative media tools, and desktop intelligence with clean privacy isolation."}
@@ -516,7 +516,7 @@ console.log(completion.choices[0].message.content);`;
                   (i) => (i - 1 + ANIMATED_STORY_CHAPTERS.length) % ANIMATED_STORY_CHAPTERS.length
                 )
               }
-              className="p-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-white cursor-pointer"
+              className="kaspi-glass-btn p-2 rounded-xl cursor-pointer"
               aria-label="Previous chapter"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -524,9 +524,9 @@ console.log(completion.choices[0].message.content);`;
             <button
               type="button"
               onClick={() => setStoriesAutoPlay((p) => !p)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-xs font-semibold text-zinc-200 cursor-pointer"
+              className="kaspi-glass-btn inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer"
             >
-              {storiesAutoPlay ? <Pause className="w-3.5 h-3.5 text-emerald-400" /> : <Play className="w-3.5 h-3.5" />}
+              {storiesAutoPlay ? <Pause className="w-3.5 h-3.5 text-emerald-500" /> : <Play className="w-3.5 h-3.5" />}
               <span>{storiesAutoPlay ? "Auto" : "Paused"}</span>
             </button>
             <button
@@ -534,7 +534,7 @@ console.log(completion.choices[0].message.content);`;
               onClick={() =>
                 setActiveStoryIndex((i) => (i + 1) % ANIMATED_STORY_CHAPTERS.length)
               }
-              className="p-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-white cursor-pointer"
+              className="kaspi-glass-btn p-2 rounded-xl cursor-pointer"
               aria-label="Next chapter"
             >
               <ChevronRight className="w-4 h-4" />
@@ -543,7 +543,7 @@ console.log(completion.choices[0].message.content);`;
         </div>
 
         <div
-          className={`rounded-3xl border border-white/15 bg-gradient-to-br ${currentStory.accentClass} bg-slate-950/85 p-6 sm:p-8 space-y-6 transition-all duration-500`}
+          className="rounded-3xl kaspi-glass-card kaspi-polar-aurora-orbit relative p-6 sm:p-8 space-y-6 transition-all duration-500"
         >
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             {ANIMATED_STORY_CHAPTERS.map((chap, idx) => (
@@ -556,16 +556,16 @@ console.log(completion.choices[0].message.content);`;
                 }}
                 className="text-start space-y-1.5 cursor-pointer group"
               >
-                <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div className="h-1.5 rounded-full kaspi-glass-surface overflow-hidden">
                   <div
                     className={`h-full transition-all duration-500 ${
-                      idx <= activeStoryIndex ? "w-full bg-emerald-400" : "w-0 bg-transparent"
+                      idx <= activeStoryIndex ? "w-full bg-emerald-500" : "w-0 bg-transparent"
                     }`}
                   />
                 </div>
                 <span
                   className={`block text-[10px] font-mono truncate ${
-                    idx === activeStoryIndex ? "text-emerald-300 font-bold" : "text-zinc-400"
+                    idx === activeStoryIndex ? "text-emerald-500 font-bold" : "text-[var(--kaspi-text-muted)]"
                   }`}
                 >
                   {chap.badge}
@@ -576,17 +576,17 @@ console.log(completion.choices[0].message.content);`;
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
             <div className="lg:col-span-8 space-y-4">
-              <span className="inline-block px-3 py-1 rounded-full bg-white/10 border border-white/15 text-xs font-bold text-emerald-300">
+              <span className="inline-block px-3 py-1 rounded-full kaspi-glass-surface text-xs font-bold text-emerald-500">
                 {currentStory.badge}
               </span>
-              <h3 className="text-2xl sm:text-3xl font-black text-white">
+              <h3 className="text-2xl sm:text-3xl font-black text-[var(--kaspi-text-primary)]">
                 {isAr
                   ? currentStory.titleAr
                   : locale === "fr"
                   ? currentStory.titleFr
                   : currentStory.titleEn}
               </h3>
-              <p className="text-sm sm:text-base text-zinc-200 leading-relaxed">
+              <p className="text-sm sm:text-base text-[var(--kaspi-text-secondary)] leading-relaxed">
                 {isAr
                   ? currentStory.descAr
                   : locale === "fr"
@@ -598,7 +598,7 @@ console.log(completion.choices[0].message.content);`;
                 {currentStory.highlights.map((h) => (
                   <span
                     key={h}
-                    className="px-3 py-1.5 rounded-xl bg-white/[0.06] border border-white/10 text-xs font-semibold text-white"
+                    className="px-3 py-1.5 rounded-xl kaspi-frosted-surface text-xs font-semibold text-[var(--kaspi-text-primary)]"
                   >
                     {h}
                   </span>
@@ -606,29 +606,29 @@ console.log(completion.choices[0].message.content);`;
               </div>
             </div>
 
-            <div className="lg:col-span-4 rounded-2xl border border-white/15 bg-black/40 p-5 space-y-3">
-              <p className="text-xs font-bold text-emerald-300 uppercase tracking-wider">
+            <div className="lg:col-span-4 rounded-2xl kaspi-frosted-surface p-5 space-y-3">
+              <p className="text-xs font-bold text-emerald-500 uppercase tracking-wider">
                 HEYUKA Platform Architecture
               </p>
-              <ul className="space-y-2 text-xs text-zinc-300">
+              <ul className="space-y-2 text-xs text-[var(--kaspi-text-secondary)]">
                 <li>
-                  • <strong className="text-white">Brand Owner:</strong> KASPI Ecosystem
+                  • <strong className="text-[var(--kaspi-text-primary)]">Brand Owner:</strong> KASPI Ecosystem
                 </li>
                 <li>
-                  • <strong className="text-white">Models:</strong> heyuka-omni / heyuka-core / heyuka-vision
+                  • <strong className="text-[var(--kaspi-text-primary)]">Models:</strong> heyuka-omni / heyuka-core / heyuka-vision
                 </li>
                 <li>
-                  • <strong className="text-white">API Standard:</strong> OpenAI SDK Drop-In Compatible
+                  • <strong className="text-[var(--kaspi-text-primary)]">API Standard:</strong> OpenAI &amp; Azure Header Compatible
                 </li>
                 <li>
-                  • <strong className="text-white">Security:</strong> Unique SHA-256 Keys &amp; Key IDs
+                  • <strong className="text-[var(--kaspi-text-primary)]">Security:</strong> Unique SHA-256 Keys &amp; Key IDs
                 </li>
               </ul>
 
               <button
                 type="button"
                 onClick={() => setWalkthroughOpen(true)}
-                className="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-xs font-extrabold text-black cursor-pointer transition-colors flex items-center justify-center gap-2"
+                className="w-full kaspi-primary-cta-btn py-2.5 px-3 rounded-xl text-xs font-extrabold cursor-pointer flex items-center justify-center gap-2"
               >
                 <Layers className="w-3.5 h-3.5" />
                 <span>
@@ -645,12 +645,12 @@ console.log(completion.choices[0].message.content);`;
       {/* SECTION 3: Download HEYUKA Desktop App + Step-by-Step Setup Drawer Button */}
       <section
         id="heyuka-download-center"
-        className="rounded-3xl border border-white/15 bg-slate-950/80 backdrop-blur-2xl p-6 sm:p-10 space-y-8 shadow-2xl"
+        className="rounded-3xl kaspi-glass-card kaspi-polar-aurora-orbit relative p-6 sm:p-10 space-y-8"
       >
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="space-y-2">
-            <h2 className="text-xl sm:text-3xl font-extrabold text-white flex items-center gap-2.5">
-              <Monitor className="w-6 h-6 text-emerald-400" />
+            <h2 className="text-xl sm:text-3xl font-extrabold text-[var(--kaspi-text-primary)] flex items-center gap-2.5">
+              <Monitor className="w-6 h-6 text-emerald-500" />
               <span>
                 {isAr
                   ? "3. مركز تحميل تطبيق HEYUKA وتوليد المفاتيح الحقيقية"
@@ -659,7 +659,7 @@ console.log(completion.choices[0].message.content);`;
                   : "3. Download HEYUKA Desktop App & Activate Your API Key"}
               </span>
             </h2>
-            <p className="text-xs sm:text-sm text-zinc-400">
+            <p className="text-xs sm:text-sm text-[var(--kaspi-text-muted)]">
               {isAr
                 ? "حمّل النسخة الرسمية المتوافقة مع نظام تشغيلك وافتح دليل المراحل الكامل لربط تطبيقاتك في دقائق."
                 : "Download HEYUKA natively for your operating system or open the visual 4-stage interactive onboarding walkthrough."}
@@ -669,7 +669,7 @@ console.log(completion.choices[0].message.content);`;
           <button
             type="button"
             onClick={() => setWalkthroughOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs sm:text-sm font-extrabold cursor-pointer shrink-0 shadow-lg shadow-emerald-500/20"
+            className="kaspi-primary-cta-btn inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-xs sm:text-sm font-extrabold cursor-pointer shrink-0"
           >
             <Layers className="w-4 h-4" />
             <span>
@@ -685,13 +685,13 @@ console.log(completion.choices[0].message.content);`;
         {/* Clean 3-Platform Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Windows */}
-          <div className="p-6 rounded-2xl border border-emerald-400/35 bg-emerald-500/10 flex flex-col justify-between gap-4">
+          <div className="p-6 rounded-2xl kaspi-frosted-surface flex flex-col justify-between gap-4">
             <div className="space-y-2">
-              <span className="px-2.5 py-1 rounded-md bg-emerald-500 text-black text-[10px] font-bold uppercase">
+              <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-emerald-500 text-[10px] font-bold uppercase">
                 Windows 10 / 11 (x64)
               </span>
-              <h3 className="text-lg font-extrabold text-white">HEYUKA Desktop Installer</h3>
-              <p className="text-xs text-zinc-300 leading-relaxed">
+              <h3 className="text-lg font-extrabold text-[var(--kaspi-text-primary)]">HEYUKA Desktop Installer</h3>
+              <p className="text-xs text-[var(--kaspi-text-secondary)] leading-relaxed">
                 {isAr
                   ? "تطبيق ويندوز المتكامل بالواجهة ثلاثية الأبعاد والربط السريع مع APIs الخاصة بك."
                   : "Native Windows desktop app with 3D companion mode, voice assistance, and instant cloud API connectivity."}
@@ -700,14 +700,14 @@ console.log(completion.choices[0].message.content);`;
             <div className="space-y-2">
               <a
                 href="/api/v1/heyuka/installer?platform=windows"
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
+                className="kaspi-primary-cta-btn w-full py-2.5 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2"
               >
                 <Download className="w-4 h-4" />
                 <span>{isAr ? "تحميل المثبّت السريع (.bat)" : "Download Windows Installer (.bat)"}</span>
               </a>
               <a
                 href="/download/exe"
-                className="w-full py-2 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                className="kaspi-glass-btn w-full py-2 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
                 <span>Desktop Package (.exe)</span>
@@ -716,13 +716,13 @@ console.log(completion.choices[0].message.content);`;
           </div>
 
           {/* macOS */}
-          <div className="p-6 rounded-2xl border border-white/15 bg-white/[0.04] flex flex-col justify-between gap-4">
+          <div className="p-6 rounded-2xl kaspi-frosted-surface flex flex-col justify-between gap-4">
             <div className="space-y-2">
-              <span className="px-2.5 py-1 rounded-md bg-white/10 text-zinc-200 text-[10px] font-bold uppercase">
+              <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[var(--kaspi-text-secondary)] text-[10px] font-bold uppercase">
                 macOS Apple Silicon &amp; Intel
               </span>
-              <h3 className="text-lg font-extrabold text-white">Universal DMG Bundle</h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
+              <h3 className="text-lg font-extrabold text-[var(--kaspi-text-primary)]">Universal DMG Bundle</h3>
+              <p className="text-xs text-[var(--kaspi-text-secondary)] leading-relaxed">
                 {isAr
                   ? "مخصص لأجهزة Mac بمعالجات M1-M4 و Intel مع دعم التسريع الرسومي والتكامل الفوري."
                   : "Engineered for Apple Silicon M-series & Intel Macs with native Metal/WebGL2 rendering and API sync."}
@@ -732,7 +732,7 @@ console.log(completion.choices[0].message.content);`;
               href="/api/v1/heyuka/installer?platform=macos"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
+              className="kaspi-glass-btn w-full py-2.5 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2"
             >
               <Terminal className="w-4 h-4" />
               <span>macOS Release Spec (DMG)</span>
@@ -740,13 +740,13 @@ console.log(completion.choices[0].message.content);`;
           </div>
 
           {/* Linux */}
-          <div className="p-6 rounded-2xl border border-white/15 bg-white/[0.04] flex flex-col justify-between gap-4">
+          <div className="p-6 rounded-2xl kaspi-frosted-surface flex flex-col justify-between gap-4">
             <div className="space-y-2">
-              <span className="px-2.5 py-1 rounded-md bg-white/10 text-zinc-200 text-[10px] font-bold uppercase">
+              <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[var(--kaspi-text-secondary)] text-[10px] font-bold uppercase">
                 Linux Desktop (x64)
               </span>
-              <h3 className="text-lg font-extrabold text-white">AppImage / Flatpak</h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
+              <h3 className="text-lg font-extrabold text-[var(--kaspi-text-primary)]">AppImage / Flatpak</h3>
+              <p className="text-xs text-[var(--kaspi-text-secondary)] leading-relaxed">
                 {isAr
                   ? "تشغيل مباشر على Ubuntu و Debian و Fedora و Arch بأداء عالٍ وعزل أمني متكامل."
                   : "Portable Linux packaging compatible with Ubuntu, Fedora, Debian & Arch desktops."}
@@ -756,7 +756,7 @@ console.log(completion.choices[0].message.content);`;
               href="/api/v1/heyuka/installer?platform=linux"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-extrabold flex items-center justify-center gap-2 transition-colors"
+              className="kaspi-glass-btn w-full py-2.5 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2"
             >
               <Terminal className="w-4 h-4" />
               <span>Linux Release Spec (AppImage)</span>
@@ -765,11 +765,11 @@ console.log(completion.choices[0].message.content);`;
         </div>
 
         {/* Unique Real API Key & Quickstart Row */}
-        <div id="heyuka-api-keys" className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-6 border-t border-white/10">
-          <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 space-y-4">
+        <div id="heyuka-api-keys" className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-6 border-t border-[var(--kaspi-border)]">
+          <div className="p-6 rounded-2xl kaspi-frosted-surface space-y-4">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <KeyRound className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-base font-bold text-[var(--kaspi-text-primary)] flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-emerald-500" />
                 <span>
                   {isAr
                     ? "توليد مفتاح API حقيقي وفريد لك (IPK)"
@@ -777,17 +777,17 @@ console.log(completion.choices[0].message.content);`;
                 </span>
               </h3>
               <Link
-                href={`/${locale}/zebra-x`}
-                className="text-xs font-bold text-emerald-400 hover:underline"
+                href={`/${locale}/zebra-x/debug`}
+                className="text-xs font-bold text-emerald-500 hover:underline"
               >
-                {isAr ? "استوديو المفاتيح الكامل →" : "Full Console →"}
+                {isAr ? "فاحص Debug الحي ←" : "Live Debugger →"}
               </Link>
             </div>
 
             {!authenticated ? (
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-400/30">
-                <div className="flex items-center gap-2 text-xs text-amber-100">
-                  <Lock className="w-4 h-4 text-amber-300 shrink-0" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl kaspi-glass-surface">
+                <div className="flex items-center gap-2 text-xs text-[var(--kaspi-text-secondary)]">
+                  <Lock className="w-4 h-4 text-amber-500 shrink-0" />
                   <span>
                     {isAr
                       ? "سجّل الدخول لتوليد مفتاح API فريد باسمك ونسخه مباشرة."
@@ -796,7 +796,7 @@ console.log(completion.choices[0].message.content);`;
                 </div>
                 <Link
                   href={`/${locale}/login?from=/${locale}/heyuka`}
-                  className="px-4 py-2 rounded-xl bg-white text-black text-xs font-extrabold shrink-0 text-center"
+                  className="kaspi-primary-cta-btn px-4 py-2 rounded-xl text-xs font-extrabold shrink-0 text-center"
                 >
                   {isAr ? "تسجيل الدخول" : "Sign In"}
                 </Link>
@@ -808,12 +808,12 @@ console.log(completion.choices[0].message.content);`;
                   value={newKeyLabel}
                   onChange={(e) => setNewKeyLabel(e.target.value)}
                   placeholder={isAr ? "اسم التطبيق أو الجهاز..." : "Key label (e.g. My Desktop App)"}
-                  className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-white/15 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-400"
+                  className="flex-1 px-3.5 py-2.5 rounded-xl kaspi-glass-surface text-xs text-[var(--kaspi-text-primary)] placeholder:text-[var(--kaspi-text-muted)] focus:outline-none"
                 />
                 <button
                   type="submit"
                   disabled={keyBusy}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-extrabold cursor-pointer shrink-0"
+                  className="kaspi-primary-cta-btn inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer shrink-0"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>{keyBusy ? "..." : isAr ? "إنشاء مفتاح فريد" : "Create Unique Key"}</span>
@@ -822,45 +822,45 @@ console.log(completion.choices[0].message.content);`;
             )}
 
             {keyError && (
-              <p className="text-xs text-red-300 bg-red-500/10 border border-red-400/30 rounded-xl p-2.5">
+              <p className="text-xs text-rose-500 kaspi-glass-surface rounded-xl p-2.5">
                 {keyError}
               </p>
             )}
 
             {generatedKeyOnce && (
-              <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-400/40 space-y-3">
+              <div className="p-4 rounded-xl kaspi-glass-surface space-y-3">
                 {generatedKeyId && (
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-zinc-200 font-semibold">
+                    <div className="flex items-center justify-between text-[11px] text-[var(--kaspi-text-secondary)] font-semibold">
                       <span>Key ID (X-API-Key-Id):</span>
                       <button
                         type="button"
                         onClick={() => void handleCopy("heyuka-key-id", generatedKeyId)}
-                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-white/15 hover:bg-white/25 text-white cursor-pointer"
+                        className="kaspi-glass-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded cursor-pointer"
                       >
-                        {copiedId === "heyuka-key-id" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        {copiedId === "heyuka-key-id" ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
                         <span>{copiedId === "heyuka-key-id" ? "Copied ✓" : "Copy ID"}</span>
                       </button>
                     </div>
-                    <code dir="ltr" className="block text-[11px] font-mono text-amber-200 break-all select-all">
+                    <code dir="ltr" className="block text-[11px] font-mono text-amber-500 break-all select-all">
                       {generatedKeyId}
                     </code>
                   </div>
                 )}
 
                 <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs text-emerald-200 font-bold">
+                  <div className="flex items-center justify-between text-xs text-emerald-500 font-bold">
                     <span>Secret API Key (shown once):</span>
                     <button
                       type="button"
                       onClick={() => void handleCopy("heyuka-key", generatedKeyOnce)}
-                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded bg-emerald-500 text-black cursor-pointer"
+                      className="kaspi-primary-cta-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded cursor-pointer"
                     >
                       {copiedId === "heyuka-key" ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                       <span>{copiedId === "heyuka-key" ? "Copied ✓" : "Copy Key"}</span>
                     </button>
                   </div>
-                  <code dir="ltr" className="block text-[11px] font-mono text-white break-all select-all">
+                  <code dir="ltr" className="block text-[11px] font-mono text-[var(--kaspi-text-primary)] break-all select-all">
                     {generatedKeyOnce}
                   </code>
                 </div>
@@ -869,29 +869,29 @@ console.log(completion.choices[0].message.content);`;
 
             {issuedKeys.length > 0 && (
               <div className="space-y-1.5 pt-1">
-                <p className="text-[11px] font-semibold text-zinc-400">
+                <p className="text-[11px] font-semibold text-[var(--kaspi-text-muted)]">
                   {isAr ? `المفاتيح النشطة (${issuedKeys.length}):` : `Active Keys (${issuedKeys.length}):`}
                 </p>
                 <div className="max-h-36 overflow-y-auto space-y-1 kaspi-no-scrollbar">
                   {issuedKeys.map((k) => (
                     <div
                       key={k.id}
-                      className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/10 text-[11px]"
+                      className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg kaspi-glass-surface text-[11px]"
                     >
                       <div className="min-w-0">
-                        <span className="font-semibold text-white">{k.label}</span>
-                        <div dir="ltr" className="font-mono text-[10px] text-amber-200 truncate">
+                        <span className="font-semibold text-[var(--kaspi-text-primary)]">{k.label}</span>
+                        <div dir="ltr" className="font-mono text-[10px] text-amber-500 truncate">
                           {k.id}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span dir="ltr" className="font-mono text-[10px] text-emerald-300">
+                        <span dir="ltr" className="font-mono text-[10px] text-emerald-500">
                           {k.prefix}••{k.last4}
                         </span>
                         <button
                           type="button"
                           onClick={() => void handleCopy(`kid-${k.id}`, k.id)}
-                          className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] text-white cursor-pointer"
+                          className="kaspi-glass-btn px-2 py-0.5 rounded text-[10px] cursor-pointer"
                         >
                           {copiedId === `kid-${k.id}` ? "✓" : "Copy ID"}
                         </button>
@@ -902,8 +902,8 @@ console.log(completion.choices[0].message.content);`;
               </div>
             )}
 
-            <div className="text-[11px] text-zinc-400 flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <div className="text-[11px] text-[var(--kaspi-text-muted)] flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
               <span>
                 {isAr
                   ? "كل مفتاح يُنشأ بمحتوى عشوائي فريد ولا يمكن تكراره أو استرجاعه بصيغته النصية لاحقاً."
@@ -912,18 +912,18 @@ console.log(completion.choices[0].message.content);`;
             </div>
           </div>
 
-          <div className="p-6 rounded-2xl bg-slate-900/95 border border-white/10 space-y-3 flex flex-col justify-between">
+          <div className="p-6 rounded-2xl kaspi-frosted-surface space-y-3 flex flex-col justify-between">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-bold text-zinc-200">
+              <p className="text-xs font-bold text-[var(--kaspi-text-primary)]">
                 Quickstart: Standard OpenAI-Compatible Client
               </p>
               <button
                 type="button"
                 onClick={() => void handleCopy("heyuka-quickstart", quickstartCode)}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] font-bold text-white cursor-pointer"
+                className="kaspi-glass-btn inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer"
               >
                 {copiedId === "heyuka-quickstart" ? (
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
                 ) : (
                   <Copy className="w-3.5 h-3.5" />
                 )}
@@ -932,16 +932,16 @@ console.log(completion.choices[0].message.content);`;
             </div>
             <pre
               dir="ltr"
-              className="text-[11px] font-mono text-emerald-300 overflow-x-auto leading-relaxed p-3 rounded-xl bg-black/40 border border-white/10"
+              className="text-[11px] font-mono text-emerald-500 overflow-x-auto leading-relaxed p-3 rounded-xl kaspi-glass-surface"
             >
               {quickstartCode}
             </pre>
             <button
               type="button"
               onClick={() => setWalkthroughOpen(true)}
-              className="w-full py-2.5 px-4 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 text-xs font-bold text-white cursor-pointer transition-colors flex items-center justify-center gap-2"
+              className="w-full kaspi-glass-btn py-2.5 px-4 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-center gap-2"
             >
-              <Layers className="w-4 h-4 text-emerald-400" />
+              <Layers className="w-4 h-4 text-emerald-500" />
               <span>
                 {isAr
                   ? "استعراض مراحل التحميل والربط الكاملة (Python / Node / cURL / OS)"

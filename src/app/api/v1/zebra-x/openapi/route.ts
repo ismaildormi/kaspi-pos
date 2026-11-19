@@ -1,48 +1,66 @@
-import { NextResponse } from "next/server";
+import {
+  apiJsonResponse,
+  createApiOptionsResponse,
+  createRequestId,
+} from "@/lib/zebra-x/api-response";
 import { PUBLIC_APIS_CATALOG_COUNT } from "@/lib/zebra-x/tools/public-apis-hub";
 
 export const dynamic = "force-dynamic";
 
+export async function OPTIONS() {
+  return createApiOptionsResponse();
+}
+
 export async function GET() {
-  return NextResponse.json({
-    openapi: "3.1.0",
-    info: {
-      title: "HEYUKA AI Platform API (KASPI)",
-      version: "12.0.0",
-      description:
-        "Unified OpenAI-compatible sovereign AI platform by KASPI for reasoning, multilingual chat completions, vision analysis, image synthesis, 3D workflows, audio processing, real-time web intelligence, and isolated code execution.",
-    },
-    servers: [{ url: "/" }],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "hk-live-...",
-        },
-        keyIdHeader: {
-          type: "apiKey",
-          in: "header",
-          name: "X-API-Key-Id",
+  const requestId = createRequestId();
+  return apiJsonResponse(
+    {
+      openapi: "3.1.0",
+      info: {
+        title: "HEYUKA AI Platform API (KASPI)",
+        version: "15.0.0",
+        description:
+          "Unified OpenAI-compatible sovereign AI platform by KASPI for reasoning, multilingual chat completions, vision analysis, image synthesis, 3D workflows, audio processing, real-time web intelligence, and isolated code execution.",
+      },
+      servers: [{ url: "/" }],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "hk-live-...",
+          },
+          keyIdHeader: {
+            type: "apiKey",
+            in: "header",
+            name: "X-API-Key-Id",
+          },
         },
       },
-    },
-    security: [{ bearerAuth: [] }],
-    "x-zebra-platform": {
-      owner: "KASPI",
-      models: ["heyuka-omni", "heyuka-core", "heyuka-vision"],
-      noKeyPublicApisCount: PUBLIC_APIS_CATALOG_COUNT,
-      openaiCompatible: true,
-    },
-    paths: {
-      "/api/v1/models": {
-        get: {
-          operationId: "listHeyukaModels",
-          summary: "List available HEYUKA Sovereign AI models and live platform capabilities.",
-          responses: { "200": { description: "OpenAI-compatible model catalog JSON" } },
-        },
+      security: [{ bearerAuth: [] }],
+      "x-zebra-platform": {
+        owner: "KASPI",
+        models: ["heyuka-omni", "heyuka-core", "heyuka-vision"],
+        noKeyPublicApisCount: PUBLIC_APIS_CATALOG_COUNT,
+        openaiCompatible: true,
+        debugEndpoint: "/api/v1/debug",
       },
-      "/api/v1/chat/completions": {
+      paths: {
+        "/api/v1/models": {
+          get: {
+            operationId: "listHeyukaModels",
+            summary: "List available HEYUKA Sovereign AI models and live platform capabilities.",
+            responses: { "200": { description: "OpenAI-compatible model catalog JSON" } },
+          },
+        },
+        "/api/v1/debug": {
+          get: {
+            operationId: "debugApiKeyDiagnostics",
+            summary: "Verify API key validity, Key ID match, active scopes, and gateway health.",
+            responses: { "200": { description: "Live gateway & API key diagnostics JSON" } },
+          },
+        },
+        "/api/v1/chat/completions": {
         post: {
           operationId: "createChatCompletion",
           summary:

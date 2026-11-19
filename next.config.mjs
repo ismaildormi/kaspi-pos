@@ -71,6 +71,32 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: "/api/v1/(models|debug|chat/:path*|public-apis|sandbox/:path*|web/:path*|images/:path*|vision/:path*|3d/:path*|audio/:path*|zebra-x/openapi|zebra-x/auto-connect)",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Methods", value: "GET, POST, OPTIONS" },
+          {
+            key: "Access-Control-Allow-Headers",
+            value:
+              "Authorization, Content-Type, X-API-Key, X-API-Key-Id, api-key, x-goog-api-key, OpenAI-Organization, x-request-id",
+          },
+          { key: "Cross-Origin-Resource-Policy", value: "cross-origin" },
+        ],
+      },
+      {
+        source: "/v1/:path*",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Methods", value: "GET, POST, OPTIONS" },
+          {
+            key: "Access-Control-Allow-Headers",
+            value:
+              "Authorization, Content-Type, X-API-Key, X-API-Key-Id, api-key, x-goog-api-key, OpenAI-Organization, x-request-id",
+          },
+          { key: "Cross-Origin-Resource-Policy", value: "cross-origin" },
+        ],
+      },
     ];
   },
   webpack: (config, { isServer, webpack }) => {

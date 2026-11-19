@@ -1,5 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { authenticateXZebraRequest } from "@/lib/zebra-x/api-auth";
+import {
+  apiErrorResponse,
+  apiJsonResponse,
+  createApiOptionsResponse,
+  createRequestId,
+} from "@/lib/zebra-x/api-response";
 import {
   discoverOpenApiSpec,
   registerWebhookOrMcpConnector,
@@ -7,16 +13,30 @@ import {
 
 export const dynamic = "force-dynamic";
 
+export async function OPTIONS() {
+  return createApiOptionsResponse();
+}
+
 export async function POST(req: NextRequest) {
+  const requestId = createRequestId();
   const auth = await authenticateXZebraRequest(req, "connector:discover");
   if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+    return apiErrorResponse({
+      status: auth.status,
+      message: auth.error,
+      type: auth.status === 403 ? "permission_error" : "authentication_error",
+      requestId,
+    });
   }
 
   const body = await req.json().catch(() => ({}));
   if (body?.specUrl) {
     const res = await discoverOpenApiSpec(String(body.specUrl));
-    return NextResponse.json(res, { status: res.ok ? 200 : 400 });
+    return apiJsonResponse(
+      { ...res, requestId },
+      res.ok ? 200 : 400,
+      { "X-Request-Id": requestId }
+    );
   }
 
   if (body?.endpointUrl && body?.name) {
@@ -26,11 +46,17 @@ export async function POST(req: NextRequest) {
       name: String(body.name),
       endpointUrl: String(body.endpointUrl),
     });
-    return NextResponse.json(res, { status: res.ok ? 200 : 400 });
+    return apiJsonResponse(
+      { ...res, requestId },
+      res.ok ? 200 : 400,
+      { "X-Request-Id": requestId }
+    );
   }
 
-  return NextResponse.json(
-    { error: "Provide 'specUrl' (OpenAPI/Swagger JSON) or '{ kind, name, endpointUrl }'." },
-    { status: 400 }
-  );
+  return apiErrorResponse({
+    status: 400,
+    message: "Provide 'specUrl' (OpenAPI/Swagger JSON) or '{ kind, name, endpointUrl }'.",
+    type: "invalid_request_error",
+    requestId,
+  });
 }

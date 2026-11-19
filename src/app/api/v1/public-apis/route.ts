@@ -1,5 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { authenticateXZebraRequest } from "@/lib/zebra-x/api-auth";
+import {
+  apiErrorResponse,
+  apiJsonResponse,
+  createApiOptionsResponse,
+  createRequestId,
+} from "@/lib/zebra-x/api-response";
 import {
   PUBLIC_APIS_CATALOG_COUNT,
   queryPublicApiHub,
@@ -14,6 +20,10 @@ import {
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 45;
+
+export async function OPTIONS() {
+  return createApiOptionsResponse();
+}
 
 const VALID_CATEGORIES = new Set<PublicApiCategory>([
   "openfoodfacts",
@@ -53,24 +63,35 @@ const VALID_CATEGORIES = new Set<PublicApiCategory>([
 ]);
 
 export async function GET(req: NextRequest) {
+  const requestId = createRequestId();
   const mode = req.nextUrl.searchParams.get("catalog");
   if (mode === "universe") {
-    return NextResponse.json({
-      ok: true,
-      owner: "KASPI",
-      platform: "HEYUKA Unified Zero-Key Arsenal",
-      noKeyCategoriesCount: PUBLIC_APIS_CATALOG_COUNT,
-      categories: Array.from(VALID_CATEGORIES),
-      cosmicDomains: HEYUKA_COSMIC_DOMAINS,
-      cyberDefenseFeeds: HEYUKA_CYBER_DEFENSE_FEEDS,
-      cloudFleetGateways: HEYUKA_CLOUD_FLEET_GATEWAYS,
-      memoryTiers: HEYUKA_ARCHITECTURAL_STACK.fiveTierHybridMemory,
-    });
+    return apiJsonResponse(
+      {
+        ok: true,
+        requestId,
+        owner: "KASPI",
+        platform: "HEYUKA Unified Zero-Key Arsenal",
+        noKeyCategoriesCount: PUBLIC_APIS_CATALOG_COUNT,
+        categories: Array.from(VALID_CATEGORIES),
+        cosmicDomains: HEYUKA_COSMIC_DOMAINS,
+        cyberDefenseFeeds: HEYUKA_CYBER_DEFENSE_FEEDS,
+        cloudFleetGateways: HEYUKA_CLOUD_FLEET_GATEWAYS,
+        memoryTiers: HEYUKA_ARCHITECTURAL_STACK.fiveTierHybridMemory,
+      },
+      200,
+      { "X-Request-Id": requestId }
+    );
   }
 
   const auth = await authenticateXZebraRequest(req, "public-apis:query");
   if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+    return apiErrorResponse({
+      status: auth.status,
+      message: auth.error,
+      type: auth.status === 403 ? "permission_error" : "authentication_error",
+      requestId,
+    });
   }
 
   const category = (req.nextUrl.searchParams.get("category") || "fx_rates") as PublicApiCategory;
@@ -80,23 +101,36 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(Number(req.nextUrl.searchParams.get("limit") || 8) || 8, 25);
 
   if (!VALID_CATEGORIES.has(category)) {
-    return NextResponse.json(
-      { error: "Unsupported category", availableCategories: Array.from(VALID_CATEGORIES) },
-      { status: 400 }
-    );
+    return apiErrorResponse({
+      status: 400,
+      message: `Unsupported category '${category}'. Available: ${Array.from(VALID_CATEGORIES).slice(0, 8).join(", ")}...`,
+      type: "invalid_request_error",
+      requestId,
+    });
   }
 
   const result = await queryPublicApiHub({ category, query, base, lang, limit });
-  return NextResponse.json({
-    ...result,
-    auth: { mode: auth.authMode, keyId: auth.keyId || null, tenantId: auth.tenantId },
-  });
+  return apiJsonResponse(
+    {
+      ...result,
+      requestId,
+      auth: { mode: auth.authMode, keyId: auth.keyId || null, tenantId: auth.tenantId },
+    },
+    200,
+    { "X-Request-Id": requestId }
+  );
 }
 
 export async function POST(req: NextRequest) {
+  const requestId = createRequestId();
   const auth = await authenticateXZebraRequest(req, "public-apis:query");
   if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+    return apiErrorResponse({
+      status: auth.status,
+      message: auth.error,
+      type: auth.status === 403 ? "permission_error" : "authentication_error",
+      requestId,
+    });
   }
 
   const body = await req.json().catch(() => ({}));
@@ -104,13 +138,12 @@ export async function POST(req: NextRequest) {
   const query = String(body?.query || body?.q || "").trim();
 
   if (!VALID_CATEGORIES.has(category) || !query) {
-    return NextResponse.json(
-      {
-        error: "Provide valid 'category' and non-empty 'query'.",
-        availableCategories: Array.from(VALID_CATEGORIES),
-      },
-      { status: 400 }
-    );
+    return apiErrorResponse({
+      status: 400,
+      message: "Provide valid 'category' and non-empty 'query'.",
+      type: "invalid_request_error",
+      requestId,
+    });
   }
 
   const result = await queryPublicApiHub({
@@ -121,8 +154,13 @@ export async function POST(req: NextRequest) {
     limit: typeof body?.limit === "number" ? Math.min(body.limit, 25) : 8,
   });
 
-  return NextResponse.json({
-    ...result,
-    auth: { mode: auth.authMode, keyId: auth.keyId || null, tenantId: auth.tenantId },
-  });
+  return apiJsonResponse(
+    {
+      ...result,
+      requestId,
+      auth: { mode: auth.authMode, keyId: auth.keyId || null, tenantId: auth.tenantId },
+    },
+    200,
+    { "X-Request-Id": requestId }
+  );
 }

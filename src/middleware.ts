@@ -38,6 +38,7 @@ const PUBLIC_API_PATHS = [
   "/api/v1/3d/assets",
   "/api/v1/heyuka/installer",
   "/api/v1/models",
+  "/api/v1/debug",
   "/healthz",
   "/readyz",
 ];
@@ -62,6 +63,31 @@ export async function middleware(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
+
+  // 0. Rewrite OpenAI root baseURL aliases (`/v1/*` -> `/api/v1/*`) & serve instant CORS preflight
+  const normalizedApiPath = pathname.startsWith("/v1/") || pathname === "/v1"
+    ? `/api${pathname}`
+    : pathname;
+
+  if (request.method === "OPTIONS" && normalizedApiPath.startsWith("/api/v1/")) {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers":
+          "Authorization, Content-Type, X-API-Key, X-API-Key-Id, api-key, x-goog-api-key, OpenAI-Organization, x-request-id",
+        "Cross-Origin-Resource-Policy": "cross-origin",
+        "Access-Control-Max-Age": "86400",
+      },
+    });
+  }
+
+  if (pathname.startsWith("/v1/") || pathname === "/v1") {
+    const rewriteUrl = request.nextUrl.clone();
+    rewriteUrl.pathname = `/api${pathname}`;
+    return applySecurityHeaders(NextResponse.rewrite(rewriteUrl));
+  }
 
   // 1. Bypass static assets, public download routes, desktop launch bridge, and next internals
   if (
@@ -150,7 +176,10 @@ export async function middleware(request: NextRequest) {
     request.cookies.get(NEXTAUTH_SECURE_COOKIE)?.value;
 
   const authHeader = request.headers.get("authorization");
-  const apiKeyHeader = request.headers.get("x-api-key");
+  const apiKeyHeader =
+    request.headers.get("x-api-key") ||
+    request.headers.get("api-key") ||
+    request.headers.get("x-goog-api-key");
   const hasAuth = Boolean(
     sessionToken ||
       /^Bearer\s+/i.test(authHeader || "") ||
@@ -210,11 +239,23 @@ export async function middleware(request: NextRequest) {
           {
             error: {
               code: "UNAUTHORIZED",
+              type: "authentication_error",
               message: "Authentication required to access tenant resources",
+              debug_hint:
+                "Send Authorization: Bearer hk-live-..., X-API-Key: hk-live-..., or api-key: hk-live-...",
               request_id: crypto.randomUUID(),
             },
           },
-          { status: 401 }
+          {
+            status: 401,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+              "Access-Control-Allow-Headers":
+                "Authorization, Content-Type, X-API-Key, X-API-Key-Id, api-key, x-goog-api-key, OpenAI-Organization, x-request-id",
+              "Cross-Origin-Resource-Policy": "cross-origin",
+            },
+          }
         )
       );
     }

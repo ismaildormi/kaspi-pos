@@ -1,13 +1,29 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { authenticateXZebraRequest } from "@/lib/zebra-x/api-auth";
+import {
+  apiErrorResponse,
+  apiJsonResponse,
+  createApiOptionsResponse,
+  createRequestId,
+} from "@/lib/zebra-x/api-response";
 import { executeRemoveBgTask } from "@/lib/zebra-x/sidecar-bridge";
 
 export const dynamic = "force-dynamic";
 
+export async function OPTIONS() {
+  return createApiOptionsResponse();
+}
+
 export async function POST(req: NextRequest) {
+  const requestId = createRequestId();
   const auth = await authenticateXZebraRequest(req, "vision:remove-bg");
   if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+    return apiErrorResponse({
+      status: auth.status,
+      message: auth.error,
+      type: auth.status === 403 ? "permission_error" : "authentication_error",
+      requestId,
+    });
   }
 
   const contentType = req.headers.get("content-type") || "";
@@ -36,18 +52,22 @@ export async function POST(req: NextRequest) {
   }
 
   if (!imageUrl && !imageBase64) {
-    return NextResponse.json(
-      { error: "Provide an uploaded 'file'/'image' or JSON 'imageUrl'/'imageBase64'." },
-      { status: 400 }
-    );
+    return apiErrorResponse({
+      status: 400,
+      message: "Provide an uploaded 'file'/'image' or JSON 'imageUrl'/'imageBase64'.",
+      type: "invalid_request_error",
+      requestId,
+    });
   }
 
   const result = await executeRemoveBgTask({ imageUrl, imageBase64, model });
-  return NextResponse.json(
+  return apiJsonResponse(
     {
       ...result,
+      requestId,
       authMode: auth.authMode,
     },
-    { status: result.ok ? 200 : 400 }
+    result.ok ? 200 : 400,
+    { "X-Request-Id": requestId }
   );
 }
