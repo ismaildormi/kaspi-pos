@@ -78,7 +78,7 @@
     "next-intl": "^4.14.9",
     "nodemailer": "^10.3.1",
     "onnxruntime-web": "^1.21.0",
-    "papaparse": "^5.7.0",
+    "papaparse": "^5.7.1",
     "pdfjs-dist": "^6.5.438",
     "pdfmake": "^0.3.14",
     "pptxgenjs": "^4.0.1",
