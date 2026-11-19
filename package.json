@@ -24,7 +24,7 @@
     "@types/suncalc": "^1.9.2",
     "autoprefixer": "^10.6.2",
     "postcss": "^8.5.32",
-    "prisma": "^6.19.3",
+    "prisma": "^7.10.1",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3"
