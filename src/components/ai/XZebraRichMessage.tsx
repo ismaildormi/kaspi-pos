@@ -16,6 +16,7 @@ import {
   Loader2,
   Presentation,
   Printer,
+  Scissors,
   ShieldAlert,
   XCircle,
 } from "lucide-react";
@@ -570,7 +571,7 @@ function OfficeExportCard({
         <div className="min-w-0">
           <p className="text-[11px] font-bold text-white truncate">{payload.title}</p>
           <p className="text-[10px] text-zinc-400">
-            {doneFile ? `✓ ${doneFile}` : `${label} • HEYUKA Office Export`}
+            {doneFile ? `Exported ${doneFile}` : `${label} • HEYUKA Office Export`}
           </p>
         </div>
       </div>
@@ -880,7 +881,7 @@ function GeneratedImageCard({
               className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-zinc-100 text-[10px] font-semibold cursor-pointer disabled:opacity-50"
               title={isAr ? "تفريغ الخلفية" : "Remove Background"}
             >
-              {cutting ? <Loader2 className="w-3 h-3 animate-spin" /> : <span>✂</span>}
+              {cutting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Scissors className="w-3 h-3" />}
               <span>{isAr ? "تفريغ" : "Cutout"}</span>
             </button>
           )}

@@ -988,7 +988,7 @@ export function AIChatWidget() {
       return {
         handled: true,
         text: `${
-          isAr ? "✅ تمت إزالة الخلفية محلياً بنجاح:" : "✅ Background removed locally:"
+          isAr ? "تمت إزالة الخلفية محلياً بنجاح:" : "Background removed locally:"
         }\n[KASPI_MEDIA_IMAGE:${cutout.dataUrl}|${attachedFile.name.replace(/\.[^.]+$/, "")}-cutout.png]`,
       };
     }
@@ -1002,7 +1002,7 @@ export function AIChatWidget() {
       return {
         handled: true,
         text: ocr.text
-          ? `${isAr ? `📄 **النص المستخرج (${ocr.confidence}%):**` : `📄 **Extracted Text (${ocr.confidence}%):**`}\n\n${ocr.text}`
+          ? `${isAr ? `**النص المستخرج (${ocr.confidence}%):**` : `**Extracted Text (${ocr.confidence}%):**`}\n\n${ocr.text}`
           : isAr
           ? "لم يُعثر على نص واضح داخل الصورة."
           : "No readable text detected in this image.",
@@ -1018,7 +1018,7 @@ export function AIChatWidget() {
       return {
         handled: true,
         text: decoded.found
-          ? `${isAr ? "✅ **نتيجة قراءة الباركود:**" : "✅ **Barcode Decoded:**"}\n- **Format:** \`${decoded.format}\`\n- **Code:** \`${decoded.text}\``
+          ? `${isAr ? "**نتيجة قراءة الباركود:**" : "**Barcode Decoded:**"}\n- **Format:** \`${decoded.format}\`\n- **Code:** \`${decoded.text}\``
           : isAr
           ? "لم أتمكن من قراءة باركود أو QR واضح داخل الصورة."
           : "Could not detect a clear QR or barcode inside this image.",
@@ -1039,7 +1039,7 @@ export function AIChatWidget() {
         .join("\n\n");
       return {
         handled: true,
-        text: `${isAr ? "📐 **تم تجهيز مقاسات السوشيال ميديا:**" : "📐 **Ready-to-Post Social Sizes:**"}\n\n${cards}`,
+        text: `${isAr ? "**تم تجهيز مقاسات السوشيال ميديا:**" : "**Ready-to-Post Social Sizes:**"}\n\n${cards}`,
       };
     }
 
@@ -1052,7 +1052,7 @@ export function AIChatWidget() {
       const rows = colors.map((c) => `| \`${c.hex}\` | ${c.sharePercent}% |`).join("\n");
       return {
         handled: true,
-        text: `${isAr ? "🎨 **لوحة الألوان المستخرجة:**" : "🎨 **Extracted Color Palette:**"}\n\n| Hex | Share |\n| --- | --- |\n${rows}`,
+        text: `${isAr ? "**لوحة الألوان المستخرجة:**" : "**Extracted Color Palette:**"}\n\n| Hex | Share |\n| --- | --- |\n${rows}`,
       };
     }
 
@@ -1085,7 +1085,7 @@ export function AIChatWidget() {
         }).catch(() => {});
         return {
           handled: true,
-          text: `${isAr ? "🎨 صورة المنتج المولدة:" : "🎨 Generated Product Photo:"}\n[KASPI_MEDIA_IMAGE:${displayUrl}|generated-product.png]`,
+          text: `${isAr ? "صورة المنتج المولدة:" : "Generated Product Photo:"}\n[KASPI_MEDIA_IMAGE:${displayUrl}|generated-product.png]`,
         };
       }
     }
@@ -1112,7 +1112,7 @@ export function AIChatWidget() {
           .join("\n");
         return {
           handled: true,
-          text: `${isAr ? "🔍 صور حقيقية من الويب:" : "🔍 Web Product Photos:"}\n${cards}`,
+          text: `${isAr ? "صور حقيقية من الويب:" : "Web Product Photos:"}\n${cards}`,
         };
       }
     }
@@ -1158,10 +1158,10 @@ export function AIChatWidget() {
     }
 
     return targetLocale === "ar"
-      ? "⚠️ تعذر الوصول مؤقتاً إلى الخادم أو النواة المحلية لـ HEYUKA. تحقق من اتصال الإنترنت أو شغّل النواة المحلية."
+      ? "تعذر الوصول مؤقتاً إلى الخادم أو النواة المحلية لـ HEYUKA. تحقق من اتصال الإنترنت أو شغّل النواة المحلية."
       : targetLocale === "fr"
-      ? "⚠️ Le noyau cloud et le relais local HEYUKA sont momentanément indisponibles. Vérifiez votre connexion."
-      : "⚠️ Both cloud and local HEYUKA nodes are currently unreachable. Please check your connection.";
+      ? "Le noyau cloud et le relais local HEYUKA sont momentanément indisponibles. Vérifiez votre connexion."
+      : "Both cloud and local HEYUKA nodes are currently unreachable. Please check your connection.";
   };
 
   // Auto-scroll to bottom of chat when new tokens or messages arrive
@@ -1806,7 +1806,7 @@ export function AIChatWidget() {
             <div
               className={
                 isExpanded
-                  ? "relative w-full h-full backdrop-blur-2xl bg-slate-950/80 border border-white/15 rounded-3xl shadow-2xl flex overflow-hidden"
+                  ? "relative w-full h-full kaspi-opaque-glass-modal border border-[var(--kaspi-border-glass)] rounded-3xl shadow-2xl flex overflow-hidden"
                   : "relative w-full h-[590px] max-h-[calc(100vh-4.5rem)] kaspi-polar-aurora-orbit kaspi-ai-assistant-shield rounded-2xl shadow-2xl flex overflow-hidden"
               }
             >
@@ -2031,7 +2031,15 @@ export function AIChatWidget() {
                             : "bg-amber-500/15 border-amber-400/35 text-amber-200 animate-pulse"
                         }`}
                       >
-                        <span>{tk.status === "completed" ? "✓" : "⏳"}</span>
+                        <span>
+                          {tk.status === "completed" ? (
+                            <svg className="w-3 h-3 text-emerald-500 inline" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2">
+                              <path d="M3 8.5l3.5 3.5L13 4.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          ) : (
+                            <span className="inline-block w-2.5 h-2.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                          )}
+                        </span>
                         <span className="truncate">{tk.label}</span>
                       </span>
                     ))}
@@ -2044,8 +2052,8 @@ export function AIChatWidget() {
                 onScroll={handleScroll}
                 className="relative flex-1 overflow-y-auto overflow-x-hidden kaspi-no-scrollbar p-3.5 space-y-3"
               >
-                {/* Vector Doodle Wallpaper Layer */}
-                <div className="pointer-events-none absolute inset-0 overflow-hidden z-0 select-none text-[var(--kaspi-text-primary)]">
+                {/* Vector Doodle Wallpaper Layer (disabled in clean full-screen mode) */}
+                <div className={`pointer-events-none absolute inset-0 overflow-hidden z-0 select-none text-[var(--kaspi-text-primary)] ${isExpanded ? "hidden" : ""}`}>
                   <svg
                     className="w-full h-full opacity-[0.04]"
                     xmlns="http://www.w3.org/2000/svg"
@@ -2170,15 +2178,19 @@ export function AIChatWidget() {
                           }`}
                         >
                           {!isUser && (
-                            <div className="w-7 h-7 rounded-full bg-zinc-900/90 backdrop-blur-md border border-zinc-800 flex items-center justify-center shrink-0 mt-0.5">
+                            <div className="w-7 h-7 rounded-full kaspi-glass-surface border border-[var(--kaspi-border-glass)] flex items-center justify-center shrink-0 mt-0.5">
                               <Bot className="w-3.5 h-3.5 text-emerald-400" />
                             </div>
                           )}
                           <div
-                            className={`group relative max-w-[85%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed ${
-                              isUser
-                                ? "bg-white text-black font-medium rounded-tr-none shadow-xs text-start"
-                                : "bg-zinc-900/95 backdrop-blur-md border border-zinc-800/80 text-zinc-200 rounded-tl-none shadow-xs text-start"
+                            className={`group relative leading-relaxed text-start ${
+                              isExpanded
+                                ? isUser
+                                  ? "max-w-[78%] px-4 py-2.5 rounded-2xl kaspi-frosted-surface border border-[var(--kaspi-border-glass)] text-[var(--kaspi-text-primary)] text-sm font-medium shadow-xs"
+                                  : "w-full max-w-3xl px-1 py-2 bg-transparent border-0 text-[var(--kaspi-text-primary)] text-[14px] leading-7"
+                                : isUser
+                                  ? "max-w-[85%] px-3.5 py-2.5 rounded-2xl text-xs bg-[var(--kaspi-text-primary)] text-[var(--kaspi-bg-primary)] font-medium rounded-tr-none shadow-xs"
+                                  : "max-w-[85%] px-3.5 py-2.5 rounded-2xl text-xs kaspi-frosted-surface border border-[var(--kaspi-border-glass)] text-[var(--kaspi-text-primary)] rounded-tl-none shadow-xs"
                             }`}
                           >
                             {/* File/Image attachments */}
@@ -2316,7 +2328,7 @@ export function AIChatWidget() {
                                 )}
                                 {messageFeedback[m.id] && (
                                   <span className="text-[10px] text-zinc-400 animate-in fade-in">
-                                    {messageFeedback[m.id] === "up" ? "👍 " + t.goodResponse : "👎 " + t.badResponse}
+                                    {messageFeedback[m.id] === "up" ? t.goodResponse : t.badResponse}
                                   </span>
                                 )}
                               </div>
@@ -2332,7 +2344,7 @@ export function AIChatWidget() {
                       <div className="w-7 h-7 rounded-full bg-white/[0.08] backdrop-blur-md border border-white/15 flex items-center justify-center shrink-0">
                         <img src="/logo-mark.png" alt="HEYUKA" className="w-4 h-4 object-contain animate-pulse" />
                       </div>
-                      <div className="bg-zinc-900/95 backdrop-blur-md border border-emerald-500/30 text-zinc-300 px-3 py-2 rounded-2xl rounded-tl-none text-xs flex items-center gap-2 shadow-xs">
+                      <div className="kaspi-frosted-surface border border-emerald-500/30 text-[var(--kaspi-text-primary)] px-3 py-2 rounded-2xl rounded-tl-none text-xs flex items-center gap-2 shadow-xs">
                         <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400 shrink-0" />
                         <span className="truncate">
                           {thinkingElapsedSec < 3
@@ -2354,7 +2366,7 @@ export function AIChatWidget() {
                   )}
 
                   {sdkError && localFallbackMessages.length === 0 && (
-                    <div className="p-3 rounded-xl bg-zinc-900/90 backdrop-blur-md border border-zinc-800 text-zinc-300 text-xs flex items-center justify-between">
+                    <div className="p-3 rounded-xl kaspi-frosted-surface border border-[var(--kaspi-border-glass)] text-[var(--kaspi-text-primary)] text-xs flex items-center justify-between">
                       <span>{t.error}</span>
                       <button
                         type="button"
@@ -2376,7 +2388,7 @@ export function AIChatWidget() {
                 <button
                   type="button"
                   onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
-                  className="absolute bottom-16 start-1/2 -translate-x-1/2 z-20 w-7 h-7 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-zinc-700/80 shadow-lg flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
+                  className="kaspi-glass-btn absolute bottom-16 start-1/2 -translate-x-1/2 z-20 w-7 h-7 rounded-full text-[var(--kaspi-text-primary)] shadow-lg flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
                   title={t.scrollToBottom}
                   aria-label={t.scrollToBottom}
                 >
@@ -2398,7 +2410,7 @@ export function AIChatWidget() {
                     className={
                       isExpanded
                         ? "mb-2 px-3.5 py-2 rounded-2xl bg-white/[0.06] border border-white/15 backdrop-blur-xl flex items-center justify-between gap-2"
-                        : "px-3 py-2 bg-zinc-900 border-t border-zinc-800 flex items-center justify-between gap-2"
+                        : "px-3 py-2 kaspi-frosted-surface border-t border-[var(--kaspi-border-glass)] flex items-center justify-between gap-2"
                     }
                   >
                     <div className="flex items-center gap-2 overflow-hidden text-xs text-zinc-300">
@@ -2429,14 +2441,14 @@ export function AIChatWidget() {
                 {/* 
                   ChatGPT-Style Voice & Input Bar in KASPI Emerald Identity:
                   - Active Voice Recording State (Image 3): (X) Cancel, Animated Waveform Dots, [■] Stop, [↑] Submit
-                  - Inactive Input State (Image 4): [+] Attach, Rounded Pill, [🎤] Mic, Circular [↑] Submit
+                  - Inactive Input State: [+] Attach, Rounded Pill, Mic, Circular [↑] Submit
                 */}
                 {isListening ? (
                   <div
                     className={
                       isExpanded
-                        ? "p-3 px-4 rounded-2xl border border-emerald-500/35 bg-slate-900/90 backdrop-blur-2xl shadow-xl flex items-center justify-between gap-3 shrink-0"
-                        : "p-2.5 px-4 bg-zinc-950/95 backdrop-blur-xl border-t border-emerald-500/30 flex items-center justify-between gap-3 shrink-0"
+                        ? "p-3 px-4 rounded-2xl border border-emerald-500/35 kaspi-frosted-surface backdrop-blur-2xl shadow-xl flex items-center justify-between gap-3 shrink-0"
+                        : "p-2.5 px-4 kaspi-frosted-surface backdrop-blur-xl border-t border-emerald-500/30 flex items-center justify-between gap-3 shrink-0"
                     }
                   >
                   {/* Left: Cancel button (X) */}
@@ -2446,7 +2458,7 @@ export function AIChatWidget() {
                       toggleListening();
                       setInput("");
                     }}
-                    className="w-8 h-8 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                    className="w-8 h-8 rounded-full kaspi-glass-btn text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)] flex items-center justify-center transition-colors cursor-pointer shrink-0"
                     title={t.cancelVoice}
                     aria-label={t.cancelVoice}
                   >
@@ -2479,7 +2491,7 @@ export function AIChatWidget() {
                   <button
                     type="button"
                     onClick={() => finishVoiceInputAndTranscribe(false)}
-                    className="w-8 h-8 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-xs"
+                    className="w-8 h-8 rounded-full kaspi-glass-btn text-[var(--kaspi-text-primary)] flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-xs"
                     title={t.voiceStop}
                     aria-label={t.voiceStop}
                   >
@@ -2537,7 +2549,7 @@ export function AIChatWidget() {
                     className={
                       isExpanded
                         ? "p-2.5 px-3.5 rounded-2xl border border-white/15 bg-white/[0.05] backdrop-blur-2xl shadow-xl flex items-center gap-2.5 shrink-0"
-                        : "p-2.5 px-3 border-t border-white/10 flex items-center gap-2 shrink-0 bg-zinc-950/80 backdrop-blur-md"
+                        : "p-2.5 px-3 border-t border-[var(--kaspi-border-glass)] flex items-center gap-2 shrink-0 kaspi-frosted-surface backdrop-blur-md"
                     }
                   >
                     <input
@@ -2560,7 +2572,7 @@ export function AIChatWidget() {
                       <Plus className="w-4 h-4" />
                     </button>
 
-                    {/* Center: Text Input Pill with [🎤] Mic on the right inside */}
+                    {/* Center: Text Input Pill with Mic on the right inside */}
                     <div className="flex-1 relative flex items-center">
                       <textarea
                         ref={composerTextareaRef}
@@ -2581,10 +2593,10 @@ export function AIChatWidget() {
                         onPaste={handleComposerPaste}
                         placeholder={t.inputPlaceholder}
                         disabled={isLoading}
-                        className="w-full ps-3.5 pe-9 py-2 text-xs kaspi-translucent-input rounded-2xl focus:outline-none transition-all placeholder-zinc-500 bg-zinc-900/90 border border-zinc-700/60 text-zinc-100 focus:border-emerald-500/60 resize-none max-h-36 overflow-y-auto kaspi-no-scrollbar leading-5"
+                        className="w-full ps-3.5 pe-9 py-2 text-xs kaspi-translucent-input rounded-2xl focus:outline-none transition-all placeholder:text-[var(--kaspi-text-muted)] border border-[var(--kaspi-border-glass)] text-[var(--kaspi-text-primary)] focus:border-emerald-500/60 resize-none max-h-36 overflow-y-auto kaspi-no-scrollbar leading-5"
                       />
 
-                      {/* Right inside: Voice Mic Button [🎤] */}
+                      {/* Right inside: Voice Mic Button */}
                       <button
                         type="button"
                         onClick={toggleListening}

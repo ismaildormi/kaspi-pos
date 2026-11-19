@@ -1,27 +1,128 @@
 {
-  "name": "@kaspi/heyuka-desktop",
-  "version": "10.0.0",
+  "name": "heyuka-desktop",
   "private": true,
-  "description": "HEYUKA Desktop OS by KASPI — 60 FPS WebGL2/GPGPU Companion, Ghost Cursor OS Automation, Adobe/Blender Bridges, TripoSR & Python Swarm.",
-  "author": "KASPI",
-  "main": "electron/main.cjs",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "HEYUKA by KASPI — Interactive 3D WebGL2/GPGPU fur physics & autonomous desktop AI companion.",
+  "main": "electron/main.js",
   "scripts": {
-    "electron:start": "electron .",
-    "package:win": "electron-builder --win nsis portable appx",
-    "package:mac": "electron-builder --mac dmg zip",
-    "package:linux": "electron-builder --linux AppImage flatpak snap"
+    "predev": "[ -d node_modules/.bin ] || bun install || npm install",
+    "dev": "tsx server.ts",
+    "prebuild": "[ -d node_modules/.bin ] || bun install || npm install",
+    "build": "vite build",
+    "prelint": "[ -d node_modules/.bin ] || bun install || npm install",
+    "lint": "tsc --noEmit",
+    "start": "node server.ts",
+    "postinstall": "vite build || true",
+    "electron:dev": "electron .",
+    "electron:build": "playwright install && npm run build && electron-builder --win --x64",
+    "build:win": "vite build && electron-builder --win",
+    "build:mac": "vite build && electron-builder --mac",
+    "build:mas": "vite build && electron-builder --mac mas",
+    "build:ms-store": "vite build && electron-builder --win appx",
+    "build:linux": "vite build && electron-builder --linux AppImage flatpak snap",
+    "build:itch": "vite build && electron-builder --win portable --mac zip --linux AppImage",
+    "playwright:install": "playwright install",
+    "doctor": "node scripts/nevea-doctor.js",
+    "test": "node adversarial_assessor.js"
+  },
+  "dependencies": {
+    "@google/genai": "^2.4.0",
+    "@supabase/supabase-js": "^2.118.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^6.1.1",
+    "axios": "^1.21.0",
+    "chokidar": "^6.0.0",
+    "electron-store": "^12.0.0",
+    "electron-updater": "^6.8.11",
+    "express": "^5.3.0",
+    "firebase": "^13.1.0",
+    "firebase-admin": "^14.5.0",
+    "framer-motion": "^14.7.1",
+    "lucide-react": "^1.62.0",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "recharts": "^3.10.1",
+    "tailwindcss": "^4.3.3",
+    "three": "^0.169.0",
+    "tsx": "^4.23.15",
+    "uuid": "^14.0.3",
+    "vite": "^8.3.0",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.186.0",
+    "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.18.2",
+    "typescript": "^7.0.2"
   },
   "build": {
     "appId": "com.kaspi.heyuka.desktop",
-    "productName": "HEYUKA Desktop OS (by KASPI)",
+    "productName": "HEYUKA AI",
+    "directories": {
+      "output": "release"
+    },
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
+    },
+    "icon": "public/logo.png",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "backend/**/*",
+      "server/**/*",
+      "server.ts",
+      "package.json"
+    ],
     "win": {
-      "target": ["nsis", "portable", "appx"]
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        },
+        {
+          "target": "appx",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "public/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    },
+    "appx": {
+      "applicationId": "NeveaAI.SentientCompanion",
+      "backgroundColor": "#050505",
+      "displayName": "NEVEA AI",
+      "identityName": "NeveaAI.SentientCompanion",
+      "publisher": "CN=NEVEA-OPEN-SOURCE",
+      "publisherDisplayName": "NEVEA AI Open Source Collective"
     },
     "mac": {
-      "target": ["dmg", "zip"]
+      "target": ["dmg", "zip", "mas"],
+      "category": "public.app-category.utilities",
+      "icon": "public/icon.ico",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "electron/entitlements.mac.plist",
+      "entitlementsInherit": "electron/entitlements.mac.plist"
     },
     "linux": {
-      "target": ["AppImage", "flatpak", "snap"]
+      "target": ["AppImage", "flatpak", "snap"],
+      "category": "Utility",
+      "icon": "public/icon.ico"
     }
   }
 }

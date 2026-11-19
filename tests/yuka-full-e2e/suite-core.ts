@@ -710,6 +710,39 @@ async function main() {
     }, { maxRetries: 3, retryDelayMs: 1200 });
   }
 
+  // 8. HEYUKA DESKTOP BUNDLE, SHOWCASE ASSETS & GMAIL ACCESS INTEGRITY
+  await runCheck("heyuka_desktop_bundle_and_showcase_assets", "HEYUKA Packaging & Assets", async () => {
+    const zipPath = path.join(process.cwd(), "public/downloads/HEYUKA-Desktop-App.zip");
+    assert.ok(fs.existsSync(zipPath), "Missing public/downloads/HEYUKA-Desktop-App.zip");
+    const zipBuf = fs.readFileSync(zipPath);
+    assert.ok(zipBuf.length > 100_000, `Desktop zip unexpectedly tiny: ${zipBuf.length}B`);
+    assert.equal(zipBuf.subarray(0, 2).toString("utf8"), "PK", "Invalid PKZIP header on HEYUKA-Desktop-App.zip");
+
+    const showcaseFiles = [
+      "hero-3d-swarm.png",
+      "companion-action.png",
+      "serverless-fleet.png",
+      "multiplied-sources.png",
+    ];
+    let pngBytes = 0;
+    for (const sf of showcaseFiles) {
+      const p = path.join(process.cwd(), "public/heyuka/showcase", sf);
+      assert.ok(fs.existsSync(p), `Missing showcase PNG: ${sf}`);
+      const b = fs.readFileSync(p);
+      assert.ok(b.length > 20_000, `Showcase PNG too small (${sf}): ${b.length}B`);
+      assert.equal(b.subarray(1, 4).toString("utf8"), "PNG", `Invalid PNG signature on ${sf}`);
+      pngBytes += b.length;
+    }
+
+    assert.ok(fs.existsSync(path.join(process.cwd(), "src/app/api/v1/heyuka/gmail-access/route.ts")), "Missing Gmail Access API route");
+    assert.ok(fs.existsSync(path.join(process.cwd(), "src/components/heyuka/HEYUKAGmailAccessCard.tsx")), "Missing Gmail Access UI card");
+
+    return {
+      artifactBytes: zipBuf.length + pngBytes,
+      detail: `ZIP=${zipBuf.length}B PKZIP OK, 4 PNGs=${pngBytes}B OK, gmail-access API+UI verified`,
+    };
+  });
+
   // SUMMARY & SELF-REPORTING
   const totalTested = results.length;
   const passed = results.filter((r) => r.status !== "failed");

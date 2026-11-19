@@ -16,6 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { saveActiveConsoleKey, type PortalLocale } from "./platform-data";
+import { HEYUKAGmailAccessCard } from "@/components/heyuka/HEYUKAGmailAccessCard";
 
 interface ApiKeyMeta {
   id: string;
@@ -317,27 +318,31 @@ export function PlatformKeysView() {
       </section>
 
       {!authenticated ? (
-        <section className="kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-2xl kaspi-glass-surface flex items-center justify-center shrink-0">
-              <Lock className="w-5 h-5 text-amber-500" />
-            </div>
-            <div className="space-y-1">
-              <div className="text-sm sm:text-base font-extrabold text-[var(--kaspi-text-primary)]">
-                {t.signInPrompt}
+        <section className="kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-6 sm:p-8 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-2xl kaspi-glass-surface flex items-center justify-center shrink-0">
+                <Lock className="w-5 h-5 text-emerald-500" />
               </div>
-              <div className="text-xs text-[var(--kaspi-text-muted)]">{t.privacyNote}</div>
+              <div className="space-y-1">
+                <div className="text-sm sm:text-base font-extrabold text-[var(--kaspi-text-primary)]">
+                  {t.signInPrompt}
+                </div>
+                <div className="text-xs text-[var(--kaspi-text-muted)]">{t.privacyNote}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              <Link href={loginHref} className="kaspi-glass-btn rounded-2xl px-4 py-2 text-xs font-bold">
+                {t.signInBtn}
+              </Link>
+              <Link href={registerHref} className="kaspi-glass-btn rounded-2xl px-4 py-2 text-xs font-bold">
+                {t.registerBtn}
+              </Link>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
-            <Link href={loginHref} className="kaspi-primary-cta-btn rounded-2xl px-4 py-2.5 text-xs font-bold">
-              {t.signInBtn}
-            </Link>
-            <Link href={registerHref} className="kaspi-glass-btn rounded-2xl px-4 py-2.5 text-xs font-bold">
-              {t.registerBtn}
-            </Link>
-          </div>
+          <HEYUKAGmailAccessCard locale={locale} onAuthenticated={loadKeys} />
         </section>
       ) : (
         <form

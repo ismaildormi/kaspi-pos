@@ -48,7 +48,7 @@ const GUIDE_I18N = {
     showAllBtn: "عرض جميع المراحل دفعة واحدة",
     stepperBtn: "عرض مرحلة بمرحلة",
     copy: "نسخ الكود",
-    copied: "تم النسخ ✓",
+    copied: "تم النسخ",
     testNow: "اختبار الاتصال الحي الآن",
     testing: "جاري الاختبار...",
     close: "إغلاق",
@@ -67,7 +67,7 @@ const GUIDE_I18N = {
     showAllBtn: "Afficher toutes les étapes",
     stepperBtn: "Mode étape par étape",
     copy: "Copier le code",
-    copied: "Copié ✓",
+    copied: "Copié",
     testNow: "Tester la connexion en direct",
     testing: "Test en cours...",
     close: "Fermer",
@@ -86,7 +86,7 @@ const GUIDE_I18N = {
     showAllBtn: "View All Stages Together",
     stepperBtn: "Step-by-Step View",
     copy: "Copy Code",
-    copied: "Copied ✓",
+    copied: "Copied",
     testNow: "Ping Live API Gateway",
     testing: "Verifying...",
     close: "Close",
@@ -129,12 +129,12 @@ export const HEYUKAInstallWalkthrough: React.FC<HEYUKAInstallWalkthroughProps> =
         : target === "node"
         ? "npm install openai dotenv"
         : target === "macos"
-        ? "# Download HEYUKA Universal Package (macOS 13+ Apple Silicon & Intel)\ncurl -fSL \"https://kaspi-pos.vercel.app/api/v1/heyuka/installer?platform=macos\" -o heyuka-macos-spec.json && open \"https://kaspi-pos.vercel.app/download\""
+        ? "# Download Complete HEYUKA Desktop Bundle (Electron + Python + 3D Studio)\ncurl -fSL \"https://kaspi-pos.vercel.app/api/v1/heyuka/installer?platform=desktop_zip\" -o HEYUKA-Desktop-App.zip && unzip -q HEYUKA-Desktop-App.zip -d HEYUKA-Desktop"
         : target === "linux"
-        ? "# Fetch HEYUKA Desktop Linux runtime metadata & verify connectivity\ncurl -fSL \"https://kaspi-pos.vercel.app/api/v1/heyuka/installer?platform=linux\" -o heyuka-linux-spec.json && cat heyuka-linux-spec.json"
+        ? "# Download Complete HEYUKA Desktop Bundle & Inspect Linux Build\ncurl -fSL \"https://kaspi-pos.vercel.app/api/v1/heyuka/installer?platform=desktop_zip\" -o HEYUKA-Desktop-App.zip && unzip -q HEYUKA-Desktop-App.zip -d HEYUKA-Desktop"
         : target === "curl"
         ? "# No SDK package required — works natively with curl, HTTPie, or Postman\ncurl --version"
-        : "# Windows 10 / 11 (x64) — PowerShell 1-Line Launcher Download\nInvoke-WebRequest -Uri \"https://kaspi-pos.vercel.app/api/v1/heyuka/installer?platform=windows\" -OutFile \"$env:USERPROFILE\\Desktop\\HEYUKA_Installer.bat\"";
+        : "# Windows 10 / 11 (x64) — Download Complete HEYUKA Desktop Bundle (.zip)\nInvoke-WebRequest -Uri \"https://kaspi-pos.vercel.app/api/v1/heyuka/installer?platform=desktop_zip\" -OutFile \"$env:USERPROFILE\\Desktop\\HEYUKA-Desktop-App.zip\"; Expand-Archive -Path \"$env:USERPROFILE\\Desktop\\HEYUKA-Desktop-App.zip\" -DestinationPath \"$env:USERPROFILE\\Desktop\\HEYUKA-Desktop\"";
 
     const envSnippet =
       target === "windows"
@@ -313,42 +313,70 @@ export const HEYUKAInstallWalkthrough: React.FC<HEYUKAInstallWalkthroughProps> =
                   {target === "windows" && (
                     <>
                       <a
-                        href="/api/v1/heyuka/installer?platform=windows"
+                        href="/api/v1/heyuka/installer?platform=desktop_zip"
+                        download="HEYUKA-Desktop-App.zip"
                         className="kaspi-primary-cta-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold"
                       >
                         <Download className="w-3.5 h-3.5" />
-                        <span>{isAr ? "تحميل مثبّت Windows" : "Download Installer (.bat)"}</span>
+                        <span>{isAr ? "تحميل تطبيق HEYUKA الكامل (.zip)" : "Download Full Desktop App (.zip)"}</span>
+                      </a>
+                      <a
+                        href="/api/v1/heyuka/installer?platform=windows"
+                        className="kaspi-glass-btn inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold"
+                      >
+                        <Terminal className="w-3.5 h-3.5" />
+                        <span>{isAr ? "المشغّل السريع (.bat)" : "Quick Launcher (.bat)"}</span>
                       </a>
                       <a
                         href="/download/exe"
-                        className="kaspi-glass-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold"
+                        className="kaspi-glass-btn inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
-                        <span>Desktop Binary (.exe)</span>
+                        <span>CI Binary (.exe)</span>
                       </a>
                     </>
                   )}
                   {target === "macos" && (
-                    <a
-                      href="/api/v1/heyuka/installer?platform=macos"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="kaspi-primary-cta-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>macOS Target Spec</span>
-                    </a>
+                    <>
+                      <a
+                        href="/api/v1/heyuka/installer?platform=desktop_zip"
+                        download="HEYUKA-Desktop-App.zip"
+                        className="kaspi-primary-cta-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>{isAr ? "حزمة HEYUKA الكاملة (macOS .zip)" : "Full App Bundle (.zip)"}</span>
+                      </a>
+                      <a
+                        href="/api/v1/heyuka/installer?platform=macos"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="kaspi-glass-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>macOS CI Spec (.dmg)</span>
+                      </a>
+                    </>
                   )}
                   {target === "linux" && (
-                    <a
-                      href="/api/v1/heyuka/installer?platform=linux"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="kaspi-primary-cta-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Linux Target Spec</span>
-                    </a>
+                    <>
+                      <a
+                        href="/api/v1/heyuka/installer?platform=desktop_zip"
+                        download="HEYUKA-Desktop-App.zip"
+                        className="kaspi-primary-cta-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>{isAr ? "حزمة HEYUKA الكاملة (Linux .zip)" : "Full App Bundle (.zip)"}</span>
+                      </a>
+                      <a
+                        href="/api/v1/heyuka/installer?platform=linux"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="kaspi-glass-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Linux CI Spec (AppImage)</span>
+                      </a>
+                    </>
                   )}
                 </div>
               </div>

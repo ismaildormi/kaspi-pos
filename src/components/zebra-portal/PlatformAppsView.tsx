@@ -105,7 +105,8 @@ export function PlatformAppsView() {
             </div>
           </div>
           <a
-            href="/api/v1/heyuka/installer?platform=windows"
+            href="/api/v1/heyuka/installer?platform=desktop_zip"
+            download="HEYUKA-Desktop-App.zip"
             className="kaspi-primary-cta-btn rounded-2xl px-4 py-2.5 text-xs font-bold inline-flex items-center justify-center gap-2"
           >
             <Download className="w-4 h-4" />
@@ -132,7 +133,8 @@ export function PlatformAppsView() {
           </div>
           <div className="flex flex-wrap gap-2">
             <a
-              href="/api/v1/heyuka/installer?platform=linux"
+              href="/api/v1/heyuka/installer?platform=desktop_zip"
+              download="HEYUKA-Desktop-App.zip"
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 kaspi-glass-btn rounded-2xl px-4 py-2.5 text-xs font-bold text-center"

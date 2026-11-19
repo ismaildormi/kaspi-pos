@@ -1,0 +1,42 @@
+name: Build HEYUKA Desktop Electron Binaries (.exe, .dmg, .AppImage)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "heyuka-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-electron-desktop:
+    name: Build HEYUKA Desktop (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            flag: "--win --x64"
+          - os: macos-latest
+            flag: "--mac"
+          - os: ubuntu-22.04
+            flag: "--linux AppImage"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install & build HEYUKA Electron Companion (apps/heyuka-desktop)
+        working-directory: apps/heyuka-desktop
+        run: |
+          npm install --legacy-peer-deps
+          npm run build
+          npx electron-builder ${{ matrix.flag }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HEYUKA-Desktop-${{ matrix.os }}
+          path: apps/heyuka-desktop/release/*

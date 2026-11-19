@@ -6,20 +6,36 @@ export const dynamic = "force-dynamic";
 
 const FALLBACK_WINDOWS_BAT = `@echo off
 chcp 65001 >nul
-title HEYUKA Desktop OS Installer (Powered by KASPI)
-set HEYUKA_PORTAL=https://kaspi-pos.vercel.app/ar/heyuka
+title HEYUKA Desktop Launcher (Powered by KASPI)
+set HEYUKA_PORTAL=https://kaspi-pos.vercel.app/en/heyuka
 where msedge >nul 2>nul && (start "" msedge --app="%HEYUKA_PORTAL%" & goto :END)
 where chrome >nul 2>nul && (start "" chrome --app="%HEYUKA_PORTAL%" & goto :END)
 start "" "%HEYUKA_PORTAL%"
 :END
-echo HEYUKA Desktop OS by KASPI launched cleanly.
 `;
 
 export async function GET(req: NextRequest) {
-  const platform = (req.nextUrl.searchParams.get("platform") || "windows").toLowerCase();
+  const platform = (req.nextUrl.searchParams.get("platform") || "desktop_zip").toLowerCase();
+
+  if (platform === "desktop_zip" || platform === "zip" || platform === "desktop") {
+    const zipPath = path.join(process.cwd(), "public", "downloads", "HEYUKA-Desktop-App.zip");
+    if (fs.existsSync(zipPath)) {
+      const buf = fs.readFileSync(zipPath);
+      return new NextResponse(new Uint8Array(buf), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/zip",
+          "Content-Disposition": 'attachment; filename="HEYUKA-Desktop-App.zip"',
+          "Content-Length": String(buf.byteLength),
+          "Cache-Control": "public, max-age=300",
+        },
+      });
+    }
+  }
 
   if (platform === "windows" || platform === "bat") {
-    const batPath = path.join(
+    const batPath = path.join(process.cwd(), "apps", "heyuka-desktop", "INSTALL_AND_RUN.bat");
+    const fallbackBat = path.join(
       process.cwd(),
       "apps",
       "heyuka-desktop",
@@ -28,6 +44,8 @@ export async function GET(req: NextRequest) {
     );
     const scriptBody = fs.existsSync(batPath)
       ? fs.readFileSync(batPath, "utf8")
+      : fs.existsSync(fallbackBat)
+      ? fs.readFileSync(fallbackBat, "utf8")
       : FALLBACK_WINDOWS_BAT;
 
     return new NextResponse(scriptBody, {
@@ -40,25 +58,22 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  const zipExists = fs.existsSync(
+    path.join(process.cwd(), "public", "downloads", "HEYUKA-Desktop-App.zip")
+  );
+
   return NextResponse.json({
     product: "HEYUKA Desktop App",
     owner: "KASPI",
     version: "12.0.0",
     platform,
+    realDesktopBundleAvailable: zipExists,
     targets: {
-      windows: {
-        autoInstallerUrl: "/api/v1/heyuka/installer?platform=windows",
-        packagingTargets: ["Windows 10/11 x64 Installer (.exe)", "One-Click Bootstrapper (.bat)"],
-        windowsDesktopBridge: "/download/exe",
-      },
-      macos: {
-        packagingTargets: ["Universal DMG (Apple Silicon & Intel)", "Signed ZIP Bundle"],
-        requirements: "macOS 13+ (Apple Silicon M1/M2/M3/M4 or Intel x64)",
-      },
-      linux: {
-        packagingTargets: ["AppImage (x64)", "Flatpak", "Snap"],
-        requirements: "Ubuntu 22.04+, Fedora, Debian, or Arch with WebGL2/Vulkan",
-      },
+      desktopZip: "/downloads/HEYUKA-Desktop-App.zip",
+      desktopZipApi: "/api/v1/heyuka/installer?platform=desktop_zip",
+      windowsLauncherBat: "/api/v1/heyuka/installer?platform=windows",
+      githubReleases: "https://github.com/ismaildormi/kaspi-pos/releases",
+      electronCiWorkflow: ".github/workflows/build-heyuka-desktop.yml",
     },
   });
 }
