@@ -161,7 +161,7 @@ export function normalizeClientTraceInput(
  */
 export function formatTracesAsChatMlJsonl(traces: ZebraLearningTraceRecord[]): string {
   const systemMsg =
-    "You are KASPI AI unified with Zebra-X POS intelligence. Answer fluently in Darija, Arabic, French, or English using accurate commerce logic.";
+    "You are HEYUKA unified with KASPI POS sovereign intelligence. Answer fluently in Darija, Arabic, French, or English using accurate commerce and general knowledge logic.";
   return traces
     .filter((t) => t.userPrompt && (t.ownerCorrectionText || t.assistantResponse))
     .map((t) =>

@@ -85,7 +85,7 @@ export const KaspiZebraOwnerConsole: React.FC<{
       <div className="max-w-xl mx-auto my-12 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 text-center space-y-2">
         <Lock className="w-6 h-6 text-amber-400 mx-auto" />
         <h3 className="text-sm font-bold text-white">
-          {isAr ? "وحدة X × Zebra مخصصة للمالك فقط" : "Owner-Exclusive X × Zebra Core"}
+          {isAr ? "وحدة HEYUKA مخصصة للمالك فقط" : "Owner-Exclusive HEYUKA Core"}
         </h3>
         <p className="text-xs text-zinc-300">
           {isAr
@@ -102,7 +102,7 @@ export const KaspiZebraOwnerConsole: React.FC<{
     setOwnerReply("");
     try {
       const summaryContext = stats
-        ? `X×Zebra Unified Stats: ${stats.totalTraces} learning traces across ${stats.connectedDevices} devices and ${stats.contributingStores} stores. Languages: ${JSON.stringify(
+        ? `HEYUKA Unified Stats: ${stats.totalTraces} learning traces across ${stats.connectedDevices} devices and ${stats.contributingStores} stores. Languages: ${JSON.stringify(
             stats.byLanguage
           )}. Models: ${JSON.stringify(stats.byModel)}.`
         : "No aggregated traces loaded yet.";
@@ -111,7 +111,7 @@ export const KaspiZebraOwnerConsole: React.FC<{
         messages: [
           {
             role: "system",
-            content: `You are X × Zebra Unified Sovereign Owner Brain (Owner-Exclusive Console for KASPI POS). You merge System X governance & behavioral memory with Zebra V2 routing & learning traces. Ground answers honestly on real telemetry:\n${summaryContext}`,
+            content: `You are HEYUKA Unified Sovereign Owner Brain (Owner-Exclusive Console for KASPI POS). You orchestrate behavioral memory, Voyager skills, and multi-device learning traces. Ground answers honestly on real telemetry:\n${summaryContext}`,
           },
           { role: "user", content: ownerPrompt },
         ],
@@ -148,7 +148,7 @@ export const KaspiZebraOwnerConsole: React.FC<{
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
             <ShieldCheck className="w-4 h-4" />
-            <span>X × ZEBRA UNIFIED OWNER BRAIN • PACK026 + PACK041 + PACK052</span>
+            <span>HEYUKA UNIFIED OWNER BRAIN • PACK026 + PACK041 + PACK052</span>
           </div>
           <p className="text-[11px] text-zinc-300">
             {X_ZEBRA_CORE_CONTRACT.modelsMerged.join(" + ")}
@@ -194,13 +194,13 @@ export const KaspiZebraOwnerConsole: React.FC<{
             <div className="rounded-2xl border border-white/10 bg-zinc-900/40 p-4 space-y-3">
               <div className="flex items-center gap-2 text-xs font-bold text-white">
                 <Cpu className="w-4 h-4 text-emerald-400" />
-                <span>{isAr ? "محادثة خاصة مع عقل X × Zebra (لك وحدك)" : "Direct Owner Chat with X × Zebra"}</span>
+                <span>{isAr ? "محادثة خاصة مع عقل HEYUKA (لك وحدك)" : "Direct Owner Chat with HEYUKA"}</span>
               </div>
               <textarea
                 rows={3}
                 value={ownerPrompt}
                 onChange={(e) => setOwnerPrompt(e.target.value)}
-                placeholder={isAr ? "اسأل X × Zebra على الإحصائيات أو التطوير..." : "Query X × Zebra evolution traces & Ollama..."}
+                placeholder={isAr ? "اسأل HEYUKA على الإحصائيات أو التطوير..." : "Query HEYUKA evolution traces & local brain..."}
                 className="w-full rounded-xl bg-zinc-950/60 border border-white/10 p-3 text-xs text-white outline-none resize-none"
               />
               <button
@@ -210,7 +210,7 @@ export const KaspiZebraOwnerConsole: React.FC<{
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer disabled:opacity-50"
               >
                 {asking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                <span>{isAr ? "إرسال لعقلك المحلي" : "Query X × Zebra"}</span>
+                <span>{isAr ? "إرسال لعقلك المحلي" : "Query HEYUKA"}</span>
               </button>
               {ownerReply && (
                 <pre className="rounded-xl bg-zinc-950/80 border border-white/10 p-3 text-[11px] text-zinc-200 whitespace-pre-wrap max-h-56 overflow-y-auto">

@@ -177,7 +177,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(
         {
           error: "OWNER_ONLY_X_ZEBRA_ACCESS",
-          message: "X × Zebra unified telemetry and dataset export are restricted to the Owner account.",
+          message: "HEYUKA unified telemetry and dataset export are restricted to the Owner account.",
         },
         { status: 403 }
       );
@@ -249,7 +249,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (err: any) {
     return NextResponse.json(
-      { error: err?.message || "Failed to read X × Zebra traces" },
+      { error: err?.message || "Failed to read HEYUKA traces" },
       { status: 500 }
     );
   }

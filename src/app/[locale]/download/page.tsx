@@ -251,6 +251,43 @@ export default function DownloadCenterPage() {
               </div>
             </div>
           </div>
+
+          {/* Link to Isolated HEYUKA Desktop OS Showcase & AI Platform Portal */}
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 flex flex-col justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-white">HEYUKA AI Platform Portal (API Keys &amp; 4 Factories)</p>
+                <p className="text-xs text-zinc-300">
+                  Powered by KASPI: generate zx-live API keys and test BG Remover, Blender 3D Hub, Transcription, and Stem Separation endpoints.
+                </p>
+              </div>
+              <Link
+                href="/zebra-x"
+                prefetch={true}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold transition-colors w-fit"
+              >
+                <span>Open HEYUKA AI Portal</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 flex flex-col justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-white">HEYUKA Desktop OS (60 FPS 3D &amp; OS Control)</p>
+                <p className="text-xs text-zinc-300">
+                  Interactive showcase of all 32 HEYUKA characters (Mochi-Puff &amp; Elemental Titans), animated stories, and standalone desktop installers.
+                </p>
+              </div>
+              <Link
+                href="/heyuka"
+                prefetch={true}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-colors w-fit"
+              >
+                <span>Explore HEYUKA Desktop OS</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
         </div>
       </main>
 

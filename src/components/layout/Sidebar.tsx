@@ -148,6 +148,8 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
     { name: t.nav.billing, href: "/dashboard/billing", icon: FileText },
     { name: t.nav.settings, href: "/dashboard/settings", icon: Settings },
     { name: t.nav.support, href: "/dashboard/support", icon: HelpCircle },
+    { name: "HEYUKA AI", href: "/zebra-x", icon: Sparkles },
+    { name: "HEYUKA OS", href: "/heyuka", icon: Monitor },
   ];
 
   return (
@@ -285,16 +287,12 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           onClick={() => {
             window.dispatchEvent(new CustomEvent("open-ai-chat"));
           }}
-          onDoubleClick={(e) => {
-            e.stopPropagation();
-            window.dispatchEvent(new CustomEvent("open-ai-studio"));
-          }}
           className="group w-full flex items-center justify-between px-3 py-2 rounded-xl kaspi-glass-surface bg-white/[0.06] hover:bg-white/[0.10] border border-white/10 hover:border-white/25 text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
-          title="نقرة: المساعد المصغّر • زر التكبير أو نقرتان: منصة KASPI AI Arena"
+          title="HEYUKA • KASPI AI"
         >
           <div className="flex items-center gap-2">
             <Bot className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
-            <span>KASPI AI</span>
+            <span>HEYUKA</span>
           </div>
           <Sparkles className="w-3 h-3 text-zinc-500 group-hover:text-white group-hover:rotate-12 transition-transform duration-300" />
         </button>

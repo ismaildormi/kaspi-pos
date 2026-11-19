@@ -43,14 +43,10 @@ export interface RouterCandidate {
 /**
  * Builds the prioritized Multi-Gateway Candidate Pool:
  * 1. Custom BYOK (Super Admin configured in SystemSetting)
- * 2. Google Gemini Key Pool (gemini-3.5-flash-lite / gemini-2.5-flash) - Native Vision & Free Tier
- * 3. Groq Key Pool (openai/gpt-oss-20b / llama-3.3-70b-versatile) - Ultra-fast free tier
- * 4. Mistral Free Tier Pool (mistral-small-latest / pixtral-12b)
- * 5. Together AI Free Tier Pool (meta-llama/Llama-3.3-70B-Instruct-Turbo)
- * 6. DeepSeek API Pool (deepseek-chat)
- * 7. Hugging Face Inference Pool (Qwen/Qwen2.5-72B-Instruct)
- * 8. OpenRouter (openrouter/auto)
- * 9. Local GPU / Ollama / vLLM (Self-hosted 0-cost fallback)
+ * 2. Fast Direct Pool (llama-3.3-70b-versatile / llama-3.1-8b-instant — zero leaked reasoning)
+ * 3. OpenRouter Free Vision & Multilingual Pool
+ * 4. Google Gemini Vision Pool
+ * 5. Mistral / Together / DeepSeek / HuggingFace / Internal Node
  */
 export async function getRouterCandidates(): Promise<RouterCandidate[]> {
   const candidates: RouterCandidate[] = [];
@@ -76,7 +72,7 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
 
         candidates.push({
           provider: "custom",
-          providerName: `BYOK (${setting.providerName})`,
+          providerName: "HEYUKA Priority Core",
           keyIndex: idx,
           keyMasked: `...${setting.apiKey.slice(-6)}`,
           apiKey: setting.apiKey,
@@ -87,10 +83,10 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
       }
     }
   } catch (dbErr) {
-    console.warn("[AI Router] Notice: Could not read SystemSetting from DB, skipping BYOK:", dbErr);
+    console.warn("[HEYUKA Router] Notice: Could not read SystemSetting from DB, skipping BYOK:", dbErr);
   }
 
-  // Priority 2: Groq (Ultra-Fast Text Inference Pool — verified ~860ms latency)
+  // Priority 2: Direct Low-Latency Inference Pool (clean direct outputs, NO raw reasoning leak models)
   const groqKeys = parseKeyPool(
     process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY
   );
@@ -98,13 +94,12 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
     if (!key.includes("mock")) {
       const groqProvider = createGroq({ apiKey: key });
       for (const modelId of [
-        "openai/gpt-oss-20b",
         "llama-3.3-70b-versatile",
         "llama-3.1-8b-instant",
       ]) {
         candidates.push({
           provider: "groq",
-          providerName: "Groq",
+          providerName: "HEYUKA Cloud Core",
           keyIndex: idx,
           keyMasked: `...${key.slice(-6)}`,
           apiKey: key,
@@ -277,17 +272,17 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
     }
   }
 
-  // Priority 9: Self-Hosted Local GPU / Ollama / LitServe (Zero API Cost, Infinite Offline)
+  // Priority 9: Self-Hosted Local Engine (Zero API Cost, Infinite Offline)
   const localBaseUrl = process.env.LOCAL_AI_BASE_URL?.trim();
   if (localBaseUrl) {
-    const localModelId = process.env.LOCAL_AI_MODEL?.trim() || "llama3.2";
+    const localModelId = process.env.LOCAL_AI_MODEL?.trim() || "heyuka-local";
     const localProvider = createOpenAI({
       apiKey: "none",
       baseURL: localBaseUrl,
     });
     candidates.push({
       provider: "local",
-      providerName: "Local GPU AI (LitServe/Ollama)",
+      providerName: "HEYUKA Local Core",
       keyIndex: 0,
       keyMasked: "local-endpoint",
       apiKey: "none",
@@ -297,15 +292,14 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
     });
   }
 
-  // Priority 10: Zero-Key Free Open-Source AI Gateway (Pollinations OpenAI-Compatible Endpoint)
-  // Always available with $0 token cost and zero API key requirement.
+  // Priority 10: Zero-Key Free Open Gateway
   const freeOpenSourceGateway = createOpenAI({
     apiKey: "kaspi-free-open-source",
     baseURL: "https://text.pollinations.ai/openai",
   });
   candidates.push({
     provider: "local",
-    providerName: "Kaspi Open-Source Arena (Free)",
+    providerName: "HEYUKA Open Core",
     keyIndex: 0,
     keyMasked: "zero-token-free",
     apiKey: "kaspi-free-open-source",

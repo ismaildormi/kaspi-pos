@@ -164,33 +164,35 @@ try {
 }
 
 // ============================================================================
-// TEST 2: Arena AI Dual-Model Execution, Fault Isolation & Bradley-Terry Elo
+// TEST 2: X x Zebra Unified Core, Reflection Gate, WASM Watchdog & Media Safety
 // ============================================================================
 try {
   const zebraTraceSource = fs.readFileSync(path.join(ROOT, "src/app/api/ai/zebra-trace/route.ts"), "utf8");
   const mediaToolsSource = fs.readFileSync(path.join(ROOT, "src/app/api/ai/media-tools/route.ts"), "utf8");
   const responderSource = fs.readFileSync(path.join(ROOT, "src/app/api/ai/auto-responder/route.ts"), "utf8");
   const sovereignSource = fs.readFileSync(path.join(ROOT, "src/lib/zebra-x/sovereign-brain.ts"), "utf8");
+  const reflectionSource = fs.readFileSync(path.join(ROOT, "src/lib/zebra-x/core/reflection-gate.ts"), "utf8");
 
   // Verify strict Owner vs Merchant isolation in X x Zebra & SSRF safety
   assert.ok(zebraTraceSource.includes("OWNER_ONLY_X_ZEBRA_ACCESS"), "X x Zebra traces GET must strictly enforce owner check (403 for merchants)");
   assert.ok(zebraTraceSource.includes("sanitizeTraceMetadata"), "Learning traces must strip secrets before persisting");
   assert.ok(mediaToolsSource.includes("isForbiddenHost"), "Media proxy must reject private/loopback SSRF targets");
   assert.ok(responderSource.includes("sanitizeOutboundEndpoint"), "Auto-responder webhook dispatch must enforce outbound SSRF sanitization");
-  assert.ok(sovereignSource.includes("probeAndChatLocalOllama"), "Must support local device Ollama Qwen inference");
+  assert.ok(sovereignSource.includes("probeAndChatLocalXZebra"), "Must support local device X x Zebra inference");
+  assert.ok(reflectionSource.includes("runPreReplyReflectionGate"), "Must enforce closed-loop pre-reply reflection gate");
 
   recordTest(
     "TEST-2",
-    "X x Zebra Unified Core, Local Ollama Cell, Auto-Responder & Media Security",
+    "X x Zebra Unified Core, Local Node, Auto-Responder & Media Security",
     "PASSED",
     [
       "Strict Owner-only enforcement verified on /api/ai/zebra-trace (PACK041 Sovereign Owner Root)",
       "Secret scrubbing & SSRF guards verified across learning traces, media tools & webhook auto-responder",
-      "Hardware-checked Local Ollama setup & client inference verified"
+      "Unified X x Zebra identity & closed-loop reflection gate verified"
     ]
   );
 } catch (err) {
-  recordTest("TEST-2", "X x Zebra Unified Core, Local Ollama Cell, Auto-Responder & Media Security", "FAILED", [err.message]);
+  recordTest("TEST-2", "X x Zebra Unified Core, Local Node, Auto-Responder & Media Security", "FAILED", [err.message]);
 }
 
 // ============================================================================
@@ -252,31 +254,30 @@ try {
 }
 
 // ============================================================================
-// TEST 4: Full Pipeline End-to-End Integration & Security Verification
+// TEST 4: Full Pipeline End-to-End Integration & Compact X x Zebra Widget Check
 // ============================================================================
 try {
-  const studioHubSource = fs.readFileSync(path.join(ROOT, "src/components/ai/KaspiAiStudioModal.tsx"), "utf8");
+  const aiWidgetSource = fs.readFileSync(path.join(ROOT, "src/components/ai/AIChatWidget.tsx"), "utf8");
+  const richMsgSource = fs.readFileSync(path.join(ROOT, "src/components/ai/XZebraRichMessage.tsx"), "utf8");
+  const publicHubSource = fs.readFileSync(path.join(ROOT, "src/lib/zebra-x/tools/public-apis-hub.ts"), "utf8");
   const desktopBootstrapSource = fs.readFileSync(path.join(ROOT, "src/lib/open-source-engines/desktop-bootstrap.ts"), "utf8");
   const puckUiSource = fs.readFileSync(path.join(ROOT, "src/components/ai/studio/KaspiPuckStorefrontBuilder.tsx"), "utf8");
 
-  // Verify clean commerce workspace mounts real sub-panels without Arena clone bloat
-  assert.ok(studioHubSource.includes("KaspiAutoResponderPanel"), "KaspiAiStudioModal must mount KaspiAutoResponderPanel");
-  assert.ok(studioHubSource.includes("KaspiMediaLabPanel"), "KaspiAiStudioModal must mount KaspiMediaLabPanel");
-  assert.ok(studioHubSource.includes("KaspiPuckStorefrontBuilder"), "KaspiAiStudioModal must mount KaspiPuckStorefrontBuilder");
-  assert.ok(studioHubSource.includes("KaspiZebraOwnerConsole"), "KaspiAiStudioModal must mount Owner-only KaspiZebraOwnerConsole");
-  assert.ok(!studioHubSource.includes("Battle Mode") && !studioHubSource.includes("Option A"), "Fake Arena Battle UI must remain completely removed");
-
+  assert.ok(!aiWidgetSource.includes("KaspiAiStudioModal"), "Bloated studio modal must not be mounted");
+  assert.ok(aiWidgetSource.includes("handleCloseChat") && aiWidgetSource.includes("XZebraRichMessage"), "Compact widget must use auto-wipe & rich cards");
+  assert.ok(richMsgSource.includes("LiveArtifactDrawer") || richMsgSource.includes("ActionConfirmationPayloadSchema"), "Rich messages must support cards & interactive actions");
+  assert.ok(publicHubSource.includes("queryPublicApiHub"), "Public No-Key APIs Hub must be integrated");
   assert.ok(!puckUiSource.includes("dangerouslySetInnerHTML"), "KaspiPuckStorefrontBuilder must not use dangerouslySetInnerHTML");
   assert.ok(desktopBootstrapSource.includes("initializeKaspiOpenSourceBootstrap"), "desktop-bootstrap.ts must provide initializeKaspiOpenSourceBootstrap");
 
   recordTest(
     "TEST-4",
-    "Full End-to-End Pipeline (Floating AI + Local Ollama + Auto-Responder + Media Lab + Puck Storefront + X x Zebra)",
+    "Full End-to-End Pipeline (Compact X x Zebra Chat + Action Cards + No-Key Hub + Puck Storefront)",
     "PASSED",
     [
-      "Verified expanded workspace cleanly integrates Local Qwen, Comment Auto-Responder, Media Lab, Plugins, Puck Storefront & Owner-only X x Zebra",
-      "Verified Arena Battle / Website Builder bloat is cleanly removed",
-      "Zero dangerouslySetInnerHTML in Puck & Media Lab components"
+      "Verified compact auto-wiping AIChatWidget cleanly mounts XZebraRichMessage without bloated Arena modals",
+      "Verified Public No-Key APIs Hub & Phase 1/2 safeguards integration",
+      "Zero dangerouslySetInnerHTML in Puck & Storefront components"
     ]
   );
 } catch (err) {

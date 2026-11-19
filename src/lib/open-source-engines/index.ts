@@ -235,13 +235,14 @@ export function generateRealPdfmeDocument(input: PdfmeDocumentInput, forceRegene
   const totalHT = Math.round((totalTTC / 1.2) * 100) / 100;
   const totalTVA = Math.round((totalTTC - totalHT) * 100) / 100;
 
-  // Build real %PDF-1.4 ASCII/Latin-safe + transliterated summary stream for universal PDF readers
+  // Preserve readable Latin/ASCII plus transliterated fallback notes cleanly when exporting raw ASCII stream
   const esc = (s: string) =>
-    s
+    String(s || "")
       .replace(/\\/g, "\\\\")
       .replace(/\(/g, "\\(")
       .replace(/\)/g, "\\)")
-      .replace(/[^\x20-\x7E]/g, " ");
+      .replace(/[\u0600-\u06FF]+/g, (ar) => `[AR:${ar.length}ch]`)
+      .replace(/[^\x20-\x7E]/g, "?");
 
   const lines: string[] = [
     "BT",

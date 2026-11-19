@@ -140,51 +140,52 @@ try {
 }
 
 // ============================================================================
-// 3. VERIFY CLEAN FLOATING CHAT + LOCAL OLLAMA + X x ZEBRA + MEDIA & RESPONDER
+// 3. VERIFY CLEAN FLOATING CHAT + X x ZEBRA CORE + PHASE 2 TOOLS
 // ============================================================================
 try {
-  const studioModalSource = fs.readFileSync(
-    path.join(ROOT, "src/components/ai/KaspiAiStudioModal.tsx"),
-    "utf8"
-  );
   const aiWidgetSource = fs.readFileSync(
     path.join(ROOT, "src/components/ai/AIChatWidget.tsx"),
+    "utf8"
+  );
+  const richMessageSource = fs.readFileSync(
+    path.join(ROOT, "src/components/ai/XZebraRichMessage.tsx"),
     "utf8"
   );
   const chatRouteSource = fs.readFileSync(
     path.join(ROOT, "src/app/api/ai/chat/route.ts"),
     "utf8"
   );
-  const rustLocalSource = fs.readFileSync(
-    path.join(ROOT, "src-tauri/src/local_ai.rs"),
-    "utf8"
-  );
   const mediaClientSource = fs.readFileSync(
     path.join(ROOT, "src/lib/zebra-x/media-client.ts"),
     "utf8"
   );
+  const watchdogSource = fs.readFileSync(
+    path.join(ROOT, "src/lib/zebra-x/core/wasm-watchdog.ts"),
+    "utf8"
+  );
 
-  // Zero fake fallback replies in chat API, Rust bridge, and floating chat widget
-  assert.ok(chatRouteSource.includes("CLOUD_AI_UNAVAILABLE_USE_LOCAL_OLLAMA"), "chat/route.ts must never invent canned static replies");
+  // Zero fake fallback replies, unified X x Zebra compact widget & Phase 1/2 safeguards
+  assert.ok(chatRouteSource.includes("X_ZEBRA_CLOUD_UNAVAILABLE_USE_LOCAL"), "chat/route.ts must use clean X x Zebra offline fallback contract");
+  assert.ok(!aiWidgetSource.includes("KaspiAiStudioModal"), "Bloated studio modal must remain removed from compact widget");
   assert.ok(!aiWidgetSource.includes("generateLocalStoreInsight"), "Floating widget must not use old hardcoded canned insight answers");
-  assert.ok(rustLocalSource.includes("127.0.0.1:11434") && rustLocalSource.includes("check_ollama_status"), "Tauri local_ai.rs must connect directly to localhost Ollama");
+  assert.ok(aiWidgetSource.includes("handleCloseChat") && aiWidgetSource.includes("releaseWasmResources"), "Compact widget must auto-wipe session & release WASM on close");
+  assert.ok(richMessageSource.includes("XZebraRichMessage") && richMessageSource.includes("runPreReplyReflectionGate"), "Rich message renderer must apply reflection gate");
+  assert.ok(watchdogSource.includes("releaseWasmResources") && watchdogSource.includes("touchWasmResource"), "WASM Watchdog must manage idle cleanup");
   assert.ok(mediaClientSource.includes("@imgly/background-removal") && mediaClientSource.includes("removeImageBackgroundLocal"), "Client media engine must support local browser background removal");
-  assert.ok(!studioModalSource.includes("Option A") && !studioModalSource.includes("Battle Mode"), "Fake Arena Battle UI must be gone");
-  assert.ok(studioModalSource.includes("KaspiAutoResponderPanel") && studioModalSource.includes("KaspiZebraOwnerConsole"), "Expanded workspace must integrate Auto-Responder & Owner-only X x Zebra");
 
   record(
-    "OLLAMA-X-ZEBRA-CORE",
-    "Floating Draggable Chat, Native Ollama Tauri Bridge, Media Lab, Comment Links & X x Zebra Core",
+    "X-ZEBRA-CORE",
+    "Unified Floating Chat, Auto-Wipe Watchdog, Media Cutout, Arabic PDF & X x Zebra Core",
     true,
     [
-      "Verified canned hardcoded AI replies are removed from chat/route.ts, local_ai.rs, and AIChatWidget.tsx",
-      "Verified native Rust TCP/HTTP 127.0.0.1:11434 Ollama runner & PowerShell background installer",
-      "Verified real Media Tools (Pollinations/AI Horde + Wikimedia/Openverse web images + @imgly/background-removal PNG cutout)",
-      "Verified Owner-gated X x Zebra learning trace collector & ChatML JSONL dataset exporter"
+      "Verified compact auto-wiping AIChatWidget.tsx with zero KaspiAiStudioModal bloat",
+      "Verified closed-loop reflection gate & pre-reply branding/secret scrub",
+      "Verified real browser Media Tools (@imgly/background-removal PNG cutout) + WASM Watchdog",
+      "Verified X x Zebra trace collector & offline IndexedDB Queue"
     ]
   );
 } catch (err) {
-  record("OLLAMA-X-ZEBRA-CORE", "Ollama + X x Zebra Core Verification", false, [err.message]);
+  record("X-ZEBRA-CORE", "Unified X x Zebra Core Verification", false, [err.message]);
 }
 
 try {

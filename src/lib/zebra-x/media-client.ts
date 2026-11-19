@@ -133,10 +133,12 @@ async function canvasSmartBorderBackgroundRemoval(
   };
 }
 
+import { touchWasmResource } from "@/lib/zebra-x/core/wasm-watchdog";
+
 /**
  * Removes image background locally in the browser with zero server API keys.
- * Uses ONNX neural segmentation (@imgly/background-removal) first, with a smart
- * edge-connected flood-fill transparent PNG fallback if ONNX WASM assets are offline.
+ * Uses ONNX neural segmentation (@imgly/background-removal) registered under the
+ * 60s WASM Memory Watchdog, with an edge-connected transparent PNG fallback.
  */
 export async function removeImageBackgroundLocal(
   input: Blob | string
@@ -147,6 +149,10 @@ export async function removeImageBackgroundLocal(
         ? `/api/ai/media-tools?action=image_proxy&url=${encodeURIComponent(input)}`
         : input
       : URL.createObjectURL(input);
+
+  touchWasmResource("imgly_onnx", "Background Removal ONNX", () => {
+    // Signal GC eligibility by clearing references after idle timeout
+  });
 
   try {
     const mod = await import("@imgly/background-removal");

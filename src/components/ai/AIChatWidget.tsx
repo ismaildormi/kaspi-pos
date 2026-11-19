@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { usePathname } from "next/navigation";
@@ -30,22 +30,50 @@ import {
   Check,
   Share2,
   MoreHorizontal,
-  ChevronDown,
-  ChevronRight,
   ArrowUp,
   ArrowDown,
   Square,
-  Maximize2,
-  Scissors,
-  Image as ImageIcon,
-  Search,
-  Cpu,
   ShieldCheck,
-  Download,
+  Maximize2,
+  Minimize2,
+  PanelLeft,
 } from "lucide-react";
-import { KaspiAiStudioModal, type WorkspaceTab } from "./KaspiAiStudioModal";
-import { probeAndChatLocalOllama, probeLocalOllamaModels } from "@/lib/zebra-x/sovereign-brain";
+import { XZebraRichMessage } from "./XZebraRichMessage";
+import { LiveArtifactDrawer, type LiveArtifactItem } from "./LiveArtifactDrawer";
+import { XZebraThreadsSidebar } from "./XZebraThreadsSidebar";
+import { probeAndChatLocalXZebra } from "@/lib/zebra-x/sovereign-brain";
 import { removeImageBackgroundLocal } from "@/lib/zebra-x/media-client";
+import {
+  analyzeCsvDataframe,
+  extractTextFromPdfBuffer,
+  extractTextFromWordBuffer,
+  parseExcelBufferToText,
+} from "@/lib/zebra-x/tools/docs-export-engine";
+import {
+  decodeBarcodeFromImage,
+  extractDominantColorPalette,
+  resizeImageForSocialPlatforms,
+  runBrowserOcrOnImage,
+} from "@/lib/zebra-x/tools/vision-screen-tools";
+import { releaseWasmResources } from "@/lib/zebra-x/core/wasm-watchdog";
+import {
+  deleteChatThread,
+  listChatThreads,
+  renameChatThread,
+  saveChatThreadSnapshot,
+  togglePinChatThread,
+  type StoredChatThread,
+} from "@/lib/zebra-x/core/chat-threads-store";
+import {
+  buildActivityContextSnapshot,
+  installGlobalActivitySensor,
+  recordActivityBreadcrumb,
+} from "@/lib/zebra-x/core/activity-sensor";
+import {
+  recordOrReinforceMemory,
+  registerVoyagerSkill,
+  searchEvolvingMemory,
+} from "@/lib/zebra-x/core/memory-engine";
 
 interface LocalChatMessage {
   id: string;
@@ -94,128 +122,128 @@ export const AI_I18N: Record<
   }
 > = {
   ar: {
-    headerTitle: "مساعد كسب الذكي",
-    headerTitleAdmin: "المساعد الرئيسي • مسؤول البيانات",
-    activeBadge: "مساعد فوري نشط",
-    activeBadgeAdmin: "وصول كامل للبيانات",
-    subtitle: "مستشارك للأعمال وتحليل المبيعات",
-    subtitleAdmin: "الذكاء الاصطناعي لتحليل منصة كسب والبيانات الحية",
+    headerTitle: "HEYUKA",
+    headerTitleAdmin: "HEYUKA • المالك",
+    activeBadge: "متصل ومباشر",
+    activeBadgeAdmin: "وضع المالك",
+    subtitle: "ذكاء KASPI الموحد لكل التخصصات وإدارة المتجر",
+    subtitleAdmin: "العقل المركزي لشركة KASPI للعلوم والبرمجة والأعمال",
     quickPrompts: [
-      { text: "كم مبيعات اليوم؟", icon: "trending" },
-      { text: "ما هي السلع المنخفضة في المخزون؟", icon: "alert" },
-      { text: "ما هي المنتجات الأكثر مبيعاً هذا الأسبوع؟", icon: "bag" },
+      { text: "اعطيني كل الاحصائيات ديال مشروعي في جدول PDF", icon: "trending" },
+      { text: "شكون آخر زبون داز عندي وعطيني آخر تذكرة", icon: "alert" },
+      { text: "ما هي المنتجات القريبة من النفاد وتوقع الطلب؟", icon: "bag" },
     ],
     quickPromptsAdmin: [
-      { text: "ما هو إجمالي الإيرادات ومبيعات المنصة؟", icon: "trending" },
+      { text: "إحصائيات المنصة والمداخيل في جدول PDF", icon: "trending" },
       { text: "عرض قائمة كافة المتاجر وحالة الاشتراكات", icon: "alert" },
-      { text: "إحصائيات استهلاك الذكاء الاصطناعي في المنصة", icon: "bag" },
+      { text: "إحصائيات الاستهلاك والأداء العام للمنصة", icon: "bag" },
     ],
-    inputPlaceholder: "اسأل المستشار الذكي أو تحدث معه بالصوت...",
-    uploadTooltip: "إرفاق صورة أو فاتورة تجارية (OCR)",
-    thinking: "المساعد الذكي يفكر ويحلل البيانات...",
-    error: "تعذر الاتصال بالمساعد الذكي",
+    inputPlaceholder: "اسأل HEYUKA أو أرسل صورة / صوت...",
+    uploadTooltip: "إرفاق صورة أو فاتورة (OCR / إزالة الخلفية)",
+    thinking: "HEYUKA يفكر ويحلل البيانات...",
+    error: "تعذر إتمام الطلب مؤقتاً",
     retry: "إعادة المحاولة",
     documentAttachment: "مستند تجاري",
-    closeTitle: "إغلاق النافذة",
-    analyzePrompt: "تحليل المستند المرفق",
-    voiceInput: "تحدث بالصوت (مجاني 100% بدون توكنز)",
+    closeTitle: "إغلاق ومحو الجلسة",
+    analyzePrompt: "تحليل المستند أو الصورة المرفقة",
+    voiceInput: "تحدث بالصوت",
     voiceListening: "جارٍ الاستماع... تحدث الآن",
     voiceStop: "إيقاف الاستماع",
     voiceNotSupported: "التسجيل الصوتي غير مدعوم في هذا المتصفح",
     voiceReadAloud: "قراءة الرد صوتياً",
     voiceAutoSpeak: "قراءة الردود تلقائياً",
-    dragTooltip: "اسحب لتحريك النافذة بالماوس في أي مكان",
+    dragTooltip: "اسحب لتحريك النافذة",
     voiceLang: "لغة المحادثة الصوتية",
     copy: "نسخ الرد",
     copied: "تم النسخ بنجاح",
     goodResponse: "إجابة مفيدة",
     badResponse: "إجابة غير مفيدة",
     share: "مشاركة الرد",
-    thoughtHeader: "فكّر وحلّل مؤشرات المتجر",
+    thoughtHeader: "تحليل HEYUKA",
     scrollToBottom: "الانتقال لآخر الرسائل",
     cancelVoice: "إلغاء التسجيل",
   },
   fr: {
-    headerTitle: "Assistant KASPI IA",
-    headerTitleAdmin: "Master IA • Directeur des Données",
-    activeBadge: "IA Active en Direct",
-    activeBadgeAdmin: "Accès Total Base",
-    subtitle: "Votre conseiller business et analyse des ventes",
-    subtitleAdmin: "Intelligence d'affaires et métriques globales KASPI POS",
+    headerTitle: "HEYUKA",
+    headerTitleAdmin: "HEYUKA • Propriétaire",
+    activeBadge: "Actif en direct",
+    activeBadgeAdmin: "Mode Souverain",
+    subtitle: "Intelligence universelle KASPI & analyses POS",
+    subtitleAdmin: "Cerveau souverain KASPI & métriques en direct",
     quickPrompts: [
-      { text: "Quelles sont les ventes d'aujourd'hui ?", icon: "trending" },
-      { text: "Quels articles sont en rupture ou stock faible ?", icon: "alert" },
-      { text: "Quels sont les produits les plus vendus cette semaine ?", icon: "bag" },
+      { text: "Donne-moi toutes les statistiques de mon magasin en PDF", icon: "trending" },
+      { text: "Qui est le dernier client et quel est le dernier ticket ?", icon: "alert" },
+      { text: "Quels produits risquent la rupture et prévision stock ?", icon: "bag" },
     ],
     quickPromptsAdmin: [
-      { text: "Quel est le MRR global et le GMV de la plateforme ?", icon: "trending" },
+      { text: "Rapport global MRR et GMV de la plateforme en PDF", icon: "trending" },
       { text: "Liste des boutiques enregistrées et statuts d'abonnement", icon: "alert" },
-      { text: "Statistiques d'utilisation IA sur la plateforme", icon: "bag" },
+      { text: "Statistiques globales d'utilisation sur la plateforme", icon: "bag" },
     ],
-    inputPlaceholder: "Posez votre question ou parlez à la voix...",
-    uploadTooltip: "Joindre une image ou facture d'achat (OCR)",
-    thinking: "L'IA analyse vos indicateurs en direct...",
-    error: "Impossible de joindre l'assistant IA",
+    inputPlaceholder: "Demandez à HEYUKA ou joignez une image...",
+    uploadTooltip: "Joindre une image ou facture",
+    thinking: "HEYUKA analyse et vérifie les données...",
+    error: "Impossible de joindre HEYUKA",
     retry: "Réessayer",
     documentAttachment: "Document Commercial",
-    closeTitle: "Fermer",
-    analyzePrompt: "Analyser le document joint",
-    voiceInput: "Commande vocale (100% gratuit sans jetons)",
+    closeTitle: "Fermer et effacer la session",
+    analyzePrompt: "Analyser l'élément joint",
+    voiceInput: "Commande vocale",
     voiceListening: "Écoute en cours... Parlez maintenant",
     voiceStop: "Arrêter l'écoute",
     voiceNotSupported: "Microphone non supporté sur ce navigateur",
     voiceReadAloud: "Lire la réponse à voix haute",
     voiceAutoSpeak: "Lecture vocale automatique",
-    dragTooltip: "Glisser pour déplacer la fenêtre n'importe où",
+    dragTooltip: "Glisser pour déplacer la fenêtre",
     voiceLang: "Langue vocale",
     copy: "Copier la réponse",
     copied: "Copié avec succès",
     goodResponse: "Bonne réponse",
     badResponse: "Mauvaise réponse",
     share: "Partager la réponse",
-    thoughtHeader: "Réfléchi et analysé les métriques",
+    thoughtHeader: "Vérifié par HEYUKA",
     scrollToBottom: "Défiler vers le bas",
     cancelVoice: "Annuler l'enregistrement",
   },
   en: {
-    headerTitle: "KASPI AI Assistant",
-    headerTitleAdmin: "Master AI • Chief Data Officer",
-    activeBadge: "Live AI Active",
-    activeBadgeAdmin: "Full DB Access",
-    subtitle: "Your business & sales intelligence advisor",
-    subtitleAdmin: "Business intelligence & platform-wide data telemetry",
+    headerTitle: "HEYUKA",
+    headerTitleAdmin: "HEYUKA • Owner",
+    activeBadge: "Live Active",
+    activeBadgeAdmin: "Sovereign Mode",
+    subtitle: "Unified KASPI intelligence & live POS insights",
+    subtitleAdmin: "Sovereign KASPI brain & universal telemetry",
     quickPrompts: [
-      { text: "What are today's total sales?", icon: "trending" },
-      { text: "Which items are running low on stock?", icon: "alert" },
-      { text: "What are the top-selling products this week?", icon: "bag" },
+      { text: "Give me all store statistics in a downloadable PDF table", icon: "trending" },
+      { text: "Who was the last customer and show the last receipt ticket", icon: "alert" },
+      { text: "Which products are low on stock and demand forecast?", icon: "bag" },
     ],
     quickPromptsAdmin: [
-      { text: "What is our total platform MRR, GMV, and revenue?", icon: "trending" },
+      { text: "What is our total platform MRR and GMV in PDF?", icon: "trending" },
       { text: "List all registered tenants and their subscription status", icon: "alert" },
-      { text: "Platform-wide AI usage stats and telemetry", icon: "bag" },
+      { text: "Platform-wide usage telemetry and operations", icon: "bag" },
     ],
-    inputPlaceholder: "Ask about sales, margins, or speak with voice...",
-    uploadTooltip: "Attach receipt image or PDF invoice (OCR)",
-    thinking: "AI is analyzing live store data...",
-    error: "Unable to reach KASPI AI Assistant",
+    inputPlaceholder: "Ask HEYUKA, attach photo, or speak...",
+    uploadTooltip: "Attach receipt image or photo",
+    thinking: "HEYUKA is reasoning and verifying...",
+    error: "Unable to reach HEYUKA",
     retry: "Retry",
     documentAttachment: "Commercial Document",
-    closeTitle: "Close",
-    analyzePrompt: "Analyze attached document",
-    voiceInput: "Voice interaction (100% Free zero-token)",
+    closeTitle: "Close and wipe session",
+    analyzePrompt: "Analyze attached image or document",
+    voiceInput: "Voice input",
     voiceListening: "Listening... Speak now",
     voiceStop: "Stop listening",
     voiceNotSupported: "Speech recognition not supported on this browser",
     voiceReadAloud: "Read response aloud",
     voiceAutoSpeak: "Auto-speak responses",
-    dragTooltip: "Drag to move window anywhere on screen",
+    dragTooltip: "Drag to move window",
     voiceLang: "Voice Language",
     copy: "Copy response",
     copied: "Copied successfully",
     goodResponse: "Helpful response",
     badResponse: "Unhelpful response",
     share: "Share response",
-    thoughtHeader: "Analyzed live store telemetry",
+    thoughtHeader: "Verified by HEYUKA",
     scrollToBottom: "Scroll to bottom",
     cancelVoice: "Cancel recording",
   },
@@ -247,13 +275,9 @@ function resolveCurrentLocale(pathname: string): SupportedLocale {
 
 export function AIChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isStudioOpen, setIsStudioOpen] = useState(false);
-  const [studioInitialTab, setStudioInitialTab] = useState<WorkspaceTab>("chat");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isOwnerSuperAdmin, setIsOwnerSuperAdmin] = useState(false);
   const [ownerBrainActive, setOwnerBrainActive] = useState(false);
-  const [ollamaOnline, setOllamaOnline] = useState(false);
-  const [ollamaModelName, setOllamaModelName] = useState<string>("");
   const [input, setInput] = useState("");
   const [attachment, setAttachment] = useState<{
     name: string;
@@ -262,6 +286,29 @@ export function AIChatWidget() {
   } | null>(null);
   const [localFallbackMessages, setLocalFallbackMessages] = useState<LocalChatMessage[]>([]);
   const [isLocalThinking, setIsLocalThinking] = useState(false);
+  const [activeArtifact, setActiveArtifact] = useState<LiveArtifactItem | null>(null);
+  const [thinkingElapsedSec, setThinkingElapsedSec] = useState(0);
+
+  // Unified HEYUKA Glassmorphic Gemini/ChatGPT Conversation Studio States
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeThreadId, setActiveThreadId] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = window.localStorage.getItem("heyuka_active_thread_id");
+        if (stored) return stored;
+      } catch {}
+    }
+    return `heyuka-${Date.now()}`;
+  });
+  const [threadSearch, setThreadSearch] = useState("");
+  const [savedThreads, setSavedThreads] = useState<StoredChatThread[]>([]);
+  const [memoryStats, setMemoryStats] = useState<{ totalMemories: number; totalSkills: number }>({
+    totalMemories: 0,
+    totalSkills: 0,
+  });
+  const lastEvolvedMsgIdRef = useRef<string | null>(null);
+  const composerTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Position state for free mouse/touch dragging
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
@@ -278,7 +325,6 @@ export function AIChatWidget() {
   // ChatGPT UI States
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [messageFeedback, setMessageFeedback] = useState<Record<string, "up" | "down" | null>>({});
-  const [expandedThoughts, setExpandedThoughts] = useState<Record<string, boolean>>({});
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(false);
 
@@ -314,6 +360,13 @@ export function AIChatWidget() {
   useEffect(() => {
     const loc = resolveCurrentLocale(pathname);
     setActiveLocale(loc);
+    if (pathname) {
+      void recordActivityBreadcrumb({
+        kind: "route",
+        route: pathname,
+        label: `Opened ${pathname}`,
+      });
+    }
   }, [pathname]);
 
   const t = AI_I18N[activeLocale] || AI_I18N.ar;
@@ -350,6 +403,7 @@ export function AIChatWidget() {
       return;
     }
     let active = true;
+    installGlobalActivitySensor();
     fetch(getApiUrl("/api/v1/me"))
       .then(async (res) => {
         if (!active) return;
@@ -364,13 +418,6 @@ export function AIChatWidget() {
       .catch(() => {
         if (active) setIsAuthenticated(typeof navigator !== "undefined" && !navigator.onLine);
       });
-    probeLocalOllamaModels()
-      .then((p) => {
-        if (!active) return;
-        setOllamaOnline(p.reachable && p.models.length > 0);
-        if (p.models[0]) setOllamaModelName(p.models[0]);
-      })
-      .catch(() => {});
     return () => {
       active = false;
     };
@@ -378,7 +425,7 @@ export function AIChatWidget() {
 
   const shouldRenderWidget = !isAuthPage && isAuthenticatedWorkspaceRoute && isAuthenticated;
 
-  // Listen for custom "open-master-ai", "open-ai-chat" and "open-ai-studio" events
+  // Listen for custom "open-master-ai", "open-ai-chat" events & Alt+X HUD shortcut (v7.8)
   useEffect(() => {
     const handleOpenAi = (ev: Event) => {
       setIsOpen((prev) => !prev);
@@ -387,22 +434,29 @@ export function AIChatWidget() {
         setInput(customEv.detail.prompt);
       }
     };
-    const handleOpenStudio = () => {
-      setIsOpen(false);
-      setIsStudioOpen(true);
+    const handleOpenDirect = () => setIsOpen(true);
+    const handleHotkey = (e: KeyboardEvent) => {
+      if (!shouldRenderWidget) return;
+      if (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === "x" || e.key === "X")) {
+        e.preventDefault();
+        setIsOpen((prev) => !prev);
+      }
     };
     window.addEventListener("open-master-ai", handleOpenAi);
     window.addEventListener("open-ai-chat", handleOpenAi);
-    window.addEventListener("open-ai-studio", handleOpenStudio);
+    window.addEventListener("open-ai-studio", handleOpenDirect);
+    window.addEventListener("keydown", handleHotkey);
     return () => {
       window.removeEventListener("open-master-ai", handleOpenAi);
       window.removeEventListener("open-ai-chat", handleOpenAi);
-      window.removeEventListener("open-ai-studio", handleOpenStudio);
+      window.removeEventListener("open-ai-studio", handleOpenDirect);
+      window.removeEventListener("keydown", handleHotkey);
     };
-  }, []);
+  }, [shouldRenderWidget]);
 
   // Dragging event handlers across mouse and touch
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (isExpanded) return;
     const target = e.target as HTMLElement;
     if (
       target.closest("button") ||
@@ -482,6 +536,9 @@ export function AIChatWidget() {
   const {
     messages: sdkMessages,
     sendMessage,
+    setMessages,
+    stop,
+    clearError,
     status,
     error: sdkError,
     regenerate,
@@ -490,6 +547,19 @@ export function AIChatWidget() {
   });
 
   const isLoading = status === "submitted" || status === "streaming" || isLocalThinking;
+
+  // Live Claude/ChatGPT-style elapsed timer running ONLY while a request is active
+  useEffect(() => {
+    if (!isLoading) {
+      setThinkingElapsedSec(0);
+      return;
+    }
+    const startMs = Date.now();
+    const id = setInterval(() => {
+      setThinkingElapsedSec(Math.floor((Date.now() - startMs) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [isLoading]);
 
   // Zero-Token Text-to-Speech (TTS) Reader with Automatic Language Detection
   const speakMessage = (messageId: string, rawText: string) => {
@@ -839,7 +909,7 @@ export function AIChatWidget() {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({
-          title: "KASPI AI Assistant",
+          title: "HEYUKA • KASPI",
           text,
         });
         return;
@@ -872,9 +942,8 @@ export function AIChatWidget() {
     };
   }, []);
 
-  // Real Local Ollama + Real Media Tools (Image Gen, Web Photos, Background Removal)
-  // Zero hardcoded canned business answers.
-  const executeRealLocalOrMedia = async (
+  // Handles immediate client/media actions (attached image BG cutout, web photo lookup)
+  const executeImmediateMediaTool = async (
     query: string,
     attachedFile: { name: string; type: string; url: string } | null,
     targetLocale: SupportedLocale
@@ -895,7 +964,7 @@ export function AIChatWidget() {
         body: JSON.stringify({
           kind: "MEDIA_OP",
           outcomeStatus: "SUCCESS",
-          modelUsed: cutout.method,
+          modelUsed: "heyuka-cutout",
           userPrompt: q || "remove background",
           assistantResponse: "Removed background locally",
           toolNamesUsed: ["removeImageBackgroundLocal"],
@@ -904,8 +973,71 @@ export function AIChatWidget() {
       return {
         handled: true,
         text: `${
-          isAr ? "✅ تمت إزالة الخلفية محلياً بنجاح" : "✅ Background removed locally"
-        } (${cutout.method}):\n[KASPI_MEDIA_IMAGE:${cutout.dataUrl}|${attachedFile.name.replace(/\.[^.]+$/, "")}-cutout.png]`,
+          isAr ? "✅ تمت إزالة الخلفية محلياً بنجاح:" : "✅ Background removed locally:"
+        }\n[KASPI_MEDIA_IMAGE:${cutout.dataUrl}|${attachedFile.name.replace(/\.[^.]+$/, "")}-cutout.png]`,
+      };
+    }
+
+    // 1.5 Browser OCR (tesseract.js) on attached image
+    if (
+      attachedFile?.type?.startsWith("image/") &&
+      /(ocr|extract.*text|read.*text|اقرأ\s*النص|استخرج\s*النص|استخراج\s*النص|نص\s*الصورة|قراءة\s*الورقة)/i.test(lower)
+    ) {
+      const ocr = await runBrowserOcrOnImage(attachedFile.url);
+      return {
+        handled: true,
+        text: ocr.text
+          ? `${isAr ? `📄 **النص المستخرج (${ocr.confidence}%):**` : `📄 **Extracted Text (${ocr.confidence}%):**`}\n\n${ocr.text}`
+          : isAr
+          ? "لم يُعثر على نص واضح داخل الصورة."
+          : "No readable text detected in this image.",
+      };
+    }
+
+    // 1.6 Browser Barcode / QR Decoding (@zxing/browser)
+    if (
+      attachedFile?.type?.startsWith("image/") &&
+      /(scan.*qr|decode|read.*barcode|qr\s*code|اقرأ\s*الباركود|فك\s*الباركود|مسح\s*الباركود)/i.test(lower)
+    ) {
+      const decoded = await decodeBarcodeFromImage(attachedFile.url);
+      return {
+        handled: true,
+        text: decoded.found
+          ? `${isAr ? "✅ **نتيجة قراءة الباركود:**" : "✅ **Barcode Decoded:**"}\n- **Format:** \`${decoded.format}\`\n- **Code:** \`${decoded.text}\``
+          : isAr
+          ? "لم أتمكن من قراءة باركود أو QR واضح داخل الصورة."
+          : "Could not detect a clear QR or barcode inside this image.",
+      };
+    }
+
+    // 1.7 Multi-Platform Social Media Smart Resizer (Canvas 0-Server)
+    if (
+      attachedFile?.type?.startsWith("image/") &&
+      /(social.*size|resize.*social|instagram.*tiktok|مقاسات|أحجام|تيكتوك|انستغرام|سوشيال)/i.test(lower)
+    ) {
+      const crops = await resizeImageForSocialPlatforms(attachedFile.url);
+      const cards = crops
+        .map(
+          (c, i) =>
+            `**${c.platform} (${c.dimensions})**\n[KASPI_MEDIA_IMAGE:${c.dataUrl}|social-${i + 1}-${c.dimensions}.png]`
+        )
+        .join("\n\n");
+      return {
+        handled: true,
+        text: `${isAr ? "📐 **تم تجهيز مقاسات السوشيال ميديا:**" : "📐 **Ready-to-Post Social Sizes:**"}\n\n${cards}`,
+      };
+    }
+
+    // 1.8 Brand Color Palette Extraction (Canvas Quantizer)
+    if (
+      attachedFile?.type?.startsWith("image/") &&
+      /(palette|colors|hex|ألوان|الألوان|باليت|كود\s*اللون)/i.test(lower)
+    ) {
+      const colors = await extractDominantColorPalette(attachedFile.url, 5);
+      const rows = colors.map((c) => `| \`${c.hex}\` | ${c.sharePercent}% |`).join("\n");
+      return {
+        handled: true,
+        text: `${isAr ? "🎨 **لوحة الألوان المستخرجة:**" : "🎨 **Extracted Color Palette:**"}\n\n| Hex | Share |\n| --- | --- |\n${rows}`,
       };
     }
 
@@ -930,7 +1062,7 @@ export function AIChatWidget() {
           body: JSON.stringify({
             kind: "MEDIA_OP",
             outcomeStatus: "SUCCESS",
-            modelUsed: "pollinations",
+            modelUsed: "heyuka-media",
             userPrompt: q,
             assistantResponse: "Generated product image",
             toolNamesUsed: ["generateProductImage"],
@@ -970,7 +1102,15 @@ export function AIChatWidget() {
       }
     }
 
-    // 4. Local Ollama Inference grounded in real live DB KPIs (no fabricated prose)
+    return { handled: false, text: "" };
+  };
+
+  // Fallback local node inference ONLY when cloud route is unreachable/offline
+  const tryDeviceCoreFallback = async (
+    query: string,
+    targetLocale: SupportedLocale,
+    activitySnapshot: string
+  ): Promise<string> => {
     let kpiContext = "";
     try {
       const res = await fetch(getApiUrl("/api/v1/dashboard/kpis"));
@@ -983,44 +1123,30 @@ export function AIChatWidget() {
 
     const ownerDirective =
       ownerBrainActive && isOwnerSuperAdmin
-        ? " You are currently speaking exclusively to the Sovereign Owner in X × Zebra Unified Mode."
-        : " Reply concisely as KASPI Local POS Assistant in the user's language (Darija/AR/FR/EN). Never fabricate sales metrics.";
+        ? " You are HEYUKA Sovereign Executive for KASPI POS."
+        : " Reply politely as HEYUKA (by KASPI) in the user's exact language (Darija/AR/FR/EN). Never invent numbers.";
 
-    const localRes = await probeAndChatLocalOllama({
-      preferredModel: ollamaModelName || undefined,
+    const localRes = await probeAndChatLocalXZebra({
       messages: [
         {
           role: "system",
-          content: `You are KASPI AI running locally via Ollama.${ownerDirective}${kpiContext}`,
+          content: `You are HEYUKA Unified Core owned by KASPI.${ownerDirective}${kpiContext}${
+            activitySnapshot ? `\nRecent Activity:\n${activitySnapshot}` : ""
+          }`,
         },
-        { role: "user", content: q || t.analyzePrompt },
+        { role: "user", content: query || t.analyzePrompt },
       ],
     });
 
     if (localRes.ok && localRes.text) {
-      setOllamaOnline(true);
-      setOllamaModelName(localRes.model);
-      void fetch(getApiUrl("/api/ai/zebra-trace"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kind: ownerBrainActive && isOwnerSuperAdmin ? "OWNER_CORRECTION" : "MODEL_ROUTE",
-          outcomeStatus: "SUCCESS",
-          modelUsed: localRes.model,
-          routeSource:
-            localRes.backend === "tauri_ollama"
-              ? "tauri_local"
-              : ownerBrainActive && isOwnerSuperAdmin
-              ? "zebra_x_owner"
-              : "local_ollama",
-          userPrompt: q,
-          assistantResponse: localRes.text,
-        }),
-      }).catch(() => {});
-      return { handled: true, text: localRes.text };
+      return localRes.text;
     }
 
-    return { handled: false, text: localRes.error || "" };
+    return targetLocale === "ar"
+      ? "⚠️ تعذر الوصول مؤقتاً إلى الخادم أو النواة المحلية لـ HEYUKA. تحقق من اتصال الإنترنت أو شغّل النواة المحلية."
+      : targetLocale === "fr"
+      ? "⚠️ Le noyau cloud et le relais local HEYUKA sont momentanément indisponibles. Vérifiez votre connexion."
+      : "⚠️ Both cloud and local HEYUKA nodes are currently unreachable. Please check your connection.";
   };
 
   // Auto-scroll to bottom of chat when new tokens or messages arrive
@@ -1029,6 +1155,29 @@ export function AIChatWidget() {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [sdkMessages, localFallbackMessages, isLoading, isOpen]);
+
+  const handleComposerPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.kind === "file" && item.type.startsWith("image/")) {
+        const pastedFile = item.getAsFile();
+        if (!pastedFile) continue;
+        e.preventDefault();
+        const reader = new FileReader();
+        reader.onload = () => {
+          setAttachment({
+            name: pastedFile.name || `screenshot-${Date.now()}.png`,
+            type: pastedFile.type || "image/png",
+            url: String(reader.result || ""),
+          });
+        };
+        reader.readAsDataURL(pastedFile);
+        break;
+      }
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1072,35 +1221,95 @@ export function AIChatWidget() {
     }
   };
 
-  const handleSend = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if ((!input.trim() && !attachment) || isLoading) return;
-
-    const messageText = input;
-    const currentAttachment = attachment;
-    setInput("");
-    setAttachment(null);
-
-    // 1. Prefer real Local Media Tools or Local Ollama Qwen when active
+  const dispatchChatRequest = async (
+    messageText: string,
+    currentAttachment: { name: string; type: string; url: string } | null
+  ) => {
     setIsLocalThinking(true);
     try {
-      const localAttempt = await executeRealLocalOrMedia(messageText, currentAttachment, activeLocale);
-      if (localAttempt.handled) {
+      const localMedia = await executeImmediateMediaTool(
+        messageText,
+        currentAttachment,
+        activeLocale
+      );
+      if (localMedia.handled) {
         setIsLocalThinking(false);
-        appendLocalExchange(messageText, localAttempt.text, currentAttachment);
+        appendLocalExchange(messageText, localMedia.text, currentAttachment);
         return;
       }
-    } catch (localErr: any) {
-      console.warn("[KASPI AI] Local attempt failed:", localErr);
+    } catch (localErr) {
+      console.warn("[HEYUKA] Media helper notice:", localErr);
     }
+
+    const activitySnapshot = await buildActivityContextSnapshot();
+    void recordActivityBreadcrumb({
+      kind: "ai_tool",
+      route: pathname || "/",
+      label: `HEYUKA prompt: ${messageText.slice(0, 60)}`,
+    });
+
+    // Phase 2 Client Document Parser: extract PDF / Word (.docx) / Excel (.xlsx) / CSV in browser
+    let enrichedMessageText = messageText;
+    if (currentAttachment?.url?.startsWith("data:") && !currentAttachment.type?.startsWith("image/")) {
+      try {
+        const res = await fetch(currentAttachment.url);
+        const buf = await res.arrayBuffer();
+        const lowerName = currentAttachment.name.toLowerCase();
+        let extractedDocText = "";
+
+        if (currentAttachment.type === "application/pdf" || lowerName.endsWith(".pdf")) {
+          const pdf = await extractTextFromPdfBuffer(buf);
+          extractedDocText = `PDF (${pdf.pageCount} pages):\n${pdf.text}`;
+        } else if (lowerName.endsWith(".docx") || currentAttachment.type.includes("wordprocessingml")) {
+          const doc = await extractTextFromWordBuffer(buf);
+          extractedDocText = `DOCX Content:\n${doc.text}`;
+        } else if (lowerName.endsWith(".xlsx") || currentAttachment.type.includes("spreadsheetml")) {
+          const sheet = await parseExcelBufferToText(buf);
+          extractedDocText = `Excel Sheet "${sheet.sheetName}" (${sheet.rowCount} rows):\n${sheet.previewCsv}`;
+        } else if (lowerName.endsWith(".csv") || currentAttachment.type.includes("csv") || currentAttachment.type.startsWith("text/")) {
+          const rawCsv = new TextDecoder().decode(buf);
+          const stats = lowerName.endsWith(".csv") ? await analyzeCsvDataframe(rawCsv) : null;
+          extractedDocText = stats
+            ? `CSV (${stats.rowCount} rows, columns: ${stats.columns.join(", ")}), numericStats=${JSON.stringify(stats.numericStats)}\nSample:\n${rawCsv.slice(0, 4000)}`
+            : rawCsv.slice(0, 5000);
+        }
+
+        if (extractedDocText.trim()) {
+          enrichedMessageText = `${messageText || t.analyzePrompt}\n\n[ATTACHED DOCUMENT CONTENT — ${currentAttachment.name}]\n${extractedDocText.slice(0, 7500)}`;
+        }
+      } catch (docErr) {
+        console.warn("[HEYUKA] Browser document parse notice:", docErr);
+      }
+    }
+
+    let recalledMemoryContext = "";
+    try {
+      const memRes = await searchEvolvingMemory(messageText || enrichedMessageText, 4);
+      setMemoryStats({
+        totalMemories: memRes.totalMemories || 0,
+        totalSkills: memRes.totalSkills || 0,
+      });
+      if (Array.isArray(memRes.hits) && memRes.hits.length > 0) {
+        recalledMemoryContext = memRes.hits
+          .slice(0, 4)
+          .map((h: any) => `- [${h?.kind || "memory"}] ${h?.content || h?.title || ""}`)
+          .join("\n")
+          .slice(0, 1500);
+      }
+    } catch {
+      // Never block chat dispatch on local memory lookup
+    }
+
     setIsLocalThinking(false);
 
-    // 2. Try Cloud /api/ai/chat (POS DB tools)
     try {
-      if (currentAttachment) {
+      if (
+        currentAttachment &&
+        (currentAttachment.type?.startsWith("image/") || currentAttachment.type === "application/pdf")
+      ) {
         await sendMessage(
           {
-            text: messageText || t.analyzePrompt,
+            text: enrichedMessageText || t.analyzePrompt,
             files: [
               {
                 type: "file",
@@ -1110,66 +1319,63 @@ export function AIChatWidget() {
             ],
           },
           {
-            body: { locale: activeLocale },
+            body: {
+              locale: activeLocale,
+              activityContext: activitySnapshot,
+              recalledMemoryContext,
+            },
             headers: { "x-app-locale": activeLocale },
           }
         );
       } else {
         await sendMessage(
-          { text: messageText },
+          { text: enrichedMessageText || messageText || t.analyzePrompt },
           {
-            body: { locale: activeLocale },
+            body: {
+              locale: activeLocale,
+              activityContext: activitySnapshot,
+              recalledMemoryContext,
+            },
             headers: { "x-app-locale": activeLocale },
           }
         );
       }
     } catch {
-      // Honest offline notice — zero fabricated AI reply
-      const offlineMsg =
-        activeLocale === "ar"
-          ? "⚠️ محرك أولاما المحلي غير متصل حالياً (127.0.0.1:11434) ومزود السحابة متوقف. اضغط على أيقونة التوسيع بالأعلى لتثبيت/تشغيل أولاما على جهازك."
-          : activeLocale === "fr"
-          ? "⚠️ Ollama local (127.0.0.1:11434) et le routeur cloud sont indisponibles. Ouvrez l'espace complet pour installer/démarrer Ollama."
-          : "⚠️ Local Ollama (127.0.0.1:11434) and cloud gateways are offline. Click Expand above to set up Ollama on your PC.";
-      appendLocalExchange(messageText, offlineMsg, currentAttachment);
+      setIsLocalThinking(true);
+      const fallbackReply = await tryDeviceCoreFallback(
+        enrichedMessageText,
+        activeLocale,
+        activitySnapshot
+      );
+      setIsLocalThinking(false);
+      appendLocalExchange(messageText, fallbackReply, currentAttachment);
     }
   };
 
-  const handleQuickPrompt = async (promptText: string) => {
-    setInput(promptText);
-    setIsLocalThinking(true);
-    try {
-      const localAttempt = await executeRealLocalOrMedia(promptText, null, activeLocale);
-      if (localAttempt.handled) {
-        setIsLocalThinking(false);
-        appendLocalExchange(promptText, localAttempt.text, null);
-        return;
-      }
-    } catch {}
-    setIsLocalThinking(false);
+  const handleSend = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if ((!input.trim() && !attachment) || isLoading) return;
 
-    try {
-      await sendMessage(
-        { text: promptText },
-        {
-          body: { locale: activeLocale },
-          headers: { "x-app-locale": activeLocale },
-        }
-      );
-    } catch {
-      const offlineMsg =
-        activeLocale === "ar"
-          ? "⚠️ أولاما المحلي غير مشغّل ومزود السحابة غير متاح. افتح لوحة التوسيع لتشغيل أولاما على جهازك."
-          : "⚠️ Local Ollama and cloud gateways are offline. Open Workspace above to start Ollama.";
-      appendLocalExchange(promptText, offlineMsg, null);
+    const messageText = input;
+    const currentAttachment = attachment;
+    setInput("");
+    setAttachment(null);
+    if (composerTextareaRef.current) {
+      composerTextareaRef.current.style.height = "auto";
     }
+    await dispatchChatRequest(messageText, currentAttachment);
+  };
+
+  const handleQuickPrompt = async (promptText: string) => {
+    setInput("");
+    await dispatchChatRequest(promptText, null);
   };
 
   const allDisplayMessages = useMemo(() => {
     return [...sdkMessages, ...localFallbackMessages];
   }, [sdkMessages, localFallbackMessages]);
 
-  const getMessageText = (m: any): string => {
+  const getMessageText = useCallback((m: any): string => {
     if (typeof m.content === "string") return m.content;
     if (Array.isArray(m.parts)) {
       return m.parts
@@ -1180,6 +1386,294 @@ export function AIChatWidget() {
         .join("");
     }
     return "";
+  }, []);
+
+  // Sync active thread ID permanently to localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem("heyuka_active_thread_id", activeThreadId);
+    } catch {}
+  }, [activeThreadId]);
+
+  // Restore saved chats permanently on open & refresh HEYUKA evolving memory stats
+  useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+    listChatThreads()
+      .then((threads) => {
+        if (!active) return;
+        setSavedThreads(threads);
+        if (allDisplayMessages.length === 0) {
+          const match = threads.find((th) => th.id === activeThreadId);
+          if (match && match.messages.length > 0) {
+            setLocalFallbackMessages(
+              match.messages.map((msg) => ({
+                id: msg.id,
+                role: (msg.role === "user" ? "user" : "assistant") as "user" | "assistant",
+                content: msg.content,
+              }))
+            );
+          }
+        }
+      })
+      .catch(() => {});
+
+    searchEvolvingMemory("", 1)
+      .then((mem) => {
+        if (!active) return;
+        setMemoryStats({
+          totalMemories: mem.totalMemories || 0,
+          totalSkills: mem.totalSkills || 0,
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, [isOpen, activeThreadId, allDisplayMessages.length]);
+
+  // Auto-persist active conversation + run HEYUKA FSRS memory & Voyager skill evolution
+  useEffect(() => {
+    if (isLoading || allDisplayMessages.length === 0) return;
+
+    const cleanMessages = allDisplayMessages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .map((m) => ({
+        id: m.id || `msg-${Math.random().toString(36).slice(2, 9)}`,
+        role: m.role as string,
+        content: getMessageText(m),
+      }))
+      .filter((m) => m.content.trim().length > 0);
+
+    if (cleanMessages.length === 0) return;
+
+    const timer = setTimeout(() => {
+      saveChatThreadSnapshot({
+        id: activeThreadId,
+        messages: cleanMessages,
+      })
+        .then(() => listChatThreads())
+        .then((threads) => setSavedThreads(threads))
+        .catch(() => {});
+    }, 450);
+
+    const lastMsg = cleanMessages[cleanMessages.length - 1];
+    if (
+      lastMsg &&
+      lastMsg.role === "assistant" &&
+      lastMsg.id !== lastEvolvedMsgIdRef.current &&
+      lastMsg.content.length >= 24
+    ) {
+      lastEvolvedMsgIdRef.current = lastMsg.id;
+      const prevUser = [...cleanMessages].reverse().find((m) => m.role === "user");
+      if (prevUser) {
+        void (async () => {
+          try {
+            const snippet = `${prevUser.content.slice(0, 140)} -> ${lastMsg.content.slice(0, 260)}`;
+            await recordOrReinforceMemory({
+              title: prevUser.content.slice(0, 80) || "HEYUKA Chat Memory",
+              content: snippet,
+              tags: [
+                "heyuka-chat",
+                /\[KASPI_|```/.test(lastMsg.content) ? "skill-artifact" : "dialogue",
+                isOwnerSuperAdmin ? "owner" : "merchant",
+              ],
+              language: activeLocale,
+            });
+
+            if (/\[KASPI_[A-Z_]+:|```/.test(lastMsg.content)) {
+              const detectedTools: string[] = [];
+              if (lastMsg.content.includes("[KASPI_IMAGE:")) detectedTools.push("generateProductImage");
+              if (lastMsg.content.includes("[KASPI_PDF_REPORT:")) detectedTools.push("generatePdfReport");
+              if (lastMsg.content.includes("[KASPI_OFFICE_EXPORT:")) detectedTools.push("createRichArtifactOrExport");
+              if (lastMsg.content.includes("[KASPI_LIVE_ARTIFACT:")) detectedTools.push("createRichArtifactOrExport");
+              if (lastMsg.content.includes("```")) detectedTools.push("executeCodeSandbox");
+
+              await registerVoyagerSkill({
+                name: prevUser.content.slice(0, 80) || "HEYUKA Skill",
+                domain: "heyuka-unified-chat",
+                summary: lastMsg.content.slice(0, 240),
+                steps: [
+                  prevUser.content.slice(0, 140),
+                  lastMsg.content.slice(0, 240),
+                ],
+                toolNames: detectedTools,
+                tags: ["kaspi-chat", activeLocale],
+              });
+            }
+
+            const memStats = await searchEvolvingMemory("", 1);
+            setMemoryStats({
+              totalMemories: memStats.totalMemories || 0,
+              totalSkills: memStats.totalSkills || 0,
+            });
+          } catch {
+            // Best-effort client memory reinforcement
+          }
+        })();
+      }
+    }
+
+    return () => clearTimeout(timer);
+  }, [allDisplayMessages, isLoading, activeThreadId, activeLocale, isOwnerSuperAdmin, getMessageText]);
+
+  const persistActiveThreadSnapshot = useCallback(async () => {
+    const cleanMessages = allDisplayMessages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .map((m) => ({
+        id: m.id || `msg-${Math.random().toString(36).slice(2, 9)}`,
+        role: m.role as string,
+        content: getMessageText(m),
+      }))
+      .filter((m) => m.content.trim().length > 0);
+    if (cleanMessages.length === 0) return;
+    await saveChatThreadSnapshot({
+      id: activeThreadId,
+      messages: cleanMessages,
+    });
+  }, [allDisplayMessages, activeThreadId, getMessageText]);
+
+  const refreshSavedThreads = useCallback(
+    async (query = threadSearch) => {
+      const items = await listChatThreads(query);
+      setSavedThreads(items);
+    },
+    [threadSearch]
+  );
+
+  // Load & filter saved conversation threads when Expanded Workspace or search changes
+  useEffect(() => {
+    if (!isOpen || !isExpanded) return;
+    void refreshSavedThreads(threadSearch);
+  }, [isOpen, isExpanded, threadSearch, refreshSavedThreads]);
+
+  // Persist compact text snapshot cleanly after each completed exchange
+  useEffect(() => {
+    if (!isOpen || isLoading || allDisplayMessages.length === 0) return;
+    const timer = setTimeout(() => {
+      void persistActiveThreadSnapshot().then(() => {
+        if (isExpanded) void refreshSavedThreads(threadSearch);
+      });
+    }, 280);
+    return () => clearTimeout(timer);
+  }, [
+    isOpen,
+    isLoading,
+    allDisplayMessages.length,
+    isExpanded,
+    threadSearch,
+    persistActiveThreadSnapshot,
+    refreshSavedThreads,
+  ]);
+
+  const handleNewThread = () => {
+    if (allDisplayMessages.length > 0) {
+      void persistActiveThreadSnapshot().then(() => refreshSavedThreads(threadSearch));
+    }
+    try {
+      stop?.();
+      setMessages?.([]);
+      clearError?.();
+    } catch {}
+    setLocalFallbackMessages([]);
+    setAttachment(null);
+    setActiveArtifact(null);
+    setInput("");
+    setIsLocalThinking(false);
+    setActiveThreadId(`zx-${Date.now()}`);
+  };
+
+  const handleSelectThread = (thread: StoredChatThread) => {
+    if (thread.id === activeThreadId) return;
+    if (allDisplayMessages.length > 0) {
+      void persistActiveThreadSnapshot();
+    }
+    try {
+      stop?.();
+      clearError?.();
+      setMessages?.(
+        thread.messages.map((m) => ({
+          id: m.id,
+          role: m.role,
+          parts: [{ type: "text" as const, text: m.content }],
+        }))
+      );
+    } catch {}
+    setLocalFallbackMessages([]);
+    setAttachment(null);
+    setActiveArtifact(null);
+    setInput("");
+    setIsLocalThinking(false);
+    setActiveThreadId(thread.id);
+  };
+
+  const handleTogglePinThread = (id: string) => {
+    void togglePinChatThread(id).then(() => refreshSavedThreads(threadSearch));
+  };
+
+  const handleRenameThread = (id: string, newTitle: string) => {
+    void renameChatThread(id, newTitle).then(() => refreshSavedThreads(threadSearch));
+  };
+
+  const handleDeleteThread = (id: string) => {
+    void deleteChatThread(id).then(() => refreshSavedThreads(threadSearch));
+    if (id === activeThreadId) {
+      try {
+        stop?.();
+        setMessages?.([]);
+        clearError?.();
+      } catch {}
+      setLocalFallbackMessages([]);
+      setActiveArtifact(null);
+      setActiveThreadId(`zx-${Date.now()}`);
+    }
+  };
+
+  /**
+   * Persists a lightweight text snapshot to isolated Dexie storage if non-empty,
+   * then auto-wipes volatile chat memory, stops streams/audio/TTS, resets
+   * compact popup state, and releases WASM buffers so CPU/RAM return to 0.
+   */
+  const handleCloseChat = () => {
+    if (allDisplayMessages.length > 0) {
+      void persistActiveThreadSnapshot();
+    }
+    try {
+      stop?.();
+    } catch {}
+    try {
+      setMessages?.([]);
+      clearError?.();
+    } catch {}
+    setLocalFallbackMessages([]);
+    setAttachment(null);
+    setActiveArtifact(null);
+    setInput("");
+    setIsLocalThinking(false);
+    setCopiedMessageId(null);
+    setMessageFeedback({});
+    stopAudioVisualizer();
+    isListeningRef.current = false;
+    setIsListening(false);
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {}
+    }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    setSpeakingMessageId(null);
+    setIsExpanded(false);
+    setPosition(null);
+    void persistActiveThreadSnapshot();
+    try {
+      window.localStorage.setItem("heyuka_active_thread_id", activeThreadId);
+    } catch {}
+    void releaseWasmResources();
+    setIsOpen(false);
   };
 
   if (!shouldRenderWidget) {
@@ -1208,7 +1702,7 @@ export function AIChatWidget() {
             ref={widgetRef}
             dir={activeLocale === "ar" ? "rtl" : "ltr"}
             style={
-              position
+              !isExpanded && position
                 ? {
                     position: "fixed",
                     left: `${position.x}px`,
@@ -1219,95 +1713,187 @@ export function AIChatWidget() {
                 : undefined
             }
             className={`fixed ${
-              position ? "" : "bottom-4 end-4"
-            } z-50 w-[92vw] sm:w-[430px] max-h-[calc(100vh-4.5rem)] origin-bottom animate-in fade-in slide-in-from-bottom-4 duration-200 print:hidden font-sans ${
-              isDragging ? "select-none cursor-grabbing opacity-95 transition-none" : ""
-            }`}
+              isExpanded
+                ? "top-3 bottom-3 start-3 end-3 sm:top-5 sm:bottom-5 sm:start-5 sm:end-5 z-50 origin-center animate-in fade-in duration-200"
+                : `${
+                    position ? "" : "bottom-4 end-4"
+                  } z-50 w-[92vw] sm:w-[430px] max-h-[calc(100vh-4.5rem)] origin-bottom animate-in fade-in slide-in-from-bottom-4 duration-200 ${
+                    isDragging ? "select-none cursor-grabbing opacity-95 transition-none" : ""
+                  }`
+            } print:hidden font-sans`}
           >
-            <div className="relative w-full h-[590px] max-h-[calc(100vh-4.5rem)] kaspi-polar-aurora-orbit kaspi-ai-assistant-shield rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-              {/* Header with Dragging on Header & Clean Apple Back Button */}
-              <div
-                onMouseDown={handleDragStart}
-                onTouchStart={handleDragStart}
-                onDoubleClick={(e) => {
-                  e.stopPropagation();
-                  setIsOpen(false);
-                  setIsStudioOpen(true);
-                }}
-                className="border-b border-white/15 text-[var(--kaspi-text-primary)] px-4 py-3 flex items-center justify-between shadow-xs shrink-0 cursor-grab active:cursor-grabbing select-none"
-                title="اسحب النافذة أو انقر مرتين لفتح Kaspi AI Studio الكامل"
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-full kaspi-glass-surface flex items-center justify-center shrink-0">
-                    <Bot className="w-4 h-4 text-[var(--kaspi-text-primary)]" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <h3 className="font-bold text-xs sm:text-sm tracking-wide text-[var(--kaspi-text-primary)] truncate">
-                        {isAdminView ? t.headerTitleAdmin : t.headerTitle}
-                      </h3>
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 shrink-0">
-                        <Zap className="w-2.5 h-2.5" />
-                        {isAdminView ? t.activeBadgeAdmin : t.activeBadge}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-[var(--kaspi-text-muted)] font-normal truncate">
-                      {isAdminView ? t.subtitleAdmin : t.subtitle}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {isOwnerSuperAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => setOwnerBrainActive((prev) => !prev)}
-                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-xl border text-[10px] font-bold transition-colors cursor-pointer ${
-                        ownerBrainActive
-                          ? "bg-amber-500/20 border-amber-400/50 text-amber-200"
-                          : "kaspi-glass-surface border-white/15 text-zinc-300 hover:border-amber-500/40"
-                      }`}
-                      title="X × Zebra Owner Brain Mode (Owner Only)"
-                    >
-                      <ShieldCheck className="w-3 h-3 text-amber-300" />
-                      <span>X×Z</span>
-                    </button>
-                  )}
-
-                  <span
-                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[9px] font-semibold border ${
-                      ollamaOnline
-                        ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-300"
-                        : "bg-white/5 border-white/10 text-zinc-400"
-                    }`}
-                    title={ollamaOnline ? `Ollama Local (${ollamaModelName})` : "Local Ollama Offline"}
-                  >
-                    <Cpu className="w-2.5 h-2.5" />
-                    <span>{ollamaOnline ? "Qwen" : "Off"}</span>
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStudioInitialTab("chat");
-                      setIsOpen(false);
-                      setIsStudioOpen(true);
-                    }}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-xl kaspi-glass-surface hover:bg-emerald-500/20 border border-white/15 hover:border-emerald-500/40 text-zinc-200 hover:text-emerald-300 transition-colors cursor-pointer text-[10px] font-bold"
-                    title={activeLocale === "ar" ? "تكبير واجهة الإدارة والربط والأدوات" : "Expand Local AI & Store Workspace"}
-                  >
-                    <Maximize2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{activeLocale === "ar" ? "توسيع" : "Expand"}</span>
-                  </button>
-
-                  {/* Strictly Closes Window Only on Explicit Click */}
-                  <AppleBackButton
-                    onClick={() => setIsOpen(false)}
+            <div
+              className={
+                isExpanded
+                  ? "relative w-full h-full backdrop-blur-2xl bg-slate-950/80 border border-white/15 rounded-3xl shadow-2xl flex overflow-hidden"
+                  : "relative w-full h-[590px] max-h-[calc(100vh-4.5rem)] kaspi-polar-aurora-orbit kaspi-ai-assistant-shield rounded-2xl shadow-2xl flex overflow-hidden"
+              }
+            >
+              {/* Collapsible Gemini-style Conversation Sidebar (Expanded Workspace Only) */}
+              {isExpanded && sidebarOpen && (
+                <div className="absolute md:relative top-0 bottom-0 start-0 z-30 flex h-full shadow-2xl md:shadow-none">
+                  <XZebraThreadsSidebar
+                    threads={savedThreads}
+                    activeThreadId={activeThreadId}
+                    searchQuery={threadSearch}
                     locale={activeLocale}
-                    title={t.closeTitle}
+                    onSearchChange={setThreadSearch}
+                    onNewChat={handleNewThread}
+                    onSelectThread={handleSelectThread}
+                    onTogglePin={handleTogglePinThread}
+                    onRename={handleRenameThread}
+                    onDelete={handleDeleteThread}
+                    onCloseSidebarMobile={() => setSidebarOpen(false)}
                   />
                 </div>
-              </div>
+              )}
+
+              <div className="relative flex-1 min-w-0 flex flex-col h-full overflow-hidden">
+                {/* Header with Official HEYUKA Emblem, Sidebar/Expand Toggles & Auto-Wipe Back Button */}
+                <div
+                  onMouseDown={handleDragStart}
+                  onTouchStart={handleDragStart}
+                  className={`border-b border-white/15 text-[var(--kaspi-text-primary)] px-4 py-3 flex items-center justify-between shadow-xs shrink-0 select-none ${
+                    isExpanded ? "" : "cursor-grab active:cursor-grabbing"
+                  }`}
+                  title={isExpanded ? undefined : t.dragTooltip}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {isExpanded && (
+                      <button
+                        type="button"
+                        onClick={() => setSidebarOpen((prev) => !prev)}
+                        className="w-8 h-8 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-zinc-200 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        title={
+                          activeLocale === "ar"
+                            ? "إظهار / إخفاء المحادثات"
+                            : activeLocale === "fr"
+                            ? "Afficher / masquer les discussions"
+                            : "Toggle chats sidebar"
+                        }
+                        aria-label="Toggle threads sidebar"
+                      >
+                        <PanelLeft className="w-4 h-4" />
+                      </button>
+                    )}
+
+                    <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/15 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                      <img
+                        src="/logo-mark.png"
+                        alt="HEYUKA"
+                        className="w-5 h-5 object-contain"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h3 className="font-bold text-xs sm:text-sm tracking-wide text-[var(--kaspi-text-primary)] truncate">
+                          {isAdminView ? t.headerTitleAdmin : t.headerTitle}
+                        </h3>
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 shrink-0">
+                          <Zap className="w-2.5 h-2.5" />
+                          {isAdminView ? t.activeBadgeAdmin : t.activeBadge}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-[var(--kaspi-text-muted)] font-normal truncate">
+                        {isAdminView ? t.subtitleAdmin : t.subtitle}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isOwnerSuperAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => setOwnerBrainActive((prev) => !prev)}
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-xl border text-[10px] font-bold transition-colors cursor-pointer ${
+                          ownerBrainActive
+                            ? "bg-amber-500/20 border-amber-400/50 text-amber-200"
+                            : "kaspi-glass-surface border-white/15 text-zinc-300 hover:border-amber-500/40"
+                        }`}
+                        title="HEYUKA Sovereign Mode — KASPI Owner"
+                      >
+                        <ShieldCheck className="w-3 h-3 text-amber-300" />
+                        <span>HEYUKA PRO</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsExpanded((prev) => {
+                          const next = !prev;
+                          if (next) setPosition(null);
+                          return next;
+                        });
+                      }}
+                      className="w-8 h-8 rounded-xl kaspi-glass-surface border border-white/15 text-zinc-200 hover:text-white hover:border-emerald-400/50 flex items-center justify-center transition-colors cursor-pointer"
+                      title={
+                        isExpanded
+                          ? activeLocale === "ar"
+                            ? "تصغير النافذة"
+                            : activeLocale === "fr"
+                            ? "Réduire la fenêtre"
+                            : "Compact window"
+                          : activeLocale === "ar"
+                          ? "توسيع مساحة العمل"
+                          : activeLocale === "fr"
+                          ? "Agrandir l'espace de travail"
+                          : "Expand workspace"
+                      }
+                      aria-label={isExpanded ? "Compact window" : "Expand workspace"}
+                    >
+                      {isExpanded ? (
+                        <Minimize2 className="w-3.5 h-3.5" />
+                      ) : (
+                        <Maximize2 className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+
+                    {/* Strictly Closes Window & Auto-Wipes Session State */}
+                    {isExpanded && (memoryStats.totalMemories > 0 || memoryStats.totalSkills > 0) && (
+                      <span
+                        className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-emerald-400/25 bg-emerald-500/10 text-[10px] font-medium text-emerald-300"
+                        title="HEYUKA Persistent Memory & Voyager Skills"
+                      >
+                        <Sparkles className="w-2.5 h-2.5" />
+                        <span>
+                          {memoryStats.totalMemories} • {memoryStats.totalSkills}
+                        </span>
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => void handleNewThread()}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-white/10 bg-white/[0.05] hover:bg-white/[0.12] text-zinc-200 hover:text-white text-[11px] font-medium transition-colors cursor-pointer"
+                      title={
+                        activeLocale === "ar"
+                          ? "محادثة جديدة (تبقى المحادثات السابقة محفوظة)"
+                          : activeLocale === "fr"
+                          ? "Nouvelle discussion"
+                          : "New Chat"
+                      }
+                      aria-label={activeLocale === "ar" ? "محادثة جديدة" : "New Chat"}
+                    >
+                      <Plus className="w-3.5 h-3.5 text-emerald-400" />
+                      {isExpanded && (
+                        <span>
+                          {activeLocale === "ar"
+                            ? "جديدة"
+                            : activeLocale === "fr"
+                            ? "Nouveau"
+                            : "New"}
+                        </span>
+                      )}
+                    </button>
+
+                    <AppleBackButton
+                      onClick={handleCloseChat}
+                      locale={activeLocale}
+                      title={t.closeTitle}
+                    />
+                  </div>
+                </div>
 
               {/* Messages Area with Doodle Wallpaper & Clean Scrollbar Suppression */}
               <div
@@ -1357,21 +1943,55 @@ export function AIChatWidget() {
                 </div>
 
                 {/* Elevated Messages Content */}
-                <div className="relative z-10 space-y-3.5">
+                <div
+                  className={
+                    isExpanded
+                      ? "relative z-10 space-y-4 max-w-3xl mx-auto w-full py-4"
+                      : "relative z-10 space-y-3.5"
+                  }
+                >
                   {allDisplayMessages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center p-3">
-                      <div className="w-12 h-12 rounded-2xl bg-zinc-900/90 backdrop-blur-md border border-zinc-800 flex items-center justify-center text-white mb-2.5 shadow-inner">
-                        <Sparkles className="w-6 h-6 text-emerald-400" />
+                    <div
+                      className={`flex flex-col items-center justify-center text-center ${
+                        isExpanded ? "min-h-[45vh] p-6" : "h-full p-3"
+                      }`}
+                    >
+                      <div
+                        className={`${
+                          isExpanded
+                            ? "w-16 h-16 rounded-3xl mb-4"
+                            : "w-12 h-12 rounded-2xl mb-2.5"
+                        } bg-white/[0.06] backdrop-blur-xl border border-white/15 flex items-center justify-center shadow-lg shadow-emerald-500/10`}
+                      >
+                        <img
+                          src="/logo-mark.png"
+                          alt="HEYUKA"
+                          className={isExpanded ? "w-10 h-10 object-contain" : "w-7 h-7 object-contain"}
+                        />
                       </div>
-                      <h4 className="font-bold text-white text-xs sm:text-sm mb-1">
+                      <h4
+                        className={`font-bold text-white mb-1 tracking-tight ${
+                          isExpanded ? "text-lg sm:text-xl" : "text-xs sm:text-sm"
+                        }`}
+                      >
                         {isAdminView ? t.headerTitleAdmin : t.headerTitle}
                       </h4>
-                      <p className="text-[11px] text-zinc-400 max-w-[280px] mb-3 leading-relaxed">
+                      <p
+                        className={`text-zinc-400 leading-relaxed ${
+                          isExpanded
+                            ? "text-xs sm:text-sm max-w-md mb-6"
+                            : "text-[11px] max-w-[280px] mb-3"
+                        }`}
+                      >
                         {isAdminView ? t.subtitleAdmin : t.subtitle}
                       </p>
 
                       {/* 100% Localized Quick Suggestion Chips */}
-                      <div className="w-full space-y-2 text-start">
+                      <div
+                        className={`w-full text-start ${
+                          isExpanded ? "grid grid-cols-1 sm:grid-cols-3 gap-2.5" : "space-y-2"
+                        }`}
+                      >
                         {promptSuggestions.map((prompt, idx) => (
                           <button
                             key={idx}
@@ -1449,91 +2069,14 @@ export function AIChatWidget() {
                               );
                             })}
 
-                            {/* Collapsible Reasoning Header (ChatGPT Style - Image 5) */}
-                            {!isUser && (
-                              <div className="mb-2">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setExpandedThoughts((prev) => ({
-                                      ...prev,
-                                      [m.id]: !prev[m.id],
-                                    }))
-                                  }
-                                  className="inline-flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer py-0.5 select-none"
-                                >
-                                  {expandedThoughts[m.id] ? (
-                                    <ChevronDown className="w-3.5 h-3.5 text-emerald-400" />
-                                  ) : (
-                                    <ChevronRight
-                                      className={`w-3.5 h-3.5 text-zinc-500 ${
-                                        activeLocale === "ar" ? "rotate-180" : ""
-                                      }`}
-                                    />
-                                  )}
-                                  <span>{t.thoughtHeader}</span>
-                                </button>
-                                {expandedThoughts[m.id] && (
-                                  <div className="mt-1.5 p-2 rounded-lg bg-black/40 border border-white/5 text-[10px] text-zinc-400 space-y-1 animate-in fade-in duration-150">
-                                    <p>
-                                      •{" "}
-                                      {activeLocale === "ar"
-                                        ? "فحص سجل المعاملات اللحظية ومؤشرات المبيعات."
-                                        : activeLocale === "fr"
-                                        ? "Validation du journal des ventes temps-réel."
-                                        : "Validation of real-time sales transactions."}
-                                    </p>
-                                    <p>
-                                      •{" "}
-                                      {activeLocale === "ar"
-                                        ? "مطابقة مستويات المخزون مع حدود التنبيه."
-                                        : activeLocale === "fr"
-                                        ? "Contrôle des seuils d'alerte de stock."
-                                        : "Verification of stock warning thresholds."}
-                                    </p>
-                                    <p>
-                                      •{" "}
-                                      {activeLocale === "ar"
-                                        ? "معالجة محلية 100% بدون استهلاك أي توكنز خارجي."
-                                        : activeLocale === "fr"
-                                        ? "Traitement 100% local sans coût de jetons."
-                                        : "100% free local zero-token processing."}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Message Text & Inline Media Results */}
-                            <div className="whitespace-pre-wrap space-y-2">
-                              {textContent.split(/(\[KASPI_MEDIA_IMAGE:[^\]]+\])/g).map((part, pIdx) => {
-                                const mediaMatch = part.match(/^\[KASPI_MEDIA_IMAGE:([^|\]]+)\|([^\]]+)\]$/);
-                                if (!mediaMatch) {
-                                  return part ? <span key={pIdx}>{part}</span> : null;
-                                }
-                                const [, mediaUrl, fileName] = mediaMatch;
-                                return (
-                                  <div key={pIdx} className="rounded-xl border border-white/15 bg-zinc-950/70 p-2 space-y-1.5">
-                                    <img
-                                      src={mediaUrl}
-                                      alt={fileName}
-                                      className="max-h-40 w-full object-contain rounded-lg bg-zinc-900"
-                                    />
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="text-[10px] text-zinc-400 truncate">{fileName}</span>
-                                      <a
-                                        href={mediaUrl}
-                                        download={fileName}
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-semibold"
-                                      >
-                                        <Download className="w-3 h-3" />
-                                        <span>Save</span>
-                                      </a>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                            {/* Gated HEYUKA Message Body (Markdown Tables, PDF, Office, Diagrams, Live Preview, Generated Images) */}
+                            <XZebraRichMessage
+                              message={m}
+                              rawText={textContent}
+                              locale={activeLocale}
+                              isUser={isUser}
+                              onOpenArtifact={setActiveArtifact}
+                            />
 
                             {/* ChatGPT Message Action Bar (Image 1, 2, 5) */}
                             {!isUser && (
@@ -1643,12 +2186,26 @@ export function AIChatWidget() {
 
                   {isLoading && (
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-zinc-900/90 backdrop-blur-md border border-zinc-800 flex items-center justify-center shrink-0">
-                        <Bot className="w-3.5 h-3.5 text-emerald-400" />
+                      <div className="w-7 h-7 rounded-full bg-white/[0.08] backdrop-blur-md border border-white/15 flex items-center justify-center shrink-0">
+                        <img src="/logo-mark.png" alt="HEYUKA" className="w-4 h-4 object-contain animate-pulse" />
                       </div>
-                      <div className="bg-zinc-900/95 backdrop-blur-md border border-zinc-800 text-zinc-400 px-3 py-2 rounded-2xl rounded-tl-none text-xs flex items-center gap-2 shadow-xs">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
-                        <span>{t.thinking}</span>
+                      <div className="bg-zinc-900/95 backdrop-blur-md border border-emerald-500/30 text-zinc-300 px-3 py-2 rounded-2xl rounded-tl-none text-xs flex items-center gap-2 shadow-xs">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400 shrink-0" />
+                        <span className="truncate">
+                          {thinkingElapsedSec < 3
+                            ? t.thinking
+                            : thinkingElapsedSec < 7
+                            ? activeLocale === "ar"
+                              ? "جرد المصادر والأدوات والتدقيق..."
+                              : "Scanning tools & verifying facts..."
+                            : activeLocale === "ar"
+                            ? "صياغة النتيجة النهائية بدقة..."
+                            : "Polishing final answer..."}
+                        </span>
+                        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shrink-0">
+                          ⏱ {String(Math.floor(thinkingElapsedSec / 60)).padStart(2, "0")}:
+                          {String(thinkingElapsedSec % 60).padStart(2, "0")}
+                        </span>
                       </div>
                     </div>
                   )}
@@ -1684,41 +2241,61 @@ export function AIChatWidget() {
                 </button>
               )}
 
-              {/* Attachment Preview Badge */}
-              {attachment && (
-                <div className="px-3 py-2 bg-zinc-900 border-t border-zinc-800 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 overflow-hidden text-xs text-zinc-300">
-                    {attachment.type.startsWith("image/") ? (
-                      <img
-                        src={attachment.url}
-                        alt="preview"
-                        className="w-7 h-7 rounded-md object-cover border border-zinc-700 shrink-0"
-                      />
-                    ) : (
-                      <FileText className="w-5 h-5 text-zinc-400 shrink-0" />
-                    )}
-                    <span className="truncate max-w-[220px] font-medium text-xs">
-                      {attachment.name}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setAttachment(null)}
-                    className="p-1 text-zinc-400 hover:text-white rounded-full cursor-pointer hover:bg-zinc-800"
-                    aria-label="Remove attachment"
+              {/* Composer Shell (Centered Floating Glass Pill when Expanded) */}
+              <div
+                className={
+                  isExpanded
+                    ? "w-full max-w-3xl mx-auto px-4 pb-4 shrink-0"
+                    : "shrink-0"
+                }
+              >
+                {/* Attachment Preview Badge */}
+                {attachment && (
+                  <div
+                    className={
+                      isExpanded
+                        ? "mb-2 px-3.5 py-2 rounded-2xl bg-white/[0.06] border border-white/15 backdrop-blur-xl flex items-center justify-between gap-2"
+                        : "px-3 py-2 bg-zinc-900 border-t border-zinc-800 flex items-center justify-between gap-2"
+                    }
                   >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
+                    <div className="flex items-center gap-2 overflow-hidden text-xs text-zinc-300">
+                      {attachment.type.startsWith("image/") ? (
+                        <img
+                          src={attachment.url}
+                          alt="preview"
+                          className="w-7 h-7 rounded-md object-cover border border-zinc-700 shrink-0"
+                        />
+                      ) : (
+                        <FileText className="w-5 h-5 text-zinc-400 shrink-0" />
+                      )}
+                      <span className="truncate max-w-[220px] font-medium text-xs">
+                        {attachment.name}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAttachment(null)}
+                      className="p-1 text-zinc-400 hover:text-white rounded-full cursor-pointer hover:bg-zinc-800"
+                      aria-label="Remove attachment"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
 
-              {/* 
-                ChatGPT-Style Voice & Input Bar in KASPI Emerald Identity:
-                - Active Voice Recording State (Image 3): (X) Cancel, Animated Waveform Dots, [■] Stop, [↑] Submit
-                - Inactive Input State (Image 4): [+] Attach, Rounded Pill, [🎤] Mic, Circular [↑] Submit
-              */}
-              {isListening ? (
-                <div className="p-2.5 px-4 bg-zinc-950/95 backdrop-blur-xl border-t border-emerald-500/30 flex items-center justify-between gap-3 shrink-0">
+                {/* 
+                  ChatGPT-Style Voice & Input Bar in KASPI Emerald Identity:
+                  - Active Voice Recording State (Image 3): (X) Cancel, Animated Waveform Dots, [■] Stop, [↑] Submit
+                  - Inactive Input State (Image 4): [+] Attach, Rounded Pill, [🎤] Mic, Circular [↑] Submit
+                */}
+                {isListening ? (
+                  <div
+                    className={
+                      isExpanded
+                        ? "p-3 px-4 rounded-2xl border border-emerald-500/35 bg-slate-900/90 backdrop-blur-2xl shadow-xl flex items-center justify-between gap-3 shrink-0"
+                        : "p-2.5 px-4 bg-zinc-950/95 backdrop-blur-xl border-t border-emerald-500/30 flex items-center justify-between gap-3 shrink-0"
+                    }
+                  >
                   {/* Left: Cancel button (X) */}
                   <button
                     type="button"
@@ -1812,63 +2389,18 @@ export function AIChatWidget() {
                     </div>
                   )}
 
-                  {/* Quick Media & Responder Bar inside Compact Chat */}
-                  <div className="px-3 py-1.5 border-t border-white/10 bg-zinc-950/60 flex items-center gap-1.5 overflow-x-auto kaspi-no-scrollbar">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStudioInitialTab("media");
-                        setIsOpen(false);
-                        setIsStudioOpen(true);
-                      }}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] text-zinc-300 shrink-0 cursor-pointer"
-                    >
-                      <ImageIcon className="w-3 h-3 text-emerald-400" />
-                      <span>{activeLocale === "ar" ? "توليد صورة" : "AI Photo"}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStudioInitialTab("media");
-                        setIsOpen(false);
-                        setIsStudioOpen(true);
-                      }}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] text-zinc-300 shrink-0 cursor-pointer"
-                    >
-                      <Scissors className="w-3 h-3 text-emerald-400" />
-                      <span>{activeLocale === "ar" ? "إزالة الخلفية" : "Remove BG"}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setInput(activeLocale === "ar" ? "جيب صور من الويب لمنتج " : "search image ");
-                      }}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] text-zinc-300 shrink-0 cursor-pointer"
-                    >
-                      <Search className="w-3 h-3 text-emerald-400" />
-                      <span>{activeLocale === "ar" ? "صور الويب" : "Web Photos"}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStudioInitialTab("responder");
-                        setIsOpen(false);
-                        setIsStudioOpen(true);
-                      }}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] text-zinc-300 shrink-0 cursor-pointer"
-                    >
-                      <span>{activeLocale === "ar" ? "الرد والروابط" : "Auto-Reply"}</span>
-                    </button>
-                  </div>
-
                   <form
                     onSubmit={handleSend}
-                    className="p-2.5 px-3 border-t border-white/10 flex items-center gap-2 shrink-0 bg-zinc-950/80 backdrop-blur-md"
+                    className={
+                      isExpanded
+                        ? "p-2.5 px-3.5 rounded-2xl border border-white/15 bg-white/[0.05] backdrop-blur-2xl shadow-xl flex items-center gap-2.5 shrink-0"
+                        : "p-2.5 px-3 border-t border-white/10 flex items-center gap-2 shrink-0 bg-zinc-950/80 backdrop-blur-md"
+                    }
                   >
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept="image/*,application/pdf"
+                      accept="image/*,.pdf,.docx,.xlsx,.xls,.csv,.txt,.md,.json,.js,.ts,.tsx,.py,.html,.css,.sql,.xml"
                       onChange={handleFileChange}
                       className="hidden"
                     />
@@ -1887,13 +2419,26 @@ export function AIChatWidget() {
 
                     {/* Center: Text Input Pill with [🎤] Mic on the right inside */}
                     <div className="flex-1 relative flex items-center">
-                      <input
-                        type="text"
+                      <textarea
+                        ref={composerTextareaRef}
+                        rows={1}
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        onChange={(e) => {
+                          setInput(e.target.value);
+                          const el = e.currentTarget;
+                          el.style.height = "auto";
+                          el.style.height = `${Math.min(el.scrollHeight, 136)}px`;
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                            e.preventDefault();
+                            void handleSend();
+                          }
+                        }}
+                        onPaste={handleComposerPaste}
                         placeholder={t.inputPlaceholder}
                         disabled={isLoading}
-                        className="w-full ps-3.5 pe-9 py-2 text-xs kaspi-translucent-input rounded-full focus:outline-none transition-all placeholder-zinc-500 bg-zinc-900/90 border border-zinc-700/60 text-zinc-100 focus:border-emerald-500/60"
+                        className="w-full ps-3.5 pe-9 py-2 text-xs kaspi-translucent-input rounded-2xl focus:outline-none transition-all placeholder-zinc-500 bg-zinc-900/90 border border-zinc-700/60 text-zinc-100 focus:border-emerald-500/60 resize-none max-h-36 overflow-y-auto kaspi-no-scrollbar leading-5"
                       />
 
                       {/* Right inside: Voice Mic Button [🎤] */}
@@ -1924,18 +2469,18 @@ export function AIChatWidget() {
                   </form>
                 </div>
               )}
+              </div>
+              </div>
             </div>
           </div>
+
+          <LiveArtifactDrawer
+            artifact={activeArtifact}
+            locale={activeLocale}
+            onClose={() => setActiveArtifact(null)}
+          />
         </>
       )}
-
-      {/* Expanded Local AI, Comment Auto-Responder, Media Lab & Channels Workspace */}
-      <KaspiAiStudioModal
-        isOpen={isStudioOpen}
-        onClose={() => setIsStudioOpen(false)}
-        locale={activeLocale}
-        initialTab={studioInitialTab}
-      />
     </>
   );
 }

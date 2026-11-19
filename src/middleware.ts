@@ -34,6 +34,9 @@ const PUBLIC_API_PATHS = [
   "/api/v1/auth/handoff",
   "/api/updates/latest.json",
   "/api/v1/webhooks",
+  "/api/v1/zebra-x/openapi",
+  "/api/v1/3d/assets",
+  "/api/v1/heyuka/installer",
   "/healthz",
   "/readyz",
 ];
@@ -146,7 +149,12 @@ export async function middleware(request: NextRequest) {
     request.cookies.get(NEXTAUTH_SECURE_COOKIE)?.value;
 
   const authHeader = request.headers.get("authorization");
-  const hasAuth = Boolean(sessionToken || authHeader?.startsWith("Bearer "));
+  const apiKeyHeader = request.headers.get("x-api-key");
+  const hasAuth = Boolean(
+    sessionToken ||
+      authHeader?.startsWith("Bearer ") ||
+      apiKeyHeader?.startsWith("zx-")
+  );
 
   // 3. Platform Super Admin & Authenticated Workspace routes protection (/admin, /dashboard, /pos)
   const isProtectedWorkspacePath =

@@ -16,9 +16,9 @@
  */
 
 export const X_ZEBRA_CORE_CONTRACT = Object.freeze({
-  schema: "kaspi.x-zebra.unified.v1",
+  schema: "kaspi.x-zebra.unified.v2",
   unifiedBrain: true,
-  modelsMerged: ["X (Sovereign Owner Root + Behavioral Learning)", "Zebra V2 (Complexity Router + Trace Evolution)"],
+  modelsMerged: ["X (Sovereign Core + Behavioral Learning)", "Zebra V2 (Meta-Planner + Reflection Gate + Trace Evolution)"],
   ownerOnlyPrivileges: [
     "INSPECT_CROSS_DEVICE_TRACES",
     "EXPORT_FINETUNING_JSONL",
@@ -26,7 +26,7 @@ export const X_ZEBRA_CORE_CONTRACT = Object.freeze({
     "VIEW_PLATFORM_ANALYTICS",
     "MANAGE_SYSTEM_MODEL_POLICY",
   ] as const,
-  merchantLocalCellRule: "Merchants execute locally via device Ollama; traces are secret-scrubbed before telemetry.",
+  merchantLocalCellRule: "Merchants execute locally inside X × Zebra Core; traces are secret-scrubbed before telemetry.",
 });
 
 export interface OllamaModelRecommendation {
@@ -45,7 +45,7 @@ export const RECOMMENDED_OLLAMA_CELLS: OllamaModelRecommendation[] = [
     approxSizeGb: 1.9,
     minRamGb: 6,
     minFreeDiskGb: 6,
-    label: "Qwen 2.5 (3B) — Fast Store & Cash Register Cell (AR/FR/EN/Darija)",
+    label: "HEYUKA Compact Cell (AR/FR/EN/Darija)",
     supportsTools: true,
     languages: ["ar", "darija", "fr", "en"],
   },
@@ -54,7 +54,7 @@ export const RECOMMENDED_OLLAMA_CELLS: OllamaModelRecommendation[] = [
     approxSizeGb: 4.7,
     minRamGb: 12,
     minFreeDiskGb: 10,
-    label: "Qwen 2.5 (7B) — High-Accuracy Multilingual & Auto-Responder Cell",
+    label: "HEYUKA Multilingual Cell",
     supportsTools: true,
     languages: ["ar", "darija", "fr", "en"],
   },
@@ -63,7 +63,7 @@ export const RECOMMENDED_OLLAMA_CELLS: OllamaModelRecommendation[] = [
     approxSizeGb: 4.7,
     minRamGb: 12,
     minFreeDiskGb: 10,
-    label: "Dolphin Llama 3 — Direct Assistant Model",
+    label: "HEYUKA Direct Cell",
     supportsTools: false,
     languages: ["en", "fr", "ar"],
   },
@@ -368,3 +368,7 @@ export async function probeLocalOllamaModels(
     return { reachable: false, models: [], via: "none" };
   }
 }
+
+export const probeLocalXZebraStatus = probeLocalOllamaModels;
+export const probeAndChatLocalXZebra = probeAndChatLocalOllama;
+

@@ -73,15 +73,30 @@ const nextConfig = {
       },
     ];
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, webpack }) => {
     config.resolve.alias["@"] = path.resolve(__dirname, "src");
     if (!isServer) {
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(/^node:/, (resource) => {
+          resource.request = resource.request.replace(/^node:/, "");
+        })
+      );
       config.resolve.fallback = {
         ...config.resolve.fallback,
         crypto: false,
         "node:crypto": false,
         fs: false,
+        "node:fs": false,
+        https: false,
+        "node:https": false,
+        http: false,
+        "node:http": false,
+        stream: false,
+        "node:stream": false,
+        zlib: false,
+        "node:zlib": false,
         path: false,
+        os: false,
         net: false,
         tls: false,
       };

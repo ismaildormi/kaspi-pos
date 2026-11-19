@@ -21,12 +21,14 @@ import {
   Plus,
   Printer,
   ChevronDown,
+  Scissors,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
 import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 import { generateProductImageUrl } from "@/lib/pollinations";
 import { uploadProductImage } from "@/lib/supabase-storage";
 import { compressImage } from "@/lib/image-compression";
+import { removeImageBackgroundLocal } from "@/lib/zebra-x/media-client";
 import { useAppDictionary } from "@/i18n/schema";
 import { getCachedData, setCachedData } from "@/lib/cache/client-cache";
 import { usePosStore } from "@/client/store/usePosStore";
@@ -86,7 +88,57 @@ export default function ProductsListPage() {
   const [newImageUrl, setNewImageUrl] = useState("");
   const [isSavingImage, setIsSavingImage] = useState(false);
   const [isUploadingToSupabase, setIsUploadingToSupabase] = useState(false);
+  const [isRemovingImageBg, setIsRemovingImageBg] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleRemoveBgInPlace = async (
+    sourceUrl: string,
+    applyUrl: (nextUrl: string) => void
+  ) => {
+    const clean = sourceUrl.trim();
+    if (!clean || isRemovingImageBg) return;
+    setIsRemovingImageBg(true);
+    const tid = toast.loading(
+      locale === "ar"
+        ? "جاري إزالة الخلفية بالذكاء المحلي..."
+        : "Détourage local de l'arrière-plan en cours..."
+    );
+    try {
+      const cutout = await removeImageBackgroundLocal(clean);
+      let finalUrl = cutout.dataUrl;
+      try {
+        const blobRes = await fetch(cutout.dataUrl);
+        const rawBlob = await blobRes.blob();
+        const file = new File([rawBlob], `cutout-${Date.now()}.png`, { type: "image/png" });
+        const compressed = await compressImage(file, {
+          autoRemoveBackground: false,
+          generateDataUrl: true,
+          maxDimension: 800,
+        });
+        const optFile = new File([compressed.blob], `cutout-${Date.now()}.webp`, {
+          type: compressed.mimeType || "image/webp",
+        });
+        try {
+          finalUrl = await uploadProductImage(optFile, "tenant-default");
+        } catch {
+          if (compressed.dataUrl) finalUrl = compressed.dataUrl;
+        }
+      } catch {
+        // Keep cutout.dataUrl when offline or external proxy blocks canvas compression
+      }
+      applyUrl(finalUrl);
+      toast.success(
+        locale === "ar"
+          ? "تمت إزالة الخلفية بنجاح!"
+          : "Arrière-plan supprimé avec succès !",
+        { id: tid }
+      );
+    } catch (err: any) {
+      toast.error(err?.message || "Background removal failed", { id: tid });
+    } finally {
+      setIsRemovingImageBg(false);
+    }
+  };
 
   // Modal State: Edit Price
   const [priceModalProduct, setPriceModalProduct] =
@@ -1125,12 +1177,33 @@ export default function ProductsListPage() {
               </div>
 
               {newImageUrl.trim() && (
-                <div className="h-36 w-full rounded-xl bg-zinc-950 border border-zinc-800 overflow-hidden flex items-center justify-center">
-                  <img
-                    src={newImageUrl.trim()}
-                    alt="Preview"
-                    className="h-full w-full object-contain"
-                  />
+                <div className="space-y-2">
+                  <div className="h-36 w-full rounded-xl bg-zinc-950 border border-zinc-800 overflow-hidden flex items-center justify-center">
+                    <img
+                      src={newImageUrl.trim()}
+                      alt="Preview"
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isRemovingImageBg || isUploadingToSupabase}
+                    onClick={() => handleRemoveBgInPlace(newImageUrl, setNewImageUrl)}
+                    className="w-full py-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-bold inline-flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                  >
+                    {isRemovingImageBg ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Scissors className="w-3.5 h-3.5" />
+                    )}
+                    <span>
+                      {locale === "ar"
+                        ? "إزالة الخلفية بالذكاء المحلي (@imgly)"
+                        : locale === "fr"
+                        ? "Supprimer l'arrière-plan (IA locale)"
+                        : "Remove Background (Local AI)"}
+                    </span>
+                  </button>
                 </div>
               )}
 
@@ -1432,14 +1505,35 @@ export default function ProductsListPage() {
                       </div>
                     </div>
 
-                    {/* Bottom Status Pill */}
+                    {/* Bottom Status Pill & One-Click Neural Remove BG */}
                     {createImageUrl ? (
-                      <div className="mt-3 py-1.5 px-3 rounded-full bg-[#14B8A6]/15 border border-[#14B8A6]/40 text-[#2DD4BF] font-mono text-[11px] font-semibold text-center shadow-[0_0_15px_rgba(20,184,166,0.2)]">
-                        {locale === "ar"
-                          ? `تم تفريغ الخلفية وتطبيق الخلفية البيضاء • (${createImageSizeKb} KB)`
-                          : locale === "fr"
-                          ? `Arrière-plan détouré sur fond blanc studio • (${createImageSizeKb} KB)`
-                          : `Auto White Studio Cutout Applied • (${createImageSizeKb} KB)`}
+                      <div className="mt-3 space-y-2">
+                        <div className="py-1.5 px-3 rounded-full bg-[#14B8A6]/15 border border-[#14B8A6]/40 text-[#2DD4BF] font-mono text-[11px] font-semibold text-center shadow-[0_0_15px_rgba(20,184,166,0.2)]">
+                          {locale === "ar"
+                            ? `تم تجهيز الصورة على خلفية نظيفة • (${createImageSizeKb} KB)`
+                            : locale === "fr"
+                            ? `Image détourée prête • (${createImageSizeKb} KB)`
+                            : `Clean Cutout Applied • (${createImageSizeKb} KB)`}
+                        </div>
+                        <button
+                          type="button"
+                          disabled={isRemovingImageBg || isCreateProcessingImage}
+                          onClick={() => handleRemoveBgInPlace(createImageUrl, setCreateImageUrl)}
+                          className="w-full py-1.5 px-3 rounded-xl border border-emerald-500/35 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-[11px] font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          {isRemovingImageBg ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Scissors className="w-3.5 h-3.5" />
+                          )}
+                          <span>
+                            {locale === "ar"
+                              ? "تفريغ عميق للخلفية (Neural Cutout)"
+                              : locale === "fr"
+                              ? "Détourage profond (Neural Cutout)"
+                              : "Deep Neural Background Removal"}
+                          </span>
+                        </button>
                       </div>
                     ) : (
                       <div className="mt-3 py-1.5 px-3 rounded-full bg-white/[0.04] border border-white/[0.08] text-zinc-400 font-mono text-[11px] text-center">

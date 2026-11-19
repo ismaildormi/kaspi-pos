@@ -40,6 +40,20 @@ export function Navbar() {
           <a href="#pricing" className="transition hover:text-white">
             Pricing
           </a>
+          <Link
+            href="/zebra-x"
+            prefetch={true}
+            className="text-emerald-400 font-semibold transition hover:text-emerald-300"
+          >
+            HEYUKA AI
+          </Link>
+          <Link
+            href="/heyuka"
+            prefetch={true}
+            className="text-zinc-200 font-semibold transition hover:text-white"
+          >
+            HEYUKA OS
+          </Link>
         </nav>
 
         {/* Public Actions: Download & Login */}
