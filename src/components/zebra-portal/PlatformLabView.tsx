@@ -131,11 +131,11 @@ export function PlatformLabView() {
     <div className="space-y-6">
       <section className="kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-6 sm:p-8 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-emerald-500">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-rose-500">
             <FlaskConical className="w-3.5 h-3.5" />
             <span>Autonomous Real Benchmark Engine • $0.00 Owner Cost Shield</span>
           </div>
-          <span className="text-xs font-mono text-emerald-500 font-bold flex items-center gap-1">
+          <span className="text-xs font-mono text-rose-500 font-bold flex items-center gap-1">
             <ShieldCheck className="w-4 h-4" /> Zero Fake Scores / Zero Stub Files
           </span>
         </div>
@@ -162,7 +162,7 @@ export function PlatformLabView() {
               >
                 <div className="text-xs font-bold flex items-center justify-between">
                   <span>{cat.label}</span>
-                  <span className="font-mono text-[10px] text-emerald-500">{on ? "ON" : "OFF"}</span>
+                  <span className="font-mono text-[10px] text-rose-500">{on ? "ON" : "OFF"}</span>
                 </div>
                 <div className="text-[11px] text-[var(--kaspi-text-muted)]">{cat.desc}</div>
               </button>
@@ -188,7 +188,7 @@ export function PlatformLabView() {
               onClick={() => void exportFullZip()}
               className="kaspi-glass-btn rounded-2xl px-5 py-3 text-xs font-bold inline-flex items-center gap-2 cursor-pointer"
             >
-              <Download className="w-4 h-4 text-emerald-500" />
+              <Download className="w-4 h-4 text-rose-500" />
               <span>{exporting ? "Building ZIP + XLSX..." : "Download HEYUKA_FULL_BENCHMARK.zip"}</span>
             </button>
           )}
@@ -207,7 +207,7 @@ export function PlatformLabView() {
             </div>
             <div className="kaspi-glass-card rounded-2xl p-3.5">
               <div className="text-[10px] font-bold text-[var(--kaspi-text-muted)]">Passed</div>
-              <div className="text-xl font-black text-emerald-500 font-mono">{activeRun.passedCount}</div>
+              <div className="text-xl font-black text-rose-500 font-mono">{activeRun.passedCount}</div>
             </div>
             <div className="kaspi-glass-card rounded-2xl p-3.5">
               <div className="text-[10px] font-bold text-[var(--kaspi-text-muted)]">Partial (No Binary)</div>
@@ -219,7 +219,7 @@ export function PlatformLabView() {
             </div>
             <div className="kaspi-glass-card rounded-2xl p-3.5">
               <div className="text-[10px] font-bold text-[var(--kaspi-text-muted)]">Owner Cost Exposure</div>
-              <div className="text-xl font-black text-emerald-500 font-mono">$0.00</div>
+              <div className="text-xl font-black text-rose-500 font-mono">$0.00</div>
             </div>
           </div>
 
@@ -230,7 +230,7 @@ export function PlatformLabView() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5">
                     {test.status === "passed" ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                      <CheckCircle2 className="w-5 h-5 text-rose-500 shrink-0" />
                     ) : test.status === "failed" ? (
                       <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
                     ) : (
@@ -287,7 +287,7 @@ export function PlatformLabView() {
                         onClick={() => void rateTest(test.testId, score, score)}
                         className={`px-2 py-0.5 rounded-lg font-mono font-bold cursor-pointer ${
                           test.humanReviewScores.promptAdherence === score
-                            ? "kaspi-orbit-active text-emerald-500"
+                            ? "kaspi-orbit-active text-rose-500"
                             : "kaspi-glass-surface"
                         }`}
                       >
@@ -312,7 +312,7 @@ export function PlatformLabView() {
                 type="button"
                 onClick={() => setActiveRun(r)}
                 className={`px-3 py-1.5 rounded-xl font-mono text-xs cursor-pointer ${
-                  activeRun?.runId === r.runId ? "kaspi-orbit-active text-emerald-500" : "kaspi-frosted-surface"
+                  activeRun?.runId === r.runId ? "kaspi-orbit-active text-rose-500" : "kaspi-frosted-surface"
                 }`}
               >
                 {r.runId} ({r.passedCount} passed)

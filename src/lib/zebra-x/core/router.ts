@@ -28,6 +28,10 @@ export type XZebraIntentCategory =
   | "skills_and_cowork"
   | "tool_discovery"
   | "reasoning_and_eval"
+  | "bot_factory_and_seo"
+  | "security_sast_audit"
+  | "qr_architect"
+  | "mobile_repair_lab"
   | "platform_owner";
 
 export interface RoutePlanDecision {
@@ -68,6 +72,26 @@ const TOOL_CATALOG_INDEX: Record<XZebraIntentCategory, string[]> = {
     "lookupSkillOrAuthor",
     "discoverOpenSourceTool",
     "unrestrictedWebSearch",
+  ],
+  bot_factory_and_seo: [
+    "executeCodeSandbox",
+    "lookupSkillOrAuthor",
+    "unrestrictedWebSearch",
+    "createRichArtifactOrExport",
+  ],
+  security_sast_audit: [
+    "executeCodeSandbox",
+    "lookupSkillOrAuthor",
+    "queryPublicApi",
+  ],
+  qr_architect: [
+    "createRichArtifactOrExport",
+    "lookupSkillOrAuthor",
+  ],
+  mobile_repair_lab: [
+    "lookupSkillOrAuthor",
+    "createRichArtifactOrExport",
+    "executeCodeSandbox",
   ],
   platform_owner: [
     "getPlatformStats",
@@ -124,6 +148,18 @@ export function planXZebraToolRoute(prompt: string, isOwner: boolean): RoutePlan
   }
   if (/(gsm8k|hotpotqa|prm800k|humaneval|mbpp|langgraph|promptfoo|ragas|deepeval|schemathesis|fast-check|toxiproxy|reflexion|expel|long context|rope|yarn|embeddings|benchmark|fuzz|reasoning|proof|deduction|تقييم|اختبار شامل|منطق|استدلال)/i.test(p)) {
     intents.push("reasoning_and_eval");
+  }
+  if (/(bot|بوت|تلغرام|تيليغرام|واتساب|seo|sitemap|ros\s*2|robotics|روبوت|esphome|cadquery|parlant|build.*site|build.*app|بناء موقع|بناء تطبيق|مشروع)/i.test(p)) {
+    intents.push("bot_factory_and_seo");
+  }
+  if (/(sast|owasp|semgrep|gitleaks|sqli|xss|ssrf|vulnerability audit|فحص الكود|ثغرة|أمن سيبراني)/i.test(p)) {
+    intents.push("security_sast_audit");
+  }
+  if (/(qr\s*code|tlv|zatca|vcard|wifi\s*qr|dynamic\s*qr|رمز\s*مسح|كيو\s*ار)/i.test(p)) {
+    intents.push("qr_architect");
+  }
+  if (/(adb|fastboot|libimobiledevice|ideviceinfo|scrcpy|android repair|iphone repair|battery health|هاتف|تليفون|إصلاح الهاتف)/i.test(p)) {
+    intents.push("mobile_repair_lab");
   }
   if (isOwner && /(منصة|متاجر|mrr|gmv|tenants|platform|revenue|usage|اشتراك)/i.test(p)) {
     intents.push("platform_owner");

@@ -7,10 +7,25 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "03:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     labels:
       - "security"
       - "dependencies"
+    ignore:
+      - dependency-name: "typescript"
+        versions: [">=6.0.0"]
+      - dependency-name: "prisma"
+        versions: [">=7.0.0"]
+      - dependency-name: "@prisma/client"
+        versions: [">=7.0.0"]
+      - dependency-name: "@ai-sdk/*"
+        versions: [">=4.0.175", ">=5.0.0"]
+      - dependency-name: "ai"
+        versions: [">=7.0.0"]
+      - dependency-name: "next"
+        versions: [">=17.0.0"]
+      - dependency-name: "zod"
+        versions: [">=4.0.0"]
 
   - package-ecosystem: "cargo"
     directory: "/src-tauri"
@@ -18,7 +33,7 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "03:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     labels:
       - "security"
       - "rust"
@@ -30,7 +45,10 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "03:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     labels:
       - "security"
       - "ci-cd"
+    ignore:
+      - dependency-name: "actions/*"
+        versions: [">=5.0.0"]

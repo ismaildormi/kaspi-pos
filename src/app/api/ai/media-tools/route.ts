@@ -115,8 +115,14 @@ export async function GET(req: NextRequest) {
       if (!targetUrl || isForbiddenHost(targetUrl)) {
         return NextResponse.json({ error: "Invalid or blocked image URL" }, { status: 400 });
       }
-      const upstream = await fetch(targetUrl, {
+      const parsedTarget = new URL(targetUrl);
+      if (parsedTarget.username || parsedTarget.password) {
+        return NextResponse.json({ error: "URL credentials disallowed" }, { status: 400 });
+      }
+      const reconstructed = new URL(`${parsedTarget.pathname}${parsedTarget.search}`, parsedTarget.origin);
+      const upstream = await fetch(reconstructed.href, {
         headers: { "User-Agent": WIKI_UA },
+        redirect: "error",
         signal: AbortSignal.timeout(12000),
       });
       if (!upstream.ok) {

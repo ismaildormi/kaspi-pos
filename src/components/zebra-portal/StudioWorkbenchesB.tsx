@@ -144,7 +144,7 @@ export function VideoAndShortsWorkbench({ mode }: { mode: "video" | "shorts" }) 
           ctx.fillStyle = "rgba(255,255,255,0.08)";
           ctx.fillRect(36, 48, width - 72, height - 96);
 
-          ctx.fillStyle = "#10b981";
+          ctx.fillStyle = "#e11d48";
           ctx.font = "bold 20px sans-serif";
           ctx.fillText(isShorts ? "HEYUKA SHORTS 9:16" : "HEYUKA VIDEO 16:9", 64, 110);
 
@@ -193,14 +193,14 @@ export function VideoAndShortsWorkbench({ mode }: { mode: "video" | "shorts" }) 
     <div className="kaspi-glass-card rounded-3xl p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm font-black">
-          <Film className="w-4 h-4 text-emerald-500" />
+          <Film className="w-4 h-4 text-rose-500" />
           <span>
             {isShorts
               ? "Shorts 9:16 Storyboard, SRT & Local WebM Renderer"
               : "Video 16:9 Storyboard, Motion WebM & FFmpeg Spec"}
           </span>
         </div>
-        <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[11px] font-mono text-emerald-500">
+        <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[11px] font-mono text-rose-500">
           {isShorts ? "540x960 (9:16)" : "960x540 (16:9)"}
         </span>
       </div>
@@ -215,7 +215,7 @@ export function VideoAndShortsWorkbench({ mode }: { mode: "video" | "shorts" }) 
       <div className="space-y-2">
         {scenes.map((sc, i) => (
           <div key={i} className="kaspi-frosted-surface rounded-2xl p-3 grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
-            <span dir="ltr" className="sm:col-span-3 font-mono text-[11px] text-emerald-500 font-bold">
+            <span dir="ltr" className="sm:col-span-3 font-mono text-[11px] text-rose-500 font-bold">
               {sc.time} ({sc.durationSec}s)
             </span>
             <input
@@ -247,7 +247,7 @@ export function VideoAndShortsWorkbench({ mode }: { mode: "video" | "shorts" }) 
           onClick={() => void downloadSrt()}
           className="kaspi-glass-btn rounded-2xl px-4 py-2.5 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
         >
-          <Download className="w-3.5 h-3.5 text-emerald-500" />
+          <Download className="w-3.5 h-3.5 text-rose-500" />
           <span>Export .SRT Subtitles</span>
         </button>
       </div>
@@ -264,7 +264,7 @@ export function VideoAndShortsWorkbench({ mode }: { mode: "video" | "shorts" }) 
       {webmUrl && (
         <div className="kaspi-frosted-surface rounded-2xl p-4 space-y-2">
           <div className="flex items-center justify-between text-xs font-bold">
-            <span className="text-emerald-500">
+            <span className="text-rose-500">
               Real Rendered WebM Output ({(webmSize / 1024).toFixed(1)} KB)
             </span>
             <a href={webmUrl} download={isShorts ? "heyuka-short.webm" : "heyuka-video.webm"} className="kaspi-glass-btn rounded-xl px-3 py-1">
@@ -363,7 +363,7 @@ export function AudioStudioWorkbench() {
     <div className="kaspi-glass-card rounded-3xl p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm font-black">
-          <FileAudio className="w-4 h-4 text-emerald-500" />
+          <FileAudio className="w-4 h-4 text-rose-500" />
           <span>Speech Transcription &amp; Stem Separation Check</span>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -466,7 +466,7 @@ export function ConversionStudioWorkbench() {
     <div className="kaspi-glass-card rounded-3xl p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm font-black">
-          <ArrowLeftRight className="w-4 h-4 text-emerald-500" />
+          <ArrowLeftRight className="w-4 h-4 text-rose-500" />
           <span>Genuine Multi-Format Studio Converter ($0.00 Server Cost)</span>
         </div>
         <div className="flex gap-1.5">
@@ -480,7 +480,7 @@ export function ConversionStudioWorkbench() {
               type="button"
               onClick={() => setTab(x.id as any)}
               className={`px-3 py-1 rounded-full text-[11px] font-bold cursor-pointer ${
-                tab === x.id ? "kaspi-orbit-active text-emerald-500" : "kaspi-glass-surface"
+                tab === x.id ? "kaspi-orbit-active text-rose-500" : "kaspi-glass-surface"
               }`}
             >
               {x.label}
@@ -498,7 +498,7 @@ export function ConversionStudioWorkbench() {
                 type="button"
                 onClick={() => setImgTargetFmt(f)}
                 className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold cursor-pointer ${
-                  imgTargetFmt === f ? "kaspi-orbit-active text-emerald-500" : "kaspi-glass-surface"
+                  imgTargetFmt === f ? "kaspi-orbit-active text-rose-500" : "kaspi-glass-surface"
                 }`}
               >
                 {f}
@@ -579,10 +579,10 @@ export function DataStudioWorkbench() {
     <div className="kaspi-glass-card rounded-3xl p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm font-black">
-          <BarChart3 className="w-4 h-4 text-emerald-500" />
+          <BarChart3 className="w-4 h-4 text-rose-500" />
           <span>Real CSV Parser, Computed KPIs &amp; Recharts Visualization</span>
         </div>
-        <span className="text-xs font-mono text-emerald-500 font-bold">
+        <span className="text-xs font-mono text-rose-500 font-bold">
           Rows: {rows.length} {numericKey ? `• Sum(${numericKey}) = ${sumVal}` : ""}
         </span>
       </div>
@@ -602,7 +602,7 @@ export function DataStudioWorkbench() {
                 <XAxis dataKey={labelKey} stroke="#94a3b8" fontSize={11} />
                 <YAxis stroke="#94a3b8" fontSize={11} />
                 <Tooltip />
-                <Bar dataKey={numericKey} fill="#10b981" radius={[6, 6, 0, 0]} />
+                <Bar dataKey={numericKey} fill="#e11d48" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -627,7 +627,7 @@ export function WebAndDocWorkbench({ mode }: { mode: "web" | "document" | "autom
     return (
       <div className="kaspi-glass-card rounded-3xl p-5 space-y-3">
         <div className="flex items-center gap-2 text-sm font-black">
-          <Workflow className="w-4 h-4 text-emerald-500" />
+          <Workflow className="w-4 h-4 text-rose-500" />
           <span>SSRF-Safe OpenAPI Spec Discovery Tester</span>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -667,9 +667,9 @@ export function WebAndDocWorkbench({ mode }: { mode: "web" | "document" | "autom
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm font-black">
           {mode === "web" ? (
-            <Globe className="w-4 h-4 text-emerald-500" />
+            <Globe className="w-4 h-4 text-rose-500" />
           ) : (
-            <FileText className="w-4 h-4 text-emerald-500" />
+            <FileText className="w-4 h-4 text-rose-500" />
           )}
           <span>
             {mode === "web"

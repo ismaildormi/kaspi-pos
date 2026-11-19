@@ -38,6 +38,25 @@ def generate_pollinations_image(
     """
     start_time = time.time()
     clean_prompt = prompt.strip()
+
+    # Try KASPI Vision Studio (/api/v1/images/generate) when HEYUKA_API_KEY is connected
+    try:
+        from kaspi_models_client import kaspi_image_generate, get_kaspi_config
+        if get_kaspi_config().get("configured"):
+            kres = kaspi_image_generate(clean_prompt)
+            if kres.get("success") and kres.get("image_url"):
+                return {
+                    "status": "success",
+                    "provider": "kaspi_heyuka_vision",
+                    "model": "heyuka-vision",
+                    "prompt": clean_prompt,
+                    "image_url": kres["image_url"],
+                    "local_path": None,
+                    "latency_ms": int((time.time() - start_time) * 1000),
+                }
+    except Exception:
+        pass
+
     encoded_prompt = urllib.parse.quote(clean_prompt)
     
     url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&model={model}"

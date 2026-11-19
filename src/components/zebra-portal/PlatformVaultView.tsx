@@ -34,7 +34,7 @@ export function PlatformVaultView() {
     <div className="space-y-6">
       <section className="kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-6 sm:p-8 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-emerald-500">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-rose-500">
             <Archive className="w-3.5 h-3.5" />
             <span>HEYUKA REAL OUTPUT VAULT • Verified Provenance</span>
           </div>
@@ -72,7 +72,7 @@ export function PlatformVaultView() {
               type="button"
               onClick={() => setFilterClass(cls)}
               className={`px-3.5 py-1.5 rounded-full text-xs font-bold cursor-pointer ${
-                filterClass === cls ? "kaspi-orbit-active text-emerald-500" : "kaspi-glass-surface"
+                filterClass === cls ? "kaspi-orbit-active text-rose-500" : "kaspi-glass-surface"
               }`}
             >
               {cls.replace("_", " ").toUpperCase()}
@@ -96,7 +96,7 @@ export function PlatformVaultView() {
                     <span
                       className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold kaspi-frosted-surface ${
                         item.truthClass === "real_output"
-                          ? "text-emerald-500"
+                          ? "text-rose-500"
                           : item.truthClass === "failed"
                           ? "text-rose-500"
                           : "text-amber-500"
@@ -166,7 +166,7 @@ export function PlatformVaultView() {
                   rel="noopener noreferrer"
                   className="kaspi-glass-btn rounded-xl px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1.5"
                 >
-                  <Download className="w-3.5 h-3.5 text-emerald-500" />
+                  <Download className="w-3.5 h-3.5 text-rose-500" />
                   <span>Open Artifact URL</span>
                 </a>
               )}
@@ -181,7 +181,7 @@ export function PlatformVaultView() {
               <div className="flex items-center justify-between gap-2 text-[10px] text-[var(--kaspi-text-muted)] pt-1 border-t border-[var(--kaspi-border)]">
                 <span className="inline-flex items-center gap-1">
                   {item.verified ? (
-                    <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                    <CheckCircle2 className="w-3 h-3 text-rose-500" />
                   ) : (
                     <ShieldCheck className="w-3 h-3 text-amber-500" />
                   )}

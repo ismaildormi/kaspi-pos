@@ -68,6 +68,13 @@ import {
   type YukaByokProvider,
   type YukaKeySummary,
 } from '../services/yukaByokVault';
+import {
+  KASPI_SOVEREIGN_MODELS,
+  getActiveKaspiModel,
+  setActiveKaspiModel,
+  fetchKaspiModelsStatus,
+  type KaspiModelId,
+} from '../services/kaspiModelsClient';
 
 export interface WorkspaceFeedItem {
   id: string;
@@ -197,11 +204,22 @@ export const GlassmorphismPanel: React.FC<GlassmorphismPanelProps> = ({
   const [newlyMintedKey, setNewlyMintedKey] = useState<string | null>(null);
   const [mintingYukaKey, setMintingYukaKey] = useState<boolean>(false);
 
+  const [selectedModelMode, setSelectedModelMode] = useState<KaspiModelId | 'auto'>(() =>
+    getActiveKaspiModel()
+  );
+  const [kaspiConnected, setKaspiConnected] = useState<boolean>(false);
+
   const showNotice = useCallback((msg: string) => {
     setToastNotice(msg);
     setTimeout(() => {
       setToastNotice((prev) => (prev === msg ? null : prev));
     }, 3200);
+  }, []);
+
+  useEffect(() => {
+    fetchKaspiModelsStatus().then((st) => {
+      if (st?.configured && st?.liveReachable) setKaspiConnected(true);
+    });
   }, []);
 
   // Load locally encrypted BYOK config on mount
@@ -961,6 +979,58 @@ export const GlassmorphismPanel: React.FC<GlassmorphismPanelProps> = ({
                       </button>
                     </div>
                   </div>
+                </div>
+
+                {/* KASPI Sovereign Multi-Model Selector (Omni / Core / Vision) */}
+                <div className="p-3.5 rounded-xl bg-[#111117] border border-white/10 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white">
+                      {isAr ? 'توجيه نماذج KASPI السيادية' : 'KASPI Sovereign Models'}
+                    </span>
+                    <span className="text-[10px] font-mono text-emerald-400">
+                      {kaspiConnected ? 'CLOUD CONNECTED' : 'ZERO-KEY READY'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(
+                      [
+                        { id: 'auto', label: 'Auto' },
+                        ...KASPI_SOVEREIGN_MODELS.map((m) => ({ id: m.id, label: m.shortLabel })),
+                      ] as const
+                    ).map((m) => {
+                      const active = selectedModelMode === m.id;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => {
+                            playCuteSound('boop');
+                            setSelectedModelMode(m.id);
+                            setActiveKaspiModel(m.id);
+                            showNotice(
+                              isAr ? `تم تفعيل نموذج ${m.label}` : `Switched active model: ${m.label}`
+                            );
+                          }}
+                          className={`h-8 px-2 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer truncate ${
+                            active
+                              ? 'bg-emerald-500 text-zinc-950 border-emerald-400'
+                              : 'bg-black/45 hover:bg-white/10 border-white/10 text-white/75'
+                          }`}
+                        >
+                          {m.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-white/55 leading-relaxed">
+                    {selectedModelMode === 'auto'
+                      ? isAr
+                        ? 'توجيه ذكي: Omni للحوار والتخطيط، Core للكود والحساب، Vision للشاشة والصور والـ 3D.'
+                        : 'Auto-dispatch: heyuka-omni (reasoning), heyuka-core (code), heyuka-vision (screen/3D).'
+                      : KASPI_SOVEREIGN_MODELS.find((m) => m.id === selectedModelMode)?.[
+                          isAr ? 'roleAr' : 'roleEn'
+                        ]}
+                  </p>
                 </div>
 
                 {/* Voice Persona Selector (PUCK, KORE, CHARON, FENRIR, AOEDE) */}

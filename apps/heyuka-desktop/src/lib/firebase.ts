@@ -1,7 +1,12 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'heyuka-optional-workspace',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'localhost',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'heyuka-workspace',
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || '(default)',
+};
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);

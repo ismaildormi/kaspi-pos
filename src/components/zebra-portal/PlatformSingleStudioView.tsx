@@ -75,7 +75,7 @@ export function PlatformSingleStudioView({ productId }: { productId: string }) {
               <ArrowLeft className={`w-3.5 h-3.5 ${locale === "ar" ? "rotate-180" : ""}`} />
               <span>All Studios</span>
             </Link>
-            <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[11px] font-mono font-bold text-emerald-500">
+            <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[11px] font-mono font-bold text-rose-500">
               {product.shortTag}
             </span>
           </div>
@@ -98,14 +98,14 @@ export function PlatformSingleStudioView({ productId }: { productId: string }) {
 
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--kaspi-text-muted)]">
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full kaspi-frosted-surface">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <ShieldCheck className="w-3.5 h-3.5 text-rose-500" />
             {product.sharedEngineDisclosure[locale]}
           </span>
           {product.allowedApiEndpoints.map((ep) => (
             <span
               key={ep}
               dir="ltr"
-              className="font-mono px-2.5 py-1 rounded-full kaspi-frosted-surface text-emerald-500"
+              className="font-mono px-2.5 py-1 rounded-full kaspi-frosted-surface text-rose-500"
             >
               {ep}
             </span>
@@ -118,7 +118,7 @@ export function PlatformSingleStudioView({ productId }: { productId: string }) {
 
       {/* Isolated Domain AI Chat */}
       {savedNotice && (
-        <div className="kaspi-frosted-surface rounded-2xl px-4 py-2 text-xs font-bold text-emerald-500">
+        <div className="kaspi-frosted-surface rounded-2xl px-4 py-2 text-xs font-bold text-rose-500">
           Saved assistant output directly to Real Output Vault!
         </div>
       )}

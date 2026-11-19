@@ -625,7 +625,7 @@ export const HEYUKACreatureCanvas: React.FC<HEYUKACreatureCanvasProps> = ({
           title="3D Levitate / Winged Flight"
           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-950/75 hover:bg-slate-900 border border-white/15 text-[10px] font-semibold text-zinc-200 backdrop-blur-md cursor-pointer transition-colors"
         >
-          <Sparkles className="w-3 h-3 text-emerald-400" />
+          <Sparkles className="w-3 h-3 text-rose-400" />
           <span>Fly</span>
         </button>
         <button

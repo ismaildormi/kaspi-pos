@@ -31,7 +31,7 @@ export function PlatformStudiosDirectoryView() {
     <div className="space-y-6">
       <section className="kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-6 sm:p-8 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-emerald-500">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-rose-500">
             <Sparkles className="w-3.5 h-3.5" />
             <span>12 Verified Specialized AI Workspaces</span>
           </div>
@@ -65,12 +65,12 @@ export function PlatformStudiosDirectoryView() {
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[11px] font-mono font-bold text-emerald-500">
+                  <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[11px] font-mono font-bold text-rose-500">
                     {product.shortTag}
                   </span>
                   <span
                     className={`px-2.5 py-1 rounded-full kaspi-frosted-surface text-[10px] font-bold inline-flex items-center gap-1 ${
-                      hasWorkerOnly ? "text-amber-500" : "text-emerald-500"
+                      hasWorkerOnly ? "text-amber-500" : "text-rose-500"
                     }`}
                   >
                     {hasWorkerOnly ? <Wrench className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
@@ -82,7 +82,7 @@ export function PlatformStudiosDirectoryView() {
                   <h2 className="text-base font-black text-[var(--kaspi-text-primary)]">
                     {product.name}
                   </h2>
-                  <p className="text-xs font-semibold text-emerald-500 mt-0.5">
+                  <p className="text-xs font-semibold text-rose-500 mt-0.5">
                     {product.tagline[locale]}
                   </p>
                 </div>
@@ -92,7 +92,7 @@ export function PlatformStudiosDirectoryView() {
                 </p>
 
                 <div className="kaspi-frosted-surface rounded-2xl p-2.5 text-[11px] text-[var(--kaspi-text-muted)] flex items-start gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
                   <span>{product.sharedEngineDisclosure[locale]}</span>
                 </div>
               </div>
@@ -111,7 +111,7 @@ export function PlatformStudiosDirectoryView() {
                     title="Create Embeddable Widget"
                     className="kaspi-glass-btn rounded-2xl px-3 py-2.5 text-xs font-bold inline-flex items-center gap-1"
                   >
-                    <Cpu className="w-3.5 h-3.5 text-emerald-500" />
+                    <Cpu className="w-3.5 h-3.5 text-rose-500" />
                     <span>Embed</span>
                   </Link>
                 )}

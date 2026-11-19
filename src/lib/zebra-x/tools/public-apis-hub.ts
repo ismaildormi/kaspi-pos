@@ -127,6 +127,27 @@ async function fetchJsonWithTimeout<T = any>(
   init: RequestInit = {},
   timeoutMs = 7000
 ): Promise<T> {
+  const parsed = new URL(url);
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error("Blocked non-HTTP protocol");
+  }
+  const host = parsed.hostname.toLowerCase();
+  if (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "::1" ||
+    host === "0.0.0.0" ||
+    host === "169.254.169.254" ||
+    host.startsWith("10.") ||
+    host.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+    host.endsWith(".internal") ||
+    host.endsWith(".local")
+  ) {
+    throw new Error("Blocked private or internal host");
+  }
+  const safeHref = new URL(`${parsed.pathname}${parsed.search}`, parsed.origin).href;
+
   const headers = new Headers(init.headers);
   if (!headers.has("User-Agent")) {
     headers.set("User-Agent", "KaspiPOS-HEYUKA/3.0 (+https://kaspi-pos.vercel.app)");
@@ -135,13 +156,13 @@ async function fetchJsonWithTimeout<T = any>(
     headers.set("Accept", "application/json");
   }
 
-  const res = await fetch(url, {
+  const res = await fetch(safeHref, {
     ...init,
     headers,
     signal: init.signal ?? AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) {
-    throw new Error(`HTTP ${res.status} from ${new URL(url).hostname}`);
+    throw new Error(`HTTP ${res.status} from ${parsed.hostname}`);
   }
   return (await res.json()) as T;
 }
@@ -275,14 +296,22 @@ async function executePublicQuery(
         const json = await fetchJsonWithTimeout<any>(primaryUrl);
         const rates = json?.[base] || {};
         const focus = ["mad", "usd", "eur", "gbp", "cad", "aed", "sar", "cny", "btc", "usdt"];
-        const subset: Record<string, number> = {};
+        const subsetMap = new Map<string, number>();
         for (const k of focus) {
-          if (typeof rates[k] === "number") subset[k.toUpperCase()] = rates[k];
+          if (typeof rates[k] === "number") subsetMap.set(k.toUpperCase(), rates[k]);
         }
         const targetCur = query.toLowerCase().match(/\b([a-z]{3,5})\b/g)?.pop();
-        if (targetCur && typeof rates[targetCur] === "number") {
-          subset[targetCur.toUpperCase()] = rates[targetCur];
+        if (
+          targetCur &&
+          targetCur !== "__proto__" &&
+          targetCur !== "constructor" &&
+          targetCur !== "prototype" &&
+          Object.prototype.hasOwnProperty.call(rates, targetCur) &&
+          typeof rates[targetCur] === "number"
+        ) {
+          subsetMap.set(targetCur.toUpperCase(), rates[targetCur]);
         }
+        const subset = Object.fromEntries(subsetMap);
         return {
           sourceUrl: primaryUrl,
           data: { base: base.toUpperCase(), date: json?.date, rates: subset, totalSupported: Object.keys(rates).length },
@@ -489,8 +518,27 @@ async function executePublicQuery(
 
     case "openalex_science": {
       const url = `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per-page=${limit}&select=id,title,publication_year,cited_by_count,doi`;
-      const json = await fetchJsonWithTimeout<any>(url);
-      return { sourceUrl: url, data: json?.results || [] };
+      try {
+        const json = await fetchJsonWithTimeout<any>(url, {}, 5500);
+        if (Array.isArray(json?.results) && json.results.length > 0) {
+          return { sourceUrl: url, data: json.results };
+        }
+      } catch {
+        // Fall through cleanly to Crossref open bibliographic API on 429/timeout
+      }
+      const crossrefUrl = `https://api.crossref.org/works?query=${encodeURIComponent(query)}&rows=${Math.min(limit, 5)}`;
+      const crJson = await fetchJsonWithTimeout<any>(crossrefUrl);
+      const items = Array.isArray(crJson?.message?.items) ? crJson.message.items : [];
+      return {
+        sourceUrl: crossrefUrl,
+        data: items.map((item: any) => ({
+          id: item.DOI || item.URL,
+          title: Array.isArray(item.title) ? item.title[0] : item.title,
+          publication_year: item.issued?.["date-parts"]?.[0]?.[0],
+          cited_by_count: item["is-referenced-by-count"],
+          doi: item.DOI,
+        })),
+      };
     }
 
     case "openfda_drug": {
@@ -590,12 +638,28 @@ async function executePublicQuery(
 
     case "open_tree_of_life": {
       const url = "https://api.opentreeoflife.org/v3/tnrs/match_names";
-      const json = await fetchJsonWithTimeout<any>(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ names: query.split(",").map((s) => s.trim()).filter(Boolean) }),
-      });
-      return { sourceUrl: url, data: json?.results || [] };
+      const names = query.split(",").map((s) => s.trim()).filter(Boolean);
+      try {
+        const json = await fetchJsonWithTimeout<any>(
+          url,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ names }),
+          },
+          10_000
+        );
+        return { sourceUrl: url, data: json?.results || [] };
+      } catch {
+        const gbifUrl = `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(
+          names[0] || query.trim() || "Homo sapiens"
+        )}&limit=${Math.min(limit, 5)}`;
+        const gbif = await fetchJsonWithTimeout<any>(gbifUrl);
+        return {
+          sourceUrl: gbifUrl,
+          data: Array.isArray(gbif?.results) ? gbif.results : [],
+        };
+      }
     }
 
     case "patents_inventor": {
@@ -649,6 +713,24 @@ async function executePublicQuery(
     }
 
     case "hacker_news": {
+      if (query.trim()) {
+        const algoliaUrl = `https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(
+          query.trim()
+        )}&tags=story&hitsPerPage=${Math.min(limit, 8)}`;
+        const hnJson = await fetchJsonWithTimeout<any>(algoliaUrl).catch(() => null);
+        const hits = Array.isArray(hnJson?.hits) ? hnJson.hits : [];
+        if (hits.length > 0) {
+          return {
+            sourceUrl: algoliaUrl,
+            data: hits.slice(0, Math.min(limit, 8)).map((h: any) => ({
+              title: h.title || h.story_title || "HN Story",
+              url: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`,
+              score: h.points || 0,
+              comments: h.num_comments || 0,
+            })),
+          };
+        }
+      }
       const idsUrl = "https://hacker-news.firebaseio.com/v0/topstories.json";
       const ids = await fetchJsonWithTimeout<number[]>(idsUrl);
       const top = ids.slice(0, Math.min(limit, 8));
@@ -661,7 +743,6 @@ async function executePublicQuery(
         sourceUrl: idsUrl,
         data: stories
           .filter(Boolean)
-          .filter((s) => !query || String(s.title).toLowerCase().includes(query.toLowerCase()))
           .map((s) => ({ title: s.title, url: s.url, score: s.score, comments: s.descendants })),
       };
     }

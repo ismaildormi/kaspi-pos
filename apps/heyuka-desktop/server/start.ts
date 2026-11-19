@@ -1048,7 +1048,7 @@ export async function runServer() {
       const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
       const yukaKeyVerified = bearerToken ? verifyYukaApiKey(bearerToken) : false;
 
-      const { prompt, screenshotBase64, userMemoryQuery, byokConfig } = req.body || {};
+      const { prompt, screenshotBase64, userMemoryQuery, byokConfig, preferredModel } = req.body || {};
       const queryPrompt =
         (prompt && String(prompt).trim()) ||
         (screenshotBase64 ? 'Inspect my screen view and describe what you see.' : '');
@@ -1070,6 +1070,7 @@ export async function runServer() {
         screenshotBase64,
         userMemoryQuery,
         byokConfig: byokConfig || null,
+        preferredModel,
       });
 
       return res.status(200).json({
@@ -1134,10 +1135,10 @@ export async function runServer() {
     return res.status(200).json(restoreFromShadowVault(String(entryId || '')));
   });
 
-  // 1. Multimodal Conversational Endpoint (Unified HEYUKA v12.0 — 100% Zero-Key + Optional BYOK)
+  // 1. Multimodal Conversational Endpoint (Unified HEYUKA v12.0 — KASPI Sovereign Models + Zero-Key + Optional BYOK)
   app.post('/api/gemini/interact', async (req, res) => {
     try {
-      const { prompt, screenshotBase64, userMemoryQuery, byokConfig } = req.body || {};
+      const { prompt, screenshotBase64, userMemoryQuery, byokConfig, preferredModel } = req.body || {};
       const queryPrompt = (prompt && String(prompt).trim()) || (screenshotBase64 ? 'Inspect my screen view and let me know what you see.' : '');
       
       if (!queryPrompt && !screenshotBase64) {
@@ -1156,6 +1157,7 @@ export async function runServer() {
         screenshotBase64,
         userMemoryQuery,
         byokConfig: byokConfig || null,
+        preferredModel,
       });
 
       return res.status(200).json({
@@ -2134,6 +2136,47 @@ export async function runServer() {
       return res.status(200).json(getOmniRouterStatus());
     } catch (err: any) {
       return res.status(500).json({ error: err?.message });
+    }
+  });
+
+  // KASPI Sovereign Multi-Model Hub Status & Key Configuration
+  app.get('/api/kaspi/models-status', async (_req, res) => {
+    try {
+      const { getKaspiModelsCatalog } = await import('./kaspiModelsClient.js');
+      const status = await getKaspiModelsCatalog();
+      return res.status(200).json(status);
+    } catch (err: any) {
+      return res.status(500).json({ error: err?.message || 'Status probe failed' });
+    }
+  });
+
+  app.post('/api/kaspi/config', async (req, res) => {
+    try {
+      const { saveStoredCredentials } = await import('./hybridRouter.js');
+      const { heyukaApiKey, heyukaKeyId, kaspiApiBaseUrl, heyukaActiveModel } = req.body || {};
+      const updates: Record<string, string> = {};
+      if (typeof heyukaApiKey === 'string' && heyukaApiKey.trim()) {
+        updates.heyukaApiKey = heyukaApiKey.trim();
+        updates.HEYUKA_API_KEY = heyukaApiKey.trim();
+      }
+      if (typeof heyukaKeyId === 'string') {
+        updates.heyukaKeyId = heyukaKeyId.trim();
+        updates.HEYUKA_KEY_ID = heyukaKeyId.trim();
+      }
+      if (typeof kaspiApiBaseUrl === 'string' && kaspiApiBaseUrl.trim()) {
+        updates.kaspiApiBaseUrl = kaspiApiBaseUrl.trim();
+        updates.KASPI_API_BASE_URL = kaspiApiBaseUrl.trim();
+      }
+      if (typeof heyukaActiveModel === 'string' && heyukaActiveModel.trim()) {
+        updates.heyukaActiveModel = heyukaActiveModel.trim();
+        updates.HEYUKA_ACTIVE_MODEL = heyukaActiveModel.trim();
+      }
+      saveStoredCredentials(updates);
+      const { getKaspiModelsCatalog } = await import('./kaspiModelsClient.js');
+      const status = await getKaspiModelsCatalog();
+      return res.status(200).json({ ok: true, ...status });
+    } catch (err: any) {
+      return res.status(500).json({ ok: false, error: err?.message });
     }
   });
 

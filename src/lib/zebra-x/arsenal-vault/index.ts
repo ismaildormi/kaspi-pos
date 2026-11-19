@@ -144,10 +144,14 @@ export function isSafePublicHttpUrl(rawUrl: string): boolean {
 }
 
 function stripHtmlClean(html: string): string {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
+  let out = String(html || "");
+  let prev: string;
+  do {
+    prev = out;
+    out = out.replace(/<[^<>]*>/g, " ");
+  } while (out !== prev);
+  return out
+    .replace(/[<>]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }

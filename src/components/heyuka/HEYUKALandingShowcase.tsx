@@ -50,7 +50,7 @@ const HEYUKACreatureCanvas = dynamic(
     ssr: false,
     loading: () => (
       <div className="w-full h-[380px] sm:h-[440px] rounded-3xl kaspi-glass-surface flex flex-col items-center justify-center gap-3 text-xs text-[var(--kaspi-text-muted)]">
-        <div className="w-10 h-10 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+        <div className="w-10 h-10 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
         <span>Initializing Real-Time WebGL2 Spatial Companion...</span>
       </div>
     ),
@@ -447,7 +447,7 @@ console.log(completion.choices[0].message.content);`;
           x: smoothX,
           y: smoothY,
           background:
-            "radial-gradient(circle, rgba(16,185,129,0.28) 0%, rgba(56,189,248,0.12) 45%, transparent 72%)",
+            "radial-gradient(circle, rgba(225,29,72,0.28) 0%, rgba(56,189,248,0.12) 45%, transparent 72%)",
         }}
       />
 
@@ -461,7 +461,7 @@ console.log(completion.choices[0].message.content);`;
         >
           <div className="lg:col-span-6 space-y-6">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-bold text-emerald-500">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-bold text-rose-500">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>HEYUKA 2026–2050 • BY KASPI</span>
               </span>
@@ -487,12 +487,26 @@ console.log(completion.choices[0].message.content);`;
             </p>
 
             <div className="flex flex-wrap gap-3 pt-1">
+              <Link
+                href={`/${locale}/chat`}
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-extrabold transition-colors"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>
+                  {isAr
+                    ? "ابدا المحادثة مجانا (HEYUKA Chat)"
+                    : locale === "fr"
+                    ? "Discuter gratuitement (HEYUKA)"
+                    : "Start HEYUKA Chat (Free)"}
+                </span>
+              </Link>
+
               <a
                 href="/api/v1/heyuka/installer?platform=desktop_zip"
                 download="HEYUKA-Desktop-App.zip"
-                className="kaspi-primary-cta-btn inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl text-xs sm:text-sm font-extrabold"
+                className="kaspi-glass-btn inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl text-xs sm:text-sm font-extrabold"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-4 h-4 text-rose-500" />
                 <span>
                   {isAr
                     ? "تحميل تطبيق HEYUKA الكامل (.zip)"
@@ -506,7 +520,7 @@ console.log(completion.choices[0].message.content);`;
                 href="#heyuka-api-keys"
                 className="kaspi-glass-btn inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl text-xs sm:text-sm font-extrabold"
               >
-                <KeyRound className="w-4 h-4 text-emerald-500" />
+                <KeyRound className="w-4 h-4 text-rose-500" />
                 <span>
                   {isAr
                     ? "الحصول على مفتاح API عبر Gmail"
@@ -521,7 +535,7 @@ console.log(completion.choices[0].message.content);`;
                 onClick={() => setWalkthroughOpen(true)}
                 className="kaspi-glass-btn inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl text-xs sm:text-sm font-bold cursor-pointer"
               >
-                <Layers className="w-4 h-4 text-emerald-500" />
+                <Layers className="w-4 h-4 text-rose-500" />
                 <span>
                   {isAr
                     ? "مراحل التثبيت الكاملة"
@@ -542,7 +556,7 @@ console.log(completion.choices[0].message.content);`;
             >
               <div className="flex items-center justify-between gap-2 px-1">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[10px] font-bold uppercase text-emerald-500">
+                  <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[10px] font-bold uppercase text-rose-500">
                     {activeCharacter.badge}
                   </span>
                   <span className="text-[11px] font-mono text-[var(--kaspi-text-muted)]">
@@ -556,7 +570,7 @@ console.log(completion.choices[0].message.content);`;
                     className="kaspi-glass-btn inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-pointer"
                   >
                     {soundEnabled ? (
-                      <Volume2 className="w-3.5 h-3.5 text-emerald-500" />
+                      <Volume2 className="w-3.5 h-3.5 text-rose-500" />
                     ) : (
                       <VolumeX className="w-3.5 h-3.5 text-[var(--kaspi-text-muted)]" />
                     )}
@@ -592,7 +606,7 @@ console.log(completion.choices[0].message.content);`;
                       onClick={() => setSelectedLightingId(preset.id)}
                       className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold cursor-pointer transition-colors ${
                         selectedLightingId === preset.id
-                          ? "kaspi-orbit-active text-emerald-500 font-bold"
+                          ? "kaspi-orbit-active text-rose-500 font-bold"
                           : "kaspi-glass-surface text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
                       }`}
                     >
@@ -631,7 +645,7 @@ console.log(completion.choices[0].message.content);`;
             {KINETIC_RAIL_BOTTOM.concat(KINETIC_RAIL_BOTTOM).map((item, i) => (
               <span
                 key={`bot-${i}`}
-                className="px-4 py-2 rounded-full kaspi-glass-surface text-xs sm:text-sm font-semibold text-emerald-500 shrink-0"
+                className="px-4 py-2 rounded-full kaspi-glass-surface text-xs sm:text-sm font-semibold text-rose-500 shrink-0"
               >
                 {item}
               </span>
@@ -643,7 +657,7 @@ console.log(completion.choices[0].message.content);`;
         <section className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="space-y-1.5">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-emerald-500 font-bold">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-rose-500 font-bold">
                 <Film className="w-3.5 h-3.5" />
                 <span>{isAr ? "عرض بصري حي" : "LIVE PRODUCT REEL"}</span>
               </span>
@@ -675,7 +689,7 @@ console.log(completion.choices[0].message.content);`;
                 className="kaspi-glass-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold cursor-pointer"
               >
                 {cinemaPlaying ? (
-                  <Pause className="w-3.5 h-3.5 text-emerald-500" />
+                  <Pause className="w-3.5 h-3.5 text-rose-500" />
                 ) : (
                   <Play className="w-3.5 h-3.5" />
                 )}
@@ -709,7 +723,7 @@ console.log(completion.choices[0].message.content);`;
                 />
               </AnimatePresence>
               <div className="absolute bottom-3 inset-x-3 flex items-center justify-between gap-2 px-3 py-2 rounded-2xl kaspi-glass-surface">
-                <span className="text-[11px] font-mono text-emerald-500 font-bold">
+                <span className="text-[11px] font-mono text-rose-500 font-bold">
                   {activeScene.metric}
                 </span>
                 <div className="flex items-center gap-1.5">
@@ -724,8 +738,8 @@ console.log(completion.choices[0].message.content);`;
                       aria-label={sc.tag[locale]}
                       className={`h-1.5 rounded-full transition-all cursor-pointer ${
                         idx === activeSceneIdx
-                          ? "w-8 bg-emerald-500"
-                          : "w-2.5 bg-[var(--kaspi-border)] hover:bg-emerald-500/60"
+                          ? "w-8 bg-rose-500"
+                          : "w-2.5 bg-[var(--kaspi-border)] hover:bg-rose-500/60"
                       }`}
                     />
                   ))}
@@ -743,7 +757,7 @@ console.log(completion.choices[0].message.content);`;
                   transition={{ duration: 0.45 }}
                   className="space-y-4"
                 >
-                  <span className="text-[11px] font-mono font-bold text-emerald-500">
+                  <span className="text-[11px] font-mono font-bold text-rose-500">
                     {activeScene.tag[locale]}
                   </span>
                   <h3 className="text-2xl font-black text-[var(--kaspi-text-primary)] leading-snug">
@@ -766,7 +780,7 @@ console.log(completion.choices[0].message.content);`;
                     }}
                     className={`p-2.5 rounded-xl text-start text-[11px] font-semibold transition-all cursor-pointer ${
                       idx === activeSceneIdx
-                        ? "kaspi-orbit-active text-emerald-500"
+                        ? "kaspi-orbit-active text-rose-500"
                         : "kaspi-frosted-surface text-[var(--kaspi-text-muted)] hover:text-[var(--kaspi-text-primary)]"
                     }`}
                   >
@@ -781,7 +795,7 @@ console.log(completion.choices[0].message.content);`;
         {/* SECTION 3: Hover-Reveal Editorial Writing (Pure Prose Style — No Static Boxy Cards) */}
         <section className="space-y-6">
           <div className="space-y-1.5">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-emerald-500 font-bold">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-rose-500 font-bold">
               <Cpu className="w-3.5 h-3.5" />
               <span>
                 {isAr
@@ -815,14 +829,14 @@ console.log(completion.choices[0].message.content);`;
                       <span
                         className={`text-sm font-mono font-black transition-colors ${
                           isActive
-                            ? "text-emerald-500"
+                            ? "text-rose-500"
                             : "text-[var(--kaspi-text-muted)]"
                         }`}
                       >
                         {chapter.num}
                       </span>
                       <div className="space-y-1">
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-500 font-bold block">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-rose-500 font-bold block">
                           {chapter.tag[locale]}
                         </span>
                         <h3 className="text-lg sm:text-xl font-extrabold text-[var(--kaspi-text-primary)] leading-snug">
@@ -842,7 +856,7 @@ console.log(completion.choices[0].message.content);`;
                           x: isActive ? 0 : isAr ? 6 : -6,
                         }}
                         transition={{ duration: 0.28 }}
-                        className="text-xs sm:text-sm font-semibold text-emerald-500 flex items-center gap-2"
+                        className="text-xs sm:text-sm font-semibold text-rose-500 flex items-center gap-2"
                       >
                         <ArrowUpRight className="w-4 h-4 shrink-0" />
                         <span>{chapter.detail[locale]}</span>
@@ -860,7 +874,7 @@ console.log(completion.choices[0].message.content);`;
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
               <h2 className="text-2xl sm:text-3xl font-black text-[var(--kaspi-text-primary)] flex items-center gap-2.5">
-                <Wand2 className="w-6 h-6 text-emerald-500" />
+                <Wand2 className="w-6 h-6 text-rose-500" />
                 <span>
                   {isAr
                     ? "مكتبة الرفاق التفاعليين (32 شخصية WebGL2)"
@@ -893,7 +907,7 @@ console.log(completion.choices[0].message.content);`;
                   onClick={() => setActiveCategory(cat.id)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                     activeCategory === cat.id
-                      ? "kaspi-orbit-active text-emerald-500"
+                      ? "kaspi-orbit-active text-rose-500"
                       : "kaspi-glass-surface text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
                   }`}
                 >
@@ -945,7 +959,7 @@ console.log(completion.choices[0].message.content);`;
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="space-y-2">
               <h2 className="text-2xl sm:text-3xl font-black text-[var(--kaspi-text-primary)] flex items-center gap-2.5">
-                <Monitor className="w-6 h-6 text-emerald-500" />
+                <Monitor className="w-6 h-6 text-rose-500" />
                 <span>
                   {isAr
                     ? "تحميل تطبيق HEYUKA وتوليد مفاتيح الـ API عبر Gmail"
@@ -980,9 +994,9 @@ console.log(completion.choices[0].message.content);`;
           {/* Real Bundle Download + Multi-OS Targets */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Primary Real Bundle */}
-            <div className="p-6 rounded-2xl kaspi-frosted-surface flex flex-col justify-between gap-4 border border-emerald-500/25">
+            <div className="p-6 rounded-2xl kaspi-frosted-surface flex flex-col justify-between gap-4 border border-rose-500/25">
               <div className="space-y-2">
-                <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-emerald-500 text-[10px] font-bold uppercase">
+                <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-rose-500 text-[10px] font-bold uppercase">
                   Complete Studio Bundle (.zip)
                 </span>
                 <h3 className="text-lg font-extrabold text-[var(--kaspi-text-primary)]">
@@ -1037,7 +1051,7 @@ console.log(completion.choices[0].message.content);`;
                   href="/download/exe"
                   className="kaspi-glass-btn w-full py-2.5 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2"
                 >
-                  <ExternalLink className="w-4 h-4 text-emerald-500" />
+                  <ExternalLink className="w-4 h-4 text-rose-500" />
                   <span>Windows Release (.exe)</span>
                 </a>
                 <a
@@ -1087,7 +1101,7 @@ console.log(completion.choices[0].message.content);`;
             <div className="p-6 rounded-2xl kaspi-frosted-surface space-y-4">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <h3 className="text-base font-bold text-[var(--kaspi-text-primary)] flex items-center gap-2">
-                  <KeyRound className="w-4 h-4 text-emerald-500" />
+                  <KeyRound className="w-4 h-4 text-rose-500" />
                   <span>
                     {isAr
                       ? "توليد مفتاح API فريد حقيقي (IPK)"
@@ -1096,7 +1110,7 @@ console.log(completion.choices[0].message.content);`;
                 </h3>
                 <Link
                   href={`/${locale}/zebra-x/debug`}
-                  className="text-xs font-bold text-emerald-500 hover:underline"
+                  className="text-xs font-bold text-rose-500 hover:underline"
                 >
                   {isAr ? "فاحص Debug الحي" : "Live Debugger"}
                 </Link>
@@ -1110,7 +1124,7 @@ console.log(completion.choices[0].message.content);`;
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between px-3.5 py-2 rounded-xl kaspi-glass-surface text-xs">
-                    <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-500">
+                    <span className="inline-flex items-center gap-1.5 font-semibold text-rose-500">
                       <ShieldCheck className="w-4 h-4" />
                       <span>{accountEmail || "Authenticated"}</span>
                     </span>
@@ -1159,7 +1173,7 @@ console.log(completion.choices[0].message.content);`;
               )}
 
               {generatedKeyOnce && (
-                <div className="p-4 rounded-xl kaspi-glass-surface space-y-3 border border-emerald-500/30">
+                <div className="p-4 rounded-xl kaspi-glass-surface space-y-3 border border-rose-500/30">
                   {generatedKeyId && (
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-[11px] text-[var(--kaspi-text-secondary)] font-semibold">
@@ -1172,7 +1186,7 @@ console.log(completion.choices[0].message.content);`;
                           className="kaspi-glass-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded cursor-pointer"
                         >
                           {copiedId === "heyuka-key-id" ? (
-                            <Check className="w-3 h-3 text-emerald-500" />
+                            <Check className="w-3 h-3 text-rose-500" />
                           ) : (
                             <Copy className="w-3 h-3" />
                           )}
@@ -1203,7 +1217,7 @@ console.log(completion.choices[0].message.content);`;
                         className="kaspi-glass-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded cursor-pointer"
                       >
                         {copiedId === "heyuka-secret" ? (
-                          <Check className="w-3 h-3 text-emerald-500" />
+                          <Check className="w-3 h-3 text-rose-500" />
                         ) : (
                           <Copy className="w-3 h-3" />
                         )}
@@ -1214,7 +1228,7 @@ console.log(completion.choices[0].message.content);`;
                     </div>
                     <code
                       dir="ltr"
-                      className="block text-[11px] font-mono text-emerald-500 break-all select-all"
+                      className="block text-[11px] font-mono text-rose-500 break-all select-all"
                     >
                       {generatedKeyOnce}
                     </code>
@@ -1264,7 +1278,7 @@ console.log(completion.choices[0].message.content);`;
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-bold text-[var(--kaspi-text-primary)] flex items-center gap-2">
-                    <Terminal className="w-4 h-4 text-emerald-500" />
+                    <Terminal className="w-4 h-4 text-rose-500" />
                     <span>OpenAI-Compatible Quickstart SDK</span>
                   </span>
                   <button
@@ -1273,7 +1287,7 @@ console.log(completion.choices[0].message.content);`;
                     className="kaspi-glass-btn inline-flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-bold cursor-pointer"
                   >
                     {copiedId === "heyuka-sdk" ? (
-                      <Check className="w-3 h-3 text-emerald-500" />
+                      <Check className="w-3 h-3 text-rose-500" />
                     ) : (
                       <Copy className="w-3 h-3" />
                     )}
@@ -1292,7 +1306,7 @@ console.log(completion.choices[0].message.content);`;
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--kaspi-border)] text-xs">
                 <Link
                   href={`/${locale}/zebra-x`}
-                  className="font-bold text-emerald-500 hover:underline inline-flex items-center gap-1"
+                  className="font-bold text-rose-500 hover:underline inline-flex items-center gap-1"
                 >
                   <span>
                     {isAr ? "فتح لوحة المطورين الكاملة" : "Open Developer Console"}

@@ -118,6 +118,30 @@ import {
   generateProceduralGlbBinary,
   probeBrowserMediaWasmSupport,
 } from "../../src/lib/heyuka/tools/zero-worker-media-3d";
+import {
+  V20_TO_V22_MASTER_CATALOG,
+  getV20ToV22Counts,
+  searchV20ToV22Catalog,
+} from "../../src/lib/zebra-x/core/v20-v22-master-catalog";
+import { scanSourceCodeForVulnerabilities } from "../../src/lib/zebra-x/tools/security-sast-auditor";
+import {
+  compileCustomBotBlueprint,
+  buildAutonomousSeoBundle,
+} from "../../src/lib/zebra-x/tools/bot-factory-engine";
+import {
+  buildWifiQrPayload,
+  buildVCard4Payload,
+  buildFiscalTlvBase64,
+  decodeFiscalTlvBase64,
+  createSignedOfflineQrToken,
+  verifySignedOfflineQrToken,
+  renderStyledBrandQrSvg,
+} from "../../src/lib/zebra-x/tools/qr-architect-engine";
+import {
+  analyzeAndroidAdbTelemetry,
+  analyzeIosIdeviceTelemetry,
+  buildMobileRepairReceiptTicket,
+} from "../../src/lib/zebra-x/tools/mobile-diagnostics-engine";
 import { generateProductImageUrl } from "../../src/lib/pollinations";
 import { executeAudioSeparateTask, executeThreeDGenerateTask } from "../../src/lib/zebra-x/sidecar-bridge";
 
@@ -743,6 +767,148 @@ async function main() {
     };
   });
 
+  // 14. v20.2 - v22.1 MASTER CATALOG INDEX (CYBERSECURITY, FULLSTACK, SYSTEMS, BOT FACTORY, ROBOTICS, 100 MOBILE TOOLS)
+  await runCheck("v20_v22_master_catalog_dedup", "v20.2-v22.1 Master Registry", async () => {
+    const counts = getV20ToV22Counts();
+    assert.equal(counts.v20_2_security, 25);
+    assert.equal(counts.v20_3_fullstack, 25);
+    assert.equal(counts.v20_4_systems, 25);
+    assert.equal(counts.v21_bots_blueprints_robotics, 44);
+    assert.equal(counts.v22_mobile_repair, 100);
+    assert.equal(counts.totalUnique, V20_TO_V22_MASTER_CATALOG.length);
+    assert.ok(searchV20ToV22Catalog("ros 2").length >= 1);
+    assert.ok(searchV20ToV22Catalog("libimobiledevice").length >= 1);
+    return { detail: `${counts.totalUnique} unique v20.2-v22.1 sources indexed (incl. 100 mobile tools & 44 bot/robotics stacks)` };
+  });
+
+  // 15. v20.2 DEFENSIVE SECURITY SAST SCANNER & REMEDIATION PATCHER
+  await runCheck("v20_2_sast_auditor_real_vulns", "v20.2 Defensive SAST", async () => {
+    const fakeDemoTok = "sk" + "-proj-" + "TestSample0123456789abcd";
+    const vulnSnippet = [
+      "const q = `SELECT * FROM sales WHERE id = ${reqId}`;",
+      "box.innerHTML = userBio;",
+      "await fetch(req.query.url);",
+      `const leak = "${fakeDemoTok}";`,
+    ].join("\n");
+    const report = scanSourceCodeForVulnerabilities(vulnSnippet);
+    assert.equal(report.clean, false);
+    assert.ok(report.findings.some((f) => f.cwe === "CWE-89"), "Missing SQLi catch");
+    assert.ok(report.findings.some((f) => f.cwe === "CWE-79"), "Missing DOM XSS catch");
+    assert.ok(report.findings.some((f) => f.cwe === "CWE-918"), "Missing SSRF catch");
+    assert.ok(report.findings.some((f) => f.cwe === "CWE-798"), "Missing Credential leak catch");
+
+    const cleanCode = "const user = await prisma.user.findUnique({ where: { id } });";
+    const cleanReport = scanSourceCodeForVulnerabilities(cleanCode);
+    assert.equal(cleanReport.clean, true);
+    assert.equal(cleanReport.riskScore, 0);
+    return { detail: `Caught ${report.findings.length} CWE vulnerabilities (CWE-89/79/918/798) + 0 false-positives on safe code` };
+  });
+
+  // 16. v21.0 - v21.5 BOT FACTORY, SEO, HYPER-CUSTOM ZOD SPEC & PHYSICAL ROBOTICS
+  await runCheck("v21_bot_factory_seo_spec_robotics", "v21 Bot Factory & Robotics", async () => {
+    const botPkg = compileCustomBotBlueprint({
+      botId: "kaspi_darija_bot",
+      displayName: "KASPI Darija Orders Bot",
+      platform: "whatsapp",
+      languages: ["ar-MA", "fr"],
+      personaTone: "friendly merchant support",
+      guidelines: [{ condition: "user asks price", action: "Reply in Moroccan Darija with VAT-included price" }],
+    });
+    assert.ok(botPkg.blueprintYaml.includes("kaspi_darija_bot"));
+    assert.ok(botPkg.sourceCode.includes("BOT_GUIDELINES"));
+
+    const rosPkg = compileCustomBotBlueprint({
+      botId: "warehouse_arm_01",
+      displayName: "Warehouse Arm ROS2",
+      platform: "robotics_ros2",
+      guidelines: [{ condition: "shelf obstacle", action: "Publish stop command on /heyuka/cmd_telemetry" }],
+    });
+    assert.ok(rosPkg.entryFilename.endsWith("_ros2_node.py"));
+    assert.ok(rosPkg.sourceCode.includes("import rclpy"));
+
+    const cadPkg = compileCustomBotBlueprint({
+      botId: "mount_bracket",
+      displayName: "Bracket 3D",
+      platform: "cadquery_3d",
+      guidelines: [{ condition: "m8 hole", action: "Drill 8.5mm clearance bore" }],
+    });
+    assert.ok(cadPkg.sourceCode.includes("import cadquery as cq"));
+
+    const seo = buildAutonomousSeoBundle({
+      siteUrl: "https://kaspi-pos.vercel.app",
+      brandName: "HEYUKA by KASPI",
+      routes: [{ path: "/en/chat", priority: 1.0 }, { path: "/en/zebra-x", priority: 0.9 }],
+      headline: "HEYUKA Sovereign AI Chat and Free Developer API",
+      description: "Chat for free with HEYUKA DeepThink and Web Search, or mint cryptographic API keys with $0.00 fee.",
+    });
+    assert.ok(seo.sitemapXml.includes("<loc>https://kaspi-pos.vercel.app/en/chat</loc>"));
+    assert.equal(seo.metaAuditScore, 100);
+
+    const routePlan = planXZebraToolRoute("build a telegram bot and seo sitemap for ros 2 robot", false);
+    assert.ok(routePlan.intents.includes("bot_factory_and_seo"));
+    return { detail: `Bot Spec + ROS2/CadQuery CAD + SEO Sitemap (100/100) + Bot-First Router verified` };
+  });
+
+  // 17. v21.6 - v21.7 QR ARCHITECT (WIFI, VCARD 4.0, ZATCA TLV BASE64, SIGNED OFFLINE TOKEN & STYLED SVG)
+  await runCheck("v21_7_qr_architect_tlv_crypto_dynamic", "v21.7 QR Architect", async () => {
+    const wifi = buildWifiQrPayload({ ssid: "KASPI_NADOR_5G", password: "SamplePass_99", encryption: "WPA" });
+    assert.ok(wifi.startsWith("WIFI:T:WPA;S:KASPI_NADOR_5G;"));
+    const vcard = buildVCard4Payload({ fullName: "Ismail KASPI", org: "KASPI POS", phone: "+212600000000" });
+    assert.ok(vcard.includes("VERSION:4.0") && vcard.includes("END:VCARD"));
+
+    const tlv = buildFiscalTlvBase64({
+      sellerName: "KASPI Store Nador",
+      vatNumber: "MA99887766",
+      isoTimestamp: "2026-11-19T14:00:00Z",
+      totalWithVat: "240.00",
+      vatAmount: "40.00",
+    });
+    const decoded = decodeFiscalTlvBase64(tlv);
+    assert.equal(decoded[1], "KASPI Store Nador");
+    assert.equal(decoded[4], "240.00");
+
+    const signed = createSignedOfflineQrToken({ ticket: "REC-2026-01", total: 240 }, "e2e-secret-phrase");
+    const verified = verifySignedOfflineQrToken<{ ticket: string; total: number }>(signed, "e2e-secret-phrase");
+    assert.equal(verified.valid, true);
+    assert.equal(verified.payload?.ticket, "REC-2026-01");
+    assert.equal(verifySignedOfflineQrToken(signed + "tamper", "e2e-secret-phrase").valid, false);
+
+    const svg = renderStyledBrandQrSvg({ payload: "https://kaspi-pos.vercel.app/q/promo", sizePx: 200, centerLabel: "HYK" });
+    assert.ok(svg.startsWith("<svg") && svg.includes("#E11D48") && svg.includes("HYK"));
+    return { artifactBytes: svg.length, detail: `Wi-Fi/vCard4/Fiscal-TLV/Signed-QR/Styled-SVG (${svg.length}B) verified` };
+  });
+
+  // 18. v22.0 - v22.1 MOBILE REPAIR & DIAGNOSTICS LAB (ANDROID ADB + APPLE IOS + THERMAL TICKETS)
+  await runCheck("v22_mobile_repair_adb_ios_tickets", "v22.1 Mobile Repair Lab", async () => {
+    const androidReport = analyzeAndroidAdbTelemetry({
+      modelProp: "Galaxy S24",
+      androidVersion: "15",
+      dumpsysBatteryText: "level: 80\ntemperature: 315\nvoltage: 4120\ncharge counter: 3600000",
+      installedPackagesText: "package:com.whatsapp\npackage:com.superclean.popup.ads\npackage:com.kaspi.pos",
+    });
+    assert.equal(androidReport.platform, "android");
+    assert.equal(androidReport.battery.temperatureC, 31.5);
+    assert.equal(androidReport.suspiciousPackages.length, 1);
+
+    const iosReport = analyzeIosIdeviceTelemetry({
+      ideviceInfoText: "ProductType: iPhone16,1\nProductVersion: 18.2\nUniqueDeviceID: 00008130-E2E",
+      cycleCount: 145,
+      designCapacityMah: 3274,
+      nominalCapacityMah: 3180,
+    });
+    assert.equal(iosReport.platform, "ios");
+    assert.equal(iosReport.battery.estimatedHealthPercent, 97);
+
+    const ticket = buildMobileRepairReceiptTicket({
+      shopName: "KASPI Repair Nador",
+      ticketCode: "REP-774",
+      report: iosReport,
+      trackingUrl: "https://kaspi-pos.vercel.app/q/rep-774",
+    });
+    assert.ok(ticket.lines.some((l) => l.includes("Health :")) && ticket.qrPayload.includes("/q/rep-774"));
+    return { detail: `Android ADB (${androidReport.suspiciousPackages.length} IOC flag) + iOS (97% Battery Health) + Thermal Ticket verified` };
+  });
+
   // SUMMARY & SELF-REPORTING
   const totalTested = results.length;
   const passed = results.filter((r) => r.status !== "failed");
@@ -777,7 +943,7 @@ async function main() {
   // Only generate/update YUKA_FINAL_100_PERCENT_TEST_RESULTS.md when 100% of runnable checks pass!
   if (failed.length === 0) {
     const mdLines = [
-      `# YUKA / HEYUKA — 100% Real End-to-End Test Results (\`v14.1\` – \`v19.0\`)`,
+      `# YUKA / HEYUKA — 100% Real End-to-End Test Results (\`v14.1\` – \`v22.1\`)`,
       ``,
       `Generated automatically by [\`tests/yuka-full-e2e/run-all-sources-forever.mjs\`](./tests/yuka-full-e2e/run-all-sources-forever.mjs) at \`${new Date().toISOString()}\`.`,
       ``,

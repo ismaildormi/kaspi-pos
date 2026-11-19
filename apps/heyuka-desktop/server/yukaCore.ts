@@ -309,7 +309,7 @@ export interface YukaLLMResult {
   success: boolean;
   text: string;
   bossIdentity: 'HEYUKA';
-  coreModule: 'HEYUKA-Core' | 'HEYUKA-Vision';
+  coreModule: 'HEYUKA-Omni' | 'HEYUKA-Core' | 'HEYUKA-Vision';
   internalChannelId: string;
   zeroKeyVerified: boolean;
   byokActive: boolean;
@@ -465,6 +465,9 @@ export async function yukaSupremeExecuteLLM(params: {
   systemPrompt?: string;
   userPrompt: string;
   maxTokens?: number;
+  temperature?: number;
+  preferredModel?: 'heyuka-omni' | 'heyuka-core' | 'heyuka-vision';
+  imageBase64?: string;
   localEndpoint?: string;
   localModel?: string;
   byokConfig?: YukaByokConfig | null;
@@ -474,7 +477,7 @@ export async function yukaSupremeExecuteLLM(params: {
   const maxTokens = params.maxTokens || 800;
 
   const baseSystem = params.systemPrompt || 'You are HEYUKA (owned by KASPI), a sovereign AI assistant.';
-  const yukaSystemPrompt = `${baseSystem}\n\n[IDENTITY DIRECTIVE]: You are HEYUKA (HEYUKA-Core & HEYUKA-Vision, owned by KASPI). Speak exclusively as HEYUKA. Never mention any external provider, API, or third-party model name.`;
+  const yukaSystemPrompt = `${baseSystem}\n\n[IDENTITY DIRECTIVE]: You are HEYUKA (HEYUKA Omni, Core & Vision, owned by KASPI). Speak exclusively as HEYUKA. Never mention any external provider, API, or third-party model name.`;
   const anonymizedUserPrompt = anonymizeOutboundTaskPayload(params.userPrompt);
 
   // Stage 0 (Optional): User-provided BYOK session booster
@@ -488,6 +491,39 @@ export async function yukaSupremeExecuteLLM(params: {
     });
     if (byokResult) return byokResult;
   }
+
+  // Stage 0.5: Unified KASPI Sovereign Models (`heyuka-omni`, `heyuka-core`, `heyuka-vision`)
+  try {
+    const { callKaspiChat } = await import('./kaspiModelsClient.js');
+    const chosenModel = params.imageBase64
+      ? 'heyuka-vision'
+      : params.preferredModel || 'heyuka-omni';
+    const kaspiRes = await callKaspiChat({
+      model: chosenModel,
+      systemPrompt: yukaSystemPrompt,
+      userPrompt: params.userPrompt,
+      imageBase64: params.imageBase64,
+      maxTokens,
+      temperature: params.temperature,
+    });
+    if (kaspiRes.ok && kaspiRes.text) {
+      return {
+        success: true,
+        text: sanitizeYukaChatOutput(kaspiRes.text),
+        bossIdentity: 'HEYUKA',
+        coreModule:
+          chosenModel === 'heyuka-vision'
+            ? 'HEYUKA-Vision'
+            : chosenModel === 'heyuka-core'
+            ? 'HEYUKA-Core'
+            : 'HEYUKA-Omni',
+        internalChannelId: 'kaspi-sovereign-cloud',
+        zeroKeyVerified: true,
+        byokActive: false,
+        latencyMs: Date.now() - start,
+      };
+    }
+  } catch {}
 
   // Stage 1: Local Ollama / llamafile / llama.cpp (100% Zero-Key, 100% Private Local)
   const localEndpoint = (params.localEndpoint || process.env.OLLAMA_HOST || 'http://localhost:11434').replace(/\/$/, '');

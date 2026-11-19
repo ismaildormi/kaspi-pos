@@ -176,7 +176,7 @@ export function PlatformWorkersView() {
     <div className="space-y-6">
       {/* Zero-Cost Financial Architecture Banner */}
       <section className="kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-6 sm:p-8 space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-emerald-500">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-rose-500">
           <ShieldCheck className="w-3.5 h-3.5" />
           <span>ZERO-COST DISTRIBUTED COMPUTE • STRICT $0.00 OWNER EXPOSURE</span>
         </div>
@@ -190,13 +190,13 @@ export function PlatformWorkersView() {
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div className="kaspi-frosted-surface rounded-2xl p-3">
             <div className="text-[10px] font-bold text-[var(--kaspi-text-muted)]">WebGPU Status</div>
-            <div className={`text-xs font-black mt-1 ${browserHw?.webGpuSupported ? "text-emerald-500" : "text-amber-500"}`}>
+            <div className={`text-xs font-black mt-1 ${browserHw?.webGpuSupported ? "text-rose-500" : "text-amber-500"}`}>
               {browserHw?.webGpuSupported ? "DETECTED READY" : "Unavailable"}
             </div>
           </div>
           <div className="kaspi-frosted-surface rounded-2xl p-3">
             <div className="text-[10px] font-bold text-[var(--kaspi-text-muted)]">WebAssembly</div>
-            <div className="text-xs font-black text-emerald-500 mt-1">
+            <div className="text-xs font-black text-rose-500 mt-1">
               {browserHw?.wasmSupported ? "READY" : "No"}
             </div>
           </div>
@@ -214,7 +214,7 @@ export function PlatformWorkersView() {
           </div>
           <div className="kaspi-frosted-surface rounded-2xl p-3">
             <div className="text-[10px] font-bold text-[var(--kaspi-text-muted)]">Daily Free Tier</div>
-            <div className="text-sm font-black font-mono mt-0.5 text-emerald-500">
+            <div className="text-sm font-black font-mono mt-0.5 text-rose-500">
               {budget ? `${budget.count}/${budget.limit}` : "0/120"} ($0.00)
             </div>
           </div>
@@ -233,7 +233,7 @@ export function PlatformWorkersView() {
         <section className="kaspi-glass-card rounded-3xl p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-black flex items-center gap-2">
-              <Server className="w-4 h-4 text-emerald-500" />
+              <Server className="w-4 h-4 text-rose-500" />
               <span>User Worker Servers (Revocable)</span>
             </h2>
             <span className="text-[11px] font-mono text-[var(--kaspi-text-muted)]">
@@ -257,7 +257,7 @@ export function PlatformWorkersView() {
                   type="button"
                   onClick={() => setWOs(os)}
                   className={`px-2.5 py-1 rounded-xl font-mono text-[11px] font-bold cursor-pointer ${
-                    wOs === os ? "kaspi-orbit-active text-emerald-500" : "kaspi-glass-surface"
+                    wOs === os ? "kaspi-orbit-active text-rose-500" : "kaspi-glass-surface"
                   }`}
                 >
                   {os}
@@ -286,7 +286,7 @@ export function PlatformWorkersView() {
                 type="checkbox"
                 checked={wConsent}
                 onChange={(e) => setWConsent(e.target.checked)}
-                className="mt-1 accent-emerald-500"
+                className="mt-1 accent-rose-500"
               />
               <span>
                 I explicitly authorize HEYUKA to probe &amp; dispatch only my tenant&apos;s jobs to this Worker (I can revoke instantly anytime).
@@ -312,7 +312,7 @@ export function PlatformWorkersView() {
                     <span
                       className={`font-mono text-[10px] font-bold ${
                         w.status === "connected_verified"
-                          ? "text-emerald-500"
+                          ? "text-rose-500"
                           : w.status === "revoked"
                           ? "text-rose-500"
                           : "text-amber-500"
@@ -363,10 +363,10 @@ export function PlatformWorkersView() {
         <section className="kaspi-glass-card rounded-3xl p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-black flex items-center gap-2">
-              <KeyRound className="w-4 h-4 text-emerald-500" />
+              <KeyRound className="w-4 h-4 text-rose-500" />
               <span>Your Encrypted BYOK AI Keys (AES-256-GCM)</span>
             </h2>
-            <span className="text-[11px] font-mono text-emerald-500">Zero Owner Billing</span>
+            <span className="text-[11px] font-mono text-rose-500">Zero Owner Billing</span>
           </div>
 
           <form onSubmit={handleSaveByok} className="space-y-3">
@@ -377,7 +377,7 @@ export function PlatformWorkersView() {
                   type="button"
                   onClick={() => setBKind(k)}
                   className={`px-2.5 py-1 rounded-xl font-mono text-[11px] font-bold cursor-pointer ${
-                    bKind === k ? "kaspi-orbit-active text-emerald-500" : "kaspi-glass-surface"
+                    bKind === k ? "kaspi-orbit-active text-rose-500" : "kaspi-glass-surface"
                   }`}
                 >
                   {k}
@@ -434,7 +434,7 @@ export function PlatformWorkersView() {
               <div key={b.id} className="kaspi-frosted-surface rounded-2xl p-3 flex items-center justify-between gap-2 text-xs">
                 <div className="min-w-0">
                   <div className="font-bold truncate">
-                    {b.label} <span className="font-mono text-[10px] text-emerald-500">({b.modelId})</span>
+                    {b.label} <span className="font-mono text-[10px] text-rose-500">({b.modelId})</span>
                   </div>
                   <div dir="ltr" className="text-[11px] font-mono text-[var(--kaspi-text-muted)]">
                     {b.providerKind} • {b.maskedKey}

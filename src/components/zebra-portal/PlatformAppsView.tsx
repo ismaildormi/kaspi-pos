@@ -32,7 +32,7 @@ export function PlatformAppsView() {
     <div className="space-y-6">
       <section className="kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-6 sm:p-8 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-emerald-500">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-rose-500">
             <Download className="w-3.5 h-3.5" />
             <span>HEYUKA APPS &amp; DOWNLOAD CENTER (Separated from Models Registry)</span>
           </div>
@@ -40,7 +40,7 @@ export function PlatformAppsView() {
             href={`/${locale}/zebra-x/models`}
             className="kaspi-glass-btn rounded-full px-3.5 py-1.5 text-xs font-bold inline-flex items-center gap-1.5"
           >
-            <Boxes className="w-3.5 h-3.5 text-emerald-500" />
+            <Boxes className="w-3.5 h-3.5 text-rose-500" />
             <span>View Models &amp; Capabilities →</span>
           </Link>
         </div>
@@ -58,13 +58,13 @@ export function PlatformAppsView() {
         <div className="kaspi-glass-card rounded-3xl p-6 flex flex-col justify-between gap-4">
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[11px] font-bold text-emerald-500 inline-flex items-center gap-1">
+              <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[11px] font-bold text-rose-500 inline-flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" /> VERIFIED LIVE
               </span>
               <span className="text-xs font-mono text-[var(--kaspi-text-muted)]">v15.0 • Web/PWA</span>
             </div>
             <h2 className="text-lg font-black flex items-center gap-2">
-              <Globe className="w-5 h-5 text-emerald-500" />
+              <Globe className="w-5 h-5 text-rose-500" />
               <span>HEYUKA Web App &amp; Studios Console</span>
             </h2>
             <p className="text-xs text-[var(--kaspi-text-secondary)] leading-relaxed">
@@ -87,13 +87,13 @@ export function PlatformAppsView() {
         <div className="kaspi-glass-card rounded-3xl p-6 flex flex-col justify-between gap-4">
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[11px] font-bold text-emerald-500 inline-flex items-center gap-1">
+              <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[11px] font-bold text-rose-500 inline-flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" /> REAL SCRIPT DOWNLOAD
               </span>
               <span className="text-xs font-mono text-[var(--kaspi-text-muted)]">v12.0 • ~1.2 KB (.bat)</span>
             </div>
             <h2 className="text-lg font-black flex items-center gap-2">
-              <Terminal className="w-5 h-5 text-emerald-500" />
+              <Terminal className="w-5 h-5 text-rose-500" />
               <span>Windows Native Window Bootstrapper (.bat)</span>
             </h2>
             <p className="text-xs text-[var(--kaspi-text-secondary)] leading-relaxed">

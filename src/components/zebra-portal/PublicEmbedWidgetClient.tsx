@@ -69,14 +69,14 @@ export function PublicEmbedWidgetClient({ productId }: { productId: string }) {
         <div className="flex items-center justify-between gap-2 border-b border-[var(--kaspi-border)] pb-2.5">
           <div>
             <div className="text-sm font-black flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-emerald-500" />
+              <Sparkles className="w-4 h-4 text-rose-500" />
               <span>{info?.widgetTitle || "HEYUKA Embedded Studio"}</span>
             </div>
             <div className="text-[11px] text-[var(--kaspi-text-muted)]">
               {info?.tagline || info?.baseProductId || ""}
             </div>
           </div>
-          <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+          <ShieldCheck className="w-4 h-4 text-rose-500 shrink-0" />
         </div>
 
         <div className="flex-1 kaspi-frosted-surface rounded-2xl p-3 overflow-y-auto space-y-2 min-h-[260px]">

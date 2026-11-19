@@ -79,7 +79,7 @@ const COPY: Record<
     sendBtn: "إرسال الطلب الحي الآن",
     sendingBtn: "جاري التنفيذ...",
     copyCurl: "نسخ كود cURL",
-    copied: "تم النسخ ✓",
+    copied: "تم النسخ OK",
     responseLabel: "نتيجة الاستجابة المباشرة",
     headersLabel: "ترويسات التشخيص المستلمة",
   },
@@ -99,7 +99,7 @@ const COPY: Record<
     sendBtn: "Exécuter la requête maintenant",
     sendingBtn: "Exécution...",
     copyCurl: "Copier cURL",
-    copied: "Copié ✓",
+    copied: "Copié OK",
     responseLabel: "Réponse brute / Flux reçu",
     headersLabel: "En-têtes de diagnostic reçus",
   },
@@ -119,7 +119,7 @@ const COPY: Record<
     sendBtn: "Send Live Request",
     sendingBtn: "Executing...",
     copyCurl: "Copy cURL",
-    copied: "Copied ✓",
+    copied: "Copied OK",
     responseLabel: "Live Response Output",
     headersLabel: "Diagnostic Response Headers",
   },
@@ -312,7 +312,7 @@ export function PlatformPlaygroundView() {
   return (
     <div className="space-y-6">
       <section className="kaspi-glass-card rounded-3xl p-6 sm:p-8 space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-emerald-500">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-rose-500">
           <Terminal className="w-3.5 h-3.5" />
           <span>{t.badge}</span>
         </div>
@@ -376,7 +376,7 @@ export function PlatformPlaygroundView() {
                     onClick={() => selectEndpoint(ep)}
                     className={`px-2.5 py-1.5 rounded-xl font-mono text-[11px] font-bold transition-all cursor-pointer ${
                       active
-                        ? "kaspi-orbit-active text-emerald-500"
+                        ? "kaspi-orbit-active text-rose-500"
                         : "kaspi-glass-surface text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
                     }`}
                   >
@@ -400,7 +400,7 @@ export function PlatformPlaygroundView() {
                     onClick={() => syncChatOptions(m, enableTools, stream)}
                     className={`px-2.5 py-1 rounded-full font-mono text-[11px] font-bold cursor-pointer ${
                       model === m
-                        ? "kaspi-orbit-active text-emerald-500"
+                        ? "kaspi-orbit-active text-rose-500"
                         : "kaspi-glass-surface text-[var(--kaspi-text-muted)]"
                     }`}
                   >
@@ -414,7 +414,7 @@ export function PlatformPlaygroundView() {
                   onClick={() => syncChatOptions(model, !enableTools, stream)}
                   className={`px-3 py-1.5 rounded-full text-[11px] font-bold cursor-pointer ${
                     enableTools
-                      ? "kaspi-orbit-active text-emerald-500"
+                      ? "kaspi-orbit-active text-rose-500"
                       : "kaspi-glass-surface text-[var(--kaspi-text-muted)]"
                   }`}
                 >
@@ -426,7 +426,7 @@ export function PlatformPlaygroundView() {
                   onClick={() => syncChatOptions(model, enableTools, !stream)}
                   className={`px-3 py-1.5 rounded-full text-[11px] font-bold cursor-pointer ${
                     stream
-                      ? "kaspi-orbit-active text-emerald-500"
+                      ? "kaspi-orbit-active text-rose-500"
                       : "kaspi-glass-surface text-[var(--kaspi-text-muted)]"
                   }`}
                 >
@@ -472,7 +472,7 @@ export function PlatformPlaygroundView() {
               className="kaspi-glass-btn rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
             >
               {copiedCurl ? (
-                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                <Check className="w-3.5 h-3.5 text-rose-500" />
               ) : (
                 <Copy className="w-3.5 h-3.5" />
               )}
@@ -491,7 +491,7 @@ export function PlatformPlaygroundView() {
               {statusCode !== null && (
                 <span
                   className={`px-2.5 py-0.5 rounded-full kaspi-glass-surface font-bold ${
-                    statusCode < 400 ? "text-emerald-500" : "text-rose-500"
+                    statusCode < 400 ? "text-rose-500" : "text-rose-500"
                   }`}
                 >
                   HTTP {statusCode}

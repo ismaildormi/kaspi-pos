@@ -53,7 +53,13 @@ function renderMindmapTree(node: MindmapNode, depth = 0, keyPrefix = "root"): Re
     "border-white/20 bg-white/5 text-zinc-200",
   ];
   const cls = palette[Math.min(depth, palette.length - 1)];
-  const cleanLabel = node.content.replace(/<[^>]+>/g, "").trim();
+  let prevLabel: string;
+  let cleanLabel = String(node.content || "");
+  do {
+    prevLabel = cleanLabel;
+    cleanLabel = cleanLabel.replace(/<[^<>]*>/g, "");
+  } while (cleanLabel !== prevLabel);
+  cleanLabel = cleanLabel.replace(/[<>]/g, "").trim();
 
   return (
     <div key={keyPrefix} className={depth > 0 ? "ms-4 ps-3 border-s border-white/15 mt-2" : "mt-1"}>

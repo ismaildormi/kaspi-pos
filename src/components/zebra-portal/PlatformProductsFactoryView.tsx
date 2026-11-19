@@ -83,7 +83,7 @@ export function PlatformProductsFactoryView() {
   return (
     <div className="space-y-6">
       <section className="kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-6 sm:p-8 space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-emerald-500">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-rose-500">
           <PackagePlus className="w-3.5 h-3.5" />
           <span>Tenant-Isolated Mini-Product Factory &amp; Website Embeds</span>
         </div>
@@ -108,7 +108,7 @@ export function PlatformProductsFactoryView() {
                 onClick={() => setBaseId(sp.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer ${
                   baseId === sp.id
-                    ? "kaspi-orbit-active text-emerald-500"
+                    ? "kaspi-orbit-active text-rose-500"
                     : "kaspi-glass-surface text-[var(--kaspi-text-secondary)]"
                 }`}
               >
@@ -134,7 +134,7 @@ export function PlatformProductsFactoryView() {
                 type="button"
                 onClick={() => setAccentColor(c)}
                 className={`flex-1 py-2 rounded-xl text-[11px] font-bold cursor-pointer ${
-                  accentColor === c ? "kaspi-orbit-active text-emerald-500" : "kaspi-glass-surface"
+                  accentColor === c ? "kaspi-orbit-active text-rose-500" : "kaspi-glass-surface"
                 }`}
               >
                 {c}
@@ -173,7 +173,7 @@ export function PlatformProductsFactoryView() {
 
       {createdKeyOnce && (
         <section className="kaspi-glass-card rounded-3xl p-5 space-y-2">
-          <div className="text-xs font-bold text-emerald-500">
+          <div className="text-xs font-bold text-rose-500">
             Project-Scoped Secret API Key Created (Save Once):
           </div>
           <div className="flex items-center justify-between gap-2 kaspi-frosted-surface rounded-2xl p-3">
@@ -183,7 +183,7 @@ export function PlatformProductsFactoryView() {
               onClick={() => void copyText("once-prd", createdKeyOnce)}
               className="kaspi-primary-cta-btn rounded-xl px-3 py-1.5 text-xs font-bold shrink-0 cursor-pointer"
             >
-              {copiedId === "once-prd" ? "Copied ✓" : "Copy Key"}
+              {copiedId === "once-prd" ? "Copied OK" : "Copy Key"}
             </button>
           </div>
         </section>
@@ -199,12 +199,12 @@ export function PlatformProductsFactoryView() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-[10px] px-2 py-0.5 rounded-full kaspi-glass-surface text-emerald-500 font-bold">
+                    <span className="font-mono text-[10px] px-2 py-0.5 rounded-full kaspi-glass-surface text-rose-500 font-bold">
                       {p.baseProductId}
                     </span>
                     <span
                       className={`font-mono text-[10px] font-bold ${
-                        p.enabled ? "text-emerald-500" : "text-rose-500"
+                        p.enabled ? "text-rose-500" : "text-rose-500"
                       }`}
                     >
                       {p.enabled ? "ACTIVE" : "PAUSED"}
@@ -230,7 +230,7 @@ export function PlatformProductsFactoryView() {
                     className="kaspi-glass-btn rounded-xl p-1.5 cursor-pointer"
                     title={p.enabled ? "Pause Product" : "Enable Product"}
                   >
-                    <Power className={`w-3.5 h-3.5 ${p.enabled ? "text-emerald-500" : "text-rose-500"}`} />
+                    <Power className={`w-3.5 h-3.5 ${p.enabled ? "text-rose-500" : "text-rose-500"}`} />
                   </button>
                   <button
                     type="button"
@@ -256,14 +256,14 @@ export function PlatformProductsFactoryView() {
                       href={`/${locale}/embed/${p.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-emerald-500 hover:underline inline-flex items-center gap-1"
+                      className="text-rose-500 hover:underline inline-flex items-center gap-1"
                     >
                       Preview <ExternalLink className="w-3 h-3" />
                     </a>
                     <button
                       type="button"
                       onClick={() => void copyText(`emb-${p.id}`, iframeSnippet)}
-                      className="text-emerald-500 inline-flex items-center gap-1 cursor-pointer"
+                      className="text-rose-500 inline-flex items-center gap-1 cursor-pointer"
                     >
                       {copiedId === `emb-${p.id}` ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                       Copy iframe

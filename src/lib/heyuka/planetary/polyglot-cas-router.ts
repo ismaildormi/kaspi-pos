@@ -249,12 +249,13 @@ export function cleanAndDeduplicateCorpus(rawDocs: Array<{ id: string; text: str
   const cleanOut: Array<{ id: string; cleanedText: string }> = [];
 
   for (const doc of rawDocs) {
-    const cleaned = String(doc.text || "")
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+    let cleaned = String(doc.text || "");
+    let prevDoc: string;
+    do {
+      prevDoc = cleaned;
+      cleaned = cleaned.replace(/<[^<>]*>/g, " ");
+    } while (cleaned !== prevDoc);
+    cleaned = cleaned.replace(/[<>]/g, "").replace(/\s+/g, " ").trim();
 
     if (cleaned.length < 12) continue;
 

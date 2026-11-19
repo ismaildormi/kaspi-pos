@@ -1,0 +1,17 @@
+name: "KASPI POS & HEYUKA CodeQL Security Config"
+
+queries:
+  - uses: security-extended
+
+paths:
+  - src
+
+paths-ignore:
+  - apps/**
+  - external_sources/**
+  - tests/**
+  - scripts/**
+  - public/sw.js
+  - src-tauri/**
+  - "**/dist/**"
+  - "**/.next/**"

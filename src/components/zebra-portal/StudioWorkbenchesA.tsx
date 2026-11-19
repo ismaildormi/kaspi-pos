@@ -180,7 +180,7 @@ export function CodingStudioWorkbench({
       <div className="kaspi-glass-card rounded-3xl p-4 sm:p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm font-black text-[var(--kaspi-text-primary)]">
-            <FileCode2 className="w-4 h-4 text-emerald-500" />
+            <FileCode2 className="w-4 h-4 text-rose-500" />
             <span>Multi-File Code IDE &amp; Isolated Sandbox</span>
           </div>
 
@@ -192,7 +192,7 @@ export function CodingStudioWorkbench({
                 onClick={() => setLanguage(l)}
                 className={`px-2.5 py-1 rounded-xl font-mono text-[11px] font-bold cursor-pointer ${
                   language === l
-                    ? "kaspi-orbit-active text-emerald-500"
+                    ? "kaspi-orbit-active text-rose-500"
                     : "kaspi-glass-surface text-[var(--kaspi-text-muted)]"
                 }`}
               >
@@ -204,7 +204,7 @@ export function CodingStudioWorkbench({
               onClick={() => setShowDiff((d) => !d)}
               className="kaspi-glass-btn rounded-xl px-3 py-1.5 text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer"
             >
-              <GitCompare className="w-3.5 h-3.5 text-emerald-500" />
+              <GitCompare className="w-3.5 h-3.5 text-rose-500" />
               <span>{showDiff ? "Code Editor" : "Inspect Diff"}</span>
             </button>
             <button
@@ -230,7 +230,7 @@ export function CodingStudioWorkbench({
                   onClick={() => setActiveFile(fname)}
                   className={`w-full text-start px-3 py-1.5 rounded-xl font-mono text-xs truncate cursor-pointer ${
                     activeFile === fname
-                      ? "kaspi-orbit-active text-emerald-500 font-bold"
+                      ? "kaspi-orbit-active text-rose-500 font-bold"
                       : "hover:bg-[var(--kaspi-surface-hover)] text-[var(--kaspi-text-secondary)]"
                   }`}
                 >
@@ -269,7 +269,7 @@ export function CodingStudioWorkbench({
                     key={i}
                     className={
                       part.added
-                        ? "block bg-emerald-500/20 text-emerald-400"
+                        ? "block bg-rose-500/20 text-rose-400"
                         : part.removed
                         ? "block bg-rose-500/20 text-rose-400 line-through"
                         : "block text-[var(--kaspi-text-secondary)]"
@@ -297,7 +297,7 @@ export function CodingStudioWorkbench({
                   type="checkbox"
                   checked={approvalChecked}
                   onChange={(e) => setApprovalChecked(e.target.checked)}
-                  className="accent-emerald-500"
+                  className="accent-rose-500"
                 />
                 <span>Approve isolated sandbox run (Zero host filesystem access)</span>
               </label>
@@ -318,7 +318,7 @@ export function CodingStudioWorkbench({
                   onClick={() => void runSandbox("test_suite")}
                   className="kaspi-glass-btn rounded-xl px-3.5 py-2 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-rose-500" />
                   <span>Run Tests</span>
                 </button>
               </div>
@@ -348,7 +348,7 @@ export function CodingStudioWorkbench({
                   <span
                     className={
                       item.status === "ok"
-                        ? "text-emerald-500 font-bold"
+                        ? "text-rose-500 font-bold"
                         : item.status === "fail"
                         ? "text-rose-500 font-bold"
                         : "text-[var(--kaspi-text-secondary)]"
@@ -415,7 +415,7 @@ export function BackgroundStudioWorkbench() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-black text-[var(--kaspi-text-primary)] flex items-center gap-2">
-            <Scissors className="w-4 h-4 text-emerald-500" />
+            <Scissors className="w-4 h-4 text-rose-500" />
             <span>Zero-Cost Local Background Removal Studio</span>
           </h3>
           <p className="text-xs text-[var(--kaspi-text-muted)]">
@@ -435,14 +435,14 @@ export function BackgroundStudioWorkbench() {
           { id: "transparent", label: "Checker / Transparent" },
           { id: "#ffffff", label: "Studio White" },
           { id: "#0f172a", label: "Midnight Slate" },
-          { id: "#10b981", label: "Emerald" },
+          { id: "#e11d48", label: "Emerald" },
         ].map((sw) => (
           <button
             key={sw.id}
             type="button"
             onClick={() => setBgSwatch(sw.id)}
             className={`px-3 py-1 rounded-full text-[11px] font-bold cursor-pointer ${
-              bgSwatch === sw.id ? "kaspi-orbit-active text-emerald-500" : "kaspi-glass-surface"
+              bgSwatch === sw.id ? "kaspi-orbit-active text-rose-500" : "kaspi-glass-surface"
             }`}
           >
             {sw.label}
@@ -462,7 +462,7 @@ export function BackgroundStudioWorkbench() {
           </div>
           <div className="kaspi-frosted-surface rounded-2xl p-3 space-y-2">
             <div className="flex items-center justify-between text-[11px]">
-              <span className="font-bold text-emerald-500">
+              <span className="font-bold text-rose-500">
                 Real Cutout Output ({method} • {dims})
               </span>
               {cutoutUrl && (
@@ -552,7 +552,7 @@ export function ImageStudioWorkbench() {
     <div className="kaspi-glass-card rounded-3xl p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm font-black">
-          <ImageIcon className="w-4 h-4 text-emerald-500" />
+          <ImageIcon className="w-4 h-4 text-rose-500" />
           <span>HEYUKA Image Synthesis &amp; Canvas Enhancer</span>
         </div>
         <div className="flex gap-1.5">
@@ -562,7 +562,7 @@ export function ImageStudioWorkbench() {
               type="button"
               onClick={() => setMode(m)}
               className={`px-3 py-1 rounded-full text-[11px] font-bold cursor-pointer ${
-                mode === m ? "kaspi-orbit-active text-emerald-500" : "kaspi-glass-surface"
+                mode === m ? "kaspi-orbit-active text-rose-500" : "kaspi-glass-surface"
               }`}
             >
               {m === "generate" ? "AI Diffusion" : "Wikimedia Search"}
@@ -601,7 +601,7 @@ export function ImageStudioWorkbench() {
                 max={150}
                 value={filterBrightness}
                 onChange={(e) => setFilterBrightness(Number(e.target.value))}
-                className="w-full accent-emerald-500"
+                className="w-full accent-rose-500"
               />
             </label>
             <label className="space-y-1">
@@ -612,7 +612,7 @@ export function ImageStudioWorkbench() {
                 max={150}
                 value={filterContrast}
                 onChange={(e) => setFilterContrast(Number(e.target.value))}
-                className="w-full accent-emerald-500"
+                className="w-full accent-rose-500"
               />
             </label>
           </div>
@@ -712,7 +712,7 @@ export function ThreeDStudioWorkbench() {
         <div className="lg:col-span-5 kaspi-glass-card rounded-3xl p-4 space-y-2">
           <div className="text-xs font-bold flex items-center justify-between">
             <span>Interactive WebGL2 3D Preview</span>
-            <span className="text-emerald-500 font-mono">Three.js 0.169</span>
+            <span className="text-rose-500 font-mono">Three.js 0.169</span>
           </div>
           <HEYUKACreatureCanvas
             character={HEYUKA_CHARACTER_PROFILES[0]}
@@ -724,7 +724,7 @@ export function ThreeDStudioWorkbench() {
         <div className="lg:col-span-7 kaspi-glass-card rounded-3xl p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-sm font-black">
-              <Box className="w-4 h-4 text-emerald-500" />
+              <Box className="w-4 h-4 text-rose-500" />
               <span>PolyHaven Live 3D Hub &amp; Blender Pipeline</span>
             </div>
             <div className="flex gap-1.5">
@@ -734,7 +734,7 @@ export function ThreeDStudioWorkbench() {
                   type="button"
                   onClick={() => setAssetType(t)}
                   className={`px-2.5 py-1 rounded-full text-[11px] font-bold cursor-pointer ${
-                    assetType === t ? "kaspi-orbit-active text-emerald-500" : "kaspi-glass-surface"
+                    assetType === t ? "kaspi-orbit-active text-rose-500" : "kaspi-glass-surface"
                   }`}
                 >
                   {t}
@@ -786,7 +786,7 @@ export function ThreeDStudioWorkbench() {
                       href={a.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[11px] text-emerald-500 hover:underline font-mono"
+                      className="text-[11px] text-rose-500 hover:underline font-mono"
                     >
                       Open Asset
                     </a>

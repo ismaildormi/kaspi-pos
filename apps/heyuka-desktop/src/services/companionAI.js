@@ -28,6 +28,7 @@ import {
   getCachedOmniscienceSettings,
 } from './omniscienceSettings.js';
 import { getActiveByokPayloadForRequest } from './yukaByokVault';
+import { resolveIntentModel } from './kaspiModelsClient';
 
 /**
  * Computes a fast 256-bit perceptual difference hash (dHash) from a base64 image
@@ -207,6 +208,7 @@ export class CompanionAIEngine {
               taskId: uuidv4(),
               prompt: visionPrompt,
               screenshotBase64,
+              preferredModel: 'heyuka-vision',
               byokConfig: byokConfig || undefined,
             }),
           });
@@ -271,6 +273,7 @@ export class CompanionAIEngine {
             taskId: uuidv4(),
             prompt: watcherPrompt,
             screenshotBase64,
+            preferredModel: 'heyuka-vision',
             byokConfig: byokConfig || undefined,
           }),
         });
@@ -804,6 +807,7 @@ export class CompanionAIEngine {
       let data = {};
       try {
         const byokConfig = await getActiveByokPayloadForRequest();
+        const preferredModel = resolveIntentModel(prompt, Boolean(screenshotBase64));
         const response = await fetch('/api/gemini/interact', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -812,6 +816,7 @@ export class CompanionAIEngine {
             taskId,
             prompt,
             screenshotBase64,
+            preferredModel,
             byokConfig: byokConfig || undefined,
             characterProfile: activeProfile
               ? {

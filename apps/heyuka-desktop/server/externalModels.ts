@@ -74,6 +74,20 @@ export async function generateImageStableDiffusion(
     }
   } catch {}
 
+  try {
+    const { callKaspiImageGenerate } = await import('./kaspiModelsClient.js');
+    const kaspiImg = await callKaspiImageGenerate(prompt.trim());
+    if (kaspiImg.ok && kaspiImg.imageUrl) {
+      return {
+        success: true,
+        imageUrl: kaspiImg.imageUrl,
+        prompt: prompt.trim(),
+        model: 'HEYUKA-Vision (/api/v1/images/generate)',
+        source: 'KASPI Sovereign Vision Engine',
+      };
+    }
+  } catch {}
+
   const baseUrl = vaultKeysCache.pollinationsUrl || 'https://image.pollinations.ai/prompt';
   const encodedPrompt = encodeURIComponent(cleanPrompt);
   const zeroKeyImageUrl = `${baseUrl.replace(/\/$/, '')}/${encodedPrompt}?width=1024&height=1024&model=flux&seed=${Math.floor(Math.random() * 999999)}&nologo=true`;
@@ -134,8 +148,9 @@ export async function generateCodeDeepseek(
 
   try {
     const bossRes = await heyukaSupremeExecuteLLM({
+      preferredModel: 'heyuka-core',
       systemPrompt:
-        'You are HEYUKA Supreme Code Architect. Output clean, modular, production-ready code with concise inline comments inside a markdown code block. Do not mention external tools or APIs.',
+        'You are HEYUKA Core Code Architect (KASPI). Output clean, modular, production-ready code with concise inline comments inside a markdown code block.',
       userPrompt: cleanPrompt,
       maxTokens: 2048,
     });
@@ -147,8 +162,8 @@ export async function generateCodeDeepseek(
           success: true,
           code: codeMatch[2].trim(),
           language: codeMatch[1] || 'typescript',
-          model: 'HEYUKA Code Core v10.2 (100% Zero-Key)',
-          explanation: 'HEYUKA synthesized modular, type-safe logic locally with zero external API keys.',
+          model: `${bossRes.coreModule || 'HEYUKA-Core'} (${bossRes.internalChannelId})`,
+          explanation: 'HEYUKA-Core synthesized modular, type-safe logic cleanly.',
           filepath: targetFilepath || 'Nevea_Plans/heyuka_solution.ts',
         };
       }

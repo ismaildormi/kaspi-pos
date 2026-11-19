@@ -1,21 +1,23 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { HEYUKAPlatformShell } from "@/components/zebra-portal/HEYUKAPlatformShell";
 import { PlatformDocsView } from "@/components/zebra-portal/PlatformDocsView";
 
 export const metadata = {
-  title: "Documentation & SDKs • HEYUKA AI Platform (KASPI)",
+  title: "HEYUKA API Docs • Quickstart, Models & FAQ",
   description:
-    "Production SDK quickstarts (Node.js OpenAI SDK, Python OpenAI SDK, Azure api-key, cURL), error guides, and OpenAPI 3.1 reference.",
+    "Official HEYUKA API Docs: OpenAI SDK /v1 compatibility, $0.00 developer rate, Live Search, and FAQ.",
 };
 
 export default function ZebraDocsPage() {
   return (
     <HEYUKAPlatformShell
       activeNav="docs"
-      pageTitle="Docs & SDKs"
-      pageSubtitle="OpenAI SDK Drop-In, Error Codes & OpenAPI 3.1"
+      pageTitle="HEYUKA API Docs"
+      pageSubtitle="OpenAI /v1 Compatible • $0.00 Coverage & FAQ"
     >
-      <PlatformDocsView />
+      <Suspense fallback={<div className="py-10 text-xs text-[var(--kaspi-text-muted)]">Loading docs...</div>}>
+        <PlatformDocsView />
+      </Suspense>
     </HEYUKAPlatformShell>
   );
 }

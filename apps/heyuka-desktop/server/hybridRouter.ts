@@ -71,6 +71,10 @@ export function getStoredCredential(key: string): string {
       if (key === 'SUPABASE_URL' && data.supabaseUrl) return String(data.supabaseUrl);
       if (key === 'SUPABASE_ANON_KEY' && data.supabaseAnonKey) return String(data.supabaseAnonKey);
       if (key === 'PYTHON_PATH' && data.pythonPath) return String(data.pythonPath);
+      if (key === 'HEYUKA_API_KEY' && data.heyukaApiKey) return String(data.heyukaApiKey);
+      if (key === 'HEYUKA_KEY_ID' && data.heyukaKeyId) return String(data.heyukaKeyId);
+      if (key === 'KASPI_API_BASE_URL' && data.kaspiApiBaseUrl) return String(data.kaspiApiBaseUrl);
+      if (key === 'HEYUKA_ACTIVE_MODEL' && data.heyukaActiveModel) return String(data.heyukaActiveModel);
     }
   } catch {}
 
@@ -124,6 +128,18 @@ export function saveStoredCredentials(creds: Record<string, string>): void {
     }
     if (merged.pythonPath || merged.PYTHON_PATH) {
       process.env.PYTHON_PATH = merged.pythonPath || merged.PYTHON_PATH;
+    }
+    if (merged.heyukaApiKey || merged.HEYUKA_API_KEY) {
+      process.env.HEYUKA_API_KEY = merged.heyukaApiKey || merged.HEYUKA_API_KEY;
+    }
+    if (merged.heyukaKeyId || merged.HEYUKA_KEY_ID) {
+      process.env.HEYUKA_KEY_ID = merged.heyukaKeyId || merged.HEYUKA_KEY_ID;
+    }
+    if (merged.kaspiApiBaseUrl || merged.KASPI_API_BASE_URL) {
+      process.env.KASPI_API_BASE_URL = merged.kaspiApiBaseUrl || merged.KASPI_API_BASE_URL;
+    }
+    if (merged.heyukaActiveModel || merged.HEYUKA_ACTIVE_MODEL) {
+      process.env.HEYUKA_ACTIVE_MODEL = merged.heyukaActiveModel || merged.HEYUKA_ACTIVE_MODEL;
     }
   } catch (err) {
     console.warn('[HybridRouter] Could not save credentials to disk:', err);
@@ -280,6 +296,19 @@ export async function generateImageHuggingFace(
   source: string;
   prompt: string;
 }> {
+  try {
+    const { callKaspiImageGenerate } = await import('./kaspiModelsClient.js');
+    const kaspiImg = await callKaspiImageGenerate(prompt.trim());
+    if (kaspiImg.ok && kaspiImg.imageUrl) {
+      return {
+        success: true,
+        imageUrl: kaspiImg.imageUrl,
+        model: 'HEYUKA-Vision (/api/v1/images/generate)',
+        source: 'KASPI Sovereign Vision Studio',
+        prompt,
+      };
+    }
+  } catch {}
   return generateImagePollinations(prompt.trim());
 }
 
@@ -326,6 +355,22 @@ export async function generate3DHunyuan(
 ): Promise<Hunyuan3DResult> {
   const cleanPrompt = prompt.trim();
 
+  try {
+    const { callKaspi3DGenerate } = await import('./kaspiModelsClient.js');
+    const kaspi3d = await callKaspi3DGenerate(cleanPrompt);
+    if (kaspi3d.ok && (kaspi3d.meshUrl || kaspi3d.meshData)) {
+      return {
+        success: true,
+        meshUrl: kaspi3d.meshUrl,
+        prompt: cleanPrompt,
+        model: 'HEYUKA-Vision (/api/v1/3d/generate)',
+        format: kaspi3d.meshUrl ? 'GLTF' : 'Procedural JSON',
+        meshData: kaspi3d.meshData,
+        message: `HEYUKA-Vision generated live 3D asset data for "${cleanPrompt.slice(0, 40)}".`,
+      };
+    }
+  } catch {}
+
   const proceduralMesh = {
     geometry: 'ProceduralSphereWithSpikes',
     prompt: cleanPrompt,
@@ -370,8 +415,9 @@ export async function generateCodeCloud(
   try {
     const { heyukaSupremeExecuteLLM } = await import('./heyukaBoss.js');
     const bossRes = await heyukaSupremeExecuteLLM({
+      preferredModel: 'heyuka-core',
       systemPrompt:
-        'You are HEYUKA Supreme Code Architect. Output clean, production-grade, typed code inside a single markdown code block with brief inline comments.',
+        'You are HEYUKA Core Code Architect (KASPI). Output clean, production-grade, typed code inside a single markdown code block with brief inline comments.',
       userPrompt: prompt,
       maxTokens: 2048,
     });
@@ -382,8 +428,8 @@ export async function generateCodeCloud(
           success: true,
           code: codeMatch[2].trim(),
           language: codeMatch[1] || 'typescript',
-          model: 'HEYUKA-v10.2 (100% Zero-Key)',
-          executionLocation: 'HEYUKA Zero-Key Sovereign Core',
+          model: `${bossRes.coreModule} (${bossRes.internalChannelId})`,
+          executionLocation: 'KASPI Sovereign HEYUKA-Core Engine',
           filepath: targetFilepath || 'Nevea_Plans/heyuka_solution.ts',
         };
       }

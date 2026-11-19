@@ -92,15 +92,26 @@ export function sanitizeOutboundEndpoint(rawUrl: string): string {
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
     throw new Error("Only HTTP/HTTPS URLs are permitted");
   }
+  if (parsed.username || parsed.password) {
+    throw new Error("Embedded URL credentials are disallowed");
+  }
   const host = parsed.hostname.toLowerCase();
   if (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "::1" ||
+    host === "0.0.0.0" ||
     host === "169.254.169.254" ||
     host === "metadata.google.internal" ||
-    host.endsWith(".internal")
+    host.startsWith("10.") ||
+    host.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+    host.endsWith(".internal") ||
+    host.endsWith(".local")
   ) {
-    throw new Error("Blocked internal cloud metadata endpoint");
+    throw new Error("Blocked internal or private outbound endpoint");
   }
-  return parsed.toString();
+  return new URL(`${parsed.pathname}${parsed.search}`, parsed.origin).href;
 }
 
 /**

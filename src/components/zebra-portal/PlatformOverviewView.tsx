@@ -1,420 +1,513 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import dynamic from "next/dynamic";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import {
   Activity,
-  Archive,
-  ArrowUpRight,
-  Boxes,
-  Bug,
-  Check,
-  CheckCircle2,
-  Copy,
-  Cpu,
+  BarChart3,
+  Coins,
   Download,
-  FlaskConical,
   KeyRound,
-  Layers,
-  PackagePlus,
+  RefreshCw,
   ShieldCheck,
-  Sparkles,
+  Store,
+  Users,
 } from "lucide-react";
-import {
-  HEYUKA_CHARACTER_PROFILES,
-  HEYUKA_LIGHTING_PRESETS,
-} from "@/lib/heyuka/heyuka-universe";
-import {
-  OFFICIAL_API_BASE_URL,
-  OFFICIAL_ROOT_V1_URL,
-  PLATFORM_COMPARISON_ROWS,
-  type PortalLocale,
-} from "./platform-data";
-import { StudioDomainChat } from "./StudioDomainChat";
-import { SPECIALIZED_PRODUCTS } from "@/lib/heyuka/ecosystem/products-catalog";
+import type { PortalLocale } from "./platform-data";
 
-const HEYUKACreatureCanvas = dynamic(
-  () => import("@/components/heyuka/HEYUKACreatureCanvas"),
+interface TelemetryPayload {
+  ok: boolean;
+  authenticated: boolean;
+  userEmail: string | null;
+  costUsd: number;
+  billingModel: string;
+  windowDays: number;
+  global: {
+    activeKeysCount: number;
+    merchantsCount: number;
+    usersCount: number;
+    totalChatSessions: number;
+    totalChatMessages: number;
+    totalApiRequests: number;
+    estimatedTokensProcessed: number;
+    estimatedMarketValueSavedUsd: number;
+  };
+  account: {
+    activeKeysCount: number;
+    totalApiRequests: number;
+    estimatedTokensProcessed: number;
+  };
+  dailySeries: Array<{
+    date: string;
+    requests: number;
+    estimatedTokens: number;
+    newKeys: number;
+  }>;
+  byKeyBreakdown: Array<{
+    id: string;
+    label: string;
+    prefix: string;
+    requests: number;
+    estimatedTokens: number;
+    lastUsedAt: string | null;
+  }>;
+}
+
+const COPY: Record<
+  PortalLocale,
   {
-    ssr: false,
-    loading: () => (
-      <div className="w-full h-[240px] rounded-2xl kaspi-frosted-surface flex items-center justify-center text-xs font-mono text-[var(--kaspi-text-muted)]">
-        Initializing 3D Viewport...
-      </div>
-    ),
+    title: string;
+    gmtNote: string;
+    balanceTitle: string;
+    balanceHint: string;
+    freeBadge: string;
+    manageKeysBtn: string;
+    totalCostTitle: string;
+    totalCostNote: string;
+    last7: string;
+    last30: string;
+    last90: string;
+    allKeys: string;
+    exportBtn: string;
+    keysIssuedTitle: string;
+    merchantsServedTitle: string;
+    requestsTitle: string;
+    estTokensTitle: string;
+    estTokensHint: string;
+    chartTitle: string;
+    tabType: string;
+    tabApiKey: string;
+    noTraffic: string;
   }
-);
-
-const FEATURED_SHOWCASE_IDS = [
-  "classic_heyuka",
-  "fire_elemental",
-  "ice_elemental",
-  "royal_king",
-  "cyber_gamer",
-  "sakura_princess",
-];
+> = {
+  ar: {
+    title: "الاستهلاك والإحصائيات الحية (Usage)",
+    gmtNote: "جميع التواريخ والأرقام تُحدَّث مباشرة من قاعدة البيانات بتوقيت GMT.",
+    balanceTitle: "التكلفة على المستخدم / الرصيد",
+    balanceHint: "جميع تكاليف الـ API والنماذج تتحملها شركة KASPI بالكامل مجاناً",
+    freeBadge: "مجاني 100% — KASPI يتكلف بكل شيء",
+    manageKeysBtn: "إدارة المفاتيح",
+    totalCostTitle: "التكلفة الإجمالية عليك",
+    totalCostNote: "تقدير السوق الموفر: ",
+    last7: "آخر 7 أيام",
+    last30: "آخر 30 يوم",
+    last90: "آخر 90 يوم",
+    allKeys: "كل مفاتيح API",
+    exportBtn: "تصدير CSV",
+    keysIssuedTitle: "مفاتيح API الحية (Active IPKs)",
+    merchantsServedTitle: "التجار والفرق المسجلة",
+    requestsTitle: "طلبات الـ API الحقيقية",
+    estTokensTitle: "تقدير التوكن (Estimated Tokens)",
+    estTokensHint: "تقدير حسابي للمعالجة (التكلفة عليك: $0.00)",
+    chartTitle: "النشاط والاستهلاك الزمني",
+    tabType: "نوع الاستخدام",
+    tabApiKey: "حسب المفتاح",
+    noTraffic: "لا توجد طلبات مسجلة في هذه الفترة بعد — أنشئ مفتاحك من صفحة API keys وابدأ فوراً.",
+  },
+  fr: {
+    title: "Usage & Statistiques Réseau",
+    gmtNote: "Toutes les données sont calculées en temps réel depuis la base PostgreSQL (GMT).",
+    balanceTitle: "Plan & Facturation Développeur",
+    balanceHint: "KASPI absorbe 100% du coût d'inférence — aucun paiement requis",
+    freeBadge: "100% Gratuit — Pris en charge par KASPI",
+    manageKeysBtn: "Gérer les Clés",
+    totalCostTitle: "Coût total facturé",
+    totalCostNote: "Valeur estimée économisée : ",
+    last7: "7 derniers jours",
+    last30: "30 derniers jours",
+    last90: "90 derniers jours",
+    allKeys: "Toutes les clés",
+    exportBtn: "Exporter CSV",
+    keysIssuedTitle: "Clés API Actives (Total)",
+    merchantsServedTitle: "Marchands & Espaces Actifs",
+    requestsTitle: "Requêtes API Réelles",
+    estTokensTitle: "Tokens Estimés Traités",
+    estTokensHint: "Estimation sans dépense personnelle ($0.00)",
+    chartTitle: "Activité & Volume de Requêtes",
+    tabType: "Par Type",
+    tabApiKey: "Par Clé API",
+    noTraffic: "Aucune requête API enregistrée sur cette période — générez une clé pour démarrer.",
+  },
+  en: {
+    title: "Usage",
+    gmtNote: "All metrics are queried live from PostgreSQL in GMT, with $0.00 cost billed to you.",
+    balanceTitle: "Coverage balance & plan",
+    balanceHint: "Free Tier Enabled — KASPI covers all model & server tokens cleanly",
+    freeBadge: "Zero-Fee Coverage • KASPI Absorbs Costs",
+    manageKeysBtn: "API keys",
+    totalCostTitle: "Total cost to you",
+    totalCostNote: "Estimated market savings: ",
+    last7: "Last 7 days",
+    last30: "Last 30 days",
+    last90: "Last 90 days",
+    allKeys: "All Keys",
+    exportBtn: "Export",
+    keysIssuedTitle: "Active API Keys Issued",
+    merchantsServedTitle: "Merchants & Teams Served",
+    requestsTitle: "API requests",
+    estTokensTitle: "Estimated Tokens Covered",
+    estTokensHint: "Token equivalent estimate (your cost: $0.00)",
+    chartTitle: "Usage & Request Volume",
+    tabType: "Usage Type",
+    tabApiKey: "API Key",
+    noTraffic: "No API requests recorded in this window yet — create a key in API keys to start.",
+  },
+};
 
 export function PlatformOverviewView() {
   const localeRaw = useLocale();
   const locale: PortalLocale =
     localeRaw === "ar" ? "ar" : localeRaw === "en" ? "en" : "fr";
+  const t = COPY[locale];
 
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [charId, setCharId] = useState("classic_heyuka");
-  const [capStats, setCapStats] = useState<{
-    verifiedLiveCount: number;
-    browserLocalCount: number;
-    workerRequiredCount: number;
-    connectedWorkersCount: number;
-  } | null>(null);
-  const [recentOutputs, setRecentOutputs] = useState<any[]>([]);
-  const [dailyBudget, setDailyBudget] = useState<{ count: number; limit: number } | null>(null);
+  const [days, setDays] = useState<number>(30);
+  const [selectedKeyId, setSelectedKeyId] = useState<string>("all");
+  const [chartTab, setChartTab] = useState<"type" | "key">("type");
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<TelemetryPayload | null>(null);
 
-  const activeProfile = useMemo(
-    () => HEYUKA_CHARACTER_PROFILES.find((c) => c.id === charId) || HEYUKA_CHARACTER_PROFILES[0],
-    [charId]
-  );
+  const loadTelemetry = useCallback(async () => {
+    setLoading(true);
+    try {
+      const qs = new URLSearchParams({
+        days: String(days),
+        keyId: selectedKeyId,
+      });
+      const res = await fetch(`/api/v1/zebra-x/telemetry?${qs.toString()}`, {
+        cache: "no-store",
+      });
+      const json = await res.json();
+      if (json?.ok) setData(json);
+    } catch {
+      // Keep UI clean on network interruption
+    } finally {
+      setLoading(false);
+    }
+  }, [days, selectedKeyId]);
 
   useEffect(() => {
-    fetch("/api/v1/heyuka/capabilities?products=0", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d) {
-          setCapStats({
-            verifiedLiveCount: d.verifiedLiveCount || 0,
-            browserLocalCount: d.browserLocalCount || 0,
-            workerRequiredCount: d.workerRequiredCount || 0,
-            connectedWorkersCount: d.connectedWorkersCount || 0,
-          });
-        }
-      })
-      .catch(() => {});
+    void loadTelemetry();
+  }, [loadTelemetry]);
 
-    fetch("/api/v1/heyuka/outputs", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d?.outputs) setRecentOutputs(d.outputs.slice(0, 4));
-      })
-      .catch(() => {});
+  const maxDailyRequests = useMemo(() => {
+    if (!data?.dailySeries?.length) return 1;
+    return Math.max(1, ...data.dailySeries.map((d) => Math.max(d.requests, d.newKeys)));
+  }, [data]);
 
-    fetch("/api/v1/heyuka/byok", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d?.dailyBudget) setDailyBudget(d.dailyBudget);
-      })
-      .catch(() => {});
-  }, []);
-
-  const copyText = async (id: string, value: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId((p) => (p === id ? null : p)), 1800);
-    } catch {}
+  const handleExportCsv = () => {
+    if (!data?.dailySeries) return;
+    const rows = [
+      "date,requests,estimated_tokens,new_keys_issued,cost_usd",
+      ...data.dailySeries.map(
+        (r) => `${r.date},${r.requests},${r.estimatedTokens},${r.newKeys},0.00`
+      ),
+    ];
+    const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `heyuka-usage-${days}d.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
-
-  const quickNavCards = [
-    {
-      href: `/${locale}/zebra-x/studios`,
-      title: locale === "ar" ? "الاستوديوهات المتخصصة (12 منتج)" : "Specialized Studios (12 Products)",
-      desc: "3D, Background PNG, Image, Shorts 9:16, Coding IDE, Audio, Data & Web.",
-      icon: Sparkles,
-      badge: "Workspaces",
-    },
-    {
-      href: `/${locale}/zebra-x/lab`,
-      title: locale === "ar" ? "مختبر الاختبار والقياس (Benchmark Lab)" : "Autonomous Testing Lab",
-      desc: "Run live endpoint probes, review outputs honestly & export HEYUKA_FULL_BENCHMARK.zip.",
-      icon: FlaskConical,
-      badge: "ZIP + XLSX",
-    },
-    {
-      href: `/${locale}/zebra-x/vault`,
-      title: locale === "ar" ? "خزنة النتائج الحقيقية (Output Vault)" : "Real Output Vault",
-      desc: "SHA-256 verified outputs separated strictly from previews & failed tasks.",
-      icon: Archive,
-      badge: `${recentOutputs.length} Logged`,
-    },
-    {
-      href: `/${locale}/zebra-x/workers`,
-      title: locale === "ar" ? "الحوسبة الموزعة وحماية $0.00" : "Distributed Workers & BYOK",
-      desc: "Inspect device WebGPU/CPU, connect or revoke Worker nodes & save encrypted BYOK keys.",
-      icon: Cpu,
-      badge: "$0.00 Owner Shield",
-    },
-    {
-      href: `/${locale}/zebra-x/products`,
-      title: locale === "ar" ? "مصنع المنتجات والـ Widget الخارجي" : "Mini-Product Factory & Embeds",
-      desc: "Build scoped external widgets with dedicated API keys and enable/disable controls.",
-      icon: PackagePlus,
-      badge: "Embed Ready",
-    },
-    {
-      href: `/${locale}/zebra-x/debug`,
-      title: locale === "ar" ? "فاحص Debug الحي (7 نقاط)" : "Live 7-Point API Debugger",
-      desc: "Verify any Secret Key, X-API-Key-Id, CORS preflight & SSE streams cleanly.",
-      icon: Bug,
-      badge: "Live Probe",
-    },
-  ];
 
   return (
     <div className="space-y-6">
-      {/* Command Center Hero + Status Grid */}
-      <section className="kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-5 sm:p-7 overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          <div className="lg:col-span-7 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full kaspi-glass-surface text-xs font-semibold text-emerald-500">
-              <Layers className="w-3.5 h-3.5" />
-              <span>HEYUKA INTELLIGENCE COMMAND CENTER • Future Glass 2050</span>
+      {/* Header matching DeepSeek Usage */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-[var(--kaspi-text-primary)] tracking-tight">
+            {t.title}
+          </h2>
+          <p className="text-xs text-[var(--kaspi-text-muted)] mt-1">{t.gmtNote}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void loadTelemetry()}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl kaspi-glass-surface text-xs font-medium text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)] cursor-pointer"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-rose-500" : ""}`} />
+          <span>{loading ? "..." : "Live Sync"}</span>
+        </button>
+      </div>
+
+      {/* Top 2 Summary Cards (Exact DeepSeek Usage Grid) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Card 1: Free Balance / Covered by KASPI */}
+        <div className="rounded-2xl kaspi-glass-surface p-5 flex items-center justify-between gap-4">
+          <div className="space-y-2 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-[var(--kaspi-text-secondary)]">
+                {t.balanceTitle}
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/35 text-[10px] font-semibold text-rose-400">
+                <ShieldCheck className="w-3 h-3" />
+                <span>{t.freeBadge}</span>
+              </span>
             </div>
-
-            <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-[var(--kaspi-text-primary)] leading-tight">
-              {locale === "ar"
-                ? "منظومة HEYUKA AI: منتجات متخصصة، مختبر قياس حي، وحماية صفر تكلفة"
-                : locale === "fr"
-                ? "HEYUKA Intelligence Command Center : Studios Spécialisés & Bouclier $0.00"
-                : "HEYUKA Intelligence Command Center: Specialized AI Studios & Zero-Cost Lab"}
-            </h1>
-
-            <p className="text-xs sm:text-sm text-[var(--kaspi-text-secondary)] leading-relaxed">
-              {locale === "ar"
-                ? "بيئة تشغيل معيارية تقسّم قدرات الذكاء إلى 12 منتجاً متخصصاً بمساحة عمل ومحادثة مستقلة، مع سجل نتائج حقيقي (Output Vault)، ربط عمّال الحوسبة الموزعة (Workers)، ومختبر اختبارات يصدّر نتائج حقيقية بدون أي تكاليف مخفية."
-                : "Modular AI platform organizing real verified capabilities into 12 domain studios, a verifiable Real Output Vault, an Autonomous Benchmark ZIP exporter, tenant-isolated mini-products, and distributed user Compute Workers with $0.00 owner risk."}
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-[var(--kaspi-text-primary)] tracking-tight">
+                $0.00
+              </span>
+              <span className="text-xs font-semibold text-[var(--kaspi-text-muted)]">
+                USD / FREE TIER
+              </span>
+            </div>
+            <p className="text-[11px] text-[var(--kaspi-text-muted)] truncate">
+              {t.balanceHint}
             </p>
-
-            {/* Live Capability Telemetry Pills */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <div className="kaspi-frosted-surface rounded-2xl p-3">
-                <div className="text-[10px] font-bold text-[var(--kaspi-text-muted)]">Verified APIs</div>
-                <div className="text-lg font-black text-emerald-500 font-mono">
-                  {capStats?.verifiedLiveCount ?? 7}
-                </div>
-              </div>
-              <div className="kaspi-frosted-surface rounded-2xl p-3">
-                <div className="text-[10px] font-bold text-[var(--kaspi-text-muted)]">On-Device GPU/WASM</div>
-                <div className="text-lg font-black text-[var(--kaspi-text-primary)] font-mono">
-                  {capStats?.browserLocalCount ?? 3}
-                </div>
-              </div>
-              <div className="kaspi-frosted-surface rounded-2xl p-3">
-                <div className="text-[10px] font-bold text-[var(--kaspi-text-muted)]">Worker-Required</div>
-                <div className="text-lg font-black text-amber-500 font-mono">
-                  {capStats?.workerRequiredCount ?? 3}
-                </div>
-              </div>
-              <div className="kaspi-frosted-surface rounded-2xl p-3">
-                <div className="text-[10px] font-bold text-[var(--kaspi-text-muted)]">Free Tier Quota</div>
-                <div className="text-lg font-black text-[var(--kaspi-text-primary)] font-mono">
-                  {dailyBudget ? `${dailyBudget.count}/${dailyBudget.limit}` : "0/120"}
-                </div>
-              </div>
-            </div>
-
-            {/* Dual Base URL Quick Copy Bar */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                { id: "base", label: "Primary Base URL", url: OFFICIAL_API_BASE_URL },
-                { id: "alias", label: "OpenAI Root Alias", url: OFFICIAL_ROOT_V1_URL },
-              ].map((item) => (
-                <div
-                  key={item.id}
-                  className="kaspi-frosted-surface rounded-2xl p-3 flex items-center justify-between gap-2"
-                >
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-semibold text-[var(--kaspi-text-muted)]">
-                      {item.label}
-                    </div>
-                    <div dir="ltr" className="text-xs font-mono text-[var(--kaspi-text-primary)] truncate">
-                      {item.url}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => void copyText(item.id, item.url)}
-                    className="kaspi-glass-btn rounded-xl px-2.5 py-1.5 text-[11px] font-bold cursor-pointer"
-                  >
-                    {copiedId === item.id ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-500" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap gap-2.5 pt-1">
-              <Link
-                href={`/${locale}/zebra-x/studios`}
-                className="kaspi-primary-cta-btn rounded-2xl px-4 py-2.5 text-xs font-bold inline-flex items-center gap-1.5"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>Explore 12 Studios</span>
-              </Link>
-              <Link
-                href={`/${locale}/zebra-x/lab`}
-                className="kaspi-glass-btn rounded-2xl px-4 py-2.5 text-xs font-bold inline-flex items-center gap-1.5"
-              >
-                <FlaskConical className="w-4 h-4 text-emerald-500" />
-                <span>Autonomous Lab</span>
-              </Link>
-              <Link
-                href={`/${locale}/zebra-x/apps`}
-                className="kaspi-glass-btn rounded-2xl px-4 py-2.5 text-xs font-bold inline-flex items-center gap-1.5"
-              >
-                <Download className="w-4 h-4 text-emerald-500" />
-                <span>Apps Center</span>
-              </Link>
-              <Link
-                href={`/${locale}/zebra-x/models`}
-                className="kaspi-glass-btn rounded-2xl px-4 py-2.5 text-xs font-bold inline-flex items-center gap-1.5"
-              >
-                <Boxes className="w-4 h-4 text-emerald-500" />
-                <span>Models &amp; Registry</span>
-              </Link>
-            </div>
           </div>
 
-          {/* Interactive 3D Identity Showcase */}
-          <div className="lg:col-span-5 kaspi-frosted-surface rounded-3xl p-4 space-y-3">
-            <div className="flex items-center justify-between gap-2 text-xs font-bold">
-              <span>Live HEYUKA 3D Core</span>
-              <span className="text-[11px] font-mono text-emerald-500">{activeProfile.name}</span>
-            </div>
-            <HEYUKACreatureCanvas
-              character={activeProfile}
-              lighting={HEYUKA_LIGHTING_PRESETS[0]}
-              compact
-            />
-            <div className="flex flex-wrap gap-1.5 justify-center">
-              {FEATURED_SHOWCASE_IDS.map((id) => {
-                const prof = HEYUKA_CHARACTER_PROFILES.find((c) => c.id === id);
-                if (!prof) return null;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setCharId(id)}
-                    className={`px-2 py-1 rounded-full text-[10px] font-semibold cursor-pointer ${
-                      charId === id ? "kaspi-orbit-active text-emerald-500" : "kaspi-glass-surface"
-                    }`}
-                  >
-                    {prof.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <Link
+            href={`/${locale}/zebra-x/api-keys`}
+            className="px-4 py-2 rounded-full bg-white text-zinc-900 hover:bg-zinc-200 text-xs font-bold shrink-0 transition-colors"
+          >
+            {t.manageKeysBtn}
+          </Link>
         </div>
-      </section>
 
-      {/* Command Center Intent-Routing AI Chat + Quick Studios Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        <div className="lg:col-span-7">
-          <StudioDomainChat productId="command-center" />
-        </div>
-        <div className="lg:col-span-5 kaspi-glass-card rounded-3xl p-5 space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="text-sm font-black flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-500" />
-              <span>Quick Studio Launch ({SPECIALIZED_PRODUCTS.length})</span>
+        {/* Card 2: Total Cost ($0.00 + Estimated Market Value Covered) */}
+        <div className="rounded-2xl kaspi-glass-surface p-5 flex items-center justify-between gap-4">
+          <div className="space-y-2 min-w-0">
+            <span className="text-xs font-medium text-[var(--kaspi-text-secondary)]">
+              {t.totalCostTitle}
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-[var(--kaspi-text-primary)] tracking-tight">
+                $0.00
+              </span>
+              <span className="text-xs font-semibold text-[var(--kaspi-text-muted)]">USD</span>
             </div>
-            <Link href={`/${locale}/zebra-x/studios`} className="text-xs font-bold text-emerald-500 hover:underline">
-              All Studios →
-            </Link>
+            <p className="text-[11px] text-rose-400 font-medium">
+              {t.totalCostNote}
+              <span className="font-mono font-bold">
+                ${(data?.global.estimatedMarketValueSavedUsd ?? 0).toFixed(2)} USD
+              </span>{" "}
+              (KASPI absorbed)
+            </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 max-h-[340px] overflow-y-auto">
-            {SPECIALIZED_PRODUCTS.map((p) => (
-              <Link
-                key={p.id}
-                href={`/${locale}/zebra-x/studios/${p.id}`}
-                className="kaspi-frosted-surface rounded-2xl p-2.5 hover:scale-[1.01] transition-transform space-y-0.5"
-              >
-                <div className="text-[11px] font-extrabold truncate text-[var(--kaspi-text-primary)]">
-                  {p.name.replace("HEYUKA ", "")}
-                </div>
-                <div className="text-[10px] font-mono text-emerald-500">{p.shortTag}</div>
-              </Link>
-            ))}
-          </div>
+
+          <Link
+            href={`/${locale}/zebra-x/docs?tab=pricing`}
+            className="px-3.5 py-2 rounded-xl border border-[var(--kaspi-border)] text-xs font-semibold text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)] shrink-0"
+          >
+            Models & Rates
+          </Link>
         </div>
       </div>
 
-      {/* Platform Pillars Directory */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {quickNavCards.map((c) => {
-          const Icon = c.icon;
-          return (
-            <Link
-              key={c.href}
-              href={c.href}
-              className="kaspi-glass-card rounded-3xl p-5 flex flex-col justify-between gap-3 hover:scale-[1.01] transition-all group"
+      {/* Filters Row matching DeepSeek Usage */}
+      <div className="border-t border-[var(--kaspi-border)] pt-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="inline-flex items-center rounded-xl kaspi-glass-surface px-3 py-1.5 text-xs gap-2">
+            <span className="text-[var(--kaspi-text-muted)]">Time</span>
+            <select
+              value={days}
+              onChange={(e) => setDays(Number(e.target.value))}
+              className="bg-transparent text-[var(--kaspi-text-primary)] font-semibold focus:outline-none cursor-pointer"
             >
-              <div className="flex items-center justify-between gap-2">
-                <div className="w-9 h-9 rounded-2xl kaspi-glass-surface flex items-center justify-center">
-                  <Icon className="w-4 h-4 text-emerald-500" />
-                </div>
-                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full kaspi-glass-surface text-[var(--kaspi-text-muted)]">
-                  {c.badge}
-                </span>
-              </div>
-              <div>
-                <h3 className="text-sm font-extrabold flex items-center justify-between gap-2">
-                  <span>{c.title}</span>
-                  <ArrowUpRight className="w-4 h-4 opacity-50 group-hover:opacity-100 shrink-0" />
-                </h3>
-                <p className="text-xs text-[var(--kaspi-text-secondary)] mt-1">{c.desc}</p>
-              </div>
-            </Link>
-          );
-        })}
-      </section>
-
-      {/* OpenAI / Microsoft / Google Benchmark Comparison Matrix */}
-      <section className="kaspi-glass-card rounded-3xl p-5 sm:p-7 space-y-4">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-[11px] font-bold text-emerald-500">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>OpenAI • Microsoft Azure • Google / DeepSeek Comparison</span>
+              <option value={7}>{t.last7}</option>
+              <option value={30}>{t.last30}</option>
+              <option value={90}>{t.last90}</option>
+            </select>
           </div>
-          <h2 className="text-lg sm:text-xl font-black">
-            Platform Architecture &amp; Zero-Cost Capability Benchmark
-          </h2>
+
+          <div className="inline-flex items-center rounded-xl kaspi-glass-surface px-3 py-1.5 text-xs gap-2">
+            <span className="text-[var(--kaspi-text-muted)]">API Key</span>
+            <select
+              value={selectedKeyId}
+              onChange={(e) => setSelectedKeyId(e.target.value)}
+              className="bg-transparent text-[var(--kaspi-text-primary)] font-semibold focus:outline-none cursor-pointer"
+            >
+              <option value="all">{t.allKeys}</option>
+              {(data?.byKeyBreakdown || []).map((k) => (
+                <option key={k.id} value={k.id}>
+                  {k.label} ({k.requests})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl kaspi-frosted-surface">
-          <table className="w-full text-xs border-collapse min-w-[740px]">
-            <thead>
-              <tr className="border-b border-[var(--kaspi-border)]">
-                <th className="p-3 text-start font-extrabold">Capability</th>
-                <th className="p-3 text-start font-black text-emerald-500">HEYUKA (KASPI)</th>
-                <th className="p-3 text-start font-bold text-[var(--kaspi-text-secondary)]">OpenAI Platform</th>
-                <th className="p-3 text-start font-bold text-[var(--kaspi-text-secondary)]">Microsoft Azure AI</th>
-                <th className="p-3 text-start font-bold text-[var(--kaspi-text-secondary)]">Google / DeepSeek</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--kaspi-border)]">
-              {PLATFORM_COMPARISON_ROWS.map((row, idx) => (
-                <tr key={idx} className="hover:bg-[var(--kaspi-surface-hover)]">
-                  <td className="p-3 font-bold align-top">{row.dimension[locale]}</td>
-                  <td className="p-3 align-top font-semibold">
-                    <div className="flex items-start gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                      <span>{row.heyuka[locale]}</span>
-                    </div>
-                  </td>
-                  <td className="p-3 align-top text-[var(--kaspi-text-secondary)]">{row.openai[locale]}</td>
-                  <td className="p-3 align-top text-[var(--kaspi-text-secondary)]">{row.microsoft[locale]}</td>
-                  <td className="p-3 align-top text-[var(--kaspi-text-secondary)]">{row.googleDeepseek[locale]}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <button
+          type="button"
+          onClick={handleExportCsv}
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white text-zinc-900 hover:bg-zinc-200 text-xs font-bold cursor-pointer transition-colors"
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>{t.exportBtn}</span>
+        </button>
+      </div>
+
+      {/* 4 Live Real PostgreSQL Stat Cards (Keys, Merchants, API Requests, Estimated Tokens) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="rounded-2xl kaspi-glass-surface p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs text-[var(--kaspi-text-secondary)]">
+            <span>{t.keysIssuedTitle}</span>
+            <KeyRound className="w-4 h-4 text-rose-500" />
+          </div>
+          <p className="text-3xl font-black text-[var(--kaspi-text-primary)] font-mono">
+            {(data?.global.activeKeysCount ?? 0).toLocaleString()}
+          </p>
+          <p className="text-[11px] text-[var(--kaspi-text-muted)]">
+            {data?.authenticated
+              ? `Your workspace: ${data.account.activeKeysCount} active key(s)`
+              : "Live SHA-256 key vault total"}
+          </p>
         </div>
-      </section>
+
+        <div className="rounded-2xl kaspi-glass-surface p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs text-[var(--kaspi-text-secondary)]">
+            <span>{t.merchantsServedTitle}</span>
+            <Store className="w-4 h-4 text-rose-500" />
+          </div>
+          <p className="text-3xl font-black text-[var(--kaspi-text-primary)] font-mono">
+            {(data?.global.merchantsCount ?? 0).toLocaleString()}
+          </p>
+          <p className="text-[11px] text-[var(--kaspi-text-muted)] flex items-center gap-1">
+            <Users className="w-3 h-3" />
+            <span>{(data?.global.usersCount ?? 0).toLocaleString()} verified accounts</span>
+          </p>
+        </div>
+
+        <div className="rounded-2xl kaspi-glass-surface p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs text-[var(--kaspi-text-secondary)]">
+            <span>{t.requestsTitle}</span>
+            <Activity className="w-4 h-4 text-rose-500" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <p className="text-3xl font-black text-[var(--kaspi-text-primary)] font-mono">
+              {(data?.authenticated && selectedKeyId !== "all"
+                ? data.account.totalApiRequests
+                : data?.global.totalApiRequests ?? 0
+              ).toLocaleString()}
+            </p>
+            <span className="text-xs text-[var(--kaspi-text-muted)]">requests</span>
+          </div>
+          <p className="text-[11px] text-[var(--kaspi-text-muted)]">
+            {(data?.global.totalChatMessages ?? 0).toLocaleString()} chat turns processed
+          </p>
+        </div>
+
+        <div className="rounded-2xl kaspi-glass-surface p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs text-[var(--kaspi-text-secondary)]">
+            <span>{t.estTokensTitle}</span>
+            <Coins className="w-4 h-4 text-rose-500" />
+          </div>
+          <p className="text-3xl font-black text-[var(--kaspi-text-primary)] font-mono">
+            {(data?.global.estimatedTokensProcessed ?? 0).toLocaleString()}
+          </p>
+          <p className="text-[11px] text-rose-400 font-medium">{t.estTokensHint}</p>
+        </div>
+      </div>
+
+      {/* Interactive Chart Card with Usage Type | API Key toggle (matching Screenshot 2) */}
+      <div className="rounded-2xl kaspi-glass-surface p-5 space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-rose-500" />
+            <h3 className="text-sm font-bold text-[var(--kaspi-text-primary)]">
+              {t.chartTitle}
+            </h3>
+          </div>
+
+          <div className="inline-flex rounded-lg kaspi-frosted-surface p-0.5 text-xs">
+            <button
+              type="button"
+              onClick={() => setChartTab("type")}
+              className={`px-3 py-1 rounded-md font-semibold cursor-pointer transition-colors ${
+                chartTab === "type"
+                  ? "bg-white/[0.14] text-[var(--kaspi-text-primary)]"
+                  : "text-[var(--kaspi-text-muted)] hover:text-[var(--kaspi-text-primary)]"
+              }`}
+            >
+              {t.tabType}
+            </button>
+            <button
+              type="button"
+              onClick={() => setChartTab("key")}
+              className={`px-3 py-1 rounded-md font-semibold cursor-pointer transition-colors ${
+                chartTab === "key"
+                  ? "bg-white/[0.14] text-[var(--kaspi-text-primary)]"
+                  : "text-[var(--kaspi-text-muted)] hover:text-[var(--kaspi-text-primary)]"
+              }`}
+            >
+              {t.tabApiKey}
+            </button>
+          </div>
+        </div>
+
+        {chartTab === "type" ? (
+          <div className="space-y-3">
+            <div className="h-48 flex items-end gap-1 pt-4 border-b border-[var(--kaspi-border)]">
+              {(data?.dailySeries || []).map((pt) => {
+                const metric = pt.requests > 0 ? pt.requests : pt.newKeys;
+                const heightPct = Math.max(metric > 0 ? 8 : 2, Math.round((metric / maxDailyRequests) * 100));
+                return (
+                  <div
+                    key={pt.date}
+                    title={`${pt.date}: ${pt.requests} requests, ~${pt.estimatedTokens.toLocaleString()} est. tokens, ${pt.newKeys} keys`}
+                    className="flex-1 flex flex-col items-center justify-end h-full group"
+                  >
+                    <div
+                      className={`w-full max-w-[14px] rounded-t-sm transition-all ${
+                        metric > 0
+                          ? "bg-rose-500 group-hover:bg-rose-400"
+                          : "bg-white/[0.08] group-hover:bg-white/[0.18]"
+                      }`}
+                      style={{ height: `${heightPct}%` }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-[var(--kaspi-text-muted)] font-mono">
+              <span>{data?.dailySeries?.[0]?.date || ""}</span>
+              <span>
+                {(data?.dailySeries?.reduce((s, d) => s + d.requests, 0) || 0) === 0
+                  ? t.noTraffic
+                  : `${data?.dailySeries?.reduce((s, d) => s + d.requests, 0)} tracked requests • Cost $0.00`}
+              </span>
+              <span>{data?.dailySeries?.[data.dailySeries.length - 1]?.date || ""}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {(data?.byKeyBreakdown || []).length === 0 ? (
+              <p className="text-xs text-[var(--kaspi-text-muted)] py-8 text-center">
+                {t.noTraffic}
+              </p>
+            ) : (
+              data!.byKeyBreakdown.map((k) => (
+                <div
+                  key={k.id}
+                  className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-[var(--kaspi-border)] text-xs"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                    <span className="font-semibold text-[var(--kaspi-text-primary)] truncate">
+                      {k.label}
+                    </span>
+                    <span className="font-mono text-[11px] text-[var(--kaspi-text-muted)]">
+                      {k.prefix}...
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 shrink-0 font-mono text-[11px]">
+                    <span className="text-[var(--kaspi-text-primary)]">
+                      {k.requests.toLocaleString()} reqs
+                    </span>
+                    <span className="text-[var(--kaspi-text-muted)]">
+                      ~{k.estimatedTokens.toLocaleString()} tokens
+                    </span>
+                    <span className="text-rose-400 font-bold">$0.00</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

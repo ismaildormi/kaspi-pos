@@ -45,7 +45,7 @@ export function PlatformModelsView() {
     <div className="space-y-6">
       <section className="kaspi-glass-card rounded-3xl p-6 sm:p-8 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-emerald-500">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-rose-500">
             <Boxes className="w-3.5 h-3.5" />
             <span>HEYUKA MODELS &amp; CAPABILITIES CENTER (Separated from Downloads)</span>
           </div>
@@ -53,7 +53,7 @@ export function PlatformModelsView() {
             href={`/${locale}/zebra-x/apps`}
             className="kaspi-glass-btn rounded-full px-3.5 py-1.5 text-xs font-bold inline-flex items-center gap-1.5"
           >
-            <Download className="w-3.5 h-3.5 text-emerald-500" />
+            <Download className="w-3.5 h-3.5 text-rose-500" />
             <span>Apps &amp; Download Center →</span>
           </Link>
         </div>
@@ -75,7 +75,7 @@ export function PlatformModelsView() {
           >
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full kaspi-glass-surface text-emerald-500">
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full kaspi-glass-surface text-rose-500">
                   {model.badge}
                 </span>
                 <span className="text-[11px] font-mono text-[var(--kaspi-text-muted)]">
@@ -85,7 +85,7 @@ export function PlatformModelsView() {
 
               <div>
                 <h2 className="text-xl font-black">{model.name}</h2>
-                <div dir="ltr" className="text-xs font-mono text-emerald-500 font-bold mt-0.5">
+                <div dir="ltr" className="text-xs font-mono text-rose-500 font-bold mt-0.5">
                   {model.id}
                 </div>
               </div>
@@ -108,7 +108,7 @@ export function PlatformModelsView() {
               <ul className="space-y-1.5 text-xs text-[var(--kaspi-text-secondary)]">
                 {model.strengths[locale].map((point, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
                     <span>{point}</span>
                   </li>
                 ))}
@@ -122,11 +122,11 @@ export function PlatformModelsView() {
                 className="flex-1 kaspi-glass-btn rounded-2xl px-3 py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 {copiedModel === model.id ? (
-                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  <Check className="w-3.5 h-3.5 text-rose-500" />
                 ) : (
                   <Copy className="w-3.5 h-3.5" />
                 )}
-                <span>{copiedModel === model.id ? "Copied ✓" : "Copy ID"}</span>
+                <span>{copiedModel === model.id ? "Copied OK" : "Copy ID"}</span>
               </button>
 
               <Link
@@ -145,10 +145,10 @@ export function PlatformModelsView() {
       <section className="kaspi-glass-card rounded-3xl p-5 sm:p-7 space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 text-base font-black">
-            <Cpu className="w-4 h-4 text-emerald-500" />
+            <Cpu className="w-4 h-4 text-rose-500" />
             <span>Dynamic Runtime Capability Registry ({caps.length})</span>
           </div>
-          <Link href={`/${locale}/zebra-x/lab`} className="text-xs font-bold text-emerald-500 hover:underline">
+          <Link href={`/${locale}/zebra-x/lab`} className="text-xs font-bold text-rose-500 hover:underline">
             Verify Live in Benchmark Lab →
           </Link>
         </div>
@@ -175,7 +175,7 @@ export function PlatformModelsView() {
                     <span
                       className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full kaspi-glass-surface text-[10px] font-mono font-bold ${
                         c.status === "verified_live" || c.status === "browser_local_ready"
-                          ? "text-emerald-500"
+                          ? "text-rose-500"
                           : "text-amber-500"
                       }`}
                     >
@@ -190,7 +190,7 @@ export function PlatformModelsView() {
                   <td className="p-3 align-top text-[var(--kaspi-text-secondary)]">{c.responsibleEngine}</td>
                   <td dir="ltr" className="p-3 align-top font-mono text-[11px]">
                     <div>{c.endpoint || "In-Browser Local"}</div>
-                    <div className="text-emerald-500">{c.zeroCostTier}</div>
+                    <div className="text-rose-500">{c.zeroCostTier}</div>
                   </td>
                   <td className="p-3 align-top text-[var(--kaspi-text-secondary)]">{c.limitations}</td>
                 </tr>

@@ -2,15 +2,20 @@ import { GoogleGenAI, LiveServerMessage, Modality } from "@google/genai";
 import { WebSocket, WebSocketServer } from "ws";
 import path from "path";
 import { exec } from "child_process";
+import { callKaspiChat, resolveKaspiConnection } from "./kaspiModelsClient.js";
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY || "",
-  httpOptions: {
-    headers: {
-      "User-Agent": "aistudio-build",
+function getGeminiLiveClient(): GoogleGenAI | null {
+  const key = process.env.GEMINI_API_KEY?.trim();
+  if (!key) return null;
+  return new GoogleGenAI({
+    apiKey: key,
+    httpOptions: {
+      headers: {
+        "User-Agent": "aistudio-build",
+      },
     },
-  },
-});
+  });
+}
 
 /**
  * Connected WebSocket clients listening for Mochi-Puff's voice streams
@@ -77,8 +82,17 @@ export function setupGeminiLiveAudioServer(wss: WebSocketServer) {
     let session: any = null;
 
     try {
+      const liveAi = getGeminiLiveClient();
+      if (!liveAi) {
+        throw new Error(
+          resolveKaspiConnection().configured
+            ? "GEMINI_API_KEY unset — routing Live Dialogue through KASPI Sovereign Cloud + Edge-TTS"
+            : "GEMINI_API_KEY unset — running with local Edge-TTS fallback"
+        );
+      }
+
       // Connect to Gemini 3.8 Live API
-      session = await ai.live.connect({
+      session = await liveAi.live.connect({
         model: "gemini-3.8-live",
         config: {
           responseModalities: [Modality.AUDIO],
@@ -172,7 +186,7 @@ export function setupGeminiLiveAudioServer(wss: WebSocketServer) {
         err.message
       );
 
-      // Even if Gemini Live fails or key is missing, keep WebSocket open for local Edge-TTS voice engine!
+      // Even if Gemini Live fails or key is missing, keep WebSocket open for KASPI Cloud + local Edge-TTS voice engine!
       clientWs.on("message", async (data: any) => {
         try {
           const parsed = JSON.parse(data.toString());
@@ -187,6 +201,18 @@ export function setupGeminiLiveAudioServer(wss: WebSocketServer) {
             const res = await synthesizeMochiVoiceEdgeTTS(dialogueText, voiceProfile, parsed.pitch, parsed.rate);
             if (res?.websocket_message && clientWs.readyState === WebSocket.OPEN) {
               clientWs.send(JSON.stringify(res.websocket_message));
+            }
+          } else if (parsed.type === "text" && parsed.text && resolveKaspiConnection().configured) {
+            const reply = await callKaspiChat({
+              model: "heyuka-core",
+              systemPrompt: "You are NEVEA, the sentient 3D companion inside HEYUKA Desktop OS. Answer concisely and warmly.",
+              userPrompt: String(parsed.text),
+            });
+            if (reply.ok && reply.text) {
+              const voiceRes = await synthesizeMochiVoiceEdgeTTS(reply.text, parsed.voice || "mochi_cute", parsed.pitch, parsed.rate);
+              if (clientWs.readyState === WebSocket.OPEN) {
+                clientWs.send(JSON.stringify({ type: "kaspi_reply", text: reply.text, model: reply.model, voice: voiceRes?.websocket_message || null }));
+              }
             }
           }
         } catch {}
@@ -241,27 +267,30 @@ export function setupSystemAudioServer(wss: WebSocketServer) {
 
     let activeLiveSession: any = null;
 
-    // Connect to Gemini Live if enabled
-    ai.live.connect({
-      model: "gemini-3.8-live",
-      config: {
-        responseModalities: [Modality.AUDIO],
-        systemInstruction:
-          "You are NEVEA hearing the user's system audio (videos, conference calls, music). Listen attentively and note any important context or questions directed at you.",
-      },
-      callbacks: {
-        onmessage: (msg: LiveServerMessage) => {
-          const text = msg.serverContent?.modelTurn?.parts?.[0]?.text;
-          if (text) {
-            console.log("[Nevea System Audio Heard]:", text);
-          }
+    // Connect to Gemini Live if API key is enabled
+    const sysAi = getGeminiLiveClient();
+    if (sysAi) {
+      sysAi.live.connect({
+        model: "gemini-3.8-live",
+        config: {
+          responseModalities: [Modality.AUDIO],
+          systemInstruction:
+            "You are NEVEA hearing the user's system audio (videos, conference calls, music). Listen attentively and note any important context or questions directed at you.",
         },
-      },
-    }).then((sess) => {
-      activeLiveSession = sess;
-    }).catch(() => {
-      // Standalone mode if API key is not live-ready
-    });
+        callbacks: {
+          onmessage: (msg: LiveServerMessage) => {
+            const text = msg.serverContent?.modelTurn?.parts?.[0]?.text;
+            if (text) {
+              console.log("[Nevea System Audio Heard]:", text);
+            }
+          },
+        },
+      }).then((sess: any) => {
+        activeLiveSession = sess;
+      }).catch(() => {
+        // Standalone mode if API key is not live-ready
+      });
+    }
 
     ws.on("message", (message: any) => {
       currentSystemAudioStatus.lastActiveTime = Date.now();

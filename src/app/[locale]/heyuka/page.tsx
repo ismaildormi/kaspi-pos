@@ -1,18 +1,18 @@
 import React from "react";
 import Link from "next/link";
 import { getLocale } from "next-intl/server";
-import { ArrowLeft, Bug, Layers } from "lucide-react";
-import { KaspiBrandMark } from "@/components/common/KaspiBrandMark";
+import { ArrowLeft, Bug, Layers, MessageSquare } from "lucide-react";
 import { KaspiThemeToggle } from "@/components/theme/KaspiThemeToggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { HEYUKALandingShowcase } from "@/components/heyuka/HEYUKALandingShowcase";
+import { HeyukaLoopMark } from "@/components/heyuka/HeyukaLoopMark";
 import { AutonomousSelfHealingBoundary } from "@/components/security/AutonomousSelfHealingBoundary";
 import { Footer } from "@/components/Footer";
 
 export const metadata = {
-  title: "HEYUKA by KASPI • 3D Interactive Desktop App & Sovereign Intelligence",
+  title: "HEYUKA • Sovereign AI Chat, Desktop App & Free Developer API",
   description:
-    "Download HEYUKA Desktop App owned by KASPI: 32 interactive 3D characters, multimodal intelligence, and unique API Keys + Key IDs for developers.",
+    "Chat with HEYUKA for free, download the 3D Desktop Companion, and issue unique SHA-256 API Keys + Key IDs covered 100% by KASPI.",
 };
 
 export default async function HeyukaShowcasePage() {
@@ -22,14 +22,14 @@ export default async function HeyukaShowcasePage() {
   return (
     <div
       dir={isRtl ? "rtl" : "ltr"}
-      className="min-h-screen bg-[var(--kaspi-bg)] text-[var(--kaspi-text-primary)] flex flex-col justify-between selection:bg-emerald-500 selection:text-white"
+      className="min-h-screen bg-[var(--kaspi-bg)] text-[var(--kaspi-text-primary)] flex flex-col justify-between selection:bg-rose-600 selection:text-white"
     >
       <header className="kaspi-glass-surface border-x-0 border-t-0 px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <Link href={`/${locale}`} className="flex items-center gap-2.5 shrink-0">
-            <KaspiBrandMark size="sm" alt="KASPI • HEYUKA" />
-            <span className="text-sm font-extrabold tracking-tight text-[var(--kaspi-text-primary)]">
-              HEYUKA <span className="text-emerald-500 font-mono text-xs">Desktop</span>
+          <Link href={`/${locale}/heyuka`} className="flex items-center gap-2 shrink-0">
+            <HeyukaLoopMark size="md" variant="crimson" />
+            <span className="text-lg font-black tracking-tight text-[var(--kaspi-text-primary)]">
+              heyuka
             </span>
           </Link>
           <Link
@@ -43,17 +43,24 @@ export default async function HeyukaShowcasePage() {
 
         <div className="flex items-center gap-2 flex-wrap">
           <Link
+            href={`/${locale}/chat`}
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>{isRtl ? "محادثة مجانية" : "Chat for free"}</span>
+          </Link>
+          <Link
             href={`/${locale}/zebra-x`}
             className="kaspi-glass-btn rounded-full px-3.5 py-1.5 text-xs font-bold inline-flex items-center gap-1.5"
           >
-            <Layers className="w-3.5 h-3.5 text-emerald-500" />
-            <span>{isRtl ? "منصة المطورين" : "Developer Console"}</span>
+            <Layers className="w-3.5 h-3.5 text-rose-500" />
+            <span>{isRtl ? "منصة الـ API" : "API Platform"}</span>
           </Link>
           <Link
             href={`/${locale}/zebra-x/debug`}
             className="hidden sm:inline-flex kaspi-glass-btn rounded-full px-3.5 py-1.5 text-xs font-bold items-center gap-1.5"
           >
-            <Bug className="w-3.5 h-3.5 text-emerald-500" />
+            <Bug className="w-3.5 h-3.5 text-rose-500" />
             <span>Live Debugger</span>
           </Link>
           <KaspiThemeToggle locale={locale} />

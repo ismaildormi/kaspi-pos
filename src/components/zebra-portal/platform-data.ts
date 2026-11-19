@@ -24,15 +24,15 @@ export interface ComparisonRow {
 export const OFFICIAL_API_BASE_URL = "https://kaspi-pos.vercel.app/api/v1";
 export const OFFICIAL_ROOT_V1_URL = "https://kaspi-pos.vercel.app/v1";
 
-const DEBUG_KEY_STORAGE = "heyuka_console_active_secret_key";
-const DEBUG_KEY_ID_STORAGE = "heyuka_console_active_key_id";
+const DEBUG_KEY_ID_STORAGE = "heyuka_console_active_tracking_id";
+let inMemoryConsoleToken = "";
 
 export function saveActiveConsoleKey(secretKey: string, keyId?: string | null) {
+  if (secretKey.trim()) {
+    inMemoryConsoleToken = secretKey.trim();
+  }
   if (typeof window === "undefined") return;
   try {
-    if (secretKey.trim()) {
-      window.sessionStorage.setItem(DEBUG_KEY_STORAGE, secretKey.trim());
-    }
     if (keyId && keyId.trim()) {
       window.sessionStorage.setItem(DEBUG_KEY_ID_STORAGE, keyId.trim());
     }
@@ -42,14 +42,14 @@ export function saveActiveConsoleKey(secretKey: string, keyId?: string | null) {
 }
 
 export function loadActiveConsoleKey(): { secretKey: string; keyId: string } {
-  if (typeof window === "undefined") return { secretKey: "", keyId: "" };
+  if (typeof window === "undefined") return { secretKey: inMemoryConsoleToken, keyId: "" };
   try {
     return {
-      secretKey: window.sessionStorage.getItem(DEBUG_KEY_STORAGE) || "",
+      secretKey: inMemoryConsoleToken,
       keyId: window.sessionStorage.getItem(DEBUG_KEY_ID_STORAGE) || "",
     };
   } catch {
-    return { secretKey: "", keyId: "" };
+    return { secretKey: inMemoryConsoleToken, keyId: "" };
   }
 }
 

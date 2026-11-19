@@ -666,7 +666,29 @@ class AutonomousSwarmCompany {
     };
 
     await Promise.allSettled([
-      // 0. Real Google Search Grounding via Gemini API
+      // 0. KASPI Sovereign Web Research Engine (/api/v1/web/research)
+      (async () => {
+        try {
+          const { callKaspiWebResearch } = await import('./kaspiModelsClient.js');
+          const kr = await callKaspiWebResearch(cleanQuery);
+          if (kr.ok && Array.isArray(kr.results)) {
+            for (const item of kr.results.slice(0, 3)) {
+              if (item?.url || item?.title) {
+                results.push({
+                  id: `kaspi_web_${Math.random().toString(36).slice(2, 8)}`,
+                  source: 'KASPI-Web-Research',
+                  title: String(item.title || cleanQuery),
+                  snippet: String(item.snippet || item.description || '').slice(0, 240),
+                  url: String(item.url || `https://kaspi-pos.vercel.app`),
+                  score: 'Sovereign',
+                });
+              }
+            }
+          }
+        } catch {}
+      })(),
+
+      // 0b. Real Google Search Grounding via Gemini API
       (async () => {
         const ai = this.getGenAIClient();
         if (!ai) return;

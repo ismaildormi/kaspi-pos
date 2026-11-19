@@ -25,7 +25,11 @@ export type SkillDomainBucket =
   | "web"
   | "science"
   | "document-factory"
-  | "engineering";
+  | "engineering"
+  | "bot-factory"
+  | "qr-studio"
+  | "mobile-repair"
+  | "security-audit";
 
 export interface SkillMetadataIndexEntry {
   id: string;
@@ -128,6 +132,46 @@ const BUNDLED_FALLBACK_METADATA: readonly SkillMetadataIndexEntry[] = [
     source: "bundled",
     filePath: "skills/engineering/code-sandbox-audit/SKILL.md",
   },
+  {
+    id: "bot-factory",
+    name: "bot-factory",
+    description: "Bot-First construction, Telegram/WhatsApp/SEO worker bots, Zod specs, Parlant guidelines, ROS 2 / ESPHome / CadQuery.",
+    domain: "bot-factory",
+    tags: ["bots", "telegram", "whatsapp", "seo", "robotics", "ros2", "esphome", "cadquery"],
+    version: "21.5.0",
+    source: "bundled",
+    filePath: "skills/bot-factory/SKILL.md",
+  },
+  {
+    id: "qr-studio",
+    name: "qr-studio",
+    description: "QR Architect: dynamic /q/[slug], Wi-Fi, vCard 4.0, ZATCA TLV Base64, signed offline QR tokens & branded SVGs.",
+    domain: "qr-studio",
+    tags: ["qr", "tlv", "wifi", "vcard", "dynamic-qr", "svg"],
+    version: "21.7.0",
+    source: "bundled",
+    filePath: "skills/qr-studio/SKILL.md",
+  },
+  {
+    id: "mobile-repair",
+    name: "mobile-repair",
+    description: "100-tool Android ADB & iOS libimobiledevice diagnostics, malware IOC triage & thermal repair shop tickets.",
+    domain: "mobile-repair",
+    tags: ["android", "adb", "ios", "libimobiledevice", "mobile-repair", "diagnostics"],
+    version: "22.1.0",
+    source: "bundled",
+    filePath: "skills/mobile-repair/SKILL.md",
+  },
+  {
+    id: "security-audit",
+    name: "security-audit",
+    description: "Defensive cybersecurity intelligence (OSV/NVD/CWE/FormAI) & static SAST vulnerability scanner with OWASP patches.",
+    domain: "security-audit",
+    tags: ["security", "sast", "owasp", "cve", "osv", "gitleaks"],
+    version: "20.2.0",
+    source: "bundled",
+    filePath: "skills/security-audit/SKILL.md",
+  },
 ];
 
 const authoredSkillStore = new Map<string, LoadedSkillPackage>();
@@ -142,6 +186,10 @@ function normalizeDomain(raw?: string): SkillDomainBucket {
     "science",
     "document-factory",
     "engineering",
+    "bot-factory",
+    "qr-studio",
+    "mobile-repair",
+    "security-audit",
   ];
   return (valid.find((v) => v === d) || "engineering") as SkillDomainBucket;
 }

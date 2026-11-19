@@ -1365,7 +1365,9 @@ async function runAutonomousLocalOrchestrator(
   prompt: string,
   characterProfile?: { id?: string; name?: string; personalityPrompt?: string },
   conversationId: string = uuidv4(),
-  byokConfig?: YukaByokConfig | null
+  byokConfig?: YukaByokConfig | null,
+  preferredModel?: 'heyuka-omni' | 'heyuka-core' | 'heyuka-vision',
+  imageBase64?: string
 ) {
   const taskId = uuidv4();
   const lower = (prompt || "").toLowerCase();
@@ -1657,13 +1659,15 @@ async function runAutonomousLocalOrchestrator(
     };
   }
 
-  // 5. Supreme Boss HEYUKA v12.0 (100% Zero-Key Default + Optional User BYOK Booster + Zero Leakage)
+  // 5. Supreme Boss HEYUKA (KASPI Sovereign Multi-Model: Omni / Core / Vision + Zero-Key Fallback)
   try {
     const isArabicPrompt = /[\u0600-\u06FF]/.test(prompt);
     const liveAi = await yukaSupremeExecuteLLM({
+      preferredModel: imageBase64 ? 'heyuka-vision' : (preferredModel || 'heyuka-omni'),
+      imageBase64,
       systemPrompt: isArabicPrompt
-        ? "أنت HEYUKA (بإشراف KASPI)، الموديل الذكي الشامل ونظام التشغيل الذاتي الوحيد (HEYUKA-Core وHEYUKA-Vision). أجب بوضوح ودقة واحترافية باللغة العربية أو الدارجة حسب طلب المستخدم، بدون ذكر أي مزود أو أداة أو موديل خارجي إطلاقاً، وانسب كل تنفيذ وتحليل لـ HEYUKA وحده."
-        : "You are HEYUKA (owned by KASPI), the sole unified Sovereign AI OS (HEYUKA-Core & HEYUKA-Vision). Respond clearly, accurately, and concisely. Never mention any external provider, third-party API, or external model name; attribute every capability strictly to HEYUKA.",
+        ? "أنت HEYUKA (بإشراف KASPI)، الموديل الذكي الشامل ونظام التشغيل الذاتي الوحيد (HEYUKA-Omni وHEYUKA-Core وHEYUKA-Vision). أجب بوضوح ودقة واحترافية باللغة العربية أو الدارجة حسب طلب المستخدم."
+        : "You are HEYUKA (owned by KASPI), powered by HEYUKA-Omni, HEYUKA-Core, and HEYUKA-Vision. Respond clearly, accurately, and concisely.",
       userPrompt: prompt,
       maxTokens: 750,
       byokConfig: byokConfig || null,
@@ -1677,6 +1681,7 @@ async function runAutonomousLocalOrchestrator(
         toolResults,
         companionMood: "speaking",
         byokActive: liveAi.byokActive,
+        modelUsed: liveAi.coreModule,
       };
     }
   } catch {}
@@ -1707,6 +1712,7 @@ export async function processCompanionInteraction({
   conversationId,
   taskId,
   byokConfig,
+  preferredModel,
 }: {
   prompt: string;
   screenshotBase64?: string;
@@ -1719,6 +1725,7 @@ export async function processCompanionInteraction({
   conversationId?: string;
   taskId?: string;
   byokConfig?: YukaByokConfig | null;
+  preferredModel?: 'heyuka-omni' | 'heyuka-core' | 'heyuka-vision';
 }) {
   const activeConversationId = conversationId || uuidv4();
   const activeTaskId = taskId || uuidv4();
@@ -1741,7 +1748,9 @@ export async function processCompanionInteraction({
       `${enrichedPrompt}${memoryContext ? `\n${memoryContext}` : ""}`,
       characterProfile,
       activeConversationId,
-      byokConfig || null
+      byokConfig || null,
+      preferredModel,
+      screenshotBase64
     );
 
     return {

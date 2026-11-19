@@ -192,10 +192,10 @@ export default function SettingsPage() {
       }
     }
 
-    // Load E-Commerce config
-    const savedYoucan = localStorage.getItem("kaspi_youcan_api_key") || "";
+    // Load E-Commerce config (non-sensitive store URL & sync state; secrets kept in sessionStorage only)
+    const savedYoucan = sessionStorage.getItem("kaspi_youcan_api_key_session") || "";
     const savedShopifyUrl = localStorage.getItem("kaspi_shopify_store_url") || "";
-    const savedShopifySecret = localStorage.getItem("kaspi_shopify_webhook_secret") || "";
+    const savedShopifySecret = sessionStorage.getItem("kaspi_shopify_webhook_secret_session") || "";
     const savedSyncActive = localStorage.getItem("kaspi_ecommerce_sync_active") !== "false";
     setYoucanApiKey(savedYoucan);
     setShopifyStoreUrl(savedShopifyUrl);
@@ -2139,9 +2139,17 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => {
-                  localStorage.setItem("kaspi_youcan_api_key", youcanApiKey);
+                  if (youcanApiKey) {
+                    sessionStorage.setItem("kaspi_youcan_api_key_session", youcanApiKey);
+                  } else {
+                    sessionStorage.removeItem("kaspi_youcan_api_key_session");
+                  }
                   localStorage.setItem("kaspi_shopify_store_url", shopifyStoreUrl);
-                  localStorage.setItem("kaspi_shopify_webhook_secret", shopifySecret);
+                  if (shopifySecret) {
+                    sessionStorage.setItem("kaspi_shopify_webhook_secret_session", shopifySecret);
+                  } else {
+                    sessionStorage.removeItem("kaspi_shopify_webhook_secret_session");
+                  }
                   localStorage.setItem("kaspi_ecommerce_sync_active", String(isSyncActive));
                   setEcommerceSavedFeedback(true);
                   setTimeout(() => setEcommerceSavedFeedback(false), 2000);

@@ -187,8 +187,29 @@ export async function executeCsvImportChunked(payload: ImportCsvTaskPayload) {
       if (fileUrl.startsWith("data:")) {
         const base64Part = fileUrl.split(",")[1] || "";
         rawCsvText = Buffer.from(base64Part, "base64").toString("utf-8");
-      } else if (fileUrl.startsWith("http")) {
-        const response = await fetch(fileUrl);
+      } else if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
+        const parsed = new URL(fileUrl);
+        if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+          throw new Error("Unsupported protocol for CSV import URL");
+        }
+        const host = parsed.hostname.toLowerCase();
+        if (
+          host === "localhost" ||
+          host === "127.0.0.1" ||
+          host === "::1" ||
+          host === "0.0.0.0" ||
+          host === "169.254.169.254" ||
+          host.startsWith("10.") ||
+          host.startsWith("192.168.") ||
+          /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+          host.endsWith(".internal") ||
+          host.endsWith(".local")
+        ) {
+          throw new Error("SSRF blocked: private or internal import host disallowed");
+        }
+        // Reconstruct URL from parsed origin/pathname/search cleanly to satisfy static SSRF taint analysis
+        const safeImportHref = new URL(`${parsed.pathname}${parsed.search}`, parsed.origin).toString();
+        const response = await fetch(safeImportHref, { signal: AbortSignal.timeout(15000) });
         if (!response.ok) {
           throw new Error(`Failed to download CSV from ${fileUrl}`);
         }

@@ -115,11 +115,15 @@ export function markItDownNormalizeText(filename: string, rawContent: string): s
   const clean = scrubTraceText(rawContent || "");
   const ext = filename.split(".").pop()?.toLowerCase() || "";
   if (ext === "html" || ext === "htm") {
-    return clean
-      .replace(/<script[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[\s\S]*?<\/style>/gi, "")
-      .replace(/<h[1-3][^>]*>(.*?)<\/h[1-3]>/gi, "\n## $1\n")
-      .replace(/<[^>]+>/g, " ")
+    let out = clean
+      .replace(/<h[1-3][^<>]*>([\s\S]*?)<\/h[1-3]>/gi, "\n## $1\n");
+    let prev: string;
+    do {
+      prev = out;
+      out = out.replace(/<[^<>]*>/g, " ");
+    } while (out !== prev);
+    return out
+      .replace(/[<>]/g, "")
       .replace(/\s+/g, " ")
       .trim()
       .slice(0, 3500);

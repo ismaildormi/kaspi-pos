@@ -121,7 +121,7 @@ const COPY: Record<
     runAllBtn: "تشغيل جميع فحوصات الـ 7 نقاط الآن",
     runningBtn: "جاري الفحص والتشخيص...",
     copyReportBtn: "نسخ تقرير Debug آمن (بدون كشف المفتاح)",
-    copied: "تم النسخ ✓",
+    copied: "تم النسخ OK",
     noKeyLink: "إنشاء مفتاح جديد من خزنة API Keys ←",
     passedLabel: "ناجح",
     failedLabel: "يحتاج مراجعة",
@@ -147,7 +147,7 @@ const COPY: Record<
     runAllBtn: "Lancer la Suite Diagnostic 7 Points",
     runningBtn: "Diagnostic en cours...",
     copyReportBtn: "Copier le rapport Debug (clé masquée)",
-    copied: "Copié ✓",
+    copied: "Copié OK",
     noKeyLink: "Créer une clé dans le coffre API Keys →",
     passedLabel: "SUCCÈS",
     failedLabel: "ÉCHEC",
@@ -173,7 +173,7 @@ const COPY: Record<
     runAllBtn: "Run All 7 Diagnostic Checks",
     runningBtn: "Running Diagnostics...",
     copyReportBtn: "Copy Masked Debug Report",
-    copied: "Copied ✓",
+    copied: "Copied OK",
     noKeyLink: "Need a key? Issue one in API Keys →",
     passedLabel: "PASS",
     failedLabel: "FAIL",
@@ -438,13 +438,13 @@ export function PlatformDebugView() {
     <div className="space-y-6">
       <section className="kaspi-glass-card rounded-3xl p-6 sm:p-8 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-emerald-500">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-rose-500">
             <Bug className="w-3.5 h-3.5" />
             <span>{t.badge}</span>
           </div>
           <Link
             href={`/${locale}/zebra-x/api-keys`}
-            className="text-xs font-bold text-emerald-500 hover:underline inline-flex items-center gap-1"
+            className="text-xs font-bold text-rose-500 hover:underline inline-flex items-center gap-1"
           >
             <KeyRound className="w-3.5 h-3.5" />
             <span>{t.noKeyLink}</span>
@@ -511,7 +511,7 @@ export function PlatformDebugView() {
                   onClick={() => setHeaderMode(m)}
                   className={`px-2.5 py-2.5 rounded-xl font-mono text-[11px] font-bold cursor-pointer ${
                     headerMode === m
-                      ? "kaspi-orbit-active text-emerald-500"
+                      ? "kaspi-orbit-active text-rose-500"
                       : "kaspi-glass-surface text-[var(--kaspi-text-muted)]"
                   }`}
                 >
@@ -540,7 +540,7 @@ export function PlatformDebugView() {
               className="kaspi-glass-btn rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2 cursor-pointer"
             >
               {copiedReport ? (
-                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                <Check className="w-3.5 h-3.5 text-rose-500" />
               ) : (
                 <Copy className="w-3.5 h-3.5" />
               )}
@@ -549,7 +549,7 @@ export function PlatformDebugView() {
           </div>
 
           <div className="text-xs font-mono px-3 py-1.5 rounded-full kaspi-frosted-surface">
-            <span className="text-emerald-500 font-bold">{passCount}</span> / {results.length} Passed
+            <span className="text-rose-500 font-bold">{passCount}</span> / {results.length} Passed
           </div>
         </div>
       </section>
@@ -561,7 +561,7 @@ export function PlatformDebugView() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 {item.status === "pass" ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-rose-500 shrink-0" />
                 ) : item.status === "fail" ? (
                   <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
                 ) : item.status === "running" ? (
@@ -585,7 +585,7 @@ export function PlatformDebugView() {
                   <span
                     dir="ltr"
                     className={`px-2.5 py-1 rounded-full font-mono text-[11px] font-bold kaspi-frosted-surface ${
-                      item.status === "pass" ? "text-emerald-500" : "text-rose-500"
+                      item.status === "pass" ? "text-rose-500" : "text-rose-500"
                     }`}
                   >
                     HTTP {item.httpCode}
@@ -644,7 +644,7 @@ export function PlatformDebugView() {
         <ul className="space-y-2 text-xs text-[var(--kaspi-text-secondary)]">
           {t.fixChecklistItems.map((item, i) => (
             <li key={i} className="flex items-start gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
               <span>{item}</span>
             </li>
           ))}

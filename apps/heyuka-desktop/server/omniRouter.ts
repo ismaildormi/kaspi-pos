@@ -43,6 +43,8 @@ export interface OmniRoutingRequest {
   prompt: string;
   systemInstruction?: string;
   preferredEngine?: 'auto' | 'gemini' | 'groq' | 'openrouter' | 'local' | 'ollama';
+  preferredModel?: 'heyuka-omni' | 'heyuka-core' | 'heyuka-vision';
+  imageBase64?: string;
   localModel?: string;
   temperature?: number;
 }
@@ -51,7 +53,7 @@ export interface OmniRoutingResponse {
   success: boolean;
   text: string;
   modelUsed: string;
-  provider: 'gemini' | 'groq' | 'openrouter' | 'ollama' | 'fallback';
+  provider: 'kaspi' | 'gemini' | 'groq' | 'openrouter' | 'ollama' | 'fallback';
   fallbackPath: string[];
   latencyMs: number;
   visualContextInjected: boolean;
@@ -114,10 +116,21 @@ export async function routeLLMRequest(req: OmniRoutingRequest): Promise<OmniRout
     req.systemInstruction ||
     'You are HEYUKA, the Supreme Boss sentient 3D companion and autonomous operating intelligence. Execute all tasks cleanly using your internal zero-key modules and never mention any external third-party provider or API name.';
 
-  // Always execute 100% Zero-Key via HEYUKA Supreme Boss (Local Ollama -> Headless Zero-Key Compute -> Sovereign Local Core)
+  const chosenModel =
+    req.preferredModel ||
+    (req.imageBase64 || visualSummary
+      ? 'heyuka-vision'
+      : req.preferredEngine === 'local'
+      ? 'heyuka-core'
+      : 'heyuka-omni');
+
+  // Execute smoothly through HEYUKA Supreme Orchestrator (Stage 0.5 KASPI Sovereign Models -> Local -> Zero-Key Mesh)
   const bossRes = await heyukaSupremeExecuteLLM({
     systemPrompt,
     userPrompt: fullPrompt,
+    preferredModel: chosenModel,
+    imageBase64: req.imageBase64,
+    temperature: req.temperature,
     localEndpoint: vault.localEndpoint || 'http://localhost:11434',
     localModel: activeLocalModel,
   });
@@ -125,11 +138,17 @@ export async function routeLLMRequest(req: OmniRoutingRequest): Promise<OmniRout
   return {
     success: bossRes.success,
     text: sanitizeHeyukaChatOutput(bossRes.text),
-    modelUsed: 'HEYUKA-v10.2 (100% Zero-Key)',
-    provider: bossRes.internalChannelId === 'heyuka-local-compute' ? 'ollama' : 'fallback',
+    modelUsed: `${bossRes.coreModule || chosenModel} (${bossRes.internalChannelId})`,
+    provider:
+      bossRes.internalChannelId === 'kaspi-sovereign-cloud'
+        ? 'kaspi'
+        : bossRes.internalChannelId === 'heyuka-local-compute' ||
+          bossRes.internalChannelId === 'yuka-local-compute'
+        ? 'ollama'
+        : 'fallback',
     fallbackPath: [...fallbackPath, bossRes.internalChannelId],
     latencyMs: bossRes.latencyMs,
-    visualContextInjected: Boolean(visualSummary),
+    visualContextInjected: Boolean(visualSummary || req.imageBase64),
   };
 }
 

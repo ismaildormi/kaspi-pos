@@ -94,14 +94,14 @@ export function StudioDomainChat({
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--kaspi-border)] pb-3">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-8 h-8 rounded-xl kaspi-glass-surface flex items-center justify-center shrink-0">
-            <Bot className="w-4 h-4 text-emerald-500" />
+            <Bot className="w-4 h-4 text-rose-500" />
           </div>
           <div className="min-w-0">
             <div className="text-xs sm:text-sm font-extrabold text-[var(--kaspi-text-primary)] truncate">
               {product ? `${product.name} Specialist` : "HEYUKA Command Router Chat"}
             </div>
             <div className="text-[11px] text-[var(--kaspi-text-muted)] truncate flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-emerald-500 shrink-0" />
+              <ShieldCheck className="w-3 h-3 text-rose-500 shrink-0" />
               <span>
                 {product
                   ? product.sharedEngineDisclosure[locale]
@@ -114,7 +114,7 @@ export function StudioDomainChat({
         {productId !== "command-center" && (
           <Link
             href={`/${locale}/zebra-x`}
-            className="text-[11px] font-bold text-emerald-500 hover:underline shrink-0"
+            className="text-[11px] font-bold text-rose-500 hover:underline shrink-0"
           >
             {locale === "ar" ? "المحادثة العامة →" : "Universal Chat →"}
           </Link>
@@ -131,7 +131,7 @@ export function StudioDomainChat({
             disabled={busy}
             className="kaspi-frosted-surface hover:scale-[1.01] rounded-full px-3 py-1.5 text-[11px] font-medium text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)] transition-all cursor-pointer text-start"
           >
-            <Sparkles className="w-3 h-3 inline me-1 text-emerald-500" />
+            <Sparkles className="w-3 h-3 inline me-1 text-rose-500" />
             {qp}
           </button>
         ))}
@@ -160,7 +160,7 @@ export function StudioDomainChat({
                   {turn.role === "user" ? (
                     <User className="w-3 h-3" />
                   ) : (
-                    <Bot className="w-3 h-3 text-emerald-500" />
+                    <Bot className="w-3 h-3 text-rose-500" />
                   )}
                   {turn.role === "user" ? "You" : product?.shortTag || "HEYUKA"}
                 </span>
@@ -180,7 +180,7 @@ export function StudioDomainChat({
                   <button
                     type="button"
                     onClick={() => onSaveOutputText(turn.content)}
-                    className="kaspi-glass-btn rounded-xl px-2.5 py-1 text-[10px] font-bold text-emerald-500 cursor-pointer"
+                    className="kaspi-glass-btn rounded-xl px-2.5 py-1 text-[10px] font-bold text-rose-500 cursor-pointer"
                   >
                     Save to Output Vault
                   </button>
@@ -189,7 +189,7 @@ export function StudioDomainChat({
                 {turn.recommended && (
                   <Link
                     href={`/${locale}/zebra-x/studios/${turn.recommended.id}`}
-                    className="kaspi-glass-btn rounded-xl px-2.5 py-1 text-[10px] font-bold inline-flex items-center gap-1 text-emerald-500"
+                    className="kaspi-glass-btn rounded-xl px-2.5 py-1 text-[10px] font-bold inline-flex items-center gap-1 text-rose-500"
                   >
                     <span>Open {turn.recommended.name}</span>
                     <ArrowUpRight className="w-3 h-3" />

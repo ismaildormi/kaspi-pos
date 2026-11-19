@@ -179,7 +179,7 @@ export const HEYUKAInstallWalkthrough: React.FC<HEYUKAInstallWalkthroughProps> =
         <button
           type="button"
           onClick={() => void copyText(id, code)}
-          className="kaspi-glass-btn rounded-lg px-3 py-1 text-[11px] font-bold inline-flex items-center gap-1.5 text-emerald-500 cursor-pointer"
+          className="kaspi-glass-btn rounded-lg px-3 py-1 text-[11px] font-bold inline-flex items-center gap-1.5 text-rose-500 cursor-pointer"
         >
           {copiedId === id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
           <span>{copiedId === id ? t.copied : t.copy}</span>
@@ -206,7 +206,7 @@ export const HEYUKAInstallWalkthrough: React.FC<HEYUKAInstallWalkthroughProps> =
               <img src="/logo-mark.png" alt="HEYUKA" className="w-7 h-7 object-contain" />
             </div>
             <div>
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-500">
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-rose-500">
                 <Sparkles className="w-3 h-3" />
                 <span>{t.badge}</span>
               </span>
@@ -220,7 +220,7 @@ export const HEYUKAInstallWalkthrough: React.FC<HEYUKAInstallWalkthroughProps> =
               onClick={() => setViewAllStages((v) => !v)}
               className="kaspi-glass-btn rounded-xl px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
             >
-              <Layers className="w-3.5 h-3.5 text-emerald-500" />
+              <Layers className="w-3.5 h-3.5 text-rose-500" />
               <span>{viewAllStages ? t.stepperBtn : t.showAllBtn}</span>
             </button>
             <button
@@ -258,7 +258,7 @@ export const HEYUKAInstallWalkthrough: React.FC<HEYUKAInstallWalkthroughProps> =
                   onClick={() => setTarget(opt.id)}
                   className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     target === opt.id
-                      ? "kaspi-orbit-active text-emerald-500"
+                      ? "kaspi-orbit-active text-rose-500"
                       : "kaspi-glass-surface text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
                   }`}
                 >
@@ -285,7 +285,7 @@ export const HEYUKAInstallWalkthrough: React.FC<HEYUKAInstallWalkthroughProps> =
                 >
                   <div className="flex items-center justify-between text-[11px] font-bold">
                     <span>{st.short}</span>
-                    {activeStage > idx && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+                    {activeStage > idx && <CheckCircle2 className="w-3.5 h-3.5 text-rose-500" />}
                   </div>
                 </button>
               ))}
@@ -298,7 +298,7 @@ export const HEYUKAInstallWalkthrough: React.FC<HEYUKAInstallWalkthroughProps> =
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <h3 className="text-base font-extrabold text-[var(--kaspi-text-primary)] flex items-center gap-2">
-                    <Download className="w-4 h-4 text-emerald-500" />
+                    <Download className="w-4 h-4 text-rose-500" />
                     <span>{t.stages[0].full}</span>
                   </h3>
                   <p className="text-xs text-[var(--kaspi-text-secondary)] mt-1">
@@ -383,7 +383,7 @@ export const HEYUKAInstallWalkthrough: React.FC<HEYUKAInstallWalkthroughProps> =
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div className="p-3 rounded-xl kaspi-frosted-surface">
-                  <p className="font-bold text-emerald-500">
+                  <p className="font-bold text-rose-500">
                     {isAr ? "1.1 التحميل الرسمي" : "1.1 Verified Package"}
                   </p>
                   <p className="text-[var(--kaspi-text-secondary)] mt-1">
@@ -393,7 +393,7 @@ export const HEYUKAInstallWalkthrough: React.FC<HEYUKAInstallWalkthroughProps> =
                   </p>
                 </div>
                 <div className="p-3 rounded-xl kaspi-frosted-surface">
-                  <p className="font-bold text-emerald-500">
+                  <p className="font-bold text-rose-500">
                     {isAr ? "1.2 تهيئة الخصوصية" : "1.2 Isolated Tenant Vault"}
                   </p>
                   <p className="text-[var(--kaspi-text-secondary)] mt-1">
@@ -403,7 +403,7 @@ export const HEYUKAInstallWalkthrough: React.FC<HEYUKAInstallWalkthroughProps> =
                   </p>
                 </div>
                 <div className="p-3 rounded-xl kaspi-frosted-surface">
-                  <p className="font-bold text-emerald-500">
+                  <p className="font-bold text-rose-500">
                     {isAr ? "1.3 توافق قياسي" : "1.3 Standard OpenAI API"}
                   </p>
                   <p className="text-[var(--kaspi-text-secondary)] mt-1">
@@ -422,7 +422,7 @@ export const HEYUKAInstallWalkthrough: React.FC<HEYUKAInstallWalkthroughProps> =
           {showStage(1) && (
             <div className="p-5 rounded-2xl kaspi-glass-card space-y-4">
               <h3 className="text-base font-extrabold text-[var(--kaspi-text-primary)] flex items-center gap-2">
-                <KeyRound className="w-4 h-4 text-emerald-500" />
+                <KeyRound className="w-4 h-4 text-rose-500" />
                 <span>{t.stages[1].full}</span>
               </h3>
               <p className="text-xs text-[var(--kaspi-text-secondary)] leading-relaxed">
@@ -435,7 +435,7 @@ export const HEYUKAInstallWalkthrough: React.FC<HEYUKAInstallWalkthroughProps> =
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="p-3.5 rounded-xl kaspi-frosted-surface space-y-1">
-                  <span className="font-mono font-bold text-emerald-500">Authorization: Bearer hk-live-...</span>
+                  <span className="font-mono font-bold text-rose-500">Authorization: Bearer hk-live-...</span>
                   <p className="text-[var(--kaspi-text-secondary)]">
                     {isAr
                       ? "المفتاح السري الحقيقي للمصادقة — يُعرض مرة واحدة فقط عند الإنشاء."
@@ -460,7 +460,7 @@ export const HEYUKAInstallWalkthrough: React.FC<HEYUKAInstallWalkthroughProps> =
           {showStage(2) && (
             <div className="p-5 rounded-2xl kaspi-glass-card space-y-4">
               <h3 className="text-base font-extrabold text-[var(--kaspi-text-primary)] flex items-center gap-2">
-                <Code2 className="w-4 h-4 text-emerald-500" />
+                <Code2 className="w-4 h-4 text-rose-500" />
                 <span>{t.stages[2].full}</span>
               </h3>
               <p className="text-xs text-[var(--kaspi-text-secondary)] leading-relaxed">
@@ -485,7 +485,7 @@ export const HEYUKAInstallWalkthrough: React.FC<HEYUKAInstallWalkthroughProps> =
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <h3 className="text-base font-extrabold text-[var(--kaspi-text-primary)] flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                    <ShieldCheck className="w-4 h-4 text-rose-500" />
                     <span>{t.stages[3].full}</span>
                   </h3>
                   <p className="text-xs text-[var(--kaspi-text-secondary)] mt-1">

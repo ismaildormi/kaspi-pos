@@ -1,94 +1,52 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useLocale } from "next-intl";
-import { BookOpen, Check, Code2, Copy, Download, ExternalLink, ShieldAlert } from "lucide-react";
-import { HEYUKAInstallWalkthrough } from "@/components/heyuka/HEYUKAInstallWalkthrough";
+import { useSearchParams } from "next/navigation";
+import {
+  BookOpen,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  Search,
+  Sparkles,
+  Tag,
+  X,
+} from "lucide-react";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 import {
   buildSdkQuickstart,
+  HEYUKA_MODEL_SPECS,
   loadActiveConsoleKey,
   OFFICIAL_API_BASE_URL,
   OFFICIAL_ROOT_V1_URL,
   type PortalLocale,
 } from "./platform-data";
 
-const COPY: Record<
-  PortalLocale,
-  {
-    badge: string;
-    title: string;
-    subtitle: string;
-    installCta: string;
-    sdkTitle: string;
-    copyCode: string;
-    copied: string;
-    errorsTitle: string;
-    openapiTitle: string;
-  }
-> = {
-  ar: {
-    badge: "التوثيق البرمجي الرسمي • OpenAPI 3.1 & SDKs",
-    title: "دليل التكامل، أكواد الربط، ومرجع الأخطاء",
-    subtitle:
-      "ادمج HEYUKA داخل Node.js أو Python عبر مكتبة OpenAI الرسمية أو باستخدام طلبات HTTPS المباشرة على /api/v1 أو /v1.",
-    installCta: "عرض جميع مراحل تحميل وتثبيت تطبيق HEYUKA",
-    sdkTitle: "أمثلة ربط جاهزة للإنتاج",
-    copyCode: "نسخ الكود",
-    copied: "تم النسخ ✓",
-    errorsTitle: "دليل رموز الأخطاء وتشخيص Debug",
-    openapiTitle: "مرجع المسارات الحي (OpenAPI 3.1)",
-  },
-  fr: {
-    badge: "Documentation Développeur • OpenAPI 3.1 & SDKs",
-    title: "Guide d'Intégration SDK, Base URLs & Codes d'Erreur",
-    subtitle:
-      "Connectez HEYUKA en moins de 2 minutes avec le SDK OpenAI officiel (Node / Python) ou tout client HTTP sur `/api/v1` et `/v1`.",
-    installCta: "Voir toutes les étapes d'installation Desktop",
-    sdkTitle: "Exemples Prêts à Copier",
-    copyCode: "Copier",
-    copied: "Copié ✓",
-    errorsTitle: "Codes HTTP & Dépannage Debug",
-    openapiTitle: "Endpoints Live OpenAPI 3.1",
-  },
-  en: {
-    badge: "Official Developer Documentation • OpenAPI 3.1",
-    title: "SDK Quickstart, Auth Headers & Error Reference",
-    subtitle:
-      "Drop HEYUKA into any OpenAI, Azure-style `api-key`, or standard REST workflow using `/api/v1` or the OpenAI root `/v1` alias.",
-    installCta: "Open Complete Desktop Install Walkthrough",
-    sdkTitle: "Production Quickstart Code",
-    copyCode: "Copy Snippet",
-    copied: "Copied ✓",
-    errorsTitle: "HTTP Status & Debug Troubleshooting",
-    openapiTitle: "Live OpenAPI 3.1 Path Reference",
-  },
-};
+type DocSectionId = "quickstart" | "pricing" | "guides" | "faq";
 
-const ERROR_REFERENCE = [
+const FAQ_ITEMS = [
   {
-    code: "401 unauthorized",
-    cause: "Missing or unrecognized API key header",
-    fix: "Send `Authorization: Bearer hk-live-...`, `X-API-Key: hk-live-...`, or Azure `api-key: hk-live-...` cleanly.",
+    q: "How do I get a unique HEYUKA API Key without creating a POS shop?",
+    a: "Click Sign in (Gmail) in the sidebar or go to API keys, enter your Gmail email, verify once, and create an `hk-live-...` secret key paired with a `hk_...` Tracking Key ID.",
   },
   {
-    code: "401 key_id_mismatch",
-    cause: "`X-API-Key-Id` does not match the hashed secret key",
-    fix: "Verify both Key ID (`hk_...`) and Secret Key (`hk-live-...`) belong to the same row in API Keys.",
+    q: "Are HEYUKA models and API requests really $0.00 / free for developers?",
+    a: "Yes. KASPI absorbs inference, web search, sandbox execution, and token costs for HEYUKA Platform developers and desktop companions. You will see estimated token value saved on the Usage page, while your billed total remains $0.00.",
   },
   {
-    code: "403 permission_error",
-    cause: "Key scope does not include the requested endpoint",
-    fix: "Create a Full Access key or select a tier containing `sandbox:execute`, `vision:remove-bg`, etc.",
+    q: "Is HEYUKA compatible with OpenAI and Anthropic SDKs?",
+    a: "Yes. Set `baseURL` to `https://kaspi-pos.vercel.app/v1` (or `/api/v1`), pass your `hk-live-...` API key in `Authorization: Bearer ...`, `X-API-Key`, or `api-key`, and use `heyuka-omni`, `heyuka-core`, or `heyuka-vision`.",
   },
   {
-    code: "400 invalid_request_error",
-    cause: "Missing `messages[]`, invalid JSON payload, or bad query params",
-    fix: "Ensure `Content-Type: application/json` and valid non-empty `messages` array.",
+    q: "Why does the Share link let friends enter directly into the conversation?",
+    a: "Clicking Share lets you pick specific conversation turns and mint a public `/share/sh_...` link. Anyone opening the link can sign in cleanly via Gmail and continue that exact thread in HEYUKA Chat.",
   },
   {
-    code: "204 OPTIONS CORS",
-    cause: "Browser/sandbox preflight check",
-    fix: "Handled automatically across all `/api/v1/*` & `/v1/*` routes with `Access-Control-Allow-Origin: *`.",
+    q: "How does `X-API-Key-Id` verification work in the 7-Point Debugger?",
+    a: "Every key is stored strictly as a SHA-256 hash. Including `X-API-Key-Id` allows strict dual-factor key verification alongside your Bearer secret without exposing secrets in logs.",
   },
 ];
 
@@ -96,219 +54,438 @@ export function PlatformDocsView() {
   const localeRaw = useLocale();
   const locale: PortalLocale =
     localeRaw === "ar" ? "ar" : localeRaw === "en" ? "en" : "fr";
-  const t = COPY[locale];
+  const isRtl = locale === "ar";
+  const searchParams = useSearchParams();
 
-  const [lang, setLang] = useState<"node" | "python" | "azure-fetch" | "curl">("node");
-  const [endpointMode, setEndpointMode] = useState<"api_v1" | "root_v1">("api_v1");
-  const [savedKey, setSavedKey] = useState("");
-  const [savedKeyId, setSavedKeyId] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [openApiSpec, setOpenApiSpec] = useState<any>(null);
-  const [walkthroughOpen, setWalkthroughOpen] = useState(false);
+  const [tab, setTab] = useState<DocSectionId>("quickstart");
+  const [sdkLang, setSdkLang] = useState<"curl" | "node" | "python" | "azure-fetch">("python");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(0);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [activeKey, setActiveKey] = useState("hk-live-YOUR_API_KEY");
+  const [activeKeyId, setActiveKeyId] = useState("hk_YOUR_KEY_ID");
 
   useEffect(() => {
-    const active = loadActiveConsoleKey();
-    setSavedKey(active.secretKey);
-    setSavedKeyId(active.keyId);
-    fetch("/api/v1/zebra-x/openapi")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((spec) => {
-        if (spec) setOpenApiSpec(spec);
-      })
-      .catch(() => {});
+    const requested = searchParams?.get("tab");
+    if (requested === "pricing" || requested === "faq" || requested === "guides") {
+      setTab(requested);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const saved = loadActiveConsoleKey();
+    if (saved.secretKey) setActiveKey(saved.secretKey);
+    if (saved.keyId) setActiveKeyId(saved.keyId);
   }, []);
 
-  const code = buildSdkQuickstart({
-    lang,
-    endpointMode,
-    secretKey: savedKey,
-    keyId: savedKeyId,
-  });
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  const activeSnippet = useMemo(
+    () =>
+      buildSdkQuickstart({
+        lang: sdkLang,
+        endpointMode: "root_v1",
+        secretKey: activeKey,
+        keyId: activeKeyId,
+      }),
+    [sdkLang, activeKey, activeKeyId]
+  );
+
+  const pythonSnippet = useMemo(
+    () =>
+      buildSdkQuickstart({
+        lang: "python",
+        endpointMode: "root_v1",
+        secretKey: activeKey,
+        keyId: activeKeyId,
+      }),
+    [activeKey, activeKeyId]
+  );
+
+  const markdownDoc = `# HEYUKA API Quickstart\n\n- base_url (OpenAI): ${OFFICIAL_ROOT_V1_URL}\n- base_url (Full API): ${OFFICIAL_API_BASE_URL}\n- models: heyuka-omni, heyuka-core, heyuka-vision\n\n\`\`\`python\n${pythonSnippet}\n\`\`\``;
+
+  const handleCopy = async (id: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId((p) => (p === id ? null : p)), 1800);
+    } catch {}
+  };
+
+  const filteredFaq = FAQ_ITEMS.filter(
+    (item) =>
+      !searchQuery.trim() ||
+      item.q.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.a.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
-      <section className="kaspi-glass-card rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-emerald-500">
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>{t.badge}</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[var(--kaspi-text-primary)]">
-            {t.title}
-          </h1>
-          <p className="text-xs sm:text-sm text-[var(--kaspi-text-secondary)] max-w-2xl">
-            {t.subtitle}
-          </p>
+      {/* Top Docs Bar matching api-docs.deepseek.com */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[var(--kaspi-border)]">
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            { id: "quickstart" as const, label: "Quick Start" },
+            { id: "guides" as const, label: "API Guides" },
+            { id: "pricing" as const, label: "Models & Pricing ($0.00)" },
+            { id: "faq" as const, label: "FAQ" },
+          ].map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setTab(item.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                tab === item.id
+                  ? "text-rose-400 border-b-2 border-rose-500 rounded-b-none"
+                  : "text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
 
         <button
           type="button"
-          onClick={() => setWalkthroughOpen(true)}
-          className="kaspi-primary-cta-btn rounded-2xl px-5 py-3 text-xs font-bold inline-flex items-center gap-2 shrink-0 cursor-pointer"
+          onClick={() => setSearchOpen(true)}
+          className="inline-flex items-center justify-between gap-6 px-3 py-1.5 rounded-lg kaspi-glass-surface text-xs text-[var(--kaspi-text-muted)] hover:border-rose-500/40 cursor-pointer"
         >
-          <Download className="w-4 h-4" />
-          <span>{t.installCta}</span>
+          <span className="inline-flex items-center gap-1.5">
+            <Search className="w-3.5 h-3.5" />
+            <span>Search Docs...</span>
+          </span>
+          <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-[10px]">ctrl K</kbd>
         </button>
-      </section>
+      </div>
 
-      {/* SDK Quickstart Builder */}
-      <section className="kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-5 sm:p-7 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-sm sm:text-base font-black text-[var(--kaspi-text-primary)]">
-            <Code2 className="w-4 h-4 text-emerald-500" />
-            <span>{t.sdkTitle}</span>
-          </div>
+      {/* Main Layout: Left Sidebar Index + Center Article + Right TOC (matching Screenshot 3) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <aside className="lg:col-span-3 space-y-1">
+          {[
+            { id: "quickstart" as const, label: "Your First API Call" },
+            { id: "pricing" as const, label: "Models & Pricing ($0.00)" },
+            { id: "guides" as const, label: "Token & Error Reference" },
+            { id: "faq" as const, label: "Frequently Asked (FAQ)" },
+          ].map((nav) => (
+            <button
+              key={nav.id}
+              type="button"
+              onClick={() => setTab(nav.id)}
+              className={`w-full text-start px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-colors ${
+                tab === nav.id
+                  ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                  : "text-[var(--kaspi-text-secondary)] hover:bg-white/[0.05]"
+              }`}
+            >
+              {nav.label}
+            </button>
+          ))}
+          <Link
+            href={`/${locale}/zebra-x/debug`}
+            className="block px-3 py-2 rounded-xl text-xs font-medium text-[var(--kaspi-text-muted)] hover:text-[var(--kaspi-text-primary)]"
+          >
+            Live 7-Point Debugger →
+          </Link>
+        </aside>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div dir="ltr" className="flex items-center gap-1 kaspi-frosted-surface rounded-full p-1">
-              {(["api_v1", "root_v1"] as const).map((mode) => (
+        {/* Center Documentation Body */}
+        <div className="lg:col-span-7 space-y-6">
+          {tab === "quickstart" && (
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-bold text-[var(--kaspi-text-primary)]">
+                    Your First API Call
+                  </h2>
+                  <p className="text-xs text-[var(--kaspi-text-secondary)] mt-1 leading-relaxed">
+                    The HEYUKA API uses an interface fully compatible with OpenAI and HTTP REST clients.
+                  </p>
+                </div>
                 <button
-                  key={mode}
                   type="button"
-                  onClick={() => setEndpointMode(mode)}
-                  className={`px-3 py-1 rounded-full font-mono text-[11px] font-bold cursor-pointer ${
-                    endpointMode === mode
-                      ? "kaspi-orbit-active text-emerald-500"
-                      : "text-[var(--kaspi-text-muted)]"
-                  }`}
+                  onClick={() => void handleCopy("copy-md", markdownDoc)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg kaspi-glass-surface text-xs font-medium text-[var(--kaspi-text-primary)] cursor-pointer"
                 >
-                  {mode === "api_v1" ? "/api/v1" : "/v1"}
+                  {copiedId === "copy-md" ? <Check className="w-3.5 h-3.5 text-rose-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedId === "copy-md" ? "Copied" : "Copy Markdown"}</span>
                 </button>
-              ))}
-            </div>
+              </div>
 
-            <div dir="ltr" className="flex items-center gap-1 kaspi-frosted-surface rounded-full p-1">
-              {(["node", "python", "azure-fetch", "curl"] as const).map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  onClick={() => setLang(l)}
-                  className={`px-3 py-1 rounded-full text-[11px] font-bold cursor-pointer ${
-                    lang === l
-                      ? "kaspi-orbit-active text-emerald-500"
-                      : "text-[var(--kaspi-text-muted)]"
-                  }`}
-                >
-                  {l === "node"
-                    ? "Node.js SDK"
-                    : l === "python"
-                    ? "Python SDK"
-                    : l === "azure-fetch"
-                    ? "Azure `api-key`"
-                    : "cURL"}
-                </button>
-              ))}
-            </div>
+              {/* Exact DeepSeek Quickstart Parameter Table */}
+              <div className="rounded-xl kaspi-glass-surface overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-[var(--kaspi-border)] text-[var(--kaspi-text-muted)] font-semibold">
+                      <th className="py-2.5 px-4 text-start w-44">PARAM</th>
+                      <th className="py-2.5 px-4 text-start">VALUE</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--kaspi-border)]">
+                    <tr>
+                      <td className="py-3 px-4 font-semibold text-[var(--kaspi-text-primary)]">
+                        base_url (OpenAI)
+                      </td>
+                      <td className="py-3 px-4 font-mono text-rose-400">
+                        {OFFICIAL_ROOT_V1_URL}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-semibold text-[var(--kaspi-text-primary)]">
+                        base_url (Full v1)
+                      </td>
+                      <td className="py-3 px-4 font-mono text-[var(--kaspi-text-secondary)]">
+                        {OFFICIAL_API_BASE_URL}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-semibold text-[var(--kaspi-text-primary)]">
+                        api_key
+                      </td>
+                      <td className="py-3 px-4">
+                        <Link
+                          href={`/${locale}/zebra-x/api-keys`}
+                          className="text-rose-400 underline font-semibold"
+                        >
+                          apply for a free API key
+                        </Link>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-semibold text-[var(--kaspi-text-primary)]">
+                        model
+                      </td>
+                      <td className="py-3 px-4 space-x-1.5 space-y-1">
+                        {["heyuka-omni", "heyuka-core", "heyuka-vision"].map((m) => (
+                          <code
+                            key={m}
+                            className="inline-block px-2 py-0.5 rounded bg-white/10 font-mono text-[11px] text-[var(--kaspi-text-primary)]"
+                          >
+                            {m}
+                          </code>
+                        ))}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
+              {/* SDK Code Tabs */}
+              <div className="rounded-xl kaspi-glass-surface overflow-hidden">
+                <div className="px-4 py-2.5 border-b border-[var(--kaspi-border)] flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex gap-1.5">
+                    {(["python", "node", "curl", "azure-fetch"] as const).map((lang) => (
+                      <button
+                        key={lang}
+                        type="button"
+                        onClick={() => setSdkLang(lang)}
+                        className={`px-2.5 py-1 rounded-md text-xs font-semibold uppercase cursor-pointer ${
+                          sdkLang === lang
+                            ? "bg-white text-zinc-900"
+                            : "text-[var(--kaspi-text-muted)] hover:text-[var(--kaspi-text-primary)]"
+                        }`}
+                      >
+                        {lang}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleCopy("sdk-code", activeSnippet)}
+                    className="inline-flex items-center gap-1 text-xs text-rose-400 font-semibold cursor-pointer"
+                  >
+                    {copiedId === "sdk-code" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedId === "sdk-code" ? "Copied" : "Copy"}</span>
+                  </button>
+                </div>
+                <pre className="p-4 text-[11px] font-mono overflow-x-auto text-[var(--kaspi-text-primary)] leading-relaxed">
+                  {activeSnippet}
+                </pre>
+              </div>
+            </div>
+          )}
+
+          {tab === "pricing" && (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-2xl font-bold text-[var(--kaspi-text-primary)]">
+                    Models & Pricing ($0.00 Free Coverage)
+                  </h2>
+                  <p className="text-xs text-[var(--kaspi-text-secondary)] mt-1">
+                    KASPI subsidizes 100% of HEYUKA inference tokens — developer rate is $0.00 across all models.
+                  </p>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-xs font-bold text-rose-400">
+                  $0.00 / 1M Tokens
+                </span>
+              </div>
+
+              <div className="rounded-xl kaspi-glass-surface overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-[var(--kaspi-border)] text-[var(--kaspi-text-muted)]">
+                      <th className="py-3 px-4 text-start">Model ID</th>
+                      <th className="py-3 px-4 text-start">Context</th>
+                      <th className="py-3 px-4 text-start">Capabilities</th>
+                      <th className="py-3 px-4 text-end">Developer Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--kaspi-border)]">
+                    {HEYUKA_MODEL_SPECS.map((m) => (
+                      <tr key={m.id}>
+                        <td className="py-3 px-4 font-mono font-bold text-rose-400">{m.id}</td>
+                        <td className="py-3 px-4 text-[var(--kaspi-text-primary)]">
+                          {m.contextWindow}
+                        </td>
+                        <td className="py-3 px-4 text-[var(--kaspi-text-secondary)]">
+                          {m.modalities.slice(0, 3).join(", ")}
+                        </td>
+                        <td className="py-3 px-4 text-end font-mono font-bold text-[var(--kaspi-text-primary)]">
+                          $0.00 (Free)
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {tab === "guides" && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold text-[var(--kaspi-text-primary)]">
+                Authentication & Error Codes
+              </h2>
+              <div className="space-y-2.5">
+                {[
+                  {
+                    code: "401 unauthorized",
+                    detail: "Missing key — pass `Authorization: Bearer hk-live-...` or `X-API-Key` header.",
+                  },
+                  {
+                    code: "401 key_id_mismatch",
+                    detail: "`X-API-Key-Id` does not match the hashed API key.",
+                  },
+                  {
+                    code: "403 permission_error",
+                    detail: "Create an All Capabilities key or add the missing endpoint scope.",
+                  },
+                  {
+                    code: "204 OPTIONS CORS",
+                    detail: "Browser preflight supported cleanly with Access-Control-Allow-Origin: *.",
+                  },
+                ].map((err) => (
+                  <div key={err.code} className="p-3.5 rounded-xl kaspi-glass-surface text-xs space-y-1">
+                    <span className="font-mono font-bold text-rose-400">{err.code}</span>
+                    <p className="text-[var(--kaspi-text-secondary)]">{err.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {tab === "faq" && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold text-[var(--kaspi-text-primary)]">
+                Help & Frequently Asked Questions
+              </h2>
+              <div className="space-y-2.5">
+                {FAQ_ITEMS.map((item, idx) => {
+                  const isOpen = openFaqIdx === idx;
+                  return (
+                    <div key={item.q} className="rounded-xl kaspi-glass-surface overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setOpenFaqIdx(isOpen ? null : idx)}
+                        className="w-full px-4 py-3.5 flex items-center justify-between gap-2 text-start text-xs font-bold text-[var(--kaspi-text-primary)] cursor-pointer"
+                      >
+                        <span>{item.q}</span>
+                        {isOpen ? (
+                          <ChevronDown className="w-4 h-4 text-rose-500 shrink-0" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-[var(--kaspi-text-muted)] shrink-0" />
+                        )}
+                      </button>
+                      {isOpen && (
+                        <div className="px-4 pb-4 text-xs text-[var(--kaspi-text-secondary)] leading-relaxed border-t border-[var(--kaspi-border)] pt-2.5">
+                          {item.a}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right TOC Column matching api-docs.deepseek.com */}
+        <aside className="lg:col-span-2 hidden lg:block space-y-2 text-[11px] sticky top-4">
+          <p className="font-bold uppercase tracking-wider text-[var(--kaspi-text-muted)]">
+            On this page
+          </p>
+          <ul className="space-y-1.5 text-[var(--kaspi-text-secondary)] border-l border-[var(--kaspi-border)] pl-3">
+            <li className="text-rose-400 font-semibold">Endpoints & Headers</li>
+            <li>OpenAI `/v1` Drop-in</li>
+            <li>Live Search & DeepThink</li>
+            <li>Zero-Cost Coverage ($0.00)</li>
+          </ul>
+        </aside>
+      </div>
+
+      {/* Ctrl+K Search Modal */}
+      <KaspiGlassModalPortal
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        dir={isRtl ? "rtl" : "ltr"}
+      >
+        <div className="w-full max-w-lg rounded-2xl kaspi-opaque-glass-modal p-4 space-y-3">
+          <div className="flex items-center gap-2 border-b border-[var(--kaspi-border)] pb-2.5">
+            <Search className="w-4 h-4 text-rose-500" />
+            <input
+              type="text"
+              autoFocus
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search HEYUKA API Docs, endpoints, or FAQ..."
+              className="flex-1 bg-transparent text-xs text-[var(--kaspi-text-primary)] placeholder:text-[var(--kaspi-text-muted)] focus:outline-none"
+            />
             <button
               type="button"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(code);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 1800);
-                } catch {}
-              }}
-              className="kaspi-glass-btn rounded-xl px-3.5 py-1.5 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              onClick={() => setSearchOpen(false)}
+              className="p-1 rounded hover:bg-white/10 text-[var(--kaspi-text-muted)] cursor-pointer"
             >
-              {copied ? (
-                <Check className="w-3.5 h-3.5 text-emerald-500" />
-              ) : (
-                <Copy className="w-3.5 h-3.5" />
-              )}
-              <span>{copied ? t.copied : t.copyCode}</span>
+              <X className="w-4 h-4" />
             </button>
           </div>
-        </div>
-
-        <div dir="ltr" className="flex flex-wrap gap-2 text-[11px] font-mono text-[var(--kaspi-text-muted)]">
-          <span className="px-2.5 py-1 rounded-full kaspi-frosted-surface">{OFFICIAL_API_BASE_URL}</span>
-          <span className="px-2.5 py-1 rounded-full kaspi-frosted-surface">{OFFICIAL_ROOT_V1_URL}</span>
-        </div>
-
-        <pre
-          dir="ltr"
-          className="rounded-2xl kaspi-frosted-surface p-4 font-mono text-xs text-[var(--kaspi-text-primary)] overflow-x-auto leading-relaxed"
-        >
-          {code}
-        </pre>
-      </section>
-
-      {/* Error Codes Reference */}
-      <section className="kaspi-glass-card rounded-3xl p-5 sm:p-6 space-y-4">
-        <div className="flex items-center gap-2 text-sm sm:text-base font-black text-[var(--kaspi-text-primary)]">
-          <ShieldAlert className="w-4 h-4 text-amber-500" />
-          <span>{t.errorsTitle}</span>
-        </div>
-
-        <div className="overflow-x-auto rounded-2xl kaspi-frosted-surface">
-          <table className="w-full text-xs border-collapse min-w-[620px]">
-            <thead>
-              <tr className="border-b border-[var(--kaspi-border)] text-[var(--kaspi-text-muted)]">
-                <th className="p-3 text-start font-bold">Status / Code</th>
-                <th className="p-3 text-start font-bold">Cause</th>
-                <th className="p-3 text-start font-bold">Resolution</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--kaspi-border)]">
-              {ERROR_REFERENCE.map((row) => (
-                <tr key={row.code}>
-                  <td dir="ltr" className="p-3 font-mono font-bold text-emerald-500">
-                    {row.code}
-                  </td>
-                  <td className="p-3 text-[var(--kaspi-text-secondary)]">{row.cause}</td>
-                  <td className="p-3 text-[var(--kaspi-text-primary)]">{row.fix}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* OpenAPI 3.1 Paths */}
-      <section className="kaspi-glass-card rounded-3xl p-5 sm:p-6 space-y-4">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="text-sm sm:text-base font-black text-[var(--kaspi-text-primary)]">
-            {t.openapiTitle}
+          <div className="max-h-72 overflow-y-auto space-y-2">
+            {filteredFaq.map((f) => (
+              <button
+                key={f.q}
+                type="button"
+                onClick={() => {
+                  setTab("faq");
+                  setSearchOpen(false);
+                }}
+                className="w-full text-start p-2.5 rounded-xl hover:bg-white/[0.06] cursor-pointer space-y-1"
+              >
+                <p className="text-xs font-bold text-[var(--kaspi-text-primary)]">{f.q}</p>
+                <p className="text-[11px] text-[var(--kaspi-text-muted)] line-clamp-2">{f.a}</p>
+              </button>
+            ))}
           </div>
-          <a
-            href="/api/v1/zebra-x/openapi"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="kaspi-glass-btn rounded-xl px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1.5"
-          >
-            <span>OpenAPI JSON</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {openApiSpec?.paths &&
-            Object.entries(openApiSpec.paths).map(([pathKey, def]: [string, any]) => {
-              const method = Object.keys(def || {})[0] || "post";
-              const summary = def?.[method]?.summary || "";
-              return (
-                <div key={pathKey} className="kaspi-frosted-surface rounded-2xl p-3.5 space-y-1">
-                  <div dir="ltr" className="flex items-center gap-2 font-mono text-xs">
-                    <span className="px-2 py-0.5 rounded-lg kaspi-glass-surface text-emerald-500 font-bold uppercase">
-                      {method}
-                    </span>
-                    <span className="font-bold text-[var(--kaspi-text-primary)]">{pathKey}</span>
-                  </div>
-                  <p className="text-xs text-[var(--kaspi-text-secondary)]">{summary}</p>
-                </div>
-              );
-            })}
-        </div>
-      </section>
-
-      <HEYUKAInstallWalkthrough
-        isOpen={walkthroughOpen}
-        onClose={() => setWalkthroughOpen(false)}
-        locale={locale}
-        activeSecretKey={savedKey}
-        activeKeyId={savedKeyId}
-      />
+      </KaspiGlassModalPortal>
     </div>
   );
 }

@@ -48,6 +48,19 @@ def call_openrouter_model(model_name: str, prompt: str) -> Dict[str, Any]:
     api_key = cfg["OPENROUTER_API_KEY"]
     resolved_model = (model_name or "deepseek/deepseek-chat").strip()
 
+    # Try KASPI Sovereign Models (`heyuka-omni` / `heyuka-core`) first when configured
+    try:
+        from kaspi_models_client import call_kaspi_model, get_kaspi_config
+        kcfg = get_kaspi_config()
+        if kcfg.get("configured"):
+            kmodel = "heyuka-core" if "code" in resolved_model.lower() else "heyuka-omni"
+            kres = call_kaspi_model(prompt=str(prompt), model=kmodel)
+            if kres.get("success") and kres.get("reply"):
+                kres["latency_ms"] = int((time.time() - start) * 1000)
+                return kres
+    except Exception:
+        pass
+
     if not api_key:
         return {
             "success": False,
@@ -109,6 +122,25 @@ def call_huggingface_model(model_id: str, inputs: Any) -> Dict[str, Any]:
     cfg = get_env_config()
     token = cfg["HF_TOKEN"]
     clean_model = (model_id or "mistralai/Mistral-7B-Instruct-v0.3").strip()
+
+    # Route via KASPI Sovereign `heyuka-vision` / `heyuka-core` first when connected
+    try:
+        from kaspi_models_client import call_kaspi_model, kaspi_image_generate, get_kaspi_config
+        kcfg = get_kaspi_config()
+        if kcfg.get("configured"):
+            prompt_str = str(inputs)
+            if any(w in clean_model.lower() for w in ("flux", "diffusion", "image", "sdxl")):
+                img_res = kaspi_image_generate(prompt_str[:300])
+                if img_res.get("success"):
+                    img_res["latency_ms"] = int((time.time() - start) * 1000)
+                    return img_res
+            else:
+                kres = call_kaspi_model(prompt=prompt_str, model="heyuka-core")
+                if kres.get("success"):
+                    kres["latency_ms"] = int((time.time() - start) * 1000)
+                    return kres
+    except Exception:
+        pass
 
     if not token:
         return {

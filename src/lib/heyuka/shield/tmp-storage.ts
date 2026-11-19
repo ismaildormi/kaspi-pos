@@ -10,7 +10,12 @@ import path from "node:path";
  * into OS `/tmp/heyuka_kaspi_v15` (with key sanitization against path traversal).
  */
 
-const BASE_TMP_DIR = path.join(os.tmpdir(), "heyuka_kaspi_v15");
+let cachedTmpDir: string | null = null;
+function getPrivateTmpDir(): string {
+  if (cachedTmpDir) return cachedTmpDir;
+  cachedTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "heyuka_kaspi_v15_"));
+  return cachedTmpDir;
+}
 const memoryFallbackMap = new Map<string, { value: string; expiresAt: number }>();
 
 function sanitizeKey(rawKey: string): string {
@@ -32,11 +37,11 @@ export async function writeEphemeralTmpValue(
   const rawBuf = typeof payload === "string" ? Buffer.from(payload, "utf8") : Buffer.from(payload);
 
   try {
-    fs.mkdirSync(BASE_TMP_DIR, { recursive: true });
-    const filePath = path.join(BASE_TMP_DIR, `${safeKey}.bin`);
-    const metaPath = path.join(BASE_TMP_DIR, `${safeKey}.meta.json`);
-    fs.writeFileSync(filePath, rawBuf);
-    fs.writeFileSync(metaPath, JSON.stringify({ expiresAt, bytes: rawBuf.byteLength }));
+    const baseDir = getPrivateTmpDir();
+    const filePath = path.join(baseDir, `${safeKey}.bin`);
+    const metaPath = path.join(baseDir, `${safeKey}.meta.json`);
+    fs.writeFileSync(filePath, rawBuf, { mode: 0o600 });
+    fs.writeFileSync(metaPath, JSON.stringify({ expiresAt, bytes: rawBuf.byteLength }), { mode: 0o600 });
     return { storage: "os_tmp", filePath, bytes: rawBuf.byteLength };
   } catch {
     memoryFallbackMap.set(safeKey, { value: rawBuf.toString("base64"), expiresAt });
@@ -47,8 +52,9 @@ export async function writeEphemeralTmpValue(
 export async function readEphemeralTmpBuffer(key: string): Promise<Buffer | null> {
   const safeKey = sanitizeKey(key);
   try {
-    const filePath = path.join(BASE_TMP_DIR, `${safeKey}.bin`);
-    const metaPath = path.join(BASE_TMP_DIR, `${safeKey}.meta.json`);
+    const baseDir = getPrivateTmpDir();
+    const filePath = path.join(baseDir, `${safeKey}.bin`);
+    const metaPath = path.join(baseDir, `${safeKey}.meta.json`);
     if (fs.existsSync(filePath)) {
       if (fs.existsSync(metaPath)) {
         const meta = JSON.parse(fs.readFileSync(metaPath, "utf8"));

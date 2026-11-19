@@ -11,15 +11,25 @@ import {
   Eye,
   EyeOff,
   Cpu,
+  Crown,
 } from 'lucide-react';
 import axios from 'axios';
 import { playCuteSound } from '../services/audioSynth';
+
+import {
+  loadDecryptedByokSettings,
+  saveEncryptedByokSettings,
+} from '../services/yukaByokVault';
+import { saveKaspiCredentials } from '../services/kaspiModelsClient';
 
 export interface SetupWizardProps {
   onComplete: () => void;
 }
 
 export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
+  const [heyukaApiKey, setHeyukaApiKey] = useState('');
+  const [heyukaKeyId, setHeyukaKeyId] = useState('');
+  const [showHeyukaKey, setShowHeyukaKey] = useState(false);
   const [geminiKey, setGeminiKey] = useState('');
   const [groqKey, setGroqKey] = useState('');
   const [supabaseUrl, setSupabaseUrl] = useState('');
@@ -39,6 +49,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
       const electron = (window as any).electron;
       if (electron?.store?.get) {
         const creds = electron.store.get('onboarding_credentials') || {};
+        if (creds.heyukaApiKey) setHeyukaApiKey(creds.heyukaApiKey);
+        if (creds.heyukaKeyId) setHeyukaKeyId(creds.heyukaKeyId);
         if (creds.geminiKey) setGeminiKey(creds.geminiKey);
         if (creds.groqKey) setGroqKey(creds.groqKey);
         if (creds.supabaseUrl) setSupabaseUrl(creds.supabaseUrl);
@@ -51,6 +63,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
     if (localCreds) {
       try {
         const parsed = JSON.parse(localCreds);
+        if (parsed.heyukaApiKey) setHeyukaApiKey(parsed.heyukaApiKey);
+        if (parsed.heyukaKeyId) setHeyukaKeyId(parsed.heyukaKeyId);
         if (parsed.geminiKey) setGeminiKey(parsed.geminiKey);
         if (parsed.groqKey) setGroqKey(parsed.groqKey);
         if (parsed.supabaseUrl) setSupabaseUrl(parsed.supabaseUrl);
@@ -66,6 +80,9 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
     playCuteSound('boop');
 
     const credentials = {
+      heyukaApiKey: heyukaApiKey.trim(),
+      heyukaKeyId: heyukaKeyId.trim(),
+      kaspiApiBaseUrl: 'https://kaspi-pos.vercel.app/api/v1',
       geminiKey: geminiKey.trim(),
       groqKey: groqKey.trim(),
       supabaseUrl: supabaseUrl.trim(),
@@ -81,6 +98,12 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
       if (electron?.store?.set) {
         electron.store.set('onboarding_credentials', credentials);
         electron.store.set('setup_completed', true);
+        if (credentials.heyukaApiKey) {
+          electron.store.set('HEYUKA_API_KEY', credentials.heyukaApiKey);
+        }
+        if (credentials.heyukaKeyId) {
+          electron.store.set('HEYUKA_KEY_ID', credentials.heyukaKeyId);
+        }
         if (credentials.geminiKey) {
           electron.store.set('GEMINI_API_KEY', credentials.geminiKey);
         }
@@ -102,6 +125,13 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
         headers: { 'Content-Type': 'application/json' },
         timeout: 4000,
       });
+      if (credentials.heyukaApiKey) {
+        await saveKaspiCredentials({
+          heyukaApiKey: credentials.heyukaApiKey,
+          heyukaKeyId: credentials.heyukaKeyId,
+          kaspiApiBaseUrl: credentials.kaspiApiBaseUrl,
+        }).catch(() => {});
+      }
     } catch (err) {
       console.warn('[SetupWizard] Backend credential vault update note:', err);
     }
@@ -171,6 +201,49 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onComplete }) => {
 
         {/* Form Fields */}
         <div className="flex flex-col gap-3.5">
+          {/* KASPI / HEYUKA Sovereign API Key & Key ID (Powering Omni / Core / Vision) */}
+          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between text-xs">
+              <label className="font-bold text-emerald-300 flex items-center gap-1.5">
+                <Crown size={13} className="text-emerald-400" />
+                <span>KASPI HEYUKA API Key &amp; Key ID (Omni / Core / Vision)</span>
+              </label>
+              <a
+                href="https://kaspi-pos.vercel.app/en/heyuka#heyuka-api-keys"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] text-emerald-300 hover:text-white underline font-mono"
+              >
+                Get Gmail API Key
+              </a>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="relative">
+                <input
+                  type={showHeyukaKey ? 'text' : 'password'}
+                  value={heyukaApiKey}
+                  onChange={(e) => setHeyukaApiKey(e.target.value)}
+                  placeholder="hk-live-..."
+                  className="w-full px-3 py-2 pr-8 rounded-xl bg-[#121212] border border-white/15 text-xs font-mono text-white focus:outline-none focus:border-emerald-400 transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowHeyukaKey(!showHeyukaKey)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+                >
+                  {showHeyukaKey ? <EyeOff size={13} /> : <Eye size={13} />}
+                </button>
+              </div>
+              <input
+                type="text"
+                value={heyukaKeyId}
+                onChange={(e) => setHeyukaKeyId(e.target.value)}
+                placeholder="Key ID (hk_... optional)"
+                className="w-full px-3 py-2 rounded-xl bg-[#121212] border border-white/15 text-xs font-mono text-white focus:outline-none focus:border-emerald-400 transition-colors"
+              />
+            </div>
+          </div>
+
           {/* Gemini API Key */}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between text-xs">

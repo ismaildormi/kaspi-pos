@@ -99,7 +99,7 @@ export function HEYUKAGmailAccessCard({
 
   return (
     <div className={compact ? "space-y-3" : "kaspi-frosted-surface rounded-2xl p-5 space-y-3.5"}>
-      <div className="inline-flex items-center gap-2 text-[11px] font-semibold text-emerald-500">
+      <div className="inline-flex items-center gap-2 text-[11px] font-semibold text-rose-500">
         <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
         <span>{t.badge}</span>
       </div>
@@ -121,7 +121,7 @@ export function HEYUKAGmailAccessCard({
                 setOtpRequired(false);
               }}
               placeholder={t.placeholder}
-              className="w-full kaspi-translucent-input rounded-xl ps-10 pe-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500/60"
+              className="w-full kaspi-translucent-input rounded-xl ps-10 pe-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:border-rose-500/60"
             />
           </div>
 
@@ -137,7 +137,7 @@ export function HEYUKAGmailAccessCard({
 
         {otpRequired && (
           <div className="space-y-1.5 pt-1">
-            <p className="text-[11px] text-emerald-500 flex items-center gap-1.5">
+            <p className="text-[11px] text-rose-500 flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
               <span>{t.sentHint}</span>
             </p>
@@ -148,7 +148,7 @@ export function HEYUKAGmailAccessCard({
               value={otpCode}
               onChange={(e) => setOtpCode(e.target.value)}
               placeholder={t.otpPlaceholder}
-              className="w-full sm:w-64 kaspi-translucent-input rounded-xl px-3.5 py-2 text-xs font-mono tracking-widest focus:outline-none focus:border-emerald-500/60"
+              className="w-full sm:w-64 kaspi-translucent-input rounded-xl px-3.5 py-2 text-xs font-mono tracking-widest focus:outline-none focus:border-rose-500/60"
             />
           </div>
         )}
