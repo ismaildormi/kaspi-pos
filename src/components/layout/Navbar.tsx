@@ -43,16 +43,16 @@ export function Navbar() {
           <Link
             href="/zebra-x"
             prefetch={true}
-            className="text-emerald-400 font-semibold transition hover:text-emerald-300"
+            className="text-rose-400 font-semibold transition hover:text-rose-300"
           >
-            HEYUKA AI
+            HEYUKA Platform
           </Link>
           <Link
-            href="/heyuka"
+            href="/chat"
             prefetch={true}
             className="text-zinc-200 font-semibold transition hover:text-white"
           >
-            HEYUKA OS
+            HEYUKA Chat
           </Link>
         </nav>
 

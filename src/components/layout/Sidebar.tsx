@@ -148,8 +148,8 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
     { name: t.nav.billing, href: "/dashboard/billing", icon: FileText },
     { name: t.nav.settings, href: "/dashboard/settings", icon: Settings },
     { name: t.nav.support, href: "/dashboard/support", icon: HelpCircle },
-    { name: "HEYUKA AI", href: "/zebra-x", icon: Sparkles },
-    { name: "HEYUKA OS", href: "/heyuka", icon: Monitor },
+    { name: "HEYUKA Platform", href: "/zebra-x", icon: Sparkles },
+    { name: "HEYUKA Chat", href: "/chat", icon: Monitor },
   ];
 
   return (
