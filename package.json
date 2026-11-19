@@ -36,6 +36,9 @@
     "@ai-sdk/react": "^4.0.161",
     "@auth/prisma-adapter": "^2.11.3",
     "@dagrejs/graphlib": "^4.0.7",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
+    "@gltf-transform/core": "^4.5.1",
     "@imgly/background-removal": "^1.7.0",
     "@node-rs/argon2": "^2.2.2",
     "@openrouter/ai-sdk-provider": "^3.1.0",
@@ -58,6 +61,7 @@
     "docx": "^9.15.4",
     "driver.js": "^1.14.0",
     "exceljs": "^4.4.0",
+    "fflate": "^0.8.3",
     "fuse.js": "^7.5.0",
     "katex": "^0.19.1",
     "libphonenumber-js": "^1.13.16",
@@ -86,6 +90,7 @@
     "suncalc": "^2.1.4",
     "tesseract.js": "^7.0.0",
     "three": "^0.169.0",
+    "yjs": "^13.6.33",
     "zod": "^4.6.7",
     "zustand": "^5.0.16"
   }

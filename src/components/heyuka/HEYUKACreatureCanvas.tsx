@@ -426,6 +426,17 @@ export const HEYUKACreatureCanvas: React.FC<HEYUKACreatureCanvasProps> = ({
     domElem.addEventListener("pointerdown", handlePointerDown);
     window.addEventListener("pointerup", handlePointerUp);
 
+    const handleContextLost = (ev: Event) => {
+      ev.preventDefault();
+      cancelAnimationFrame(animId);
+      setWebglUnavailable(true);
+    };
+    const handleContextRestored = () => {
+      setWebglUnavailable(false);
+    };
+    domElem.addEventListener("webglcontextlost", handleContextLost);
+    domElem.addEventListener("webglcontextrestored", handleContextRestored);
+
     const handleResize = () => {
       const w = getWidth();
       const h = getHeight();
@@ -562,6 +573,8 @@ export const HEYUKACreatureCanvas: React.FC<HEYUKACreatureCanvasProps> = ({
       domElem.removeEventListener("pointermove", handlePointerMove);
       domElem.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("pointerup", handlePointerUp);
+      domElem.removeEventListener("webglcontextlost", handleContextLost);
+      domElem.removeEventListener("webglcontextrestored", handleContextRestored);
       fluffCreature.dispose();
       wings.dispose();
       particleTrail.dispose();

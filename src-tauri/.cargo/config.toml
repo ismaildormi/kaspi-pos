@@ -1,0 +1,5 @@
+[target.x86_64-pc-windows-msvc]
+# Enables `cargo xwin check --target x86_64-pc-windows-msvc` inside Linux/WSL containers
+# without requiring Linux GTK/WebKit system headers (pkg-config, gdk-3.0, libsoup-3.0).
+linker = "lld"
+rustflags = ["-C", "link-arg=/NOLOGO"]

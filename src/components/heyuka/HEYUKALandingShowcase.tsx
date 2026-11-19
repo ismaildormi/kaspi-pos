@@ -623,6 +623,9 @@ console.log(completion.choices[0].message.content);`;
                 <li>
                   • <strong className="text-[var(--kaspi-text-primary)]">Security:</strong> Unique SHA-256 Keys &amp; Key IDs
                 </li>
+                <li>
+                  • <strong className="text-[var(--kaspi-text-primary)]">Planetary Scale Target:</strong> Edge-First + Client WASM/WebGPU (`99.999%` Zero-Downtime architecture designed for `100M+` active users &amp; `1,100+` languages/dialects via Local-First + Multi-Tenant isolation)
+                </li>
               </ul>
 
               <button

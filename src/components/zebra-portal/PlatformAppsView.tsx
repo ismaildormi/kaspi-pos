@@ -127,17 +127,27 @@ export function PlatformAppsView() {
               <span>Desktop Standalone (.exe / .dmg / .AppImage)</span>
             </h2>
             <p className="text-xs text-[var(--kaspi-text-secondary)] leading-relaxed">
-              The repository contains the Electron companion source (`apps/heyuka-desktop`) and Tauri Rust shell (`src-tauri/`). Pre-compiled standalone signed installers (`.exe` / `.dmg` / `.AppImage`) are NOT yet attached to GitHub Releases — so no fake download button is shown.
+              The repository contains the Electron companion source (`apps/heyuka-desktop`), Tauri v2 Rust shell (`src-tauri/` + `cargo-xwin` Windows cross-config), and GitHub Actions automated workflow (`.github/workflows/release-all-binaries.yml`) compiling `.exe/.msi`, Universal `.dmg`, and Linux `.AppImage` on release tags.
             </p>
           </div>
-          <a
-            href="/api/v1/heyuka/installer?platform=linux"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="kaspi-glass-btn rounded-2xl px-4 py-2.5 text-xs font-bold text-center"
-          >
-            Inspect Platform Build Spec JSON
-          </a>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href="/api/v1/heyuka/installer?platform=linux"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 kaspi-glass-btn rounded-2xl px-4 py-2.5 text-xs font-bold text-center"
+            >
+              Build Spec JSON
+            </a>
+            <a
+              href="https://github.com/ismaildormi/kaspi-pos/releases"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 kaspi-primary-cta-btn rounded-2xl px-4 py-2.5 text-xs font-bold text-center"
+            >
+              GitHub Releases →
+            </a>
+          </div>
         </div>
 
         {/* 4. Mobile Android APK & iOS */}
@@ -145,21 +155,26 @@ export function PlatformAppsView() {
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="px-2.5 py-1 rounded-full kaspi-glass-surface text-[11px] font-bold text-amber-500 inline-flex items-center gap-1">
-                <AlertTriangle className="w-3.5 h-3.5" /> NOT YET PUBLISHED
+                <AlertTriangle className="w-3.5 h-3.5" /> CI WORKFLOW READY
               </span>
-              <span className="text-xs font-mono text-[var(--kaspi-text-muted)]">Android APK &amp; iOS</span>
+              <span className="text-xs font-mono text-[var(--kaspi-text-muted)]">Capacitor APK &amp; Unsigned IPA</span>
             </div>
             <h2 className="text-lg font-black flex items-center gap-2">
               <Smartphone className="w-5 h-5 text-[var(--kaspi-text-muted)]" />
-              <span>Android (APK) &amp; iOS Distribution</span>
+              <span>Android (`.apk`) &amp; iOS (`.ipa`) CI Bundles</span>
             </h2>
             <p className="text-xs text-[var(--kaspi-text-secondary)] leading-relaxed">
-              No signed native Android `.apk` or signed Apple App Store / TestFlight `.ipa` binary exists in this repository yet. Rather than providing fake mobile download links, use the responsive Mobile Web App / PWA above cleanly.
+              Mobile packages build via `.github/workflows/release-all-binaries.yml` (Capacitor + Gradle Android `.apk` and Capacitor + `xcodebuild` unsigned `.ipa` for AltStore). No local fake APK stubs are hosted on Vercel — download release artifacts from GitHub Actions or install as a 1-click PWA above.
             </p>
           </div>
-          <div className="kaspi-frosted-surface rounded-2xl px-4 py-2.5 text-xs font-bold text-center text-[var(--kaspi-text-muted)]">
-            No APK / IPA Binary Released Yet
-          </div>
+          <a
+            href="https://github.com/ismaildormi/kaspi-pos/actions"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="kaspi-glass-btn rounded-2xl px-4 py-2.5 text-xs font-bold text-center"
+          >
+            View CI Binary Builds on GitHub Actions →
+          </a>
         </div>
       </div>
     </div>

@@ -31,6 +31,7 @@ import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal
 import { KaspiThemeToggle } from "@/components/theme/KaspiThemeToggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { HEYUKAInstallWalkthrough } from "@/components/heyuka/HEYUKAInstallWalkthrough";
+import { AutonomousSelfHealingBoundary } from "@/components/security/AutonomousSelfHealingBoundary";
 import type { PortalLocale } from "./platform-data";
 
 export type PlatformNavId =
@@ -461,7 +462,9 @@ export function HEYUKAPlatformShell({
         </header>
 
         <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-          {children}
+          <AutonomousSelfHealingBoundary scope="HEYUKA_PLATFORM">
+            {children}
+          </AutonomousSelfHealingBoundary>
         </main>
       </div>
 

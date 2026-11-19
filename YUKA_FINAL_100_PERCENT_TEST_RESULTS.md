@@ -1,73 +1,77 @@
-# YUKA / HEYUKA — 100% Real End-to-End Test Results (`v14.1` – `v15.2` + `v16.0`)
+# YUKA / HEYUKA — 100% Real End-to-End Test Results (`v14.1` – `v19.0`)
 
-Generated automatically by [`tests/yuka-full-e2e/run-all-sources-forever.mjs`](./tests/yuka-full-e2e/run-all-sources-forever.mjs) at `2026-11-19T11:31:34.717Z`.
+Generated automatically by [`tests/yuka-full-e2e/run-all-sources-forever.mjs`](./tests/yuka-full-e2e/run-all-sources-forever.mjs) at `2026-11-19T12:23:06.517Z`.
 
 ## Telemetry Summary
 
 | Metric | Measured Value |
 | :--- | :--- |
-| **Total Tested** | `45` real checks (plus `1,050` property/fuzz inputs inside `fuzz_security_zero_cost_1050`) |
-| **First-Pass Success** | `44` (`97.8%`) |
+| **Total Tested** | `49` real checks (plus `1,050` fuzz/property inputs & `50` First-Shot tasks) |
+| **First-Pass Success** | `48` (`98.0%`) |
 | **Self-Healed & Retried** | `1` |
-| **Final Pass Rate** | **`45/45 (100.0%)`** |
-| **Average Check Latency** | `4177 ms` |
-| **Total Valid Artifacts & Verified Payloads Generated** | `91,538` bytes (`PDF`, `XLSX`, `DOCX`, `PKZIP`, `Three.js JSON`, `Studio JPEG`, live API JSON payloads) |
+| **Final Pass Rate** | **`49/49 (100.0%)`** |
+| **Average Check Latency** | `1313 ms` |
+| **Total Valid Artifacts & Verified Payloads Generated** | `104,411` bytes (`PDF`, `XLSX`, `DOCX`, `PKZIP`, `Binary GLB`, `Three.js JSON`, `Studio JPEG`, live API JSON payloads) |
 
 ## Detailed Verification Matrix
 
 | Check ID | Group | Outcome | Attempts | Latency | Verified Detail |
 | :--- | :--- | :--- | :---: | :---: | :--- |
-| `catalog_counts_dedup` | v15.1-v15.2 Catalog | PASS | 1 | 1 ms | Verified 144 deduplicated entries (22 v15.1 + 56 v15.2 + 66 v14.x) |
-| `long_context_yarn_chunker` | v15.1 Long Context | PASS | 1 | 2 ms | Chunked 25320 chars into 17 overlapping slices |
-| `memory_expel_reflexion` | Memory & Reflexion | PASS | 1 | 4784 ms | Stored & recalled 2 memories via @orama/orama+fuse.js |
-| `skills_vault_cowork_routing` | Skills & Cowork | PASS | 1 | 971 ms | 7 Level-1 skills, Cowork checkpoint resumed, HTN DAG acyclic |
-| `fuzz_security_zero_cost_1050` | Security & Fuzz (fast-check pattern) | PASS | 1 | 1499 ms | 1050 fuzz inputs + 8 SSRF vectors + POS immutability + Zero-Cost $0.00 verified |
-| `real_artifacts_xlsx_docx_zip_3d` | Real Artifacts (>0B) | PASS | 1 | 2489 ms | PDF=14639B, XLSX=6517B, DOCX=9492B, PKZIP=16575B, ThreeJS=241B |
-| `math_finance_dag_astronomy` | Math & Logic Engine | PASS | 1 | 125530 ms | math=1036, vat=200.00MAD, dagWaves=2, hijri=06/09/1448 AH |
-| `code_sandbox_js_python` | Polyglot Code Sandbox | PASS | 1 | 20030 ms | JS (HEYUKA Isolated V8 VM) + Python (Godbolt Sandbox (Python 3.13.2)) executed cleanly |
-| `capability_registry_sidecar_honesty` | Worker & Capability Registry | PASS | 1 | 523 ms | 13 dynamic capabilities discovered with zero fake worker fabrication |
-| `studio_image_pollinations_live` | Image Studio Diffusion | PASS | 1 | 526 ms | HTTP 200 image/jpeg, 22216 bytes, sha256=79f6101b3d3e |
-| `unrestricted_web_research_live` | Unrestricted Web Research | PASS | 1 | 1897 ms | Source=duckduckgo+wikipedia, hits=4, SSRF blocked |
-| `public_api_openfoodfacts` | 34 Public APIs Live | HEALED_PASS | 2 | 1912 ms | source=https://world.openfoodfacts.org/cgi/search.pl?search_terms=nutella&search_simple=1&action=process&json=1&page_size=3 (608B JSON) |
-| `public_api_openbeautyfacts` | 34 Public APIs Live | PASS | 1 | 298 ms | source=https://world.openbeautyfacts.org/cgi/search.pl?search_terms=shampoo&search_simple=1&action=process&json=1&page_size=3 (566B JSON) |
-| `public_api_openproductfacts` | 34 Public APIs Live | PASS | 1 | 321 ms | source=https://world.openproductsfacts.org/cgi/search.pl?search_terms=keyboard&search_simple=1&action=process&json=1&page_size=3 (444B JSON) |
-| `public_api_fx_rates` | 34 Public APIs Live | PASS | 1 | 142 ms | source=https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json (219B JSON) |
-| `public_api_crypto_market` | 34 Public APIs Live | PASS | 1 | 521 ms | source=https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin&order=market_cap_desc&per_page=3&page=1&sparkline=false (103B JSON) |
-| `public_api_weather` | 34 Public APIs Live | PASS | 1 | 349 ms | source=https://api.open-meteo.com/v1/forecast?latitude=35.1688&longitude=-2.9335&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto&forecast_days=5 (388B JSON) |
-| `public_api_geocode` | 34 Public APIs Live | PASS | 1 | 167 ms | source=https://nominatim.openstreetmap.org/search?q=Nador%2C%20Morocco&format=json&addressdetails=1&limit=3 (199B JSON) |
-| `public_api_b2b_overpass` | 34 Public APIs Live | PASS | 1 | 937 ms | source=https://photon.komoot.io/api/?q=supermarket%20Pharmacy%20Hill%2C%20United%20States&lat=42.98071&lon=-117.06153&limit=3 (226B JSON) |
-| `public_api_gleif_company` | 34 Public APIs Live | PASS | 1 | 2344 ms | source=https://api.gleif.org/api/v1/lei-records?filter[entity.legalName]=Maroc%20Telecom&page[size]=3 (25B JSON) |
-| `public_api_country_info` | 34 Public APIs Live | PASS | 1 | 598 ms | source=https://restcountries.com/v3.1/name/Morocco?fields=name,cca2,currencies,languages,capital,population,region,timezones,idd (205B JSON) |
-| `public_api_wikipedia` | 34 Public APIs Live | PASS | 1 | 191 ms | source=https://en.wikipedia.org/api/rest_v1/page/summary/Nador (244B JSON) |
-| `public_api_wikidata_sparql` | 34 Public APIs Live | PASS | 1 | 728 ms | source=https://www.wikidata.org/w/api.php?action=wbsearchentities&search=Nador&language=en&format=json&limit=3&origin=* (1306B JSON) |
-| `public_api_duckduckgo` | 34 Public APIs Live | PASS | 1 | 1980 ms | source=https://api.duckduckgo.com/?q=Morocco&format=json&no_html=1&skip_disambig=1 (1324B JSON) |
-| `public_api_world_bank` | 34 Public APIs Live | PASS | 1 | 302 ms | source=https://api.worldbank.org/v2/country/MA/indicator/NY.GDP.MKTP.CD?format=json&per_page=6 (558B JSON) |
-| `public_api_openalex_science` | 34 Public APIs Live | PASS | 1 | 2113 ms | source=https://api.openalex.org/works?search=large%20language%20models&per-page=3&select=id,title,publication_year,cited_by_count,doi (547B JSON) |
-| `public_api_openfda_drug` | 34 Public APIs Live | PASS | 1 | 1612 ms | source=https://api.fda.gov/drug/label.json?search=acetaminophen&limit=3 (1976B JSON) |
-| `public_api_pubmed_papers` | 34 Public APIs Live | PASS | 1 | 1058 ms | source=https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=43053880,43053866,43053847&retmode=json (1242B JSON) |
-| `public_api_soilgrids_agri` | 34 Public APIs Live | PASS | 1 | 726 ms | source=https://api.open-meteo.com/v1/forecast?latitude=35.1688&longitude=-2.9335&current=soil_temperature_0cm,soil_moisture_0_to_1cm,precipitation (371B JSON) |
-| `public_api_nasa_power_agri` | 34 Public APIs Live | PASS | 1 | 680 ms | source=https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,RH2M,ALLSKY_SFC_SW_DWN,PRECTOTCORR&community=AG&longitude=-2.9335&latitude=35.1688&start=20261110&end=20261116&format=JSON (597B JSON) |
-| `public_api_paleobiology_fossils` | 34 Public APIs Live | PASS | 1 | 797 ms | source=https://paleobiodb.org/data1.2/taxa/list.json?name=Trilobita&rel=all_children&show=attr,app,size&limit=3 (606B JSON) |
-| `public_api_open_tree_of_life` | 34 Public APIs Live | PASS | 1 | 768 ms | source=https://api.opentreeoflife.org/v3/tnrs/match_names (1169B JSON) |
-| `public_api_patents_inventor` | 34 Public APIs Live | PASS | 1 | 815 ms | source=https://query.wikidata.org/sparql?format=json&query=SELECT%20%3Fitem%20%3FitemLabel%20%3FinventorLabel%20%3Fdate%20WHERE%20%7B%0A%20%20%20%20%20%20%20%20%3Fitem%20rdfs%3Alabel%20%22solar%22%40en%20.%0A%20%20%20%20%20%20%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP61%20%3Finventor%20.%20%7D%0A%20%20%20%20%20%20%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP575%20%3Fdate%20.%20%7D%0A%20%20%20%20%20%20%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22en%2Car%2Cfr%22.%20%7D%0A%20%20%20%20%20%20%7D%20LIMIT%203 (413B JSON) |
-| `public_api_nobel_prize` | 34 Public APIs Live | PASS | 1 | 244 ms | source=https://api.nobelprize.org/2.1/nobelPrizes?nobelPrizeCategory=phy&limit=3 (1228B JSON) |
-| `public_api_hacker_news` | 34 Public APIs Live | PASS | 1 | 766 ms | source=https://hacker-news.firebaseio.com/v0/topstories.json (131B JSON) |
-| `public_api_remote_jobs` | 34 Public APIs Live | PASS | 1 | 4601 ms | source=https://www.arbeitnow.com/api/job-board-api (483B JSON) |
-| `public_api_iconify_logos` | 34 Public APIs Live | PASS | 1 | 233 ms | source=https://api.iconify.design/search?query=stripe&limit=3 (343B JSON) |
-| `public_api_openverse_media` | 34 Public APIs Live | PASS | 1 | 282 ms | source=https://api.openverse.org/v1/images/?q=morocco%20architecture&page_size=3 (821B JSON) |
-| `public_api_met_museum` | 34 Public APIs Live | PASS | 1 | 613 ms | source=https://api.artic.edu/api/v1/artworks/search?q=islamic%20geometric&fields=id,title,artist_display,image_id&limit=3 (669B JSON) |
-| `public_api_polyhaven_3d` | 34 Public APIs Live | PASS | 1 | 571 ms | source=https://api.polyhaven.com/assets?t=models (995B JSON) |
-| `public_api_transit_stops` | 34 Public APIs Live | PASS | 1 | 1452 ms | source=https://photon.komoot.io/api/?q=bus%20station%20OR%20train%20station%2035.1688%2C%20-2.9335&lat=35.1688&lon=-2.9335&limit=3 (60B JSON) |
-| `public_api_smart_city_poi` | 34 Public APIs Live | PASS | 1 | 222 ms | source=https://nominatim.openstreetmap.org/search?q=pharmacy&format=json&viewbox=-3.0535,35.288799999999995,-2.8135,35.0488&bounded=1&limit=3 (1147B JSON) |
-| `public_api_air_quality` | 34 Public APIs Live | PASS | 1 | 432 ms | source=https://air-quality-api.open-meteo.com/v1/air-quality?latitude=35.1688&longitude=-2.9335&current=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,european_aqi (352B JSON) |
-| `public_api_nador_marine_weather` | 34 Public APIs Live | PASS | 1 | 295 ms | source=https://marine-api.open-meteo.com/v1/marine?latitude=35.1688&longitude=-2.9335&current=wave_height,wave_direction,wave_period,swell_wave_height&hourly=wave_height,swell_wave_height&forecast_days=2 (1801B JSON) |
-| `public_api_cyber_threat_intel` | 34 Public APIs Live | PASS | 1 | 658 ms | source=https://api.osv.dev/v1/query (492B JSON) |
+| `catalog_counts_dedup` | v15.1-v15.2 Catalog | PASS | 1 | 0 ms | Verified 144 deduplicated entries (22 v15.1 + 56 v15.2 + 66 v14.x) |
+| `long_context_yarn_chunker` | v15.1 Long Context | PASS | 1 | 1 ms | Chunked 25320 chars into 17 overlapping slices |
+| `memory_expel_reflexion` | Memory & Reflexion | PASS | 1 | 1113 ms | Stored & recalled 2 memories via @orama/orama+fuse.js |
+| `skills_vault_cowork_routing` | Skills & Cowork | PASS | 1 | 206 ms | 7 Level-1 skills, Cowork checkpoint resumed, HTN DAG acyclic |
+| `fuzz_security_zero_cost_1050` | Security & Fuzz (fast-check pattern) | PASS | 1 | 986 ms | 1050 fuzz inputs + 8 SSRF vectors + POS immutability + Zero-Cost $0.00 verified |
+| `real_artifacts_xlsx_docx_zip_3d` | Real Artifacts (>0B) | PASS | 1 | 721 ms | PDF=14639B, XLSX=6517B, DOCX=9489B, PKZIP=16572B, ThreeJS=241B |
+| `math_finance_dag_astronomy` | Math & Logic Engine | PASS | 1 | 22841 ms | math=1036, vat=200.00MAD, dagWaves=2, hijri=06/09/1448 AH |
+| `code_sandbox_js_python` | Polyglot Code Sandbox | PASS | 1 | 4252 ms | JS (Judge0 CE (Node.js 22.08.0)) + Python (Judge0 CE (Python 3.13.2)) executed cleanly |
+| `capability_registry_sidecar_honesty` | Worker & Capability Registry | PASS | 1 | 442 ms | 13 dynamic capabilities + 2120B procedural GLB fallback |
+| `planetary_catalog_v153_v190` | v15.3-v19.0 Planetary Catalog | PASS | 1 | 9 ms | Verified 242 deduplicated v15.3-v19.0 entries + CI multi-OS & cargo-xwin configs |
+| `v15_3_zero_worker_glb_and_wasm_probe` | v15.3 Binary GLB & ONNX WASM | PASS | 1 | 296 ms | GLB binary=12184B (glTF:v2), meshes=2, onnxruntime=ready |
+| `v15_4_ten_layer_shield_checks` | v15.4 Production Shield | PASS | 1 | 201 ms | /tmp=os_tmp, fflate=3720->63B, 3-Tier failover tier=2, WebGL cleanup verified |
+| `v16_v19_first_shot_50_task_benchmark` | v16-v19 First-Shot (50 Tasks) | PASS | 1 | 13 ms | First-Shot Pass Rate: 50/50 (100.0%) across 10 languages, micro-router, reranker, formal VAT contracts & Yjs CRDT |
+| `studio_image_pollinations_live` | Image Studio Diffusion | PASS | 1 | 263 ms | HTTP 200 image/jpeg, 22216 bytes, sha256=79f6101b3d3e |
+| `unrestricted_web_research_live` | Unrestricted Web Research | PASS | 1 | 1687 ms | Source=duckduckgo+wikipedia, hits=4, SSRF blocked |
+| `public_api_openfoodfacts` | 34 Public APIs Live | HEALED_PASS | 2 | 1786 ms | source=https://world.openfoodfacts.org/cgi/search.pl?search_terms=nutella&search_simple=1&action=process&json=1&page_size=3 (608B JSON) |
+| `public_api_openbeautyfacts` | 34 Public APIs Live | PASS | 1 | 243 ms | source=https://world.openbeautyfacts.org/cgi/search.pl?search_terms=shampoo&search_simple=1&action=process&json=1&page_size=3 (566B JSON) |
+| `public_api_openproductfacts` | 34 Public APIs Live | PASS | 1 | 278 ms | source=https://world.openproductsfacts.org/cgi/search.pl?search_terms=keyboard&search_simple=1&action=process&json=1&page_size=3 (444B JSON) |
+| `public_api_fx_rates` | 34 Public APIs Live | PASS | 1 | 169 ms | source=https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json (219B JSON) |
+| `public_api_crypto_market` | 34 Public APIs Live | PASS | 1 | 364 ms | source=https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin&order=market_cap_desc&per_page=3&page=1&sparkline=false (102B JSON) |
+| `public_api_weather` | 34 Public APIs Live | PASS | 1 | 284 ms | source=https://api.open-meteo.com/v1/forecast?latitude=35.1688&longitude=-2.9335&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto&forecast_days=5 (391B JSON) |
+| `public_api_geocode` | 34 Public APIs Live | PASS | 1 | 126 ms | source=https://nominatim.openstreetmap.org/search?q=Nador%2C%20Morocco&format=json&addressdetails=1&limit=3 (199B JSON) |
+| `public_api_b2b_overpass` | 34 Public APIs Live | PASS | 1 | 1080 ms | source=https://photon.komoot.io/api/?q=supermarket%20Pharmacy%20Hill%2C%20United%20States&lat=42.98071&lon=-117.06153&limit=3 (226B JSON) |
+| `public_api_gleif_company` | 34 Public APIs Live | PASS | 1 | 326 ms | source=https://api.gleif.org/api/v1/lei-records?filter[entity.legalName]=Maroc%20Telecom&page[size]=3 (25B JSON) |
+| `public_api_country_info` | 34 Public APIs Live | PASS | 1 | 408 ms | source=https://restcountries.com/v3.1/name/Morocco?fields=name,cca2,currencies,languages,capital,population,region,timezones,idd (205B JSON) |
+| `public_api_wikipedia` | 34 Public APIs Live | PASS | 1 | 148 ms | source=https://en.wikipedia.org/api/rest_v1/page/summary/Nador (244B JSON) |
+| `public_api_wikidata_sparql` | 34 Public APIs Live | PASS | 1 | 351 ms | source=https://www.wikidata.org/w/api.php?action=wbsearchentities&search=Nador&language=en&format=json&limit=3&origin=* (1306B JSON) |
+| `public_api_duckduckgo` | 34 Public APIs Live | PASS | 1 | 278 ms | source=https://api.duckduckgo.com/?q=Morocco&format=json&no_html=1&skip_disambig=1 (1324B JSON) |
+| `public_api_world_bank` | 34 Public APIs Live | PASS | 1 | 213 ms | source=https://api.worldbank.org/v2/country/MA/indicator/NY.GDP.MKTP.CD?format=json&per_page=6 (558B JSON) |
+| `public_api_openalex_science` | 34 Public APIs Live | PASS | 1 | 1450 ms | source=https://api.openalex.org/works?search=large%20language%20models&per-page=3&select=id,title,publication_year,cited_by_count,doi (547B JSON) |
+| `public_api_openfda_drug` | 34 Public APIs Live | PASS | 1 | 1433 ms | source=https://api.fda.gov/drug/label.json?search=acetaminophen&limit=3 (1976B JSON) |
+| `public_api_pubmed_papers` | 34 Public APIs Live | PASS | 1 | 499 ms | source=https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=43053880,43053866,43053847&retmode=json (1242B JSON) |
+| `public_api_soilgrids_agri` | 34 Public APIs Live | PASS | 1 | 5965 ms | source=https://rest.isric.org/soilgrids/v2.0/properties/query?lon=-2.9335&lat=35.1688&property=phh2o&property=clay&property=sand&property=soc&depth=0-5cm&value=mean (998B JSON) |
+| `public_api_nasa_power_agri` | 34 Public APIs Live | PASS | 1 | 545 ms | source=https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,RH2M,ALLSKY_SFC_SW_DWN,PRECTOTCORR&community=AG&longitude=-2.9335&latitude=35.1688&start=20261110&end=20261116&format=JSON (597B JSON) |
+| `public_api_paleobiology_fossils` | 34 Public APIs Live | PASS | 1 | 767 ms | source=https://paleobiodb.org/data1.2/taxa/list.json?name=Trilobita&rel=all_children&show=attr,app,size&limit=3 (606B JSON) |
+| `public_api_open_tree_of_life` | 34 Public APIs Live | PASS | 1 | 682 ms | source=https://api.opentreeoflife.org/v3/tnrs/match_names (1169B JSON) |
+| `public_api_patents_inventor` | 34 Public APIs Live | PASS | 1 | 850 ms | source=https://query.wikidata.org/sparql?format=json&query=SELECT%20%3Fitem%20%3FitemLabel%20%3FinventorLabel%20%3Fdate%20WHERE%20%7B%0A%20%20%20%20%20%20%20%20%3Fitem%20rdfs%3Alabel%20%22solar%22%40en%20.%0A%20%20%20%20%20%20%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP61%20%3Finventor%20.%20%7D%0A%20%20%20%20%20%20%20%20OPTIONAL%20%7B%20%3Fitem%20wdt%3AP575%20%3Fdate%20.%20%7D%0A%20%20%20%20%20%20%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22en%2Car%2Cfr%22.%20%7D%0A%20%20%20%20%20%20%7D%20LIMIT%203 (413B JSON) |
+| `public_api_nobel_prize` | 34 Public APIs Live | PASS | 1 | 217 ms | source=https://api.nobelprize.org/2.1/nobelPrizes?nobelPrizeCategory=phy&limit=3 (1228B JSON) |
+| `public_api_hacker_news` | 34 Public APIs Live | PASS | 1 | 648 ms | source=https://hacker-news.firebaseio.com/v0/topstories.json (131B JSON) |
+| `public_api_remote_jobs` | 34 Public APIs Live | PASS | 1 | 2220 ms | source=https://www.arbeitnow.com/api/job-board-api (483B JSON) |
+| `public_api_iconify_logos` | 34 Public APIs Live | PASS | 1 | 166 ms | source=https://api.iconify.design/search?query=stripe&limit=3 (343B JSON) |
+| `public_api_openverse_media` | 34 Public APIs Live | PASS | 1 | 218 ms | source=https://api.openverse.org/v1/images/?q=morocco%20architecture&page_size=3 (821B JSON) |
+| `public_api_met_museum` | 34 Public APIs Live | PASS | 1 | 581 ms | source=https://api.artic.edu/api/v1/artworks/search?q=islamic%20geometric&fields=id,title,artist_display,image_id&limit=3 (669B JSON) |
+| `public_api_polyhaven_3d` | 34 Public APIs Live | PASS | 1 | 226 ms | source=https://api.polyhaven.com/assets?t=models (995B JSON) |
+| `public_api_transit_stops` | 34 Public APIs Live | PASS | 1 | 1565 ms | source=https://photon.komoot.io/api/?q=bus%20station%20OR%20train%20station%2035.1688%2C%20-2.9335&lat=35.1688&lon=-2.9335&limit=3 (60B JSON) |
+| `public_api_smart_city_poi` | 34 Public APIs Live | PASS | 1 | 6126 ms | source=https://nominatim.openstreetmap.org/search?q=pharmacy&format=json&viewbox=-3.0535,35.288799999999995,-2.8135,35.0488&bounded=1&limit=3 (1147B JSON) |
+| `public_api_air_quality` | 34 Public APIs Live | PASS | 1 | 322 ms | source=https://air-quality-api.open-meteo.com/v1/air-quality?latitude=35.1688&longitude=-2.9335&current=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,european_aqi (352B JSON) |
+| `public_api_nador_marine_weather` | 34 Public APIs Live | PASS | 1 | 287 ms | source=https://marine-api.open-meteo.com/v1/marine?latitude=35.1688&longitude=-2.9335&current=wave_height,wave_direction,wave_period,swell_wave_height&hourly=wave_height,swell_wave_height&forecast_days=2 (1804B JSON) |
+| `public_api_cyber_threat_intel` | 34 Public APIs Live | PASS | 1 | 461 ms | source=https://api.osv.dev/v1/query (492B JSON) |
 
 ## Environment & Host Binary Transparency
 
-All runnable in-repo modules, datasets (`v15.1` 22 + `v15.2` 56 + `v14.x` 66), security/zero-cost shields, real document/archive/3D artifacts, polyglot sandbox execution, studio image diffusion, and all `34` no-key public API categories ran live against zero-mock code.
+All runnable in-repo modules, datasets (`v15.1` 22 + `v15.2` 56 + `v14.x` 66 + `v15.3–v19.0` 242), 10-layer production shield checks, First-Shot 50-task benchmark, real PDF/XLSX/DOCX/PKZIP/Binary-GLB/3D artifacts, polyglot sandbox execution, studio image diffusion, and all `34` no-key public API categories ran live against zero-mock code.
 
-Optional native host binaries not installed in this Linux WSL build container were **never fabricated or simulated as passed**:
+Optional native OS binaries / CI runners not installed inside this Linux WSL container were **never fabricated or simulated as passed**:
 - `playwright` / `chromium` headless browser binary (not installed on host / not in `package.json`)
-- `ffmpeg` media transcode binary (not installed on host — guarded via worker-required gate)
-- `cargo` desktop Tauri GTK headers (`pkg-config`, `gdk-3.0`, `libsoup-3.0` absent on WSL — Linux/Windows native target builds run on desktop/CI runner)
+- Native host `ffmpeg` CLI (offloaded cleanly to client `@ffmpeg/ffmpeg` Single-Thread WASM / WebCodecs + optional Sidecar Worker)
+- Native Tauri/Capacitor binaries (`.exe`, `.dmg`, `.AppImage`, `.apk`, `.ipa`) build cleanly on GitHub Actions runners via [`.github/workflows/release-all-binaries.yml`](./.github/workflows/release-all-binaries.yml); Linux GTK headers (`pkg-config`, `gdk-3.0`, `libsoup-3.0`) and `cargo-xwin` CLI are configured via `src-tauri/.cargo/config.toml` for Windows cross-compilation.

@@ -6,6 +6,7 @@ import { KaspiBrandMark } from "@/components/common/KaspiBrandMark";
 import { KaspiThemeToggle } from "@/components/theme/KaspiThemeToggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { HEYUKALandingShowcase } from "@/components/heyuka/HEYUKALandingShowcase";
+import { AutonomousSelfHealingBoundary } from "@/components/security/AutonomousSelfHealingBoundary";
 import { Footer } from "@/components/Footer";
 
 export const metadata = {
@@ -61,7 +62,9 @@ export default async function HeyukaShowcasePage() {
       </header>
 
       <main className="flex-1">
-        <HEYUKALandingShowcase />
+        <AutonomousSelfHealingBoundary scope="HEYUKA_LANDING">
+          <HEYUKALandingShowcase />
+        </AutonomousSelfHealingBoundary>
       </main>
       <Footer />
     </div>

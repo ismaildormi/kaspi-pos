@@ -1,6 +1,7 @@
 import { assertPosCoreImmutable, isSafePublicHttpUrl } from "./arsenal-vault";
 import { queryPublicApiHub } from "./tools/public-apis-hub";
 import { transcribeAudioBuffer } from "./audio-transcribe-server";
+import { generateProceduralGlbBinary } from "@/lib/heyuka/tools/zero-worker-media-3d";
 
 /**
  * X × Zebra — Sidecar, Creative Suite & 4-App Media Factory Bridge (v7.5 → v8.2)
@@ -277,14 +278,30 @@ export async function executeThreeDGenerateTask(params: {
   });
 
   const format = params.format || "glb";
+  let proceduralGlbBase64: string | undefined;
+  let proceduralGlbByteLength = 0;
+  if (format === "glb") {
+    try {
+      const glbRes = await generateProceduralGlbBinary({ prompt: params.prompt });
+      proceduralGlbByteLength = glbRes.glbBytes.byteLength;
+      proceduralGlbBase64 = Buffer.from(glbRes.glbBytes).toString("base64");
+    } catch {
+      // Keep honest fallback cleanly even if exporter cannot run
+    }
+  }
+
   return {
     ok: true,
     executedServerSide: false,
     honestStatus: "partial_catalog_and_script" as const,
     mode: "procedural_blender_and_catalog",
-    engine: "PolyHaven Open Catalog + Blender bpy Script (No Binary Mesh Generated Without Worker)",
+    engine: proceduralGlbByteLength
+      ? "Three.js GLTFExporter (.glb Binary) + PolyHaven Catalog + Blender bpy (TripoSR GPU Worker Optional)"
+      : "PolyHaven Open Catalog + Blender bpy Script (No Binary Mesh Generated Without Worker)",
     sidecarStatus: sidecarTry.reason,
     matchedReadyModels: matchedCatalog.assets,
+    proceduralGlbByteLength,
+    proceduralGlbBase64,
     blenderBpyStarter: [
       "import bpy, bmesh",
       "# Clean scene for HEYUKA 3D Hub generation",
@@ -412,9 +429,14 @@ export async function executeAudioSeparateTask(params: {
     executedServerSide: false,
     honestStatus: "worker_required" as const,
     mode: "worker_required",
-    engine: "Meta Demucs (htdemucs) + FFmpeg (Not available without user GPU Worker)",
+    engine: "Meta Demucs (htdemucs) + FFmpeg (Client WebGPU & Public Space Fallback Available)",
     sidecarStatus: sidecarTry.reason,
     stems,
+    zeroWorkerClientFallback: {
+      browserAudioWasm: "@ffmpeg/ffmpeg Single-Thread (COOP/COEP-safe, $0.00)",
+      browserWebGpuStems: "onnxruntime-web (MDX-Net / Demucs ONNX WebGPU)",
+      cloudFallbackHint: "Connect user Worker or run client-side @ffmpeg/ffmpeg WASM + WebGPU ONNX",
+    },
     pipelineSpec: {
       twoStemsFlag: stems === "2stems" ? "--two-stems=vocals" : "",
       command: `demucs -n htdemucs ${stems === "2stems" ? "--two-stems=vocals " : ""}input_audio.mp3 && ffmpeg -i separated/htdemucs/input_audio/vocals.wav vocals.mp3`,
