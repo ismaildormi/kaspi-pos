@@ -26,7 +26,11 @@ async function discoverAndCallGoogleVision(params: {
   if (parsedImages.length === 0 || params.apiKeys.length === 0) return null;
 
   for (const apiKey of params.apiKeys) {
-    let modelNames = ["models/gemini-2.5-flash", "models/gemini-2.5-flash-lite"];
+    let modelNames = [
+      "models/gemini-3.8-flash",
+      "models/gemini-flash-latest",
+      "models/gemini-3.7-flash",
+    ];
     try {
       const listRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`,
@@ -39,21 +43,29 @@ async function discoverAndCallGoogleVision(params: {
             (m: any) =>
               Array.isArray(m.supportedGenerationMethods) &&
               m.supportedGenerationMethods.includes("generateContent") &&
-              /gemini-(2\.5|3|2\.0-flash-exp)/i.test(String(m.name || "")) &&
-              !/(tts|image-generation|live|embedding|aqa|robotics|1\.5|gemini-2\.0-flash$)/i.test(String(m.name || ""))
+              /gemini-(3|2\.5|flash-latest)/i.test(String(m.name || "")) &&
+              !/(tts|image-generation|image|live|embedding|aqa|robotics|1\.5|gemini-2\.0)/i.test(
+                String(m.name || "")
+              )
           )
           .map((m: any) => String(m.name));
         if (available.length > 0) {
           const preferred = available.sort((a, b) => {
             const score = (n: string) =>
-              n.includes("2.5-flash") && !n.includes("lite") ? 0 : n.includes("flash") ? 1 : 2;
+              n.includes("3.8-flash")
+                ? 0
+                : n.includes("gemini-3") && n.includes("flash")
+                ? 1
+                : n.includes("flash-latest")
+                ? 2
+                : 3;
             return score(a) - score(b);
           });
           modelNames = preferred.slice(0, 3);
         }
       }
     } catch {
-      // Keep default Gemini 2.5 list when discovery times out
+      // Keep default Gemini 3.x list when discovery times out
     }
 
     for (const modelName of modelNames) {

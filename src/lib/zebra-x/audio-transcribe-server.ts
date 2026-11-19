@@ -61,47 +61,50 @@ export async function transcribeAudioBuffer(params: {
     .filter(Boolean);
 
   for (const key of googleKeyPool) {
-    try {
-      const base64Audio = buffer.toString("base64");
-      const safeMime = mimeType?.includes("webm") ? "audio/webm" : "audio/mp3";
+    for (const gemModel of ["gemini-3.8-flash", "gemini-3.5-transcribe", "gemini-flash-latest"]) {
+      try {
+        const base64Audio = buffer.toString("base64");
+        const safeMime = mimeType?.includes("webm") ? "audio/webm" : "audio/mp3";
 
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    inlineData: {
-                      mimeType: safeMime,
-                      data: base64Audio,
+        const geminiRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${gemModel}:generateContent?key=${key}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: AbortSignal.timeout(12000),
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    {
+                      inlineData: {
+                        mimeType: safeMime,
+                        data: base64Audio,
+                      },
                     },
-                  },
-                  {
-                    text: "Transcribe the spoken audio verbatim in its original spoken language (Moroccan Darija, Arabic, French, English, or mixed code-switching). Return strictly the exact transcript without commentary.",
-                  },
-                ],
-              },
-            ],
-          }),
-        }
-      );
+                    {
+                      text: "Transcribe the spoken audio verbatim in its original spoken language (Moroccan Darija, Arabic, French, English, or mixed code-switching). Return strictly the exact transcript without commentary.",
+                    },
+                  ],
+                },
+              ],
+            }),
+          }
+        );
 
-      if (geminiRes.ok) {
-        const data = await geminiRes.json();
-        const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (candidateText) {
-          return {
-            text: candidateText,
-            engine: "HEYUKA Multimodal Audio",
-          };
+        if (geminiRes.ok) {
+          const data = await geminiRes.json();
+          const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+          if (candidateText) {
+            return {
+              text: candidateText,
+              engine: "HEYUKA Multimodal Audio",
+            };
+          }
         }
+      } catch (err) {
+        console.warn(`[HEYUKA Transcribe] Secondary (${gemModel}) notice:`, err);
       }
-    } catch (err) {
-      console.warn("[HEYUKA Transcribe] Secondary candidate notice:", err);
     }
   }
 

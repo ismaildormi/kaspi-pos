@@ -1407,13 +1407,23 @@ export function AIChatWidget() {
         if (allDisplayMessages.length === 0) {
           const match = threads.find((th) => th.id === activeThreadId);
           if (match && match.messages.length > 0) {
-            setLocalFallbackMessages(
-              match.messages.map((msg) => ({
-                id: msg.id,
-                role: (msg.role === "user" ? "user" : "assistant") as "user" | "assistant",
-                content: msg.content,
-              }))
-            );
+            try {
+              setMessages?.(
+                match.messages.map((msg) => ({
+                  id: msg.id,
+                  role: (msg.role === "user" ? "user" : "assistant") as "user" | "assistant",
+                  parts: [{ type: "text" as const, text: msg.content }],
+                }))
+              );
+            } catch {
+              setLocalFallbackMessages(
+                match.messages.map((msg) => ({
+                  id: msg.id,
+                  role: (msg.role === "user" ? "user" : "assistant") as "user" | "assistant",
+                  content: msg.content,
+                }))
+              );
+            }
           }
         }
       })
@@ -1582,7 +1592,7 @@ export function AIChatWidget() {
     setActiveArtifact(null);
     setInput("");
     setIsLocalThinking(false);
-    setActiveThreadId(`zx-${Date.now()}`);
+    setActiveThreadId(`heyuka-${Date.now()}`);
   };
 
   const handleSelectThread = (thread: StoredChatThread) => {
@@ -1627,7 +1637,7 @@ export function AIChatWidget() {
       } catch {}
       setLocalFallbackMessages([]);
       setActiveArtifact(null);
-      setActiveThreadId(`zx-${Date.now()}`);
+      setActiveThreadId(`heyuka-${Date.now()}`);
     }
   };
 

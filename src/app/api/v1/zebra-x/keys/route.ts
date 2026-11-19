@@ -13,6 +13,7 @@ export const dynamic = "force-dynamic";
 const CreateKeySchema = z.object({
   label: z.string().min(1).max(64).optional(),
   scopes: z.array(z.enum(ALL_X_ZEBRA_SCOPES as [string, ...string[]])).optional(),
+  tokenPrefix: z.enum(["hk-live", "zx-live"]).optional(),
 });
 
 export async function GET() {
@@ -22,6 +23,7 @@ export async function GET() {
     return NextResponse.json({
       authenticated: true,
       tenantId: ctx.tenantId,
+      userEmail: ctx.userEmail,
       keys,
       availableScopes: ALL_X_ZEBRA_SCOPES,
     });
@@ -52,14 +54,18 @@ export async function POST(req: NextRequest) {
       userId: ctx.userId,
       label: parsed.data.label,
       scopes: parsed.data.scopes as any,
+      tokenPrefix: parsed.data.tokenPrefix || "hk-live",
     });
 
     return NextResponse.json(
       {
         ok: true,
+        keyId: created.keyId,
         secretKeyOnce: created.secretKeyOnce,
+        tenantId: ctx.tenantId,
         key: created.meta,
-        warning: "Copy your zx-live secret key now; for security it is stored strictly as SHA-256 and will not be shown again.",
+        warning:
+          "Copy your Secret API Key & Key ID now; keys are stored strictly as SHA-256 hashes and secret values cannot be recovered later.",
       },
       { status: 201 }
     );
@@ -82,11 +88,11 @@ export async function DELETE(req: NextRequest) {
     const body = idFromQuery ? {} : await req.json().catch(() => ({}));
     const keyId = String(idFromQuery || body?.id || "").trim();
     if (!keyId) {
-      return NextResponse.json({ error: "API key id is required" }, { status: 400 });
+      return NextResponse.json({ error: "API Key ID is required" }, { status: 400 });
     }
     const revoked = await revokeTenantXZebraApiKey(ctx.tenantId, keyId);
     if (!revoked) {
-      return NextResponse.json({ error: "API key not found for this tenant" }, { status: 404 });
+      return NextResponse.json({ error: "API Key ID not found for this tenant" }, { status: 404 });
     }
     return NextResponse.json({ ok: true, id: keyId, revoked: true });
   } catch {

@@ -153,6 +153,12 @@ function LoginForm() {
   const initialLocale = normalizeLocale(params?.locale as string);
 
   const [locale, setLocale] = useState<AuthLocale>(initialLocale);
+  const rawRedirectTarget =
+    searchParams.get("from") || searchParams.get("callbackUrl") || searchParams.get("next") || "";
+  const postLoginTarget =
+    rawRedirectTarget.startsWith("/") && !rawRedirectTarget.startsWith("//")
+      ? rawRedirectTarget
+      : `/${locale}/dashboard`;
   const t = LOGIN_I18N[locale];
   const isRtl = locale === "ar";
 
@@ -349,7 +355,7 @@ function LoginForm() {
         } catch {}
       }
 
-      executeInstantNavigation(`/${locale}/dashboard`);
+      executeInstantNavigation(postLoginTarget);
     } catch {
       stopLoginProgress();
       setLoading(false);
@@ -437,7 +443,7 @@ function LoginForm() {
       }
 
       setSuccess(t.msgVerified);
-      executeInstantNavigation(`/${locale}/dashboard`);
+      executeInstantNavigation(postLoginTarget);
     } catch {
       stopLoginProgress();
       setLoading(false);
@@ -550,7 +556,7 @@ function LoginForm() {
       });
 
       setSuccess(t.msgVerified);
-      executeInstantNavigation(`/${locale}/dashboard`);
+      executeInstantNavigation(postLoginTarget);
     } catch {
       playErrorSound();
       setError(t.errNetwork);

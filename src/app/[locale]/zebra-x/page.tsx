@@ -4,9 +4,9 @@ import { Footer } from "@/components/Footer";
 import { XZebraPlatformPortal } from "@/components/zebra-portal/XZebraPlatformPortal";
 
 export const metadata = {
-  title: "HEYUKA AI Platform Portal • HEYUKA-Core & Vision APIs (KASPI)",
+  title: "HEYUKA AI Platform (KASPI) • Sovereign Models, API Keys & Studio",
   description:
-    "Unified developer platform for HEYUKA by KASPI: Live API keys, BG Remover, Blender 3D Hub, Transcription, and Vocal Stem Separation.",
+    "Official HEYUKA developer platform by KASPI: issue cryptographically unique API Keys & Key IDs for OpenAI-compatible Chat, Vision, 3D, Code Sandbox, and Audio APIs.",
 };
 
 export default function XZebraPortalPage() {

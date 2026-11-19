@@ -63,7 +63,7 @@ const nextConfig = {
           },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), payment=(self)",
+            value: "camera=(self), microphone=(self), geolocation=(self), payment=(self)",
           },
           {
             key: "X-DNS-Prefetch-Control",

@@ -4,9 +4,9 @@ import { Footer } from "@/components/Footer";
 import { HEYUKALandingShowcase } from "@/components/heyuka/HEYUKALandingShowcase";
 
 export const metadata = {
-  title: "HEYUKA Desktop OS by KASPI • 60 FPS 3D Companion & OS Control",
+  title: "HEYUKA by KASPI • 3D Interactive Desktop App & Sovereign Intelligence",
   description:
-    "Download HEYUKA Desktop OS owned by KASPI: 32 interactive WebGL2 fur characters, Ghost Cursor OS automation, 120 Zero-Key Cosmic & Cyber sources, and live zx-live API keys.",
+    "Download HEYUKA Desktop App owned by KASPI: 32 interactive 3D characters, multimodal intelligence, and unique API Keys + Key IDs for developers.",
 };
 
 export default function HeyukaShowcasePage() {

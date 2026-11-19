@@ -4,6 +4,8 @@ import { createGroq } from "@ai-sdk/groq";
 import { createOpenAI } from "@ai-sdk/openai";
 import { prisma } from "@/server/db/prisma";
 import {
+  createUIMessageStream,
+  createUIMessageStreamResponse,
   generateText,
   streamText,
   type LanguageModel,
@@ -41,12 +43,12 @@ export interface RouterCandidate {
 }
 
 /**
- * Builds the prioritized Multi-Gateway Candidate Pool:
+ * Builds the prioritized Multi-Gateway Candidate Pool using verified live models:
  * 1. Custom BYOK (Super Admin configured in SystemSetting)
- * 2. Fast Direct Pool (llama-3.3-70b-versatile / llama-3.1-8b-instant — zero leaked reasoning)
- * 3. OpenRouter Free Vision & Multilingual Pool
- * 4. Google Gemini Vision Pool
- * 5. Mistral / Together / DeepSeek / HuggingFace / Internal Node
+ * 2. Fast Groq Pool (`openai/gpt-oss-120b`, `qwen/qwen3.8-27b`, `openai/gpt-oss-20b`) balanced across keys
+ * 3. OpenRouter Free Vision & Tool Pool (`openrouter/free`, `nvidia/nemotron-3.5-super-vl:free`, `google/gemma-4-31b-it:free`)
+ * 4. Google Gemini 3.x Multimodal Pool (`gemini-3.8-flash`, `gemini-flash-latest`, `gemini-3.7-flash`)
+ * 5. Mistral / Together / DeepSeek / HuggingFace / Local Endpoint
  */
 export async function getRouterCandidates(): Promise<RouterCandidate[]> {
   const candidates: RouterCandidate[] = [];
@@ -86,193 +88,157 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
     console.warn("[HEYUKA Router] Notice: Could not read SystemSetting from DB, skipping BYOK:", dbErr);
   }
 
-  // Priority 2: Direct Low-Latency Inference Pool (clean direct outputs, NO raw reasoning leak models)
+  // Priority 2: Groq Ultra-Fast Live 2026 Models (balanced key rotation across model tiers)
   const groqKeys = parseKeyPool(
     process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY
-  );
-  groqKeys.forEach((key, idx) => {
-    if (!key.includes("mock")) {
-      const groqProvider = createGroq({ apiKey: key });
-      for (const modelId of [
-        "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
-      ]) {
-        candidates.push({
-          provider: "groq",
-          providerName: "HEYUKA Cloud Core",
-          keyIndex: idx,
-          keyMasked: `...${key.slice(-6)}`,
-          apiKey: key,
-          modelId,
-          model: groqProvider(modelId) as unknown as LanguageModel,
-          supportsVision: false,
-        });
-      }
-    }
-  });
+  ).filter((k) => !k.includes("mock"));
 
-  // Priority 3: OpenRouter Free Tier Pool (Zero-Credit Free Router + Free Vision Models)
+  for (const modelId of ["openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"]) {
+    groqKeys.forEach((key, idx) => {
+      const groqProvider = createGroq({ apiKey: key });
+      candidates.push({
+        provider: "groq",
+        providerName: "HEYUKA Cloud Core",
+        keyIndex: idx,
+        keyMasked: `...${key.slice(-6)}`,
+        apiKey: key,
+        modelId,
+        model: groqProvider(modelId) as unknown as LanguageModel,
+        supportsVision: false,
+      });
+    });
+  }
+
+  // Priority 3: OpenRouter Verified Free Tool & Vision Routers
   const openRouterPoolKey = process.env.OPENROUTER_API_KEY?.trim();
   if (openRouterPoolKey && !openRouterPoolKey.includes("mock")) {
     const orProvider = createOpenRouter({ apiKey: openRouterPoolKey });
     for (const orModel of [
       "openrouter/free",
-      "meta-llama/llama-3.3-70b-instruct:free",
-      "google/gemma-4-31b-it:free",
       "nvidia/nemotron-3.5-super-vl:free",
+      "google/gemma-4-31b-it:free",
+      "google/gemma-4-26b-a4b-it:free",
+      "inclusionai/ling-3.2-flash:free",
     ]) {
       candidates.push({
         provider: "openrouter",
-        providerName: "OpenRouter Free",
+        providerName: "HEYUKA Neural Mesh",
         keyIndex: 0,
         keyMasked: `...${openRouterPoolKey.slice(-6)}`,
         apiKey: openRouterPoolKey,
         modelId: orModel,
         model: orProvider(orModel) as unknown as LanguageModel,
-        supportsVision: orModel.includes("gemma-4") || orModel.includes("vl"),
-      });
-    }
-  }
-
-  // Priority 3.5: Google Gemini (Multimodal Pool)
-  const geminiKeys = parseKeyPool(
-    process.env.GOOGLE_API_KEYS || process.env.GOOGLE_GENERATIVE_AI_API_KEY
-  );
-  geminiKeys.forEach((key, idx) => {
-    if (!key.includes("mock")) {
-      const googleProvider = createGoogleGenerativeAI({ apiKey: key });
-      for (const modelId of ["gemini-2.5-flash", "gemini-2.5-flash-lite"]) {
-        candidates.push({
-          provider: "google",
-          providerName: "Google Gemini",
-          keyIndex: idx,
-          keyMasked: `...${key.slice(-6)}`,
-          apiKey: key,
-          modelId,
-          model: googleProvider(modelId) as unknown as LanguageModel,
-          supportsVision: true,
-        });
-      }
-    }
-  });
-
-  // Priority 4: Mistral AI Free Tier (mistral-small-latest & pixtral for vision)
-  const mistralKeys = parseKeyPool(
-    process.env.MISTRAL_API_KEYS || process.env.MISTRAL_API_KEY
-  );
-  mistralKeys.forEach((key, idx) => {
-    if (!key.includes("mock")) {
-      const mistralProvider = createOpenAI({
-        apiKey: key,
-        baseURL: "https://api.mistral.ai/v1",
-      });
-      candidates.push({
-        provider: "mistral",
-        providerName: "Mistral AI",
-        keyIndex: idx,
-        keyMasked: `...${key.slice(-6)}`,
-        apiKey: key,
-        modelId: "mistral-small-latest",
-        model: mistralProvider("mistral-small-latest") as unknown as LanguageModel,
         supportsVision: true,
       });
     }
-  });
-
-  // Priority 5: Together AI (Generous Free Credits / LLaMA 3.3 70B Turbo)
-  const togetherKeys = parseKeyPool(
-    process.env.TOGETHER_API_KEYS || process.env.TOGETHER_API_KEY
-  );
-  togetherKeys.forEach((key, idx) => {
-    if (!key.includes("mock")) {
-      const togetherProvider = createOpenAI({
-        apiKey: key,
-        baseURL: "https://api.together.xyz/v1",
-      });
-      candidates.push({
-        provider: "together",
-        providerName: "Together AI",
-        keyIndex: idx,
-        keyMasked: `...${key.slice(-6)}`,
-        apiKey: key,
-        modelId: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-        model: togetherProvider(
-          "meta-llama/Llama-3.3-70B-Instruct-Turbo"
-        ) as unknown as LanguageModel,
-        supportsVision: false,
-      });
-    }
-  });
-
-  // Priority 6: DeepSeek API (Affordable / Ultra-Capable Coding & Reasoning)
-  const deepseekKeys = parseKeyPool(
-    process.env.DEEPSEEK_API_KEYS || process.env.DEEPSEEK_API_KEY
-  );
-  deepseekKeys.forEach((key, idx) => {
-    if (!key.includes("mock")) {
-      const deepseekProvider = createOpenAI({
-        apiKey: key,
-        baseURL: "https://api.deepseek.com/v1",
-      });
-      candidates.push({
-        provider: "deepseek",
-        providerName: "DeepSeek",
-        keyIndex: idx,
-        keyMasked: `...${key.slice(-6)}`,
-        apiKey: key,
-        modelId: "deepseek-chat",
-        model: deepseekProvider("deepseek-chat") as unknown as LanguageModel,
-        supportsVision: false,
-      });
-    }
-  });
-
-  // Priority 7: Hugging Face Serverless Inference
-  const hfKeys = parseKeyPool(
-    process.env.HUGGINGFACE_API_KEYS || process.env.HUGGINGFACE_API_KEY
-  );
-  hfKeys.forEach((key, idx) => {
-    if (!key.includes("mock")) {
-      const hfProvider = createOpenAI({
-        apiKey: key,
-        baseURL: "https://api-inference.huggingface.co/v1",
-      });
-      candidates.push({
-        provider: "huggingface",
-        providerName: "Hugging Face",
-        keyIndex: idx,
-        keyMasked: `...${key.slice(-6)}`,
-        apiKey: key,
-        modelId: "Qwen/Qwen2.5-72B-Instruct",
-        model: hfProvider("Qwen/Qwen2.5-72B-Instruct") as unknown as LanguageModel,
-        supportsVision: false,
-      });
-    }
-  });
-
-  // Priority 8: OpenRouter (Zero-Credit Free Model Router + Free Tier Pool)
-  const openRouterKey = process.env.OPENROUTER_API_KEY?.trim();
-  if (openRouterKey && !openRouterKey.includes("mock")) {
-    const orProvider = createOpenRouter({ apiKey: openRouterKey });
-    for (const orModel of [
-      "openrouter/free",
-      "meta-llama/llama-3.3-70b-instruct:free",
-      "google/gemma-3-27b-it:free",
-    ]) {
-      candidates.push({
-        provider: "openrouter",
-        providerName: "OpenRouter Free",
-        keyIndex: 0,
-        keyMasked: `...${openRouterKey.slice(-6)}`,
-        apiKey: openRouterKey,
-        modelId: orModel,
-        model: orProvider(orModel) as unknown as LanguageModel,
-        supportsVision: false,
-      });
-    }
   }
 
-  // Priority 9: Self-Hosted Local Engine (Zero API Cost, Infinite Offline)
+  // Priority 4: Google Gemini Live Multimodal Pool
+  const geminiKeys = parseKeyPool(
+    process.env.GOOGLE_API_KEYS || process.env.GOOGLE_GENERATIVE_AI_API_KEY
+  ).filter((k) => !k.includes("mock"));
+
+  for (const modelId of ["gemini-3.8-flash", "gemini-flash-latest", "gemini-3.7-flash"]) {
+    geminiKeys.forEach((key, idx) => {
+      const googleProvider = createGoogleGenerativeAI({ apiKey: key });
+      candidates.push({
+        provider: "google",
+        providerName: "HEYUKA Multimodal Core",
+        keyIndex: idx,
+        keyMasked: `...${key.slice(-6)}`,
+        apiKey: key,
+        modelId,
+        model: googleProvider(modelId) as unknown as LanguageModel,
+        supportsVision: true,
+      });
+    });
+  }
+
+  // Priority 5: Mistral AI Free Tier
+  const mistralKeys = parseKeyPool(
+    process.env.MISTRAL_API_KEYS || process.env.MISTRAL_API_KEY
+  ).filter((k) => !k.includes("mock"));
+  mistralKeys.forEach((key, idx) => {
+    const mistralProvider = createOpenAI({
+      apiKey: key,
+      baseURL: "https://api.mistral.ai/v1",
+    });
+    candidates.push({
+      provider: "mistral",
+      providerName: "HEYUKA Studio Mesh",
+      keyIndex: idx,
+      keyMasked: `...${key.slice(-6)}`,
+      apiKey: key,
+      modelId: "mistral-small-latest",
+      model: mistralProvider("mistral-small-latest") as unknown as LanguageModel,
+      supportsVision: true,
+    });
+  });
+
+  // Priority 6: Together AI
+  const togetherKeys = parseKeyPool(
+    process.env.TOGETHER_API_KEYS || process.env.TOGETHER_API_KEY
+  ).filter((k) => !k.includes("mock"));
+  togetherKeys.forEach((key, idx) => {
+    const togetherProvider = createOpenAI({
+      apiKey: key,
+      baseURL: "https://api.together.xyz/v1",
+    });
+    candidates.push({
+      provider: "together",
+      providerName: "HEYUKA Compute Node",
+      keyIndex: idx,
+      keyMasked: `...${key.slice(-6)}`,
+      apiKey: key,
+      modelId: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+      model: togetherProvider("meta-llama/Llama-3.3-70B-Instruct-Turbo") as unknown as LanguageModel,
+      supportsVision: false,
+    });
+  });
+
+  // Priority 7: DeepSeek API
+  const deepseekKeys = parseKeyPool(
+    process.env.DEEPSEEK_API_KEYS || process.env.DEEPSEEK_API_KEY
+  ).filter((k) => !k.includes("mock"));
+  deepseekKeys.forEach((key, idx) => {
+    const deepseekProvider = createOpenAI({
+      apiKey: key,
+      baseURL: "https://api.deepseek.com/v1",
+    });
+    candidates.push({
+      provider: "deepseek",
+      providerName: "HEYUKA Code Node",
+      keyIndex: idx,
+      keyMasked: `...${key.slice(-6)}`,
+      apiKey: key,
+      modelId: "deepseek-chat",
+      model: deepseekProvider("deepseek-chat") as unknown as LanguageModel,
+      supportsVision: false,
+    });
+  });
+
+  // Priority 8: Hugging Face Inference
+  const hfKeys = parseKeyPool(
+    process.env.HUGGINGFACE_API_KEYS || process.env.HUGGINGFACE_API_KEY
+  ).filter((k) => !k.includes("mock"));
+  hfKeys.forEach((key, idx) => {
+    const hfProvider = createOpenAI({
+      apiKey: key,
+      baseURL: "https://api-inference.huggingface.co/v1",
+    });
+    candidates.push({
+      provider: "huggingface",
+      providerName: "HEYUKA Open Mesh",
+      keyIndex: idx,
+      keyMasked: `...${key.slice(-6)}`,
+      apiKey: key,
+      modelId: "Qwen/Qwen2.5-72B-Instruct",
+      model: hfProvider("Qwen/Qwen2.5-72B-Instruct") as unknown as LanguageModel,
+      supportsVision: false,
+    });
+  });
+
+  // Priority 9: Self-Hosted Local Engine
   const localBaseUrl = process.env.LOCAL_AI_BASE_URL?.trim();
   if (localBaseUrl) {
     const localModelId = process.env.LOCAL_AI_MODEL?.trim() || "heyuka-local";
@@ -292,31 +258,63 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
     });
   }
 
-  // Priority 10: Zero-Key Free Open Gateway
-  const freeOpenSourceGateway = createOpenAI({
-    apiKey: "kaspi-free-open-source",
-    baseURL: "https://text.pollinations.ai/openai",
-  });
-  candidates.push({
-    provider: "local",
-    providerName: "HEYUKA Open Core",
-    keyIndex: 0,
-    keyMasked: "zero-token-free",
-    apiKey: "kaspi-free-open-source",
-    modelId: "openai",
-    model: freeOpenSourceGateway("openai") as unknown as LanguageModel,
-    supportsVision: false,
-  });
-
   return candidates;
 }
 
 /**
- * Checks whether any message or prompt contains multimodal content (images / files).
+ * Direct Zero-Key Pollinations HTTP fallback (POST https://text.pollinations.ai/openai)
+ * invoked only when all configured cloud/local SDK gateways fail or rate-limit.
+ */
+async function callPollinationsZeroKeyHttp(params: {
+  system?: string;
+  messages?: any[];
+}): Promise<string> {
+  const flatMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [];
+  if (params.system) {
+    flatMessages.push({ role: "system", content: params.system.slice(0, 6000) });
+  }
+  for (const m of (params.messages || []).slice(-10)) {
+    const role = m?.role === "assistant" ? "assistant" : "user";
+    let txt = "";
+    if (typeof m?.content === "string") txt = m.content;
+    else if (Array.isArray(m?.content)) {
+      txt = m.content
+        .filter((p: any) => p?.type === "text")
+        .map((p: any) => p.text || "")
+        .join("\n");
+    } else if (Array.isArray(m?.parts)) {
+      txt = m.parts
+        .filter((p: any) => p?.type === "text")
+        .map((p: any) => p.text || "")
+        .join("\n");
+    }
+    if (txt.trim()) flatMessages.push({ role, content: txt.trim().slice(0, 4000) });
+  }
+
+  const res = await fetch("https://text.pollinations.ai/openai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "openai",
+      messages: flatMessages,
+    }),
+    signal: AbortSignal.timeout(14_000),
+  });
+  if (!res.ok) throw new Error(`Zero-Key HTTP ${res.status}`);
+  const data = (await res.json()) as any;
+  const reply = String(data?.choices?.[0]?.message?.content || "").trim();
+  if (!reply) throw new Error("Empty Zero-Key response");
+  return reply;
+}
+
+/**
+ * Checks whether the active/recent messages actually require vision capabilities.
+ * Inspects only the latest 2 messages so historical images/PDFs don't lock out fast text models.
  */
 function hasMultimodalContent(options: any): boolean {
   if (options.messages && Array.isArray(options.messages)) {
-    for (const msg of options.messages) {
+    const recent = options.messages.slice(-2);
+    for (const msg of recent) {
       if (Array.isArray(msg.content)) {
         for (const part of msg.content) {
           if (part.type === "image" || part.type === "file") return true;
@@ -339,61 +337,36 @@ export type GenerateTextOptions = Omit<Parameters<typeof generateText>[0], "mode
 export type StreamTextOptions = Omit<Parameters<typeof streamText>[0], "model">;
 
 /**
- * Execute text/multimodal generation with Multi-Gateway Key Rotation & Failover
+ * Execute non-streaming text/multimodal generation with Multi-Gateway Failover + Zero-Key fallback.
  */
 export async function generateTextWithRouter(options: GenerateTextOptions) {
   const allCandidates = await getRouterCandidates();
-
-  if (allCandidates.length === 0) {
-    throw new Error(
-      "[AI Router] No valid API keys found in SystemSetting, GOOGLE_API_KEYS, OPENROUTER_API_KEY, or GROQ_API_KEYS."
-    );
-  }
-
   const isMultimodal = hasMultimodalContent(options);
   const candidates = isMultimodal
     ? allCandidates.filter((c) => c.supportsVision)
     : allCandidates;
 
-  if (candidates.length === 0) {
-    throw new Error(
-      "[AI Router] Multimodal request received but no vision-capable providers are available."
-    );
-  }
-
   const errors: { provider: string; keyIndex: number; error: string }[] = [];
 
   for (const candidate of candidates) {
     try {
-      console.log(
-        `[AI Router] Attempting Priority Gateway: ${candidate.providerName} (Key #${
-          candidate.keyIndex + 1
-        }: ${candidate.keyMasked}) with model [${candidate.modelId}]...`
-      );
-
       const result = await generateText({
         model: candidate.model as any,
         maxRetries: 0,
         abortSignal: AbortSignal.timeout(
-          isMultimodal
-            ? 18000
-            : candidate.provider === "openrouter"
-            ? 9500
-            : 12000
+          isMultimodal ? 18_000 : candidate.provider === "groq" ? 10_000 : 12_000
         ),
         ...(options as any),
       });
-
-      console.log(
-        `[AI Router] ✔ SUCCESS via ${candidate.providerName} (Key #${
-          candidate.keyIndex + 1
-        })`
-      );
 
       const outputText =
         result.steps?.[result.steps.length - 1]?.text ||
         (result as any).text ||
         "";
+
+      if (!outputText && (!result.steps || result.steps.length === 0)) {
+        throw new Error("Model returned empty output");
+      }
 
       return {
         ...result,
@@ -404,9 +377,9 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
       };
     } catch (err: any) {
       console.warn(
-        `[AI Router] ✖ ${candidate.providerName} (Key #${
+        `[HEYUKA Router] Failover from ${candidate.provider}:${candidate.modelId} (Key #${
           candidate.keyIndex + 1
-        }) error: ${err?.message || err}. Initiating failover rotation...`
+        }): ${String(err?.message || err).slice(0, 140)}`
       );
       errors.push({
         provider: candidate.providerName,
@@ -416,69 +389,209 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
     }
   }
 
+  // Final Zero-Key text synthesis rescue for non-image requests
+  if (!isMultimodal) {
+    try {
+      const openText = await callPollinationsZeroKeyHttp({
+        system: typeof (options as any).system === "string" ? (options as any).system : undefined,
+        messages: (options as any).messages,
+      });
+      return {
+        text: openText,
+        steps: [],
+        activeProvider: "HEYUKA Open Core",
+        activeKeyIndex: 0,
+        activeModel: "heyuka-open",
+      };
+    } catch (openErr: any) {
+      errors.push({
+        provider: "HEYUKA Open Core",
+        keyIndex: 0,
+        error: openErr?.message || String(openErr),
+      });
+    }
+  }
+
   throw new Error(
-    `[AI Router] All ${candidates.length} candidates exhausted.\nErrors:\n` +
-      errors
-        .map((e) => `• ${e.provider} (Key #${e.keyIndex + 1}): ${e.error}`)
-        .join("\n")
+    `[HEYUKA Router] All ${candidates.length} candidates exhausted.\nErrors:\n` +
+      errors.map((e) => `• ${e.provider}: ${e.error}`).join("\n")
   );
 }
 
 /**
- * Execute streaming text/multimodal with Multi-Gateway Key Rotation & Failover
+ * Legacy helper retained for backward compatibility where raw streamText return shape is expected.
  */
 export async function streamTextWithRouter(options: StreamTextOptions) {
   const allCandidates = await getRouterCandidates();
-
-  if (allCandidates.length === 0) {
-    throw new Error(
-      "[AI Router] No valid API keys configured in Key Pool or SystemSetting."
-    );
-  }
-
   const isMultimodal = hasMultimodalContent(options);
   const candidates = isMultimodal
     ? allCandidates.filter((c) => c.supportsVision)
     : allCandidates;
 
   if (candidates.length === 0) {
-    throw new Error(
-      "[AI Router] Multimodal request received but no vision-capable providers are available."
-    );
+    throw new Error("[HEYUKA Router] No gateway candidates available.");
   }
 
-  let lastError: Error | null = null;
+  const candidate = candidates[0];
+  const streamResult = streamText({
+    model: candidate.model as any,
+    maxRetries: 0,
+    ...(options as any),
+  });
+  return { streamResult, candidate };
+}
 
-  for (const candidate of candidates) {
-    try {
-      console.log(
-        `[AI Router] Initializing stream with ${candidate.providerName} (Key #${
-          candidate.keyIndex + 1
-        }: ${candidate.keyMasked}) [${candidate.modelId}]...`
-      );
+/**
+ * Production UIMessage Stream Response with TRUE async stream-level failover:
+ * Buffers control chunks until a candidate produces real payload tokens or tool calls,
+ * rotates instantly on HTTP 404/429/401/tool_use errors, and falls back to tools-free or Open Core.
+ */
+export async function streamUiResponseWithRouter(
+  options: StreamTextOptions & {
+    onCompletedText?: (text: string, candidate: Pick<RouterCandidate, "providerName" | "modelId" | "keyIndex">) => Promise<void> | void;
+  },
+  headers: Record<string, string> = {}
+): Promise<Response> {
+  const allCandidates = await getRouterCandidates();
+  const isMultimodal = hasMultimodalContent(options);
+  const baseCandidates = isMultimodal
+    ? allCandidates.filter((c) => c.supportsVision)
+    : allCandidates;
 
-      const streamResult = streamText({
-        model: candidate.model as any,
-        ...(options as any),
-      });
+  const { onFinish: userOnFinish, onCompletedText, ...restOptions } = options as any;
 
-      return {
-        streamResult,
-        candidate,
-      };
-    } catch (err: any) {
-      console.warn(
-        `[AI Router] Failed to initialize stream on ${candidate.providerName} (Key #${
-          candidate.keyIndex + 1
-        }):`,
-        err?.message || err
-      );
-      lastError = err;
+  // Build ordered attempts: tool-enabled pass across all candidates, then clean text-only fallback if tools caused rejection
+  const attempts: Array<{ candidate: RouterCandidate; stripTools: boolean }> = [
+    ...baseCandidates.map((candidate) => ({ candidate, stripTools: false })),
+  ];
+  if (restOptions.tools) {
+    for (const candidate of baseCandidates.slice(0, 4)) {
+      attempts.push({ candidate, stripTools: true });
     }
   }
 
-  throw (
-    lastError ||
-    new Error("[AI Router] Failed to initialize stream on all providers.")
-  );
+  const stream = createUIMessageStream({
+    execute: async ({ writer }) => {
+      let succeeded = false;
+      let lastErrMsg = "All HEYUKA cloud gateways unavailable";
+
+      for (const { candidate, stripTools } of attempts) {
+        let emittedToClient = false;
+        const bufferedHeaderChunks: any[] = [];
+        let collectedText = "";
+
+        try {
+          const callConfig = { ...restOptions };
+          if (stripTools) delete callConfig.tools;
+
+          const res = streamText({
+            model: candidate.model as any,
+            maxRetries: 0,
+            abortSignal: AbortSignal.timeout(stripTools ? 15_000 : 24_000),
+            ...callConfig,
+          });
+
+          for await (const chunk of res.toUIMessageStream()) {
+            const c = chunk as any;
+            if (c.type === "error") {
+              throw new Error(String(c.errorText || c.error?.message || "Upstream stream error"));
+            }
+            if (c.type === "abort" && !emittedToClient) {
+              throw new Error("Upstream stream aborted before content");
+            }
+
+            if (c.type === "text-delta") {
+              const piece = typeof c.delta === "string" ? c.delta : typeof c.textDelta === "string" ? c.textDelta : "";
+              collectedText += piece;
+            }
+
+            const isContentChunk =
+              (c.type === "text-delta" && Boolean(c.delta || c.textDelta)) ||
+              c.type === "reasoning-delta" ||
+              c.type === "tool-input-available" ||
+              c.type === "tool-output-available";
+
+            if (!emittedToClient) {
+              if (isContentChunk) {
+                emittedToClient = true;
+                for (const h of bufferedHeaderChunks) writer.write(h);
+                bufferedHeaderChunks.length = 0;
+                writer.write(chunk);
+              } else {
+                bufferedHeaderChunks.push(chunk);
+              }
+            } else {
+              writer.write(chunk);
+            }
+          }
+
+          if (!emittedToClient) {
+            throw new Error("Upstream produced zero payload chunks");
+          }
+
+          succeeded = true;
+          if (collectedText && onCompletedText) {
+            await Promise.resolve(onCompletedText(collectedText, candidate)).catch(() => {});
+          }
+          if (collectedText && userOnFinish) {
+            await Promise.resolve(userOnFinish({ text: collectedText })).catch(() => {});
+          }
+          break;
+        } catch (err: any) {
+          lastErrMsg = String(err?.message || err);
+          console.warn(
+            `[HEYUKA Stream Failover] ${candidate.provider}:${candidate.modelId}${
+              stripTools ? " (text-only)" : ""
+            } failed -> ${lastErrMsg.slice(0, 140)}`
+          );
+          if (emittedToClient) {
+            // Stream already committed mid-reply cleanly
+            succeeded = true;
+            if (collectedText && onCompletedText) {
+              await Promise.resolve(onCompletedText(collectedText, candidate)).catch(() => {});
+            }
+            break;
+          }
+        }
+      }
+
+      // Final Zero-Key Open Core rescue before surfacing an error
+      if (!succeeded && !isMultimodal) {
+        try {
+          const openReply = await callPollinationsZeroKeyHttp({
+            system: typeof restOptions.system === "string" ? restOptions.system : undefined,
+            messages: restOptions.messages,
+          });
+          const msgId = `txt-${Date.now()}`;
+          writer.write({ type: "start" } as any);
+          writer.write({ type: "start-step" } as any);
+          writer.write({ type: "text-start", id: msgId } as any);
+          writer.write({ type: "text-delta", id: msgId, delta: openReply } as any);
+          writer.write({ type: "text-end", id: msgId } as any);
+          writer.write({ type: "finish-step" } as any);
+          writer.write({ type: "finish" } as any);
+          succeeded = true;
+          const openCand = { providerName: "HEYUKA Open Core", modelId: "heyuka-open", keyIndex: 0 };
+          if (onCompletedText) await Promise.resolve(onCompletedText(openReply, openCand)).catch(() => {});
+          if (userOnFinish) await Promise.resolve(userOnFinish({ text: openReply })).catch(() => {});
+        } catch (openErr: any) {
+          lastErrMsg = String(openErr?.message || lastErrMsg);
+        }
+      }
+
+      if (!succeeded) {
+        throw new Error(lastErrMsg);
+      }
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err || "Gateway busy");
+      console.error("[HEYUKA Stream Error]", msg);
+      return "HEYUKA gateway is currently busy; switching cleanly to device core.";
+    },
+  });
+
+  return createUIMessageStreamResponse({
+    stream,
+    headers,
+  });
 }

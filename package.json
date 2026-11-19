@@ -44,6 +44,7 @@
     "@supabase/supabase-js": "^2.118.0",
     "@trigger.dev/nextjs": "^3.3.12",
     "@trigger.dev/sdk": "^3.3.17",
+    "@types/three": "^0.169.0",
     "@zxing/browser": "^0.2.1",
     "@zxing/library": "^0.23.0",
     "ai": "^7.0.157",
@@ -84,6 +85,7 @@
     "sonner": "^2.0.1",
     "suncalc": "^2.1.4",
     "tesseract.js": "^7.0.0",
+    "three": "^0.169.0",
     "zod": "^4.6.7",
     "zustand": "^5.0.16"
   }

@@ -4,10 +4,10 @@ import { prisma } from "@/server/db/prisma";
 import { getRequestContext } from "@/server/auth/context";
 
 /**
- * X × Zebra — Tenant-Isolated Developer API Key Auth & Management (v7.5)
- * Keys use `zx-live-...` format, stored strictly as SHA-256 hashes inside
- * `prisma.idempotencyRecord` (`scope: "kaspi_zebra_x_api_keys_v1"`) so
- * Kaspi POS Prisma schema remains 100% immutable and secrets never persist in plaintext.
+ * HEYUKA (KASPI Sovereign AI) — Tenant-Isolated Developer API Key & Key ID Auth (v12.0)
+ * Keys use `hk-live-...` (and backward-compatible `zx-live-...`) tokens paired with
+ * explicit verifiable Key IDs (`hk_...` / `zk_...`), stored strictly as SHA-256 hashes inside
+ * `prisma.idempotencyRecord` (`scope: "kaspi_zebra_x_api_keys_v1"`).
  */
 
 export const X_ZEBRA_KEY_SCOPE = "kaspi_zebra_x_api_keys_v1";
@@ -19,26 +19,35 @@ export type XZebraKeyScope =
   | "audio:transcribe"
   | "audio:separate"
   | "chat:universal"
-  | "connector:discover";
+  | "connector:discover"
+  | "public-apis:query"
+  | "images:generate"
+  | "sandbox:execute"
+  | "web:research";
 
 export const ALL_X_ZEBRA_SCOPES: XZebraKeyScope[] = [
+  "chat:universal",
+  "public-apis:query",
+  "images:generate",
+  "sandbox:execute",
+  "web:research",
   "vision:remove-bg",
   "3d:generate",
   "3d:assets",
   "audio:transcribe",
   "audio:separate",
-  "chat:universal",
   "connector:discover",
 ];
 
 export interface StoredApiKeyMeta {
-  id: string;
+  id: string; // Explicit verifiable Key ID (e.g. hk_... or zk_...)
   label: string;
   prefix: string;
   last4: string;
   scopes: XZebraKeyScope[];
   createdAt: string;
   lastUsedAt?: string;
+  usageCount?: number;
   createdByUserId?: string;
   revoked: boolean;
 }
@@ -47,19 +56,29 @@ export function hashApiKeyToken(rawToken: string): string {
   return crypto.createHash("sha256").update(rawToken.trim(), "utf8").digest("hex");
 }
 
+export function isDeveloperApiToken(raw: string): boolean {
+  const clean = raw.trim().toLowerCase();
+  return clean.startsWith("hk-") || clean.startsWith("hyk-") || clean.startsWith("zx-");
+}
+
 export function buildHashedApiKeyArtifacts(params: {
   label?: string;
   scopes?: XZebraKeyScope[];
   createdByUserId?: string;
+  tokenPrefix?: "hk-live" | "zx-live";
 }): {
   rawKey: string;
   keyHash: string;
   meta: StoredApiKeyMeta;
 } {
+  const tokenPrefix = params.tokenPrefix === "zx-live" ? "zx-live" : "hk-live";
+  const idPrefix = tokenPrefix === "zx-live" ? "zk" : "hk";
   const randomSecret = crypto.randomBytes(24).toString("hex");
-  const rawKey = `zx-live-${randomSecret}`;
+  const rawKey = `${tokenPrefix}-${randomSecret}`;
   const keyHash = hashApiKeyToken(rawKey);
-  const cleanLabel = String(params.label || "Production App Key").trim().slice(0, 64) || "Production App Key";
+  const cleanLabel =
+    String(params.label || "HEYUKA Production Key").trim().slice(0, 64) ||
+    "HEYUKA Production Key";
   const scopes =
     Array.isArray(params.scopes) && params.scopes.length > 0
       ? params.scopes
@@ -69,12 +88,13 @@ export function buildHashedApiKeyArtifacts(params: {
     rawKey,
     keyHash,
     meta: {
-      id: `zk_${crypto.randomBytes(8).toString("hex")}`,
+      id: `${idPrefix}_${crypto.randomBytes(8).toString("hex")}`,
       label: cleanLabel,
       prefix: rawKey.slice(0, 14),
       last4: rawKey.slice(-4),
       scopes,
       createdAt: new Date().toISOString(),
+      usageCount: 0,
       createdByUserId: params.createdByUserId,
       revoked: false,
     },
@@ -86,7 +106,8 @@ export async function createTenantXZebraApiKey(params: {
   userId?: string;
   label?: string;
   scopes?: XZebraKeyScope[];
-}): Promise<{ secretKeyOnce: string; meta: StoredApiKeyMeta }> {
+  tokenPrefix?: "hk-live" | "zx-live";
+}): Promise<{ secretKeyOnce: string; keyId: string; meta: StoredApiKeyMeta }> {
   if (!params.tenantId || params.tenantId === "00000000-0000-0000-0000-000000000000") {
     throw new Error("AUTHENTICATED_TENANT_REQUIRED");
   }
@@ -94,6 +115,7 @@ export async function createTenantXZebraApiKey(params: {
     label: params.label,
     scopes: params.scopes,
     createdByUserId: params.userId,
+    tokenPrefix: params.tokenPrefix,
   });
 
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 5);
@@ -109,7 +131,7 @@ export async function createTenantXZebraApiKey(params: {
     },
   });
 
-  return { secretKeyOnce: rawKey, meta };
+  return { secretKeyOnce: rawKey, keyId: meta.id, meta };
 }
 
 export async function listTenantXZebraApiKeys(tenantId: string): Promise<StoredApiKeyMeta[]> {
@@ -150,6 +172,7 @@ export type XZebraAuthResult =
       ok: true;
       tenantId: string;
       authMode: "api_key" | "session";
+      keyId?: string;
       keyMeta?: StoredApiKeyMeta;
     }
   | {
@@ -164,12 +187,13 @@ export async function authenticateXZebraRequest(
 ): Promise<XZebraAuthResult> {
   const authHeader = req.headers.get("authorization") || "";
   const apiKeyHeader = req.headers.get("x-api-key") || "";
+  const keyIdHeader = (req.headers.get("x-api-key-id") || "").trim();
   const bearerToken = authHeader.toLowerCase().startsWith("bearer ")
     ? authHeader.slice(7).trim()
     : "";
   const rawToken = bearerToken || apiKeyHeader.trim();
 
-  if (rawToken.startsWith("zx-")) {
+  if (isDeveloperApiToken(rawToken)) {
     const keyHash = hashApiKeyToken(rawToken);
     const record = await prisma.idempotencyRecord.findFirst({
       where: {
@@ -187,10 +211,26 @@ export async function authenticateXZebraRequest(
       };
     }
 
+    if (keyIdHeader && keyIdHeader !== meta.id) {
+      return {
+        ok: false,
+        status: 401,
+        error: "Provided X-API-Key-Id does not match the secret API key.",
+      };
+    }
+
+    // Legacy keys issued before v12 retain broad access; hk_ keys enforce exact requested scopes
+    const isLegacyUniversalKey =
+      meta.id.startsWith("zk_") &&
+      Array.isArray(meta.scopes) &&
+      meta.scopes.includes("vision:remove-bg") &&
+      meta.scopes.length <= 6;
+
     if (
       requiredScope &&
       Array.isArray(meta.scopes) &&
-      !meta.scopes.includes(requiredScope)
+      !meta.scopes.includes(requiredScope) &&
+      !isLegacyUniversalKey
     ) {
       return {
         ok: false,
@@ -199,13 +239,14 @@ export async function authenticateXZebraRequest(
       };
     }
 
-    // Best-effort async touch without adding latency
-    void prisma.idempotencyRecord
+    // Track real usage count & last used timestamp durably on Serverless
+    await prisma.idempotencyRecord
       .update({
         where: { id: record.id },
         data: {
           responseBody: {
             ...meta,
+            usageCount: (meta.usageCount || 0) + 1,
             lastUsedAt: new Date().toISOString(),
           } as any,
         },
@@ -216,6 +257,7 @@ export async function authenticateXZebraRequest(
       ok: true,
       tenantId: record.tenantId,
       authMode: "api_key",
+      keyId: meta.id,
       keyMeta: meta,
     };
   }
@@ -231,7 +273,8 @@ export async function authenticateXZebraRequest(
     return {
       ok: false,
       status: 401,
-      error: "Authentication required. Sign in on KASPI POS or send 'Authorization: Bearer zx-live-...'.",
+      error:
+        "Authentication required. Sign in on KASPI POS or send 'Authorization: Bearer hk-live-...' (or 'zx-live-...').",
     };
   }
 }

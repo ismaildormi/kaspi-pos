@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { stepCountIs, tool } from "ai";
 import { z } from "zod";
-import { streamTextWithRouter } from "@/lib/ai-router";
+import { streamUiResponseWithRouter } from "@/lib/ai-router";
 import { prisma } from "@/server/db/prisma";
 import { getRequestContext } from "@/server/auth/context";
 import { auth } from "@/auth";
@@ -28,6 +28,7 @@ import {
 } from "@/lib/zebra-x/core/bridge-schema";
 import { scrubTraceText } from "@/lib/zebra-x/learning-trace";
 import { queryPublicApiHub } from "@/lib/zebra-x/tools/public-apis-hub";
+import { executePolyglotCodeSandbox } from "@/lib/zebra-x/tools/code-sandbox";
 import {
   computeExactRetailFinance,
   evaluateMathOrAlgebra,
@@ -44,6 +45,9 @@ import {
   preparePosSaleConfirmation,
   prepareProductAdjustmentConfirmation,
 } from "@/lib/zebra-x/tools/pos-live-tools";
+
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 // ============================================================================
 // STANDARD MERCHANT TOOLS (Strict Tenant Isolation)
@@ -542,26 +546,35 @@ export async function POST(req: NextRequest) {
 
     // 3. Extract and Persist the Latest User Message & Multimodal Attachments
     const incomingUserMsg = messages[messages.length - 1];
-    const incomingAttachments: Array<{
-      name?: string;
-      contentType?: string;
-      url: string;
-    }> =
-      incomingUserMsg?.experimental_attachments ||
-      (incomingUserMsg as any)?.attachments ||
-      [];
+    const extractMsgPartsAttachments = (msg: any): Array<{ name?: string; contentType?: string; url: string }> => {
+      const fromExp = msg?.experimental_attachments || msg?.attachments || [];
+      const fromParts = Array.isArray(msg?.parts)
+        ? msg.parts
+            .filter((p: any) => p?.type === "file" && typeof p?.url === "string")
+            .map((p: any) => ({
+              name: p.filename || p.name,
+              contentType: p.mediaType || p.mimeType || "",
+              url: p.url,
+            }))
+        : [];
+      return [...fromExp, ...fromParts];
+    };
 
-    const userPrompt =
-      typeof incomingUserMsg?.content === "string"
-        ? incomingUserMsg.content
-        : Array.isArray(incomingUserMsg?.parts)
-        ? incomingUserMsg.parts
-            .filter((p: any) => p.type === "text")
-            .map((p: any) => p.text)
+    const incomingAttachments = extractMsgPartsAttachments(incomingUserMsg);
+
+    const extractTextFromMsg = (msg: any): string =>
+      typeof msg?.content === "string"
+        ? msg.content
+        : Array.isArray(msg?.parts)
+        ? msg.parts
+            .filter((p: any) => p?.type === "text")
+            .map((p: any) => p?.text || "")
             .join(" ")
-        : incomingUserMsg?.content
-        ? JSON.stringify(incomingUserMsg.content)
+        : msg?.content
+        ? JSON.stringify(msg.content)
         : "";
+
+    const userPrompt = extractTextFromMsg(incomingUserMsg);
 
     const firstImageAtt = incomingAttachments.find(
       (a) =>
@@ -588,46 +601,83 @@ export async function POST(req: NextRequest) {
     // 3.5 Merchant AI Studio & Universal Retail Intelligence (Unrestricted)
     // Allows full business, code, website building, document generation, and multilingual queries.
 
-    // 4. Load Complete Chat History for Deep Context
+    // 4. Load Complete Chat History (merge persisted DB messages OR full client UIMessage[] multi-turn history)
     const historicalMessages = await prisma.aIChatMessage.findMany({
       where: { sessionId: chatSession.id },
       orderBy: { createdAt: "asc" },
       take: 20,
     });
 
-    const formattedHistory = historicalMessages.map((m) => {
-      const parts: any[] = [{ type: "text", text: m.content }];
-      if (m.imageUrl) {
-        parts.push({ type: "image", image: m.imageUrl });
-      }
-      if (m.documentUrl) {
-        const mimeMatch = m.documentUrl.match(/^data:([^;]+);base64,(.+)$/);
-        const mime = mimeMatch?.[1] || "application/pdf";
-        if (mime === "application/pdf" || m.documentUrl.endsWith(".pdf")) {
-          parts.push({
-            type: "file",
-            data: m.documentUrl,
-            mimeType: "application/pdf",
-          });
-        } else if (mimeMatch?.[2] && (mime.startsWith("text/") || /json|xml|javascript|csv/i.test(mime))) {
-          try {
-            const decodedDoc = Buffer.from(mimeMatch[2], "base64").toString("utf8").slice(0, 12000);
-            parts.push({ type: "text", text: `\n[Attached Document Content]:\n${decodedDoc}` });
-          } catch {
-            parts.push({ type: "file", data: m.documentUrl, mimeType: mime });
-          }
-        } else {
-          parts.push({ type: "file", data: m.documentUrl, mimeType: mime });
-        }
-      }
+    const formattedHistory =
+      messages.length > historicalMessages.length
+        ? messages
+            .slice(-14)
+            .filter((m: any) => m?.role === "user" || m?.role === "assistant")
+            .map((m: any, idx: number, arr: any[]) => {
+              const txt = extractTextFromMsg(m);
+              const isLatest = idx === arr.length - 1;
+              if (!isLatest) {
+                return {
+                  role: (m.role === "user" ? "user" : "assistant") as "user" | "assistant",
+                  content: txt || "...",
+                };
+              }
+              const atts = extractMsgPartsAttachments(m);
+              const parts: any[] = [{ type: "text", text: txt || "Analyze attachment" }];
+              for (const att of atts) {
+                const mime = att.contentType || "";
+                if (mime.startsWith("image/") || att.url?.startsWith("data:image/")) {
+                  parts.push({ type: "image", image: att.url });
+                } else if (att.url?.startsWith("data:application/pdf") || mime === "application/pdf") {
+                  parts.push({ type: "file", data: att.url, mimeType: "application/pdf" });
+                } else if (att.url?.startsWith("data:")) {
+                  const mm = att.url.match(/^data:([^;]+);base64,(.+)$/);
+                  if (mm?.[2] && (mm[1].startsWith("text/") || /json|xml|javascript|csv/i.test(mm[1]))) {
+                    try {
+                      const decoded = Buffer.from(mm[2], "base64").toString("utf8").slice(0, 12000);
+                      parts.push({ type: "text", text: `\n[Attached Document Content]:\n${decoded}` });
+                    } catch {}
+                  }
+                }
+              }
+              return {
+                role: (m.role === "user" ? "user" : "assistant") as "user" | "assistant",
+                content: parts.length > 1 ? parts : txt,
+              };
+            })
+        : historicalMessages.map((m) => {
+            const parts: any[] = [{ type: "text", text: m.content }];
+            if (m.imageUrl) {
+              parts.push({ type: "image", image: m.imageUrl });
+            }
+            if (m.documentUrl) {
+              const mimeMatch = m.documentUrl.match(/^data:([^;]+);base64,(.+)$/);
+              const mime = mimeMatch?.[1] || "application/pdf";
+              if (mime === "application/pdf" || m.documentUrl.endsWith(".pdf")) {
+                parts.push({
+                  type: "file",
+                  data: m.documentUrl,
+                  mimeType: "application/pdf",
+                });
+              } else if (mimeMatch?.[2] && (mime.startsWith("text/") || /json|xml|javascript|csv/i.test(mime))) {
+                try {
+                  const decodedDoc = Buffer.from(mimeMatch[2], "base64").toString("utf8").slice(0, 12000);
+                  parts.push({ type: "text", text: `\n[Attached Document Content]:\n${decodedDoc}` });
+                } catch {
+                  parts.push({ type: "file", data: m.documentUrl, mimeType: mime });
+                }
+              } else {
+                parts.push({ type: "file", data: m.documentUrl, mimeType: mime });
+              }
+            }
 
-      return {
-        role: (m.role === "user" ? "user" : "assistant") as
-          | "user"
-          | "assistant",
-        content: parts.length > 1 ? parts : m.content,
-      };
-    });
+            return {
+              role: (m.role === "user" ? "user" : "assistant") as
+                | "user"
+                | "assistant",
+              content: parts.length > 1 ? parts : m.content,
+            };
+          });
 
     // 5. Define Tools Based on Privilege (Super Admin vs Standard Tenant)
     const tenantTools = {
@@ -1043,54 +1093,14 @@ export async function POST(req: NextRequest) {
 
       executeCodeSandbox: tool({
         description:
-          "Safely executes isolated Python, JavaScript, TypeScript, Bash, PHP, C++, or Go scripts in a zero-key remote Piston sandbox to test algorithms, crunch data, or validate code snippets.",
+          "Safely executes isolated Python, JavaScript, TypeScript, Bash, PHP, C++, or Go scripts in a zero-key remote Judge0 CE / Godbolt / V8 sandbox to test algorithms, crunch data, or validate code snippets.",
         inputSchema: z.object({
           language: z.enum(["python", "javascript", "typescript", "bash", "php", "go", "c++"]),
-          version: z.string().optional().describe("Optional runtime version or '*' for latest"),
           code: z.string().min(1).max(16000),
           stdin: z.string().optional(),
         }),
-        execute: async ({ language, version, code, stdin }) => {
-          const runtimeMap: Record<string, { lang: string; ver: string }> = {
-            python: { lang: "python", ver: "3.10.0" },
-            javascript: { lang: "javascript", ver: "18.15.0" },
-            typescript: { lang: "typescript", ver: "5.0.3" },
-            bash: { lang: "bash", ver: "5.2.0" },
-            php: { lang: "php", ver: "8.2.3" },
-            go: { lang: "go", ver: "1.16.2" },
-            "c++": { lang: "c++", ver: "10.2.0" },
-          };
-          const chosen = runtimeMap[language] || { lang: language, ver: "*" };
-          try {
-            const res = await fetch("https://emkc.org/api/v2/piston/execute", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                language: chosen.lang,
-                version: version || chosen.ver,
-                files: [{ content: code }],
-                stdin: stdin || "",
-                compile_timeout: 5000,
-                run_timeout: 5000,
-              }),
-              signal: AbortSignal.timeout(7000),
-            });
-            if (!res.ok) {
-              return { ok: false, language, error: `Sandbox HTTP ${res.status}` };
-            }
-            const json = (await res.json()) as any;
-            return {
-              ok: Number(json?.run?.code ?? 0) === 0 && !json?.run?.stderr,
-              language: json?.language || language,
-              version: json?.version || chosen.ver,
-              stdout: String(json?.run?.stdout || "").slice(0, 4000),
-              stderr: String(json?.run?.stderr || json?.compile?.stderr || "").slice(0, 2000),
-              exitCode: json?.run?.code ?? null,
-            };
-          } catch (err: any) {
-            return { ok: false, language, error: err?.message || "Sandbox execution timed out" };
-          }
-        },
+        execute: async ({ language, code, stdin }) =>
+          executePolyglotCodeSandbox({ language, code, stdin }),
       }),
     };
 
@@ -1189,67 +1199,59 @@ DOMAIN & HARDWARE EXPERTISE:
 - Prices and revenues MUST be stated clearly in MAD (درهم).
 ${closedLoopMasterDirective}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
 
-    const commonConfig = {
-      system: isSuperAdmin ? superAdminSystemPrompt : merchantSystemPrompt,
-      messages:
-        formattedHistory.length > 0
-          ? formattedHistory
-          : [{ role: "user" as const, content: userPrompt }],
-      tools: activeTools,
-      stopWhen: stepCountIs(5),
-      onFinish: async (event: any) => {
-        if (event.text) {
-          const audited = runPreReplyReflectionGate({
-            draftText: String(event.text),
-            expectedLocale: expectedShortLocale,
-          });
-          const selfCheck = scoreSelfCheckConsistency({
-            draftText: audited.cleanedText,
-            expectedLocale: expectedShortLocale,
-          });
-          if (!selfCheck.consistent) {
-            console.warn("[HEYUKA SelfCheckGPT]", selfCheck);
-          }
-          await prisma.aIChatMessage.create({
-            data: {
-              sessionId: chatSession.id,
-              role: "assistant",
-              content: audited.cleanedText,
-            },
-          });
-          await prisma.aIChatSession.update({
-            where: { id: chatSession.id },
-            data: { updatedAt: new Date() },
-          });
-
-          // Increment merchant daily AI quota count
-          if (!isSuperAdmin && tenantId) {
-            await prisma.tenant.update({
-              where: { id: tenantId },
+    // 7. Multi-Gateway Key Rotation & True Stream-Level Failover Execution
+    try {
+      return await streamUiResponseWithRouter(
+        {
+          system: isSuperAdmin ? superAdminSystemPrompt : merchantSystemPrompt,
+          messages:
+            formattedHistory.length > 0
+              ? formattedHistory
+              : [{ role: "user" as const, content: userPrompt }],
+          tools: activeTools,
+          stopWhen: stepCountIs(5),
+          onCompletedText: async (text: string) => {
+            if (!text) return;
+            const audited = runPreReplyReflectionGate({
+              draftText: String(text),
+              expectedLocale: expectedShortLocale,
+            });
+            const selfCheck = scoreSelfCheckConsistency({
+              draftText: audited.cleanedText,
+              expectedLocale: expectedShortLocale,
+            });
+            if (!selfCheck.consistent) {
+              console.warn("[HEYUKA SelfCheckGPT]", selfCheck);
+            }
+            await prisma.aIChatMessage.create({
               data: {
-                aiMessagesUsedToday: { increment: 1 },
+                sessionId: chatSession.id,
+                role: "assistant",
+                content: audited.cleanedText,
               },
             });
-          }
-        }
-      },
-    };
+            await prisma.aIChatSession.update({
+              where: { id: chatSession.id },
+              data: { updatedAt: new Date() },
+            });
 
-    // 7. Multi-Gateway Key Rotation & Failover Execution
-    try {
-      const { streamResult, candidate } = await streamTextWithRouter(
-        commonConfig as any
-      );
-
-      return streamResult.toUIMessageStreamResponse({
-        headers: {
+            if (!isSuperAdmin && tenantId) {
+              await prisma.tenant.update({
+                where: { id: tenantId },
+                data: {
+                  aiMessagesUsedToday: { increment: 1 },
+                },
+              });
+            }
+          },
+        } as any,
+        {
           "x-kaspi-ai-session-id": chatSession.id,
           "x-kaspi-ai-provider": "HEYUKA Core (KASPI)",
-          "x-kaspi-ai-key-index": String(candidate.keyIndex),
           "x-kaspi-ai-model": "heyuka-unified",
           "x-kaspi-ai-role": isSuperAdmin ? "super-admin" : "merchant",
-        },
-      });
+        }
+      );
     } catch (routerErr: any) {
       console.error(
         "[HEYUKA] Cloud gateways unavailable (no fabricated fallback returned):",

@@ -37,6 +37,7 @@ const PUBLIC_API_PATHS = [
   "/api/v1/zebra-x/openapi",
   "/api/v1/3d/assets",
   "/api/v1/heyuka/installer",
+  "/api/v1/models",
   "/healthz",
   "/readyz",
 ];
@@ -152,8 +153,8 @@ export async function middleware(request: NextRequest) {
   const apiKeyHeader = request.headers.get("x-api-key");
   const hasAuth = Boolean(
     sessionToken ||
-      authHeader?.startsWith("Bearer ") ||
-      apiKeyHeader?.startsWith("zx-")
+      /^Bearer\s+/i.test(authHeader || "") ||
+      /^(?:zx-|hk-|hyk-)/i.test((apiKeyHeader || "").trim())
   );
 
   // 3. Platform Super Admin & Authenticated Workspace routes protection (/admin, /dashboard, /pos)
@@ -197,9 +198,11 @@ export async function middleware(request: NextRequest) {
 
   // 3. API route protection under /api/v1
   if (pathname.startsWith("/api/v1")) {
-    const isPublic = PUBLIC_API_PATHS.some(
-      (p) => pathname === p || pathname.startsWith(p + "/")
-    );
+    const isPublic =
+      PUBLIC_API_PATHS.some(
+        (p) => pathname === p || pathname.startsWith(p + "/")
+      ) ||
+      (pathname === "/api/v1/zebra-x/keys" && request.method === "GET");
 
     if (!isPublic && !hasAuth) {
       return applySecurityHeaders(

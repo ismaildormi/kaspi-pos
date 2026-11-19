@@ -41,23 +41,23 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    product: "HEYUKA Desktop OS",
+    product: "HEYUKA Desktop App",
     owner: "KASPI",
-    version: "10.0.0",
+    version: "12.0.0",
     platform,
     targets: {
       windows: {
         autoInstallerUrl: "/api/v1/heyuka/installer?platform=windows",
-        packagingTargets: ["NSIS (.exe)", "Portable", "AppX / MSIX"],
+        packagingTargets: ["Windows 10/11 x64 Installer (.exe)", "One-Click Bootstrapper (.bat)"],
         windowsDesktopBridge: "/download/exe",
       },
       macos: {
-        packagingTargets: ["Universal DMG", "ZIP", "Mac App Store (MAS)"],
-        requirements: "electron-builder --mac dmg zip inside apps/heyuka-desktop",
+        packagingTargets: ["Universal DMG (Apple Silicon & Intel)", "Signed ZIP Bundle"],
+        requirements: "macOS 13+ (Apple Silicon M1/M2/M3/M4 or Intel x64)",
       },
       linux: {
-        packagingTargets: ["AppImage", "Flatpak", "Snap"],
-        requirements: "electron-builder --linux AppImage flatpak snap inside apps/heyuka-desktop",
+        packagingTargets: ["AppImage (x64)", "Flatpak", "Snap"],
+        requirements: "Ubuntu 22.04+, Fedora, Debian, or Arch with WebGL2/Vulkan",
       },
     },
   });
