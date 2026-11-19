@@ -1,69 +1,37 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
-import { ArrowUpRight, Boxes, Check, CheckCircle2, Copy, Cpu, Sparkles, Terminal } from "lucide-react";
+import {
+  AlertTriangle,
+  Boxes,
+  Check,
+  CheckCircle2,
+  Copy,
+  Cpu,
+  Download,
+  Sparkles,
+  Terminal,
+} from "lucide-react";
 import { HEYUKA_MODEL_SPECS, type PortalLocale } from "./platform-data";
-
-const COPY: Record<
-  PortalLocale,
-  {
-    badge: string;
-    title: string;
-    subtitle: string;
-    copyId: string;
-    copied: string;
-    testPlayground: string;
-    aliasesTitle: string;
-    aliasesDesc: string;
-    benchmarkNote: string;
-  }
-> = {
-  ar: {
-    badge: "كتالوج النماذج الرسمي • /api/v1/models",
-    title: "نماذج HEYUKA السيادية من KASPI",
-    subtitle:
-      "ثلاث عائلات متخصصة تغطي الاستدلال العميق، البرمجة بزمن استجابة منخفض، والوسائط المتعددة مع توافق خلفي كامل لـ x-core و zebra-vision.",
-    copyId: "نسخ المعرف",
-    copied: "تم النسخ ✓",
-    testPlayground: "اختبار في الملعب",
-    aliasesTitle: "معرفات التوافق الخلفي (Aliases)",
-    aliasesDesc: "التطبيقات القديمة التي ترسل x-core أو zebra-vision تتحول تلقائياً دون أي كسر.",
-    benchmarkNote: "فئة المكافئ المرجعي",
-  },
-  fr: {
-    badge: "Catalogue Officiel • /api/v1/models",
-    title: "Modèles Souverains HEYUKA par KASPI",
-    subtitle:
-      "Trois moteurs spécialisés couvrant le raisonnement multimodal, l'ingénierie rapide et le studio visuel/3D/audio avec compatibilité OpenAI complète.",
-    copyId: "Copier ID",
-    copied: "Copié ✓",
-    testPlayground: "Tester au Playground",
-    aliasesTitle: "Alias Rétrocompatibles",
-    aliasesDesc: "Les requêtes ciblant `x-core` ou `zebra-vision` restent routées sans interruption.",
-    benchmarkNote: "Équivalent Référence",
-  },
-  en: {
-    badge: "Official Model Directory • /api/v1/models",
-    title: "Sovereign HEYUKA Model Lineup",
-    subtitle:
-      "Three specialized model tiers covering flagship tool reasoning, ultra-fast code/math execution, and vision/3D/audio intelligence.",
-    copyId: "Copy Model ID",
-    copied: "Copied ✓",
-    testPlayground: "Test in Playground",
-    aliasesTitle: "Backward-Compatible Model Aliases",
-    aliasesDesc: "Legacy clients targeting `x-core` or `zebra-vision` route transparently to `heyuka-core` and `heyuka-vision`.",
-    benchmarkNote: "Competitor Tier Benchmark",
-  },
-};
+import type { RegisteredCapability } from "@/lib/heyuka/compute/capability-registry";
 
 export function PlatformModelsView() {
   const localeRaw = useLocale();
   const locale: PortalLocale =
     localeRaw === "ar" ? "ar" : localeRaw === "en" ? "en" : "fr";
-  const t = COPY[locale];
   const [copiedModel, setCopiedModel] = useState<string | null>(null);
+  const [caps, setCaps] = useState<RegisteredCapability[]>([]);
+
+  useEffect(() => {
+    fetch("/api/v1/heyuka/capabilities?products=0", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (Array.isArray(d?.capabilities)) setCaps(d.capabilities);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleCopy = async (id: string) => {
     try {
@@ -76,15 +44,24 @@ export function PlatformModelsView() {
   return (
     <div className="space-y-6">
       <section className="kaspi-glass-card rounded-3xl p-6 sm:p-8 space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-emerald-500">
-          <Boxes className="w-3.5 h-3.5" />
-          <span>{t.badge}</span>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-emerald-500">
+            <Boxes className="w-3.5 h-3.5" />
+            <span>HEYUKA MODELS &amp; CAPABILITIES CENTER (Separated from Downloads)</span>
+          </div>
+          <Link
+            href={`/${locale}/zebra-x/apps`}
+            className="kaspi-glass-btn rounded-full px-3.5 py-1.5 text-xs font-bold inline-flex items-center gap-1.5"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Apps &amp; Download Center →</span>
+          </Link>
         </div>
         <h1 className="text-2xl sm:text-3xl font-black text-[var(--kaspi-text-primary)]">
-          {t.title}
+          Models Directory &amp; Dynamic Capability Registry
         </h1>
-        <p className="text-sm text-[var(--kaspi-text-secondary)] max-w-3xl leading-relaxed">
-          {t.subtitle}
+        <p className="text-xs sm:text-sm text-[var(--kaspi-text-secondary)] max-w-3xl leading-relaxed">
+          All specialized HEYUKA Studios share this unified core model engine with isolated domain system prompts, tool permissions, and project workspaces — never claiming fictional separate neural models per tab.
         </p>
       </section>
 
@@ -107,9 +84,7 @@ export function PlatformModelsView() {
               </div>
 
               <div>
-                <h2 className="text-xl font-black text-[var(--kaspi-text-primary)]">
-                  {model.name}
-                </h2>
+                <h2 className="text-xl font-black">{model.name}</h2>
                 <div dir="ltr" className="text-xs font-mono text-emerald-500 font-bold mt-0.5">
                   {model.id}
                 </div>
@@ -123,23 +98,14 @@ export function PlatformModelsView() {
                 {model.modalities.map((mod) => (
                   <span
                     key={mod}
-                    className="px-2.5 py-1 rounded-full text-[11px] font-semibold kaspi-frosted-surface text-[var(--kaspi-text-primary)]"
+                    className="px-2.5 py-1 rounded-full text-[11px] font-semibold kaspi-frosted-surface"
                   >
                     {mod}
                   </span>
                 ))}
               </div>
 
-              <div className="kaspi-frosted-surface rounded-2xl p-3 space-y-1">
-                <div className="text-[11px] font-bold text-[var(--kaspi-text-muted)]">
-                  {t.benchmarkNote}
-                </div>
-                <div className="text-xs font-semibold text-[var(--kaspi-text-primary)]">
-                  {model.competitorBenchmark}
-                </div>
-              </div>
-
-              <ul className="space-y-2 text-xs text-[var(--kaspi-text-secondary)]">
+              <ul className="space-y-1.5 text-xs text-[var(--kaspi-text-secondary)]">
                 {model.strengths[locale].map((point, i) => (
                   <li key={i} className="flex items-start gap-2">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
@@ -152,7 +118,7 @@ export function PlatformModelsView() {
             <div className="flex items-center gap-2 pt-3 border-t border-[var(--kaspi-border)]">
               <button
                 type="button"
-                onClick={() => handleCopy(model.id)}
+                onClick={() => void handleCopy(model.id)}
                 className="flex-1 kaspi-glass-btn rounded-2xl px-3 py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 {copiedModel === model.id ? (
@@ -160,7 +126,7 @@ export function PlatformModelsView() {
                 ) : (
                   <Copy className="w-3.5 h-3.5" />
                 )}
-                <span>{copiedModel === model.id ? t.copied : t.copyId}</span>
+                <span>{copiedModel === model.id ? "Copied ✓" : "Copy ID"}</span>
               </button>
 
               <Link
@@ -168,40 +134,69 @@ export function PlatformModelsView() {
                 className="flex-1 kaspi-primary-cta-btn rounded-2xl px-3 py-2.5 text-xs font-bold flex items-center justify-center gap-1.5"
               >
                 <Terminal className="w-3.5 h-3.5" />
-                <span>{t.testPlayground}</span>
+                <span>Playground</span>
               </Link>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Backward-Compatible Aliases */}
-      <section className="kaspi-glass-card rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm font-extrabold text-[var(--kaspi-text-primary)]">
+      {/* Dynamic Capability Registry Matrix */}
+      <section className="kaspi-glass-card rounded-3xl p-5 sm:p-7 space-y-4">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2 text-base font-black">
             <Cpu className="w-4 h-4 text-emerald-500" />
-            <span>{t.aliasesTitle}</span>
+            <span>Dynamic Runtime Capability Registry ({caps.length})</span>
           </div>
-          <p className="text-xs text-[var(--kaspi-text-muted)]">{t.aliasesDesc}</p>
+          <Link href={`/${locale}/zebra-x/lab`} className="text-xs font-bold text-emerald-500 hover:underline">
+            Verify Live in Benchmark Lab →
+          </Link>
         </div>
 
-        <div dir="ltr" className="flex flex-wrap items-center gap-2">
-          {[
-            { alias: "x-core", target: "heyuka-core" },
-            { alias: "zebra-vision", target: "heyuka-vision" },
-          ].map((item) => (
-            <button
-              key={item.alias}
-              type="button"
-              onClick={() => handleCopy(item.alias)}
-              className="kaspi-glass-btn rounded-full px-3.5 py-1.5 text-xs font-mono flex items-center gap-2 cursor-pointer"
-            >
-              <Sparkles className="w-3 h-3 text-emerald-500" />
-              <span>{item.alias}</span>
-              <span className="opacity-60">→</span>
-              <span className="text-emerald-500 font-bold">{item.target}</span>
-            </button>
-          ))}
+        <div className="overflow-x-auto rounded-2xl kaspi-frosted-surface">
+          <table className="w-full text-xs border-collapse min-w-[760px]">
+            <thead>
+              <tr className="border-b border-[var(--kaspi-border)] text-[var(--kaspi-text-muted)]">
+                <th className="p-3 text-start font-bold">Capability</th>
+                <th className="p-3 text-start font-bold">Status</th>
+                <th className="p-3 text-start font-bold">Engine</th>
+                <th className="p-3 text-start font-bold">Endpoint / Tier</th>
+                <th className="p-3 text-start font-bold">Constraints &amp; Limitations</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--kaspi-border)]">
+              {caps.map((c) => (
+                <tr key={c.id} className="hover:bg-[var(--kaspi-surface-hover)]">
+                  <td className="p-3 align-top">
+                    <div className="font-bold">{c.name}</div>
+                    <div className="text-[11px] font-mono text-[var(--kaspi-text-muted)]">{c.id}</div>
+                  </td>
+                  <td className="p-3 align-top">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full kaspi-glass-surface text-[10px] font-mono font-bold ${
+                        c.status === "verified_live" || c.status === "browser_local_ready"
+                          ? "text-emerald-500"
+                          : "text-amber-500"
+                      }`}
+                    >
+                      {c.status === "worker_required" ? (
+                        <AlertTriangle className="w-3 h-3" />
+                      ) : (
+                        <Sparkles className="w-3 h-3" />
+                      )}
+                      {c.status}
+                    </span>
+                  </td>
+                  <td className="p-3 align-top text-[var(--kaspi-text-secondary)]">{c.responsibleEngine}</td>
+                  <td dir="ltr" className="p-3 align-top font-mono text-[11px]">
+                    <div>{c.endpoint || "In-Browser Local"}</div>
+                    <div className="text-emerald-500">{c.zeroCostTier}</div>
+                  </td>
+                  <td className="p-3 align-top text-[var(--kaspi-text-secondary)]">{c.limitations}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
     </div>

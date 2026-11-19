@@ -7,6 +7,7 @@ import {
   createRequestId,
 } from "@/lib/zebra-x/api-response";
 import { executeThreeDGenerateTask } from "@/lib/zebra-x/sidecar-bridge";
+import { findActiveEligibleWorker } from "@/lib/heyuka/compute/workers-registry";
 
 export const dynamic = "force-dynamic";
 
@@ -42,11 +43,18 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const activeWorker = await findActiveEligibleWorker({
+      tenantId: auth.tenantId,
+      requiredCapability: "3d_generate",
+    });
     const result = await executeThreeDGenerateTask({
       prompt,
       imageUrl,
       format,
       targetPath: typeof body?.targetPath === "string" ? body.targetPath : undefined,
+      tenantWorker: activeWorker
+        ? { endpointUrl: activeWorker.worker.endpointUrl, token: activeWorker.token }
+        : null,
     });
     return apiJsonResponse(
       { ...result, requestId, authMode: auth.authMode },

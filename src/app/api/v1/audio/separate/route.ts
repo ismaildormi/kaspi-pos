@@ -7,6 +7,7 @@ import {
   createRequestId,
 } from "@/lib/zebra-x/api-response";
 import { executeAudioSeparateTask } from "@/lib/zebra-x/sidecar-bridge";
+import { findActiveEligibleWorker } from "@/lib/heyuka/compute/workers-registry";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +40,17 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const result = await executeAudioSeparateTask({ mediaUrl, stems });
+  const activeWorker = await findActiveEligibleWorker({
+    tenantId: auth.tenantId,
+    requiredCapability: "audio_separate",
+  });
+  const result = await executeAudioSeparateTask({
+    mediaUrl,
+    stems,
+    tenantWorker: activeWorker
+      ? { endpointUrl: activeWorker.worker.endpointUrl, token: activeWorker.token }
+      : null,
+  });
   return apiJsonResponse(
     { ...result, requestId, authMode: auth.authMode },
     result.ok ? 200 : 400,

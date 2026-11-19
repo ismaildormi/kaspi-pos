@@ -7,6 +7,7 @@ import {
   createRequestId,
 } from "@/lib/zebra-x/api-response";
 import { executeAudioTranscribeTask } from "@/lib/zebra-x/sidecar-bridge";
+import { findActiveEligibleWorker } from "@/lib/heyuka/compute/workers-registry";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +56,19 @@ export async function POST(req: NextRequest) {
   const mediaUrl = typeof body?.mediaUrl === "string" ? body.mediaUrl.trim() : undefined;
   const language = typeof body?.language === "string" ? body.language.trim() : undefined;
 
-  const result = await executeAudioTranscribeTask({ mediaUrl, language });
+  const activeWorker = mediaUrl
+    ? await findActiveEligibleWorker({
+        tenantId: auth.tenantId,
+        requiredCapability: "audio_transcribe",
+      })
+    : null;
+  const result = await executeAudioTranscribeTask({
+    mediaUrl,
+    language,
+    tenantWorker: activeWorker
+      ? { endpointUrl: activeWorker.worker.endpointUrl, token: activeWorker.token }
+      : null,
+  });
   return apiJsonResponse(
     { ...result, requestId, authMode: auth.authMode },
     result.ok ? 200 : 400,

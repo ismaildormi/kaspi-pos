@@ -4,12 +4,21 @@ import { createGroq } from "@ai-sdk/groq";
 import { createOpenAI } from "@ai-sdk/openai";
 import { prisma } from "@/server/db/prisma";
 import {
+  getDecryptedTenantByokCredentials,
+  PAID_OWNER_ENV_PROVIDERS,
+} from "@/lib/heyuka/compute/zero-cost-policy";
+import {
   createUIMessageStream,
   createUIMessageStreamResponse,
   generateText,
   streamText,
   type LanguageModel,
 } from "ai";
+
+export interface RouterGovernanceScope {
+  tenantId?: string;
+  allowOwnerPaidProviders?: boolean;
+}
 
 /**
  * Splits a comma-separated string of API keys into a clean, trimmed array.
@@ -50,42 +59,83 @@ export interface RouterCandidate {
  * 4. Google Gemini 3.x Multimodal Pool (`gemini-3.8-flash`, `gemini-flash-latest`, `gemini-3.7-flash`)
  * 5. Mistral / Together / DeepSeek / HuggingFace / Local Endpoint
  */
-export async function getRouterCandidates(): Promise<RouterCandidate[]> {
+export async function getRouterCandidates(
+  scope?: RouterGovernanceScope
+): Promise<RouterCandidate[]> {
   const candidates: RouterCandidate[] = [];
+  const allowPaidOwner = scope?.allowOwnerPaidProviders === true;
 
-  // Priority 1: Custom BYOK Providers (Configured by Super Admin in SystemSetting)
-  try {
-    const customSettings = await prisma.systemSetting.findMany({
-      where: { isActive: true },
-      orderBy: { createdAt: "asc" },
-    });
-
-    for (let idx = 0; idx < customSettings.length; idx++) {
-      const setting = customSettings[idx];
-      if (setting.apiKey && !setting.apiKey.includes("mock")) {
-        const customOpenAI = createOpenAI({
-          apiKey: setting.apiKey,
-          baseURL: setting.baseUrl?.trim() || undefined,
-        });
-
-        const modelId = setting.providerName.toLowerCase().includes("gpt")
-          ? setting.providerName
-          : "gpt-4o-mini";
+  // Priority 0: Tenant's Own Encrypted BYOK Provider (Zero Owner Financial Exposure)
+  if (scope?.tenantId && scope.tenantId !== "00000000-0000-0000-0000-000000000000") {
+    try {
+      const tenantByoks = await getDecryptedTenantByokCredentials(scope.tenantId);
+      for (let idx = 0; idx < tenantByoks.length; idx++) {
+        const b = tenantByoks[idx];
+        const byokModel =
+          b.providerKind === "groq"
+            ? createGroq({ apiKey: b.apiKey })(b.modelId || "openai/gpt-oss-120b")
+            : b.providerKind === "google"
+            ? createGoogleGenerativeAI({ apiKey: b.apiKey })(b.modelId || "gemini-flash-latest")
+            : b.providerKind === "openrouter"
+            ? createOpenRouter({ apiKey: b.apiKey })(b.modelId || "openrouter/free")
+            : createOpenAI({
+                apiKey: b.apiKey || "none",
+                baseURL:
+                  b.baseUrl ||
+                  (b.providerKind === "mistral" ? "https://api.mistral.ai/v1" : undefined),
+              })(b.modelId || "gpt-4o-mini");
 
         candidates.push({
           provider: "custom",
-          providerName: "HEYUKA Priority Core",
+          providerName: `Tenant BYOK (${b.label})`,
           keyIndex: idx,
-          keyMasked: `...${setting.apiKey.slice(-6)}`,
-          apiKey: setting.apiKey,
-          modelId,
-          model: customOpenAI(modelId) as unknown as LanguageModel,
+          keyMasked: b.maskedKey,
+          apiKey: b.apiKey,
+          modelId: b.modelId,
+          model: byokModel as unknown as LanguageModel,
           supportsVision: true,
         });
       }
+    } catch {
+      // Continue safely to authorized free-tier pools if BYOK lookup is unavailable
     }
-  } catch (dbErr) {
-    console.warn("[HEYUKA Router] Notice: Could not read SystemSetting from DB, skipping BYOK:", dbErr);
+  }
+
+  // Priority 1: Global Owner BYOK Providers (STRICTLY gated by explicit owner authorization)
+  if (allowPaidOwner) {
+    try {
+      const customSettings = await prisma.systemSetting.findMany({
+        where: { isActive: true },
+        orderBy: { createdAt: "asc" },
+      });
+
+      for (let idx = 0; idx < customSettings.length; idx++) {
+        const setting = customSettings[idx];
+        if (setting.apiKey && !setting.apiKey.includes("mock")) {
+          const customOpenAI = createOpenAI({
+            apiKey: setting.apiKey,
+            baseURL: setting.baseUrl?.trim() || undefined,
+          });
+
+          const modelId = setting.providerName.toLowerCase().includes("gpt")
+            ? setting.providerName
+            : "gpt-4o-mini";
+
+          candidates.push({
+            provider: "custom",
+            providerName: "HEYUKA Priority Core",
+            keyIndex: idx,
+            keyMasked: `...${setting.apiKey.slice(-6)}`,
+            apiKey: setting.apiKey,
+            modelId,
+            model: customOpenAI(modelId) as unknown as LanguageModel,
+            supportsVision: true,
+          });
+        }
+      }
+    } catch (dbErr) {
+      console.warn("[HEYUKA Router] Notice: Could not read SystemSetting from DB, skipping BYOK:", dbErr);
+    }
   }
 
   // Priority 2: Groq Ultra-Fast Live 2026 Models (balanced key rotation across model tiers)
@@ -175,47 +225,49 @@ export async function getRouterCandidates(): Promise<RouterCandidate[]> {
     });
   });
 
-  // Priority 6: Together AI
-  const togetherKeys = parseKeyPool(
-    process.env.TOGETHER_API_KEYS || process.env.TOGETHER_API_KEY
-  ).filter((k) => !k.includes("mock"));
-  togetherKeys.forEach((key, idx) => {
-    const togetherProvider = createOpenAI({
-      apiKey: key,
-      baseURL: "https://api.together.xyz/v1",
+  // Priority 6: Together AI (Restricted unless owner paid mode or explicit authorization)
+  if (allowPaidOwner) {
+    const togetherKeys = parseKeyPool(
+      process.env.TOGETHER_API_KEYS || process.env.TOGETHER_API_KEY
+    ).filter((k) => !k.includes("mock"));
+    togetherKeys.forEach((key, idx) => {
+      const togetherProvider = createOpenAI({
+        apiKey: key,
+        baseURL: "https://api.together.xyz/v1",
+      });
+      candidates.push({
+        provider: "together",
+        providerName: "HEYUKA Compute Node",
+        keyIndex: idx,
+        keyMasked: `...${key.slice(-6)}`,
+        apiKey: key,
+        modelId: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+        model: togetherProvider("meta-llama/Llama-3.3-70B-Instruct-Turbo") as unknown as LanguageModel,
+        supportsVision: false,
+      });
     });
-    candidates.push({
-      provider: "together",
-      providerName: "HEYUKA Compute Node",
-      keyIndex: idx,
-      keyMasked: `...${key.slice(-6)}`,
-      apiKey: key,
-      modelId: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-      model: togetherProvider("meta-llama/Llama-3.3-70B-Instruct-Turbo") as unknown as LanguageModel,
-      supportsVision: false,
-    });
-  });
 
-  // Priority 7: DeepSeek API
-  const deepseekKeys = parseKeyPool(
-    process.env.DEEPSEEK_API_KEYS || process.env.DEEPSEEK_API_KEY
-  ).filter((k) => !k.includes("mock"));
-  deepseekKeys.forEach((key, idx) => {
-    const deepseekProvider = createOpenAI({
-      apiKey: key,
-      baseURL: "https://api.deepseek.com/v1",
+    // Priority 7: DeepSeek API (Owner-only unless tenant configures BYOK)
+    const deepseekKeys = parseKeyPool(
+      process.env.DEEPSEEK_API_KEYS || process.env.DEEPSEEK_API_KEY
+    ).filter((k) => !k.includes("mock"));
+    deepseekKeys.forEach((key, idx) => {
+      const deepseekProvider = createOpenAI({
+        apiKey: key,
+        baseURL: "https://api.deepseek.com/v1",
+      });
+      candidates.push({
+        provider: "deepseek",
+        providerName: "HEYUKA Code Node",
+        keyIndex: idx,
+        keyMasked: `...${key.slice(-6)}`,
+        apiKey: key,
+        modelId: "deepseek-chat",
+        model: deepseekProvider("deepseek-chat") as unknown as LanguageModel,
+        supportsVision: false,
+      });
     });
-    candidates.push({
-      provider: "deepseek",
-      providerName: "HEYUKA Code Node",
-      keyIndex: idx,
-      keyMasked: `...${key.slice(-6)}`,
-      apiKey: key,
-      modelId: "deepseek-chat",
-      model: deepseekProvider("deepseek-chat") as unknown as LanguageModel,
-      supportsVision: false,
-    });
-  });
+  }
 
   // Priority 8: Hugging Face Inference
   const hfKeys = parseKeyPool(
@@ -333,18 +385,31 @@ function hasMultimodalContent(options: any): boolean {
   return false;
 }
 
-export type GenerateTextOptions = Omit<Parameters<typeof generateText>[0], "model">;
-export type StreamTextOptions = Omit<Parameters<typeof streamText>[0], "model">;
+export type GenerateTextOptions = Omit<Parameters<typeof generateText>[0], "model"> & {
+  governance?: RouterGovernanceScope;
+};
+export type StreamTextOptions = Omit<Parameters<typeof streamText>[0], "model"> & {
+  governance?: RouterGovernanceScope;
+};
 
 /**
  * Execute non-streaming text/multimodal generation with Multi-Gateway Failover + Zero-Key fallback.
  */
 export async function generateTextWithRouter(options: GenerateTextOptions) {
-  const allCandidates = await getRouterCandidates();
+  const { governance, ...restGenOptions } = options;
+  const allCandidates = await getRouterCandidates(governance);
+  const filteredByCost =
+    governance?.allowOwnerPaidProviders === true
+      ? allCandidates
+      : allCandidates.filter(
+          (c) =>
+            !PAID_OWNER_ENV_PROVIDERS.has(c.provider) ||
+            c.providerName.startsWith("Tenant BYOK")
+        );
   const isMultimodal = hasMultimodalContent(options);
   const candidates = isMultimodal
-    ? allCandidates.filter((c) => c.supportsVision)
-    : allCandidates;
+    ? filteredByCost.filter((c) => c.supportsVision)
+    : filteredByCost;
 
   const errors: { provider: string; keyIndex: number; error: string }[] = [];
 
@@ -356,7 +421,7 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
         abortSignal: AbortSignal.timeout(
           isMultimodal ? 18_000 : candidate.provider === "groq" ? 10_000 : 12_000
         ),
-        ...(options as any),
+        ...(restGenOptions as any),
       });
 
       const outputText =
@@ -452,13 +517,12 @@ export async function streamUiResponseWithRouter(
   },
   headers: Record<string, string> = {}
 ): Promise<Response> {
-  const allCandidates = await getRouterCandidates();
+  const { onFinish: userOnFinish, onCompletedText, governance, ...restOptions } = options as any;
+  const allCandidates = await getRouterCandidates(governance);
   const isMultimodal = hasMultimodalContent(options);
   const baseCandidates = isMultimodal
     ? allCandidates.filter((c) => c.supportsVision)
     : allCandidates;
-
-  const { onFinish: userOnFinish, onCompletedText, ...restOptions } = options as any;
 
   // Build ordered attempts: tool-enabled pass across all candidates, then clean text-only fallback if tools caused rejection
   const attempts: Array<{ candidate: RouterCandidate; stripTools: boolean }> = [

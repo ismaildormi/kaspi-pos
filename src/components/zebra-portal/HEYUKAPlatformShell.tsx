@@ -6,14 +6,19 @@ import { usePathname, useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import {
   Activity,
+  Archive,
   BookOpen,
   Boxes,
   Bug,
+  Command,
+  Cpu,
   Download,
+  FlaskConical,
   KeyRound,
-  Layers,
   LogIn,
   Menu,
+  Palette,
+  PackagePlus,
   ShieldCheck,
   Sparkles,
   Terminal,
@@ -30,11 +35,27 @@ import type { PortalLocale } from "./platform-data";
 
 export type PlatformNavId =
   | "overview"
+  | "studios"
+  | "lab"
+  | "vault"
+  | "workers"
+  | "products"
   | "models"
+  | "apps"
   | "api-keys"
   | "playground"
   | "debug"
   | "docs";
+
+type AccentKey = "emerald" | "teal" | "violet" | "amber" | "titanium";
+
+const ACCENT_HEX: Record<AccentKey, string> = {
+  emerald: "#10b981",
+  teal: "#14b8a6",
+  violet: "#8b5cf6",
+  amber: "#f59e0b",
+  titanium: "#94a3b8",
+};
 
 interface HEYUKAPlatformShellProps {
   activeNav: PlatformNavId;
@@ -47,79 +68,99 @@ const SHELL_COPY: Record<
   PortalLocale,
   {
     platformName: string;
-    platformTag: string;
     backToKaspi: string;
     signIn: string;
-    desktopApp: string;
     installGuide: string;
-    navSectionMain: string;
-    navSectionTools: string;
+    secCore: string;
+    secInfra: string;
+    secDev: string;
     gatewayLive: string;
     navItems: Record<PlatformNavId, { label: string; desc: string }>;
   }
 > = {
   ar: {
-    platformName: "منصة مطوري HEYUKA",
-    platformTag: "بنية KASPI POS الزجاجية • بروتوكول OpenAI",
-    backToKaspi: "العودة لـ KASPI POS",
+    platformName: "منظومة HEYUKA AI 2050",
+    backToKaspi: "العودة لـ KASPI",
     signIn: "تسجيل الدخول",
-    desktopApp: "تطبيق HEYUKA",
-    installGuide: "مراحل التثبيت",
-    navSectionMain: "المنصة والنماذج",
-    navSectionTools: "الاستوديو والتشخيص",
-    gatewayLive: "البوابة متصلة 200 OK",
+    installGuide: "دليل التثبيت",
+    secCore: "القيادة والمنتجات",
+    secInfra: "المختبر والنتائج والحوسبة",
+    secDev: "المطورون والتطبيقات",
+    gatewayLive: "حماية $0.00 فعالة",
     navItems: {
-      overview: { label: "نظرة عامة والمقارنة", desc: "مقارنة مع OpenAI & Microsoft" },
-      models: { label: "دليل النماذج", desc: "Omni • Core • Vision" },
-      "api-keys": { label: "مفاتيح الـ API", desc: "إنشاء مفاتيح حقيقية + Key ID" },
-      playground: { label: "ملعب التجربة الحي", desc: "محادثة و 12 مسار API" },
+      overview: { label: "مركز القيادة الذكي", desc: "نظرة عامة ومحادثة موجهة" },
+      studios: { label: "الاستوديوهات المتخصصة", desc: "12 منتج AI مجالي مستقل" },
+      lab: { label: "مختبر الاختبار والقياس", desc: "اختبارات حقيقية وتصدير ZIP" },
+      vault: { label: "خزنة النتائج الحقيقية", desc: "Real Output Vault + SHA-256" },
+      workers: { label: "الحوسبة الموزعة و BYOK", desc: "أجهزة المستخدم و Worker nodes" },
+      products: { label: "مصنع المنتجات المصغرة", desc: "إنشاء منتجات + Widget خارجي" },
+      models: { label: "النماذج والقدرات", desc: "Capability Registry مفحوص" },
+      apps: { label: "التطبيقات والتحميلات", desc: "إصدارات حقيقية بدون ملفات وهمية" },
+      "api-keys": { label: "مفاتيح الـ API", desc: "مفاتيح SHA-256 + Key ID" },
+      playground: { label: "ملعب الاختبار", desc: "Chat SSE & 13 Endpoints" },
       debug: { label: "فاحص Debug الحي", desc: "اختبار 7 نقاط وحل الأخطاء" },
-      docs: { label: "التوثيق والـ SDK", desc: "OpenAPI 3.1 • Node • Python" },
+      docs: { label: "التوثيق و OpenAPI", desc: "SDKs + الأمان + الميزانية" },
     },
   },
   fr: {
-    platformName: "Plateforme HEYUKA AI",
-    platformTag: "Design Crystal KASPI • Protocole OpenAI",
-    backToKaspi: "Retour KASPI POS",
+    platformName: "HEYUKA AI Ecosystem 2050",
+    backToKaspi: "Retour KASPI",
     signIn: "Connexion",
-    desktopApp: "App HEYUKA",
-    installGuide: "Étapes Install",
-    navSectionMain: "Console & Modèles",
-    navSectionTools: "Studio & Diagnostic",
-    gatewayLive: "Passerelle En Ligne",
+    installGuide: "Guide Install",
+    secCore: "Command Center & Studios",
+    secInfra: "Labo, Résultats & Compute",
+    secDev: "Développeurs & Apps",
+    gatewayLive: "Bouclier $0.00 Actif",
     navItems: {
-      overview: { label: "Aperçu & Comparatif", desc: "vs OpenAI & Microsoft Azure" },
-      models: { label: "Catalogue Modèles", desc: "Omni • Core • Vision" },
-      "api-keys": { label: "Clés API (IPK)", desc: "Clés SHA-256 & Key ID" },
-      playground: { label: "Playground API", desc: "Chat SSE & 12 Endpoints" },
+      overview: { label: "Command Center", desc: "Vue globale & routeur IA" },
+      studios: { label: "Studios Spécialisés", desc: "12 produits IA métiers" },
+      lab: { label: "Labo Benchmarks", desc: "Tests réels & Export ZIP/XLSX" },
+      vault: { label: "Coffre Résultats Réels", desc: "Output Vault vérifié SHA-256" },
+      workers: { label: "Compute & Workers", desc: "WebGPU, Workers & BYOK chiffré" },
+      products: { label: "Mini-Produits & Embed", desc: "Widgets externes & Clés dédiées" },
+      models: { label: "Modèles & Capacités", desc: "Registre dynamique vérifié" },
+      apps: { label: "Apps & Téléchargements", desc: "Releases réelles séparées" },
+      "api-keys": { label: "Clés API (IPK)", desc: "Coffre SHA-256 & Key ID" },
+      playground: { label: "Playground API", desc: "Chat SSE & REST interactif" },
       debug: { label: "Debugger en Direct", desc: "Suite Diagnostic 7 Points" },
-      docs: { label: "Documentation SDK", desc: "OpenAPI 3.1 • Node • Python" },
+      docs: { label: "Docs & Sécurité", desc: "SDKs, OpenAPI 3.1 & Règles" },
     },
   },
   en: {
-    platformName: "HEYUKA AI Platform",
-    platformTag: "KASPI VisionOS Glass • OpenAI Compatible",
-    backToKaspi: "Back to KASPI POS",
+    platformName: "HEYUKA AI Ecosystem 2050",
+    backToKaspi: "Back to KASPI",
     signIn: "Sign in",
-    desktopApp: "HEYUKA App",
     installGuide: "Setup Guide",
-    navSectionMain: "Platform & Models",
-    navSectionTools: "Workbench & Debug",
-    gatewayLive: "Gateway Online",
+    secCore: "Command & Studios",
+    secInfra: "Testing Lab, Vault & Compute",
+    secDev: "Developers & Apps",
+    gatewayLive: "$0.00 Cost Shield Active",
     navItems: {
-      overview: { label: "Overview & Compare", desc: "vs OpenAI, Microsoft & Google" },
-      models: { label: "Models Directory", desc: "Omni • Core • Vision" },
-      "api-keys": { label: "API Keys (IPK)", desc: "Issue Unique Keys & Key IDs" },
-      playground: { label: "API Playground", desc: "Live Chat & 12 Endpoints" },
+      overview: { label: "Command Center", desc: "Overview & Intent Router" },
+      studios: { label: "Specialized Studios", desc: "12 Focused AI Workspaces" },
+      lab: { label: "Autonomous Test Lab", desc: "Real Benchmarks & ZIP Export" },
+      vault: { label: "Real Output Vault", desc: "SHA-256 Verified Artifacts" },
+      workers: { label: "Workers & Zero-Cost", desc: "Device GPU, Workers & BYOK" },
+      products: { label: "Mini-Product Factory", desc: "Tenant Widgets & Scoped Keys" },
+      models: { label: "Models & Capabilities", desc: "Dynamic Capability Registry" },
+      apps: { label: "Apps & Downloads", desc: "Honest Releases (Zero Fakes)" },
+      "api-keys": { label: "API Keys (IPK)", desc: "SHA-256 Keys & Key IDs" },
+      playground: { label: "API Playground", desc: "Live Chat SSE & REST" },
       debug: { label: "Live API Debugger", desc: "7-Point Key & CORS Check" },
-      docs: { label: "Docs & SDKs", desc: "OpenAPI 3.1 • Node • Python" },
+      docs: { label: "Docs & Security", desc: "SDKs, OpenAPI 3.1 & Guardrails" },
     },
   },
 };
 
 const NAV_ICONS: Record<PlatformNavId, React.ComponentType<{ className?: string }>> = {
-  overview: Layers,
+  overview: Command,
+  studios: Sparkles,
+  lab: FlaskConical,
+  vault: Archive,
+  workers: Cpu,
+  products: PackagePlus,
   models: Boxes,
+  apps: Download,
   "api-keys": KeyRound,
   playground: Terminal,
   debug: Bug,
@@ -144,8 +185,14 @@ export function HEYUKAPlatformShell({
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
+  const [accent, setAccent] = useState<AccentKey>("emerald");
+  const [accentMenuOpen, setAccentMenuOpen] = useState(false);
 
   useEffect(() => {
+    try {
+      const savedAccent = window.localStorage.getItem("heyuka_future_glass_accent") as AccentKey | null;
+      if (savedAccent && ACCENT_HEX[savedAccent]) setAccent(savedAccent);
+    } catch {}
     fetch("/api/v1/zebra-x/keys", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -159,28 +206,59 @@ export function HEYUKAPlatformShell({
       .catch(() => setAuthenticated(false));
   }, []);
 
-  const navRoutes: { id: PlatformNavId; href: string; group: "main" | "tools" }[] = [
-    { id: "overview", href: `/${locale}/zebra-x`, group: "main" },
-    { id: "models", href: `/${locale}/zebra-x/models`, group: "main" },
-    { id: "api-keys", href: `/${locale}/zebra-x/api-keys`, group: "main" },
-    { id: "playground", href: `/${locale}/zebra-x/playground`, group: "tools" },
-    { id: "debug", href: `/${locale}/zebra-x/debug`, group: "tools" },
-    { id: "docs", href: `/${locale}/zebra-x/docs`, group: "tools" },
+  const chooseAccent = (next: AccentKey) => {
+    setAccent(next);
+    setAccentMenuOpen(false);
+    try {
+      window.localStorage.setItem("heyuka_future_glass_accent", next);
+    } catch {}
+  };
+
+  const navGroups: {
+    title: string;
+    items: { id: PlatformNavId; href: string }[];
+  }[] = [
+    {
+      title: t.secCore,
+      items: [
+        { id: "overview", href: `/${locale}/zebra-x` },
+        { id: "studios", href: `/${locale}/zebra-x/studios` },
+        { id: "products", href: `/${locale}/zebra-x/products` },
+      ],
+    },
+    {
+      title: t.secInfra,
+      items: [
+        { id: "lab", href: `/${locale}/zebra-x/lab` },
+        { id: "vault", href: `/${locale}/zebra-x/vault` },
+        { id: "workers", href: `/${locale}/zebra-x/workers` },
+      ],
+    },
+    {
+      title: t.secDev,
+      items: [
+        { id: "models", href: `/${locale}/zebra-x/models` },
+        { id: "apps", href: `/${locale}/zebra-x/apps` },
+        { id: "api-keys", href: `/${locale}/zebra-x/api-keys` },
+        { id: "playground", href: `/${locale}/zebra-x/playground` },
+        { id: "debug", href: `/${locale}/zebra-x/debug` },
+        { id: "docs", href: `/${locale}/zebra-x/docs` },
+      ],
+    },
   ];
 
   const loginHref = `/${locale}/login?from=${encodeURIComponent(pathname || `/${locale}/zebra-x`)}`;
   const backHref = authenticated ? `/${locale}/dashboard` : `/${locale}`;
 
   const renderNavLinks = (onSelect?: () => void) => (
-    <div className="space-y-5">
-      <div>
-        <div className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-[var(--kaspi-text-muted)]">
-          {t.navSectionMain}
-        </div>
-        <div className="space-y-1.5">
-          {navRoutes
-            .filter((r) => r.group === "main")
-            .map((route) => {
+    <div className="space-y-4">
+      {navGroups.map((group) => (
+        <div key={group.title}>
+          <div className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--kaspi-text-muted)]">
+            {group.title}
+          </div>
+          <div className="space-y-1">
+            {group.items.map((route) => {
               const Icon = NAV_ICONS[route.id];
               const isActive = activeNav === route.id;
               const copy = t.navItems[route.id];
@@ -189,7 +267,7 @@ export function HEYUKAPlatformShell({
                   key={route.id}
                   href={route.href}
                   onClick={onSelect}
-                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl transition-all group ${
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-2xl transition-all group ${
                     isActive
                       ? "kaspi-orbit-active font-semibold"
                       : "hover:bg-[var(--kaspi-surface-hover)] text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
@@ -203,83 +281,51 @@ export function HEYUKAPlatformShell({
                     }`}
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs sm:text-[13px] truncate text-[var(--kaspi-text-primary)]">
+                    <div className="text-xs truncate text-[var(--kaspi-text-primary)]">
                       {copy.label}
                     </div>
-                    <div className="text-[11px] truncate text-[var(--kaspi-text-muted)]">
+                    <div className="text-[10px] truncate text-[var(--kaspi-text-muted)]">
                       {copy.desc}
                     </div>
                   </div>
                 </Link>
               );
             })}
+          </div>
         </div>
-      </div>
-
-      <div>
-        <div className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-[var(--kaspi-text-muted)]">
-          {t.navSectionTools}
-        </div>
-        <div className="space-y-1.5">
-          {navRoutes
-            .filter((r) => r.group === "tools")
-            .map((route) => {
-              const Icon = NAV_ICONS[route.id];
-              const isActive = activeNav === route.id;
-              const copy = t.navItems[route.id];
-              return (
-                <Link
-                  key={route.id}
-                  href={route.href}
-                  onClick={onSelect}
-                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl transition-all group ${
-                    isActive
-                      ? "kaspi-orbit-active font-semibold"
-                      : "hover:bg-[var(--kaspi-surface-hover)] text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
-                  }`}
-                >
-                  <Icon
-                    className={`w-4 h-4 shrink-0 ${
-                      isActive
-                        ? "text-emerald-500"
-                        : "text-[var(--kaspi-text-muted)] group-hover:text-[var(--kaspi-text-primary)]"
-                    }`}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs sm:text-[13px] truncate text-[var(--kaspi-text-primary)]">
-                      {copy.label}
-                    </div>
-                    <div className="text-[11px] truncate text-[var(--kaspi-text-muted)]">
-                      {copy.desc}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-        </div>
-      </div>
+      ))}
     </div>
   );
 
   return (
     <div
       dir={isRtl ? "rtl" : "ltr"}
+      style={{ ["--heyuka-accent" as any]: ACCENT_HEX[accent] }}
       className="min-h-screen md:h-screen md:overflow-hidden bg-[var(--kaspi-bg)] text-[var(--kaspi-text-primary)] flex flex-col md:flex-row relative selection:bg-emerald-500 selection:text-white"
     >
-      {/* Desktop Crystal Glass Sidebar */}
-      <aside className="hidden md:flex md:w-[272px] md:shrink-0 md:flex-col kaspi-sidebar-glass md:h-screen overflow-y-auto p-4 gap-5 z-20">
+      {/* Subtle 2050 Corner Atmospheric Accent Glow */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed top-0 right-0 bottom-0 left-0 opacity-[0.14] z-0"
+        style={{
+          background: `radial-gradient(ellipse 46% 36% at 18% 14%, ${ACCENT_HEX[accent]} 0%, transparent 64%), radial-gradient(ellipse 42% 34% at 86% 84%, ${ACCENT_HEX[accent]} 0%, transparent 66%)`,
+        }}
+      />
+
+      {/* Desktop Future Glass 2050 Sidebar */}
+      <aside className="hidden md:flex md:w-[276px] md:shrink-0 md:flex-col kaspi-sidebar-glass md:h-screen overflow-y-auto kaspi-no-scrollbar p-4 gap-4 z-20">
         <div className="flex items-center gap-3 px-2 pt-1">
           <Link href={`/${locale}/zebra-x`} className="flex items-center gap-3 group min-w-0">
-            <KaspiBrandMark size="md" alt="KASPI POS • HEYUKA" />
+            <KaspiBrandMark size="md" alt="KASPI • HEYUKA 2050" />
             <div className="min-w-0">
               <div className="text-sm font-extrabold tracking-tight text-[var(--kaspi-text-primary)] flex items-center gap-1.5 truncate">
                 <span>HEYUKA</span>
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full kaspi-glass-surface text-emerald-500 font-bold">
-                  AI API
+                  OS 2050
                 </span>
               </div>
               <div className="text-[11px] text-[var(--kaspi-text-muted)] truncate">
-                KASPI Developer Console
+                Multi-Product Ecosystem
               </div>
             </div>
           </Link>
@@ -287,9 +333,12 @@ export function HEYUKAPlatformShell({
 
         <nav className="flex-1">{renderNavLinks()}</nav>
 
-        {/* Bottom Status & Desktop App Card */}
-        <div className="space-y-2.5 pt-3 border-t border-[var(--kaspi-border)]">
-          <div className="kaspi-frosted-surface rounded-2xl p-3 flex items-center justify-between gap-2">
+        {/* Bottom Zero-Cost & Setup Controls */}
+        <div className="space-y-2 pt-3 border-t border-[var(--kaspi-border)]">
+          <Link
+            href={`/${locale}/zebra-x/workers`}
+            className="kaspi-frosted-surface rounded-2xl p-2.5 flex items-center justify-between gap-2 hover:scale-[1.01] transition-transform"
+          >
             <div className="flex items-center gap-2 min-w-0">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
               <span className="text-[11px] font-semibold text-[var(--kaspi-text-secondary)] truncate">
@@ -297,23 +346,12 @@ export function HEYUKAPlatformShell({
               </span>
             </div>
             <Activity className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-          </div>
-
-          <Link
-            href={`/${locale}/heyuka`}
-            className="kaspi-glass-btn rounded-2xl px-3.5 py-2.5 flex items-center justify-between text-xs font-semibold transition-all hover:scale-[1.01]"
-          >
-            <span className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-              <span>{t.desktopApp}</span>
-            </span>
-            <Download className="w-3.5 h-3.5 opacity-70" />
           </Link>
 
           <button
             type="button"
             onClick={() => setWalkthroughOpen(true)}
-            className="w-full kaspi-primary-cta-btn rounded-2xl px-3.5 py-2.5 flex items-center justify-center gap-2 text-xs font-bold cursor-pointer"
+            className="w-full kaspi-primary-cta-btn rounded-2xl px-3.5 py-2 flex items-center justify-center gap-2 text-xs font-bold cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
             <span>{t.installGuide}</span>
@@ -323,7 +361,6 @@ export function HEYUKAPlatformShell({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 md:h-screen md:overflow-y-auto relative z-10">
-        {/* VisionOS Frosted Top Bar */}
         <header className="kaspi-glass-surface border-x-0 border-t-0 px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
             <button
@@ -336,7 +373,7 @@ export function HEYUKAPlatformShell({
             </button>
 
             <div className="md:hidden flex items-center gap-2">
-              <KaspiBrandMark size="sm" alt="KASPI POS" />
+              <KaspiBrandMark size="sm" alt="KASPI" />
             </div>
 
             <div className="hidden sm:inline-flex">
@@ -351,8 +388,8 @@ export function HEYUKAPlatformShell({
             <div className="min-w-0">
               <div className="text-xs sm:text-sm font-bold text-[var(--kaspi-text-primary)] truncate flex items-center gap-2">
                 <span>{pageTitle || t.platformName}</span>
-                <span className="hidden lg:inline-flex text-[11px] font-mono px-2 py-0.5 rounded-full kaspi-glass-surface text-[var(--kaspi-text-muted)]">
-                  /api/v1 &amp; /v1
+                <span className="hidden lg:inline-flex text-[10px] font-mono px-2 py-0.5 rounded-full kaspi-glass-surface text-emerald-500 font-bold">
+                  Future Glass 2050
                 </span>
               </div>
               {pageSubtitle && (
@@ -363,7 +400,35 @@ export function HEYUKAPlatformShell({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap relative">
+            {/* Accent Color Picker */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setAccentMenuOpen((v) => !v)}
+                title="Adaptive Glass Accent"
+                className="kaspi-glass-btn w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
+              >
+                <Palette className="w-4 h-4" style={{ color: ACCENT_HEX[accent] }} />
+              </button>
+              {accentMenuOpen && (
+                <div className="absolute right-0 mt-2 kaspi-glass-card rounded-2xl p-2 flex items-center gap-1.5 z-50">
+                  {(Object.keys(ACCENT_HEX) as AccentKey[]).map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => chooseAccent(key)}
+                      title={key}
+                      className={`w-6 h-6 rounded-full border-2 cursor-pointer transition-transform ${
+                        accent === key ? "scale-110 border-white" : "border-transparent opacity-80"
+                      }`}
+                      style={{ backgroundColor: ACCENT_HEX[key] }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
             {authenticated && userEmail ? (
               <Link
                 href={`/${locale}/zebra-x/api-keys`}
@@ -371,7 +436,7 @@ export function HEYUKAPlatformShell({
                 title={userEmail}
               >
                 <UserCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span className="max-w-[140px] sm:max-w-[200px] truncate font-mono text-[11px]">
+                <span className="max-w-[130px] sm:max-w-[190px] truncate font-mono text-[11px]">
                   {userEmail}
                 </span>
               </Link>
@@ -386,7 +451,7 @@ export function HEYUKAPlatformShell({
             ) : (
               <div className="kaspi-glass-surface rounded-full px-3 py-1.5 text-[11px] text-[var(--kaspi-text-muted)] font-mono">
                 <ShieldCheck className="w-3.5 h-3.5 inline me-1 text-emerald-500" />
-                KASPI Auth
+                HEYUKA
               </div>
             )}
 
@@ -395,25 +460,24 @@ export function HEYUKAPlatformShell({
           </div>
         </header>
 
-        {/* Page Container */}
         <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
           {children}
         </main>
       </div>
 
-      {/* Mobile Navigation Drawer inside KaspiGlassModalPortal */}
+      {/* Mobile Drawer inside KaspiGlassModalPortal */}
       <KaspiGlassModalPortal
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
         dir={isRtl ? "rtl" : "ltr"}
       >
-        <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit relative w-full max-w-sm rounded-3xl p-5 space-y-5 text-[var(--kaspi-text-primary)]">
+        <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit relative w-full max-w-sm rounded-3xl p-5 space-y-4 max-h-[85vh] overflow-y-auto text-[var(--kaspi-text-primary)]">
           <div className="flex items-center justify-between gap-3 border-b border-[var(--kaspi-border)] pb-3">
             <div className="flex items-center gap-2.5">
               <KaspiBrandMark size="sm" alt="KASPI" />
               <div>
-                <div className="text-sm font-extrabold">HEYUKA AI Platform</div>
-                <div className="text-[11px] text-[var(--kaspi-text-muted)]">KASPI Developer Console</div>
+                <div className="text-sm font-extrabold">HEYUKA OS 2050</div>
+                <div className="text-[11px] text-[var(--kaspi-text-muted)]">Multi-Product Platform</div>
               </div>
             </div>
             <button

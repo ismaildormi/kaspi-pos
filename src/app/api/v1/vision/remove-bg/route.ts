@@ -7,6 +7,7 @@ import {
   createRequestId,
 } from "@/lib/zebra-x/api-response";
 import { executeRemoveBgTask } from "@/lib/zebra-x/sidecar-bridge";
+import { findActiveEligibleWorker } from "@/lib/heyuka/compute/workers-registry";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +61,18 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const result = await executeRemoveBgTask({ imageUrl, imageBase64, model });
+  const activeWorker = await findActiveEligibleWorker({
+    tenantId: auth.tenantId,
+    requiredCapability: "vision_remove_bg",
+  });
+  const result = await executeRemoveBgTask({
+    imageUrl,
+    imageBase64,
+    model,
+    tenantWorker: activeWorker
+      ? { endpointUrl: activeWorker.worker.endpointUrl, token: activeWorker.token }
+      : null,
+  });
   return apiJsonResponse(
     {
       ...result,

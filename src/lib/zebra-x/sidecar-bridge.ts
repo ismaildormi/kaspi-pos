@@ -132,20 +132,21 @@ export function getConfiguredSidecarUrl(): string | null {
 
 async function callSidecarEndpoint<T = any>(
   path: string,
-  payload: unknown
+  payload: unknown,
+  tenantWorker?: { endpointUrl: string; token: string } | null
 ): Promise<{ ok: true; data: T } | { ok: false; reason: string }> {
-  const baseUrl = getConfiguredSidecarUrl();
+  const baseUrl = tenantWorker?.endpointUrl || getConfiguredSidecarUrl();
   if (!baseUrl) {
     return {
       ok: false,
-      reason: "NO_SIDECAR_CONFIGURED",
+      reason: "NO_WORKER_OR_SIDECAR_CONFIGURED",
     };
   }
   try {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
-    const token = process.env.X_ZEBRA_SIDECAR_TOKEN?.trim();
+    const token = tenantWorker?.token || process.env.X_ZEBRA_SIDECAR_TOKEN?.trim();
     if (token) headers.Authorization = `Bearer ${token}`;
 
     const res = await fetch(`${baseUrl}${path}`, {
@@ -155,12 +156,12 @@ async function callSidecarEndpoint<T = any>(
       signal: AbortSignal.timeout(25_000),
     });
     if (!res.ok) {
-      return { ok: false, reason: `Sidecar HTTP ${res.status}` };
+      return { ok: false, reason: `Worker HTTP ${res.status}` };
     }
     const data = (await res.json()) as T;
     return { ok: true, data };
   } catch (err: any) {
-    return { ok: false, reason: err?.message || "Sidecar unreachable" };
+    return { ok: false, reason: err?.message || "Worker unreachable" };
   }
 }
 
@@ -168,19 +169,24 @@ export async function executeRemoveBgTask(params: {
   imageUrl?: string;
   imageBase64?: string;
   model?: "rmbg-1.4" | "birefnet" | "imgly-webgpu";
+  tenantWorker?: { endpointUrl: string; token: string } | null;
 }) {
   if (params.imageUrl && !isSafePublicHttpUrl(params.imageUrl)) {
     return {
       ok: false,
+      executedServerSide: false,
+      honestStatus: "blocked" as const,
       error: "SSRF_BLOCKED: Private, local, or invalid imageUrl rejected.",
     };
   }
 
-  const sidecarTry = await callSidecarEndpoint("/vision/remove-bg", params);
+  const sidecarTry = await callSidecarEndpoint("/vision/remove-bg", params, params.tenantWorker);
   if (sidecarTry.ok) {
     return {
       ok: true,
-      mode: "sidecar_gpu",
+      executedServerSide: true,
+      honestStatus: "completed" as const,
+      mode: "worker_gpu",
       engine: params.model || "BiRefNet / RMBG-1.4",
       result: sidecarTry.data,
     };
@@ -188,6 +194,8 @@ export async function executeRemoveBgTask(params: {
 
   return {
     ok: true,
+    executedServerSide: false,
+    honestStatus: "browser_local_ready" as const,
     mode: "browser_webgpu_slot",
     engine: "@imgly/background-removal (ONNX WebGPU / WASM)",
     sidecarStatus: sidecarTry.reason,
@@ -236,6 +244,7 @@ export async function executeThreeDGenerateTask(params: {
   imageUrl?: string;
   format?: "glb" | "fbx" | "blend";
   targetPath?: string;
+  tenantWorker?: { endpointUrl: string; token: string } | null;
 }) {
   if (params.targetPath) {
     assertPosCoreImmutable(params.targetPath);
@@ -243,15 +252,19 @@ export async function executeThreeDGenerateTask(params: {
   if (params.imageUrl && !isSafePublicHttpUrl(params.imageUrl)) {
     return {
       ok: false,
+      executedServerSide: false,
+      honestStatus: "blocked" as const,
       error: "SSRF_BLOCKED: Private or invalid imageUrl rejected.",
     };
   }
 
-  const sidecarTry = await callSidecarEndpoint("/3d/generate", params);
+  const sidecarTry = await callSidecarEndpoint("/3d/generate", params, params.tenantWorker);
   if (sidecarTry.ok) {
     return {
       ok: true,
-      mode: "sidecar_gpu",
+      executedServerSide: true,
+      honestStatus: "completed" as const,
+      mode: "worker_gpu",
       engine: "TripoSR / InstantMesh + glTF-Transform",
       result: sidecarTry.data,
     };
@@ -266,22 +279,24 @@ export async function executeThreeDGenerateTask(params: {
   const format = params.format || "glb";
   return {
     ok: true,
+    executedServerSide: false,
+    honestStatus: "partial_catalog_and_script" as const,
     mode: "procedural_blender_and_catalog",
-    engine: "PolyHaven Open Catalog + Blender bpy Generator (Sidecar TripoSR ready)",
+    engine: "PolyHaven Open Catalog + Blender bpy Script (No Binary Mesh Generated Without Worker)",
     sidecarStatus: sidecarTry.reason,
     matchedReadyModels: matchedCatalog.assets,
     blenderBpyStarter: [
       "import bpy, bmesh",
-      "# Clean scene for X x Zebra 3D Hub generation",
+      "# Clean scene for HEYUKA 3D Hub generation",
       "bpy.ops.wm.read_factory_settings(use_empty=True)",
       "bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=3, radius=1.0)",
       "obj = bpy.context.active_object",
       `# Export ready target: .${format}`,
       format === "glb"
-        ? "bpy.ops.export_scene.gltf(filepath='output_xzebra.glb', export_format='GLB')"
+        ? "bpy.ops.export_scene.gltf(filepath='output_heyuka.glb', export_format='GLB')"
         : format === "fbx"
-        ? "bpy.ops.export_scene.fbx(filepath='output_xzebra.fbx')"
-        : "bpy.ops.wm.save_as_mainfile(filepath='output_xzebra.blend')",
+        ? "bpy.ops.export_scene.fbx(filepath='output_heyuka.fbx')"
+        : "bpy.ops.wm.save_as_mainfile(filepath='output_heyuka.blend')",
     ].join("\n"),
   };
 }
@@ -291,31 +306,42 @@ export async function executeAudioTranscribeTask(params: {
   mimeType?: string;
   mediaUrl?: string;
   language?: string;
+  tenantWorker?: { endpointUrl: string; token: string } | null;
 }) {
   if (params.mediaUrl && !isSafePublicHttpUrl(params.mediaUrl)) {
     return {
       ok: false,
+      executedServerSide: false,
+      honestStatus: "blocked" as const,
       error: "SSRF_BLOCKED: Private or invalid mediaUrl rejected.",
     };
   }
 
   if (params.mediaUrl) {
-    const sidecarTry = await callSidecarEndpoint("/audio/transcribe", {
-      mediaUrl: params.mediaUrl,
-      language: params.language,
-    });
+    const sidecarTry = await callSidecarEndpoint(
+      "/audio/transcribe",
+      {
+        mediaUrl: params.mediaUrl,
+        language: params.language,
+      },
+      params.tenantWorker
+    );
     if (sidecarTry.ok) {
       return {
         ok: true,
-        mode: "sidecar_faster_whisper_ytdlp",
+        executedServerSide: true,
+        honestStatus: "completed" as const,
+        mode: "worker_faster_whisper_ytdlp",
         engine: "Faster-Whisper / WhisperX + yt-dlp",
         result: sidecarTry.data,
       };
     }
     return {
       ok: true,
-      mode: "sidecar_worker_required_for_url",
-      engine: "yt-dlp + Faster-Whisper + whisper-timestamped",
+      executedServerSide: false,
+      honestStatus: "worker_required" as const,
+      mode: "worker_required_for_url",
+      engine: "yt-dlp + Faster-Whisper (Connect a user Worker or upload audio file directly)",
       sidecarStatus: sidecarTry.reason,
       commandTemplate: `yt-dlp -x --audio-format mp3 "${params.mediaUrl}" -o audio.mp3 && whisperx audio.mp3 --model large-v3`,
     };
@@ -328,7 +354,9 @@ export async function executeAudioTranscribeTask(params: {
     });
     return {
       ok: true,
-      mode: cloudResult.fallback ? "client_web_speech_fallback" : "zebra_vision_whisper_api",
+      executedServerSide: !cloudResult.fallback,
+      honestStatus: cloudResult.fallback ? ("worker_required" as const) : ("completed" as const),
+      mode: cloudResult.fallback ? "client_web_speech_fallback" : "heyuka_whisper_api",
       engine: cloudResult.engine || "HEYUKA Multilingual Whisper",
       text: cloudResult.text,
       fallback: Boolean(cloudResult.fallback),
@@ -338,6 +366,8 @@ export async function executeAudioTranscribeTask(params: {
 
   return {
     ok: false,
+    executedServerSide: false,
+    honestStatus: "blocked" as const,
     error: "Provide either multipart audio 'file' or public 'mediaUrl'.",
   };
 }
@@ -345,23 +375,32 @@ export async function executeAudioTranscribeTask(params: {
 export async function executeAudioSeparateTask(params: {
   mediaUrl?: string;
   stems?: "2stems" | "4stems";
+  tenantWorker?: { endpointUrl: string; token: string } | null;
 }) {
   if (params.mediaUrl && !isSafePublicHttpUrl(params.mediaUrl)) {
     return {
       ok: false,
+      executedServerSide: false,
+      honestStatus: "blocked" as const,
       error: "SSRF_BLOCKED: Private or invalid mediaUrl rejected.",
     };
   }
 
   const stems = params.stems || "2stems";
-  const sidecarTry = await callSidecarEndpoint("/audio/separate", {
-    mediaUrl: params.mediaUrl,
-    stems,
-  });
+  const sidecarTry = await callSidecarEndpoint(
+    "/audio/separate",
+    {
+      mediaUrl: params.mediaUrl,
+      stems,
+    },
+    params.tenantWorker
+  );
   if (sidecarTry.ok) {
     return {
       ok: true,
-      mode: "sidecar_demucs_gpu",
+      executedServerSide: true,
+      honestStatus: "completed" as const,
+      mode: "worker_demucs_gpu",
       engine: "Demucs (Meta htdemucs) + UVR5 + FFmpeg",
       stems,
       result: sidecarTry.data,
@@ -370,8 +409,10 @@ export async function executeAudioSeparateTask(params: {
 
   return {
     ok: true,
-    mode: "sidecar_worker_required",
-    engine: "Meta Demucs (htdemucs) / UVR5 + FFmpeg",
+    executedServerSide: false,
+    honestStatus: "worker_required" as const,
+    mode: "worker_required",
+    engine: "Meta Demucs (htdemucs) + FFmpeg (Not available without user GPU Worker)",
     sidecarStatus: sidecarTry.reason,
     stems,
     pipelineSpec: {

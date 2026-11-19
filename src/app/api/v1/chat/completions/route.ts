@@ -10,6 +10,10 @@ import {
   HEYUKA_API_CORS_HEADERS,
 } from "@/lib/zebra-x/api-response";
 import { generateTextWithRouter } from "@/lib/ai-router";
+import {
+  evaluateZeroCostPolicy,
+  recordTenantFreeTierUsage,
+} from "@/lib/heyuka/compute/zero-cost-policy";
 import { runUnrestrictedWebResearch } from "@/lib/zebra-x/arsenal-vault";
 import { queryPublicApiHub } from "@/lib/zebra-x/tools/public-apis-hub";
 import { executePolyglotCodeSandbox } from "@/lib/zebra-x/tools/code-sandbox";
@@ -283,12 +287,34 @@ Planned Route: ${routePlan.complexity}${
     callerSystem ? `\n\nCaller Context:\n${callerSystem}` : ""
   }`;
 
+  const policyDecision = await evaluateZeroCostPolicy({
+    tenantId: auth.tenantId,
+  });
+  if (!policyDecision.allowed) {
+    return apiErrorResponse({
+      status: 429,
+      message: policyDecision.reason,
+      type: "permission_error",
+      code: "zero_cost_budget_reached",
+      requestId,
+      hint: "Configure a tenant BYOK provider or connect a local Worker node under /zebra-x/workers to bypass shared free-tier daily caps.",
+    });
+  }
+
   try {
     const result = await generateTextWithRouter({
       system: baseSystem,
       messages: chatMessages,
+      governance: {
+        tenantId: auth.tenantId,
+        allowOwnerPaidProviders: false,
+      },
       ...(enableTools ? { tools: heyukaApiTools, stopWhen: stepCountIs(5) } : {}),
     } as any);
+
+    if (policyDecision.tier === "free_public_tier") {
+      await recordTenantFreeTierUsage(auth.tenantId).catch(() => {});
+    }
 
     const audited = runPreReplyReflectionGate({
       draftText: String(result.text || ""),

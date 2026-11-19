@@ -72,7 +72,7 @@ const nextConfig = {
         ],
       },
       {
-        source: "/api/v1/(models|debug|chat/:path*|public-apis|sandbox/:path*|web/:path*|images/:path*|vision/:path*|3d/:path*|audio/:path*|zebra-x/openapi|zebra-x/auto-connect)",
+        source: "/api/v1/(models|debug|chat/:path*|public-apis|sandbox/:path*|web/:path*|images/:path*|vision/:path*|3d/:path*|audio/:path*|heyuka/:path*|zebra-x/openapi|zebra-x/auto-connect)",
         headers: [
           { key: "Access-Control-Allow-Origin", value: "*" },
           { key: "Access-Control-Allow-Methods", value: "GET, POST, OPTIONS" },

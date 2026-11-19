@@ -37,6 +37,8 @@ const PUBLIC_API_PATHS = [
   "/api/v1/zebra-x/openapi",
   "/api/v1/3d/assets",
   "/api/v1/heyuka/installer",
+  "/api/v1/heyuka/capabilities",
+  "/api/v1/heyuka/widget",
   "/api/v1/models",
   "/api/v1/debug",
   "/healthz",
