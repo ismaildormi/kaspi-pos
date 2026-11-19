@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 const CreateKeySchema = z.object({
   label: z.string().min(1).max(64).optional(),
   scopes: z.array(z.enum(ALL_X_ZEBRA_SCOPES as [string, ...string[]])).optional(),
-  tokenPrefix: z.enum(["hk-live", "zx-live"]).optional(),
+  tokenPrefix: z.enum(["hk-live", "yk-live", "zx-live"]).optional(),
 });
 
 export async function GET() {

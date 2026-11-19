@@ -154,7 +154,7 @@ export async function middleware(request: NextRequest) {
   const hasAuth = Boolean(
     sessionToken ||
       /^Bearer\s+/i.test(authHeader || "") ||
-      /^(?:zx-|hk-|hyk-)/i.test((apiKeyHeader || "").trim())
+      /^(?:zx-|hk-|hyk-|yk-)/i.test((apiKeyHeader || "").trim())
   );
 
   // 3. Platform Super Admin & Authenticated Workspace routes protection (/admin, /dashboard, /pos)

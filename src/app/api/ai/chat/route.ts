@@ -8,7 +8,25 @@ import { auth } from "@/auth";
 import { toDecimal, roundMoney } from "@/domain/money";
 import { generateProductImageUrl } from "@/lib/pollinations";
 import { runPreReplyReflectionGate } from "@/lib/zebra-x/core/reflection-gate";
-import { planXZebraToolRoute } from "@/lib/zebra-x/core/router";
+import {
+  planXZebraToolRoute,
+  selectMaskedActiveTools,
+} from "@/lib/zebra-x/core/router";
+import {
+  authorSkillFromSuccess,
+  buildLevel1SkillPromptIndex,
+  importExternalSkillRepoCatalog,
+  loadSkillInstructionsOnDemand,
+} from "@/lib/zebra-x/core/skills-vault";
+import {
+  compactConversationMessages,
+  loadHierarchicalYukaContext,
+  spawnParallelSubAgents,
+} from "@/lib/zebra-x/core/cowork-session";
+import {
+  autonomousToolHunt,
+  fetchBigTechOrgRepos,
+} from "@/lib/zebra-x/core/catalog-hunter";
 import {
   refinePromptWithPhase3,
   scoreSelfCheckConsistency,
@@ -1102,6 +1120,91 @@ export async function POST(req: NextRequest) {
         execute: async ({ language, code, stdin }) =>
           executePolyglotCodeSandbox({ language, code, stdin }),
       }),
+
+      lookupSkillOrAuthor: tool({
+        description:
+          "Progressive Agent Skills engine (SKILL.md): loads Level-2 instructions for a named skill on-demand, indexes official skill repos (anthropics/skills, awesome-agent-skills, Fabric, cursorrules), or authors a new reusable skill after solving a complex workflow.",
+        inputSchema: z.object({
+          action: z.enum(["load", "author", "import_repo"]),
+          skillIdOrName: z.string().optional(),
+          domain: z
+            .enum([
+              "commerce",
+              "creative-suite",
+              "3d",
+              "web",
+              "science",
+              "document-factory",
+              "engineering",
+            ])
+            .optional(),
+          description: z.string().optional(),
+          steps: z.array(z.string()).optional(),
+          repoSlug: z.string().optional(),
+        }),
+        execute: async (input) => {
+          if (input.action === "import_repo") {
+            return importExternalSkillRepoCatalog(input.repoSlug || "anthropics/skills");
+          }
+          if (input.action === "author" && input.skillIdOrName && input.description) {
+            return authorSkillFromSuccess({
+              name: input.skillIdOrName,
+              domain: input.domain || "engineering",
+              description: input.description,
+              steps: input.steps || [input.description],
+              toolNames: ["lookupSkillOrAuthor"],
+              tags: [input.domain || "engineering", "auto-authored"],
+            });
+          }
+          const loaded = await loadSkillInstructionsOnDemand(input.skillIdOrName || "code-sandbox-audit");
+          return loaded || { found: false, message: "No matching SKILL.md found." };
+        },
+      }),
+
+      discoverOpenSourceTool: tool({
+        description:
+          "Autonomous zero-key open-source tool hunter & Big-Tech catalog indexer (Microsoft, Google, Meta, Anthropic, xAI, NVIDIA, Cloudflare, HuggingFace, GitHub, NPM): finds top libraries for unfamiliar needs or fetches org repos.",
+        inputSchema: z.object({
+          mode: z.enum(["hunt_tool", "big_tech_org"]),
+          queryOrOrg: z.string().min(2),
+          verifyWithSandbox: z.boolean().optional(),
+        }),
+        execute: async ({ mode, queryOrOrg, verifyWithSandbox }) => {
+          if (mode === "big_tech_org") {
+            return fetchBigTechOrgRepos(queryOrOrg, 8);
+          }
+          return autonomousToolHunt({
+            needQuery: queryOrOrg,
+            verifyWithSandbox: Boolean(verifyWithSandbox),
+            saveAsSkillDomain: "engineering",
+          });
+        },
+      }),
+
+      runCoworkSubAgents: tool({
+        description:
+          "Spawns isolated parallel research sub-agents (web queries & checks) and returns clean concise summaries without cluttering main chat context.",
+        inputSchema: z.object({
+          tasks: z
+            .array(
+              z.object({
+                id: z.string().min(1),
+                role: z.enum(["research", "analysis", "verify"]),
+                query: z.string().min(2),
+              })
+            )
+            .min(1)
+            .max(4),
+        }),
+        execute: async ({ tasks }) => {
+          const workerResults = await spawnParallelSubAgents(
+            tasks.map((t) => ({ id: t.id, role: t.role, payload: t.query })),
+            async (q) => runUnrestrictedWebResearch({ query: q, lang: expectedShortLocale }),
+            3
+          );
+          return { ok: true, subAgentSummaries: workerResults };
+        },
+      }),
     };
 
     const superAdminTools = {
@@ -1148,11 +1251,25 @@ export async function POST(req: NextRequest) {
       }),
     };
 
-    const activeTools = isSuperAdmin ? superAdminTools : tenantTools;
+    const fullTools = isSuperAdmin ? superAdminTools : tenantTools;
     const phase3Refinement = refinePromptWithPhase3(userPrompt, expectedShortLocale);
     const routePlan = planXZebraToolRoute(
       phase3Refinement.normalization.normalizedQuery,
       isSuperAdmin
+    );
+    const activeTools = selectMaskedActiveTools(fullTools, routePlan, userPrompt);
+    const [level1SkillsIndex, compactedHistoryRes] = await Promise.all([
+      buildLevel1SkillPromptIndex(userPrompt).catch(() => ""),
+      Promise.resolve(compactConversationMessages(formattedHistory)),
+    ]);
+    const hierarchicalDomainHint = loadHierarchicalYukaContext(
+      routePlan.intents.includes("pos_metrics") || routePlan.intents.includes("pos_sale_action")
+        ? "commerce"
+        : routePlan.intents.includes("media_and_vision")
+        ? "creative-suite"
+        : routePlan.intents.includes("public_apis") || routePlan.intents.includes("universal_web_research")
+        ? "web"
+        : "engineering"
     );
 
     // 6. System Instructions (HEYUKA Sovereign Core by KASPI — Immutable POS Lock + Unrestricted Universal Topics + Phase 3)
@@ -1174,6 +1291,10 @@ ${phase3Refinement.systemDirectiveSnippet}`;
       ? `\nRECALLED EVOLVING HEYUKA MEMORY & SKILLS (Local Persistent Brain):\n${clientMemoryContext}\n`
       : "";
 
+    const progressiveSkillsSnippet = level1SkillsIndex
+      ? `\nPROGRESSIVE SKILL INDEX (Level-1 Metadata Only — call lookupSkillOrAuthor(load) strictly when needed):\n${level1SkillsIndex}\n${hierarchicalDomainHint}\n`
+      : `\n${hierarchicalDomainHint}\n`;
+
     const activityPromptSnippet = clientActivityLog
       ? `\nCURRENT DEVICE ACTIVITY BREADCRUMBS (Local Ring Buffer):\n${clientActivityLog}\n`
       : "";
@@ -1185,29 +1306,31 @@ Available Super Admin & Store Tools:
 - Platform: getPlatformStats, getPlatformRevenue, getAllTenantsList, getTenantDetails, getAIUsageStats
 - Store & Actions: getTodaySales, getLowStockProducts, getTopSellingProducts, predictStockDemand, getLastCustomer, getLastReceiptTicket, getUserActivityLog, generatePdfReport, preparePosActionConfirmation, generateProductImage, searchWebImages
 - Universal Web, Code Sandbox, Cyber, Math, Office & Vision Tools: unrestrictedWebSearch, executeCodeSandbox, queryPublicApi (34 live open APIs incl. CISA/OSV cyber intel & Nador marine), evaluateMathAndFinance, createRichArtifactOrExport, checkPhoneCalendarOrCron
-${closedLoopMasterDirective}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
+${closedLoopMasterDirective}${progressiveSkillsSnippet}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
 
     const merchantSystemPrompt = `You are HEYUKA by KASPI, the versatile, unrestricted intelligence companion & business advisor inside KASPI POS.
 Available Store & Universal Arsenal Tools:
 - Metrics & Awareness (Read-Only): getTodaySales, getLowStockProducts, getTopSellingProducts, predictStockDemand, getLastCustomer, getLastReceiptTicket, getUserActivityLog
 - Real Exports & Explicit Action Cards: generatePdfReport, preparePosActionConfirmation
 - Universal Web, Code Sandbox, Cyber, Science, Office & Vision Tools: unrestrictedWebSearch, executeCodeSandbox, queryPublicApi (34 No-Key APIs incl. Cyber Defense & Smart City), evaluateMathAndFinance, createRichArtifactOrExport, checkPhoneCalendarOrCron
+- Skills, Self-Discovery & Cowork: lookupSkillOrAuthor, discoverOpenSourceTool, runCoworkSubAgents
 - Media & Images: generateProductImage, searchWebImages
 
 DOMAIN & HARDWARE EXPERTISE:
 - Thermal Printers (80mm/58mm ESC/POS USB/Bluetooth/Network), EAN-13 HID scanners, Electronic Scales (PLU/KG), CSV/Excel import, Moroccan TVA/DGI/ICE retail workflows.
 - Prices and revenues MUST be stated clearly in MAD (درهم).
-${closedLoopMasterDirective}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
+${closedLoopMasterDirective}${progressiveSkillsSnippet}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
 
     // 7. Multi-Gateway Key Rotation & True Stream-Level Failover Execution
     try {
+      const sanitizedMessages =
+        compactedHistoryRes.compacted.length > 0
+          ? compactedHistoryRes.compacted
+          : [{ role: "user" as const, content: userPrompt }];
       return await streamUiResponseWithRouter(
         {
           system: isSuperAdmin ? superAdminSystemPrompt : merchantSystemPrompt,
-          messages:
-            formattedHistory.length > 0
-              ? formattedHistory
-              : [{ role: "user" as const, content: userPrompt }],
+          messages: sanitizedMessages,
           tools: activeTools,
           stopWhen: stepCountIs(5),
           onCompletedText: async (text: string) => {

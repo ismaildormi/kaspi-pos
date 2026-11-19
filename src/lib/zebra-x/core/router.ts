@@ -25,6 +25,8 @@ export type XZebraIntentCategory =
   | "universal_web_research"
   | "nador_oriental_local"
   | "node_mesh_scale"
+  | "skills_and_cowork"
+  | "tool_discovery"
   | "platform_owner";
 
 export interface RoutePlanDecision {
@@ -57,6 +59,8 @@ const TOOL_CATALOG_INDEX: Record<XZebraIntentCategory, string[]> = {
   universal_web_research: ["unrestrictedWebSearch", "executeCodeSandbox", "queryPublicApi", "createRichArtifactOrExport"],
   nador_oriental_local: ["queryPublicApi", "unrestrictedWebSearch", "createRichArtifactOrExport"],
   node_mesh_scale: ["unrestrictedWebSearch", "executeCodeSandbox", "evaluateMathAndFinance", "createRichArtifactOrExport"],
+  skills_and_cowork: ["lookupSkillOrAuthor", "runCoworkSubAgents", "executeCodeSandbox", "createRichArtifactOrExport"],
+  tool_discovery: ["discoverOpenSourceTool", "lookupSkillOrAuthor", "unrestrictedWebSearch", "executeCodeSandbox"],
   platform_owner: [
     "getPlatformStats",
     "getPlatformRevenue",
@@ -103,6 +107,12 @@ export function planXZebraToolRoute(prompt: string, isOwner: boolean): RoutePlan
   }
   if (/(صاوب صورة|ارسم|توليد صورة|صورة|تصويرة|خلفية|شعار|بوستر|draw|generate image|generate photo|poster|logo|image|photo|picture|background)/i.test(p)) {
     intents.push("media_and_vision");
+  }
+  if (/(مهارة|مهارات|سكيلز|مجلد|ملفات|جلسة|مهام|تعاون|skill\.md|skills|cowork|checkpoint|workspace|sub-?agent|وكلاء فرعي)/i.test(p)) {
+    intents.push("skills_and_cowork");
+  }
+  if (/(اكتشف|كتالوج|مكتبة|مفتوح المصدر|مستودع|github|microsoft|google|meta|xai|anthropic|hugging|sora|kling|runway|suno|open-source|discover)/i.test(p)) {
+    intents.push("tool_discovery");
   }
   if (isOwner && /(منصة|متاجر|mrr|gmv|tenants|platform|revenue|usage|اشتراك)/i.test(p)) {
     intents.push("platform_owner");
@@ -229,4 +239,36 @@ export async function buildMasterStrategicExecutionPlan(params: {
       mermaidDiagram: dag.mermaidDiagram,
     },
   };
+}
+
+/**
+ * Dynamic Tool Masking (`v12.4` Defer Loading):
+ * Keeps only context-matched tools + core fallbacks active on standard turns so large registries
+ * never cause tool-selection confusion, while keeping at least 6 essential tools available.
+ */
+export function selectMaskedActiveTools<T extends Record<string, any>>(
+  allTools: T,
+  routePlan: RoutePlanDecision,
+  prompt: string
+): Partial<T> {
+  if (/(\ball tools\b|\bevery\b|كاع القدرات|كل قدراتك|المصادر المفتوحة)/i.test(prompt)) {
+    return allTools;
+  }
+
+  const alwaysReady = [
+    "unrestrictedWebSearch",
+    "queryPublicApi",
+    "evaluateMathAndFinance",
+    "executeCodeSandbox",
+    "lookupSkillOrAuthor",
+    "createRichArtifactOrExport",
+  ];
+  const keepNames = new Set<string>([...alwaysReady, ...routePlan.selectedToolNames]);
+  const masked: Partial<T> = {};
+  for (const [k, v] of Object.entries(allTools)) {
+    if (keepNames.has(k)) {
+      (masked as any)[k] = v;
+    }
+  }
+  return Object.keys(masked).length > 0 ? masked : allTools;
 }

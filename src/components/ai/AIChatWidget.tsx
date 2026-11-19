@@ -37,6 +37,8 @@ import {
   Maximize2,
   Minimize2,
   PanelLeft,
+  FolderOpen,
+  ListTodo,
 } from "lucide-react";
 import { XZebraRichMessage } from "./XZebraRichMessage";
 import { LiveArtifactDrawer, type LiveArtifactItem } from "./LiveArtifactDrawer";
@@ -74,6 +76,13 @@ import {
   registerVoyagerSkill,
   searchEvolvingMemory,
 } from "@/lib/zebra-x/core/memory-engine";
+import {
+  resumeCoworkSession,
+  saveCoworkCheckpoint,
+  scanBrowserWorkspaceDirectory,
+  type CoworkFileSummary,
+  type LiveTaskItem,
+} from "@/lib/zebra-x/core/cowork-session";
 
 interface LocalChatMessage {
   id: string;
@@ -307,6 +316,12 @@ export function AIChatWidget() {
     totalMemories: 0,
     totalSkills: 0,
   });
+  const [coworkWorkspace, setCoworkWorkspace] = useState<{
+    name: string;
+    files: CoworkFileSummary[];
+  } | null>(null);
+  const [coworkTasks, setCoworkTasks] = useState<LiveTaskItem[]>([]);
+  const [planOnlyMode, setPlanOnlyMode] = useState(false);
   const lastEvolvedMsgIdRef = useRef<string | null>(null);
   const composerTextareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -1300,6 +1315,40 @@ export function AIChatWidget() {
       // Never block chat dispatch on local memory lookup
     }
 
+    if (coworkWorkspace && coworkWorkspace.files.length > 0) {
+      const wsContext = coworkWorkspace.files
+        .slice(0, 8)
+        .map((f) => `- [Workspace:${f.relativePath}] ${f.previewMarkdown.slice(0, 220)}`)
+        .join("\n");
+      recalledMemoryContext = `${recalledMemoryContext}\nCOWORK WORKSPACE DIRECTORY (${coworkWorkspace.name}):\n${wsContext}`.slice(
+        0,
+        2800
+      );
+    }
+
+    if (planOnlyMode) {
+      recalledMemoryContext = `${recalledMemoryContext}\n[Read-Only Plan Mode Active]: Present a clear structured numbered plan before recommending any execution step.`.trim();
+    }
+
+    const activeTaskId = `task-${Date.now()}`;
+    const goalSummary = (messageText || enrichedMessageText || t.analyzePrompt).slice(0, 120);
+    const nextTasks: LiveTaskItem[] = [
+      ...coworkTasks.slice(-4).map((it) => ({
+        ...it,
+        status: it.status === "in_progress" ? ("completed" as const) : it.status,
+      })),
+      { id: activeTaskId, label: goalSummary, status: "in_progress" },
+    ];
+    setCoworkTasks(nextTasks);
+    void saveCoworkCheckpoint({
+      sessionId: activeThreadId,
+      goal: goalSummary,
+      workspaceName: coworkWorkspace?.name,
+      tasks: nextTasks,
+      openedFiles: coworkWorkspace?.files.map((f) => f.relativePath) || [],
+      scratchpadNotes: [planOnlyMode ? "Plan Mode enabled" : "Direct Cowork execution"],
+    });
+
     setIsLocalThinking(false);
 
     try {
@@ -1519,6 +1568,22 @@ export function AIChatWidget() {
               totalMemories: memStats.totalMemories || 0,
               totalSkills: memStats.totalSkills || 0,
             });
+            setCoworkTasks((prev) => {
+              const updated = prev.map((tk) =>
+                tk.status === "in_progress" ? ({ ...tk, status: "completed" as const }) : tk
+              );
+              if (updated.length > 0) {
+                void saveCoworkCheckpoint({
+                  sessionId: activeThreadId,
+                  goal: updated[updated.length - 1]?.label || "Session",
+                  workspaceName: coworkWorkspace?.name,
+                  tasks: updated,
+                  openedFiles: coworkWorkspace?.files.map((f) => f.relativePath) || [],
+                  scratchpadNotes: [lastMsg.content.slice(0, 180)],
+                });
+              }
+              return updated;
+            });
           } catch {
             // Best-effort client memory reinforcement
           }
@@ -1553,11 +1618,16 @@ export function AIChatWidget() {
     [threadSearch]
   );
 
-  // Load & filter saved conversation threads when Expanded Workspace or search changes
+  // Load & filter saved conversation threads + restore Cowork session checkpoints
   useEffect(() => {
     if (!isOpen || !isExpanded) return;
     void refreshSavedThreads(threadSearch);
-  }, [isOpen, isExpanded, threadSearch, refreshSavedThreads]);
+    void resumeCoworkSession(activeThreadId).then((saved) => {
+      if (saved && Array.isArray(saved.tasks)) {
+        setCoworkTasks(saved.tasks);
+      }
+    });
+  }, [isOpen, isExpanded, activeThreadId, threadSearch, refreshSavedThreads]);
 
   // Persist compact text snapshot cleanly after each completed exchange
   useEffect(() => {
@@ -1590,6 +1660,7 @@ export function AIChatWidget() {
     setLocalFallbackMessages([]);
     setAttachment(null);
     setActiveArtifact(null);
+    setCoworkTasks([]);
     setInput("");
     setIsLocalThinking(false);
     setActiveThreadId(`heyuka-${Date.now()}`);
@@ -1859,6 +1930,46 @@ export function AIChatWidget() {
                       )}
                     </button>
 
+                    {isExpanded && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const scanned = await scanBrowserWorkspaceDirectory(18);
+                              setCoworkWorkspace({
+                                name: scanned.workspaceName,
+                                files: scanned.files,
+                              });
+                            } catch {}
+                          }}
+                          className={`hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-semibold cursor-pointer transition-colors ${
+                            coworkWorkspace
+                              ? "bg-emerald-500/20 border-emerald-400/50 text-emerald-300"
+                              : "bg-white/[0.05] hover:bg-white/[0.12] border-white/15 text-zinc-300"
+                          }`}
+                          title="Workspace Folder Cowork (Read External Project Files)"
+                        >
+                          <FolderOpen className="w-3 h-3" />
+                          <span>{coworkWorkspace ? `${coworkWorkspace.name} (${coworkWorkspace.files.length})` : "Folder"}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setPlanOnlyMode((p) => !p)}
+                          className={`hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-semibold cursor-pointer transition-colors ${
+                            planOnlyMode
+                              ? "bg-amber-500/20 border-amber-400/50 text-amber-200"
+                              : "bg-white/[0.05] hover:bg-white/[0.12] border-white/15 text-zinc-300"
+                          }`}
+                          title="Toggle Read-Only Plan Mode Before Execution"
+                        >
+                          <ListTodo className="w-3 h-3" />
+                          <span>Plan</span>
+                        </button>
+                      </>
+                    )}
+
                     {/* Strictly Closes Window & Auto-Wipes Session State */}
                     {isExpanded && (memoryStats.totalMemories > 0 || memoryStats.totalSkills > 0) && (
                       <span
@@ -1904,6 +2015,28 @@ export function AIChatWidget() {
                     />
                   </div>
                 </div>
+
+                {/* Live Persistent Cowork Checklist & Folder Strip (Expanded Mode Only) */}
+                {isExpanded && coworkTasks.length > 0 && (
+                  <div className="px-4 py-1.5 border-b border-white/10 bg-white/[0.03] flex items-center gap-2 overflow-x-auto kaspi-no-scrollbar shrink-0">
+                    <span className="text-[10px] font-bold text-emerald-300 shrink-0">
+                      Cowork:
+                    </span>
+                    {coworkTasks.slice(-3).map((tk) => (
+                      <span
+                        key={tk.id}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] border max-w-[200px] truncate ${
+                          tk.status === "completed"
+                            ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-200"
+                            : "bg-amber-500/15 border-amber-400/35 text-amber-200 animate-pulse"
+                        }`}
+                      >
+                        <span>{tk.status === "completed" ? "✓" : "⏳"}</span>
+                        <span className="truncate">{tk.label}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
 
               {/* Messages Area with Doodle Wallpaper & Clean Scrollbar Suppression */}
               <div

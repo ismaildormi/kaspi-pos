@@ -286,7 +286,7 @@ export function XZebraPlatformPortal() {
   const [showKeyForm, setShowKeyForm] = useState(true);
   const [newKeyLabel, setNewKeyLabel] = useState("");
   const [permissionTier, setPermissionTier] = useState<PermissionTierId>("all");
-  const [tokenPrefix, setTokenPrefix] = useState<"hk-live" | "zx-live">("hk-live");
+  const [tokenPrefix, setTokenPrefix] = useState<"hk-live" | "yk-live" | "zx-live">("hk-live");
   const [createdSecretOnce, setCreatedSecretOnce] = useState<string | null>(null);
   const [createdKeyId, setCreatedKeyId] = useState<string | null>(null);
   const [keyBusy, setKeyBusy] = useState(false);
@@ -872,7 +872,7 @@ export function XZebraPlatformPortal() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
                   <div className="flex items-center gap-2 text-[11px] text-zinc-400">
                     <span>{isAr ? "صيغة المفتاح:" : "Format:"}</span>
-                    {(["hk-live", "zx-live"] as const).map((pref) => (
+                    {(["hk-live", "yk-live", "zx-live"] as const).map((pref) => (
                       <button
                         key={pref}
                         type="button"

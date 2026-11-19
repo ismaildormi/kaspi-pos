@@ -58,21 +58,32 @@ export function hashApiKeyToken(rawToken: string): string {
 
 export function isDeveloperApiToken(raw: string): boolean {
   const clean = raw.trim().toLowerCase();
-  return clean.startsWith("hk-") || clean.startsWith("hyk-") || clean.startsWith("zx-");
+  return (
+    clean.startsWith("hk-") ||
+    clean.startsWith("hyk-") ||
+    clean.startsWith("yk-") ||
+    clean.startsWith("zx-")
+  );
 }
 
 export function buildHashedApiKeyArtifacts(params: {
   label?: string;
   scopes?: XZebraKeyScope[];
   createdByUserId?: string;
-  tokenPrefix?: "hk-live" | "zx-live";
+  tokenPrefix?: "hk-live" | "yk-live" | "zx-live";
 }): {
   rawKey: string;
   keyHash: string;
   meta: StoredApiKeyMeta;
 } {
-  const tokenPrefix = params.tokenPrefix === "zx-live" ? "zx-live" : "hk-live";
-  const idPrefix = tokenPrefix === "zx-live" ? "zk" : "hk";
+  const tokenPrefix =
+    params.tokenPrefix === "zx-live"
+      ? "zx-live"
+      : params.tokenPrefix === "yk-live"
+      ? "yk-live"
+      : "hk-live";
+  const idPrefix =
+    tokenPrefix === "zx-live" ? "zk" : tokenPrefix === "yk-live" ? "yk" : "hk";
   const randomSecret = crypto.randomBytes(24).toString("hex");
   const rawKey = `${tokenPrefix}-${randomSecret}`;
   const keyHash = hashApiKeyToken(rawKey);
@@ -106,7 +117,7 @@ export async function createTenantXZebraApiKey(params: {
   userId?: string;
   label?: string;
   scopes?: XZebraKeyScope[];
-  tokenPrefix?: "hk-live" | "zx-live";
+  tokenPrefix?: "hk-live" | "yk-live" | "zx-live";
 }): Promise<{ secretKeyOnce: string; keyId: string; meta: StoredApiKeyMeta }> {
   if (!params.tenantId || params.tenantId === "00000000-0000-0000-0000-000000000000") {
     throw new Error("AUTHENTICATED_TENANT_REQUIRED");

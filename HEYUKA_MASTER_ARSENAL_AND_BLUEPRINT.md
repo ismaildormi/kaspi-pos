@@ -207,3 +207,20 @@ flowchart TD
 3. **السيادة غير المتماثلة و`Remote Kill-Switch` (`Phase 7`):** أي مزامنة من عقد المستخدمين إلى `Owner Root Vault` أو `Kill-Switch` أو بث `owner-live` يجب أن تكون موثقة بوضوح في شروط المطورين (`Opt-In / Licensed Node`)، ومعزولة داخل `Extism WASI Sandbox` + `Semgrep/Bandit` حتى لا تنفذ مهارة معطوبة داخل جهاز المالك.
 4. **الهاتف `SIP` والاتصالات:** برامج السنترال مجانية، أما المكالمات الحقيقية فتعبر مزود `SIP` برصيد فعلي أو مودم `USB/GSM` بشريحة محلية.
 5. **عزل `WebContainers`:** يكتفي `LiveArtifactDrawer` في `Phase 2` بـ `iframe srcdoc` المعزول والعارض المباشر لكي لا نكسر صور المتجر بترويسات `COOP/COEP`.
+
+
+---
+
+## Chapter 40 (v12.1 – v14.0): Progressive `SKILL.md` Vault, Persistent Cowork Sessions, Context Hygiene, Autonomous Tool Hunter & GitHub Flagship Hub
+
+- **Progressive Skills (`skills/` + `src/lib/zebra-x/core/skills-vault.ts`):**
+  - 7 domain-bucketed `SKILL.md` packages (`commerce`, `creative-suite`, `3d`, `web`, `science`, `document-factory`, `engineering`) with 3-tier Progressive Disclosure (`Level 1 Metadata Index ~50t/skill`, `Level 2 On-Demand Body`, `Level 3 Execute & Release`).
+  - Auto-skill authoring (`authorSkillFromSuccess`), Fabric/Cursor `.mdc` converter (`convertPatternOrRuleToYukaSkill`), `.yuka-skill/v1` export bundles, and SSRF-allowlisted GitHub Skills Indexer (`importExternalSkillRepoCatalog`).
+- **Persistent Cowork Sessions & Context Hygiene (`YUKA.md` + `src/lib/zebra-x/core/cowork-session.ts`):**
+  - Dexie IndexedDB persistent checkpoints (`saveCoworkCheckpoint` / `resumeCoworkSession`), Live Task Checklist UI strip + File System Access API Workspace Folder Cowork inside expanded `AIChatWidget`.
+  - Hierarchical context (`loadHierarchicalYukaContext`), Smart Auto-Compaction (`compactConversationMessages`), Tool Output Pruning (`pruneOldToolOutputs`), Clarification Gate (`evaluateClarificationGate`), Dynamic Tool Masking (`selectMaskedActiveTools`), and Parallel Sub-Agent Spawning (`spawnParallelSubAgents`).
+- **Big-Tech Catalogs, Frontier Equivalents & Self-Discovery (`src/lib/zebra-x/core/catalog-hunter.ts`):**
+  - Zero-key live repository discovery (`fetchBigTechOrgRepos` + `autonomousToolHunt` across GitHub/NPM/HuggingFace) paired with Judge0/Godbolt/Node sandbox verification and indexed equivalents across Microsoft, Google, Meta, Anthropic, xAI, Video, Music, Voice, Image, App-Building, and Deep Research ecosystems.
+- **Unified Token Families & Flagship Hub (`v14.0`):**
+  - Supports `hk-live-...` (`hk_...`), `yk-live-...` (`yk_...`), and `zx-live-...` (`zk_...`) keys cleanly across `api-auth.ts`, `middleware.ts`, and `/api/v1/*`.
+  - Published flagship GitHub landing hub [`README.md`](./README.md) and [`YUKA_MASTER_HUB.md`](./YUKA_MASTER_HUB.md).
