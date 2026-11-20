@@ -1234,11 +1234,13 @@ export function HeyukaChatWorkspace() {
       )}
 
       {/* Middle Chat Rail + Smooth Antigravity Split Stage */}
-      <div className="flex-1 flex min-w-0">
+      <div className="flex-1 flex flex-col lg:flex-row min-w-0 min-h-0">
         {/* Chat Column (Automatically glides smoothly to left when Antigravity Studio opens!) */}
         <div
-          className={`flex flex-col min-w-0 relative transition-all duration-200 ${
-            studioOpen ? "w-full lg:w-[44%] border-r border-white/[0.07]" : "flex-1"
+          className={`flex flex-col min-w-0 min-h-0 relative transition-all duration-200 ${
+            studioOpen
+              ? "w-full h-[46%] lg:h-full lg:w-[44%] border-b lg:border-b-0 lg:border-r border-white/[0.07]"
+              : "flex-1 h-full"
           }`}
         >
           <header className="px-4 py-3 flex items-center justify-between gap-3 shrink-0 h-14">
@@ -1696,7 +1698,7 @@ export function HeyukaChatWorkspace() {
 
         {/* Right Antigravity Split-Pane IDE Stage */}
         {studioOpen && (
-          <div className="fixed inset-0 z-40 lg:static lg:z-auto lg:w-[56%] flex-1 min-w-0 bg-[#111215]">
+          <div className="w-full h-[54%] lg:h-full lg:w-[56%] flex-1 min-w-0 min-h-0 bg-[#111215]">
             <AntigravityStudioPane
               files={studioFiles}
               onChangeFiles={setStudioFiles}

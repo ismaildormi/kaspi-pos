@@ -275,7 +275,17 @@ async function executePublicQuery(
       const url = `https://${host}/cgi/search.pl?search_terms=${encodeURIComponent(
         query
       )}&search_simple=1&action=process&json=1&page_size=${limit}`;
-      const json = await fetchJsonWithTimeout(url);
+      let json: any = null;
+      let resolvedUrl = url;
+      try {
+        json = await fetchJsonWithTimeout(url, {}, 5000);
+      } catch {
+        const v2Url = `https://${host}/api/v2/search?search_terms=${encodeURIComponent(
+          query
+        )}&fields=code,product_name,brands,quantity,image_front_small_url&page_size=${limit}`;
+        resolvedUrl = v2Url;
+        json = await fetchJsonWithTimeout(v2Url, {}, 6000);
+      }
       const products = (json?.products || []).slice(0, limit).map((p: any) => ({
         barcode: p.code,
         name: p.product_name,
@@ -283,7 +293,7 @@ async function executePublicQuery(
         quantity: p.quantity,
         image: p.image_front_small_url,
       }));
-      return { sourceUrl: url, data: { count: products.length, products } };
+      return { sourceUrl: resolvedUrl, data: { count: products.length, products } };
     }
 
     case "fx_rates": {
@@ -671,8 +681,16 @@ async function executePublicQuery(
         SERVICE wikibase:label { bd:serviceParam wikibase:language "en,ar,fr". }
       } LIMIT ${limit}`;
       const url = `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(sparql)}`;
-      const json = await fetchJsonWithTimeout<any>(url);
-      return { sourceUrl: url, data: json?.results?.bindings || [] };
+      try {
+        const json = await fetchJsonWithTimeout<any>(url, {}, 5000);
+        return { sourceUrl: url, data: json?.results?.bindings || [] };
+      } catch {
+        const fallbackUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(
+          query
+        )}&language=en&format=json&limit=${limit}&origin=*`;
+        const json = await fetchJsonWithTimeout<any>(fallbackUrl, {}, 5500);
+        return { sourceUrl: fallbackUrl, data: json?.search || [] };
+      }
     }
 
     case "nobel_prize": {
