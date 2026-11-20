@@ -429,7 +429,7 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
         (result as any).text ||
         "";
 
-      if (!outputText && (!result.steps || result.steps.length === 0)) {
+      if (!outputText || !outputText.trim()) {
         throw new Error("Model returned empty output");
       }
 

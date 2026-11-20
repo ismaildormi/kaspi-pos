@@ -273,6 +273,49 @@ function buildStarterCodeScaffold(prompt: string, title: string): ExtractedStudi
   ];
 }
 
+/** Builds deterministic Markdown summary from live zero-key APIs & web search hits. */
+function buildLiveGroundingFallback(
+  validApis: Array<{ category: string; sourceUrl?: string; data?: unknown }>,
+  sources: Array<{ title: string; url: string; snippet?: string }>,
+  locale: "ar" | "fr" | "en",
+  effectiveMode: string
+): string {
+  const sections: string[] = [];
+  if (validApis.length > 0) {
+    sections.push(
+      locale === "ar"
+        ? `## نتائج البيانات الحية (${validApis.map((a) => a.category).join(" • ")})`
+        : `## Live Real-World Telemetry (${validApis.map((a) => a.category).join(" • ")})`
+    );
+    for (const api of validApis) {
+      sections.push(
+        `### ${api.category}${api.sourceUrl ? ` — [Source](${api.sourceUrl})` : ""}\n\n\`\`\`json\n${JSON.stringify(
+          api.data,
+          null,
+          2
+        ).slice(0, 1400)}\n\`\`\``
+      );
+    }
+  }
+  if (sources.length > 0) {
+    sections.push(
+      locale === "ar" ? "### المصادر المفتوحة المتحققة" : "### Verified Web & Knowledge Sources"
+    );
+    sections.push(
+      sources
+        .slice(0, 6)
+        .map((s) => `- **${s.title}**${s.url ? ` — ${s.url}` : ""}${s.snippet ? `: ${s.snippet}` : ""}`)
+        .join("\n")
+    );
+  }
+  if (sections.length === 0) {
+    return locale === "ar"
+      ? `تم تجهيز بيئة التنفيذ محلياً على جهازك (**$0.00**) في وضع **${effectiveMode.toUpperCase()}**.`
+      : `Studio workspace initialized locally on your CPU (**$0.00**) in **${effectiveMode.toUpperCase()}** mode.`;
+  }
+  return sections.join("\n\n");
+}
+
 export async function POST(req: NextRequest) {
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -542,16 +585,7 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
       effectiveMode === "qr" ||
       validApis.length > 0
     ) {
-      rawText =
-        validApis.length > 0
-          ? `### Live Real-World Telemetry (${validApis.map((a) => a.category).join(", ")})\n\n\`\`\`json\n${JSON.stringify(
-              validApis.map((a) => ({ source: a.sourceUrl, data: a.data })),
-              null,
-              2
-            )}\n\`\`\``
-          : locale === "ar"
-          ? `تم تجهيز بيئة التنفيذ محلياً على جهازك (**$0.00**) في وضع **${effectiveMode.toUpperCase()}**.`
-          : `Studio workspace initialized locally on your CPU (**$0.00**) in **${effectiveMode.toUpperCase()}** mode.`;
+      rawText = buildLiveGroundingFallback(validApis, sources, locale, effectiveMode);
     } else {
       return NextResponse.json(
         { ok: false, error: err?.message || "HEYUKA inference temporarily unavailable." },
@@ -571,20 +605,45 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
   let reasoning = "";
   let answerRaw = rawText;
   const thinkMatch = rawText.match(/<think>([\s\S]*?)<\/think>/i);
+  const unclosedThinkMatch = !thinkMatch ? rawText.match(/<think>([\s\S]*)$/i) : null;
   if (thinkMatch) {
     reasoning = thinkMatch[1].trim();
     answerRaw = rawText.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  } else if (unclosedThinkMatch) {
+    reasoning = unclosedThinkMatch[1].trim();
+    answerRaw = rawText.replace(/<think>[\s\S]*$/gi, "").trim();
   } else if (effectiveDeepThink) {
     reasoning = thinkingSteps
       .map((s) => `• [${s.timestamp}] ${s.phase} (${s.agentModel}, ${s.durationMs}ms): ${s.summary}`)
       .join("\n");
   }
 
+  // Retry once concisely without <think> if upstream reasoning exhausted tokens leaving empty answer
+  if (!answerRaw && reasoning && validApis.length === 0 && sources.length === 0) {
+    try {
+      const rescue = await generateTextWithRouter({
+        system: `Respond directly in clean Markdown (${detectedLang}). Zero <think> tags.`,
+        messages: [{ role: "user", content: effectiveUserText }],
+        temperature: 0.4,
+        governance: { tenantId, allowOwnerPaidProviders: false },
+      });
+      const rescueText = String(rescue.text || "").replace(/<\/?think>/gi, "").trim();
+      if (rescueText) answerRaw = rescueText;
+    } catch {}
+  }
+
   const reflected = runPreReplyReflectionGate({
     draftText: answerRaw,
     expectedLocale: locale,
   });
-  const answer = reflected.cleanedText || answerRaw || rawText;
+  const isClarifyFallback =
+    /^(Please clarify your request slightly|مرحباً، أعد صياغة طلبك قليلاً|Bonjour, veuillez préciser votre demande)/i.test(
+      reflected.cleanedText
+    );
+  const answer =
+    (!answerRaw || isClarifyFallback) && (validApis.length > 0 || sources.length > 0)
+      ? buildLiveGroundingFallback(validApis, sources, locale, effectiveMode)
+      : reflected.cleanedText || answerRaw || rawText;
 
   let studioFiles = extractStudioFilesFromMarkdown(answer);
   if (effectiveMode === "coding" && studioFiles.length === 0) {
