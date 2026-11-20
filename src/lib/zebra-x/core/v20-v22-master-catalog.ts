@@ -1,5 +1,10 @@
+import {
+  V24_TO_V28_MASTER_CATALOG,
+  type V24PlusSourceEntry,
+} from "@/lib/zebra-x/core/v24-v28-master-catalog";
+
 /**
- * HEYUKA / YUKA — Master Engineering, Security, Bot Factory, Robotics & Mobile Lab Catalog (`v20.2`–`v22.1`)
+ * HEYUKA / YUKA — Master Engineering, Security, Bot Factory, Robotics & Mobile Lab Catalog (`v20.2`–`v28.1`)
  *
  * Strictly deduplicated Progressive-Disclosure Registry (Level 1 lightweight metadata):
  * - v20.2 (25): Massive Defensive Cybersecurity & Code Auditing Corpora (1M+ Records)
@@ -353,7 +358,8 @@ export const V23_REAL_WORLD_OMNISCIENCE_CATALOG: readonly MasterSourceEntry[] = 
   ["v23-opensky", "OpenSky Network + ADS-B Live Flights", "https://opensky-network.org/", "Real-time airspace aircraft vectors & country metadata"],
 ]);
 
-export const ALL_SOVEREIGN_MASTER_CATALOG: readonly MasterSourceEntry[] = [
+export const ALL_SOVEREIGN_MASTER_CATALOG: readonly (MasterSourceEntry | V24PlusSourceEntry)[] = [
   ...V20_TO_V22_MASTER_CATALOG,
   ...V23_REAL_WORLD_OMNISCIENCE_CATALOG,
+  ...V24_TO_V28_MASTER_CATALOG,
 ];

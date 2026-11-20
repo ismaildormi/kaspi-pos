@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import vm from "node:vm";
 
 import ExcelJS from "exceljs";
 import { Document, Packer, Paragraph, TextRun } from "docx";
@@ -120,9 +121,26 @@ import {
 } from "../../src/lib/heyuka/tools/zero-worker-media-3d";
 import {
   V20_TO_V22_MASTER_CATALOG,
+  ALL_SOVEREIGN_MASTER_CATALOG,
   getV20ToV22Counts,
   searchV20ToV22Catalog,
 } from "../../src/lib/zebra-x/core/v20-v22-master-catalog";
+import {
+  V24_TO_V28_MASTER_CATALOG,
+  getV24ToV28Counts,
+  searchV24ToV28Catalog,
+} from "../../src/lib/zebra-x/core/v24-v28-master-catalog";
+import {
+  applySearchReplaceDiffPatch,
+  assembleMultiFilePreviewDocument,
+  buildCodeToMediaArtifactSvg,
+  detectTruncationState,
+  executeProjectLifecyclePipeline,
+  extractStudioFilesSafe,
+  mergeContinuationChunk,
+  repairTruncatedJsonString,
+  repairTruncatedMarkdownAndCode,
+} from "../../src/lib/heyuka/autonomous-builder-v24-v28";
 import { scanSourceCodeForVulnerabilities } from "../../src/lib/zebra-x/tools/security-sast-auditor";
 import {
   compileCustomBotBlueprint,
@@ -943,6 +961,103 @@ async function main() {
     assert.ok(adminVaultSrc.includes("/api/v1/admin/gmail-directory"));
 
     return { detail: `46 APIs + v23 Real-World + Markdown dir=auto + Compressed Vision + 3-Agent Swarm + Client CPU Studio verified` };
+  });
+
+  // 20. v24.0 - v28.1 INFINITE AUTO-CONTINUATION, SELF-CONTAINED 3D GAMES, SITES, DIFF PATCH, ROBOTICS & VFS PKZIP (VM.SCRIPT)
+  await runCheck("v24_v28_infinite_coder_games_vfs_suite", "v24.0-v28.1 Autonomous Builder", async () => {
+    // A) v24-v28 Master Catalog & Strict Zero-Duplication
+    const counts = getV24ToV28Counts();
+    assert.ok(counts.totalUnique >= 115, `Expected >=115 deduplicated v24-v28 engine entries, got ${counts.totalUnique}`);
+    assert.ok(ALL_SOVEREIGN_MASTER_CATALOG.length >= 340);
+    assert.ok(searchV24ToV28Catalog("yuka").length >= 1 && searchV24ToV28Catalog("zenfs").length >= 1);
+
+    // B) Infinite Auto-Continuation & Interrupted 1024-token Code Repair
+    const truncatedHtml = "```html path=game.html\n<!DOCTYPE html><html><body><script>function initGame(){ const cfg = { speed: 5";
+    const trunc = detectTruncationState(truncatedHtml);
+    assert.equal(trunc.truncated, true);
+    assert.ok(trunc.reasons.includes("unclosed_markdown_fence"));
+    assert.ok(trunc.unclosedTags.includes("</script>") && trunc.unclosedTags.includes("</html>"));
+
+    const stitched = mergeContinuationChunk(truncatedHtml, "{ speed: 5 }; return cfg; }\n</script></body></html>\n```");
+    assert.ok(stitched.includes("const cfg = { speed: 5 }; return cfg; }") && !stitched.includes("speed: 5{ speed: 5"));
+
+    const hardRepaired = repairTruncatedMarkdownAndCode(truncatedHtml);
+    assert.equal(hardRepaired.wasRepaired, true);
+    const extracted = extractStudioFilesSafe(truncatedHtml);
+    assert.equal(extracted.length, 1);
+    assert.ok(extracted[0].content.includes("</script>") && extracted[0].content.includes("</html>"));
+
+    const repairedJson = JSON.parse(repairTruncatedJsonString('{"arena":{"wave":3,"bots":[{"id":1'));
+    assert.equal(repairedJson.arena.wave, 3);
+    assert.equal(repairedJson.arena.bots[0].id, 1);
+
+    // C) Surgical Aider Search/Replace Diff Patching
+    const patched = applySearchReplaceDiffPatch(
+      "const speed = 1.2;\nconst waveMax = 3;\nconsole.log(speed);",
+      "<<<<<<< SEARCH\nconst waveMax = 3;\n=======\nconst waveMax = 7;\n>>>>>>> REPLACE"
+    );
+    assert.equal(patched.ok, true);
+    assert.ok(patched.patched.includes("const waveMax = 7;") && !patched.patched.includes("waveMax = 3;"));
+
+    // D) Full Self-Contained Multi-Page Website + vm.Script Execution + Zip
+    const vmValidator = (file: string, code: string) => {
+      const ctx: any = vm.createContext({ globalThis: {}, console, Math, JSON, setTimeout });
+      ctx.globalThis = ctx;
+      new vm.Script(code, { filename: file }).runInContext(ctx);
+    };
+
+    const siteRes = executeProjectLifecyclePipeline({
+      title: "KASPI Atlas Store",
+      prompt: "Create a full storefront website with links, catalog search and cart",
+      kind: "website",
+      validateJsFn: vmValidator,
+    });
+    assert.equal(siteRes.ok, true);
+    assert.ok(siteRes.zipBytes.length > 1000 && siteRes.zipBytes[0] === 0x50 && siteRes.zipBytes[1] === 0x4b);
+    const assembledSite = assembleMultiFilePreviewDocument(siteRes.files) || "";
+    assert.ok(assembledSite.includes("<style") && assembledSite.includes("#/catalog") && !assembledSite.includes('<script src="router.js">'));
+
+    // E) Full Packaged 3D Game (Yuka AI + WebAudio + Physics) verified live inside vm.Script!
+    const gameSandbox: any = vm.createContext({ globalThis: {}, console, Math, JSON, setTimeout });
+    gameSandbox.globalThis = gameSandbox;
+    const gameRes = executeProjectLifecyclePipeline({
+      title: "Neon Yuka Arena",
+      prompt: "3D space arena game with enemy AI, score HUD and sound effects",
+      kind: "game3d",
+      validateJsFn: (file, code) => new vm.Script(code, { filename: file }).runInContext(gameSandbox),
+    });
+    assert.equal(gameRes.ok, true);
+    gameSandbox.__HEYUKA_GAME_ENGINE.startMission();
+    assert.equal(gameSandbox.__HEYUKA_GAME_ENGINE.gameState.running, true);
+    assert.ok(gameSandbox.__HEYUKA_GAME_ENGINE.gameState.bots.length >= 2);
+    gameSandbox.__HEYUKA_GAME_ENGINE.updatePhysics(0.1);
+
+    // F) Robotics Kit (Behavior Tree + Yuka Nav + ESP32) + Procedural SVG Code-to-Image
+    const roboRes = executeProjectLifecyclePipeline({
+      title: "Atlas Rover",
+      prompt: "Autonomous robot behavior tree with MicroPython PWM",
+      kind: "robotics",
+      validateJsFn: (file, code) => {
+        const roboCtx: any = vm.createContext({ globalThis: {}, Math });
+        roboCtx.globalThis = roboCtx;
+        new vm.Script(code, { filename: file }).runInContext(roboCtx);
+        const navStep = roboCtx.__HEYUKA_ROBOT_NAV.planWaypointStep({ x: 0, y: 0 }, { x: 4, y: 3 }, 100);
+        assert.equal(navStep.action, "DRIVE");
+      },
+    });
+    assert.equal(roboRes.ok, true);
+
+    const svgArt = buildCodeToMediaArtifactSvg("HEYUKA Vector", "Procedural infinity emblem");
+    assert.ok(svgArt.startsWith("<svg") && svgArt.includes("</svg>") && svgArt.length > 500);
+
+    const chatWebSrc = fs.readFileSync(path.join(process.cwd(), "src/app/api/v1/heyuka/chat-web/route.ts"), "utf8");
+    assert.ok(chatWebSrc.includes("detectTruncationState") && chatWebSrc.includes("mergeContinuationChunk") && chatWebSrc.includes("repairTruncatedMarkdownAndCode"));
+
+    const totalZipBytes = siteRes.zipBytes.length + gameRes.zipBytes.length + roboRes.zipBytes.length + svgArt.length;
+    return {
+      artifactBytes: totalZipBytes,
+      detail: `${counts.totalUnique} v24-v28 engines + 1024-tok Auto-Continuation + vm.Script 3D Game/Site/Robotics + Search/Replace Diff + PKZIP (${totalZipBytes}B) verified`,
+    };
   });
 
   // SUMMARY & SELF-REPORTING

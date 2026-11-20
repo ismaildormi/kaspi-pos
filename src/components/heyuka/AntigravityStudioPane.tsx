@@ -38,6 +38,14 @@ import {
   type ClientMediaArtifact,
   type ClientStudioFile,
 } from "@/lib/heyuka/client-cpu-engine";
+import {
+  assembleMultiFilePreviewDocument,
+  buildCodeToMediaArtifactSvg,
+  buildPackaged3DGameBlueprint,
+  buildRoboticsActionBlueprint,
+  buildSelfContainedWebSiteBlueprint,
+  repairTruncatedMarkdownAndCode,
+} from "@/lib/heyuka/autonomous-builder-v24-v28";
 
 interface ThinkingPhaseStep {
   phase: string;
@@ -373,36 +381,34 @@ export function AntigravityStudioPane({
     return issues;
   }, [files]);
 
-  const assembledHtmlSrcDoc = useMemo(() => {
-    const htmlFile = files.find((f) => f.path.endsWith(".html") || f.language === "html");
-    const cssFiles = files.filter((f) => f.path.endsWith(".css") || f.language === "css");
-    const jsFiles = files.filter(
-      (f) => f.path.endsWith(".js") || f.language === "js" || f.language === "javascript"
-    );
+  const assembledHtmlSrcDoc = useMemo(
+    () => assembleMultiFilePreviewDocument(files),
+    [files]
+  );
 
-    if (htmlFile) {
-      let doc = htmlFile.content;
-      if (cssFiles.length > 0) {
-        const styleTag = `<style>\n${cssFiles.map((c) => c.content).join("\n")}\n</style>`;
-        doc = doc.includes("</head>") ? doc.replace("</head>", `${styleTag}</head>`) : `${styleTag}${doc}`;
-      }
-      if (jsFiles.length > 0) {
-        const scriptTag = `<script>\n${jsFiles.map((j) => j.content).join("\n")}\n</script>`;
-        doc = doc.includes("</body>") ? doc.replace("</body>", `${scriptTag}</body>`) : `${doc}${scriptTag}`;
-      }
-      return doc;
-    }
-
-    const svgFile = files.find((f) => f.path.endsWith(".svg") || f.language === "svg");
-    if (svgFile) {
-      return `<!DOCTYPE html><html><body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#111215;">${svgFile.content}</body></html>`;
-    }
-
-    if (jsFiles.length > 0) {
-      return `<!DOCTYPE html><html><body style="margin:0;background:#111215;color:#f4f4f5;font-family:monospace;padding:20px;"><pre id="out"></pre><script>const log=(...a)=>{document.getElementById('out').textContent+=a.join(' ')+'\\n';};console.log=log;try{${jsFiles.map((j) => j.content).join("\n")}}catch(e){log('Error:',e.message);}</script></body></html>`;
-    }
-    return null;
-  }, [files]);
+  const loadSelfContainedBlueprint = (kind: "game3d" | "website" | "robotics" | "svg") => {
+    const generated =
+      kind === "game3d"
+        ? buildPackaged3DGameBlueprint("HEYUKA 3D Arena", "Yuka-AI enemy bots, 3D projection, HUD & WebAudio SFX")
+        : kind === "robotics"
+        ? buildRoboticsActionBlueprint("HEYUKA Robot Kit", "Behavior tree, Yuka waypoint drive & ESP32 MicroPython")
+        : kind === "svg"
+        ? [
+            {
+              path: "artwork.svg",
+              language: "svg",
+              content: buildCodeToMediaArtifactSvg("HEYUKA Code-to-Image Vector", "Procedural SVG Render"),
+            },
+          ]
+        : buildSelfContainedWebSiteBlueprint("HEYUKA Storefront", "Multi-page site with routing, live catalog search & cart");
+    onChangeFiles(generated);
+    setSelectedPath(generated[0]?.path || "");
+    setStageTab("preview");
+    setWorkerLogs((p) => [
+      ...p,
+      `PS C:\\HEYUKA\\studio> Synthesized ${generated.length} self-contained files (${kind}) on client CPU ($0.00).`,
+    ]);
+  };
 
   const handleOpenLocalFolder = async () => {
     const win = window as any;
@@ -463,8 +469,29 @@ export function AntigravityStudioPane({
     if (lower === "help") {
       setWorkerLogs((p) => [
         ...p,
-        "Built-in Client Commands: ls | dir | pwd | cat <path> | touch <path> | rm <path> | node <file.js> | run | sast | hw | zip | date | clear",
+        "Built-in Client Commands: ls | dir | pwd | cat <path> | touch <path> | rm <path> | build-game | build-site | build-robot | repair | node <file.js> | run | sast | hw | zip | date | clear",
       ]);
+      return;
+    }
+    if (lower === "build-game") {
+      loadSelfContainedBlueprint("game3d");
+      return;
+    }
+    if (lower === "build-site") {
+      loadSelfContainedBlueprint("website");
+      return;
+    }
+    if (lower === "build-robot") {
+      loadSelfContainedBlueprint("robotics");
+      return;
+    }
+    if (lower === "repair") {
+      const next = files.map((f) => ({
+        ...f,
+        content: repairTruncatedMarkdownAndCode(f.content).repaired,
+      }));
+      onChangeFiles(next);
+      setWorkerLogs((p) => [...p, `Verified & repaired ${next.length} workspace files.`]);
       return;
     }
     if (lower === "pwd") {
@@ -901,6 +928,30 @@ export function AntigravityStudioPane({
                     Download the standalone portable HTML studio app or upload your own `.zip` / project folder from your PC to edit, preview, review SAST security, or execute scripts directly on your CPU.
                   </p>
                   <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => loadSelfContainedBlueprint("game3d")}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] text-white font-semibold text-[11px] cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Build 3D Game (Yuka AI)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => loadSelfContainedBlueprint("website")}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] text-white font-semibold text-[11px] cursor-pointer"
+                    >
+                      <FolderOpen className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Build Multi-Page Site</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => loadSelfContainedBlueprint("robotics")}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] text-white font-semibold text-[11px] cursor-pointer"
+                    >
+                      <Cpu className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Build Robotics Kit</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => uploadAppInputRef.current?.click()}

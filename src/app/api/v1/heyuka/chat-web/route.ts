@@ -15,6 +15,17 @@ import { scanSourceCodeForVulnerabilities } from "@/lib/zebra-x/tools/security-s
 import { renderStyledBrandQrSvg } from "@/lib/zebra-x/tools/qr-architect-engine";
 import { ALL_SOVEREIGN_MASTER_CATALOG } from "@/lib/zebra-x/core/v20-v22-master-catalog";
 import { runPreReplyReflectionGate } from "@/lib/zebra-x/core/reflection-gate";
+import {
+  buildCodeToMediaArtifactSvg,
+  buildPackaged3DGameBlueprint,
+  buildRoboticsActionBlueprint,
+  buildSelfContainedWebSiteBlueprint,
+  detectTruncationState,
+  extractStudioFilesSafe,
+  mergeContinuationChunk,
+  repairTruncatedMarkdownAndCode,
+  type BuilderStudioFile,
+} from "@/lib/heyuka/autonomous-builder-v24-v28";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -176,101 +187,16 @@ function matchPublicApiCategories(prompt: string): PublicApiCategory[] {
   return picked.slice(0, 3);
 }
 
-function extractStudioFilesFromMarkdown(markdown: string): ExtractedStudioFile[] {
-  const files: ExtractedStudioFile[] = [];
-  const usedPaths = new Set<string>();
-  const fenceRegex = /```([a-zA-Z0-9_-]*)(?:\s+(?:path|file)=["']?([^\s"'\n]+)["']?)?\s*\n([\s\S]*?)```/g;
-
-  let m: RegExpExecArray | null;
-  let counter = 1;
-  while ((m = fenceRegex.exec(markdown)) !== null) {
-    const langRaw = (m[1] || "txt").toLowerCase();
-    const content = (m[3] || "").trim();
-    if (!content) continue;
-
-    let pathName = (m[2] || "").trim();
-    if (!pathName) {
-      const extMap: Record<string, string> = {
-        html: "index.html",
-        tsx: `App${counter > 1 ? counter : ""}.tsx`,
-        ts: `module${counter > 1 ? counter : ""}.ts`,
-        jsx: `App${counter > 1 ? counter : ""}.jsx`,
-        js: `script${counter > 1 ? counter : ""}.js`,
-        javascript: `script${counter > 1 ? counter : ""}.js`,
-        css: "styles.css",
-        python: `main${counter > 1 ? counter : ""}.py`,
-        py: `main${counter > 1 ? counter : ""}.py`,
-        svg: `graphic${counter > 1 ? counter : ""}.svg`,
-        json: `config${counter > 1 ? counter : ""}.json`,
-        sql: "schema.sql",
-        sh: "run.sh",
-        bash: "run.sh",
-        powershell: "script.ps1",
-        ps1: "script.ps1",
-      };
-      pathName = extMap[langRaw] || `artifact-${counter}.${langRaw || "txt"}`;
-      counter += 1;
-    }
-
-    if (usedPaths.has(pathName)) {
-      pathName = `${counter}_${pathName}`;
-      counter += 1;
-    }
-    usedPaths.add(pathName);
-
-    files.push({
-      path: pathName,
-      language: langRaw || "text",
-      content,
-    });
+/** Picks the richest domain-specific self-contained blueprint if code generation yielded empty/partial output. */
+function buildDomainBlueprintFiles(prompt: string, title: string): BuilderStudioFile[] {
+  const p = prompt.toLowerCase();
+  if (/(game|3d|arena|shooter|racing|platformer|phaser|three|yuka|لعبة|ألعاب|مجسم|مغامرة)/i.test(p)) {
+    return buildPackaged3DGameBlueprint(title, prompt);
   }
-
-  return files;
-}
-
-function buildStarterCodeScaffold(prompt: string, title: string): ExtractedStudioFile[] {
-  const safeTitle = title.replace(/[<>"'&]/g, "").slice(0, 50) || "HEYUKA App";
-  return [
-    {
-      path: "index.html",
-      language: "html",
-      content: `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${safeTitle}</title>
-  <style>
-    :root { --bg: #111215; --card: #1d1e23; --accent: #e11d48; --text: #f4f4f5; }
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-    body { margin: 0; background: var(--bg); color: var(--text); min-height: 100vh; display: grid; place-items: center; padding: 24px; }
-    .card { width: 100%; max-width: 560px; background: var(--card); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 24px; }
-    .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; background: rgba(225,29,72,0.16); color: #fb7185; font-size: 11px; font-weight: 700; }
-    h1 { margin: 12px 0 8px; font-size: 22px; }
-    p { color: #a1a1aa; font-size: 13px; line-height: 1.6; }
-    button { background: var(--accent); color: #fff; border: 0; border-radius: 10px; padding: 10px 18px; font-weight: 700; cursor: pointer; margin-top: 10px; }
-    #out { margin-top: 14px; font-family: monospace; font-size: 12px; color: #fda4af; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <span class="badge">HEYUKA CLIENT CPU • $0.00</span>
-    <h1>${safeTitle}</h1>
-    <p>${prompt.replace(/[<>"']/g, "").slice(0, 140)}</p>
-    <button onclick="runTask()">Execute on Local CPU</button>
-    <div id="out"></div>
-  </div>
-  <script>
-    function runTask() {
-      const t0 = performance.now();
-      const cores = navigator.hardwareConcurrency || 4;
-      document.getElementById('out').textContent = 'Executed locally in ' + (performance.now() - t0).toFixed(2) + 'ms using ' + cores + ' CPU threads.';
-    }
-  </script>
-</body>
-</html>`,
-    },
-  ];
+  if (/(robot|ros|ros2|esp32|arduino|micropython|behavior tree|actuator|روبوت|ذراع|درون)/i.test(p)) {
+    return buildRoboticsActionBlueprint(title, prompt);
+  }
+  return buildSelfContainedWebSiteBlueprint(title, prompt);
 }
 
 /** Builds deterministic Markdown summary from live zero-key APIs & web search hits. */
@@ -373,12 +299,11 @@ export async function POST(req: NextRequest) {
     Boolean(imageBase64)
   );
   const isCollaborative = model === "multi-agent-3";
+  const suppressThinkTokens = effectiveMode === "coding" || effectiveMode === "3d";
   const effectiveDeepThink =
     deepThink ||
-    isCollaborative ||
     effectiveMode === "deepthink" ||
-    effectiveMode === "coding" ||
-    effectiveMode === "security";
+    (!suppressThinkTokens && (isCollaborative || effectiveMode === "security"));
   const effectiveSearch = webSearch || effectiveMode === "search";
 
   const routePlan = planXZebraToolRoute(lastUser, false);
@@ -490,14 +415,14 @@ export async function POST(req: NextRequest) {
 
   const modeDirective =
     effectiveMode === "coding"
-      ? `\nMODE: CODING STUDIO (ANTIGRAVITY SPLIT IDE).
-Output complete runnable multi-file code inside fenced blocks with \`path=\` headers (e.g. \`\`\`html path=index.html\`, \`\`\`css path=styles.css\`, \`\`\`js path=app.js\`). Ensure web solutions execute cleanly directly inside the visitor's browser CPU.`
+      ? `\nMODE: CODING STUDIO v27.0 (ANTIGRAVITY SPLIT IDE — MULTI-FILE OUTPUT).
+Suppress <think> commentary to save tokens. Output complete runnable separated files with \`path=\` headers (\`\`\`html path=index.html\`, \`\`\`css path=styles.css\`, \`\`\`js path=engine.js\`, \`\`\`js path=yuka-ai.js\`). If creating a website, include real multi-page links & search; if creating a game, include Start Menu, HUD Score/HP, physics, enemy AI & WebAudio SFX.`
       : isImageEditRequest
       ? `\nMODE: VISION IMAGE EDITING & BACKGROUND ISOLATION.
 Analyze the uploaded image directly using Vision, describe the detected subjects vs background zones precisely, AND guide the user that HEYUKA Studio has opened the Client-GPU Image Mask / Clean-Background Editor right alongside this chat so they can erase subjects or isolate/download the clean background PNG with $0 server cost.`
       : effectiveMode === "image"
-      ? `\nMODE: IMAGE STUDIO (CLIENT GPU CANVAS + DIFFUSION).
-Describe the composition clearly and optionally include \`\`\`svg path=artwork.svg\`\`\`. Client Canvas GPU Studio opens automatically.`
+      ? `\nMODE: CODE-TO-IMAGE STUDIO (SVG / P5 / CLIENT GPU CANVAS).
+Describe the composition clearly and emit a clean vector graphic inside \`\`\`svg path=artwork.svg\`\`\`. Client Canvas GPU Studio opens automatically.`
       : effectiveMode === "video"
       ? `\nMODE: VIDEO STUDIO (CLIENT 30FPS WEBM RENDERER).
 Provide 3 crisp scene titles/lines so Client CPU Video Studio renders a real downloadable .webm video immediately.`
@@ -505,8 +430,8 @@ Provide 3 crisp scene titles/lines so Client CPU Video Studio renders a real dow
       ? `\nMODE: AUDIO & VOICE STUDIO.
 Provide clean audio synthesis / track direction; visitor's CPU WebAudio synthesizes playable .wav immediately.`
       : effectiveMode === "3d"
-      ? `\nMODE: 3D & CAD STUDIO.
-Generate clear 3D geometry specs or interactive Three.js / WebGL HTML code (\`\`\`html path=scene.html\`\`\`).`
+      ? `\nMODE: 3D, GAME & ROBOTICS STUDIO (v26.0–v27.0 SELF-CONTAINED MULTI-FILE).
+Suppress <think> commentary. Split complex scenes/games cleanly across \`\`\`html path=index.html\`\`\`, \`\`\`css path=styles.css\`\`\`, \`\`\`js path=yuka-ai.js\`\`\`, and \`\`\`js path=game-engine.js\`\`\` so nothing ever truncates.`
       : "";
 
   const workspaceSnippet =
@@ -575,6 +500,40 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
       },
     });
     rawText = String(gen.text || "").trim();
+
+    // v24.0 Infinite Auto-Continuation Loop: silently resumes mid-code ~1024-token cuts (up to 2 hops)
+    let continuationHops = 0;
+    while (continuationHops < 2 && Date.now() - startedAt < 34_000 && !imageBase64) {
+      const truncCheck = detectTruncationState(rawText);
+      if (!truncCheck.truncated) break;
+      continuationHops += 1;
+      const hopStart = Date.now();
+      try {
+        const cont = await generateTextWithRouter({
+          system: `Continue generating ONLY the remaining code/tags cleanly from the exact cutoff point. Zero explanations, zero repetition, zero <think> tags.`,
+          messages: [
+            {
+              role: "user",
+              content: `Original task: ${effectiveUserText.slice(0, 260)}\n\nContinue seamlessly from the exact end below:\n${truncCheck.tailSnippet}`,
+            },
+          ],
+          temperature: 0.25,
+          governance: { tenantId, allowOwnerPaidProviders: false },
+        });
+        const nextChunk = String(cont.text || "").trim();
+        if (!nextChunk) break;
+        rawText = mergeContinuationChunk(rawText, nextChunk);
+        thinkingSteps.push({
+          phase: `Auto-Continuation Hop #${continuationHops} (v24.0)`,
+          agentModel: resolvedModel,
+          summary: `Stitched +${nextChunk.length} chars after detecting ${truncCheck.reasons.join(", ")}`,
+          durationMs: Math.max(1, Date.now() - hopStart),
+          timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+        });
+      } catch {
+        break;
+      }
+    }
   } catch (err: any) {
     if (
       isImageEditRequest ||
@@ -632,8 +591,19 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     } catch {}
   }
 
+  const { repaired: repairedDraft, wasRepaired } = repairTruncatedMarkdownAndCode(answerRaw);
+  if (wasRepaired) {
+    thinkingSteps.push({
+      phase: "Structural Bracket & Tag Auto-Repair (v24.0)",
+      agentModel: "heyuka-repair",
+      summary: "Closed interrupted fences, brackets, or HTML tags cleanly.",
+      durationMs: 1,
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+    });
+  }
+
   const reflected = runPreReplyReflectionGate({
-    draftText: answerRaw,
+    draftText: repairedDraft,
     expectedLocale: locale,
   });
   const isClarifyFallback =
@@ -641,13 +611,22 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
       reflected.cleanedText
     );
   const answer =
-    (!answerRaw || isClarifyFallback) && (validApis.length > 0 || sources.length > 0)
+    (!repairedDraft || isClarifyFallback) && (validApis.length > 0 || sources.length > 0)
       ? buildLiveGroundingFallback(validApis, sources, locale, effectiveMode)
-      : reflected.cleanedText || answerRaw || rawText;
+      : reflected.cleanedText || repairedDraft || rawText;
 
-  let studioFiles = extractStudioFilesFromMarkdown(answer);
-  if (effectiveMode === "coding" && studioFiles.length === 0) {
-    studioFiles = buildStarterCodeScaffold(lastUser, lastUser.slice(0, 44));
+  let studioFiles = extractStudioFilesSafe(answer);
+  const hasRunnableAsset = studioFiles.some(
+    (f) => f.path.endsWith(".html") || f.path.endsWith(".js") || f.path.endsWith(".py")
+  );
+  if ((effectiveMode === "coding" || effectiveMode === "3d") && !hasRunnableAsset) {
+    studioFiles = buildDomainBlueprintFiles(lastUser, lastUser.slice(0, 44));
+  }
+  if (effectiveMode === "image" && !isImageEditRequest && !studioFiles.some((f) => f.path.endsWith(".svg"))) {
+    studioFiles = [
+      { path: "artwork.svg", language: "svg", content: buildCodeToMediaArtifactSvg(lastUser.slice(0, 40), lastUser) },
+      ...studioFiles,
+    ];
   }
   if (effectiveMode === "qr" && qrSvgMarkup) {
     studioFiles = [{ path: "heyuka-qr.svg", language: "svg", content: qrSvgMarkup }, ...studioFiles];
