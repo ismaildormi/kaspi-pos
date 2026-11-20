@@ -41,27 +41,43 @@ import {
   ThumbsDown,
   ThumbsUp,
   Trash2,
+  Upload,
   User,
+  Users,
   Video,
   Volume2,
   VolumeX,
   X,
+  Zap,
 } from "lucide-react";
 import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 import { HeyukaLoopMark } from "./HeyukaLoopMark";
 import { HEYUKAGmailAccessCard } from "./HEYUKAGmailAccessCard";
 import { AntigravityStudioPane } from "./AntigravityStudioPane";
+import { HeyukaMarkdownMessage } from "./HeyukaMarkdownMessage";
 import {
+  compressImageFileToDataUrl,
   renderImageOnClientCpu,
   renderVideoOnClientCpu,
   speakTextReliably,
   synthesizeAudioWavOnClientCpu,
+  unpackUploadedFilesOrZip,
   type ClientMediaArtifact,
   type ClientMediaJobSpec,
   type ClientStudioFile,
 } from "@/lib/heyuka/client-cpu-engine";
 
 type ChatLocale = "ar" | "fr" | "en";
+type HeyukaModelSelection = "heyuka-omni" | "heyuka-core" | "heyuka-vision" | "multi-agent-3";
+type ExecutionPolicy = "turbo" | "auto" | "review";
+
+interface ThinkingPhaseStep {
+  phase: string;
+  agentModel: string;
+  summary: string;
+  durationMs: number;
+  timestamp: string;
+}
 
 export type HeyukaComposerMode =
   | "auto"
@@ -89,6 +105,9 @@ interface ChatMessageItem {
   content: string;
   reasoning?: string;
   thinkingSec?: number;
+  thinkingSteps?: ThinkingPhaseStep[];
+  thoughtCompletedAt?: string;
+  modelUsed?: string;
   sources?: ChatSource[];
   imagePreview?: string;
   detectedMode?: string;
@@ -286,24 +305,31 @@ export function HeyukaChatWorkspace() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
-  // Unified Composer Mode Box State
+  // Unified Composer Mode Box, 3-Model Swarm & Speed Policy State
   const [input, setInput] = useState("");
+  const [selectedModel, setSelectedModel] = useState<HeyukaModelSelection>("heyuka-omni");
+  const [executionPolicy, setExecutionPolicy] = useState<ExecutionPolicy>("auto");
   const [selectedMode, setSelectedMode] = useState<HeyukaComposerMode>("auto");
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [deepThink, setDeepThink] = useState(true);
   const [webSearch, setWebSearch] = useState(false);
+  const [autoReadAloud, setAutoReadAloud] = useState(false);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [audioNote, setAudioNote] = useState<string | null>(null);
   const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
   const [audioStatusHint, setAudioStatusHint] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const [sending, setSending] = useState(false);
+  const [thinkingElapsedSec, setThinkingElapsedSec] = useState(0);
 
   // Antigravity Split Studio State
   const [studioOpen, setStudioOpen] = useState(false);
   const [studioFiles, setStudioFiles] = useState<ClientStudioFile[]>([]);
   const [mediaArtifacts, setMediaArtifacts] = useState<ClientMediaArtifact[]>([]);
   const [activePollinationsUrl, setActivePollinationsUrl] = useState<string | null>(null);
+  const [editableImageUrl, setEditableImageUrl] = useState<string | null>(null);
+  const [latestThinkingSteps, setLatestThinkingSteps] = useState<ThinkingPhaseStep[]>([]);
   const [videoProgressPct, setVideoProgressPct] = useState<number | null>(null);
   const [isRenderingMedia, setIsRenderingMedia] = useState(false);
 
@@ -329,11 +355,22 @@ export function HeyukaChatWorkspace() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadBundleInputRef = useRef<HTMLInputElement>(null);
   const bottomScrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const stopSpeechRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (!sending) {
+      setThinkingElapsedSec(0);
+      return;
+    }
+    setThinkingElapsedSec(1);
+    const id = window.setInterval(() => setThinkingElapsedSec((s) => s + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [sending]);
 
   const saveGuestThreads = (next: ThreadItem[]) => {
     try {
@@ -453,6 +490,10 @@ export function HeyukaChatWorkspace() {
 
     try {
       let artifact: ClientMediaArtifact | null = null;
+      if (job.kind === "image_edit" && job.sourceImageUrl) {
+        setEditableImageUrl(job.sourceImageUrl);
+        return;
+      }
       if (job.kind === "video") {
         artifact = await renderVideoOnClientCpu(job, (pct) => setVideoProgressPct(pct));
       } else if (job.kind === "image") {
@@ -495,12 +536,13 @@ export function HeyukaChatWorkspace() {
     const textToSend = (overrideText ?? input).trim();
     if ((!textToSend && !attachedImage && !audioNote) || sending) return;
 
+    const imgSnapshot = attachedImage;
     const historyToUse = baseHistory ?? messages;
     const userMsg: ChatMessageItem = {
       id: `u_${Date.now()}`,
       role: "user",
-      content: textToSend || (audioNote ? `[Voice Note] ${audioNote}` : "Analyze the attached image."),
-      imagePreview: attachedImage || undefined,
+      content: textToSend || (audioNote ? `[Voice Note] ${audioNote}` : "Analyze or edit the attached image."),
+      imagePreview: imgSnapshot || undefined,
     };
 
     const optimisticMsgs = [...historyToUse, userMsg];
@@ -512,6 +554,7 @@ export function HeyukaChatWorkspace() {
       setRecordedAudioUrl(null);
     }
     setModeMenuOpen(false);
+    setModelMenuOpen(false);
     setSending(true);
     setShareNoticeUrl(null);
     setAudioStatusHint(null);
@@ -521,24 +564,31 @@ export function HeyukaChatWorkspace() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: attachedImage ? "heyuka-vision" : deepThink ? "heyuka-omni" : "heyuka-core",
+          model: imgSnapshot && selectedModel !== "multi-agent-3" ? "heyuka-vision" : selectedModel,
+          executionPolicy,
           mode: selectedMode,
           deepThink,
           webSearch,
           locale,
-          imageBase64: attachedImage || undefined,
+          imageBase64: imgSnapshot || undefined,
           audioTranscriptNote: audioNote || undefined,
           workspaceFiles:
             studioFiles.length > 0
               ? studioFiles.slice(0, 6).map((f) => ({ path: f.path, content: f.content }))
               : undefined,
-          messages: optimisticMsgs.map((m) => ({ role: m.role, content: m.content })),
+          messages: optimisticMsgs.map((m) => ({
+            role: m.role,
+            content: String(m.content || " ").slice(0, 24000),
+          })),
         }),
       });
       const json = await res.json();
 
       if (Array.isArray(json?.studioFiles) && json.studioFiles.length > 0) {
         setStudioFiles(json.studioFiles);
+      }
+      if (Array.isArray(json?.thinkingSteps)) {
+        setLatestThinkingSteps(json.thinkingSteps);
       }
       if (json?.openStudio) {
         setStudioOpen(true);
@@ -554,12 +604,16 @@ export function HeyukaChatWorkspace() {
           : undefined;
 
       const assistantId = `a_${Date.now()}`;
+      const answerContent = json?.answer || json?.error || "Unable to complete response cleanly.";
       const assistantMsg: ChatMessageItem = {
         id: assistantId,
         role: "assistant",
-        content: json?.answer || json?.error || "Unable to complete response cleanly.",
+        content: answerContent,
         reasoning: json?.reasoning,
         thinkingSec: json?.thinkingSec,
+        thinkingSteps: Array.isArray(json?.thinkingSteps) ? json.thinkingSteps : undefined,
+        thoughtCompletedAt: json?.thoughtCompletedAt,
+        modelUsed: json?.model,
         sources: Array.isArray(json?.sources) ? json.sources : undefined,
         detectedMode: json?.effectiveMode,
         autoSwitched: Boolean(json?.autoSwitched),
@@ -573,6 +627,9 @@ export function HeyukaChatWorkspace() {
 
       if (job && job.kind !== "code" && job.kind !== "qr") {
         void runClientCpuJob(job, assistantId);
+      }
+      if (autoReadAloud && answerContent) {
+        handleSpeakMessage(assistantId, answerContent);
       }
 
       const savedId = await persistCurrentThread(finalMsgs, activeThreadId);
@@ -1023,14 +1080,30 @@ export function HeyukaChatWorkspace() {
         type="file"
         accept="image/*"
         className="hidden"
-        onChange={(e) => {
+        onChange={async (e) => {
           const f = e.target.files?.[0];
           if (!f) return;
-          const r = new FileReader();
-          r.onload = () => {
-            if (typeof r.result === "string") setAttachedImage(r.result);
-          };
-          r.readAsDataURL(f);
+          const compressed = await compressImageFileToDataUrl(f);
+          if (compressed) setAttachedImage(compressed);
+          e.target.value = "";
+        }}
+      />
+      <input
+        ref={uploadBundleInputRef}
+        type="file"
+        multiple
+        accept=".zip,.html,.css,.js,.jsx,.ts,.tsx,.py,.json,.svg,.md,.txt,.sql,.ps1,.sh"
+        className="hidden"
+        onChange={async (e) => {
+          const list = Array.from(e.target.files || []);
+          if (list.length === 0) return;
+          const unpacked = await unpackUploadedFilesOrZip(list);
+          if (unpacked.length > 0) {
+            setStudioFiles(unpacked);
+            setStudioOpen(true);
+            setSelectedMode("coding");
+          }
+          e.target.value = "";
         }}
       />
 
@@ -1400,6 +1473,7 @@ export function HeyukaChatWorkspace() {
                           editingMsgId === msg.id ? (
                             <div className="w-full rounded-2xl bg-[#1E1F24] border-2 border-rose-500 p-3.5 space-y-3">
                               <textarea
+                                dir="auto"
                                 value={editDraft}
                                 onChange={(e) => setEditDraft(e.target.value)}
                                 rows={2}
@@ -1424,7 +1498,10 @@ export function HeyukaChatWorkspace() {
                             </div>
                           ) : (
                             <div className="group max-w-[82%] space-y-1.5 flex flex-col items-end">
-                              <div className="px-4 py-2.5 rounded-2xl bg-[#272930] text-sm text-zinc-100 whitespace-pre-wrap">
+                              <div
+                                dir="auto"
+                                className="px-4 py-2.5 rounded-2xl bg-[#272930] text-sm text-zinc-100 whitespace-pre-wrap"
+                              >
                                 {msg.imagePreview && (
                                   <img
                                     src={msg.imagePreview}
@@ -1457,18 +1534,27 @@ export function HeyukaChatWorkspace() {
                           )
                         ) : (
                           <div className="space-y-3">
-                            {msg.detectedMode && (
-                              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/12 border border-rose-500/30 text-[11px] font-medium text-rose-300">
-                                <Cpu className="w-3 h-3" />
-                                <span>
-                                  {msg.autoSwitched ? "Auto AI -> " : ""}
-                                  {msg.detectedMode.toUpperCase()}
-                                  {msg.studioFilesCount ? ` (${msg.studioFilesCount} studio files)` : ""}
-                                </span>
+                            {(msg.detectedMode || msg.modelUsed) && (
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {msg.detectedMode && (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/12 border border-rose-500/30 text-[11px] font-medium text-rose-300">
+                                    <Cpu className="w-3 h-3" />
+                                    <span>
+                                      {msg.autoSwitched ? "Auto AI -> " : ""}
+                                      {msg.detectedMode.toUpperCase()}
+                                      {msg.studioFilesCount ? ` (${msg.studioFilesCount} files)` : ""}
+                                    </span>
+                                  </span>
+                                )}
+                                {msg.modelUsed && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.06] text-[10px] font-mono text-zinc-400">
+                                    {msg.modelUsed === "multi-agent-3" ? "3-Agent Swarm (Core + Omni + Vision)" : msg.modelUsed}
+                                  </span>
+                                )}
                               </div>
                             )}
 
-                            {msg.reasoning && (
+                            {(msg.reasoning || (msg.thinkingSteps && msg.thinkingSteps.length > 0)) && (
                               <div className="space-y-2">
                                 <button
                                   type="button"
@@ -1480,13 +1566,33 @@ export function HeyukaChatWorkspace() {
                                   <HeyukaLoopMark size="xs" variant="crimson" />
                                   <span>
                                     {t.thoughtFor} {msg.thinkingSec || 2} seconds
+                                    {msg.thoughtCompletedAt ? ` • ${msg.thoughtCompletedAt}` : ""}
                                   </span>
                                   {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                                 </button>
 
                                 {!collapsed && (
-                                  <div className="border-l-2 border-white/15 pl-3.5 text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap">
-                                    {msg.reasoning}
+                                  <div className="border-s-2 border-white/15 ps-3.5 space-y-2 text-xs text-zinc-400 leading-relaxed">
+                                    {msg.thinkingSteps && msg.thinkingSteps.length > 0 && (
+                                      <div className="space-y-1">
+                                        {msg.thinkingSteps.map((st, sIdx) => (
+                                          <div key={sIdx} className="flex items-start justify-between gap-2 text-[11px]">
+                                            <span>
+                                              <strong className="text-zinc-200">{st.phase}</strong>{" "}
+                                              <span className="font-mono text-rose-400/90">[{st.agentModel}]</span>: {st.summary}
+                                            </span>
+                                            <span className="font-mono text-[10px] text-zinc-500 shrink-0">
+                                              {st.durationMs}ms
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {msg.reasoning && (
+                                      <div dir="auto" className="whitespace-pre-wrap">
+                                        {msg.reasoning}
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -1509,9 +1615,17 @@ export function HeyukaChatWorkspace() {
                               </div>
                             )}
 
-                            <div className="text-[14px] text-zinc-100 leading-relaxed whitespace-pre-wrap">
-                              {msg.content}
-                            </div>
+                            <HeyukaMarkdownMessage
+                              markdown={msg.content}
+                              onOpenCodeInStudio={(lang, code, filePath) => {
+                                const targetPath = filePath || `snippet.${lang === "python" ? "py" : lang || "txt"}`;
+                                setStudioFiles((prev) => {
+                                  const filtered = prev.filter((f) => f.path !== targetPath);
+                                  return [{ path: targetPath, language: lang, content: code }, ...filtered];
+                                });
+                                setStudioOpen(true);
+                              }}
+                            />
 
                             {/* Inline Rendered Client-CPU Media Outputs */}
                             {msg.qrSvgDataUrl && (
@@ -1637,7 +1751,9 @@ export function HeyukaChatWorkspace() {
                 {sending && (
                   <div className="flex items-center gap-3 text-xs text-rose-400 font-medium py-2">
                     <HeyukaLoopMark animated size="sm" variant="crimson" />
-                    <span>{webSearch ? t.searching : t.thinking}</span>
+                    <span>
+                      {webSearch ? t.searching : t.thinking} ({thinkingElapsedSec}s)
+                    </span>
                   </div>
                 )}
 
@@ -1703,9 +1819,14 @@ export function HeyukaChatWorkspace() {
               files={studioFiles}
               onChangeFiles={setStudioFiles}
               mediaArtifacts={mediaArtifacts}
+              onAddMediaArtifact={(art) => setMediaArtifacts((prev) => [...prev, art])}
               activePollinationsUrl={activePollinationsUrl}
+              editableImageUrl={editableImageUrl}
               videoProgressPct={videoProgressPct}
               isRenderingMedia={isRenderingMedia}
+              executionPolicy={executionPolicy}
+              activeModel={selectedModel}
+              thinkingSteps={latestThinkingSteps}
               onClose={() => setStudioOpen(false)}
               locale={locale}
             />
@@ -1813,6 +1934,7 @@ export function HeyukaChatWorkspace() {
         )}
 
         <textarea
+          dir="auto"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
@@ -1826,31 +1948,61 @@ export function HeyukaChatWorkspace() {
           className="w-full bg-transparent text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none resize-none max-h-40"
         />
 
-        <div className="flex items-center justify-between gap-2">
-          {/* Left: Single Unified Mode & DeepThink/Search Selector Pill */}
-          <div className="relative flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Left: Unified Mode & Policy Dropdown + 3-Model Multi-Agent Selector */}
+          <div className="relative flex flex-wrap items-center gap-1.5">
             <button
               type="button"
-              onClick={() => setModeMenuOpen((p) => !p)}
-              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
-                selectedMode !== "auto" || deepThink || webSearch
+              onClick={() => {
+                setModelMenuOpen(false);
+                setModeMenuOpen((p) => !p);
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
+                selectedMode !== "auto" || deepThink || webSearch || executionPolicy !== "auto"
                   ? "bg-rose-500/15 border-rose-500/60 text-rose-300"
                   : "bg-white/[0.04] border-white/[0.12] text-zinc-200 hover:bg-white/[0.08]"
               }`}
             >
               <ActiveModeIcon className="w-3.5 h-3.5 text-rose-400" />
-              <span>{activeModeMeta.label}</span>
+              <span className="max-w-[130px] truncate">{activeModeMeta.label}</span>
               {deepThink && (
                 <span className="px-1.5 py-0.5 rounded bg-rose-500/20 text-[10px] font-bold">
-                  +DeepThink
+                  DeepThink
                 </span>
               )}
               {webSearch && (
                 <span className="px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-bold">
-                  +Search
+                  Search
                 </span>
               )}
               <ChevronDown className="w-3.5 h-3.5 opacity-80" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setModeMenuOpen(false);
+                setModelMenuOpen((p) => !p);
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
+                selectedModel === "multi-agent-3"
+                  ? "bg-rose-600/20 border-rose-500 text-rose-300"
+                  : "bg-white/[0.04] border-white/[0.12] text-zinc-300 hover:bg-white/[0.08]"
+              }`}
+              title="Select HEYUKA Model or All 3 Agents Collaborating"
+            >
+              {selectedModel === "multi-agent-3" ? (
+                <Users className="w-3.5 h-3.5 text-rose-400" />
+              ) : (
+                <Zap className="w-3.5 h-3.5 text-rose-400" />
+              )}
+              <span>
+                {selectedModel === "multi-agent-3" ? "3-Agent Swarm" : selectedModel}
+              </span>
+              <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-white/10 text-[9px] font-mono uppercase">
+                {executionPolicy}
+              </span>
+              <ChevronDown className="w-3 h-3 opacity-80" />
             </button>
 
             {modeMenuOpen && (
@@ -1859,7 +2011,6 @@ export function HeyukaChatWorkspace() {
                   isRtl ? "right-0" : "left-0"
                 } z-50 w-72 sm:w-80 rounded-2xl bg-[#1D1F25] border border-white/10 p-2.5 shadow-2xl space-y-2`}
               >
-                {/* Toggles inside unified dropdown: DeepThink + Search */}
                 <div className="grid grid-cols-2 gap-1.5 pb-2 border-b border-white/[0.08]">
                   <button
                     type="button"
@@ -1887,8 +2038,31 @@ export function HeyukaChatWorkspace() {
                   </button>
                 </div>
 
-                {/* Creation / Studio Mode List */}
-                <div className="max-h-64 overflow-y-auto space-y-0.5 kaspi-no-scrollbar">
+                {/* Antigravity Execution Speed & Review Policy */}
+                <div className="grid grid-cols-3 gap-1 pb-2 border-b border-white/[0.08] text-[11px]">
+                  {(
+                    [
+                      { id: "turbo", label: "Turbo" },
+                      { id: "auto", label: "Auto" },
+                      { id: "review", label: "Request Review" },
+                    ] as const
+                  ).map((pol) => (
+                    <button
+                      key={pol.id}
+                      type="button"
+                      onClick={() => setExecutionPolicy(pol.id)}
+                      className={`py-1.5 px-2 rounded-lg font-semibold cursor-pointer transition-colors ${
+                        executionPolicy === pol.id
+                          ? "bg-rose-600 text-white"
+                          : "bg-white/[0.04] text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      {pol.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="max-h-60 overflow-y-auto space-y-0.5 kaspi-no-scrollbar">
                   {MODE_OPTIONS.map((opt) => {
                     const Icon = opt.icon;
                     const active = selectedMode === opt.id;
@@ -1930,10 +2104,85 @@ export function HeyukaChatWorkspace() {
                 </div>
               </div>
             )}
+
+            {modelMenuOpen && (
+              <div
+                className={`absolute bottom-11 ${
+                  isRtl ? "right-0" : "left-16"
+                } z-50 w-72 rounded-2xl bg-[#1D1F25] border border-white/10 p-2 shadow-2xl space-y-1 text-xs`}
+              >
+                {(
+                  [
+                    {
+                      id: "heyuka-omni" as const,
+                      label: "heyuka-omni",
+                      desc: "Flagship full-stack coding, search & multimodal builder",
+                    },
+                    {
+                      id: "heyuka-core" as const,
+                      label: "heyuka-core",
+                      desc: "Ultra-fast logic, math, security SAST & architecture",
+                    },
+                    {
+                      id: "heyuka-vision" as const,
+                      label: "heyuka-vision",
+                      desc: "Image understanding, OCR, editing & UI visual inspection",
+                    },
+                    {
+                      id: "multi-agent-3" as const,
+                      label: "All 3 Agents Collaborating",
+                      desc: "Core plans -> Omni builds -> Vision audits together",
+                    },
+                  ]
+                ).map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedModel(m.id);
+                      setModelMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-start cursor-pointer ${
+                      selectedModel === m.id
+                        ? "bg-rose-500/20 text-white font-semibold"
+                        : "text-zinc-300 hover:bg-white/[0.06]"
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p className="font-mono text-[11px]">{m.label}</p>
+                      <p className="text-[10px] text-zinc-500 truncate">{m.desc}</p>
+                    </div>
+                    {selectedModel === m.id && <Check className="w-3.5 h-3.5 text-rose-400 shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Right: Dual-Engine Mic + Attach + Crimson Send Button */}
-          <div className="flex items-center gap-1.5">
+          {/* Right: Auto-Voice + Upload App/.ZIP + Dual Mic + Attach Photo + Send */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setAutoReadAloud((p) => !p)}
+              className={`p-2 rounded-full cursor-pointer transition-colors ${
+                autoReadAloud
+                  ? "bg-rose-500/20 text-rose-400"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/10"
+              }`}
+              title={autoReadAloud ? "Auto Voice Reply: ON" : "Auto Voice Reply: OFF"}
+            >
+              <Volume2 className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => uploadBundleInputRef.current?.click()}
+              className="p-2 rounded-full text-zinc-400 hover:text-rose-400 hover:bg-white/10 cursor-pointer"
+              title="Upload App (.zip or source files) into Studio"
+            >
+              <Upload className="w-4 h-4" />
+            </button>
+
             <button
               type="button"
               onClick={() => void handleToggleAudioMic()}

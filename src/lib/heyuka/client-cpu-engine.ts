@@ -1,10 +1,12 @@
 "use client";
 
+import { unzipSync, strFromU8 } from "fflate";
+
 /**
  * HEYUKA Sovereign Client-Device CPU / WebGL / WebAudio / WebWorker Engine ($0.00 Server Cost)
  *
  * Moves heavy multimedia rendering, coding sandboxes, video encoding, audio synthesis,
- * PKZIP packaging, and speech processing directly onto the visitor's own CPU/GPU cores.
+ * PKZIP packaging, ZIP extraction, image resizing, and speech processing directly onto the visitor's hardware.
  */
 
 export interface ClientHardwareTelemetry {
@@ -27,11 +29,12 @@ export interface ClientStudioFile {
 }
 
 export interface ClientMediaJobSpec {
-  kind: "image" | "video" | "audio" | "3d" | "qr" | "code";
+  kind: "image" | "image_edit" | "video" | "audio" | "3d" | "qr" | "code";
   title: string;
   subtitle?: string;
   prompt: string;
   accentHex?: string;
+  sourceImageUrl?: string;
   pollinationsUrl?: string;
   svgMarkup?: string;
   glbPreset?: "cube" | "sphere" | "torus" | "product_stand" | "emerald_prism";
@@ -741,3 +744,179 @@ export async function renderVideoOnClientCpu(
     bytes: videoBlob.size,
   };
 }
+
+/**
+ * Compresses & scales uploaded user images cleanly on client GPU Canvas (max 1280px, < 700 KB)
+ * so high-res camera/screenshot uploads never fail Vercel or JSON payload limits.
+ */
+export async function compressImageFileToDataUrl(file: File, maxDim = 1280): Promise<string> {
+  const rawUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(new Error("Could not read image file."));
+    reader.readAsDataURL(file);
+  });
+
+  if (!rawUrl || typeof document === "undefined") return rawUrl;
+
+  return new Promise<string>((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxDim / Math.max(img.width || 1, img.height || 1));
+      const targetW = Math.max(1, Math.round((img.width || 800) * scale));
+      const targetH = Math.max(1, Math.round((img.height || 600) * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(rawUrl);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, targetW, targetH);
+      const jpegUrl = canvas.toDataURL("image/jpeg", 0.84);
+      resolve(jpegUrl.length < rawUrl.length ? jpegUrl : rawUrl);
+    };
+    img.onerror = () => resolve(rawUrl);
+    img.src = rawUrl;
+  });
+}
+
+const TEXT_EXTENSIONS = new Set([
+  "html", "htm", "css", "scss", "js", "jsx", "ts", "tsx", "py", "json", "md", "txt",
+  "svg", "xml", "yml", "yaml", "sql", "sh", "ps1", "bat", "toml", "rs", "go", "env",
+]);
+
+/**
+ * Unpacks uploaded `.zip` application bundles or source files directly inside the visitor's browser ($0 server cost).
+ */
+export async function unpackUploadedFilesOrZip(inputFiles: File[]): Promise<ClientStudioFile[]> {
+  const collected: ClientStudioFile[] = [];
+
+  for (const f of inputFiles.slice(0, 20)) {
+    const lower = f.name.toLowerCase();
+    if (lower.endsWith(".zip")) {
+      const buf = new Uint8Array(await f.arrayBuffer());
+      const entries = unzipSync(buf);
+      for (const [entryPath, bytes] of Object.entries(entries)) {
+        if (entryPath.endsWith("/") || bytes.length === 0 || bytes.length > 260_000) continue;
+        if (entryPath.includes("node_modules/") || entryPath.includes(".git/")) continue;
+        const ext = (entryPath.split(".").pop() || "txt").toLowerCase();
+        if (!TEXT_EXTENSIONS.has(ext)) continue;
+        try {
+          collected.push({
+            path: entryPath,
+            language: ext,
+            content: strFromU8(bytes),
+          });
+        } catch {}
+        if (collected.length >= 40) break;
+      }
+    } else if (f.size <= 350_000) {
+      const ext = (f.name.split(".").pop() || "txt").toLowerCase();
+      const rel = (f as any).webkitRelativePath || f.name;
+      const content = await f.text();
+      collected.push({ path: rel, language: ext, content });
+    }
+    if (collected.length >= 40) break;
+  }
+
+  return collected;
+}
+
+/**
+ * Exports a portable standalone HEYUKA Chat + Antigravity Studio HTML application
+ * matching KASPI Crimson & Obsidian branding that users can upload, host, or run anywhere.
+ */
+export function buildPortableHeyukaAppHtml(apiOrigin: string): string {
+  const safeApi = `${apiOrigin.replace(/\/$/, "")}/api/v1/heyuka/chat-web`;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HEYUKA Portable Chat &amp; Antigravity Studio</title>
+  <style>
+    :root { --bg: #111215; --panel: #181920; --card: #22242B; --accent: #E11D48; --text: #F4F4F5; --muted: #A1A1AA; }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    header { height: 52px; padding: 0 18px; border-bottom: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; justify-content: space-between; background: #141519; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; text-transform: lowercase; }
+    .main { flex: 1; display: flex; min-height: 0; }
+    .chat-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .studio-col { width: 52%; border-left: 1px solid rgba(255,255,255,.08); display: none; flex-direction: column; background: var(--panel); }
+    .studio-col.open { display: flex; }
+    .msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .bubble { max-width: 82%; padding: 12px 15px; border-radius: 16px; line-height: 1.6; font-size: 14px; }
+    .user { align-self: flex-end; background: #272930; }
+    .bot { align-self: flex-start; background: #1A1C23; border: 1px solid rgba(255,255,255,.07); }
+    .composer { padding: 14px 18px; border-top: 1px solid rgba(255,255,255,.08); display: flex; flex-direction: column; gap: 10px; background: #141519; }
+    textarea { width: 100%; background: var(--card); color: var(--text); border: 1px solid rgba(255,255,255,.1); border-radius: 14px; padding: 11px 14px; resize: none; font-size: 14px; }
+    .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+    select, button { border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    select { background: var(--card); color: var(--text); border: 1px solid rgba(255,255,255,.14); padding: 6px 12px; }
+    .btn { background: var(--accent); color: #fff; border: 0; padding: 7px 16px; }
+    .btn-ghost { background: var(--card); color: var(--text); border: 1px solid rgba(255,255,255,.12); padding: 6px 12px; }
+    iframe { flex: 1; width: 100%; border: 0; background: #fff; }
+    .term { height: 140px; background: #0B0C0F; color: #FDA4AF; padding: 10px; font-family: monospace; font-size: 12px; overflow-y: auto; border-top: 1px solid rgba(255,255,255,.08); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <svg width="26" height="15" viewBox="0 0 64 34" fill="none"><path d="M18 5C9.8 5 4 10.4 4 17C4 23.6 9.8 29 18 29C27.5 29 36.5 5 46 5C54.2 5 60 10.4 60 17C60 23.6 54.2 29 46 29C36.5 29 27.5 5 18 5Z" stroke="#E11D48" stroke-width="5"/></svg>
+      <span>heyuka</span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-ghost" onclick="toggleStudio()">Toggle Studio Split</button>
+      <button class="btn-ghost" onclick="toggleAudio()">🔊 Voice</button>
+    </div>
+  </header>
+  <div class="main">
+    <div class="chat-col">
+      <div class="msgs" id="msgs"><div class="bubble bot" dir="auto">HEYUKA Portable Studio ready ($0.00 client CPU mode). Switch modes, collaborate across models, or inspect live code &amp; preview!</div></div>
+      <div class="composer">
+        <textarea id="prompt" rows="2" placeholder="Message HEYUKA in any language..."></textarea>
+        <div class="bar">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <select id="model"><option value="heyuka-omni">heyuka-omni</option><option value="heyuka-core">heyuka-core</option><option value="heyuka-vision">heyuka-vision</option><option value="multi-agent-3">All 3 Agents 🤝</option></select>
+            <select id="mode"><option value="auto">Mode: Auto AI</option><option value="coding">Coding Studio</option><option value="deepthink">DeepThink</option><option value="search">Search Web + APIs</option><option value="image">Image Studio</option><option value="video">Video Studio</option><option value="3d">3D Studio</option></select>
+            <select id="policy"><option value="auto">Auto</option><option value="turbo">Turbo</option><option value="review">Request Review</option></select>
+          </div>
+          <button class="btn" onclick="sendChat()">Send ↑</button>
+        </div>
+      </div>
+    </div>
+    <div class="studio-col" id="studio">
+      <iframe id="preview" sandbox="allow-scripts"></iframe>
+      <div class="term" id="term">PS heyuka-portable&gt; Ready on client CPU cores: <span id="cores"></span></div>
+    </div>
+  </div>
+  <script>
+    document.getElementById('cores').textContent = navigator.hardwareConcurrency || 4;
+    let lastAnswer = '';
+    function toggleStudio(){ document.getElementById('studio').classList.toggle('open'); }
+    function toggleAudio(){ if(!lastAnswer || !('speechSynthesis' in window)) return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(lastAnswer); window.speechSynthesis.speak(u); }
+    async function sendChat(){
+      const p=document.getElementById('prompt'); const txt=p.value.trim(); if(!txt) return; p.value='';
+      const box=document.getElementById('msgs');
+      box.appendChild(Object.assign(document.createElement('div'), { className: 'bubble user', dir: 'auto', textContent: txt }));
+      try {
+        const res = await fetch(${JSON.stringify(safeApi)}, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ model: document.getElementById('model').value, mode: document.getElementById('mode').value, executionPolicy: document.getElementById('policy').value, deepThink: true, messages:[{role:'user',content:txt}] })});
+        const j = await res.json();
+        lastAnswer = j.answer || j.error || 'Error';
+        const d = document.createElement('div'); d.className='bubble bot'; d.dir='auto'; d.textContent = lastAnswer;
+        box.appendChild(d); box.scrollTop = box.scrollHeight;
+        if (j.studioFiles && j.studioFiles.length) {
+          document.getElementById('studio').classList.add('open');
+          const html = j.studioFiles.find(f => f.path.endsWith('.html'));
+          if (html) document.getElementById('preview').srcdoc = html.content;
+          document.getElementById('term').textContent += '\\n[Studio] Loaded ' + j.studioFiles.length + ' file(s) cleanly.';
+        }
+      } catch (e) { alert('Connection error: ' + e.message); }
+    }
+  </script>
+</body>
+</html>`;
+}
+

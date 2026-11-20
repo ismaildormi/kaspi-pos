@@ -19,7 +19,8 @@ export type V20PlusGroup =
   | "v22_mobile_adb_transfer_25"
   | "v22_mobile_ios_apple_25"
   | "v22_mobile_av_debloat_25"
-  | "v22_mobile_hardware_shop_25";
+  | "v22_mobile_hardware_shop_25"
+  | "v23_real_world_omniscience";
 
 export interface MasterSourceEntry {
   id: string;
@@ -330,3 +331,29 @@ export function getV20ToV22Counts(): {
     totalUnique: uniqueIds.size,
   };
 }
+
+/**
+ * v23.0 — Real-World Omniscience & Every-Scenario Pack (100% Free & Zero-Key)
+ */
+export const V23_REAL_WORLD_OMNISCIENCE_CATALOG: readonly MasterSourceEntry[] = packGroup("v23_real_world_omniscience", [
+  ["v23-osrm", "OSRM Driving & Logistics Router", "https://project-osrm.org/", "Live route geometry, travel duration & distance across Morocco & worldwide"],
+  ["v23-valhalla", "Valhalla + Overpass Geo Engine", "https://valhalla.github.io/valhalla/", "Isochrone routing, turn-by-turn & OpenStreetMap amenity discovery"],
+  ["v23-usgs-quake", "USGS Earthquake Live GeoJSON", "https://earthquake.usgs.gov/", "Real-time seismic magnitude feeds & disaster alerts"],
+  ["v23-nasa-eonet", "NASA EONET + APOD Open APIs", "https://api.nasa.gov/", "Natural hazard tracking & astronomy observation data"],
+  ["v23-celestrak", "Celestrak TLE Satellite Tracker", "https://celestrak.org/", "Orbital TLE ephemeris & satellite pass calculations"],
+  ["v23-obd2-dtc", "OBD-II Open PIDs & P0xxx Decoder", "https://github.com/brendan-w/python-OBD", "Decode automotive engine fault DTCs & sensor diagnostics"],
+  ["v23-nhtsa", "NHTSA Vehicles & Recalls API", "https://vpic.nhtsa.dot.gov/", "Vehicle make/model specs, VIN metadata & safety recalls"],
+  ["v23-openfda-rx", "OpenFDA + NLM RxNav + Disease.sh", "https://rxnav.nlm.nih.gov/", "Public clinical terminology, RxCUI drug concepts & epidemiology stats"],
+  ["v23-wger", "USDA FoodData + wger Workout API", "https://wger.de/", "Nutritional macro lookups & multi-language workout programming"],
+  ["v23-courtlistener", "CourtListener + OpenLaws Corpus", "https://www.courtlistener.com/", "Open public legal opinions, licensing templates & contract structure"],
+  ["v23-openlibrary", "OpenLibrary + OpenAlex (250M+)", "https://openlibrary.org/", "Millions of free educational books & scholarly papers"],
+  ["v23-gbif", "GBIF + SoilGrids + OpenAQ", "https://www.gbif.org/", "Global biodiversity species taxonomy, soil metrics & air quality"],
+  ["v23-frankfurter", "Frankfurter ECB + World Bank FX", "https://www.frankfurter.app/", "Central bank foreign exchange & macroeconomic indicators"],
+  ["v23-themealdb", "TheMealDB & Recipe Catalog", "https://www.themealdb.com/api.php", "Structured global culinary recipes by ingredient or region"],
+  ["v23-opensky", "OpenSky Network + ADS-B Live Flights", "https://opensky-network.org/", "Real-time airspace aircraft vectors & country metadata"],
+]);
+
+export const ALL_SOVEREIGN_MASTER_CATALOG: readonly MasterSourceEntry[] = [
+  ...V20_TO_V22_MASTER_CATALOG,
+  ...V23_REAL_WORLD_OMNISCIENCE_CATALOG,
+];

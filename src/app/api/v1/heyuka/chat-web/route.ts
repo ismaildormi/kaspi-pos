@@ -6,10 +6,14 @@ import { runUnrestrictedWebResearch } from "@/lib/zebra-x/arsenal-vault";
 import { checkPlanetaryRateLimit } from "@/lib/heyuka/planetary/polyglot-cas-router";
 import { planXZebraToolRoute } from "@/lib/zebra-x/core/router";
 import { buildLevel1SkillPromptIndex } from "@/lib/zebra-x/core/skills-vault";
-import { queryPublicApiHub, type PublicApiCategory } from "@/lib/zebra-x/tools/public-apis-hub";
+import {
+  PUBLIC_APIS_CATALOG_COUNT,
+  queryPublicApiHub,
+  type PublicApiCategory,
+} from "@/lib/zebra-x/tools/public-apis-hub";
 import { scanSourceCodeForVulnerabilities } from "@/lib/zebra-x/tools/security-sast-auditor";
 import { renderStyledBrandQrSvg } from "@/lib/zebra-x/tools/qr-architect-engine";
-import { V20_TO_V22_MASTER_CATALOG } from "@/lib/zebra-x/core/v20-v22-master-catalog";
+import { ALL_SOVEREIGN_MASTER_CATALOG } from "@/lib/zebra-x/core/v20-v22-master-catalog";
 import { runPreReplyReflectionGate } from "@/lib/zebra-x/core/reflection-gate";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +34,10 @@ export type HeyukaRequestedMode =
   | "mobile";
 
 const WebChatRequestSchema = z.object({
-  model: z.enum(["heyuka-omni", "heyuka-core", "heyuka-vision"]).default("heyuka-omni"),
+  model: z
+    .enum(["heyuka-omni", "heyuka-core", "heyuka-vision", "multi-agent-3"])
+    .default("heyuka-omni"),
+  executionPolicy: z.enum(["turbo", "auto", "review"]).default("auto"),
   mode: z
     .enum([
       "auto",
@@ -54,19 +61,19 @@ const WebChatRequestSchema = z.object({
     .array(
       z.object({
         role: z.enum(["user", "assistant"]),
-        content: z.string().min(1).max(24000),
+        content: z.string().min(1).max(32000),
       })
     )
     .min(1)
     .max(24),
-  imageBase64: z.string().max(4_000_000).optional(),
+  imageBase64: z.string().max(8_000_000).optional(),
   audioTranscriptNote: z.string().max(4000).optional(),
   workspaceFiles: z
     .array(
       z.object({
         path: z.string().max(180),
         language: z.string().max(32).optional(),
-        content: z.string().max(16000),
+        content: z.string().max(18000),
       })
     )
     .max(12)
@@ -79,16 +86,33 @@ interface ExtractedStudioFile {
   content: string;
 }
 
+interface ThinkingPhaseStep {
+  phase: string;
+  agentModel: string;
+  summary: string;
+  durationMs: number;
+  timestamp: string;
+}
+
 function detectSmartMode(
   requestedMode: HeyukaRequestedMode,
   prompt: string,
-  hasCodeContext: boolean
+  hasCodeContext: boolean,
+  hasImageUpload: boolean
 ): { effectiveMode: Exclude<HeyukaRequestedMode, "auto">; autoSwitched: boolean } {
   if (requestedMode !== "auto") {
     return { effectiveMode: requestedMode, autoSwitched: false };
   }
 
   const p = prompt.toLowerCase();
+  if (
+    hasImageUpload &&
+    /(ازالة|إزالة|امسح|مسح|حيد|خلي الخلفية|باغراوند|background|remove person|remove people|inpaint|erase|cutout|edit image)/i.test(
+      p
+    )
+  ) {
+    return { effectiveMode: "image", autoSwitched: true };
+  }
   if (/(فيديو|مونتاج|أنيميشن|reel|video|clip|mp4|webm|motion|tiktok|animation)/i.test(p)) {
     return { effectiveMode: "video", autoSwitched: true };
   }
@@ -118,7 +142,11 @@ function detectSmartMode(
   ) {
     return { effectiveMode: "coding", autoSwitched: true };
   }
-  if (/(بحث|قلب|أخبار|ثمن|سعر|الطقس|الناظور|عملة|بيتكوين|search|news|weather|price|btc|usd|fx|today|latest|wikipedia)/i.test(p)) {
+  if (
+    /(بحث|قلب|أخبار|ثمن|سعر|الطقس|الناظور|طريق|مسافة|زلزال|ناسا|طيران|مطار|دواء|وصفة|طبخ|كتاب|سيارة|محرك|workout|recipe|flight|airport|earthquake|route|distance|distance between|obd|recall|drug|book|species|crypto|bitcoin|usd|mad|fx|search|news|weather|price|btc|today|latest|wikipedia)/i.test(
+      p
+    )
+  ) {
     return { effectiveMode: "search", autoSwitched: true };
   }
 
@@ -128,13 +156,24 @@ function detectSmartMode(
 function matchPublicApiCategories(prompt: string): PublicApiCategory[] {
   const p = prompt.toLowerCase();
   const picked: PublicApiCategory[] = [];
+  if (/(route|distance|directions|طريق|مسافة|km|travel time|itineraire|osrm)/i.test(p)) picked.push("osrm_routing");
+  if (/(earthquake|seismic|زلزال|هزة)/i.test(p)) picked.push("usgs_earthquakes");
+  if (/(nasa|wildfire|storm|space|فضاء|ناسا|قمر صناعي|عاصفة)/i.test(p)) picked.push("nasa_eonet_events");
+  if (/(obd|check engine|\b[pbcu]\d{4}\b|car recall|سيارة|ميكانيك|محرك|acura|toyota|dacia|renault)/i.test(p)) picked.push("nhtsa_recalls_vehicles");
+  if (/(drug|medicine|pharma|pill|دواء|صحة|مضاد)/i.test(p)) picked.push("rxnav_drugs");
+  if (/(covid|epidemic|disease|وباء|مرض)/i.test(p)) picked.push("disease_health_stats");
+  if (/(workout|exercise|gym|muscle|رياضة|تمارين|عضلات)/i.test(p)) picked.push("wger_workouts");
+  if (/(book|library|author|كتاب|رواية|مكتبة)/i.test(p)) picked.push("openlibrary_books");
+  if (/(species|plant|animal|tree|فلاحة|حيوان|نبات|شجرة)/i.test(p)) picked.push("gbif_biodiversity");
+  if (/(recipe|cook|meal|food|طبخ|وصفة|طاجين|أكل)/i.test(p)) picked.push("themealdb_recipes");
+  if (/(flight|airplane|aircraft|airport|طائرة|طيران|مطار)/i.test(p)) picked.push("opensky_flights");
   if (/(btc|bitcoin|eth|crypto|عملة رقمية|بيتكوين)/i.test(p)) picked.push("crypto_market");
-  if (/(usd|eur|mad|exchange|fx|سعر الصرف|دولار|أورو|درهم)/i.test(p)) picked.push("fx_rates");
+  if (/(usd|eur|mad|exchange|fx|سعر الصرف|دولار|أورو|درهم)/i.test(p)) picked.push("frankfurter_fx");
   if (/(weather|طقس|مناخ|درجة الحرارة|nador|الناظور|بحر)/i.test(p)) picked.push("weather");
   if (/(cve|vulnerability|exploit|ثغرة|أمن سيبراني)/i.test(p)) picked.push("cyber_threat_intel");
   if (/(paper|research|arxiv|study|بحث علمي|دراسة)/i.test(p)) picked.push("openalex_science");
   if (/(wiki|who is|what is|تاريخ|معلومات عن|من هو)/i.test(p)) picked.push("wikipedia");
-  return picked.slice(0, 2);
+  return picked.slice(0, 3);
 }
 
 function extractStudioFilesFromMarkdown(markdown: string): ExtractedStudioFile[] {
@@ -166,6 +205,8 @@ function extractStudioFilesFromMarkdown(markdown: string): ExtractedStudioFile[]
         sql: "schema.sql",
         sh: "run.sh",
         bash: "run.sh",
+        powershell: "script.ps1",
+        ps1: "script.ps1",
       };
       pathName = extMap[langRaw] || `artifact-${counter}.${langRaw || "txt"}`;
       counter += 1;
@@ -232,12 +273,6 @@ function buildStarterCodeScaffold(prompt: string, title: string): ExtractedStudi
   ];
 }
 
-/**
- * HEYUKA Full-Power Multimodal Web Chat (`/api/v1/heyuka/chat-web`):
- * Orchestrates Smart Auto-Mode Switching, 34 No-Key Public APIs, Live Web Search,
- * SAST Security Auditor, QR Architect, Skills Vault, v20-v22 Catalog, and Zero-Cost
- * Client-CPU Studio / Video / Image / Audio / 3D artifact generation.
- */
 export async function POST(req: NextRequest) {
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -265,12 +300,11 @@ export async function POST(req: NextRequest) {
   try {
     const ctx = await getRequestContext({ requireTenant: false });
     tenantId = ctx.tenantId || undefined;
-  } catch {
-    // Public Chat-for-Free mode allowed cleanly
-  }
+  } catch {}
 
   const {
     model,
+    executionPolicy,
     mode,
     deepThink,
     webSearch,
@@ -282,34 +316,47 @@ export async function POST(req: NextRequest) {
   } = parsed.data;
 
   const startedAt = Date.now();
+  const thinkingSteps: ThinkingPhaseStep[] = [];
   const lastUser = messages[messages.length - 1].content;
   const effectiveUserText = audioTranscriptNote
     ? `${lastUser}\n\n[Voice / Audio Input]: ${audioTranscriptNote}`
     : lastUser;
 
+  const phase1Start = Date.now();
   const { effectiveMode, autoSwitched } = detectSmartMode(
     mode,
     lastUser,
-    Boolean(workspaceFiles && workspaceFiles.length > 0)
+    Boolean(workspaceFiles && workspaceFiles.length > 0),
+    Boolean(imageBase64)
   );
+  const isCollaborative = model === "multi-agent-3";
   const effectiveDeepThink =
     deepThink ||
+    isCollaborative ||
     effectiveMode === "deepthink" ||
     effectiveMode === "coding" ||
     effectiveMode === "security";
   const effectiveSearch = webSearch || effectiveMode === "search";
 
-  // 1) Master Router & Skills Vault Inspection
   const routePlan = planXZebraToolRoute(lastUser, false);
   const skillIndexPrompt = await buildLevel1SkillPromptIndex(lastUser).catch(() => "");
-  const matchedCatalogCount = V20_TO_V22_MASTER_CATALOG.length;
+  const matchedCatalogCount = ALL_SOVEREIGN_MASTER_CATALOG.length;
 
-  // 2) Parallel Grounding: Live Web Search + 34 Public APIs Hub
+  thinkingSteps.push({
+    phase: "Intent, Auto-Router & Capabilities Mapping",
+    agentModel: isCollaborative ? "heyuka-core (Architect)" : model,
+    summary: `Routed to ${effectiveMode.toUpperCase()}${autoSwitched ? " (Auto AI)" : ""} • Policy: ${executionPolicy.toUpperCase()} • ${PUBLIC_APIS_CATALOG_COUNT} Live APIs + ${matchedCatalogCount} Tools`,
+    durationMs: Math.max(1, Date.now() - phase1Start),
+    timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+  });
+
+  // 2) Parallel Real-World Knowledge & Live Public API Grounding
+  const phase2Start = Date.now();
   let sources: Array<{ title: string; url: string; snippet?: string }> = [];
   let webContextBlock = "";
   let apiContextBlock = "";
 
-  const apiCats = effectiveSearch ? matchPublicApiCategories(lastUser) : matchPublicApiCategories(lastUser);
+  const apiCats = matchPublicApiCategories(lastUser);
   const [searchRes, apiResults] = await Promise.all([
     effectiveSearch
       ? runUnrestrictedWebResearch({ query: lastUser.slice(0, 320), lang: locale }).catch(() => null)
@@ -339,18 +386,26 @@ export async function POST(req: NextRequest) {
   const validApis = apiResults.filter((r): r is NonNullable<typeof r> => Boolean(r?.ok && r.data));
   if (validApis.length > 0) {
     apiContextBlock =
-      "\n\n[LIVE ZERO-KEY PUBLIC API TELEMETRY]\n" +
+      "\n\n[LIVE ZERO-KEY REAL-WORLD PUBLIC API TELEMETRY]\n" +
       validApis
-        .map((a) => `• ${a.category} (${a.sourceUrl}): ${JSON.stringify(a.data).slice(0, 500)}`)
+        .map((a) => `• ${a.category} (${a.sourceUrl}): ${JSON.stringify(a.data).slice(0, 600)}`)
         .join("\n");
     for (const a of validApis) {
-      if (a.sourceUrl) {
-        sources.push({ title: `Live API: ${a.category}`, url: a.sourceUrl });
-      }
+      if (a.sourceUrl) sources.push({ title: `Live API: ${a.category}`, url: a.sourceUrl });
     }
   }
 
-  // 3) Deterministic Sovereign Tools (Security SAST, QR Architect)
+  if (sources.length > 0 || validApis.length > 0) {
+    thinkingSteps.push({
+      phase: "Real-World Grounding & Zero-Key Feeds",
+      agentModel: "heyuka-search",
+      summary: `Fetched ${sources.length} verified sources${validApis.length > 0 ? ` (${validApis.map((v) => v.category).join(", ")})` : ""}`,
+      durationMs: Math.max(1, Date.now() - phase2Start),
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+    });
+  }
+
+  // 3) Security SAST & QR Deterministic Modules
   let toolSupplementBlock = "";
   let qrSvgMarkup: string | undefined;
 
@@ -364,15 +419,14 @@ export async function POST(req: NextRequest) {
   if (effectiveMode === "qr") {
     const urlMatch = lastUser.match(/https?:\/\/[^\s]+/i);
     const qrPayload = urlMatch ? urlMatch[0] : "https://kaspi-pos.vercel.app";
-    const qrSvg = renderStyledBrandQrSvg({
+    qrSvgMarkup = renderStyledBrandQrSvg({
       payload: qrPayload,
       sizePx: 220,
       foregroundHex: "#0B0D10",
       backgroundHex: "#FFFFFF",
       centerLabel: "HYK",
     });
-    qrSvgMarkup = qrSvg;
-    toolSupplementBlock += `\n\n[QR ARCHITECT READY]\nGenerated styled SVG QR for "${qrPayload}" (Payload ready in Studio).`;
+    toolSupplementBlock += `\n\n[QR ARCHITECT READY]\nGenerated styled SVG QR for "${qrPayload}".`;
   }
 
   const detectedLang = /[\u0600-\u06FF]/.test(lastUser)
@@ -385,41 +439,61 @@ export async function POST(req: NextRequest) {
     ? "French"
     : "English";
 
+  const isImageEditRequest =
+    Boolean(imageBase64) &&
+    /(ازالة|إزالة|امسح|مسح|حيد|خلي الخلفية|باغراوند|background|remove person|remove people|inpaint|erase|cutout|edit)/i.test(
+      lastUser
+    );
+
   const modeDirective =
     effectiveMode === "coding"
       ? `\nMODE: CODING STUDIO (ANTIGRAVITY SPLIT IDE).
-Generate complete, clean, runnable project files inside fenced code blocks with \`path=\` headers (example: \`\`\`html path=index.html\` or \`\`\`js path=app.js\` or \`\`\`py path=main.py\`). Ensure web apps run directly in the user's browser CPU/DOM cleanly.`
+Output complete runnable multi-file code inside fenced blocks with \`path=\` headers (e.g. \`\`\`html path=index.html\`, \`\`\`css path=styles.css\`, \`\`\`js path=app.js\`). Ensure web solutions execute cleanly directly inside the visitor's browser CPU.`
+      : isImageEditRequest
+      ? `\nMODE: VISION IMAGE EDITING & BACKGROUND ISOLATION.
+Analyze the uploaded image directly using Vision, describe the detected subjects vs background zones precisely, AND guide the user that HEYUKA Studio has opened the Client-GPU Image Mask / Clean-Background Editor right alongside this chat so they can erase subjects or isolate/download the clean background PNG with $0 server cost.`
       : effectiveMode === "image"
-      ? `\nMODE: IMAGE STUDIO (USER CPU / GPU CANVAS).
-Describe the high-res image composition clearly and optionally include an inline \`\`\`svg path=design.svg\`\`\` or canvas visual spec. Client GPU Canvas + free diffusion preview will render immediately in Studio.`
+      ? `\nMODE: IMAGE STUDIO (CLIENT GPU CANVAS + DIFFUSION).
+Describe the composition clearly and optionally include \`\`\`svg path=artwork.svg\`\`\`. Client Canvas GPU Studio opens automatically.`
       : effectiveMode === "video"
       ? `\nMODE: VIDEO STUDIO (CLIENT 30FPS WEBM RENDERER).
-Outline the video scenes concisely in 3 short visual beat lines so the visitor's local CPU Video Studio renders a real playable .webm clip.`
+Provide 3 crisp scene titles/lines so Client CPU Video Studio renders a real downloadable .webm video immediately.`
       : effectiveMode === "audio"
-      ? `\nMODE: AUDIO / VOICE / MUSIC STUDIO.
-Describe the synthesized track / rhythm / audio output cleanly; user's CPU WebAudio engine renders playable .wav immediately.`
+      ? `\nMODE: AUDIO & VOICE STUDIO.
+Provide clean audio synthesis / track direction; visitor's CPU WebAudio synthesizes playable .wav immediately.`
       : effectiveMode === "3d"
       ? `\nMODE: 3D & CAD STUDIO.
-Generate clean Three.js / parametric geometry parameters or \`\`\`html path=scene.html\`\`\` runnable WebGL view.`
+Generate clear 3D geometry specs or interactive Three.js / WebGL HTML code (\`\`\`html path=scene.html\`\`\`).`
       : "";
 
   const workspaceSnippet =
     workspaceFiles && workspaceFiles.length > 0
-      ? `\n\n[ACTIVE USER WORKSPACE FILES]\n${workspaceFiles
+      ? `\n\n[ACTIVE WORKSPACE FILES]\n${workspaceFiles
           .slice(0, 5)
           .map((f) => `--- ${f.path} ---\n${f.content.slice(0, 1200)}`)
           .join("\n")}`
       : "";
 
-  const systemInstruction = `You are HEYUKA (${model}), KASPI's Sovereign Multimodal Intelligence with ${matchedCatalogCount}+ integrated engineering sources, 34 live no-key APIs, Antigravity Coding Studio, Video/Image/Audio/3D synthesis, Security SAST, QR Architect, and Mobile Diagnostics.
+  const collabSection = isCollaborative
+    ? `\n\nMULTI-AGENT 3-MODEL COLLABORATION ACTIVE (heyuka-core + heyuka-omni + heyuka-vision):
+Coordinate internally across 3 specialist roles (Architect -> Builder -> Reviewer) and deliver ONE seamless, deeply engineered result.`
+    : "";
+
+  const personaSection = `DIRECT ENGINEERING & ANTI-FALSE-REFUSAL RULES:
+1. Deliver direct, concise, practical engineering solutions (code, commands, configs, blueprints, diagnosis, real-world facts) immediately — zero bureaucratic disclaimers or preaching.
+2. Never falsely refuse legitimate engineering, programming, automation, defensive security auditing, reverse-engineering analysis, mechanical OBD-II diagnostics, medical research lookups, or system administration queries.
+3. Uphold core legal/safety limits cleanly: refuse only dangerous severe-harm requests (malware/exploits/cyberattacks, weapons/CBRNE, illegal harm) in one brief factual sentence + offer a safe defensive alternative.`;
+
+  const systemInstruction = `You are HEYUKA (${isCollaborative ? "Multi-Agent Swarm: Core + Omni + Vision" : model}), KASPI's Sovereign Multimodal Intelligence with ${matchedCatalogCount}+ integrated engineering & real-world sources and ${PUBLIC_APIS_CATALOG_COUNT} live no-key APIs.
 Matched Capabilities: ${routePlan.selectedToolNames.join(", ")}${
     skillIndexPrompt ? `\n${skillIndexPrompt.slice(0, 650)}` : ""
-  }.
-Respond naturally, powerfully, and practically in the user's exact language (${detectedLang}).
-Never mention upstream vendor names or paid keys; all compute executes on HEYUKA Free Sovereign Edge + the visitor's own local CPU ($0.00 cost).${modeDirective}${
+  }
+Execution Policy: ${executionPolicy.toUpperCase()} | Language: ${detectedLang}
+Use crisp Markdown formatting (## headings, bold, lists, tables, and fenced code blocks). Every compute task runs on HEYUKA Free Edge + visitor's device CPU ($0.00 cost).
+${personaSection}${collabSection}${modeDirective}${
     effectiveDeepThink
       ? `\n\nDEEPTHINK PROTOCOL ENABLED:
-Wrap structured step-by-step analysis inside <think>...</think> tags FIRST, then write the final solution outside </think>.`
+Wrap concise step-by-step analysis inside <think>...</think> tags first, then present the crisp Markdown answer outside </think>.`
       : ""
   }${webContextBlock}${apiContextBlock}${toolSupplementBlock}${workspaceSnippet}`;
 
@@ -443,27 +517,41 @@ Wrap structured step-by-step analysis inside <think>...</think> tags FIRST, then
     };
   });
 
+  const phase3Start = Date.now();
   let rawText = "";
-  let resolvedModel = imageBase64 ? "heyuka-vision" : model;
+  const resolvedModel = imageBase64 ? "heyuka-vision" : isCollaborative ? "multi-agent-3" : model;
 
   try {
     const gen = await generateTextWithRouter({
       system: systemInstruction,
       messages: formattedMessages as any,
-      temperature: effectiveDeepThink ? 0.35 : 0.65,
+      temperature: executionPolicy === "turbo" ? 0.45 : effectiveDeepThink ? 0.35 : 0.65,
       governance: {
         tenantId,
-        allowOwnerPaidProviders: false, // Zero owner cost exposure enforced strictly
+        allowOwnerPaidProviders: false,
       },
     });
     rawText = String(gen.text || "").trim();
   } catch (err: any) {
-    // Graceful Sovereign fallback when cloud free pool is congested — still completes studio/tools cleanly
-    if (effectiveMode === "coding" || effectiveMode === "image" || effectiveMode === "video" || effectiveMode === "audio" || effectiveMode === "qr") {
+    if (
+      isImageEditRequest ||
+      effectiveMode === "coding" ||
+      effectiveMode === "image" ||
+      effectiveMode === "video" ||
+      effectiveMode === "audio" ||
+      effectiveMode === "qr" ||
+      validApis.length > 0
+    ) {
       rawText =
-        locale === "ar"
-          ? `تم تجهيز المخرجات محلياً على معالج جهازك ($0.00) في وضع **${effectiveMode.toUpperCase()}**:`
-          : `Workspace artifact prepared cleanly on your device's CPU ($0.00) in **${effectiveMode.toUpperCase()}** mode.`;
+        validApis.length > 0
+          ? `### Live Real-World Telemetry (${validApis.map((a) => a.category).join(", ")})\n\n\`\`\`json\n${JSON.stringify(
+              validApis.map((a) => ({ source: a.sourceUrl, data: a.data })),
+              null,
+              2
+            )}\n\`\`\``
+          : locale === "ar"
+          ? `تم تجهيز بيئة التنفيذ محلياً على جهازك (**$0.00**) في وضع **${effectiveMode.toUpperCase()}**.`
+          : `Studio workspace initialized locally on your CPU (**$0.00**) in **${effectiveMode.toUpperCase()}** mode.`;
     } else {
       return NextResponse.json(
         { ok: false, error: err?.message || "HEYUKA inference temporarily unavailable." },
@@ -472,6 +560,14 @@ Wrap structured step-by-step analysis inside <think>...</think> tags FIRST, then
     }
   }
 
+  thinkingSteps.push({
+    phase: isCollaborative ? "Multi-Agent Synthesis & Review Pass" : "Neural Synthesis & Formatting",
+    agentModel: resolvedModel,
+    summary: `Synthesized response (${rawText.length} chars) under ${executionPolicy} policy`,
+    durationMs: Math.max(1, Date.now() - phase3Start),
+    timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+  });
+
   let reasoning = "";
   let answerRaw = rawText;
   const thinkMatch = rawText.match(/<think>([\s\S]*?)<\/think>/i);
@@ -479,11 +575,9 @@ Wrap structured step-by-step analysis inside <think>...</think> tags FIRST, then
     reasoning = thinkMatch[1].trim();
     answerRaw = rawText.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
   } else if (effectiveDeepThink) {
-    reasoning = [
-      `• Detected Intent: ${effectiveMode.toUpperCase()}${autoSwitched ? " (Auto-Switched by HEYUKA AI)" : ""} in ${detectedLang}.`,
-      `• Routed via ${resolvedModel} • Tools: ${routePlan.selectedToolNames.slice(0, 4).join(", ") || "core"}.`,
-      sources.length > 0 ? `• Grounded with ${sources.length} live verified sources.` : "• Client-CPU Zero-Cost ($0.00) execution plan ready.",
-    ].join("\n");
+    reasoning = thinkingSteps
+      .map((s) => `• [${s.timestamp}] ${s.phase} (${s.agentModel}, ${s.durationMs}ms): ${s.summary}`)
+      .join("\n");
   }
 
   const reflected = runPreReplyReflectionGate({
@@ -497,13 +591,9 @@ Wrap structured step-by-step analysis inside <think>...</think> tags FIRST, then
     studioFiles = buildStarterCodeScaffold(lastUser, lastUser.slice(0, 44));
   }
   if (effectiveMode === "qr" && qrSvgMarkup) {
-    studioFiles = [
-      { path: "heyuka-qr.svg", language: "svg", content: qrSvgMarkup },
-      ...studioFiles,
-    ];
+    studioFiles = [{ path: "heyuka-qr.svg", language: "svg", content: qrSvgMarkup }, ...studioFiles];
   }
 
-  // Client-CPU Media Job Directive for Image / Video / Audio / 3D / QR
   let clientMediaJob: Record<string, unknown> | undefined;
   const shouldOpenStudio =
     effectiveMode === "coding" ||
@@ -512,9 +602,19 @@ Wrap structured step-by-step analysis inside <think>...</think> tags FIRST, then
     effectiveMode === "audio" ||
     effectiveMode === "3d" ||
     effectiveMode === "qr" ||
+    isImageEditRequest ||
     studioFiles.length > 0;
 
-  if (effectiveMode === "image") {
+  if (isImageEditRequest && imageBase64) {
+    clientMediaJob = {
+      kind: "image_edit",
+      title: "Vision Image Studio (Inpaint / Background Editor)",
+      subtitle: "Client GPU Interactive Eraser & Export ($0.00)",
+      prompt: lastUser,
+      sourceImageUrl: imageBase64,
+      openStudio: true,
+    };
+  } else if (effectiveMode === "image") {
     clientMediaJob = {
       kind: "image",
       title: lastUser.slice(0, 48),
@@ -539,7 +639,10 @@ Wrap structured step-by-step analysis inside <think>...</think> tags FIRST, then
       prompt: lastUser,
       accentHex: "#E11D48",
       durationSec: 3.4,
-      scenes: cleanLines.length > 0 ? cleanLines : [lastUser.slice(0, 45), "HEYUKA Studio Motion", "100% Client CPU • $0.00"],
+      scenes:
+        cleanLines.length > 0
+          ? cleanLines
+          : [lastUser.slice(0, 45), "HEYUKA Studio Motion", "100% Client CPU • $0.00"],
       openStudio: true,
     };
   } else if (effectiveMode === "audio") {
@@ -582,6 +685,7 @@ Wrap structured step-by-step analysis inside <think>...</think> tags FIRST, then
   return NextResponse.json({
     ok: true,
     model: resolvedModel,
+    executionPolicy,
     effectiveMode,
     autoSwitched,
     deepThinkUsed: effectiveDeepThink,
@@ -589,6 +693,8 @@ Wrap structured step-by-step analysis inside <think>...</think> tags FIRST, then
     answer,
     reasoning: reasoning || undefined,
     thinkingSec: effectiveDeepThink ? thinkingSec : undefined,
+    thinkingSteps,
+    thoughtCompletedAt: new Date().toLocaleTimeString("en-GB", { hour12: false }),
     sources: sources.length > 0 ? sources : undefined,
     studioFiles: studioFiles.length > 0 ? studioFiles : undefined,
     clientMediaJob,

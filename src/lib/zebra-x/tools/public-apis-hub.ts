@@ -45,7 +45,19 @@ export type PublicApiCategory =
   | "smart_city_poi"
   | "air_quality"
   | "nador_marine_weather"
-  | "cyber_threat_intel";
+  | "cyber_threat_intel"
+  | "osrm_routing"
+  | "usgs_earthquakes"
+  | "nasa_eonet_events"
+  | "nhtsa_recalls_vehicles"
+  | "disease_health_stats"
+  | "rxnav_drugs"
+  | "wger_workouts"
+  | "openlibrary_books"
+  | "gbif_biodiversity"
+  | "frankfurter_fx"
+  | "themealdb_recipes"
+  | "opensky_flights";
 
 export interface PublicApiCacheRow {
   cacheKey: string;
@@ -280,11 +292,27 @@ async function executePublicQuery(
       try {
         json = await fetchJsonWithTimeout(url, {}, 5000);
       } catch {
-        const v2Url = `https://${host}/api/v2/search?search_terms=${encodeURIComponent(
-          query
-        )}&fields=code,product_name,brands,quantity,image_front_small_url&page_size=${limit}`;
-        resolvedUrl = v2Url;
-        json = await fetchJsonWithTimeout(v2Url, {}, 6000);
+        try {
+          const v2Url = `https://${host}/api/v2/search?search_terms=${encodeURIComponent(
+            query
+          )}&fields=code,product_name,brands,quantity,image_front_small_url&page_size=${limit}`;
+          resolvedUrl = v2Url;
+          json = await fetchJsonWithTimeout(v2Url, {}, 6000);
+        } catch {
+          const usdaUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(
+            query
+          )}&pageSize=${limit}&api_key=DEMO_KEY`;
+          resolvedUrl = usdaUrl;
+          const usda = await fetchJsonWithTimeout<any>(usdaUrl, {}, 6500);
+          const foods = (usda?.foods || []).slice(0, limit).map((f: any) => ({
+            barcode: String(f.gtinUpc || f.fdcId || ""),
+            name: f.description,
+            brand: f.brandOwner || f.dataType,
+            quantity: f.servingSize ? `${f.servingSize}${f.servingSizeUnit || "g"}` : "100g",
+            image: null,
+          }));
+          return { sourceUrl: usdaUrl, data: { count: foods.length, products: foods, provider: "usda_fooddata" } };
+        }
       }
       const products = (json?.products || []).slice(0, limit).map((p: any) => ({
         barcode: p.code,
@@ -1042,6 +1070,187 @@ async function executePublicQuery(
         },
       };
     }
+
+    case "osrm_routing": {
+      const parts = (query || "Nador|Oujda").split(/[|;>]+/).map((s) => s.trim()).filter(Boolean);
+      const fromPlace = parts[0] || "Nador";
+      const toPlace = parts[1] || "Oujda";
+      const [a, b] = await Promise.all([resolveLatLon(fromPlace), resolveLatLon(toPlace)]);
+      const url = `https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false`;
+      const json = await fetchJsonWithTimeout<any>(url, {}, 7500);
+      const route = json?.routes?.[0];
+      return {
+        sourceUrl: url,
+        data: {
+          origin: a,
+          destination: b,
+          distanceKm: route ? Number((route.distance / 1000).toFixed(2)) : null,
+          durationMinutes: route ? Math.round(route.duration / 60) : null,
+        },
+      };
+    }
+
+    case "usgs_earthquakes": {
+      const url = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&limit=${limit}&orderby=time`;
+      const json = await fetchJsonWithTimeout<any>(url, {}, 7500);
+      const events = (json?.features || []).slice(0, limit).map((f: any) => ({
+        place: f.properties?.place,
+        magnitude: f.properties?.mag,
+        timeIso: f.properties?.time ? new Date(f.properties.time).toISOString() : null,
+      }));
+      return { sourceUrl: url, data: { count: events.length, events } };
+    }
+
+    case "nasa_eonet_events": {
+      const url = `https://eonet.gsfc.nasa.gov/api/v3/events?limit=${limit}&status=open`;
+      try {
+        const json = await fetchJsonWithTimeout<any>(url, {}, 7500);
+        const events = (json?.events || []).slice(0, limit).map((ev: any) => ({
+          id: ev.id,
+          title: ev.title,
+          category: ev.categories?.[0]?.title || "Earth Event",
+        }));
+        return { sourceUrl: url, data: { events } };
+      } catch {
+        const apodUrl = "https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY";
+        const json = await fetchJsonWithTimeout<any>(apodUrl, {}, 7500);
+        return { sourceUrl: apodUrl, data: { title: json?.title, date: json?.date, url: json?.url } };
+      }
+    }
+
+    case "nhtsa_recalls_vehicles": {
+      const obdCodes: Record<string, string> = {
+        P0300: "Random/Multiple Cylinder Misfire Detected — inspect spark plugs, ignition coils, vacuum leaks, fuel pressure.",
+        P0420: "Catalyst System Efficiency Below Threshold (Bank 1) — inspect O2 sensors, exhaust leaks, catalytic converter.",
+        P0171: "System Too Lean (Bank 1) — inspect MAF sensor, intake boots, PCV valve, fuel injector delivery.",
+        P0128: "Coolant Thermostat Below Regulating Temperature — verify ECT sensor and stuck-open thermostat.",
+      };
+      const codeMatch = query.toUpperCase().match(/\b[PBCU]\d{4}\b/);
+      const make = (query.replace(/\b[PBCU]\d{4}\b/gi, "").trim().split(/\s+/)[0] || "toyota").replace(
+        /[^a-zA-Z0-9-]/g,
+        ""
+      );
+      const url = `https://vpic.nhtsa.dot.gov/api/vehicles/getmodelsformake/${encodeURIComponent(
+        make
+      )}?format=json`;
+      const json = await fetchJsonWithTimeout<any>(url, {}, 7500);
+      return {
+        sourceUrl: url,
+        data: {
+          make,
+          obdDiagnostic: codeMatch ? { code: codeMatch[0], meaning: obdCodes[codeMatch[0]] || "Standard SAE J2012 DTC Code" } : null,
+          modelsCount: json?.Count || 0,
+          sampleModels: (json?.Results || []).slice(0, limit).map((r: any) => r.Model_Name),
+        },
+      };
+    }
+
+    case "disease_health_stats": {
+      const cleanCountry = (query || "Morocco").trim().replace(/[^a-zA-Z\s-]/g, "");
+      const url = cleanCountry
+        ? `https://disease.sh/v3/covid-19/countries/${encodeURIComponent(cleanCountry)}`
+        : "https://disease.sh/v3/covid-19/all";
+      const json = await fetchJsonWithTimeout<any>(url, {}, 7000);
+      return {
+        sourceUrl: url,
+        data: {
+          country: json?.country || "Global",
+          cases: json?.cases,
+          recovered: json?.recovered,
+          population: json?.population,
+        },
+      };
+    }
+
+    case "rxnav_drugs": {
+      const url = `https://rxnav.nlm.nih.gov/REST/drugs.json?name=${encodeURIComponent(
+        query || "amoxicillin"
+      )}`;
+      const json = await fetchJsonWithTimeout<any>(url, {}, 7500);
+      const groups = (json?.drugGroup?.conceptGroup || []).slice(0, limit).map((g: any) => ({
+        tty: g.tty,
+        concepts: (g.conceptProperties || []).slice(0, 3).map((c: any) => ({ rxcui: c.rxcui, name: c.name })),
+      }));
+      return { sourceUrl: url, data: { query, groups } };
+    }
+
+    case "wger_workouts": {
+      const url = `https://wger.de/api/v2/exerciseinfo/?limit=${limit}&language=2`;
+      const json = await fetchJsonWithTimeout<any>(url, {}, 7500);
+      const exercises = (json?.results || []).slice(0, limit).map((ex: any) => ({
+        id: ex.id,
+        category: ex.category?.name,
+        muscles: (ex.muscles || []).map((m: any) => m.name_en || m.name),
+      }));
+      return { sourceUrl: url, data: { count: json?.count || exercises.length, exercises } };
+    }
+
+    case "openlibrary_books": {
+      const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(
+        query || "morocco history"
+      )}&limit=${limit}&fields=key,title,author_name,first_publish_year`;
+      const json = await fetchJsonWithTimeout<any>(url, {}, 7500);
+      const docs = (json?.docs || []).slice(0, limit).map((d: any) => ({
+        title: d.title,
+        authors: d.author_name?.slice(0, 2),
+        year: d.first_publish_year,
+      }));
+      return { sourceUrl: url, data: { numFound: json?.numFound || docs.length, books: docs } };
+    }
+
+    case "gbif_biodiversity": {
+      const url = `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(
+        query || "Argania spinosa"
+      )}&limit=${limit}`;
+      const json = await fetchJsonWithTimeout<any>(url, {}, 7500);
+      const species = (json?.results || []).slice(0, limit).map((sp: any) => ({
+        scientificName: sp.scientificName,
+        kingdom: sp.kingdom,
+        family: sp.family,
+      }));
+      return { sourceUrl: url, data: { species } };
+    }
+
+    case "frankfurter_fx": {
+      const baseCur = (extra?.base || query || "EUR").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "EUR";
+      const url = `https://api.frankfurter.app/latest?from=${encodeURIComponent(baseCur)}`;
+      const json = await fetchJsonWithTimeout<any>(url, {}, 7000);
+      return { sourceUrl: url, data: json };
+    }
+
+    case "themealdb_recipes": {
+      const cleanDish = encodeURIComponent(query || "chicken");
+      const url = `https://www.themealdb.com/api/json/v1/1/search.php?s=${cleanDish}`;
+      const json = await fetchJsonWithTimeout<any>(url, {}, 7000);
+      const meals = (json?.meals || []).slice(0, limit).map((m: any) => ({
+        id: m.idMeal,
+        name: m.strMeal,
+        category: m.strCategory,
+        area: m.strArea,
+      }));
+      return { sourceUrl: url, data: { count: meals.length, meals } };
+    }
+
+    case "opensky_flights": {
+      const adsbUrl = "https://api.adsb.lol/v2/point/35.1688/-2.9335/250";
+      const osUrl = "https://opensky-network.org/api/states/all?lamin=29.0&lomin=-11.0&lamax=36.0&lomax=-1.0";
+      try {
+        const json = await fetchJsonWithTimeout<any>(osUrl, {}, 5500);
+        const states = (json?.states || []).slice(0, limit).map((s: any) => ({
+          icao24: s[0],
+          callsign: String(s[1] || "").trim(),
+          country: s[2],
+        }));
+        if (states.length > 0) return { sourceUrl: osUrl, data: { source: "opensky", flights: states } };
+      } catch {}
+      const fallback = await fetchJsonWithTimeout<any>(adsbUrl, {}, 6500);
+      const aircraft = (fallback?.ac || []).slice(0, limit).map((ac: any) => ({
+        hex: ac.hex,
+        flight: String(ac.flight || "").trim(),
+        altBaro: ac.alt_baro,
+      }));
+      return { sourceUrl: adsbUrl, data: { source: "adsb.lol", totalTracked: fallback?.total || aircraft.length, flights: aircraft } };
+    }
   }
 }
 
@@ -1126,4 +1335,4 @@ export async function queryPublicApiHub(params: {
   }
 }
 
-export const PUBLIC_APIS_CATALOG_COUNT = 34;
+export const PUBLIC_APIS_CATALOG_COUNT = 46;

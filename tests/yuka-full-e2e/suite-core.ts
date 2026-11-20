@@ -720,11 +720,23 @@ async function main() {
     ["air_quality", "35.1688,-2.9335"],
     ["nador_marine_weather", "Nador"],
     ["cyber_threat_intel", "openssl"],
+    ["osrm_routing", "Nador|Oujda"],
+    ["usgs_earthquakes", "global"],
+    ["nasa_eonet_events", "earth"],
+    ["nhtsa_recalls_vehicles", "P0300 toyota"],
+    ["disease_health_stats", "Morocco"],
+    ["rxnav_drugs", "amoxicillin"],
+    ["wger_workouts", "chest"],
+    ["openlibrary_books", "mathematics"],
+    ["gbif_biodiversity", "Argania"],
+    ["frankfurter_fx", "EUR", "EUR"],
+    ["themealdb_recipes", "chicken"],
+    ["opensky_flights", "Morocco"],
   ];
   assert.equal(apiQueries.length, PUBLIC_APIS_CATALOG_COUNT, "Missing PublicApiCategory test case!");
 
   for (const [category, q, base] of apiQueries) {
-    await runCheck(`public_api_${category}`, "34 Public APIs Live", async () => {
+    await runCheck(`public_api_${category}`, `${PUBLIC_APIS_CATALOG_COUNT} Public APIs Live`, async () => {
       const r = await queryPublicApiHub({ category, query: q, base, limit: 3, ttlMs: 1000 });
       assert.equal(r.ok, true, `${category} failed: ${r.error}`);
       assert.ok(r.data !== undefined && r.data !== null, `${category} empty payload`);
@@ -915,20 +927,22 @@ async function main() {
     const cpuEngineSrc = fs.readFileSync(path.join(root, "src/lib/heyuka/client-cpu-engine.ts"), "utf8");
     const studioPaneSrc = fs.readFileSync(path.join(root, "src/components/heyuka/AntigravityStudioPane.tsx"), "utf8");
     const chatWorkspaceSrc = fs.readFileSync(path.join(root, "src/components/heyuka/HeyukaChatWorkspace.tsx"), "utf8");
+    const markdownMsgSrc = fs.readFileSync(path.join(root, "src/components/heyuka/HeyukaMarkdownMessage.tsx"), "utf8");
     const chatWebApiSrc = fs.readFileSync(path.join(root, "src/app/api/v1/heyuka/chat-web/route.ts"), "utf8");
     const gmailDirSrc = fs.readFileSync(path.join(root, "src/lib/heyuka/gmail-directory.ts"), "utf8");
     const gmailAccessSrc = fs.readFileSync(path.join(root, "src/app/api/v1/heyuka/gmail-access/route.ts"), "utf8");
     const feedbackApiSrc = fs.readFileSync(path.join(root, "src/app/api/v1/heyuka/feedback/route.ts"), "utf8");
     const adminVaultSrc = fs.readFileSync(path.join(root, "src/app/admin/AdminGmailVaultCard.tsx"), "utf8");
 
-    assert.ok(cpuEngineSrc.includes("executeJsInClientWorker") && cpuEngineSrc.includes("renderVideoOnClientCpu") && cpuEngineSrc.includes("synthesizeAudioWavOnClientCpu") && cpuEngineSrc.includes("speakTextReliably"));
-    assert.ok(studioPaneSrc.includes("Antigravity Studio") && studioPaneSrc.includes("showDirectoryPicker") && studioPaneSrc.includes("buildClientProjectZipBlob"));
-    assert.ok(chatWorkspaceSrc.includes("MODE_OPTIONS") && chatWorkspaceSrc.includes("MediaRecorder") && chatWorkspaceSrc.includes("studioOpen"));
-    assert.ok(chatWebApiSrc.includes("allowOwnerPaidProviders: false") && chatWebApiSrc.includes("detectSmartMode") && chatWebApiSrc.includes("queryPublicApiHub"));
+    assert.ok(cpuEngineSrc.includes("executeJsInClientWorker") && cpuEngineSrc.includes("compressImageFileToDataUrl") && cpuEngineSrc.includes("buildPortableHeyukaAppHtml"));
+    assert.ok(studioPaneSrc.includes("Antigravity Studio") && studioPaneSrc.includes("InteractiveImageInpaintEditor") && studioPaneSrc.includes("PS studio"));
+    assert.ok(chatWorkspaceSrc.includes("HeyukaMarkdownMessage") && chatWorkspaceSrc.includes("multi-agent-3") && chatWorkspaceSrc.includes("executionPolicy"));
+    assert.ok(markdownMsgSrc.includes('dir="auto"') && markdownMsgSrc.includes("Download"));
+    assert.ok(chatWebApiSrc.includes("allowOwnerPaidProviders: false") && chatWebApiSrc.includes("multi-agent-3") && chatWebApiSrc.includes("PUBLIC_APIS_CATALOG_COUNT"));
     assert.ok(gmailDirSrc.includes("syncUserToSupabaseDirectory") && gmailAccessSrc.includes("recordProjectGmail") && feedbackApiSrc.includes("recordProjectGmail"));
     assert.ok(adminVaultSrc.includes("/api/v1/admin/gmail-directory"));
 
-    return { detail: "Client CPU (Worker/Video/WAV/TTS/PKZIP), Antigravity IDE Split, Smart Auto-Mode & Central Gmail Vault verified" };
+    return { detail: `46 APIs + v23 Real-World + Markdown dir=auto + Compressed Vision + 3-Agent Swarm + Client CPU Studio verified` };
   });
 
   // SUMMARY & SELF-REPORTING
