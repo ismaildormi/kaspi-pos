@@ -10,6 +10,7 @@ import {
   SESSION_EXPIRY_DAYS,
 } from "@/server/auth/session";
 import { checkPlanetaryRateLimit } from "@/lib/heyuka/planetary/polyglot-cas-router";
+import { recordProjectGmail } from "@/lib/heyuka/gmail-directory";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ const GmailAccessSchema = z.object({
     .transform((v) => v.toLowerCase()),
   fullName: z.string().trim().max(80).optional(),
   otpCode: z.string().trim().max(12).optional(),
+  source: z.string().trim().max(48).optional(),
 });
 
 export async function GET() {
@@ -60,8 +62,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { email, fullName, otpCode } = parsed.data;
+  const { email, fullName, otpCode, source } = parsed.data;
   const userAgent = req.headers.get("user-agent") || "HEYUKA-Web";
+  const resolvedSource = source || "heyuka_gmail_access";
 
   try {
     const existingUser = await prisma.user.findUnique({
@@ -152,6 +155,15 @@ export async function POST(req: NextRequest) {
         userAgent,
       });
 
+      await recordProjectGmail({
+        email,
+        fullName: existingUser.fullName || existingUser.name || fullName || null,
+        source: resolvedSource,
+        tenantId: activeTenantId,
+        role: memberships[0]?.role || "owner",
+        shopName: memberships[0]?.tenant?.displayName || "HEYUKA Studio",
+      }).catch(() => {});
+
       const res = NextResponse.json({
         ok: true,
         authenticated: true,
@@ -214,6 +226,15 @@ export async function POST(req: NextRequest) {
       ip,
       userAgent,
     });
+
+    await recordProjectGmail({
+      email,
+      fullName: displayName,
+      source: resolvedSource,
+      tenantId: createdTenant.id,
+      role: "owner",
+      shopName: createdTenant.displayName,
+    }).catch(() => {});
 
     const res = NextResponse.json({
       ok: true,

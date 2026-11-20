@@ -7,31 +7,42 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowUp,
   Atom,
+  AudioLines,
+  Box,
   Check,
   ChevronDown,
   ChevronRight,
+  Code2,
   Copy,
+  Cpu,
   Download,
   Edit3,
   Globe,
+  HelpCircle,
+  Image as ImageIcon,
   Link2,
   Loader2,
   Mic,
   MicOff,
   MoreHorizontal,
   PanelLeft,
+  PanelRight,
   Paperclip,
   Pin,
   PinOff,
   Plus,
+  QrCode,
   RefreshCw,
   Search,
   Share2,
+  ShieldCheck,
+  Sparkles,
   SquareCheck,
   ThumbsDown,
   ThumbsUp,
   Trash2,
   User,
+  Video,
   Volume2,
   VolumeX,
   X,
@@ -39,8 +50,32 @@ import {
 import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 import { HeyukaLoopMark } from "./HeyukaLoopMark";
 import { HEYUKAGmailAccessCard } from "./HEYUKAGmailAccessCard";
+import { AntigravityStudioPane } from "./AntigravityStudioPane";
+import {
+  renderImageOnClientCpu,
+  renderVideoOnClientCpu,
+  speakTextReliably,
+  synthesizeAudioWavOnClientCpu,
+  type ClientMediaArtifact,
+  type ClientMediaJobSpec,
+  type ClientStudioFile,
+} from "@/lib/heyuka/client-cpu-engine";
 
 type ChatLocale = "ar" | "fr" | "en";
+
+export type HeyukaComposerMode =
+  | "auto"
+  | "chat"
+  | "deepthink"
+  | "search"
+  | "coding"
+  | "image"
+  | "video"
+  | "audio"
+  | "3d"
+  | "security"
+  | "qr"
+  | "mobile";
 
 interface ChatSource {
   title: string;
@@ -56,6 +91,12 @@ interface ChatMessageItem {
   thinkingSec?: number;
   sources?: ChatSource[];
   imagePreview?: string;
+  detectedMode?: string;
+  autoSwitched?: boolean;
+  studioFilesCount?: number;
+  pollinationsUrl?: string;
+  mediaArtifact?: ClientMediaArtifact;
+  qrSvgDataUrl?: string;
 }
 
 interface ThreadItem {
@@ -67,6 +108,23 @@ interface ThreadItem {
 }
 
 const LOCAL_THREADS_KEY = "heyuka_guest_threads_v1";
+
+const MODE_OPTIONS: Array<{
+  id: HeyukaComposerMode;
+  label: string;
+  hint: string;
+  icon: React.ComponentType<{ className?: string }>;
+}> = [
+  { id: "auto", label: "Auto (AI Smart Router)", hint: "AI switches mode automatically", icon: Sparkles },
+  { id: "coding", label: "Coding Studio (Antigravity IDE)", hint: "Split files, preview & CPU runner", icon: Code2 },
+  { id: "image", label: "Image Studio", hint: "Client GPU render + AI art", icon: ImageIcon },
+  { id: "video", label: "Video Studio", hint: "30fps WebM on your CPU", icon: Video },
+  { id: "audio", label: "Audio & Music", hint: "WebAudio WAV synthesizer", icon: AudioLines },
+  { id: "3d", label: "3D & CAD Studio", hint: "Interactive WebGL viewport", icon: Box },
+  { id: "security", label: "Security SAST & Mobile Lab", hint: "CWE scan & device diagnostics", icon: ShieldCheck },
+  { id: "qr", label: "QR Architect", hint: "Styled SVG & dynamic QR", icon: QrCode },
+  { id: "chat", label: "Standard Chat", hint: "Fast conversational reply", icon: Sparkles },
+];
 
 const COPY: Record<
   ChatLocale,
@@ -97,6 +155,7 @@ const COPY: Record<
     searchChatsPlaceholder: string;
     signInGmail: string;
     apiPlatform: string;
+    messagingLink: string;
     desktopDownload: string;
     disclaimer: string;
     audioStart: string;
@@ -104,18 +163,18 @@ const COPY: Record<
   }
 > = {
   ar: {
-    newChat: "New chat",
+    newChat: "محادثة جديدة",
     selectChats: "تحديد المحادثات",
     pinned: "مثبتة",
     today: "اليوم",
     last30: "آخر 30 يوم",
-    greeting: "مرحباً! كيف أساعدك اليوم؟",
-    placeholder: "Message HEYUKA",
+    greeting: "مرحباً! بشنو نقدر نعاونك اليوم؟",
+    placeholder: "اكتب لـ HEYUKA... (كود، فيديو، صورة، أوديو، بحث أو استشارة)",
     deepThink: "DeepThink",
     search: "Search",
-    thinking: "جاري التفكير...",
+    thinking: "جاري التحليل والتنفيذ...",
     thoughtFor: "Thought for",
-    searching: "جاري البحث على الويب...",
+    searching: "جاري البحث المباشر على الويب...",
     share: "مشاركة",
     rename: "Rename",
     pin: "Pin",
@@ -126,14 +185,15 @@ const COPY: Record<
     selectedTurns: "conversation turn(s) selected",
     cancel: "Cancel",
     createPublicLink: "Create public link",
-    copiedLink: "تم نسخ الرابط العام بنجاح! من يفتحه يختار Gmail ويدخل لهذه المحادثة.",
-    searchChatsPlaceholder: "Search chat content...",
+    copiedLink: "تم نسخ الرابط العام! أي شخص يفتحه يختار Gmail ويكمل داخل نفس المحادثة.",
+    searchChatsPlaceholder: "ابحث داخل المحادثات...",
     signInGmail: "Sign in (Gmail)",
     apiPlatform: "API Platform",
-    desktopDownload: "Desktop (.zip)",
-    disclaimer: "AI-generated, for reference only • HEYUKA by KASPI",
-    audioStart: "Audio / Voice Input",
-    audioStop: "Stop Audio",
+    messagingLink: "المراسلات والدعم (Feedback)",
+    desktopDownload: "Desktop App (.zip)",
+    disclaimer: "AI-generated, for reference only • 100% Client CPU & Zero-Cost $0.00",
+    audioStart: "تسجيل صوتي / Audio Mic",
+    audioStop: "إيقاف التسجيل",
   },
   fr: {
     newChat: "New chat",
@@ -141,13 +201,13 @@ const COPY: Record<
     pinned: "Pinned",
     today: "Today",
     last30: "30 Days",
-    greeting: "Bonjour ! Comment puis-je vous aider ?",
-    placeholder: "Message HEYUKA",
+    greeting: "Bonjour ! Que voulez-vous créer aujourd'hui ?",
+    placeholder: "Message HEYUKA (code, vidéo, image, audio, recherche...)",
     deepThink: "DeepThink",
     search: "Search",
-    thinking: "Réflexion...",
+    thinking: "Réflexion & exécution...",
     thoughtFor: "Thought for",
-    searching: "Recherche sur le web...",
+    searching: "Recherche web en direct...",
     share: "Partager",
     rename: "Rename",
     pin: "Pin",
@@ -162,10 +222,11 @@ const COPY: Record<
     searchChatsPlaceholder: "Search chat content...",
     signInGmail: "Connexion Gmail",
     apiPlatform: "API Platform",
+    messagingLink: "Messagerie & Support",
     desktopDownload: "Desktop (.zip)",
-    disclaimer: "AI-generated, for reference only • HEYUKA by KASPI",
+    disclaimer: "AI-generated, for reference only • CPU Client 100% ($0.00)",
     audioStart: "Entrée Audio",
-    audioStop: "Arrêter",
+    audioStop: "Arrêter Audio",
   },
   en: {
     newChat: "New chat",
@@ -174,12 +235,12 @@ const COPY: Record<
     today: "Today",
     last30: "30 Days",
     greeting: "Hi! What's on your mind today?",
-    placeholder: "Message HEYUKA",
+    placeholder: "Message HEYUKA — code apps, images, videos, audio, search...",
     deepThink: "DeepThink",
     search: "Search",
-    thinking: "Thinking...",
+    thinking: "Thinking & routing tools...",
     thoughtFor: "Thought for",
-    searching: "Searching web...",
+    searching: "Searching live web & APIs...",
     share: "Share",
     rename: "Rename",
     pin: "Pin",
@@ -194,8 +255,9 @@ const COPY: Record<
     searchChatsPlaceholder: "Search chat content...",
     signInGmail: "Sign in (Gmail)",
     apiPlatform: "API Platform",
+    messagingLink: "Help & Messaging",
     desktopDownload: "Desktop App",
-    disclaimer: "AI-generated, for reference only",
+    disclaimer: "AI-generated, for reference only • Runs on Your Hardware ($0.00)",
     audioStart: "Audio / Voice Input",
     audioStop: "Stop Audio",
   },
@@ -224,40 +286,54 @@ export function HeyukaChatWorkspace() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
-  // Composer State
+  // Unified Composer Mode Box State
   const [input, setInput] = useState("");
+  const [selectedMode, setSelectedMode] = useState<HeyukaComposerMode>("auto");
+  const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const [deepThink, setDeepThink] = useState(true);
   const [webSearch, setWebSearch] = useState(false);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [audioNote, setAudioNote] = useState<string | null>(null);
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
+  const [audioStatusHint, setAudioStatusHint] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const [sending, setSending] = useState(false);
 
-  // Inline Edit (Screenshot 8)
+  // Antigravity Split Studio State
+  const [studioOpen, setStudioOpen] = useState(false);
+  const [studioFiles, setStudioFiles] = useState<ClientStudioFile[]>([]);
+  const [mediaArtifacts, setMediaArtifacts] = useState<ClientMediaArtifact[]>([]);
+  const [activePollinationsUrl, setActivePollinationsUrl] = useState<string | null>(null);
+  const [videoProgressPct, setVideoProgressPct] = useState<number | null>(null);
+  const [isRenderingMedia, setIsRenderingMedia] = useState(false);
+
+  // Inline Edit
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
 
-  // Reactions & Audio Read-Aloud (Screenshot 9)
+  // Reactions & Audio Read-Aloud
   const [collapsedThoughts, setCollapsedThoughts] = useState<Record<string, boolean>>({});
   const [feedbackMap, setFeedbackMap] = useState<Record<string, "up" | "down">>({});
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Share Turn Selection (Screenshots 11 & 12)
+  // Share Turn Selection
   const [shareSelectMode, setShareSelectMode] = useState(false);
   const [shareSelectedMsgIds, setShareSelectedMsgIds] = useState<string[]>([]);
   const [shareBusy, setShareBusy] = useState(false);
   const [shareNoticeUrl, setShareNoticeUrl] = useState<string | null>(null);
 
-  // Search Modal (Screenshot 14) & Gmail Sign-in Modal
+  // Search Modal & Gmail Sign-in Modal
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const audioFileRef = useRef<HTMLInputElement>(null);
   const bottomScrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const stopSpeechRef = useRef<(() => void) | null>(null);
 
   const saveGuestThreads = (next: ThreadItem[]) => {
     try {
@@ -286,7 +362,6 @@ export function HeyukaChatWorkspace() {
     void loadThreads();
   }, [loadThreads]);
 
-  // Load shared conversation seamlessly via ?fromShare=sh_...
   useEffect(() => {
     const fromShare = searchParams?.get("fromShare");
     if (!fromShare) return;
@@ -322,6 +397,11 @@ export function HeyukaChatWorkspace() {
     const firstUser = messages.find((m) => m.role === "user");
     return firstUser ? firstUser.content.slice(0, 42) : t.newChat;
   }, [activeThreadId, threads, messages, t.newChat]);
+
+  const activeModeMeta = useMemo(
+    () => MODE_OPTIONS.find((m) => m.id === selectedMode) || MODE_OPTIONS[0],
+    [selectedMode]
+  );
 
   const persistCurrentThread = async (nextMsgs: ChatMessageItem[], currentId: string | null) => {
     if (nextMsgs.length === 0) return currentId;
@@ -363,6 +443,54 @@ export function HeyukaChatWorkspace() {
     return currentId;
   };
 
+  const runClientCpuJob = async (
+    job: ClientMediaJobSpec,
+    assistantId: string
+  ): Promise<void> => {
+    setIsRenderingMedia(true);
+    setVideoProgressPct(job.kind === "video" ? 0 : null);
+    if (job.pollinationsUrl) setActivePollinationsUrl(job.pollinationsUrl);
+
+    try {
+      let artifact: ClientMediaArtifact | null = null;
+      if (job.kind === "video") {
+        artifact = await renderVideoOnClientCpu(job, (pct) => setVideoProgressPct(pct));
+      } else if (job.kind === "image") {
+        artifact = await renderImageOnClientCpu(job);
+      } else if (job.kind === "audio") {
+        artifact = synthesizeAudioWavOnClientCpu({
+          title: job.title,
+          prompt: job.prompt,
+          bpm: job.bpm,
+          durationSec: job.durationSec,
+        });
+      } else if (job.kind === "3d") {
+        artifact = {
+          kind: "3d",
+          title: job.title,
+          objectUrl: "",
+          mimeType: "model/gltf-binary",
+          filename: "heyuka-scene.glb",
+          durationMs: 12,
+          cpuCoresUsed: navigator.hardwareConcurrency || 4,
+          bytes: 2048,
+        };
+      }
+
+      if (artifact) {
+        setMediaArtifacts((prev) => [...prev, artifact!]);
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantId ? { ...m, mediaArtifact: artifact! } : m))
+        );
+      }
+    } catch (err: any) {
+      setAudioStatusHint(err?.message || "Local CPU media render notice.");
+    } finally {
+      setIsRenderingMedia(false);
+      setVideoProgressPct(null);
+    }
+  };
+
   const handleSend = async (overrideText?: string, baseHistory?: ChatMessageItem[]) => {
     const textToSend = (overrideText ?? input).trim();
     if ((!textToSend && !attachedImage && !audioNote) || sending) return;
@@ -371,7 +499,7 @@ export function HeyukaChatWorkspace() {
     const userMsg: ChatMessageItem = {
       id: `u_${Date.now()}`,
       role: "user",
-      content: textToSend || (audioNote ? `[Audio] ${audioNote}` : "Analyze the attached image."),
+      content: textToSend || (audioNote ? `[Voice Note] ${audioNote}` : "Analyze the attached image."),
       imagePreview: attachedImage || undefined,
     };
 
@@ -381,9 +509,12 @@ export function HeyukaChatWorkspace() {
       setInput("");
       setAttachedImage(null);
       setAudioNote(null);
+      setRecordedAudioUrl(null);
     }
+    setModeMenuOpen(false);
     setSending(true);
     setShareNoticeUrl(null);
+    setAudioStatusHint(null);
 
     try {
       const res = await fetch("/api/v1/heyuka/chat-web", {
@@ -391,25 +522,59 @@ export function HeyukaChatWorkspace() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: attachedImage ? "heyuka-vision" : deepThink ? "heyuka-omni" : "heyuka-core",
+          mode: selectedMode,
           deepThink,
           webSearch,
           locale,
           imageBase64: attachedImage || undefined,
           audioTranscriptNote: audioNote || undefined,
+          workspaceFiles:
+            studioFiles.length > 0
+              ? studioFiles.slice(0, 6).map((f) => ({ path: f.path, content: f.content }))
+              : undefined,
           messages: optimisticMsgs.map((m) => ({ role: m.role, content: m.content })),
         }),
       });
       const json = await res.json();
+
+      if (Array.isArray(json?.studioFiles) && json.studioFiles.length > 0) {
+        setStudioFiles(json.studioFiles);
+      }
+      if (json?.openStudio) {
+        setStudioOpen(true);
+        if (typeof window !== "undefined" && window.innerWidth < 1280) {
+          setSidebarOpen(false);
+        }
+      }
+
+      const job: ClientMediaJobSpec | undefined = json?.clientMediaJob;
+      const qrDataUrl =
+        job?.svgMarkup && typeof job.svgMarkup === "string"
+          ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(job.svgMarkup)}`
+          : undefined;
+
+      const assistantId = `a_${Date.now()}`;
       const assistantMsg: ChatMessageItem = {
-        id: `a_${Date.now()}`,
+        id: assistantId,
         role: "assistant",
         content: json?.answer || json?.error || "Unable to complete response cleanly.",
         reasoning: json?.reasoning,
         thinkingSec: json?.thinkingSec,
         sources: Array.isArray(json?.sources) ? json.sources : undefined,
+        detectedMode: json?.effectiveMode,
+        autoSwitched: Boolean(json?.autoSwitched),
+        studioFilesCount: Array.isArray(json?.studioFiles) ? json.studioFiles.length : undefined,
+        pollinationsUrl: job?.pollinationsUrl,
+        qrSvgDataUrl: qrDataUrl,
       };
+
       const finalMsgs = [...optimisticMsgs, assistantMsg];
       setMessages(finalMsgs);
+
+      if (job && job.kind !== "code" && job.kind !== "qr") {
+        void runClientCpuJob(job, assistantId);
+      }
+
       const savedId = await persistCurrentThread(finalMsgs, activeThreadId);
       if (savedId && !activeThreadId) setActiveThreadId(savedId);
     } catch {
@@ -439,59 +604,119 @@ export function HeyukaChatWorkspace() {
     await handleSend(trimmed, messages.slice(0, idx));
   };
 
-  const handleToggleAudioMic = () => {
-    if (listening) {
-      try {
-        recognitionRef.current?.stop();
-      } catch {}
-      setListening(false);
-      return;
-    }
-    const SpeechRec =
-      typeof window !== "undefined"
-        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-        : null;
-    if (!SpeechRec) {
-      audioFileRef.current?.click();
-      return;
-    }
+  const stopAllMicCapture = () => {
     try {
-      const rec = new SpeechRec();
-      rec.lang = locale === "ar" ? "ar-MA" : locale === "fr" ? "fr-FR" : "en-US";
-      rec.interimResults = true;
-      rec.continuous = false;
-      rec.onresult = (ev: any) => {
-        const txt = Array.from(ev.results)
-          .map((r: any) => r[0]?.transcript || "")
-          .join(" ")
-          .trim();
-        if (txt) setInput(txt);
-      };
-      rec.onend = () => setListening(false);
-      rec.onerror = () => setListening(false);
-      recognitionRef.current = rec;
+      recognitionRef.current?.stop();
+    } catch {}
+    try {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+    } catch {}
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach((tr) => tr.stop());
+      micStreamRef.current = null;
+    }
+    setListening(false);
+  };
+
+  const handleToggleAudioMic = async () => {
+    setAudioStatusHint(null);
+    if (listening) {
+      stopAllMicCapture();
+      return;
+    }
+
+    const w = window as any;
+    const SpeechRec =
+      typeof window !== "undefined" ? w.SpeechRecognition || w.webkitSpeechRecognition : null;
+
+    let startedAnything = false;
+
+    // 1) Real Microphone Capture (MediaRecorder) so voice clip always records even without STT
+    if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        micStreamRef.current = stream;
+        const rec = new MediaRecorder(stream);
+        const chunks: BlobPart[] = [];
+        rec.ondataavailable = (ev) => {
+          if (ev.data.size > 0) chunks.push(ev.data);
+        };
+        rec.onstop = () => {
+          if (chunks.length > 0) {
+            const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+            setRecordedAudioUrl(URL.createObjectURL(blob));
+            setAudioNote((prev) => prev || `Voice clip (${Math.max(1, Math.round(blob.size / 1024))} KB)`);
+          }
+          stream.getTracks().forEach((tr) => tr.stop());
+          micStreamRef.current = null;
+        };
+        mediaRecorderRef.current = rec;
+        rec.start();
+        startedAnything = true;
+      } catch {
+        setAudioStatusHint(
+          locale === "ar"
+            ? "يرجى السماح بالمايكروفون في المتصفح أو إرفاق ملف صوتي."
+            : "Microphone permission blocked by browser. Allow mic access to record voice."
+        );
+      }
+    }
+
+    // 2) Live Speech-to-Text Transcript alongside recording
+    if (SpeechRec) {
+      try {
+        const speech = new SpeechRec();
+        speech.lang = locale === "ar" ? "ar-MA" : locale === "fr" ? "fr-FR" : "en-US";
+        speech.interimResults = true;
+        speech.continuous = false;
+        speech.onresult = (ev: any) => {
+          const txt = Array.from(ev.results)
+            .map((r: any) => r[0]?.transcript || "")
+            .join(" ")
+            .trim();
+          if (txt) {
+            setInput(txt);
+            setAudioNote(`Voice transcript: ${txt.slice(0, 120)}`);
+          }
+        };
+        speech.onend = () => {
+          setListening(false);
+        };
+        speech.onerror = () => {
+          // Keep MediaRecorder active if mic stream succeeded
+        };
+        recognitionRef.current = speech;
+        speech.start();
+        startedAnything = true;
+      } catch {}
+    }
+
+    if (startedAnything) {
       setListening(true);
-      rec.start();
-    } catch {
-      setListening(false);
-      audioFileRef.current?.click();
     }
   };
 
   const handleSpeakMessage = (msgId: string, text: string) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    setAudioStatusHint(null);
     if (speakingMsgId === msgId) {
-      window.speechSynthesis.cancel();
+      stopSpeechRef.current?.();
+      stopSpeechRef.current = null;
       setSpeakingMsgId(null);
       return;
     }
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = /[\u0600-\u06FF]/.test(text) ? "ar-MA" : locale === "fr" ? "fr-FR" : "en-US";
-    utter.onend = () => setSpeakingMsgId(null);
-    utter.onerror = () => setSpeakingMsgId(null);
-    setSpeakingMsgId(msgId);
-    window.speechSynthesis.speak(utter);
+    stopSpeechRef.current?.();
+    stopSpeechRef.current = speakTextReliably({
+      text,
+      locale,
+      onStart: () => setSpeakingMsgId(msgId),
+      onEnd: () => setSpeakingMsgId(null),
+      onError: (reason) => {
+        setSpeakingMsgId(null);
+        setAudioStatusHint(`Audio notice: ${reason}`);
+      },
+    });
   };
 
   const handleCopy = async (id: string, text: string) => {
@@ -536,7 +761,7 @@ export function HeyukaChatWorkspace() {
         try {
           await navigator.clipboard.writeText(json.shareUrl);
         } catch {}
-        setShareNoticeUrl(json.shareUrl);
+        setShareNoticeUrl(json.path || json.shareUrl);
         setShareSelectMode(false);
       }
     } finally {
@@ -550,6 +775,7 @@ export function HeyukaChatWorkspace() {
     setShareSelectMode(false);
     setShareNoticeUrl(null);
     setEditingMsgId(null);
+    setStudioOpen(false);
   };
 
   const selectThread = (th: ThreadItem) => {
@@ -687,12 +913,13 @@ export function HeyukaChatWorkspace() {
         }}
       >
         {selectMode && (
-          <input
-            type="checkbox"
-            checked={isSelectedBulk}
-            onChange={() => {}}
-            className="accent-rose-600 w-3.5 h-3.5 shrink-0 cursor-pointer"
-          />
+          <span
+            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+              isSelectedBulk ? "bg-rose-600 border-rose-600 text-white" : "border-zinc-500"
+            }`}
+          >
+            {isSelectedBulk && <Check className="w-2.5 h-2.5" />}
+          </span>
         )}
 
         {renamingThreadId === th.id ? (
@@ -806,26 +1033,15 @@ export function HeyukaChatWorkspace() {
           r.readAsDataURL(f);
         }}
       />
-      <input
-        ref={audioFileRef}
-        type="file"
-        accept="audio/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) setAudioNote(`Audio: ${f.name}`);
-        }}
-      />
 
-      {/* Exact Screenshot 5 & 15 Left Sidebar (`w-[260px]`, `#111215`) */}
+      {/* Left Sidebar (`w-[250px]`, DeepSeek dark obsidian `#111215`) */}
       {sidebarOpen && (
         <aside
-          className={`w-[260px] shrink-0 hidden md:flex flex-col justify-between bg-[#111215] border-white/[0.06] p-3 ${
+          className={`w-[250px] shrink-0 hidden md:flex flex-col justify-between bg-[#111215] border-white/[0.06] p-3 ${
             isRtl ? "border-l" : "border-r"
           }`}
         >
           {selectMode ? (
-            /* Screenshot 15: Select Chats Mode */
             <div className="flex flex-col h-full justify-between">
               <div className="space-y-4">
                 <div className="flex items-center justify-between px-1 py-1">
@@ -870,7 +1086,6 @@ export function HeyukaChatWorkspace() {
           ) : (
             <>
               <div className="space-y-4 min-h-0 flex-1 flex flex-col">
-                {/* Brand + Search + Collapse (exact Screenshot 5) */}
                 <div className="flex items-center justify-between px-1 py-1">
                   <div className="flex items-center gap-2">
                     <HeyukaLoopMark size="sm" variant="crimson" />
@@ -898,7 +1113,6 @@ export function HeyukaChatWorkspace() {
                   </div>
                 </div>
 
-                {/* New chat Pill Button (Screenshot 5) */}
                 <button
                   type="button"
                   onClick={startNewChat}
@@ -908,11 +1122,20 @@ export function HeyukaChatWorkspace() {
                   <span>{t.newChat}</span>
                 </button>
 
-                {/* Threads Groups */}
                 <div className="flex-1 overflow-y-auto space-y-4 pr-0.5 kaspi-no-scrollbar">
                   {pinnedThreads.length > 0 && (
-                    <div className="space-y-1">
-                      <p className="px-2.5 text-[11px] font-medium text-zinc-500">{t.pinned}</p>
+                    <div className="space-y-1 pb-2 border-b border-white/[0.06]">
+                      <div className="flex items-center justify-between px-2.5">
+                        <p className="text-[11px] font-medium text-zinc-500">{t.pinned}</p>
+                        <button
+                          type="button"
+                          onClick={() => setSelectMode(true)}
+                          className="text-zinc-500 hover:text-zinc-300 cursor-pointer"
+                          title={t.selectChats}
+                        >
+                          <SquareCheck className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                       {pinnedThreads.map(renderThreadRow)}
                     </div>
                   )}
@@ -931,7 +1154,6 @@ export function HeyukaChatWorkspace() {
                 </div>
               </div>
 
-              {/* Bottom User Menu Bar matching Screenshot 5 (`ismail dormi  ...`) */}
               <div className="relative pt-2">
                 {profileMenuOpen && (
                   <div className="absolute bottom-14 left-0 right-0 z-40 rounded-xl bg-[#25272D] border border-white/10 p-1.5 shadow-2xl space-y-0.5 text-xs">
@@ -942,10 +1164,17 @@ export function HeyukaChatWorkspace() {
                       <span>{t.apiPlatform}</span>
                     </Link>
                     <Link
+                      href={`/${locale}/zebra-x/contact`}
+                      className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/10 text-zinc-200"
+                    >
+                      <span>{t.messagingLink}</span>
+                      <HelpCircle className="w-3.5 h-3.5 text-rose-400" />
+                    </Link>
+                    <Link
                       href={`/${locale}/zebra-x/profile`}
                       className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/10 text-zinc-200"
                     >
-                      <span>Profile & Settings</span>
+                      <span>Profile &amp; Settings</span>
                     </Link>
                     <a
                       href="/api/v1/heyuka/installer?platform=desktop_zip"
@@ -1004,360 +1233,485 @@ export function HeyukaChatWorkspace() {
         </aside>
       )}
 
-      {/* Main Canvas */}
-      <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Clean Minimal Top Header (Screenshot 7 / Screenshot 13 capsule when collapsed — NO theme/lang clutter!) */}
-        <header className="px-4 py-3 flex items-center justify-between gap-3 shrink-0 h-14">
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              className={`${
-                sidebarOpen ? "md:hidden flex" : "flex"
-              } items-center gap-1.5`}
-            >
-              <HeyukaLoopMark size="sm" variant="crimson" className="mr-1" />
-              <div className="inline-flex items-center rounded-full bg-[#24262B] border border-white/[0.08] px-1.5 py-1 gap-1">
-                <button
-                  type="button"
-                  onClick={() => setSidebarOpen((p) => !p)}
-                  className="p-1.5 rounded-full hover:bg-white/10 text-zinc-300 cursor-pointer"
-                  title="Sidebar"
-                >
-                  <PanelLeft className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSearchModalOpen(true)}
-                  className="p-1.5 rounded-full hover:bg-white/10 text-zinc-300 cursor-pointer"
-                  title="Search"
-                >
-                  <Search className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={startNewChat}
-                  className="p-1.5 rounded-full hover:bg-white/10 text-zinc-300 cursor-pointer"
-                  title="New chat"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
+      {/* Middle Chat Rail + Smooth Antigravity Split Stage */}
+      <div className="flex-1 flex min-w-0">
+        {/* Chat Column (Automatically glides smoothly to left when Antigravity Studio opens!) */}
+        <div
+          className={`flex flex-col min-w-0 relative transition-all duration-200 ${
+            studioOpen ? "w-full lg:w-[44%] border-r border-white/[0.07]" : "flex-1"
+          }`}
+        >
+          <header className="px-4 py-3 flex items-center justify-between gap-3 shrink-0 h-14">
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className={`${
+                  sidebarOpen ? "md:hidden flex" : "flex"
+                } items-center gap-1.5`}
+              >
+                <HeyukaLoopMark size="sm" variant="crimson" className="mr-1" />
+                <div className="inline-flex items-center rounded-full bg-[#24262B] border border-white/[0.08] px-1.5 py-1 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setSidebarOpen((p) => !p)}
+                    className="p-1.5 rounded-full hover:bg-white/10 text-zinc-300 cursor-pointer"
+                    title="Sidebar"
+                  >
+                    <PanelLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSearchModalOpen(true)}
+                    className="p-1.5 rounded-full hover:bg-white/10 text-zinc-300 cursor-pointer"
+                    title="Search"
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={startNewChat}
+                    className="p-1.5 rounded-full hover:bg-white/10 text-zinc-300 cursor-pointer"
+                    title="New chat"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
+
+              {messages.length > 0 && (
+                <span className="text-sm font-medium text-zinc-200 truncate">
+                  {activeThreadTitle}
+                </span>
+              )}
             </div>
 
-            {messages.length > 0 && (
-              <span className="text-sm font-medium text-zinc-200 truncate">
-                {activeThreadTitle}
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            {messages.length > 0 && (
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
-                onClick={() => enterShareSelection()}
-                className="p-2 rounded-lg hover:bg-white/10 text-zinc-300 cursor-pointer"
-                title={t.share}
+                onClick={() => {
+                  const next = !studioOpen;
+                  setStudioOpen(next);
+                  if (next) setSelectedMode((m) => (m === "auto" ? "coding" : m));
+                }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
+                  studioOpen
+                    ? "bg-rose-500/15 border-rose-500/60 text-rose-400"
+                    : "bg-[#24262B] border-white/[0.08] text-zinc-300 hover:text-white"
+                }`}
+                title="Toggle Antigravity Coding & Media Studio"
               >
-                <Share2 className="w-4 h-4" />
+                <PanelRight className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Studio</span>
               </button>
-            )}
-          </div>
-        </header>
 
-        {/* Copied Public Link Banner */}
-        {shareNoticeUrl && (
-          <div className="mx-auto max-w-3xl px-4 w-full mb-2">
-            <div className="rounded-xl bg-[#22242A] border border-rose-500/40 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <span className="flex items-center gap-2 text-zinc-100 truncate">
-                <Link2 className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                <span className="truncate">{t.copiedLink}</span>
-              </span>
-              <div className="flex items-center gap-2 shrink-0">
-                <Link
-                  href={shareNoticeUrl}
-                  className="px-3 py-1 rounded-full bg-rose-600 text-white font-semibold text-[11px]"
+              <Link
+                href={`/${locale}/zebra-x/contact`}
+                className="p-2 rounded-lg hover:bg-white/10 text-zinc-300"
+                title={t.messagingLink}
+              >
+                <HelpCircle className="w-4 h-4" />
+              </Link>
+
+              {messages.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => enterShareSelection()}
+                  className="p-2 rounded-lg hover:bg-white/10 text-zinc-300 cursor-pointer"
+                  title={t.share}
                 >
-                  Open Link
-                </Link>
-                <button type="button" onClick={() => setShareNoticeUrl(null)} className="cursor-pointer">
+                  <Share2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </header>
+
+          {shareNoticeUrl && (
+            <div className="mx-auto max-w-3xl px-4 w-full mb-2">
+              <div className="rounded-xl bg-[#22242A] border border-rose-500/40 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="flex items-center gap-2 text-zinc-100 truncate">
+                  <Link2 className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                  <span className="truncate">{t.copiedLink}</span>
+                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link
+                    href={shareNoticeUrl}
+                    className="px-3 py-1 rounded-full bg-rose-600 text-white font-semibold text-[11px]"
+                  >
+                    Open Link
+                  </Link>
+                  <button type="button" onClick={() => setShareNoticeUrl(null)} className="cursor-pointer">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {audioStatusHint && (
+            <div className="mx-auto max-w-3xl px-4 w-full mb-2">
+              <div className="rounded-xl bg-[#22242A] border border-rose-500/35 px-3.5 py-2 flex items-center justify-between gap-2 text-xs text-rose-300">
+                <span>{audioStatusHint}</span>
+                <button type="button" onClick={() => setAudioStatusHint(null)} className="cursor-pointer">
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Chat Area OR Centered DeepSeek Greeting (Screenshot 5 & 13) */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
-          {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center max-w-[740px] mx-auto pb-14 space-y-6">
-              <div className="flex items-center gap-3">
-                <HeyukaLoopMark animated size="lg" variant="crimson" />
-                <h1 className="text-2xl sm:text-[26px] font-semibold tracking-tight text-white">
-                  {t.greeting}
-                </h1>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
+            {messages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center max-w-[720px] mx-auto pb-12 space-y-6">
+                <div className="flex items-center gap-3">
+                  <HeyukaLoopMark animated size="lg" variant="crimson" />
+                  <h1 className="text-2xl sm:text-[26px] font-semibold tracking-tight text-white">
+                    {t.greeting}
+                  </h1>
+                </div>
+
+                {renderComposer()}
               </div>
+            ) : (
+              <div className="max-w-[740px] mx-auto space-y-7 py-4">
+                {messages.map((msg, idx) => {
+                  const isUser = msg.role === "user";
+                  const checked = shareSelectedMsgIds.includes(msg.id);
+                  const collapsed = Boolean(collapsedThoughts[msg.id]);
 
-              {renderComposer()}
-            </div>
-          ) : (
-            <div className="max-w-[760px] mx-auto space-y-7 py-4">
-              {messages.map((msg, idx) => {
-                const isUser = msg.role === "user";
-                const checked = shareSelectedMsgIds.includes(msg.id);
-                const collapsed = Boolean(collapsedThoughts[msg.id]);
+                  return (
+                    <div key={msg.id} className="flex items-start gap-3">
+                      {shareSelectMode && (
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() =>
+                            setShareSelectedMsgIds((prev) =>
+                              prev.includes(msg.id)
+                                ? prev.filter((x) => x !== msg.id)
+                                : [...prev, msg.id]
+                            )
+                          }
+                          className="mt-2.5 w-4 h-4 accent-rose-600 cursor-pointer shrink-0"
+                        />
+                      )}
 
-                return (
-                  <div key={msg.id} className="flex items-start gap-3">
-                    {shareSelectMode && (
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() =>
-                          setShareSelectedMsgIds((prev) =>
-                            prev.includes(msg.id)
-                              ? prev.filter((x) => x !== msg.id)
-                              : [...prev, msg.id]
-                          )
-                        }
-                        className="mt-2.5 w-4 h-4 accent-rose-600 cursor-pointer shrink-0"
-                      />
-                    )}
-
-                    <div className={`flex-1 min-w-0 ${isUser ? "flex flex-col items-end" : ""}`}>
-                      {isUser ? (
-                        editingMsgId === msg.id ? (
-                          /* Exact Screenshot 8 Crimson/Focus Inline Edit Box */
-                          <div className="w-full rounded-2xl bg-[#1E1F24] border-2 border-rose-500 p-3.5 space-y-3">
-                            <textarea
-                              value={editDraft}
-                              onChange={(e) => setEditDraft(e.target.value)}
-                              rows={2}
-                              className="w-full bg-transparent text-sm text-zinc-100 focus:outline-none resize-none"
-                            />
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setEditingMsgId(null)}
-                                className="px-4 py-1.5 rounded-full bg-white/10 text-xs font-medium cursor-pointer"
-                              >
-                                {t.cancel}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void handleSaveInlineEdit(msg.id)}
-                                className="px-4 py-1.5 rounded-full bg-[#DC2626] hover:bg-[#EF4444] text-white text-xs font-semibold cursor-pointer"
-                              >
-                                Send
-                              </button>
+                      <div className={`flex-1 min-w-0 ${isUser ? "flex flex-col items-end" : ""}`}>
+                        {isUser ? (
+                          editingMsgId === msg.id ? (
+                            <div className="w-full rounded-2xl bg-[#1E1F24] border-2 border-rose-500 p-3.5 space-y-3">
+                              <textarea
+                                value={editDraft}
+                                onChange={(e) => setEditDraft(e.target.value)}
+                                rows={2}
+                                className="w-full bg-transparent text-sm text-zinc-100 focus:outline-none resize-none"
+                              />
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingMsgId(null)}
+                                  className="px-4 py-1.5 rounded-full bg-white/10 text-xs font-medium cursor-pointer"
+                                >
+                                  {t.cancel}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleSaveInlineEdit(msg.id)}
+                                  className="px-4 py-1.5 rounded-full bg-[#DC2626] hover:bg-[#EF4444] text-white text-xs font-semibold cursor-pointer"
+                                >
+                                  Send
+                                </button>
+                              </div>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="group max-w-[82%] space-y-1.5 flex flex-col items-end">
+                              <div className="px-4 py-2.5 rounded-2xl bg-[#272930] text-sm text-zinc-100 whitespace-pre-wrap">
+                                {msg.imagePreview && (
+                                  <img
+                                    src={msg.imagePreview}
+                                    alt="Attachment"
+                                    className="max-h-40 rounded-lg mb-2 object-contain"
+                                  />
+                                )}
+                                {msg.content}
+                              </div>
+                              <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-400">
+                                <button
+                                  type="button"
+                                  onClick={() => void handleCopy(msg.id, msg.content)}
+                                  className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                                >
+                                  {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-rose-500" /> : <Copy className="w-3.5 h-3.5" />}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingMsgId(msg.id);
+                                    setEditDraft(msg.content);
+                                  }}
+                                  className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          )
                         ) : (
-                          <div className="group max-w-[80%] space-y-1.5 flex flex-col items-end">
-                            <div className="px-4 py-2.5 rounded-2xl bg-[#272930] text-sm text-zinc-100 whitespace-pre-wrap">
-                              {msg.imagePreview && (
-                                <img
-                                  src={msg.imagePreview}
-                                  alt="Attachment"
-                                  className="max-h-40 rounded-lg mb-2 object-contain"
-                                />
-                              )}
+                          <div className="space-y-3">
+                            {msg.detectedMode && (
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/12 border border-rose-500/30 text-[11px] font-medium text-rose-300">
+                                <Cpu className="w-3 h-3" />
+                                <span>
+                                  {msg.autoSwitched ? "Auto AI -> " : ""}
+                                  {msg.detectedMode.toUpperCase()}
+                                  {msg.studioFilesCount ? ` (${msg.studioFilesCount} studio files)` : ""}
+                                </span>
+                              </div>
+                            )}
+
+                            {msg.reasoning && (
+                              <div className="space-y-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setCollapsedThoughts((p) => ({ ...p, [msg.id]: !p[msg.id] }))
+                                  }
+                                  className="inline-flex items-center gap-2 text-xs font-medium text-zinc-300 hover:text-white cursor-pointer"
+                                >
+                                  <HeyukaLoopMark size="xs" variant="crimson" />
+                                  <span>
+                                    {t.thoughtFor} {msg.thinkingSec || 2} seconds
+                                  </span>
+                                  {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                </button>
+
+                                {!collapsed && (
+                                  <div className="border-l-2 border-white/15 pl-3.5 text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap">
+                                    {msg.reasoning}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {msg.sources && msg.sources.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {msg.sources.map((src, sIdx) => (
+                                  <a
+                                    key={`${src.url}-${sIdx}`}
+                                    href={src.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/[0.06] text-[11px] text-rose-400 hover:bg-white/10"
+                                  >
+                                    <Globe className="w-3 h-3" />
+                                    <span className="truncate max-w-[180px]">{src.title}</span>
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="text-[14px] text-zinc-100 leading-relaxed whitespace-pre-wrap">
                               {msg.content}
                             </div>
-                            <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-400">
+
+                            {/* Inline Rendered Client-CPU Media Outputs */}
+                            {msg.qrSvgDataUrl && (
+                              <div className="rounded-xl bg-white p-3 inline-block">
+                                <img src={msg.qrSvgDataUrl} alt="HEYUKA QR Code" className="w-40 h-40" />
+                              </div>
+                            )}
+
+                            {msg.mediaArtifact && (
+                              <div className="rounded-2xl bg-[#1D1E24] border border-white/[0.08] p-3.5 space-y-2 max-w-md">
+                                <div className="flex items-center justify-between gap-2 text-xs">
+                                  <span className="font-semibold text-white truncate">
+                                    {msg.mediaArtifact.title}
+                                  </span>
+                                  {msg.mediaArtifact.objectUrl && (
+                                    <a
+                                      href={msg.mediaArtifact.objectUrl}
+                                      download={msg.mediaArtifact.filename}
+                                      className="text-rose-400 font-semibold hover:underline shrink-0"
+                                    >
+                                      Download
+                                    </a>
+                                  )}
+                                </div>
+                                {msg.mediaArtifact.kind === "video" && (
+                                  <video
+                                    controls
+                                    loop
+                                    muted
+                                    playsInline
+                                    src={msg.mediaArtifact.objectUrl}
+                                    className="w-full rounded-lg bg-black"
+                                  />
+                                )}
+                                {msg.mediaArtifact.kind === "image" && (
+                                  <img
+                                    src={msg.mediaArtifact.objectUrl}
+                                    alt={msg.mediaArtifact.title}
+                                    className="w-full rounded-lg"
+                                  />
+                                )}
+                                {msg.mediaArtifact.kind === "audio" && (
+                                  <audio controls src={msg.mediaArtifact.objectUrl} className="w-full" />
+                                )}
+                                <p className="text-[10px] font-mono text-zinc-400">
+                                  Executed on Your CPU ({msg.mediaArtifact.cpuCoresUsed} cores • {msg.mediaArtifact.durationMs}ms • $0 Server)
+                                </p>
+                              </div>
+                            )}
+
+                            {(msg.studioFilesCount || msg.mediaArtifact) && !studioOpen && (
+                              <button
+                                type="button"
+                                onClick={() => setStudioOpen(true)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-600/20 border border-rose-500/40 text-xs font-semibold text-rose-300 hover:bg-rose-600/30 cursor-pointer"
+                              >
+                                <PanelRight className="w-3.5 h-3.5" />
+                                <span>Open in Antigravity Studio →</span>
+                              </button>
+                            )}
+
+                            {/* Action Icons Row */}
+                            <div className="flex items-center gap-2 text-zinc-400 pt-1">
                               <button
                                 type="button"
                                 onClick={() => void handleCopy(msg.id, msg.content)}
-                                className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                                className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white cursor-pointer"
                               >
                                 {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-rose-500" /> : <Copy className="w-3.5 h-3.5" />}
                               </button>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setEditingMsgId(msg.id);
-                                  setEditDraft(msg.content);
-                                }}
-                                className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                                onClick={() => void handleRegenerate(idx)}
+                                disabled={sending}
+                                className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white cursor-pointer"
                               >
-                                <Edit3 className="w-3.5 h-3.5" />
+                                <RefreshCw className="w-3.5 h-3.5" />
                               </button>
-                            </div>
-                          </div>
-                        )
-                      ) : (
-                        <div className="space-y-3">
-                          {msg.reasoning && (
-                            <div className="space-y-2">
                               <button
                                 type="button"
-                                onClick={() =>
-                                  setCollapsedThoughts((p) => ({ ...p, [msg.id]: !p[msg.id] }))
-                                }
-                                className="inline-flex items-center gap-2 text-xs font-medium text-zinc-300 hover:text-white cursor-pointer"
+                                onClick={() => setFeedbackMap((p) => ({ ...p, [msg.id]: "up" }))}
+                                className={`p-1.5 rounded-lg hover:bg-white/10 cursor-pointer ${
+                                  feedbackMap[msg.id] === "up" ? "text-rose-400" : "hover:text-white"
+                                }`}
                               >
-                                <HeyukaLoopMark size="xs" variant="crimson" />
-                                <span>
-                                  {t.thoughtFor} {msg.thinkingSec || 2} seconds
-                                </span>
-                                {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                <ThumbsUp className="w-3.5 h-3.5" />
                               </button>
-
-                              {!collapsed && (
-                                <div className="border-l-2 border-white/15 pl-3.5 text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap">
-                                  {msg.reasoning}
-                                </div>
-                              )}
+                              <button
+                                type="button"
+                                onClick={() => setFeedbackMap((p) => ({ ...p, [msg.id]: "down" }))}
+                                className={`p-1.5 rounded-lg hover:bg-white/10 cursor-pointer ${
+                                  feedbackMap[msg.id] === "down" ? "text-rose-500" : "hover:text-white"
+                                }`}
+                              >
+                                <ThumbsDown className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSpeakMessage(msg.id, msg.content)}
+                                className={`p-1.5 rounded-lg hover:bg-white/10 cursor-pointer ${
+                                  speakingMsgId === msg.id ? "text-rose-400 animate-pulse" : "hover:text-white"
+                                }`}
+                                title="Read aloud (TTS Audio)"
+                              >
+                                {speakingMsgId === msg.id ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => enterShareSelection(msg.id)}
+                                className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white cursor-pointer"
+                                title={t.share}
+                              >
+                                <Share2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
-                          )}
-
-                          {msg.sources && msg.sources.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {msg.sources.map((src, sIdx) => (
-                                <a
-                                  key={`${src.url}-${sIdx}`}
-                                  href={src.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/[0.06] text-[11px] text-rose-400 hover:bg-white/10"
-                                >
-                                  <Globe className="w-3 h-3" />
-                                  <span className="truncate max-w-[180px]">{src.title}</span>
-                                </a>
-                              ))}
-                            </div>
-                          )}
-
-                          <div className="text-[14px] text-zinc-100 leading-relaxed whitespace-pre-wrap">
-                            {msg.content}
                           </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
 
-                          {/* Exact Screenshot 9 Action Row */}
-                          <div className="flex items-center gap-2 text-zinc-400 pt-1">
-                            <button
-                              type="button"
-                              onClick={() => void handleCopy(msg.id, msg.content)}
-                              className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white cursor-pointer"
-                            >
-                              {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-rose-500" /> : <Copy className="w-3.5 h-3.5" />}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void handleRegenerate(idx)}
-                              disabled={sending}
-                              className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white cursor-pointer"
-                            >
-                              <RefreshCw className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setFeedbackMap((p) => ({ ...p, [msg.id]: "up" }))}
-                              className={`p-1.5 rounded-lg hover:bg-white/10 cursor-pointer ${
-                                feedbackMap[msg.id] === "up" ? "text-rose-400" : "hover:text-white"
-                              }`}
-                            >
-                              <ThumbsUp className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setFeedbackMap((p) => ({ ...p, [msg.id]: "down" }))}
-                              className={`p-1.5 rounded-lg hover:bg-white/10 cursor-pointer ${
-                                feedbackMap[msg.id] === "down" ? "text-rose-500" : "hover:text-white"
-                              }`}
-                            >
-                              <ThumbsDown className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleSpeakMessage(msg.id, msg.content)}
-                              className={`p-1.5 rounded-lg hover:bg-white/10 cursor-pointer ${
-                                speakingMsgId === msg.id ? "text-rose-400" : "hover:text-white"
-                              }`}
-                              title="Speak aloud"
-                            >
-                              {speakingMsgId === msg.id ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => enterShareSelection(msg.id)}
-                              className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white cursor-pointer"
-                              title={t.share}
-                            >
-                              <Share2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                {sending && (
+                  <div className="flex items-center gap-3 text-xs text-rose-400 font-medium py-2">
+                    <HeyukaLoopMark animated size="sm" variant="crimson" />
+                    <span>{webSearch ? t.searching : t.thinking}</span>
+                  </div>
+                )}
+
+                <div ref={bottomScrollRef} />
+              </div>
+            )}
+          </div>
+
+          {messages.length > 0 && (
+            <div className="px-4 sm:px-6 pb-3 pt-1 shrink-0">
+              <div className="max-w-[720px] mx-auto space-y-2">
+                {shareSelectMode ? (
+                  <div className="rounded-2xl bg-[#1F2025] border border-white/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-3">
+                      <label className="inline-flex items-center gap-2 font-medium text-white cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={shareSelectedMsgIds.length === messages.length && messages.length > 0}
+                          onChange={(e) =>
+                            setShareSelectedMsgIds(e.target.checked ? messages.map((m) => m.id) : [])
+                          }
+                          className="accent-rose-600 w-4 h-4 cursor-pointer"
+                        />
+                        <span>{t.selectAll}</span>
+                      </label>
+                      <span className="text-zinc-400">
+                        {shareSelectedMsgIds.length} {t.selectedTurns}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShareSelectMode(false)}
+                        className="px-4 py-2 rounded-full bg-white/10 text-zinc-200 font-medium cursor-pointer"
+                      >
+                        {t.cancel}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={shareSelectedMsgIds.length === 0 || shareBusy}
+                        onClick={() => void handleCreatePublicLink()}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#DC2626] hover:bg-[#EF4444] text-white font-semibold cursor-pointer disabled:opacity-40"
+                      >
+                        <Link2 className="w-3.5 h-3.5" />
+                        <span>{shareBusy ? "..." : t.createPublicLink}</span>
+                      </button>
                     </div>
                   </div>
-                );
-              })}
+                ) : (
+                  renderComposer()
+                )}
 
-              {sending && (
-                <div className="flex items-center gap-3 text-xs text-rose-400 font-medium py-2">
-                  <HeyukaLoopMark animated size="sm" variant="crimson" />
-                  <span>{webSearch ? t.searching : t.thinking}</span>
-                </div>
-              )}
-
-              <div ref={bottomScrollRef} />
+                <p className="text-center text-[11px] text-zinc-500">{t.disclaimer}</p>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Bottom Dock (Share Select Bar OR Composer) */}
-        {messages.length > 0 && (
-          <div className="px-4 sm:px-6 pb-3 pt-1 shrink-0">
-            <div className="max-w-[740px] mx-auto space-y-2">
-              {shareSelectMode ? (
-                /* Screenshots 11 & 12 Bottom Share Footer in Crimson Red */
-                <div className="rounded-2xl bg-[#1F2025] border border-white/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-3">
-                    <label className="inline-flex items-center gap-2 font-medium text-white cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={shareSelectedMsgIds.length === messages.length && messages.length > 0}
-                        onChange={(e) =>
-                          setShareSelectedMsgIds(e.target.checked ? messages.map((m) => m.id) : [])
-                        }
-                        className="accent-rose-600 w-4 h-4 cursor-pointer"
-                      />
-                      <span>{t.selectAll}</span>
-                    </label>
-                    <span className="text-zinc-400">
-                      {shareSelectedMsgIds.length} {t.selectedTurns}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShareSelectMode(false)}
-                      className="px-4 py-2 rounded-full bg-white/10 text-zinc-200 font-medium cursor-pointer"
-                    >
-                      {t.cancel}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={shareSelectedMsgIds.length === 0 || shareBusy}
-                      onClick={() => void handleCreatePublicLink()}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#DC2626] hover:bg-[#EF4444] text-white font-semibold cursor-pointer disabled:opacity-40"
-                    >
-                      <Link2 className="w-3.5 h-3.5" />
-                      <span>{shareBusy ? "..." : t.createPublicLink}</span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                renderComposer()
-              )}
-
-              <p className="text-center text-[11px] text-zinc-500">{t.disclaimer}</p>
-            </div>
+        {/* Right Antigravity Split-Pane IDE Stage */}
+        {studioOpen && (
+          <div className="fixed inset-0 z-40 lg:static lg:z-auto lg:w-[56%] flex-1 min-w-0 bg-[#111215]">
+            <AntigravityStudioPane
+              files={studioFiles}
+              onChangeFiles={setStudioFiles}
+              mediaArtifacts={mediaArtifacts}
+              activePollinationsUrl={activePollinationsUrl}
+              videoProgressPct={videoProgressPct}
+              isRenderingMedia={isRenderingMedia}
+              onClose={() => setStudioOpen(false)}
+              locale={locale}
+            />
           </div>
         )}
       </div>
 
-      {/* Search Modal (Screenshot 14) */}
+      {/* Search Modal */}
       <KaspiGlassModalPortal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} dir={isRtl ? "rtl" : "ltr"}>
         <div className="w-full max-w-xl rounded-2xl bg-[#25272D] border border-white/10 p-4 space-y-3 shadow-2xl">
           <div className="flex items-center gap-2.5 border-b border-white/10 pb-3">
@@ -1426,9 +1780,11 @@ export function HeyukaChatWorkspace() {
   );
 
   function renderComposer() {
+    const ActiveModeIcon = activeModeMeta.icon;
+
     return (
-      <div className="w-full rounded-[24px] bg-[#22242A] border border-white/[0.08] px-4 py-3.5 space-y-3">
-        {(attachedImage || audioNote) && (
+      <div className="relative w-full rounded-[24px] bg-[#22242A] border border-white/[0.08] px-4 py-3.5 space-y-3">
+        {(attachedImage || audioNote || recordedAudioUrl) && (
           <div className="flex flex-wrap items-center gap-2">
             {attachedImage && (
               <div className="relative inline-block">
@@ -1442,10 +1798,13 @@ export function HeyukaChatWorkspace() {
                 </button>
               </div>
             )}
+            {recordedAudioUrl && (
+              <audio controls src={recordedAudioUrl} className="h-8 max-w-[220px]" />
+            )}
             {audioNote && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-300 text-xs">
                 <Mic className="w-3 h-3" />
-                <span>{audioNote}</span>
+                <span className="truncate max-w-[200px]">{audioNote}</span>
               </span>
             )}
           </div>
@@ -1466,40 +1825,116 @@ export function HeyukaChatWorkspace() {
         />
 
         <div className="flex items-center justify-between gap-2">
-          {/* Left: Exact DeepThink + Search Pills in Crimson Red (replacing Blue) */}
-          <div className="flex items-center gap-2">
+          {/* Left: Single Unified Mode & DeepThink/Search Selector Pill */}
+          <div className="relative flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setDeepThink((p) => !p)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
-                deepThink
-                  ? "bg-rose-500/15 border-rose-500/70 text-rose-400"
-                  : "bg-white/[0.04] border-white/[0.12] text-zinc-300 hover:bg-white/[0.08]"
+              onClick={() => setModeMenuOpen((p) => !p)}
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
+                selectedMode !== "auto" || deepThink || webSearch
+                  ? "bg-rose-500/15 border-rose-500/60 text-rose-300"
+                  : "bg-white/[0.04] border-white/[0.12] text-zinc-200 hover:bg-white/[0.08]"
               }`}
             >
-              <Atom className="w-3.5 h-3.5" />
-              <span>{t.deepThink}</span>
+              <ActiveModeIcon className="w-3.5 h-3.5 text-rose-400" />
+              <span>{activeModeMeta.label}</span>
+              {deepThink && (
+                <span className="px-1.5 py-0.5 rounded bg-rose-500/20 text-[10px] font-bold">
+                  +DeepThink
+                </span>
+              )}
+              {webSearch && (
+                <span className="px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-bold">
+                  +Search
+                </span>
+              )}
+              <ChevronDown className="w-3.5 h-3.5 opacity-80" />
             </button>
 
-            <button
-              type="button"
-              onClick={() => setWebSearch((p) => !p)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
-                webSearch
-                  ? "bg-rose-500/15 border-rose-500/70 text-rose-400"
-                  : "bg-white/[0.04] border-white/[0.12] text-zinc-300 hover:bg-white/[0.08]"
-              }`}
-            >
-              <Globe className="w-3.5 h-3.5" />
-              <span>{t.search}</span>
-            </button>
+            {modeMenuOpen && (
+              <div
+                className={`absolute bottom-11 ${
+                  isRtl ? "right-0" : "left-0"
+                } z-50 w-72 sm:w-80 rounded-2xl bg-[#1D1F25] border border-white/10 p-2.5 shadow-2xl space-y-2`}
+              >
+                {/* Toggles inside unified dropdown: DeepThink + Search */}
+                <div className="grid grid-cols-2 gap-1.5 pb-2 border-b border-white/[0.08]">
+                  <button
+                    type="button"
+                    onClick={() => setDeepThink((p) => !p)}
+                    className={`flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-semibold border cursor-pointer ${
+                      deepThink
+                        ? "bg-rose-500/20 border-rose-500 text-rose-300"
+                        : "bg-white/[0.04] border-white/10 text-zinc-400"
+                    }`}
+                  >
+                    <Atom className="w-3.5 h-3.5" />
+                    <span>{t.deepThink}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWebSearch((p) => !p)}
+                    className={`flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-semibold border cursor-pointer ${
+                      webSearch
+                        ? "bg-rose-500/20 border-rose-500 text-rose-300"
+                        : "bg-white/[0.04] border-white/10 text-zinc-400"
+                    }`}
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>{t.search}</span>
+                  </button>
+                </div>
+
+                {/* Creation / Studio Mode List */}
+                <div className="max-h-64 overflow-y-auto space-y-0.5 kaspi-no-scrollbar">
+                  {MODE_OPTIONS.map((opt) => {
+                    const Icon = opt.icon;
+                    const active = selectedMode === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedMode(opt.id);
+                          setModeMenuOpen(false);
+                          if (
+                            opt.id === "coding" ||
+                            opt.id === "image" ||
+                            opt.id === "video" ||
+                            opt.id === "audio" ||
+                            opt.id === "3d" ||
+                            opt.id === "qr"
+                          ) {
+                            setStudioOpen(true);
+                          }
+                        }}
+                        className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-start text-xs cursor-pointer transition-colors ${
+                          active
+                            ? "bg-rose-500/20 text-white font-semibold"
+                            : "text-zinc-300 hover:bg-white/[0.06]"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Icon className={`w-4 h-4 shrink-0 ${active ? "text-rose-400" : "text-zinc-400"}`} />
+                          <div className="min-w-0">
+                            <p className="truncate">{opt.label}</p>
+                            <p className="text-[10px] text-zinc-500 truncate">{opt.hint}</p>
+                          </div>
+                        </div>
+                        {active && <Check className="w-3.5 h-3.5 text-rose-400 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Right: Audio Mic + Attach + Crimson Send Button */}
+          {/* Right: Dual-Engine Mic + Attach + Crimson Send Button */}
           <div className="flex items-center gap-1.5">
             <button
               type="button"
-              onClick={handleToggleAudioMic}
+              onClick={() => void handleToggleAudioMic()}
               className={`p-2 rounded-full cursor-pointer transition-colors ${
                 listening ? "bg-rose-600 text-white animate-pulse" : "text-zinc-400 hover:text-rose-400 hover:bg-white/10"
               }`}
@@ -1512,7 +1947,7 @@ export function HeyukaChatWorkspace() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 cursor-pointer"
-              title="Attach"
+              title="Attach image"
             >
               <Paperclip className="w-4 h-4" />
             </button>

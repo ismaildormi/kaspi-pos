@@ -32,6 +32,27 @@ async function writePinnedSet(userId: string, pinned: Set<string>) {
   });
 }
 
+const GENERIC_SESSION_TITLES = new Set([
+  "heyuka business chat",
+  "kaspi ai business chat",
+  "new conversation",
+  "new chat",
+  "",
+]);
+
+function deriveReadableThreadTitle(rawTitle: string | null | undefined, firstUserMsg?: string): string {
+  const cleaned = (rawTitle || "").trim();
+  if (cleaned && !GENERIC_SESSION_TITLES.has(cleaned.toLowerCase())) {
+    return cleaned;
+  }
+  const snippet = (firstUserMsg || "")
+    .replace(/\s+/g, " ")
+    .replace(/[#*`]/g, "")
+    .trim();
+  if (!snippet) return "New conversation";
+  return snippet.length > 44 ? `${snippet.slice(0, 44).trim()}…` : snippet;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const ctx = await getRequestContext({ requireTenant: false });
@@ -59,19 +80,22 @@ export async function GET(req: NextRequest) {
         if ((s.title || "").toLowerCase().includes(q)) return true;
         return s.messages.some((m) => m.content.toLowerCase().includes(q));
       })
-      .map((s) => ({
-        id: s.id,
-        title: s.title || "New conversation",
-        pinned: pinnedSet.has(s.id),
-        updatedAt: s.updatedAt.toISOString(),
-        createdAt: s.createdAt.toISOString(),
-        messages: s.messages.map((m) => ({
-          id: m.id,
-          role: m.role === "assistant" ? ("assistant" as const) : ("user" as const),
-          content: m.content,
-          createdAt: m.createdAt.toISOString(),
-        })),
-      }));
+      .map((s) => {
+        const firstUserMsg = s.messages.find((m) => m.role !== "assistant")?.content;
+        return {
+          id: s.id,
+          title: deriveReadableThreadTitle(s.title, firstUserMsg),
+          pinned: pinnedSet.has(s.id),
+          updatedAt: s.updatedAt.toISOString(),
+          createdAt: s.createdAt.toISOString(),
+          messages: s.messages.map((m) => ({
+            id: m.id,
+            role: m.role === "assistant" ? ("assistant" as const) : ("user" as const),
+            content: m.content,
+            createdAt: m.createdAt.toISOString(),
+          })),
+        };
+      });
 
     return NextResponse.json({
       ok: true,

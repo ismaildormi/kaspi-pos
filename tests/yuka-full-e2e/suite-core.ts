@@ -909,6 +909,28 @@ async function main() {
     return { detail: `Android ADB (${androidReport.suspiciousPackages.length} IOC flag) + iOS (97% Battery Health) + Thermal Ticket verified` };
   });
 
+  // 19. ANTRAGRAVITY STUDIO, CLIENT-CPU ENGINE, UNIFIED CHAT & CENTRAL GMAIL VAULT
+  await runCheck("heyuka_antigravity_client_cpu_gmail_vault", "Antigravity Studio & Gmail Vault", async () => {
+    const root = process.cwd();
+    const cpuEngineSrc = fs.readFileSync(path.join(root, "src/lib/heyuka/client-cpu-engine.ts"), "utf8");
+    const studioPaneSrc = fs.readFileSync(path.join(root, "src/components/heyuka/AntigravityStudioPane.tsx"), "utf8");
+    const chatWorkspaceSrc = fs.readFileSync(path.join(root, "src/components/heyuka/HeyukaChatWorkspace.tsx"), "utf8");
+    const chatWebApiSrc = fs.readFileSync(path.join(root, "src/app/api/v1/heyuka/chat-web/route.ts"), "utf8");
+    const gmailDirSrc = fs.readFileSync(path.join(root, "src/lib/heyuka/gmail-directory.ts"), "utf8");
+    const gmailAccessSrc = fs.readFileSync(path.join(root, "src/app/api/v1/heyuka/gmail-access/route.ts"), "utf8");
+    const feedbackApiSrc = fs.readFileSync(path.join(root, "src/app/api/v1/heyuka/feedback/route.ts"), "utf8");
+    const adminVaultSrc = fs.readFileSync(path.join(root, "src/app/admin/AdminGmailVaultCard.tsx"), "utf8");
+
+    assert.ok(cpuEngineSrc.includes("executeJsInClientWorker") && cpuEngineSrc.includes("renderVideoOnClientCpu") && cpuEngineSrc.includes("synthesizeAudioWavOnClientCpu") && cpuEngineSrc.includes("speakTextReliably"));
+    assert.ok(studioPaneSrc.includes("Antigravity Studio") && studioPaneSrc.includes("showDirectoryPicker") && studioPaneSrc.includes("buildClientProjectZipBlob"));
+    assert.ok(chatWorkspaceSrc.includes("MODE_OPTIONS") && chatWorkspaceSrc.includes("MediaRecorder") && chatWorkspaceSrc.includes("studioOpen"));
+    assert.ok(chatWebApiSrc.includes("allowOwnerPaidProviders: false") && chatWebApiSrc.includes("detectSmartMode") && chatWebApiSrc.includes("queryPublicApiHub"));
+    assert.ok(gmailDirSrc.includes("syncUserToSupabaseDirectory") && gmailAccessSrc.includes("recordProjectGmail") && feedbackApiSrc.includes("recordProjectGmail"));
+    assert.ok(adminVaultSrc.includes("/api/v1/admin/gmail-directory"));
+
+    return { detail: "Client CPU (Worker/Video/WAV/TTS/PKZIP), Antigravity IDE Split, Smart Auto-Mode & Central Gmail Vault verified" };
+  });
+
   // SUMMARY & SELF-REPORTING
   const totalTested = results.length;
   const passed = results.filter((r) => r.status !== "failed");

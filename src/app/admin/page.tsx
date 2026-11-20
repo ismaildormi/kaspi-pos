@@ -5,6 +5,7 @@ import { checkSuperAdminUser } from "@/server/admin/guard";
 import { getAdminDashboardStats } from "@/server/admin/stats";
 import { AdminAlertButton } from "./AdminAlertButton";
 import { AdminBroadcastButton } from "./AdminBroadcastButton";
+import { AdminGmailVaultCard } from "./AdminGmailVaultCard";
 import { MasterAiBanner } from "./MasterAiBanner";
 import { RevenueChart } from "./RevenueChart";
 import { TenantsTable } from "./TenantsTable";
@@ -278,6 +279,9 @@ export default async function AdminDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Central Project Gmail Directory Vault */}
+      <AdminGmailVaultCard />
 
       {/* Interactive Tenants Management Table */}
       <TenantsTable tenants={stats.tenants} />

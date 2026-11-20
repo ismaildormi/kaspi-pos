@@ -180,6 +180,7 @@ export function SharedConversationEntryClient({
                   <HEYUKAGmailAccessCard
                     locale={safeLocale}
                     compact
+                    source="heyuka_share"
                     onAuthenticated={async () => {
                       enterConversation();
                     }}

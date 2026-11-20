@@ -7,6 +7,7 @@ interface HEYUKAGmailAccessCardProps {
   locale: "ar" | "fr" | "en";
   onAuthenticated: () => void | Promise<void>;
   compact?: boolean;
+  source?: string;
 }
 
 const COPY = {
@@ -46,6 +47,7 @@ export function HEYUKAGmailAccessCard({
   locale,
   onAuthenticated,
   compact = false,
+  source = "heyuka_gmail_access",
 }: HEYUKAGmailAccessCardProps) {
   const t = COPY[locale];
   const [email, setEmail] = useState("");
@@ -75,6 +77,7 @@ export function HEYUKAGmailAccessCard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: email.trim(),
+          source,
           ...(otpRequired ? { otpCode: otpCode.trim() } : {}),
         }),
       });

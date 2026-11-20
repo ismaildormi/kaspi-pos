@@ -275,25 +275,32 @@ export function PlatformOverviewView() {
 
         {chartTab === "type" ? (
           <div className="space-y-2">
-            <div className="h-44 flex items-end gap-1 border-b border-white/[0.08] pb-0.5">
-              {(data?.dailySeries || []).map((pt) => {
-                const metric = pt.requests > 0 ? pt.requests : pt.newKeys;
-                const h = Math.max(metric > 0 ? 10 : 2, Math.round((metric / maxDaily) * 100));
-                return (
-                  <div
-                    key={pt.date}
-                    title={`${pt.date}: ${pt.requests} requests, ${pt.newKeys} keys`}
-                    className="flex-1 flex flex-col items-center justify-end h-full group"
-                  >
+            <div className="flex items-stretch gap-2 h-44">
+              <div className="flex flex-col justify-between text-[10px] font-mono text-zinc-500 py-1 select-none w-8 text-end shrink-0">
+                <span>{maxDaily}</span>
+                <span>{Math.max(1, Math.round(maxDaily / 2))}</span>
+                <span>0</span>
+              </div>
+              <div className="flex-1 flex items-end gap-1 border-b border-l border-white/[0.08] pl-2 pb-0.5">
+                {(data?.dailySeries || []).map((pt) => {
+                  const metric = pt.requests > 0 ? pt.requests : pt.newKeys;
+                  const h = Math.max(metric > 0 ? 10 : 2, Math.round((metric / maxDaily) * 100));
+                  return (
                     <div
-                      className={`w-full max-w-[12px] rounded-t-sm transition-colors ${
-                        metric > 0 ? "bg-rose-500 group-hover:bg-rose-400" : "bg-white/[0.07]"
-                      }`}
-                      style={{ height: `${h}%` }}
-                    />
-                  </div>
-                );
-              })}
+                      key={pt.date}
+                      title={`${pt.date}: ${pt.requests} requests, ${pt.newKeys} keys ($0.00)`}
+                      className="flex-1 flex flex-col items-center justify-end h-full group"
+                    >
+                      <div
+                        className={`w-full max-w-[12px] rounded-t-sm transition-colors ${
+                          metric > 0 ? "bg-rose-500 group-hover:bg-rose-400" : "bg-white/[0.07]"
+                        }`}
+                        style={{ height: `${h}%` }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             <div className="flex justify-between text-[11px] font-mono text-zinc-500">
               <span>{data?.dailySeries?.[0]?.date || ""}</span>

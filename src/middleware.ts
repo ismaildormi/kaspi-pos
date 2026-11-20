@@ -45,6 +45,7 @@ const PUBLIC_API_PATHS = [
   "/api/v1/heyuka/chat-web",
   "/api/v1/heyuka/chat-threads",
   "/api/v1/heyuka/share",
+  "/api/v1/heyuka/feedback",
   "/api/v1/qr/dynamic",
   "/api/v1/models",
   "/api/v1/debug",

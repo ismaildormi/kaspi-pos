@@ -37,6 +37,7 @@ export function PlatformProfileView() {
 
   const [data, setData] = useState<ProfilePayload | null>(null);
   const [devicesOpen, setDevicesOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const loadProfile = useCallback(async () => {
@@ -151,12 +152,50 @@ export function PlatformProfileView() {
 
         <button
           type="button"
-          onClick={() => setDevicesOpen(true)}
+          onClick={() => setDeleteOpen(true)}
           className="px-4 py-2 rounded-lg bg-[#DC2626] hover:bg-[#EF4444] text-xs font-semibold text-white cursor-pointer"
         >
           Delete
         </button>
       </div>
+
+      <KaspiGlassModalPortal
+        isOpen={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        dir={isRtl ? "rtl" : "ltr"}
+      >
+        <div className="w-full max-w-md rounded-2xl kaspi-opaque-glass-modal p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-rose-400">Clear Session &amp; Workspace Data</h3>
+            <button type="button" onClick={() => setDeleteOpen(false)} className="cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-xs text-zinc-300 leading-relaxed">
+            This signs out all active sessions on your browser and clears local stored keys. Your KASPI email stays safely archived in the support directory if you wish to return.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setDeleteOpen(false)}
+              className="px-4 py-2 rounded-full bg-white/10 text-xs font-medium cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                setDeleteOpen(false);
+                await handleLogout();
+              }}
+              className="px-4 py-2 rounded-full bg-[#DC2626] hover:bg-[#EF4444] text-white text-xs font-bold cursor-pointer"
+            >
+              Confirm Sign Out &amp; Clear
+            </button>
+          </div>
+        </div>
+      </KaspiGlassModalPortal>
 
       <KaspiGlassModalPortal
         isOpen={devicesOpen}

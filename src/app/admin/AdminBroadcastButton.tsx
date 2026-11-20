@@ -49,7 +49,7 @@ export function AdminBroadcastButton() {
         onClick={() => setIsOpen(true)}
         className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 font-bold text-xs transition flex items-center gap-2 cursor-pointer shadow-sm"
       >
-        <Mail className="w-4 h-4 text-emerald-400" />
+        <Mail className="w-4 h-4 text-rose-400" />
         <span>Diffuser Email Gmail</span>
       </button>
 
@@ -65,7 +65,7 @@ export function AdminBroadcastButton() {
           <div className="kaspi-opaque-glass-modal kaspi-polar-aurora-orbit rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto my-auto p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
                   <Mail className="w-4 h-4" />
                 </div>
                 <div>

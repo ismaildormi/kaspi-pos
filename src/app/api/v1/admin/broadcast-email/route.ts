@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkSuperAdminUser } from "@/server/admin/guard";
 import { prisma } from "@/server/db/prisma";
 import { getSupabaseDirectoryEmails } from "@/lib/supabase";
+import { listAllProjectGmails } from "@/lib/heyuka/gmail-directory";
 import { sendBroadcastEmail } from "@/lib/email/mailer";
 
 export async function POST(req: NextRequest) {
@@ -40,14 +41,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Supplement from Supabase user_directory & auth.users
+    // 2. Supplement from Supabase user_directory & Central Project Gmail Vault
     try {
-      const supaEmails = await getSupabaseDirectoryEmails();
+      const [supaEmails, vaultDirectory] = await Promise.all([
+        getSupabaseDirectoryEmails(),
+        listAllProjectGmails(),
+      ]);
       for (const email of supaEmails) {
         recipientSet.add(email);
       }
+      for (const email of vaultDirectory.allEmails) {
+        recipientSet.add(email);
+      }
     } catch (supaErr) {
-      console.warn("[Broadcast API] Supabase user_directory fetch warning:", supaErr);
+      console.warn("[Broadcast API] Directory fetch warning:", supaErr);
     }
 
     const recipients = Array.from(recipientSet);

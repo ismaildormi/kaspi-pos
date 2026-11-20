@@ -236,6 +236,12 @@ export function PlatformDocsView() {
             >
               HEYUKA Free Web Chat
             </Link>
+            <Link
+              href={`/${locale}/zebra-x/contact`}
+              className="block px-3 py-1.5 rounded-lg text-[var(--kaspi-text-secondary)] hover:text-rose-500"
+            >
+              Help, Messaging &amp; Feedback
+            </Link>
           </div>
         </aside>
 

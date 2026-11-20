@@ -31,6 +31,8 @@ export type PlatformNavId =
   | "api-keys"
   | "quota"
   | "pricing"
+  | "faq"
+  | "contact"
   | "models"
   | "playground"
   | "debug"
@@ -199,7 +201,7 @@ export function HEYUKAPlatformShell({
     },
     {
       id: "faq" as const,
-      href: `/${locale}/zebra-x/docs?tab=faq`,
+      href: `/${locale}/zebra-x/contact`,
       label: t.faq,
       icon: HelpCircle,
       external: false,
