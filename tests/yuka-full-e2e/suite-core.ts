@@ -1094,10 +1094,14 @@ async function main() {
     const chatWebSrc = fs.readFileSync(path.join(process.cwd(), "src/app/api/v1/heyuka/chat-web/route.ts"), "utf8");
     assert.ok(chatWebSrc.includes("detectTruncationState") && chatWebSrc.includes("mergeContinuationChunk") && chatWebSrc.includes("repairTruncatedMarkdownAndCode"));
 
-    // H) Cognitive Brain Pre-Classification (9 Clusters) + Google Patents 150M+ Blueprint & PDF Marker
-    assert.equal(COGNITIVE_BRAIN_CLUSTERS.length, 9);
+    // H) Cognitive Brain Pre-Classification (10 Clusters) + Google Patents 150M+ Blueprint & PDF Marker
+    assert.equal(COGNITIVE_BRAIN_CLUSTERS.length, 10);
     assert.equal(
       isCapabilitiesOrSourcesTableRequest("ابحث عن كل قدراتك و المصادر المفتوحة لك لاستعمالها و اعطها اليا في جدول كلها"),
+      true
+    );
+    assert.equal(
+      isCapabilitiesOrSourcesTableRequest("شنو هما الحوايج اللي ما كتقدرش تديرهم، عطيهم ليا في ملف"),
       true
     );
     const capTableMd = buildFullCapabilitiesAndSourcesMarkdown("ar");
@@ -1184,10 +1188,17 @@ async function main() {
     assert.equal(localEsRes.detectedLanguage.code, "es");
     assert.ok(localEsRes.answer.includes("Resumen Ejecutivo Directo"));
 
-    const totalBytes = bundle.reduce((sum, f) => sum + f.content.length, 0) + localApiRes.answer.length + localEsRes.answer.length;
+    const extEngRes = runLocalOnDeviceHeyukaBrain({
+      prompt: "بغيت مخطط AutoCAD DXF مع WebUSB ESC/POS ومكالمات WebRTC VoIP وايميل EML وفيزياء مغناطيسية",
+      locale: "ar",
+    });
+    const extPaths = extEngRes.studioFiles.map((f) => f.path);
+    assert.ok(extPaths.includes("cad-blueprint.dxf") && extPaths.includes("message-draft.eml") && extPaths.includes("schedule-invite.ics") && extPaths.includes("webusb-escpos-webrtc.js") && extPaths.includes("physics-stress-benchmark.js"));
+
+    const totalBytes = bundle.reduce((sum, f) => sum + f.content.length, 0) + localApiRes.answer.length + localEsRes.answer.length + extEngRes.answer.length;
     return {
       artifactBytes: totalBytes,
-      detail: `15/15 World Languages & Scripts + Local On-Device Brain + Portable Local API Server & Mobile SDK (${totalBytes}B) verified`,
+      detail: `15/15 World Languages + 10 Cognitive Clusters + CAD .DXF / .EML / .ICS / WebUSB / WebRTC / Physics + Local API SDK (${totalBytes}B) verified`,
     };
   });
 

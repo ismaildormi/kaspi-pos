@@ -21,7 +21,8 @@ export type CognitiveClusterId =
   | "games_3d_video_and_audio"
   | "live_search_and_47_public_apis"
   | "robotics_agents_and_mobile_lab"
-  | "kaspi_pos_merchant_intelligence";
+  | "kaspi_pos_merchant_intelligence"
+  | "hardware_cad_voip_testing_and_physics";
 
 export interface CognitiveClusterSpec {
   id: CognitiveClusterId;
@@ -224,6 +225,26 @@ export const COGNITIVE_BRAIN_CLUSTERS: readonly CognitiveClusterSpec[] = [
     roleEn:
       "Real-time store sales, inventory forecasting, thermal receipts, fiscal QR generation, and strategic business co-pilot for KASPI merchants.",
   },
+  {
+    id: "hardware_cad_voip_testing_and_physics",
+    badgeIcon: "⚙️",
+    titleAr: "الأجهزة الطرفية (USB/ESC-POS)، التصميم الهندسي CAD (.DXF)، اتصالات WebRTC/VoIP، البريد (.EML)، اختبارات الضغط، والفيزياء 3D",
+    titleEn: "Hardware WebUSB/ESC-POS, Open CAD (.DXF), WebRTC/SIP VoIP, RFC-5322 Email (.EML), Sandbox Stress Testing & 3D Physics",
+    enginesCount: 58,
+    outputFormats: ["AutoCAD .DXF", "Email .EML", "Calendar .ICS", "ESC/POS Binary", "WebRTC Room .HTML", "Tauri/Capacitor Config"],
+    keyEngines: [
+      "WebUSB, WebSerial, WebBluetooth & ESC/POS 80mm/58mm Thermal Spooler",
+      "OpenJSCAD, CadQuery, AutoCAD .DXF Generator & Canvas/Photopea-style Layer Studio",
+      "RFC-5322 .EML Email Builder, iCalendar .ICS & Consent-Based Gmail Lead Vault",
+      "WebRTC P2P Audio/Video Room + SIP.js VoIP Signaling & WebAudio DSP",
+      "Tauri (.exe/.msi) & Capacitor (.apk/.ipa) Packaging Blueprints + Sandbox Unit/Stress Runner",
+      "3D Magnetic Flux & Rigid-Body Physics Shader + NCBI/OpenAlex Open Bioinformatics",
+    ],
+    roleAr:
+      "يعوض البرامج المغلقة (AutoCAD/Photoshop/SAP) بمحركات مفتوحة لتوليد ملفات .DXF و.EML و.ICS، والتحكم في الطابعات الحرارية عبر WebUSB/WebSerial، وبناء غرف مكالمات WebRTC/VoIP، وإجراء اختبارات الوحدات والضغط، والمحاكاة الفيزيائية والمغناطيسية 3D.",
+    roleEn:
+      "Open-source replacements for CAD (.dxf), email (.eml/.ics), WebUSB/WebSerial ESC/POS hardware bridges, WebRTC/SIP VoIP calls, Tauri/Capacitor native app builders, isolated unit/stress testing, and 3D magnetic/physics simulation.",
+  },
 ];
 
 export function getTotalIntegratedCapabilitiesCount(): {
@@ -259,6 +280,9 @@ export function isCapabilitiesOrSourcesTableRequest(prompt: string): boolean {
       p
     ) &&
       /(كل|جميع|جدول|كامل|ابحث|اعطها|اعطيني|وريني|شامل)/i.test(p)) ||
+    /(ما كتقدرش|ما تقدرش|ما لا تستطيع|القدرات التي لا تتوفر|شنو.*ما.*كتقدرش|شنو.*ما.*تقدرش|limitations|what can you not do|what can't you do)/i.test(
+      p
+    ) ||
     /\b(all your capabilities|all open[- ]source tools|list all your sources|table of all capabilities)\b/i.test(
       p
     )
@@ -370,6 +394,22 @@ export function classifyCognitiveIntentAndSources(
     });
   }
 
+  if (
+    /(dxf|autocad|cad|webrtc|voip|sip|eml|email|gmail|webusb|webserial|webbluetooth|thermal|esc\/pos|stress test|unit test|benchmark|magnetic|مغناطيس|فيزياء|طابعة حرارية|بلوتوث|ايميل|مكالمات|أوتوكاد)/i.test(
+      p
+    )
+  ) {
+    matchedIds.add("hardware_cad_voip_testing_and_physics");
+    stageBadges.push({
+      icon: "⚙️",
+      label:
+        locale === "ar"
+          ? "محرك الأجهزة، CAD (.DXF)، VoIP، والفيزياء 3D"
+          : "Hardware, CAD (.DXF), VoIP & 3D Physics Engine",
+      domain: "WebUSB / OpenJSCAD / WebRTC",
+    });
+  }
+
   if (matchedIds.size === 0) {
     matchedIds.add("live_search_and_47_public_apis");
     matchedIds.add("pdf_office_and_documents");
@@ -447,7 +487,7 @@ export function buildFullCapabilitiesAndSourcesMarkdown(
 
     return `## 🧠 الخريطة الشاملة لقدرات ومصادر HEYUKA المدمجة (\`${totals.grandTotalSources}+\` مصدر ومحرك مفتوح • \`100% Free & Zero-Key\`)
 
-تم تنظيم وترتيب جميع المصادر والمكتبات وقواعد البيانات في عقل **HEYUKA (KASPI AI)** ضمن **9 مجموعات معرفية مصنفة مسبقاً (Pre-Classified Cognitive Clusters)** بحيث يحدد المحرك المجال المطلوب فوراً قبل البحث، ويخرج لك أي نوع من الملفات (**PDF, ZIP, Word, Excel, PNG, SVG, 3D GLB, WAV, ومشاريع برمجية كاملة**) مباشرة من المحادثة:
+تم تنظيم وترتيب جميع المصادر والمكتبات وقواعد البيانات في عقل **HEYUKA (KASPI AI)** ضمن **10 مجموعات معرفية مصنفة مسبقاً (Pre-Classified Cognitive Clusters)** بحيث يحدد المحرك المجال المطلوب فوراً قبل البحث، ويخرج لك أي نوع من الملفات (**PDF, ZIP, Word, Excel, AutoCAD .DXF, Email .EML, Calendar .ICS, PNG, SVG, 3D GLB, WAV, ومشاريع برمجية كاملة**) مباشرة من المحادثة:
 
 | المجموعة المعرفية في عقل HEYUKA | عدد المحركات | أبرز المصادر والمكتبات المفتوحة المدمجة | الملفات والمخرجات التي يصنعها | الدور المباشر وكيف يستفيد منه المستخدم |
 | :--- | :---: | :--- | :--- | :--- |
@@ -455,12 +495,24 @@ ${rowsMd}
 
 ---
 
-### 🔍 تصنيف قنوات البحث الحي المسبق (\`${totals.livePublicApisCount}\` مصدر API حي + \`150M+\` براءة اختراع)
-1. **💡 براءات الاختراع والابتكارات والتجارة (\`Google Patents 150M+\`):** البحث المباشر في أكثر من **150 مليون براءة اختراع عالمية** (\`patents.google.com\`) مع الأبحاث العلمية (\`Google Scholar / OpenAlex 250M+\`) وبيانات المخترعين (\`Wikidata P1246\`)، استخراج الخطط والرسومات بصيغة **PDF**، وتعديلها لبناء مشاريع مربحة.
-2. **🗺️ الملاحة والخرائط والطيران الحي:** \`OSRM Driving Router\` (حساب المسافات والطرق)، \`OpenStreetMap Nominatim & Overpass\`، و\`OpenSky / ADS-B\` لتتبع الطيران الحي.
-3. **🌍 الأرض، الطقس، البحار، والفضاء:** \`Open-Meteo Weather & Nador Marine\`، \`USGS Earthquakes\` (الزلازل لحظياً)، \`NASA EONET & NASA POWER\`، و\`ISRIC SoilGrids\`.
-4. **💊 الطب، الأدوية، التغذية، والعلوم:** \`OpenFDA\`، \`NLM RxNav\`، \`PubMed\`، \`Disease.sh\`، \`OpenFoodFacts + USDA\`، \`wger Workouts\`، و\`GBIF Biodiversity\`.
-5. **💶 المال، العملات، الشركات، والأمن السيبراني:** \`Frankfurter ECB FX\`، \`CoinGecko Crypto\`، \`GLEIF Company LEI\`، \`World Bank GDP\`، \`NHTSA & OBD-II Vehicles\`، و\`OSV.dev Cyber Threat Intel\`.
+### ⚙️ البدائل المفتوحة المدمجة للبرامج المغلقة والأجهزة والاتصالات (\`100% Enabled via Open-Source Engines\`)
+
+| المجال المتقدم | كيفاش كيخدمو HEYUKA الآن بمحركات مفتوحة مجانية؟ | الصيغ والملفات الناتجة |
+| :--- | :--- | :--- |
+| **1. الأجهزة الطرفية والطابعات الحرارية (\`USB / Bluetooth / Thermal\`)** | عبر \`WebUSB\`, \`WebSerial\`, \`WebBluetooth\` ومحرك \`ESC/POS 80mm/58mm Spooler\` المدمج. | \`ESC/POS Commands\` • \`Thermal Ticket\` |
+| **2. بدائل \`AutoCAD\` و \`Photoshop\` و \`SAP\` المفتوحة** | عبر \`OpenJSCAD / CadQuery (.DXF)\` للرسم الهندسي، و\`Canvas/SVG Inpaint Studio\` للصور، و\`ExcelJS/ERP Ledger\` للمحاسبة. | \`.DXF\` • \`.SVG / .PNG\` • \`.XLSX\` |
+| **3. البريد الإلكتروني والمواعيد (\`Email & Calendar\`)** | توليد ملفات البريد القياسية \`RFC-5322 (.EML)\`، دعوات التقويم \`iCalendar (.ICS)\`، وخزنة \`Gmail Lead Vault\`. | \`.EML\` • \`.ICS\` • \`mailto:\` |
+| **4. المكالمات الصوتية والمرئية (\`WebRTC & SIP VoIP\`)** | توليد غرف اتصال صوتي/مرئي مباشر \`WebRTC P2P\` وإعدادات \`SIP.js VoIP\` وتوليد الصوت \`WebAudio WAV\`. | \`WebRTC Room .HTML\` • \`.WAV\` |
+| **5. بناء تطبيقات سطح المكتب والهواتف (\`.exe / .apk\`)** | توليد مشاريع وقوالب بناء \`Tauri (.exe / .msi / .AppImage)\` و\`Capacitor (.apk / .ipa)\` و\`PWA\` جاهزة للتنصيب بموافقة المستخدم. | \`tauri.conf.json\` • \`capacitor.config.ts\` • \`.ZIP\` |
+| **6. اختبارات الضغط والوحدات والتكامل (\`Stress / Unit / Integration\`)** | تشغيل اختبارات الوحدات والأداء والضغط على أكواد ومشاريع المستخدم داخل المعزل الآمن (\`Isolated V8 & Judge0 Sandbox\`). | \`Test Suite .TS/.PY\` • \`Benchmark Report\` |
+| **7. المحاكاة الفيزيائية والمغناطيسية والعلوم الحيوية (\`3D Physics & Open Bio\`)** | محاكاة الحقول المغناطيسية والفيزياء ثلاثية الأبعاد عبر \`Three.js / WebGL Shaders\` والبحث العلمي الحيوي المفتوح عبر \`NCBI PubMed / OpenAlex / GBIF\`. | \`3D Simulation .HTML/.GLB\` • \`Scientific PDF\` |
+
+---
+
+### 🛡️ الضوابط الأمنية والقانونية الصارمة (الخطوط الحمراء التي لا يمكن تجاوزها قانونياً وأمنياً)
+1. **حماية نواة الكاشير الإنتاجية (\`POS_CORE_LOCK=true\`):** لا يُسمح بتخريب أو تعديل قاعدة بيانات وكود الكاشير الإنتاجي الحي من داخل الشات (بينما يمكنك بناء وتعديل أي مشروع أو كود كامل بحرية تامة داخل معزل \`Antigravity Studio\`).
+2. **السلامة العالمية ومنع الأسلحة والمواد الخطرة:** يُمنع منعاً باتاً توليد مخططات تصنيع الأسلحة، المواد الكيميائية/البيولوجية الخطرة (\`CBRNE\`)، أو البرمجيات الخبيثة (\`Malware/Exploits\`).
+3. **احترام الخصوصية وحقوق الملكية والتفويض:** لا يقوم النظام باختراق حسابات \`OAuth/OTP\` الخاصة بالغير، أو قرصنة المحتوى المحمي بدون ترخيص، أو جمع بيانات طبية/شخصية حساسة بدون موافقة صاحبها.
 
 ${pdfMarker}`;
   }
@@ -472,7 +524,7 @@ ${pdfMarker}`;
 
   return `## 🧠 HEYUKA Complete Cognitive Brain & Open-Source Arsenal (\`${totals.grandTotalSources}+\` Integrated Engines • \`100% Free & Zero-Key\`)
 
-All integrated libraries, compilers, datasets, and **${totals.livePublicApisCount} live no-key APIs** are pre-classified into **9 Cognitive Domain Clusters** so HEYUKA routes directly to the right engine and exports any file format (**PDF, ZIP, DOCX, XLSX, PNG, SVG, 3D GLB, WAV, and multi-file code**):
+All integrated libraries, compilers, datasets, and **${totals.livePublicApisCount} live no-key APIs** are pre-classified into **10 Cognitive Domain Clusters** so HEYUKA routes directly to the right engine and exports any file format (**PDF, ZIP, DOCX, XLSX, AutoCAD .DXF, Email .EML, Calendar .ICS, PNG, SVG, 3D GLB, WAV, and multi-file code**):
 
 | Cognitive Cluster | Engines | Core Open-Source Libraries & Live Feeds | Supported Output Files | Direct Capability |
 | :--- | :---: | :--- | :--- | :--- |
