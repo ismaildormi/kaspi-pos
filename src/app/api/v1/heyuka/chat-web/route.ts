@@ -167,23 +167,23 @@ function detectSmartMode(
 function matchPublicApiCategories(prompt: string): PublicApiCategory[] {
   const p = prompt.toLowerCase();
   const picked: PublicApiCategory[] = [];
-  if (/(route|distance|directions|طريق|مسافة|km|travel time|itineraire|osrm)/i.test(p)) picked.push("osrm_routing");
-  if (/(earthquake|seismic|زلزال|هزة)/i.test(p)) picked.push("usgs_earthquakes");
-  if (/(nasa|wildfire|storm|space|فضاء|ناسا|قمر صناعي|عاصفة)/i.test(p)) picked.push("nasa_eonet_events");
-  if (/(obd|check engine|\b[pbcu]\d{4}\b|car recall|سيارة|ميكانيك|محرك|acura|toyota|dacia|renault)/i.test(p)) picked.push("nhtsa_recalls_vehicles");
-  if (/(drug|medicine|pharma|pill|دواء|صحة|مضاد)/i.test(p)) picked.push("rxnav_drugs");
-  if (/(covid|epidemic|disease|وباء|مرض)/i.test(p)) picked.push("disease_health_stats");
-  if (/(workout|exercise|gym|muscle|رياضة|تمارين|عضلات)/i.test(p)) picked.push("wger_workouts");
-  if (/(book|library|author|كتاب|رواية|مكتبة)/i.test(p)) picked.push("openlibrary_books");
-  if (/(species|plant|animal|tree|فلاحة|حيوان|نبات|شجرة)/i.test(p)) picked.push("gbif_biodiversity");
-  if (/(recipe|cook|meal|food|طبخ|وصفة|طاجين|أكل)/i.test(p)) picked.push("themealdb_recipes");
-  if (/(flight|airplane|aircraft|airport|طائرة|طيران|مطار)/i.test(p)) picked.push("opensky_flights");
-  if (/(btc|bitcoin|eth|crypto|عملة رقمية|بيتكوين)/i.test(p)) picked.push("crypto_market");
-  if (/(usd|eur|mad|exchange|fx|سعر الصرف|دولار|أورو|درهم)/i.test(p)) picked.push("frankfurter_fx");
-  if (/(weather|طقس|مناخ|درجة الحرارة|nador|الناظور|بحر)/i.test(p)) picked.push("weather");
-  if (/(cve|vulnerability|exploit|ثغرة|أمن سيبراني)/i.test(p)) picked.push("cyber_threat_intel");
-  if (/(paper|research|arxiv|study|بحث علمي|دراسة)/i.test(p)) picked.push("openalex_science");
-  if (/(wiki|who is|what is|تاريخ|معلومات عن|من هو)/i.test(p)) picked.push("wikipedia");
+  if (/(\broute\b|\bdistance\b|\bdirections\b|الطريق|المسافة|\btravel time\b|\bitineraire\b|\bosrm\b)/i.test(p)) picked.push("osrm_routing");
+  if (/(\bearthquakes?\b|\bseismic\b|زلزال|زلازل|هزة أرضية)/i.test(p)) picked.push("usgs_earthquakes");
+  if (/(\bnasa\b|\bwildfire\b|\beonet\b|قمر صناعي|وكالة ناسا)/i.test(p)) picked.push("nasa_eonet_events");
+  if (/(\bobd\b|check engine|\b[pbcu]\d{4}\b|car recall|محرك السيارة|عطل سيارة|\bacura\b|\btoyota\b|\bdacia\b|\brenault\b)/i.test(p)) picked.push("nhtsa_recalls_vehicles");
+  if (/(\bdrug\b|\bmedicine\b|\bpharma\b|\brxnav\b|دواء|مضاد حيوي)/i.test(p)) picked.push("rxnav_drugs");
+  if (/(\bcovid\b|\bepidemic\b|وباء)/i.test(p)) picked.push("disease_health_stats");
+  if (/(\bworkout\b|\bexercise\b|\bgym\b|تمارين رياضية)/i.test(p)) picked.push("wger_workouts");
+  if (/(\bopenlibrary\b|\bisbn\b|رواية|مكتبة الكتب)/i.test(p)) picked.push("openlibrary_books");
+  if (/(\bspecies\b|\bbiodiversity\b|\bargania\b|\bgbif\b|التنوع البيولوجي)/i.test(p)) picked.push("gbif_biodiversity");
+  if (/(\brecipe\b|\bmeal\b|وصفة طبخ|طاجين)/i.test(p)) picked.push("themealdb_recipes");
+  if (/(\bflight\b|\bairplane\b|\baircraft\b|\bairport\b|رحلة طيران|مطار)/i.test(p)) picked.push("opensky_flights");
+  if (/(\bbtc\b|\bbitcoin\b|\beth\b|\bcrypto\b|عملة رقمية|بيتكوين)/i.test(p)) picked.push("crypto_market");
+  if (/(\busd\b|\beur\b|\bmad\b|\bexchange rate\b|\bfx\b|سعر الصرف)/i.test(p)) picked.push("frankfurter_fx");
+  if (/(\bweather\b|طقس|درجة الحرارة|\bnador\b|الناظور)/i.test(p)) picked.push("weather");
+  if (/(\bcve-\d+|\bexploit\b|ثغرة أمنية)/i.test(p)) picked.push("cyber_threat_intel");
+  if (/(\bopenalex\b|\barxiv\b|ورقة بحثية)/i.test(p)) picked.push("openalex_science");
+  if (/(\bwikipedia\b|من هو|تاريخ مدينة)/i.test(p)) picked.push("wikipedia");
   return picked.slice(0, 3);
 }
 
@@ -324,7 +324,9 @@ export async function POST(req: NextRequest) {
   let webContextBlock = "";
   let apiContextBlock = "";
 
-  const apiCats = matchPublicApiCategories(lastUser);
+  const shouldProbeLiveApis =
+    effectiveSearch || (effectiveMode === "chat" && lastUser.length < 400);
+  const apiCats = shouldProbeLiveApis ? matchPublicApiCategories(lastUser) : [];
   const [searchRes, apiResults] = await Promise.all([
     effectiveSearch
       ? runUnrestrictedWebResearch({ query: lastUser.slice(0, 320), lang: locale }).catch(() => null)

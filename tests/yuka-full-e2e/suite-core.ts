@@ -1050,13 +1050,39 @@ async function main() {
     const svgArt = buildCodeToMediaArtifactSvg("HEYUKA Vector", "Procedural infinity emblem");
     assert.ok(svgArt.startsWith("<svg") && svgArt.includes("</svg>") && svgArt.length > 500);
 
+    // G) Heading-to-Path Extraction & Embedded FastAPI HTML Preview Extraction (Zero artifact-1.txt / main6.py)
+    const transparaSampleMd = [
+      "## 1️⃣ مخطط المشروع (Tree)",
+      "```",
+      "transpara-ai/\n├─ backend/\n│  └─ Dockerfile",
+      "```",
+      "### `docker-compose.yml`",
+      "```yaml",
+      "version: '3.9'\nservices:\n  db:\n    image: postgres:15-alpine",
+      "```",
+      "### `backend/Dockerfile`",
+      "```dockerfile",
+      "FROM python:3.11-slim\nWORKDIR /app",
+      "```",
+      "### `backend/app/core/background_removal.py` *(BackgroundRemovalEngine)*",
+      "```python",
+      'class BackgroundRemovalEngine:\n    pass\n@app.get("/")\nasync def serve():\n    html = """<!DOCTYPE html><html><head><title>TRANSPARA AI</title></head><body><h1>TRANSPARA AI</h1',
+    ].join("\n");
+    const parsedTranspara = extractStudioFilesSafe(transparaSampleMd);
+    const paths = parsedTranspara.map((f) => f.path);
+    assert.ok(paths.includes("PROJECT_TREE.txt"), `Missing PROJECT_TREE.txt in ${paths.join(",")}`);
+    assert.ok(paths.includes("docker-compose.yml"), `Missing docker-compose.yml in ${paths.join(",")}`);
+    assert.ok(paths.includes("backend/Dockerfile"), `Missing backend/Dockerfile in ${paths.join(",")}`);
+    assert.ok(paths.includes("backend/app/core/background_removal.py"), `Missing background_removal.py in ${paths.join(",")}`);
+    assert.ok(paths.includes("frontend/preview.html"), `Missing extracted frontend/preview.html in ${paths.join(",")}`);
+
     const chatWebSrc = fs.readFileSync(path.join(process.cwd(), "src/app/api/v1/heyuka/chat-web/route.ts"), "utf8");
     assert.ok(chatWebSrc.includes("detectTruncationState") && chatWebSrc.includes("mergeContinuationChunk") && chatWebSrc.includes("repairTruncatedMarkdownAndCode"));
 
     const totalZipBytes = siteRes.zipBytes.length + gameRes.zipBytes.length + roboRes.zipBytes.length + svgArt.length;
     return {
       artifactBytes: totalZipBytes,
-      detail: `${counts.totalUnique} v24-v28 engines + 1024-tok Auto-Continuation + vm.Script 3D Game/Site/Robotics + Search/Replace Diff + PKZIP (${totalZipBytes}B) verified`,
+      detail: `${counts.totalUnique} v24-v28 engines + Heading Path Extractor + Syntax IDE + vm.Script 3D Game/Site/Robotics + PKZIP (${totalZipBytes}B) verified`,
     };
   });
 

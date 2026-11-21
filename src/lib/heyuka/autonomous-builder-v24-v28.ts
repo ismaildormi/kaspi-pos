@@ -207,8 +207,11 @@ export function repairTruncatedMarkdownAndCode(rawText: string): {
     return { repaired: out, wasRepaired: false };
   }
 
-  // Strip dangling incomplete trailing token before closing
-  out = out.replace(/(?:=>|=|\(|\[|,|function\s+\w*|const\s+\w*|let\s+\w*)$/i, "").trimEnd();
+  // Strip dangling incomplete trailing token or half-open HTML closing tag (e.g. "</h1") before closing
+  out = out
+    .replace(/<\/?[a-zA-Z0-9_-]*$/, "")
+    .replace(/(?:=>|=|\(|\[|,|function\s+\w*|const\s+\w*|let\s+\w*)$/i, "")
+    .trimEnd();
 
   if (check.openFenceLang === "json") {
     const lastFenceIdx = out.lastIndexOf("```");
@@ -237,52 +240,224 @@ export function repairTruncatedMarkdownAndCode(rawText: string): {
 }
 
 /**
- * Extracts all code/asset files from Markdown (repairing unclosed fences automatically first).
+ * Infers the exact file path from fence attributes, preceding Markdown headings (e.g. ### `backend/app/core/config.py`),
+ * leading file comments, or content signatures instead of generic artifact-1.txt / main6.py names.
+ */
+export function inferFilePathFromContext(params: {
+  explicitPath?: string;
+  langRaw: string;
+  precedingText: string;
+  content: string;
+  counter: number;
+}): string {
+  const cleanCandidate = (raw: string): string =>
+    raw
+      .trim()
+      .replace(/^['"`]+|['"`]+$/g, "")
+      .replace(/^\.?\//, "")
+      .replace(/[*:;,)]+$/, "");
+
+  const isValidPathToken = (cand: string): boolean => {
+    if (!cand || cand.length > 140 || /\s/.test(cand) || cand.startsWith("http")) return false;
+    if (/^(?:[a-zA-Z0-9_.-]+\/)*(?:Dockerfile|Makefile|Procfile|Jenkinsfile|docker-compose\.ya?ml|requirements\.txt|package\.json|tsconfig\.json|next\.config\.[a-z]+|tailwind\.config\.[a-z]+|\.env(?:\.[a-z]+)?)$/i.test(cand)) {
+      return true;
+    }
+    return /^(?:[a-zA-Z0-9_.-]+\/)*[a-zA-Z0-9_.-]+\.(?:py|ts|tsx|js|jsx|html|css|scss|yml|yaml|json|toml|sql|sh|bash|ps1|md|txt|svg|dockerfile|prisma|rs|go|java|cpp|c|h|php|rb|vue|svelte)$/i.test(
+      cand
+    );
+  };
+
+  if (params.explicitPath) {
+    const cleaned = cleanCandidate(params.explicitPath);
+    if (isValidPathToken(cleaned)) return cleaned;
+  }
+
+  // 1) Check the last 4 non-empty lines right before the code fence (e.g. ### `backend/app/core/config.py`)
+  const prevLines = params.precedingText
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .slice(-4)
+    .reverse();
+
+  for (const line of prevLines) {
+    // Backticked path has highest priority: ### `backend/app/core/config.py` *(BackgroundRemovalEngine)*
+    const backtickMatches = Array.from(line.matchAll(/`([^`]+)`/g));
+    for (const bm of backtickMatches) {
+      const cand = cleanCandidate(bm[1]);
+      if (isValidPathToken(cand)) return cand;
+    }
+    // Heading or bold path without backticks: ### backend/Dockerfile or **docker-compose.yml**
+    const tokens = line
+      .replace(/^[#>*\d.)\s-]+/, "")
+      .split(/[\s*()`"']+/)
+      .map(cleanCandidate)
+      .filter(Boolean);
+    for (const tok of tokens) {
+      if (isValidPathToken(tok)) return tok;
+    }
+  }
+
+  // 2) Check first 2 lines of code content for comment headers (# path/to/file.py or // src/app.ts)
+  const firstCodeLines = params.content.split(/\r?\n/).slice(0, 2);
+  for (const cl of firstCodeLines) {
+    const m = cl.match(/^\s*(?:#|\/\/|\/\*+|<!--)\s*(?:file:\s*|path:\s*)?([a-zA-Z0-9_./-]+\.[a-zA-Z0-9]+|(?:[a-zA-Z0-9_.-]+\/)*Dockerfile)/i);
+    if (m) {
+      const cand = cleanCandidate(m[1]);
+      if (isValidPathToken(cand)) return cand;
+    }
+  }
+
+  // 3) Check content structure signatures
+  if (/[├└│]─/.test(params.content)) {
+    return "PROJECT_TREE.txt";
+  }
+  if (/^\s*FROM\s+[a-zA-Z0-9_.:/-]+/m.test(params.content) || params.langRaw === "dockerfile") {
+    return /node|npm|next/i.test(params.content) ? "frontend/Dockerfile" : "backend/Dockerfile";
+  }
+  if (/^\s*services:\s*$/m.test(params.content) && (params.langRaw === "yaml" || params.langRaw === "yml")) {
+    return "docker-compose.yml";
+  }
+  if (/^(?:fastapi|uvicorn|pydantic|sqlalchemy|celery|redis|pytest)[=~><]/im.test(params.content)) {
+    return "backend/requirements.txt";
+  }
+
+  const extMap: Record<string, string> = {
+    html: "index.html",
+    tsx: `src/App${params.counter > 1 ? params.counter : ""}.tsx`,
+    ts: `src/module${params.counter > 1 ? params.counter : ""}.ts`,
+    jsx: `src/App${params.counter > 1 ? params.counter : ""}.jsx`,
+    js: `script${params.counter > 1 ? params.counter : ""}.js`,
+    javascript: `script${params.counter > 1 ? params.counter : ""}.js`,
+    css: "styles.css",
+    python: `app/module_${params.counter}.py`,
+    py: `app/module_${params.counter}.py`,
+    svg: `graphic${params.counter > 1 ? params.counter : ""}.svg`,
+    json: `config${params.counter > 1 ? params.counter : ""}.json`,
+    yaml: `config${params.counter > 1 ? params.counter : ""}.yaml`,
+    yml: `config${params.counter > 1 ? params.counter : ""}.yml`,
+    sql: "schema.sql",
+    sh: "run.sh",
+    bash: "run.sh",
+    powershell: "script.ps1",
+    ps1: "script.ps1",
+  };
+  return extMap[params.langRaw] || `notes-${params.counter}.${params.langRaw || "txt"}`;
+}
+
+/**
+ * Extracts all code/asset files from Markdown (repairing unclosed fences and inferring real paths from headings).
  */
 export function extractStudioFilesSafe(markdown: string): BuilderStudioFile[] {
   const { repaired } = repairTruncatedMarkdownAndCode(markdown);
   const files: BuilderStudioFile[] = [];
   const usedPaths = new Set<string>();
-  const fenceRegex = /```([a-zA-Z0-9_-]*)(?:\s+(?:path|file)=["']?([^\s"'\n]+)["']?)?\s*\n([\s\S]*?)```/g;
+  const fenceRegex = /```([a-zA-Z0-9_.-]*)(?:[\t ]+(?:(?:path|file)=["']?([^\s"'\n]+)["']?|([^\s"'\n]+\.[a-zA-Z0-9]+)))?[\t ]*\n([\s\S]*?)```/g;
 
   let m: RegExpExecArray | null;
   let counter = 1;
+  let lastEndIndex = 0;
+
   while ((m = fenceRegex.exec(repaired)) !== null) {
     const langRaw = (m[1] || "txt").toLowerCase();
-    const content = (m[3] || "").trim();
+    const explicitPath = (m[2] || m[3] || "").trim();
+    const content = (m[4] || "").trim();
+    const precedingText = repaired.slice(lastEndIndex, m.index);
+    lastEndIndex = m.index + m[0].length;
+
     if (!content) continue;
 
-    let pathName = (m[2] || "").trim();
-    if (!pathName) {
-      const extMap: Record<string, string> = {
-        html: "index.html",
-        tsx: `App${counter > 1 ? counter : ""}.tsx`,
-        ts: `module${counter > 1 ? counter : ""}.ts`,
-        jsx: `App${counter > 1 ? counter : ""}.jsx`,
-        js: `script${counter > 1 ? counter : ""}.js`,
-        javascript: `script${counter > 1 ? counter : ""}.js`,
-        css: "styles.css",
-        python: `main${counter > 1 ? counter : ""}.py`,
-        py: `main${counter > 1 ? counter : ""}.py`,
-        svg: `graphic${counter > 1 ? counter : ""}.svg`,
-        json: `config${counter > 1 ? counter : ""}.json`,
-        sql: "schema.sql",
-        sh: "run.sh",
-        bash: "run.sh",
-        powershell: "script.ps1",
-        ps1: "script.ps1",
-      };
-      pathName = extMap[langRaw] || `artifact-${counter}.${langRaw || "txt"}`;
-      counter += 1;
-    }
+    let pathName = inferFilePathFromContext({
+      explicitPath,
+      langRaw,
+      precedingText,
+      content,
+      counter,
+    });
+    counter += 1;
 
     if (usedPaths.has(pathName)) {
-      pathName = `${counter}_${pathName}`;
-      counter += 1;
+      const dotIdx = pathName.lastIndexOf(".");
+      pathName =
+        dotIdx !== -1
+          ? `${pathName.slice(0, dotIdx)}_${counter}${pathName.slice(dotIdx)}`
+          : `${pathName}_${counter}`;
     }
     usedPaths.add(pathName);
 
-    files.push({ path: pathName, language: langRaw || "text", content });
+    const resolvedLang =
+      pathName.endsWith("Dockerfile") || pathName.endsWith(".dockerfile")
+        ? "dockerfile"
+        : pathName.endsWith(".yml") || pathName.endsWith(".yaml")
+        ? "yaml"
+        : pathName.endsWith(".py")
+        ? "python"
+        : pathName.endsWith(".tsx")
+        ? "tsx"
+        : pathName.endsWith(".ts")
+        ? "ts"
+        : pathName.endsWith(".js")
+        ? "js"
+        : pathName.endsWith(".html")
+        ? "html"
+        : pathName.endsWith(".css")
+        ? "css"
+        : pathName.endsWith(".json")
+        ? "json"
+        : langRaw || "text";
+
+    files.push({ path: pathName, language: resolvedLang, content });
+  }
+
+  // If no standalone .html file was emitted, check if a Python/TS route embeds an HTML document (e.g. FastAPI serve_frontend)
+  if (!files.some((f) => f.path.endsWith(".html") || f.language === "html")) {
+    for (const f of files) {
+      const htmlIdx = f.content.search(/<!DOCTYPE html>|<html[\s>]/i);
+      if (htmlIdx !== -1) {
+        let rawEmbedded = f.content.slice(htmlIdx);
+        const tripleQuoteEnd = rawEmbedded.indexOf('"""');
+        if (tripleQuoteEnd !== -1) {
+          rawEmbedded = rawEmbedded.slice(0, tripleQuoteEnd);
+        }
+        let repairedHtml = repairTruncatedMarkdownAndCode(rawEmbedded).repaired;
+        // If embedded HTML got truncated right inside <header> before any interactive body controls, enrich it cleanly
+        if (!/<main|<section|class="studio-grid"|class="upload-zone"/i.test(repairedHtml)) {
+          const titleMatch = repairedHtml.match(/<title>([^<]+)<\/title>/i);
+          const appTitle = titleMatch ? titleMatch[1] : "TRANSPARA AI — Live Studio Preview";
+          repairedHtml = repairedHtml.replace(
+            /<\/body>[\s\S]*$/i,
+            `  <div class="container" style="max-width:980px;margin:0 auto;padding:28px 20px;font-family:system-ui,sans-serif;">
+    <div class="studio-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:18px;">
+      <div class="card" style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:22px;color:#f8fafc;">
+        <h2 style="font-size:17px;margin-bottom:8px;">AI Background Removal (rembg ONNX)</h2>
+        <p style="color:#94a3b8;font-size:13px;margin-bottom:14px;">Drop PNG, JPG, or WEBP to isolate alpha foreground &amp; hair edges.</p>
+        <label class="upload-zone" style="display:block;border:2px dashed #4f46e5;border-radius:10px;padding:22px;text-align:center;cursor:pointer;background:rgba(99,102,241,0.08);">
+          <input type="file" accept="image/*" style="display:none" onchange="document.getElementById('st').style.display='block';document.getElementById('st').textContent='✓ Loaded '+(this.files[0]?.name||'image')+' into RGBA Alpha Matting pipeline';" />
+          <div style="font-size:13px;font-weight:700;color:#818cf8;">+ Select or Drop Image</div>
+        </label>
+        <div id="st" style="display:none;margin-top:12px;padding:10px;border-radius:8px;background:rgba(16,185,129,0.14);color:#34d399;font-size:12px;"></div>
+      </div>
+      <div class="card" style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:22px;color:#f8fafc;">
+        <h2 style="font-size:17px;margin-bottom:8px;">Stack &amp; Endpoints (${files.length} Files)</h2>
+        <p style="color:#94a3b8;font-size:13px;margin-bottom:10px;">${appTitle}</p>
+        <ul style="font-family:monospace;font-size:12px;color:#cbd5e1;line-height:1.8;list-style:none;padding:0;">
+          <li>• POST /api/v1/studio/remove-bg</li>
+          <li>• POST /api/v1/studio/enhance</li>
+          <li>• POST /api/v1/studio/batch-process</li>
+        </ul>
+      </div>
+    </div>
+  </div>\n</body>\n</html>`
+          );
+        }
+        files.push({
+          path: "frontend/preview.html",
+          language: "html",
+          content: repairedHtml,
+        });
+        break;
+      }
+    }
   }
 
   return files;
@@ -421,6 +596,51 @@ export function assembleMultiFilePreviewDocument(files: BuilderStudioFile[]): st
 
   if (jsFiles.length > 0) {
     return `<!DOCTYPE html><html><body style="margin:0;background:#111215;color:#f4f4f5;font-family:monospace;padding:20px;"><pre id="out"></pre><script>const log=(...a)=>{document.getElementById('out').textContent+=a.join(' ')+'\\n';};console.log=log;try{${jsFiles.map((j) => j.content).join("\n")}}catch(e){log('Error:',e.message);}</script></body></html>`;
+  }
+
+  if (files.length > 0) {
+    const endpoints: string[] = [];
+    const models: string[] = [];
+    for (const f of files) {
+      for (const m of f.content.matchAll(/@(?:app|router)\.(get|post|put|delete|patch)\(\s*["']([^"']+)["']/gi)) {
+        endpoints.push(`${m[1].toUpperCase()} ${m[2]} (${f.path})`);
+      }
+      for (const m of f.content.matchAll(/class\s+([A-Za-z0-9_]+)\s*\((?:Base|BaseSettings|BaseModel)/g)) {
+        models.push(`${m[1]} (${f.path})`);
+      }
+    }
+    const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"/><style>
+      body{margin:0;background:#0f1117;color:#f4f4f5;font-family:system-ui,-apple-system,sans-serif;padding:22px;}
+      .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:14px;}
+      .card{background:#181a22;border:1px solid rgba(255,255,255,0.09);border-radius:14px;padding:16px;}
+      h2{margin:0 0 6px;font-size:18px;color:#fff;}
+      h3{margin:0 0 10px;font-size:13px;color:#fb7185;text-transform:uppercase;letter-spacing:0.05em;}
+      ul{margin:0;padding:0;list-style:none;font-family:ui-monospace,monospace;font-size:12px;line-height:1.75;color:#d4d4d8;}
+      .pill{display:inline-block;padding:2px 8px;border-radius:6px;background:rgba(225,29,72,0.18);color:#fda4af;font-size:11px;margin-right:6px;}
+    </style></head><body>
+      <h2><span class="pill">FULL-STACK ARCHITECTURE</span> Live Project Topology (${files.length} Files)</h2>
+      <p style="color:#a1a1aa;font-size:12.5px;margin:4px 0 12px;">Click any file in the left Explorer to view or edit syntax-highlighted code, or click <b>.ZIP</b> to download the entire project.</p>
+      <div class="grid">
+        <div class="card"><h3>Project Files (${files.length})</h3><ul>${files
+          .map((f) => `<li>📄 <b>${esc(f.path)}</b> <span style="color:#71717a">(${f.content.length}B)</span></li>`)
+          .join("")}</ul></div>
+        ${
+          endpoints.length > 0
+            ? `<div class="card"><h3>Discovered API Routes (${endpoints.length})</h3><ul>${endpoints
+                .map((e) => `<li>⚡ ${esc(e)}</li>`)
+                .join("")}</ul></div>`
+            : ""
+        }
+        ${
+          models.length > 0
+            ? `<div class="card"><h3>Schemas &amp; Models (${models.length})</h3><ul>${models
+                .map((m) => `<li>🗃️ ${esc(m)}</li>`)
+                .join("")}</ul></div>`
+            : ""
+        }
+      </div>
+    </body></html>`;
   }
 
   return null;

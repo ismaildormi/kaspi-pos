@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import { Check, Copy, Download, PanelRight } from "lucide-react";
+import { inferFilePathFromContext, repairTruncatedMarkdownAndCode } from "@/lib/heyuka/autonomous-builder-v24-v28";
+import { HeyukaSyntaxCodeView, getFileBadgeMeta } from "@/components/heyuka/HeyukaSyntaxCodeView";
 
 interface HeyukaMarkdownMessageProps {
   markdown: string;
@@ -98,6 +100,7 @@ function DeepSeekStyleCodeCard({
   onOpenCodeInStudio?: (lang: string, code: string, filePath?: string) => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const badge = getFileBadgeMeta(filePath, lang);
   const label = filePath || lang || "text";
   const ext = LANG_EXT_MAP[lang.toLowerCase()] || "txt";
 
@@ -125,22 +128,35 @@ function DeepSeekStyleCodeCard({
   return (
     <div
       dir="ltr"
-      className="my-3 rounded-xl border border-white/[0.09] bg-[#16171C] overflow-hidden shadow-sm"
+      style={{ backgroundColor: "#111319" }}
+      className="my-3 rounded-xl border border-white/[0.10] overflow-hidden shadow-md"
     >
-      {/* Exact DeepSeek Copy + Download Bar */}
-      <div className="px-3.5 py-2 bg-[#202229] border-b border-white/[0.07] flex items-center justify-between gap-2 text-xs">
-        <span className="font-mono text-[11px] font-medium text-zinc-300 truncate">
-          {label}
-        </span>
+      {/* Antigravity / VS Code File Header Bar */}
+      <div
+        style={{ backgroundColor: "#1B1D26" }}
+        className="px-3.5 py-2 border-b border-white/[0.08] flex items-center justify-between gap-2 text-xs"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span
+            style={{ color: badge.color, backgroundColor: badge.bg }}
+            className="px-1.5 py-0.5 rounded font-mono text-[10px] font-bold shrink-0"
+          >
+            {badge.extLabel}
+          </span>
+          <span className="font-mono text-[11.5px] font-semibold text-zinc-200 truncate">
+            {label}
+          </span>
+        </div>
         <div className="flex items-center gap-3 shrink-0 text-zinc-300">
           {onOpenCodeInStudio && (
             <button
               type="button"
               onClick={() => onOpenCodeInStudio(lang, code, filePath)}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-400 hover:text-rose-300 cursor-pointer"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-400 hover:text-rose-300 cursor-pointer"
+              title="Open this file in Antigravity Studio Code Editor"
             >
               <PanelRight className="w-3.5 h-3.5" />
-              <span>Studio</span>
+              <span>Open in Studio</span>
             </button>
           )}
           <button
@@ -162,12 +178,7 @@ function DeepSeekStyleCodeCard({
         </div>
       </div>
 
-      <pre
-        dir="auto"
-        className="p-3.5 text-[12.5px] font-mono text-zinc-100 overflow-x-auto leading-relaxed whitespace-pre-wrap break-words"
-      >
-        {code}
-      </pre>
+      <HeyukaSyntaxCodeView code={code} language={lang} filePath={filePath} />
     </div>
   );
 }
@@ -176,24 +187,38 @@ export function HeyukaMarkdownMessage({
   markdown,
   onOpenCodeInStudio,
 }: HeyukaMarkdownMessageProps) {
-  const parts = markdown.split(
-    /(```[a-zA-Z0-9_-]*(?:\s+(?:path|file)=["']?[^\s"'\n]+["']?)?\n[\s\S]*?```)/g
+  const repairedMarkdown = repairTruncatedMarkdownAndCode(markdown).repaired;
+  const parts = repairedMarkdown.split(
+    /(```[a-zA-Z0-9_.-]*(?:[\t ]+(?:(?:path|file)=["']?[^\s"'\n]+["']?|[^\s"'\n]+\.[a-zA-Z0-9]+))?[\t ]*\n[\s\S]*?```)/g
   );
+
+  let codeCounter = 1;
 
   return (
     <div className="space-y-2.5 text-[14px] text-zinc-100 leading-relaxed">
       {parts.map((part, pIdx) => {
         if (!part) return null;
         const fenceMatch = part.match(
-          /^```([a-zA-Z0-9_-]*)(?:\s+(?:path|file)=["']?([^\s"'\n]+)["']?)?\n([\s\S]*?)```$/
+          /^```([a-zA-Z0-9_.-]*)(?:[\t ]+(?:(?:path|file)=["']?([^\s"'\n]+)["']?|([^\s"'\n]+\.[a-zA-Z0-9]+)))?[\t ]*\n([\s\S]*?)```$/
         );
         if (fenceMatch) {
+          const langRaw = fenceMatch[1] || "text";
+          const explicitPath = fenceMatch[2] || fenceMatch[3] || "";
+          const codeBody = fenceMatch[4].trimEnd();
+          const prevProse = pIdx > 0 ? parts[pIdx - 1] || "" : "";
+          const inferredPath = inferFilePathFromContext({
+            explicitPath,
+            langRaw,
+            precedingText: prevProse,
+            content: codeBody,
+            counter: codeCounter++,
+          });
           return (
             <DeepSeekStyleCodeCard
               key={pIdx}
-              lang={fenceMatch[1] || "text"}
-              filePath={fenceMatch[2]}
-              code={fenceMatch[3].trimEnd()}
+              lang={langRaw}
+              filePath={inferredPath}
+              code={codeBody}
               onOpenCodeInStudio={onOpenCodeInStudio}
             />
           );

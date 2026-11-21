@@ -46,6 +46,7 @@ import {
   buildSelfContainedWebSiteBlueprint,
   repairTruncatedMarkdownAndCode,
 } from "@/lib/heyuka/autonomous-builder-v24-v28";
+import { HeyukaSyntaxCodeView, getFileBadgeMeta } from "@/components/heyuka/HeyukaSyntaxCodeView";
 
 interface ThinkingPhaseStep {
   phase: string;
@@ -58,6 +59,7 @@ interface ThinkingPhaseStep {
 interface AntigravityStudioPaneProps {
   files: ClientStudioFile[];
   onChangeFiles: (next: ClientStudioFile[]) => void;
+  selectedFilePath?: string | null;
   mediaArtifacts: ClientMediaArtifact[];
   onAddMediaArtifact?: (artifact: ClientMediaArtifact) => void;
   activePollinationsUrl?: string | null;
@@ -306,6 +308,7 @@ function Interactive3dCanvas({ prompt }: { prompt: string }) {
 export function AntigravityStudioPane({
   files,
   onChangeFiles,
+  selectedFilePath,
   mediaArtifacts,
   onAddMediaArtifact,
   activePollinationsUrl,
@@ -322,6 +325,7 @@ export function AntigravityStudioPane({
     "overview" | "preview" | "code" | "review" | "terminal" | "audio"
   >("preview");
   const [selectedPath, setSelectedPath] = useState<string>(files[0]?.path || "");
+  const [isEditingCode, setIsEditingCode] = useState(false);
   const [selectedArtifactIdx, setSelectedArtifactIdx] = useState<number>(0);
   const [hw, setHw] = useState<ClientHardwareTelemetry | null>(null);
   const [terminalCmd, setTerminalCmd] = useState("");
@@ -342,10 +346,29 @@ export function AntigravityStudioPane({
   }, []);
 
   useEffect(() => {
+    if (selectedFilePath && files.some((f) => f.path === selectedFilePath)) {
+      setSelectedPath(selectedFilePath);
+      setStageTab("code");
+    }
+  }, [selectedFilePath, files]);
+
+  useEffect(() => {
     if (files.length > 0 && !files.some((f) => f.path === selectedPath)) {
       setSelectedPath(files[0].path);
     }
   }, [files, selectedPath]);
+
+  const groupedFolders = useMemo(() => {
+    const map = new Map<string, ClientStudioFile[]>();
+    for (const f of files) {
+      const meta = getFileBadgeMeta(f.path, f.language);
+      const dir = meta.folderPath || "/";
+      const arr = map.get(dir) || [];
+      arr.push(f);
+      map.set(dir, arr);
+    }
+    return Array.from(map.entries());
+  }, [files]);
 
   useEffect(() => {
     if (mediaArtifacts.length > 0 || editableImageUrl) {
@@ -675,63 +698,65 @@ export function AntigravityStudioPane({
       />
 
       {/* Top Antigravity IDE Toolbar */}
-      <header className="h-14 px-3 border-b border-white/[0.07] bg-[#141519] flex items-center justify-between gap-2 shrink-0 overflow-x-auto kaspi-no-scrollbar">
-        <div className="flex items-center gap-2 shrink-0">
+      <header className="min-h-12 px-2.5 py-1.5 border-b border-white/[0.07] bg-[#141519] flex flex-wrap items-center justify-between gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <div className="px-2 py-1 rounded-md bg-rose-500/15 border border-rose-500/35 text-rose-400 text-[11px] font-bold flex items-center gap-1.5">
             <Cpu className="w-3.5 h-3.5" />
             <span>Antigravity Studio</span>
           </div>
-          <span className="hidden xl:inline-flex text-[11px] font-mono text-zinc-400">
+          <span className="hidden 2xl:inline-flex text-[10px] font-mono text-zinc-400">
             {hw?.cpuCores || 4} Cores • {executionPolicy.toUpperCase()} • $0.00
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-1 shrink-0">
           <button
             type="button"
             onClick={() => uploadAppInputRef.current?.click()}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-[11px] font-medium cursor-pointer"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-[11px] font-medium cursor-pointer"
             title="Upload App (.zip or files) into Studio"
           >
             <Upload className="w-3.5 h-3.5 text-rose-400" />
-            <span className="hidden sm:inline">Upload App</span>
+            <span className="hidden xl:inline">Upload</span>
           </button>
 
           <button
             type="button"
             onClick={() => void handleOpenLocalFolder()}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-[11px] font-medium cursor-pointer"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-[11px] font-medium cursor-pointer"
             title="Connect Local Computer Folder"
           >
             <FolderOpen className="w-3.5 h-3.5 text-zinc-300" />
-            <span className="hidden md:inline">Folder</span>
+            <span className="hidden xl:inline">Folder</span>
           </button>
 
           <button
             type="button"
             onClick={handleDownloadPortableApp}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-[11px] font-medium cursor-pointer"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-[11px] font-medium cursor-pointer"
             title="Export Portable HEYUKA Studio App (.html)"
           >
             <Sparkles className="w-3.5 h-3.5 text-rose-400" />
-            <span className="hidden md:inline">Export App</span>
+            <span className="hidden xl:inline">Export</span>
           </button>
 
           <button
             type="button"
             onClick={() => void handleRunOnClientCpu()}
             disabled={workerRunning}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#E11D48] hover:bg-rose-500 text-white text-[11px] font-bold cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#E11D48] hover:bg-rose-500 text-white text-[11px] font-bold cursor-pointer disabled:opacity-50"
+            title="Run or Preview on Client CPU ($0.00)"
           >
             {workerRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-            <span>Run CPU</span>
+            <span>Run</span>
           </button>
 
           <button
             type="button"
             onClick={handleDownloadZip}
             disabled={files.length === 0}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white text-zinc-900 hover:bg-zinc-200 text-[11px] font-bold cursor-pointer disabled:opacity-40"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white text-zinc-900 hover:bg-zinc-200 text-[11px] font-bold cursor-pointer disabled:opacity-40"
+            title="Download All Workspace Files as .ZIP"
           >
             <Download className="w-3.5 h-3.5" />
             <span>.ZIP</span>
@@ -740,7 +765,7 @@ export function AntigravityStudioPane({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 cursor-pointer"
+            className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 cursor-pointer"
             aria-label="Close studio"
           >
             <X className="w-4 h-4" />
@@ -750,11 +775,14 @@ export function AntigravityStudioPane({
 
       {/* Main Interior Split: File Tree + Right Stage */}
       <div className="flex-1 min-h-0 flex flex-col sm:flex-row">
-        {/* File Explorer */}
-        <aside className="sm:w-44 shrink-0 border-b sm:border-b-0 sm:border-r border-white/[0.06] bg-[#0F1013] p-2.5 flex flex-col gap-3 overflow-y-auto max-h-36 sm:max-h-none">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-              Files ({files.length})
+        {/* Hierarchical Folder & File Explorer */}
+        <aside
+          style={{ backgroundColor: "#101217" }}
+          className="sm:w-52 shrink-0 border-b sm:border-b-0 sm:border-r border-white/[0.07] p-2 flex flex-col gap-2.5 overflow-y-auto max-h-40 sm:max-h-none"
+        >
+          <div className="flex items-center justify-between px-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+              Explorer ({files.length})
             </span>
             <button
               type="button"
@@ -766,33 +794,56 @@ export function AntigravityStudioPane({
             </button>
           </div>
 
-          <div className="flex sm:flex-col gap-1 overflow-x-auto sm:overflow-x-visible">
+          <div className="flex sm:flex-col gap-1.5 overflow-x-auto sm:overflow-x-visible">
             {files.length === 0 ? (
               <p className="text-[11px] text-zinc-500 px-1.5 py-2">
                 Upload a `.zip` / folder or ask HEYUKA to generate code, apps, video, 3D, or audio.
               </p>
             ) : (
-              files.map((f) => {
-                const active = f.path === activeFile?.path;
-                return (
-                  <button
-                    key={f.path}
-                    type="button"
-                    onClick={() => {
-                      setSelectedPath(f.path);
-                      setStageTab("code");
-                    }}
-                    className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-start shrink-0 cursor-pointer transition-colors ${
-                      active
-                        ? "bg-rose-500/15 text-rose-300 font-semibold border border-rose-500/30"
-                        : "text-zinc-300 hover:bg-white/[0.06]"
-                    }`}
-                  >
-                    <FileCode2 className="w-3.5 h-3.5 shrink-0 text-rose-400" />
-                    <span className="truncate font-mono text-[11px]">{f.path}</span>
-                  </button>
-                );
-              })
+              groupedFolders.map(([folder, folderFiles]) => (
+                <div key={folder} className="space-y-0.5 shrink-0">
+                  {folder !== "/" && (
+                    <div className="hidden sm:flex items-center gap-1.5 px-1.5 py-1 text-[10px] font-mono font-semibold text-zinc-400 truncate">
+                      <FolderOpen className="w-3 h-3 text-amber-400/90 shrink-0" />
+                      <span className="truncate">{folder}/</span>
+                    </div>
+                  )}
+                  {folderFiles.map((f) => {
+                    const active = f.path === activeFile?.path;
+                    const badge = getFileBadgeMeta(f.path, f.language);
+                    return (
+                      <button
+                        key={f.path}
+                        type="button"
+                        onClick={() => {
+                          setSelectedPath(f.path);
+                          setStageTab("code");
+                        }}
+                        title={f.path}
+                        className={`w-full flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-lg text-xs text-start shrink-0 cursor-pointer transition-colors ${
+                          folder !== "/" ? "sm:pl-3.5" : ""
+                        } ${
+                          active
+                            ? "bg-rose-500/15 text-white font-semibold border border-rose-500/35"
+                            : "text-zinc-300 hover:bg-white/[0.06]"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            style={{ color: badge.color, backgroundColor: badge.bg }}
+                            className="px-1 py-0.5 rounded font-mono text-[9px] font-bold shrink-0"
+                          >
+                            {badge.extLabel}
+                          </span>
+                          <span className="truncate font-mono text-[11px]">
+                            {badge.fileName}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))
             )}
           </div>
 
@@ -1087,17 +1138,97 @@ export function AntigravityStudioPane({
             )}
 
             {stageTab === "code" && (
-              <div className="h-full flex flex-col">
+              <div className="h-full flex flex-col gap-2">
                 {activeFile ? (
-                  <textarea
-                    value={activeFile.content}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      onChangeFiles(files.map((f) => (f.path === activeFile.path ? { ...f, content: val } : f)));
-                    }}
-                    spellCheck={false}
-                    className="w-full h-full min-h-[380px] rounded-xl bg-[#0D0E12] border border-white/[0.08] p-4 font-mono text-xs text-zinc-100 leading-relaxed focus:outline-none focus:border-rose-500 resize-none select-text"
-                  />
+                  <>
+                    {/* Multi-File IDE Tab Strip */}
+                    <div
+                      style={{ backgroundColor: "#111319" }}
+                      className="flex items-center gap-1 overflow-x-auto rounded-lg border border-white/[0.08] p-1 shrink-0 kaspi-no-scrollbar"
+                    >
+                      {files.map((f) => {
+                        const isTabActive = f.path === activeFile.path;
+                        const badge = getFileBadgeMeta(f.path, f.language);
+                        return (
+                          <button
+                            key={f.path}
+                            type="button"
+                            onClick={() => setSelectedPath(f.path)}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono shrink-0 cursor-pointer transition-colors ${
+                              isTabActive
+                                ? "bg-rose-500/20 text-white font-semibold border border-rose-500/35"
+                                : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]"
+                            }`}
+                          >
+                            <span
+                              style={{ color: badge.color, backgroundColor: badge.bg }}
+                              className="px-1 py-0.2 rounded text-[9px] font-bold"
+                            >
+                              {badge.extLabel}
+                            </span>
+                            <span>{badge.fileName}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Active File Breadcrumb & Syntax/Edit Switch */}
+                    <div
+                      style={{ backgroundColor: "#181A22" }}
+                      className="px-3 py-1.5 rounded-t-xl border border-b-0 border-white/[0.08] flex flex-wrap items-center justify-between gap-2 text-[11px]"
+                    >
+                      <div className="flex items-center gap-1.5 font-mono text-zinc-300 truncate">
+                        {activeFile.path.split("/").map((seg, idx, arr) => (
+                          <React.Fragment key={idx}>
+                            <span className={idx === arr.length - 1 ? "text-white font-bold" : "text-zinc-400"}>
+                              {seg}
+                            </span>
+                            {idx < arr.length - 1 && <span className="text-zinc-600">›</span>}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="font-mono text-[10px] text-zinc-400">
+                          {activeFile.content.split(/\r?\n/).length} lines • {activeFile.content.length}B
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingCode((p) => !p)}
+                          className={`px-2.5 py-0.5 rounded-md font-semibold cursor-pointer transition-colors ${
+                            isEditingCode
+                              ? "bg-rose-600 text-white"
+                              : "bg-white/[0.07] text-zinc-200 hover:bg-white/[0.12]"
+                          }`}
+                        >
+                          {isEditingCode ? "✓ Done Editing" : "✎ Edit Raw"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {isEditingCode ? (
+                      <textarea
+                        value={activeFile.content}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          onChangeFiles(
+                            files.map((f) => (f.path === activeFile.path ? { ...f, content: val } : f))
+                          );
+                        }}
+                        spellCheck={false}
+                        style={{ backgroundColor: "#111319" }}
+                        className="w-full flex-1 min-h-[380px] rounded-b-xl border border-white/[0.08] p-4 font-mono text-xs text-zinc-100 leading-relaxed focus:outline-none focus:border-rose-500 resize-none select-text"
+                      />
+                    ) : (
+                      <div className="flex-1 min-h-[380px] rounded-b-xl border border-white/[0.08] overflow-hidden">
+                        <HeyukaSyntaxCodeView
+                          code={activeFile.content}
+                          language={activeFile.language}
+                          filePath={activeFile.path}
+                          maxHeightClass="h-full min-h-[380px]"
+                        />
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <p className="text-xs text-zinc-500 text-center py-12">Select or create a file to edit code.</p>
                 )}

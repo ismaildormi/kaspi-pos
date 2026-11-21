@@ -326,6 +326,7 @@ export function HeyukaChatWorkspace() {
   // Antigravity Split Studio State
   const [studioOpen, setStudioOpen] = useState(false);
   const [studioFiles, setStudioFiles] = useState<ClientStudioFile[]>([]);
+  const [studioFocusPath, setStudioFocusPath] = useState<string | null>(null);
   const [mediaArtifacts, setMediaArtifacts] = useState<ClientMediaArtifact[]>([]);
   const [activePollinationsUrl, setActivePollinationsUrl] = useState<string | null>(null);
   const [editableImageUrl, setEditableImageUrl] = useState<string | null>(null);
@@ -1620,9 +1621,15 @@ export function HeyukaChatWorkspace() {
                               onOpenCodeInStudio={(lang, code, filePath) => {
                                 const targetPath = filePath || `snippet.${lang === "python" ? "py" : lang || "txt"}`;
                                 setStudioFiles((prev) => {
-                                  const filtered = prev.filter((f) => f.path !== targetPath);
-                                  return [{ path: targetPath, language: lang, content: code }, ...filtered];
+                                  const existingIdx = prev.findIndex((f) => f.path === targetPath);
+                                  if (existingIdx !== -1) {
+                                    return prev.map((f, i) =>
+                                      i === existingIdx ? { ...f, language: lang, content: code } : f
+                                    );
+                                  }
+                                  return [...prev, { path: targetPath, language: lang, content: code }];
                                 });
+                                setStudioFocusPath(targetPath);
                                 setStudioOpen(true);
                               }}
                             />
@@ -1818,6 +1825,7 @@ export function HeyukaChatWorkspace() {
             <AntigravityStudioPane
               files={studioFiles}
               onChangeFiles={setStudioFiles}
+              selectedFilePath={studioFocusPath}
               mediaArtifacts={mediaArtifacts}
               onAddMediaArtifact={(art) => setMediaArtifacts((prev) => [...prev, art])}
               activePollinationsUrl={activePollinationsUrl}
@@ -2007,9 +2015,12 @@ export function HeyukaChatWorkspace() {
 
             {modeMenuOpen && (
               <div
-                className={`absolute bottom-11 ${
+                style={{ backgroundColor: "#15171E", zIndex: 140 }}
+                className={`absolute ${
+                  messages.length === 0 ? "top-full mt-2" : "bottom-11"
+                } ${
                   isRtl ? "right-0" : "left-0"
-                } z-50 w-72 sm:w-80 rounded-2xl bg-[#1D1F25] border border-white/10 p-2.5 shadow-2xl space-y-2`}
+                } w-72 sm:w-80 rounded-2xl border border-white/15 p-2.5 shadow-2xl space-y-2`}
               >
                 <div className="grid grid-cols-2 gap-1.5 pb-2 border-b border-white/[0.08]">
                   <button
@@ -2107,9 +2118,12 @@ export function HeyukaChatWorkspace() {
 
             {modelMenuOpen && (
               <div
-                className={`absolute bottom-11 ${
+                style={{ backgroundColor: "#15171E", zIndex: 140 }}
+                className={`absolute ${
+                  messages.length === 0 ? "top-full mt-2" : "bottom-11"
+                } ${
                   isRtl ? "right-0" : "left-16"
-                } z-50 w-72 rounded-2xl bg-[#1D1F25] border border-white/10 p-2 shadow-2xl space-y-1 text-xs`}
+                } w-72 rounded-2xl border border-white/15 p-2 shadow-2xl space-y-1 text-xs`}
               >
                 {(
                   [
