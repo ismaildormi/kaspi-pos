@@ -36,6 +36,14 @@ import {
   stripHiddenReasoningAndArtifacts,
 } from "../../src/lib/zebra-x/core/reflection-gate";
 import {
+  COGNITIVE_BRAIN_CLUSTERS,
+  buildFullCapabilitiesAndSourcesMarkdown,
+  buildPatentBlueprintAndPdfMarker,
+  classifyCognitiveIntentAndSources,
+  isCapabilitiesOrSourcesTableRequest,
+  isPatentOrInventionRequest,
+} from "../../src/lib/zebra-x/core/cognitive-brain-registry";
+import {
   normalizeDarijaAndTarifit,
   refinePromptWithPhase3,
 } from "../../src/lib/zebra-x/core/prompt-refiner";
@@ -750,6 +758,7 @@ async function main() {
     ["frankfurter_fx", "EUR", "EUR"],
     ["themealdb_recipes", "chicken"],
     ["opensky_flights", "Morocco"],
+    ["google_patents", "point of sale terminal"],
   ];
   assert.equal(apiQueries.length, PUBLIC_APIS_CATALOG_COUNT, "Missing PublicApiCategory test case!");
 
@@ -1079,10 +1088,39 @@ async function main() {
     const chatWebSrc = fs.readFileSync(path.join(process.cwd(), "src/app/api/v1/heyuka/chat-web/route.ts"), "utf8");
     assert.ok(chatWebSrc.includes("detectTruncationState") && chatWebSrc.includes("mergeContinuationChunk") && chatWebSrc.includes("repairTruncatedMarkdownAndCode"));
 
-    const totalZipBytes = siteRes.zipBytes.length + gameRes.zipBytes.length + roboRes.zipBytes.length + svgArt.length;
+    // H) Cognitive Brain Pre-Classification (9 Clusters) + Google Patents 150M+ Blueprint & PDF Marker
+    assert.equal(COGNITIVE_BRAIN_CLUSTERS.length, 9);
+    assert.equal(
+      isCapabilitiesOrSourcesTableRequest("ابحث عن كل قدراتك و المصادر المفتوحة لك لاستعمالها و اعطها اليا في جدول كلها"),
+      true
+    );
+    const capTableMd = buildFullCapabilitiesAndSourcesMarkdown("ar");
+    assert.ok(capTableMd.includes("Google Patents") && capTableMd.includes("[KASPI_PDF_REPORT:"));
+    assert.equal(isPatentOrInventionRequest("ابحث في Google Patents عن براءة اختراع نظام دفع ذكي"), true);
+    const patentRoute = classifyCognitiveIntentAndSources("بغيت براءة اختراع Google Patents فـ PDF", "ar");
+    assert.ok(patentRoute.matchedClusters.some((c) => c.id === "patents_and_inventions_150m"));
+    assert.ok(patentRoute.stageBadges.length >= 2);
+    const patentBp = buildPatentBlueprintAndPdfMarker({
+      query: "Smart AI POS Terminal",
+      patents: [
+        {
+          patentNumber: "US-11488112-B2",
+          title: "Autonomous AI Point-of-Sale & Inventory Verification System",
+          inventors: ["H. Kaspi", "Y. Sovereign"],
+          year: 2025,
+          citationCount: 19,
+          googlePatentsUrl: "https://patents.google.com/?q=Autonomous+AI+Point-of-Sale&scholar",
+        },
+      ],
+      locale: "ar",
+    });
+    const patentMd = patentBp.markdownSupplement;
+    assert.ok(patentMd.includes("https://patents.google.com/") && patentMd.includes("[KASPI_PDF_REPORT:"));
+
+    const totalZipBytes = siteRes.zipBytes.length + gameRes.zipBytes.length + roboRes.zipBytes.length + svgArt.length + capTableMd.length + patentMd.length;
     return {
       artifactBytes: totalZipBytes,
-      detail: `${counts.totalUnique} v24-v28 engines + Heading Path Extractor + Syntax IDE + vm.Script 3D Game/Site/Robotics + PKZIP (${totalZipBytes}B) verified`,
+      detail: `${counts.totalUnique} v24-v28 engines + 9 Cognitive Brain Clusters + Google Patents 150M+ + Syntax IDE + PKZIP (${totalZipBytes}B) verified`,
     };
   });
 

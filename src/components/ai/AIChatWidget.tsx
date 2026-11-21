@@ -138,9 +138,10 @@ export const AI_I18N: Record<
     subtitle: "ذكاء KASPI الموحد لكل التخصصات وإدارة المتجر",
     subtitleAdmin: "العقل المركزي لشركة KASPI للعلوم والبرمجة والأعمال",
     quickPrompts: [
+      { text: "ابحث عن كل قدراتك والمصادر المفتوحة لك وأعطها لي في جدول PDF", icon: "trending" },
       { text: "اعطيني كل الاحصائيات ديال مشروعي في جدول PDF", icon: "trending" },
+      { text: "ابحث في Google Patents عن براءة اختراع نظام دفع ذكي مع مخطط PDF", icon: "bag" },
       { text: "شكون آخر زبون داز عندي وعطيني آخر تذكرة", icon: "alert" },
-      { text: "ما هي المنتجات القريبة من النفاد وتوقع الطلب؟", icon: "bag" },
     ],
     quickPromptsAdmin: [
       { text: "إحصائيات المنصة والمداخيل في جدول PDF", icon: "trending" },
@@ -1795,7 +1796,7 @@ export function AIChatWidget() {
             }
             className={`fixed ${
               isExpanded
-                ? "top-3 bottom-3 start-3 end-3 sm:top-5 sm:bottom-5 sm:start-5 sm:end-5 z-50 origin-center animate-in fade-in duration-200"
+                ? "inset-0 w-screen h-screen z-[100] origin-center animate-in fade-in duration-200"
                 : `${
                     position ? "" : "bottom-4 end-4"
                   } z-50 w-[92vw] sm:w-[430px] max-h-[calc(100vh-4.5rem)] origin-bottom animate-in fade-in slide-in-from-bottom-4 duration-200 ${
@@ -1804,9 +1805,10 @@ export function AIChatWidget() {
             } print:hidden font-sans`}
           >
             <div
+              style={isExpanded ? { backgroundColor: "#0B0E14" } : undefined}
               className={
                 isExpanded
-                  ? "relative w-full h-full kaspi-opaque-glass-modal border border-[var(--kaspi-border-glass)] rounded-3xl shadow-2xl flex overflow-hidden"
+                  ? "relative w-full h-full bg-[#0B0E14] text-zinc-100 border-0 rounded-none shadow-2xl flex overflow-hidden"
                   : "relative w-full h-[590px] max-h-[calc(100vh-4.5rem)] kaspi-polar-aurora-orbit kaspi-ai-assistant-shield rounded-2xl shadow-2xl flex overflow-hidden"
               }
             >
@@ -1829,13 +1831,13 @@ export function AIChatWidget() {
                 </div>
               )}
 
-              <div className="relative flex-1 min-w-0 flex flex-col h-full overflow-hidden">
+              <div className="relative flex-1 min-w-0 flex flex-col h-full overflow-hidden" style={isExpanded ? { backgroundColor: "#0B0E14" } : undefined}>
                 {/* Header with Official HEYUKA Emblem, Sidebar/Expand Toggles & Auto-Wipe Back Button */}
                 <div
                   onMouseDown={handleDragStart}
                   onTouchStart={handleDragStart}
-                  className={`border-b border-white/15 text-[var(--kaspi-text-primary)] px-4 py-3 flex items-center justify-between shadow-xs shrink-0 select-none ${
-                    isExpanded ? "" : "cursor-grab active:cursor-grabbing"
+                  className={`border-b border-white/10 text-[var(--kaspi-text-primary)] px-4 py-3 flex items-center justify-between shadow-xs shrink-0 select-none ${
+                    isExpanded ? "bg-[#0F131C]" : "cursor-grab active:cursor-grabbing"
                   }`}
                   title={isExpanded ? undefined : t.dragTooltip}
                 >
@@ -1930,63 +1932,10 @@ export function AIChatWidget() {
                       )}
                     </button>
 
-                    {isExpanded && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              const scanned = await scanBrowserWorkspaceDirectory(18);
-                              setCoworkWorkspace({
-                                name: scanned.workspaceName,
-                                files: scanned.files,
-                              });
-                            } catch {}
-                          }}
-                          className={`hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-semibold cursor-pointer transition-colors ${
-                            coworkWorkspace
-                              ? "bg-emerald-500/20 border-emerald-400/50 text-emerald-300"
-                              : "bg-white/[0.05] hover:bg-white/[0.12] border-white/15 text-zinc-300"
-                          }`}
-                          title="Workspace Folder Cowork (Read External Project Files)"
-                        >
-                          <FolderOpen className="w-3 h-3" />
-                          <span>{coworkWorkspace ? `${coworkWorkspace.name} (${coworkWorkspace.files.length})` : "Folder"}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setPlanOnlyMode((p) => !p)}
-                          className={`hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-semibold cursor-pointer transition-colors ${
-                            planOnlyMode
-                              ? "bg-amber-500/20 border-amber-400/50 text-amber-200"
-                              : "bg-white/[0.05] hover:bg-white/[0.12] border-white/15 text-zinc-300"
-                          }`}
-                          title="Toggle Read-Only Plan Mode Before Execution"
-                        >
-                          <ListTodo className="w-3 h-3" />
-                          <span>Plan</span>
-                        </button>
-                      </>
-                    )}
-
-                    {/* Strictly Closes Window & Auto-Wipes Session State */}
-                    {isExpanded && (memoryStats.totalMemories > 0 || memoryStats.totalSkills > 0) && (
-                      <span
-                        className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-emerald-400/25 bg-emerald-500/10 text-[10px] font-medium text-emerald-300"
-                        title="HEYUKA Persistent Memory & Voyager Skills"
-                      >
-                        <Sparkles className="w-2.5 h-2.5" />
-                        <span>
-                          {memoryStats.totalMemories} • {memoryStats.totalSkills}
-                        </span>
-                      </span>
-                    )}
-
                     <button
                       type="button"
                       onClick={() => void handleNewThread()}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-white/10 bg-white/[0.05] hover:bg-white/[0.12] text-zinc-200 hover:text-white text-[11px] font-medium transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-200 hover:text-white text-[11px] font-semibold transition-colors cursor-pointer"
                       title={
                         activeLocale === "ar"
                           ? "محادثة جديدة (تبقى المحادثات السابقة محفوظة)"
@@ -2000,10 +1949,10 @@ export function AIChatWidget() {
                       {isExpanded && (
                         <span>
                           {activeLocale === "ar"
-                            ? "جديدة"
+                            ? "محادثة جديدة"
                             : activeLocale === "fr"
-                            ? "Nouveau"
-                            : "New"}
+                            ? "Nouvelle discussion"
+                            : "New Chat"}
                         </span>
                       )}
                     </button>
@@ -2015,36 +1964,6 @@ export function AIChatWidget() {
                     />
                   </div>
                 </div>
-
-                {/* Live Persistent Cowork Checklist & Folder Strip (Expanded Mode Only) */}
-                {isExpanded && coworkTasks.length > 0 && (
-                  <div className="px-4 py-1.5 border-b border-white/10 bg-white/[0.03] flex items-center gap-2 overflow-x-auto kaspi-no-scrollbar shrink-0">
-                    <span className="text-[10px] font-bold text-emerald-300 shrink-0">
-                      Cowork:
-                    </span>
-                    {coworkTasks.slice(-3).map((tk) => (
-                      <span
-                        key={tk.id}
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] border max-w-[200px] truncate ${
-                          tk.status === "completed"
-                            ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-200"
-                            : "bg-amber-500/15 border-amber-400/35 text-amber-200 animate-pulse"
-                        }`}
-                      >
-                        <span>
-                          {tk.status === "completed" ? (
-                            <svg className="w-3 h-3 text-emerald-500 inline" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2">
-                              <path d="M3 8.5l3.5 3.5L13 4.5" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          ) : (
-                            <span className="inline-block w-2.5 h-2.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                          )}
-                        </span>
-                        <span className="truncate">{tk.label}</span>
-                      </span>
-                    ))}
-                  </div>
-                )}
 
               {/* Messages Area with Doodle Wallpaper & Clean Scrollbar Suppression */}
               <div

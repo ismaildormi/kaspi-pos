@@ -59,6 +59,11 @@ import {
   enqueueOfflineConfirmedAction,
   recordActivityBreadcrumb,
 } from "@/lib/zebra-x/core/activity-sensor";
+import { classifyCognitiveIntentAndSources } from "@/lib/zebra-x/core/cognitive-brain-registry";
+import {
+  HeyukaSyntaxCodeView,
+  getFileBadgeMeta,
+} from "@/components/heyuka/HeyukaSyntaxCodeView";
 import type { LiveArtifactItem } from "./LiveArtifactDrawer";
 
 interface XZebraRichMessageProps {
@@ -94,26 +99,78 @@ function makeUuid(): string {
 
 function CodeBlock({ lang, code }: { lang: string; code: string }) {
   const [copied, setCopied] = useState(false);
+  const badge = getFileBadgeMeta(undefined, lang);
+  const extMap: Record<string, string> = {
+    python: "py",
+    py: "py",
+    typescript: "ts",
+    tsx: "tsx",
+    javascript: "js",
+    js: "js",
+    html: "html",
+    css: "css",
+    json: "json",
+    yaml: "yml",
+    yml: "yml",
+    sql: "sql",
+    bash: "sh",
+    sh: "sh",
+    markdown: "md",
+    md: "md",
+    svg: "svg",
+  };
+  const ext = extMap[(lang || "").toLowerCase()] || "txt";
+  const lineCount = code.split("\n").length;
+
   return (
-    <div className="my-2 rounded-xl overflow-hidden border border-white/15 bg-zinc-950/90">
-      <div className="flex items-center justify-between px-3 py-1 bg-white/[0.04] border-b border-white/10 text-[10px] text-zinc-400">
-        <span className="font-mono uppercase">{lang || "code"}</span>
-        <button
-          type="button"
-          onClick={() => {
-            navigator.clipboard?.writeText(code);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1800);
-          }}
-          className="inline-flex items-center gap-1 hover:text-white cursor-pointer"
-        >
-          {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-          <span>{copied ? "Copied" : "Copy"}</span>
-        </button>
+    <div dir="ltr" className="my-2.5 rounded-xl overflow-hidden border border-white/15 bg-[#121317] shadow-lg">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[#1A1C23] border-b border-white/10 text-[10px] text-zinc-300">
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold font-mono tracking-wider"
+            style={{
+              backgroundColor: badge.bg,
+              color: badge.color,
+              border: `1px solid ${badge.color}55`,
+            }}
+          >
+            {badge.extLabel}
+          </span>
+          <span className="font-mono uppercase text-zinc-200">{lang || "code"}</span>
+          <span className="text-[9px] text-zinc-500 font-mono">({lineCount} lines)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              navigator.clipboard?.writeText(code);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1800);
+            }}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white/[0.04] hover:bg-white/[0.1] border border-white/10 hover:text-white cursor-pointer"
+          >
+            {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+            <span>{copied ? "Copied" : "Copy"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `heyuka-export.${ext}`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 cursor-pointer"
+          >
+            <Download className="w-3 h-3" />
+            <span>Download</span>
+          </button>
+        </div>
       </div>
-      <pre className="p-2.5 overflow-x-auto text-[11px] font-mono text-zinc-100 leading-relaxed">
-        <code>{code}</code>
-      </pre>
+      <HeyukaSyntaxCodeView code={code} language={lang || "text"} maxHeightClass="max-h-[420px]" />
     </div>
   );
 }
@@ -950,8 +1007,27 @@ export const XZebraRichMessage: React.FC<XZebraRichMessageProps> = ({
     /(!\[[^\]]*\]\((?:https?:\/\/|\/api\/ai\/media-tools)[^\s)]+\)|\[KASPI_IMAGE:[^\]]+\]|\[KASPI_MEDIA_IMAGE:[^\]]+\]|\[KASPI_PDF_REPORT:[^\]]+\]|\[KASPI_RECEIPT_TICKET:[^\]]+\]|\[KASPI_ACTION_CONFIRM:[^\]]+\]|\[KASPI_OFFICE_EXPORT:[^\]]+\]|\[KASPI_DIAGRAM:[^\]]+\]|\[KASPI_BARCODE_LABEL:[^\]]+\]|\[KASPI_LIVE_ARTIFACT:[^\]]+\]|\[KASPI_TEXT_DIFF:[^\]]+\]|\[KASPI_UI_TOUR:[^\]]+\])/g
   );
 
+  const cognitiveBadges = useMemo(() => {
+    if (isUser || cleanText.length < 60) return [];
+    const classified = classifyCognitiveIntentAndSources(cleanText.slice(0, 600), locale);
+    return classified.stageBadges;
+  }, [isUser, cleanText, locale]);
+
   return (
-    <div className="space-y-1.5 text-xs">
+    <div dir="auto" className="space-y-1.5 text-xs">
+      {!isUser && cognitiveBadges.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 pb-1">
+          {cognitiveBadges.map((b, bIdx) => (
+            <span
+              key={bIdx}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-white/[0.05] border border-white/10 text-zinc-300"
+            >
+              <span>{b.icon}</span>
+              <span>{b.label}</span>
+            </span>
+          ))}
+        </div>
+      )}
       {segments.map((part, idx) => {
         if (!part) return null;
 

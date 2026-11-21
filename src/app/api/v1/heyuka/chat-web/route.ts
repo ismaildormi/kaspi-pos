@@ -16,6 +16,13 @@ import { renderStyledBrandQrSvg } from "@/lib/zebra-x/tools/qr-architect-engine"
 import { ALL_SOVEREIGN_MASTER_CATALOG } from "@/lib/zebra-x/core/v20-v22-master-catalog";
 import { runPreReplyReflectionGate } from "@/lib/zebra-x/core/reflection-gate";
 import {
+  buildFullCapabilitiesAndSourcesMarkdown,
+  buildPatentBlueprintAndPdfMarker,
+  classifyCognitiveIntentAndSources,
+  isCapabilitiesOrSourcesTableRequest,
+  isPatentOrInventionRequest,
+} from "@/lib/zebra-x/core/cognitive-brain-registry";
+import {
   buildCodeToMediaArtifactSvg,
   buildPackaged3DGameBlueprint,
   buildRoboticsActionBlueprint,
@@ -167,6 +174,7 @@ function detectSmartMode(
 function matchPublicApiCategories(prompt: string): PublicApiCategory[] {
   const p = prompt.toLowerCase();
   const picked: PublicApiCategory[] = [];
+  if (isPatentOrInventionRequest(p)) picked.push("google_patents");
   if (/(\broute\b|\bdistance\b|\bdirections\b|الطريق|المسافة|\btravel time\b|\bitineraire\b|\bosrm\b)/i.test(p)) picked.push("osrm_routing");
   if (/(\bearthquakes?\b|\bseismic\b|زلزال|زلازل|هزة أرضية)/i.test(p)) picked.push("usgs_earthquakes");
   if (/(\bnasa\b|\bwildfire\b|\beonet\b|قمر صناعي|وكالة ناسا)/i.test(p)) picked.push("nasa_eonet_events");
@@ -309,14 +317,45 @@ export async function POST(req: NextRequest) {
   const routePlan = planXZebraToolRoute(lastUser, false);
   const skillIndexPrompt = await buildLevel1SkillPromptIndex(lastUser).catch(() => "");
   const matchedCatalogCount = ALL_SOVEREIGN_MASTER_CATALOG.length;
+  const cognitiveRoute = classifyCognitiveIntentAndSources(lastUser, locale);
+  const isPatentQuery = isPatentOrInventionRequest(lastUser);
 
   thinkingSteps.push({
-    phase: "Intent, Auto-Router & Capabilities Mapping",
+    phase: "Cognitive Brain Pre-Classification & Auto-Router",
     agentModel: isCollaborative ? "heyuka-core (Architect)" : model,
-    summary: `Routed to ${effectiveMode.toUpperCase()}${autoSwitched ? " (Auto AI)" : ""} • Policy: ${executionPolicy.toUpperCase()} • ${PUBLIC_APIS_CATALOG_COUNT} Live APIs + ${matchedCatalogCount} Tools`,
+    summary: `Clusters: [${cognitiveRoute.stageBadges.map((b) => `${b.icon} ${b.label}`).join(" | ")}] • Mode: ${effectiveMode.toUpperCase()}${autoSwitched ? " (Auto AI)" : ""} • ${PUBLIC_APIS_CATALOG_COUNT} Live APIs + ${matchedCatalogCount}+ Tools`,
     durationMs: Math.max(1, Date.now() - phase1Start),
     timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
   });
+
+  if (isCapabilitiesOrSourcesTableRequest(lastUser)) {
+    const tableMarkdown = buildFullCapabilitiesAndSourcesMarkdown(locale);
+    return NextResponse.json({
+      ok: true,
+      answer: tableMarkdown,
+      reasoning: thinkingSteps
+        .map((s) => `• [${s.timestamp}] ${s.phase} (${s.agentModel}, ${s.durationMs}ms): ${s.summary}`)
+        .join("\n"),
+      thinkingSteps,
+      sources: cognitiveRoute.stageBadges.map((b) => ({
+        title: `${b.icon} ${b.label}`,
+        url: "https://patents.google.com/",
+      })),
+      modelUsed: model,
+      effectiveMode,
+      autoSwitched,
+      provider: "heyuka-cognitive-brain-registry",
+      executionTimeMs: Math.max(1, Date.now() - phase1Start),
+      shouldOpenStudio: true,
+      studioFiles: [
+        {
+          path: "heyuka-capabilities-catalog.md",
+          language: "markdown",
+          content: tableMarkdown,
+        },
+      ],
+    });
+  }
 
   // 2) Parallel Real-World Knowledge & Live Public API Grounding
   const phase2Start = Date.now();
@@ -325,7 +364,7 @@ export async function POST(req: NextRequest) {
   let apiContextBlock = "";
 
   const shouldProbeLiveApis =
-    effectiveSearch || (effectiveMode === "chat" && lastUser.length < 400);
+    effectiveSearch || isPatentQuery || (effectiveMode === "chat" && lastUser.length < 400);
   const apiCats = shouldProbeLiveApis ? matchPublicApiCategories(lastUser) : [];
   const [searchRes, apiResults] = await Promise.all([
     effectiveSearch
@@ -612,12 +651,55 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     /^(Please clarify your request slightly|مرحباً، أعد صياغة طلبك قليلاً|Bonjour, veuillez préciser votre demande)/i.test(
       reflected.cleanedText
     );
-  const answer =
+  let answer =
     (!repairedDraft || isClarifyFallback) && (validApis.length > 0 || sources.length > 0)
       ? buildLiveGroundingFallback(validApis, sources, locale, effectiveMode)
       : reflected.cleanedText || repairedDraft || rawText;
 
+  if (isPatentQuery) {
+    const patentApi = validApis.find((a) => a.category === "google_patents");
+    const patentHits = Array.isArray((patentApi?.data as Record<string, unknown> | undefined)?.patents)
+      ? ((patentApi?.data as Record<string, unknown>).patents as Array<{
+          patentNumber?: string;
+          title?: string;
+          inventors?: string[];
+          year?: number;
+          citationCount?: number;
+          googlePatentsUrl?: string;
+          pdfOrLandingUrl?: string;
+        }>)
+      : [];
+    const patentBlock = buildPatentBlueprintAndPdfMarker({
+      query: lastUser.slice(0, 120),
+      patents: patentHits,
+      locale,
+    });
+    if (!answer.includes("patents.google.com")) {
+      answer = `${answer}\n\n${patentBlock.markdownSupplement}`;
+    }
+  }
+
+  for (const badge of cognitiveRoute.stageBadges) {
+    const badgeTitle = `${badge.icon} ${badge.label}`;
+    if (!sources.some((s) => s.title === badgeTitle)) {
+      sources.unshift({
+        title: badgeTitle,
+        url: isPatentQuery ? `https://patents.google.com/?q=${encodeURIComponent(lastUser.slice(0, 80))}&scholar` : "",
+      });
+    }
+  }
+
   let studioFiles = extractStudioFilesSafe(answer);
+  if (isPatentQuery && !studioFiles.some((f) => f.path.endsWith(".md"))) {
+    studioFiles = [
+      {
+        path: "patent-specification-blueprint.md",
+        language: "markdown",
+        content: answer,
+      },
+      ...studioFiles,
+    ];
+  }
   const hasRunnableAsset = studioFiles.some(
     (f) => f.path.endsWith(".html") || f.path.endsWith(".js") || f.path.endsWith(".py")
   );

@@ -1,7 +1,14 @@
 import { NextRequest } from "next/server";
-import { stepCountIs, tool } from "ai";
+import { createUIMessageStream, createUIMessageStreamResponse, stepCountIs, tool } from "ai";
 import { z } from "zod";
 import { streamUiResponseWithRouter } from "@/lib/ai-router";
+import {
+  buildFullCapabilitiesAndSourcesMarkdown,
+  buildPatentBlueprintAndPdfMarker,
+  classifyCognitiveIntentAndSources,
+  isCapabilitiesOrSourcesTableRequest,
+  isPatentOrInventionRequest,
+} from "@/lib/zebra-x/core/cognitive-brain-registry";
 import { prisma } from "@/server/db/prisma";
 import { getRequestContext } from "@/server/auth/context";
 import { auth } from "@/auth";
@@ -956,19 +963,43 @@ export async function POST(req: NextRequest) {
             "air_quality",
             "nador_marine_weather",
             "cyber_threat_intel",
+            "osrm_routing",
+            "usgs_earthquakes",
+            "nasa_eonet_events",
+            "nhtsa_recalls_vehicles",
+            "disease_health_stats",
+            "rxnav_drugs",
+            "wger_workouts",
+            "openlibrary_books",
+            "gbif_biodiversity",
+            "frankfurter_fx",
+            "themealdb_recipes",
+            "opensky_flights",
+            "google_patents",
           ]),
           query: z.string().min(1),
           base: z.string().optional().describe("Base currency for fx_rates (e.g. MAD, USD, EUR)"),
           limit: z.number().optional().default(6),
         }),
-        execute: async (input) =>
-          queryPublicApiHub({
+        execute: async (input) => {
+          const res = await queryPublicApiHub({
             category: input.category,
             query: input.query,
             base: input.base,
             lang: expectedShortLocale,
             limit: input.limit,
-          }),
+          });
+          if (input.category === "google_patents" && res.ok) {
+            const patList = Array.isArray((res.data as any)?.patents) ? (res.data as any).patents : [];
+            const bp = buildPatentBlueprintAndPdfMarker({
+              query: input.query,
+              patentRecords: patList,
+              locale: expectedShortLocale,
+            });
+            return { ...res, inlineMarker: bp.pdfMarker, patentTableMarkdown: bp.markdownSupplement };
+          }
+          return res;
+        },
       }),
 
       evaluateMathAndFinance: tool({
@@ -1252,6 +1283,60 @@ export async function POST(req: NextRequest) {
     };
 
     const fullTools = isSuperAdmin ? superAdminTools : tenantTools;
+    const cognitiveRoute = classifyCognitiveIntentAndSources(userPrompt, expectedShortLocale);
+
+    // Instant deterministic Master Capabilities & 800+ Open-Source Table + Downloadable PDF Report
+    if (isCapabilitiesOrSourcesTableRequest(userPrompt)) {
+      const capabilitiesMarkdown = buildFullCapabilitiesAndSourcesMarkdown(expectedShortLocale);
+      await prisma.aIChatMessage
+        .create({
+          data: {
+            sessionId: chatSession.id,
+            role: "assistant",
+            content: capabilitiesMarkdown,
+          },
+        })
+        .catch(() => {});
+      const stream = createUIMessageStream({
+        execute: ({ writer }) => {
+          const msgId = `cap-${Date.now()}`;
+          writer.write({ type: "start" } as any);
+          writer.write({ type: "start-step" } as any);
+          writer.write({ type: "text-start", id: msgId } as any);
+          writer.write({ type: "text-delta", id: msgId, delta: capabilitiesMarkdown } as any);
+          writer.write({ type: "text-end", id: msgId } as any);
+          writer.write({ type: "finish-step" } as any);
+          writer.write({ type: "finish" } as any);
+        },
+      });
+      return createUIMessageStreamResponse({
+        stream,
+        headers: {
+          "x-kaspi-ai-session-id": chatSession.id,
+          "x-kaspi-ai-provider": "HEYUKA Cognitive Brain",
+          "x-kaspi-ai-model": "heyuka-unified",
+        },
+      });
+    }
+
+    // Live Google Patents (150M+) & Scholar Pre-Grounding when user asks about patents/inventions
+    let patentPromptBlock = "";
+    if (isPatentOrInventionRequest(userPrompt)) {
+      const patRes = await queryPublicApiHub({
+        category: "google_patents",
+        query: userPrompt.slice(0, 140),
+        lang: expectedShortLocale,
+        limit: 5,
+      }).catch(() => null);
+      const patList = Array.isArray((patRes?.data as any)?.patents) ? (patRes?.data as any).patents : [];
+      const bp = buildPatentBlueprintAndPdfMarker({
+        query: userPrompt.slice(0, 80),
+        patentRecords: patList,
+        locale: expectedShortLocale,
+      });
+      patentPromptBlock = `\n\n[GOOGLE PATENTS 150M+ LIVE TELEMETRY & PDF BLUEPRINT]\nInclude the following verified Google Patents table and the exact [KASPI_PDF_REPORT:...] line verbatim in your response:\n${bp.markdownSupplement}\n`;
+    }
+
     const phase3Refinement = refinePromptWithPhase3(userPrompt, expectedShortLocale);
     const routePlan = planXZebraToolRoute(
       phase3Refinement.normalization.normalizedQuery,
@@ -1292,8 +1377,8 @@ ${phase3Refinement.systemDirectiveSnippet}`;
       : "";
 
     const progressiveSkillsSnippet = level1SkillsIndex
-      ? `\nPROGRESSIVE SKILL INDEX (Level-1 Metadata Only — call lookupSkillOrAuthor(load) strictly when needed):\n${level1SkillsIndex}\n${hierarchicalDomainHint}\n`
-      : `\n${hierarchicalDomainHint}\n`;
+      ? `\n${cognitiveRoute.cognitiveRoutingNote}\nPROGRESSIVE SKILL INDEX (Level-1 Metadata Only — call lookupSkillOrAuthor(load) strictly when needed):\n${level1SkillsIndex}\n${hierarchicalDomainHint}${patentPromptBlock}\n`
+      : `\n${cognitiveRoute.cognitiveRoutingNote}\n${hierarchicalDomainHint}${patentPromptBlock}\n`;
 
     const activityPromptSnippet = clientActivityLog
       ? `\nCURRENT DEVICE ACTIVITY BREADCRUMBS (Local Ring Buffer):\n${clientActivityLog}\n`

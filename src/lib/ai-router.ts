@@ -350,7 +350,7 @@ async function callPollinationsZeroKeyHttp(params: {
       model: "openai",
       messages: flatMessages,
     }),
-    signal: AbortSignal.timeout(14_000),
+    signal: AbortSignal.timeout(28_000),
   });
   if (!res.ok) throw new Error(`Zero-Key HTTP ${res.status}`);
   const data = (await res.json()) as any;
@@ -419,7 +419,7 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
         model: candidate.model as any,
         maxRetries: 0,
         abortSignal: AbortSignal.timeout(
-          isMultimodal ? 18_000 : candidate.provider === "groq" ? 10_000 : 12_000
+          isMultimodal ? 32_000 : candidate.provider === "groq" ? 24_000 : 28_000
         ),
         ...(restGenOptions as any),
       });
@@ -537,6 +537,7 @@ export async function streamUiResponseWithRouter(
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
       let succeeded = false;
+      let streamStartedOnWriter = false;
       let lastErrMsg = "All HEYUKA cloud gateways unavailable";
 
       for (const { candidate, stripTools } of attempts) {
@@ -551,7 +552,7 @@ export async function streamUiResponseWithRouter(
           const res = streamText({
             model: candidate.model as any,
             maxRetries: 0,
-            abortSignal: AbortSignal.timeout(stripTools ? 15_000 : 24_000),
+            abortSignal: AbortSignal.timeout(stripTools ? 32_000 : 42_000),
             ...callConfig,
           });
 
@@ -571,13 +572,12 @@ export async function streamUiResponseWithRouter(
 
             const isContentChunk =
               (c.type === "text-delta" && Boolean(c.delta || c.textDelta)) ||
-              c.type === "reasoning-delta" ||
-              c.type === "tool-input-available" ||
               c.type === "tool-output-available";
 
             if (!emittedToClient) {
               if (isContentChunk) {
                 emittedToClient = true;
+                streamStartedOnWriter = true;
                 for (const h of bufferedHeaderChunks) writer.write(h);
                 bufferedHeaderChunks.length = 0;
                 writer.write(chunk);
@@ -589,8 +589,13 @@ export async function streamUiResponseWithRouter(
             }
           }
 
-          if (!emittedToClient) {
-            throw new Error("Upstream produced zero payload chunks");
+          const visibleClean = collectedText
+            .replace(/<think>[\s\S]*?<\/think>/gi, "")
+            .replace(/<think>[\s\S]*$/gi, "")
+            .trim();
+
+          if (!emittedToClient || !visibleClean) {
+            throw new Error("Upstream produced zero visible text after reasoning strip");
           }
 
           succeeded = true;
@@ -608,10 +613,13 @@ export async function streamUiResponseWithRouter(
               stripTools ? " (text-only)" : ""
             } failed -> ${lastErrMsg.slice(0, 140)}`
           );
-          if (emittedToClient) {
-            // Stream already committed mid-reply cleanly
+          const visibleClean = collectedText
+            .replace(/<think>[\s\S]*?<\/think>/gi, "")
+            .replace(/<think>[\s\S]*$/gi, "")
+            .trim();
+          if (emittedToClient && visibleClean.length > 24) {
             succeeded = true;
-            if (collectedText && onCompletedText) {
+            if (onCompletedText) {
               await Promise.resolve(onCompletedText(collectedText, candidate)).catch(() => {});
             }
             break;
@@ -619,7 +627,7 @@ export async function streamUiResponseWithRouter(
         }
       }
 
-      // Final Zero-Key Open Core rescue before surfacing an error
+      // Final Zero-Key Open Core rescue before surfacing an error (even if an earlier tool step opened writer)
       if (!succeeded && !isMultimodal) {
         try {
           const openReply = await callPollinationsZeroKeyHttp({
@@ -627,7 +635,9 @@ export async function streamUiResponseWithRouter(
             messages: restOptions.messages,
           });
           const msgId = `txt-${Date.now()}`;
-          writer.write({ type: "start" } as any);
+          if (!streamStartedOnWriter) {
+            writer.write({ type: "start" } as any);
+          }
           writer.write({ type: "start-step" } as any);
           writer.write({ type: "text-start", id: msgId } as any);
           writer.write({ type: "text-delta", id: msgId, delta: openReply } as any);
