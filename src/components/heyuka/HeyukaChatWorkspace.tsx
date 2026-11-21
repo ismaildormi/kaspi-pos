@@ -55,6 +55,7 @@ import { HeyukaLoopMark } from "./HeyukaLoopMark";
 import { HEYUKAGmailAccessCard } from "./HEYUKAGmailAccessCard";
 import { AntigravityStudioPane } from "./AntigravityStudioPane";
 import { HeyukaMarkdownMessage } from "./HeyukaMarkdownMessage";
+import { runLocalOnDeviceHeyukaBrain } from "@/lib/heyuka/local-sovereign-brain";
 import {
   compressImageFileToDataUrl,
   renderImageOnClientCpu,
@@ -605,7 +606,18 @@ export function HeyukaChatWorkspace() {
           : undefined;
 
       const assistantId = `a_${Date.now()}`;
-      const answerContent = json?.answer || json?.error || "Unable to complete response cleanly.";
+      const localBackup = !json?.answer
+        ? runLocalOnDeviceHeyukaBrain({
+            prompt: textToSend || "HEYUKA Studio",
+            mode: selectedMode,
+            locale,
+          })
+        : null;
+      if (localBackup && localBackup.studioFiles.length > 0 && (!Array.isArray(json?.studioFiles) || json.studioFiles.length === 0)) {
+        setStudioFiles(localBackup.studioFiles);
+      }
+      const answerContent =
+        json?.answer || localBackup?.answer || "Processed locally on device CPU ($0.00).";
       const assistantMsg: ChatMessageItem = {
         id: assistantId,
         role: "assistant",
@@ -614,11 +626,13 @@ export function HeyukaChatWorkspace() {
         thinkingSec: json?.thinkingSec,
         thinkingSteps: Array.isArray(json?.thinkingSteps) ? json.thinkingSteps : undefined,
         thoughtCompletedAt: json?.thoughtCompletedAt,
-        modelUsed: json?.model,
-        sources: Array.isArray(json?.sources) ? json.sources : undefined,
+        modelUsed: json?.model || "heyuka-local-omni",
+        sources: Array.isArray(json?.sources) ? json.sources : localBackup?.sources,
         detectedMode: json?.effectiveMode,
         autoSwitched: Boolean(json?.autoSwitched),
-        studioFilesCount: Array.isArray(json?.studioFiles) ? json.studioFiles.length : undefined,
+        studioFilesCount: Array.isArray(json?.studioFiles)
+          ? json.studioFiles.length
+          : localBackup?.studioFiles.length,
         pollinationsUrl: job?.pollinationsUrl,
         qrSvgDataUrl: qrDataUrl,
       };
@@ -636,9 +650,24 @@ export function HeyukaChatWorkspace() {
       const savedId = await persistCurrentThread(finalMsgs, activeThreadId);
       if (savedId && !activeThreadId) setActiveThreadId(savedId);
     } catch {
+      const localRes = runLocalOnDeviceHeyukaBrain({
+        prompt: textToSend || "HEYUKA Studio",
+        mode: selectedMode,
+        locale,
+      });
+      if (localRes.studioFiles.length > 0) {
+        setStudioFiles(localRes.studioFiles);
+      }
       setMessages((prev) => [
         ...prev,
-        { id: `err_${Date.now()}`, role: "assistant", content: "Connection interrupted. Please retry." },
+        {
+          id: `local_${Date.now()}`,
+          role: "assistant",
+          content: localRes.answer,
+          modelUsed: "heyuka-local-omni",
+          sources: localRes.sources,
+          studioFilesCount: localRes.studioFiles.length,
+        },
       ]);
     } finally {
       setSending(false);

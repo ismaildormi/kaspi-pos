@@ -44,6 +44,12 @@ import {
   isPatentOrInventionRequest,
 } from "../../src/lib/zebra-x/core/cognitive-brain-registry";
 import {
+  buildPortableLocalApiBundleFiles,
+  detectUniversalWorldLanguage,
+  isLocalApiOrSdkRequest,
+  runLocalOnDeviceHeyukaBrain,
+} from "../../src/lib/heyuka/local-sovereign-brain";
+import {
   normalizeDarijaAndTarifit,
   refinePromptWithPhase3,
 } from "../../src/lib/zebra-x/core/prompt-refiner";
@@ -1121,6 +1127,67 @@ async function main() {
     return {
       artifactBytes: totalZipBytes,
       detail: `${counts.totalUnique} v24-v28 engines + 9 Cognitive Brain Clusters + Google Patents 150M+ + Syntax IDE + PKZIP (${totalZipBytes}B) verified`,
+    };
+  });
+
+  // 21. v29.0 UNIVERSAL 45+ WORLD LANGUAGE ENGINE + 100% ON-DEVICE LOCAL BRAIN + PORTABLE LOCAL API/MOBILE SDK
+  await runCheck("v29_universal_45_lang_local_sovereign_api", "v29.0 Universal Language & Local API SDK", async () => {
+    const langSamples: Array<[string, string]> = [
+      ["بغيت دابا نعرف كفاش كيخدم هادشي ديالي", "ary"],
+      ["أريد تقريراً هندسياً شاملاً عن الطاقة الشمسية", "ar"],
+      ["Azul mamesh tedjid tamazight tarifit", "tzm"],
+      ["Bonjour, comment créer un système pour mon entreprise ?", "fr"],
+      ["Hola, quiero crear un sistema para mi proyecto por favor", "es"],
+      ["Bitte erstellen Sie ein System für die Entwicklung", "de"],
+      ["Merhaba, lütfen bu sistem için nasıl çalışır açıkla", "tr"],
+      ["Привет, как создать локальный сервер для проекта", "ru"],
+      ["你好，请为我创建一个本地运行的智能系统", "zh"],
+      ["こんにちは、ローカルで動作するシステムを作成してください", "ja"],
+      ["안녕하세요, 로컬 서버 시스템을 만들어 주세요", "ko"],
+      ["नमस्ते, कृपया मेरे प्रोजेक्ट के लिए एक सिस्टम बनाएं", "hi"],
+      ["سلام، لطفاً یک سیستم هوشمند برای پروژه من بسازید", "fa"],
+      ["Halo, buatkan sistem aplikasi untuk perusahaan", "id"],
+      ["Habari, tafadhali tengeneza mfumo kwa ajili yetu", "sw"],
+    ];
+
+    for (const [sample, expectedCode] of langSamples) {
+      const detected = detectUniversalWorldLanguage(sample, "en");
+      assert.equal(detected.code, expectedCode, `Expected ${expectedCode} for "${sample}", got ${detected.code}`);
+    }
+
+    assert.equal(isLocalApiOrSdkRequest("بغيت تحميل الـ API يخدم محلياً في الهواتف والسيرفرات المحلية"), true);
+    const bundle = buildPortableLocalApiBundleFiles();
+    assert.equal(bundle.length, 4);
+    const serverFile = bundle.find((f) => f.path === "heyuka-local-api-server.mjs");
+    const sdkFile = bundle.find((f) => f.path === "heyuka-mobile-browser-sdk.js");
+    const openApiFile = bundle.find((f) => f.path === "openapi-heyuka-local.json");
+    assert.ok(serverFile && serverFile.content.includes("/v1/chat/completions"));
+    assert.ok(sdkFile && sdkFile.content.includes("class HeyukaLocalSDK"));
+    assert.ok(openApiFile && JSON.parse(openApiFile.content).openapi === "3.1.0");
+
+    // Verify mobile SDK compiles cleanly in V8 vm.Script
+    const sdkCommonJs = sdkFile!.content.replace(/export\s+class\s+HeyukaLocalSDK/, "class HeyukaLocalSDK");
+    new vm.Script(sdkCommonJs);
+
+    // Verify On-Device Local Brain across Darija, Spanish, Japanese, and Local API requests
+    const localApiRes = runLocalOnDeviceHeyukaBrain({
+      prompt: "بغيت تحميل الـ API يخدم محلياً في الهواتف والسيرفرات المحلية",
+      locale: "ar",
+    });
+    assert.ok(localApiRes.answer.includes("heyuka-local-api-server.mjs"));
+    assert.equal(localApiRes.studioFiles.length, 4);
+
+    const localEsRes = runLocalOnDeviceHeyukaBrain({
+      prompt: "Hola, quiero crear un sistema web para mi proyecto por favor",
+      locale: "en",
+    });
+    assert.equal(localEsRes.detectedLanguage.code, "es");
+    assert.ok(localEsRes.answer.includes("Resumen Ejecutivo Directo"));
+
+    const totalBytes = bundle.reduce((sum, f) => sum + f.content.length, 0) + localApiRes.answer.length + localEsRes.answer.length;
+    return {
+      artifactBytes: totalBytes,
+      detail: `15/15 World Languages & Scripts + Local On-Device Brain + Portable Local API Server & Mobile SDK (${totalBytes}B) verified`,
     };
   });
 

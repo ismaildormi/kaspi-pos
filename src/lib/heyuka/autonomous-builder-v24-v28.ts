@@ -359,13 +359,18 @@ export function extractStudioFilesSafe(markdown: string): BuilderStudioFile[] {
   let lastEndIndex = 0;
 
   while ((m = fenceRegex.exec(repaired)) !== null) {
-    const langRaw = (m[1] || "txt").toLowerCase();
+    const rawTag = (m[1] || "txt").toLowerCase();
+    const langRaw = /^https?$/i.test(rawTag) ? "txt" : rawTag;
     const explicitPath = (m[2] || m[3] || "").trim();
     const content = (m[4] || "").trim();
     const precedingText = repaired.slice(lastEndIndex, m.index);
     lastEndIndex = m.index + m[0].length;
 
     if (!content) continue;
+    // Skip 1-line bare URL or tiny 1-line plain-text snippets that have no file path heading
+    if (!explicitPath && content.split(/\r?\n/).length <= 1 && (/^https?:\/\/\S+$/i.test(content) || (langRaw === "txt" && content.length < 60))) {
+      continue;
+    }
 
     let pathName = inferFilePathFromContext({
       explicitPath,

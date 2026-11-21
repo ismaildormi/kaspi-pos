@@ -23,6 +23,12 @@ import {
   isPatentOrInventionRequest,
 } from "@/lib/zebra-x/core/cognitive-brain-registry";
 import {
+  buildStructuredDiscourseDirective,
+  detectUniversalWorldLanguage,
+  isLocalApiOrSdkRequest,
+  runLocalOnDeviceHeyukaBrain,
+} from "@/lib/heyuka/local-sovereign-brain";
+import {
   buildCodeToMediaArtifactSvg,
   buildPackaged3DGameBlueprint,
   buildRoboticsActionBlueprint,
@@ -328,32 +334,28 @@ export async function POST(req: NextRequest) {
     timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
   });
 
-  if (isCapabilitiesOrSourcesTableRequest(lastUser)) {
-    const tableMarkdown = buildFullCapabilitiesAndSourcesMarkdown(locale);
+  if (isCapabilitiesOrSourcesTableRequest(lastUser) || isLocalApiOrSdkRequest(lastUser)) {
+    const localBrainRes = runLocalOnDeviceHeyukaBrain({
+      prompt: lastUser,
+      mode: effectiveMode,
+      locale,
+    });
     return NextResponse.json({
       ok: true,
-      answer: tableMarkdown,
+      answer: localBrainRes.answer,
       reasoning: thinkingSteps
         .map((s) => `• [${s.timestamp}] ${s.phase} (${s.agentModel}, ${s.durationMs}ms): ${s.summary}`)
         .join("\n"),
       thinkingSteps,
-      sources: cognitiveRoute.stageBadges.map((b) => ({
-        title: `${b.icon} ${b.label}`,
-        url: "https://patents.google.com/",
-      })),
+      sources: localBrainRes.sources,
       modelUsed: model,
       effectiveMode,
       autoSwitched,
-      provider: "heyuka-cognitive-brain-registry",
+      provider: localBrainRes.provider,
+      detectedLanguage: localBrainRes.detectedLanguage,
       executionTimeMs: Math.max(1, Date.now() - phase1Start),
       shouldOpenStudio: true,
-      studioFiles: [
-        {
-          path: "heyuka-capabilities-catalog.md",
-          language: "markdown",
-          content: tableMarkdown,
-        },
-      ],
+      studioFiles: localBrainRes.studioFiles,
     });
   }
 
@@ -438,15 +440,9 @@ export async function POST(req: NextRequest) {
     toolSupplementBlock += `\n\n[QR ARCHITECT READY]\nGenerated styled SVG QR for "${qrPayload}".`;
   }
 
-  const detectedLang = /[\u0600-\u06FF]/.test(lastUser)
-    ? "Arabic / Moroccan Darija"
-    : /\b(salam|labas|kidayr|chno|wach|bghit|dial|dyal|mzyan|khdam)\b/i.test(lastUser)
-    ? "Moroccan Darija"
-    : locale === "ar"
-    ? "Arabic"
-    : locale === "fr"
-    ? "French"
-    : "English";
+  const worldLang = detectUniversalWorldLanguage(lastUser, locale);
+  const detectedLang = `${worldLang.name} (${worldLang.nativeName})`;
+  const discourseDirective = buildStructuredDiscourseDirective(worldLang);
 
   const isImageEditRequest =
     Boolean(imageBase64) &&
@@ -499,6 +495,7 @@ Matched Capabilities: ${routePlan.selectedToolNames.join(", ")}${
   }
 Execution Policy: ${executionPolicy.toUpperCase()} | Language: ${detectedLang}
 Use crisp Markdown formatting (## headings, bold, lists, tables, and fenced code blocks). Every compute task runs on HEYUKA Free Edge + visitor's device CPU ($0.00 cost).
+${discourseDirective}
 ${personaSection}${collabSection}${modeDirective}${
     effectiveDeepThink
       ? `\n\nDEEPTHINK PROTOCOL ENABLED:
@@ -575,22 +572,15 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
         break;
       }
     }
-  } catch (err: any) {
-    if (
-      isImageEditRequest ||
-      effectiveMode === "coding" ||
-      effectiveMode === "image" ||
-      effectiveMode === "video" ||
-      effectiveMode === "audio" ||
-      effectiveMode === "qr" ||
-      validApis.length > 0
-    ) {
+  } catch {
+    if (validApis.length > 0 || sources.length > 0) {
       rawText = buildLiveGroundingFallback(validApis, sources, locale, effectiveMode);
     } else {
-      return NextResponse.json(
-        { ok: false, error: err?.message || "HEYUKA inference temporarily unavailable." },
-        { status: 500 }
-      );
+      rawText = runLocalOnDeviceHeyukaBrain({
+        prompt: lastUser,
+        mode: effectiveMode,
+        locale: worldLang.shortLocale,
+      }).answer;
     }
   }
 
@@ -654,6 +644,12 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
   let answer =
     (!repairedDraft || isClarifyFallback) && (validApis.length > 0 || sources.length > 0)
       ? buildLiveGroundingFallback(validApis, sources, locale, effectiveMode)
+      : !repairedDraft || isClarifyFallback
+      ? runLocalOnDeviceHeyukaBrain({
+          prompt: lastUser,
+          mode: effectiveMode,
+          locale: worldLang.shortLocale,
+        }).answer
       : reflected.cleanedText || repairedDraft || rawText;
 
   if (isPatentQuery) {
@@ -672,9 +668,9 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     const patentBlock = buildPatentBlueprintAndPdfMarker({
       query: lastUser.slice(0, 120),
       patents: patentHits,
-      locale,
+      locale: worldLang.shortLocale,
     });
-    if (!answer.includes("patents.google.com")) {
+    if (!answer.includes("[KASPI_PDF_REPORT:")) {
       answer = `${answer}\n\n${patentBlock.markdownSupplement}`;
     }
   }

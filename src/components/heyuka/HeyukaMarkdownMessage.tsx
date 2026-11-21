@@ -1,9 +1,30 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, Copy, Download, PanelRight } from "lucide-react";
+import { Check, Copy, Download, FileText, PanelRight } from "lucide-react";
 import { inferFilePathFromContext, repairTruncatedMarkdownAndCode } from "@/lib/heyuka/autonomous-builder-v24-v28";
 import { HeyukaSyntaxCodeView, getFileBadgeMeta } from "@/components/heyuka/HeyukaSyntaxCodeView";
+import {
+  generateAndDownloadArabicPdf,
+  generateAndDownloadExcelXlsx,
+  generateAndDownloadPowerPointPptx,
+  generateAndDownloadWordDocx,
+} from "@/lib/zebra-x/tools/docs-export-engine";
+import {
+  OfficeExportPayloadSchema,
+  PdfReportPayloadSchema,
+} from "@/lib/zebra-x/core/bridge-schema";
+
+function decodeBase64JsonSafe<T>(b64: string): T | null {
+  try {
+    const bin = atob(b64.trim());
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return JSON.parse(new TextDecoder().decode(bytes)) as T;
+  } catch {
+    return null;
+  }
+}
 
 interface HeyukaMarkdownMessageProps {
   markdown: string;
@@ -368,6 +389,83 @@ export function HeyukaMarkdownMessage({
               </ol>
             );
             continue;
+          }
+
+          // [KASPI_PDF_REPORT:...] interactive PDF download card
+          const pdfMatch = trimmed.match(/\[KASPI_PDF_REPORT:([A-Za-z0-9+/=_-]+)\]/);
+          if (pdfMatch) {
+            const rawDecoded = decodeBase64JsonSafe<unknown>(pdfMatch[1]);
+            const parsedPdf = PdfReportPayloadSchema.safeParse(rawDecoded);
+            if (parsedPdf.success) {
+              const payload = parsedPdf.data;
+              nodes.push(
+                <div
+                  key={`pdf-${pIdx}-${i}`}
+                  dir="auto"
+                  className="my-2.5 rounded-xl border border-rose-500/30 bg-[#181920] p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-lg"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-white truncate">{payload.title}</div>
+                      <div className="text-[11px] text-zinc-400 truncate">
+                        {payload.subtitle || "PDF Document • Client CPU Export ($0.00)"}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void generateAndDownloadArabicPdf(payload, "ar")}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold transition-colors cursor-pointer shrink-0"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>تحميل PDF</span>
+                  </button>
+                </div>
+              );
+              i += 1;
+              continue;
+            }
+          }
+
+          // [KASPI_OFFICE_EXPORT:...] interactive Word/Excel/PPTX download card
+          const officeMatch = trimmed.match(/\[KASPI_OFFICE_EXPORT:([A-Za-z0-9+/=_-]+)\]/);
+          if (officeMatch) {
+            const rawOffice = decodeBase64JsonSafe<unknown>(officeMatch[1]);
+            const parsedOffice = OfficeExportPayloadSchema.safeParse(rawOffice);
+            if (parsedOffice.success) {
+              const payload = parsedOffice.data;
+              nodes.push(
+                <div
+                  key={`off-${pIdx}-${i}`}
+                  dir="auto"
+                  className="my-2.5 rounded-xl border border-emerald-500/30 bg-[#181920] p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-lg"
+                >
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-white truncate">{payload.title}</div>
+                    <div className="text-[11px] text-zinc-400">
+                      {payload.format.toUpperCase()} • 100% Client Export
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (payload.format === "xlsx") void generateAndDownloadExcelXlsx(payload);
+                      else if (payload.format === "pptx") void generateAndDownloadPowerPointPptx(payload);
+                      else void generateAndDownloadWordDocx(payload);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors cursor-pointer shrink-0"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download .{payload.format}</span>
+                  </button>
+                </div>
+              );
+              i += 1;
+              continue;
+            }
           }
 
           // Standard Paragraph with dir="auto"

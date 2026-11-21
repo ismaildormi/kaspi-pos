@@ -45,14 +45,14 @@ export function stripHiddenReasoningAndArtifacts(rawText: string): {
   text = text.replace(ENGLISH_META_MONOLOGUE_RE, "");
   text = text.replace(INLINE_CHAIN_PREAMBLE_RE, "");
 
-  // If stripping <think> emptied the entire response, salvage non-meta answer content from inside <think>
+  // If stripping <think> emptied the entire response, salvage non-meta answer content from inside <think> in any world language
   if (!text.trim() && /<think>/i.test(rawText)) {
     const inner = String(rawText)
       .replace(/<\/?think>/gi, "")
       .replace(ENGLISH_META_MONOLOGUE_RE, "")
       .replace(INLINE_CHAIN_PREAMBLE_RE, "")
       .trim();
-    if (/(\|.*\|)|```|#{1,3}\s+|[\u0600-\u06FF]{12,}/.test(inner)) {
+    if (inner.length >= 24 || /(\|.*\|)|```|#{1,3}\s+|[\u0600-\u06FF]{8,}/.test(inner)) {
       text = inner;
     }
   }

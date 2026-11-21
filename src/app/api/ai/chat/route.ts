@@ -9,6 +9,12 @@ import {
   isCapabilitiesOrSourcesTableRequest,
   isPatentOrInventionRequest,
 } from "@/lib/zebra-x/core/cognitive-brain-registry";
+import {
+  buildStructuredDiscourseDirective,
+  detectUniversalWorldLanguage,
+  isLocalApiOrSdkRequest,
+  runLocalOnDeviceHeyukaBrain,
+} from "@/lib/heyuka/local-sovereign-brain";
 import { prisma } from "@/server/db/prisma";
 import { getRequestContext } from "@/server/auth/context";
 import { auth } from "@/auth";
@@ -1283,11 +1289,17 @@ export async function POST(req: NextRequest) {
     };
 
     const fullTools = isSuperAdmin ? superAdminTools : tenantTools;
-    const cognitiveRoute = classifyCognitiveIntentAndSources(userPrompt, expectedShortLocale);
+    const detectedWorldLang = detectUniversalWorldLanguage(userPrompt, expectedShortLocale);
+    const cognitiveRoute = classifyCognitiveIntentAndSources(userPrompt, detectedWorldLang.shortLocale);
 
-    // Instant deterministic Master Capabilities & 800+ Open-Source Table + Downloadable PDF Report
-    if (isCapabilitiesOrSourcesTableRequest(userPrompt)) {
-      const capabilitiesMarkdown = buildFullCapabilitiesAndSourcesMarkdown(expectedShortLocale);
+    // Instant deterministic Master Capabilities & 800+ Open-Source Table / Local API SDK + Downloadable PDF Report
+    if (isCapabilitiesOrSourcesTableRequest(userPrompt) || isLocalApiOrSdkRequest(userPrompt)) {
+      const capabilitiesMarkdown = isCapabilitiesOrSourcesTableRequest(userPrompt)
+        ? buildFullCapabilitiesAndSourcesMarkdown(detectedWorldLang.shortLocale)
+        : runLocalOnDeviceHeyukaBrain({
+            prompt: userPrompt,
+            locale: detectedWorldLang.shortLocale,
+          }).answer;
       await prisma.aIChatMessage
         .create({
           data: {
@@ -1384,7 +1396,7 @@ ${phase3Refinement.systemDirectiveSnippet}`;
       ? `\nCURRENT DEVICE ACTIVITY BREADCRUMBS (Local Ring Buffer):\n${clientActivityLog}\n`
       : "";
 
-    const languageDirective = `\nMANDATORY RESPONSE LANGUAGE: Respond fluently in the user's conversational language (Moroccan Darija, Tarifit, Arabic, French, or English), defaulting to ${targetLanguageName} when neutral. Never reply in raw English meta-text to an Arabic/Darija prompt.`;
+    const languageDirective = `\n${buildStructuredDiscourseDirective(detectedWorldLang)}\nMANDATORY RESPONSE LANGUAGE: Respond fluently in the user's exact detected language (${detectedWorldLang.name} / ${detectedWorldLang.nativeName}), defaulting to ${targetLanguageName} when neutral. Never reply in raw English meta-text to an Arabic/Darija prompt.`;
 
     const superAdminSystemPrompt = `You are HEYUKA Sovereign Executive, owned by KASPI. You have full access to the platform database and store operations.
 Available Super Admin & Store Tools:
@@ -1460,24 +1472,40 @@ ${closedLoopMasterDirective}${progressiveSkillsSnippet}${memoryPromptSnippet}${a
           "x-kaspi-ai-role": isSuperAdmin ? "super-admin" : "merchant",
         }
       );
-    } catch (routerErr: any) {
-      console.error(
-        "[HEYUKA] Cloud gateways unavailable (no fabricated fallback returned):",
-        routerErr
-      );
-      return new Response(
-        JSON.stringify({
-          error: "X_ZEBRA_CLOUD_UNAVAILABLE_USE_LOCAL",
-          requiresLocalEngine: true,
-          message:
-            routerErr?.message ||
-            "HEYUKA gateway is currently busy; switching cleanly to device core.",
-        }),
-        {
-          status: 503,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+    } catch {
+      const localFallback = runLocalOnDeviceHeyukaBrain({
+        prompt: userPrompt,
+        locale: detectedWorldLang.shortLocale,
+      });
+      await prisma.aIChatMessage
+        .create({
+          data: {
+            sessionId: chatSession.id,
+            role: "assistant",
+            content: localFallback.answer,
+          },
+        })
+        .catch(() => {});
+      const stream = createUIMessageStream({
+        execute: ({ writer }) => {
+          const msgId = `local-${Date.now()}`;
+          writer.write({ type: "start" } as any);
+          writer.write({ type: "start-step" } as any);
+          writer.write({ type: "text-start", id: msgId } as any);
+          writer.write({ type: "text-delta", id: msgId, delta: localFallback.answer } as any);
+          writer.write({ type: "text-end", id: msgId } as any);
+          writer.write({ type: "finish-step" } as any);
+          writer.write({ type: "finish" } as any);
+        },
+      });
+      return createUIMessageStreamResponse({
+        stream,
+        headers: {
+          "x-kaspi-ai-session-id": chatSession.id,
+          "x-kaspi-ai-provider": "HEYUKA Local Sovereign Brain",
+          "x-kaspi-ai-model": "heyuka-local-omni",
+        },
+      });
     }
   } catch (err: any) {
     console.error("[HEYUKA] Unexpected chat route error:", err);
