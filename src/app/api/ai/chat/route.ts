@@ -484,25 +484,42 @@ export async function POST(req: NextRequest) {
       }
 
       tenantId = tenantId || defaultTenant.id;
+      const fallbackUserRecord = await prisma.user
+        .findFirst({ select: { id: true } })
+        .catch(() => null);
       userId =
         userId ||
         (defaultTenant as any).memberships?.[0]?.userId ||
-        defaultTenant.id;
+        fallbackUserRecord?.id;
     }
 
-    // 1.1 CASH FLOW PROTECTION & ANTI-ABUSE: Enforce 30 AI messages/day per merchant (Pillar 4)
+    // Verify userId actually exists in `users` before creating FK-constrained `AIChatSession`
+    let verifiedUserId: string | undefined = userId;
+    if (verifiedUserId) {
+      const uExists = await prisma.user
+        .findUnique({ where: { id: verifiedUserId }, select: { id: true } })
+        .catch(() => null);
+      if (!uExists) {
+        const anyUser = await prisma.user.findFirst({ select: { id: true } }).catch(() => null);
+        verifiedUserId = anyUser?.id;
+      }
+    }
+
+    // 1.1 CASH FLOW PROTECTION & ANTI-ABUSE: Enforce non-blocking telemetry reset safely
     if (!isSuperAdmin && tenantId) {
       const todayStr = new Date().toISOString().split("T")[0];
       const todayDate = new Date(todayStr);
 
-      const tenantRecord = await prisma.tenant.findUnique({
-        where: { id: tenantId },
-        select: {
-          displayName: true,
-          aiMessagesUsedToday: true,
-          lastAiMessageDate: true,
-        },
-      });
+      const tenantRecord = await prisma.tenant
+        .findUnique({
+          where: { id: tenantId },
+          select: {
+            displayName: true,
+            aiMessagesUsedToday: true,
+            lastAiMessageDate: true,
+          },
+        })
+        .catch(() => null);
 
       let currentUsage = tenantRecord?.aiMessagesUsedToday ?? 0;
       const lastRecordedDate = tenantRecord?.lastAiMessageDate
@@ -510,38 +527,52 @@ export async function POST(req: NextRequest) {
         : null;
 
       // Unlimited Zero-Owner-Cost telemetry tracking (no blocking 429 cutoff)
-      if (lastRecordedDate !== todayStr) {
+      if (tenantRecord && lastRecordedDate !== todayStr) {
         currentUsage = 0;
-        await prisma.tenant.update({
-          where: { id: tenantId },
-          data: {
-            aiMessagesUsedToday: 0,
-            lastAiMessageDate: todayDate,
-          },
-        });
+        await prisma.tenant
+          .update({
+            where: { id: tenantId },
+            data: {
+              aiMessagesUsedToday: 0,
+              lastAiMessageDate: todayDate,
+            },
+          })
+          .catch(() => {});
       }
     }
 
-    // 2. Resolve or Create Persistent AI Chat Session
+    // 2. Resolve or Create Persistent AI Chat Session (Non-fatal DB guard prevents FK crashes)
     const existingSession = requestedSessionId
-      ? await prisma.aIChatSession.findUnique({
-          where: { id: requestedSessionId },
-          include: { messages: { orderBy: { createdAt: "asc" } } },
-        })
+      ? await prisma.aIChatSession
+          .findUnique({
+            where: { id: requestedSessionId },
+            include: { messages: { orderBy: { createdAt: "asc" } } },
+          })
+          .catch(() => null)
       : null;
 
-    const chatSession =
-      existingSession ??
-      (await prisma.aIChatSession.create({
-        data: {
-          tenantId: tenantId!,
-          userId: userId!,
-          title: isSuperAdmin
-            ? "HEYUKA Sovereign • Chief Data Officer"
-            : "HEYUKA Business Chat",
-        },
-        include: { messages: true },
-      }));
+    let createdDbSession: any = null;
+    if (!existingSession && tenantId && verifiedUserId) {
+      createdDbSession = await prisma.aIChatSession
+        .create({
+          data: {
+            tenantId,
+            userId: verifiedUserId,
+            title: isSuperAdmin
+              ? "HEYUKA Sovereign • Chief Data Officer"
+              : "HEYUKA Business Chat",
+          },
+          include: { messages: true },
+        })
+        .catch(() => null);
+    }
+
+    const dbSessionPersisted = Boolean(existingSession || createdDbSession);
+    const chatSession = existingSession ??
+      createdDbSession ?? {
+        id: requestedSessionId || `ephemeral_${Date.now()}`,
+        messages: [],
+      };
 
     // 3. Extract and Persist the Latest User Message & Multimodal Attachments
     const incomingUserMsg = messages[messages.length - 1];
@@ -585,27 +616,33 @@ export async function POST(req: NextRequest) {
         Boolean(a.url)
     );
 
-    if (userPrompt || incomingAttachments.length > 0) {
-      await prisma.aIChatMessage.create({
-        data: {
-          sessionId: chatSession.id,
-          role: "user",
-          content: userPrompt || "(Uploaded attachment)",
-          imageUrl: firstImageAtt?.url || null,
-          documentUrl: firstDocAtt?.url || null,
-        },
-      });
+    if (dbSessionPersisted && (userPrompt || incomingAttachments.length > 0)) {
+      await prisma.aIChatMessage
+        .create({
+          data: {
+            sessionId: chatSession.id,
+            role: "user",
+            content: userPrompt || "(Uploaded attachment)",
+            imageUrl: firstImageAtt?.url || null,
+            documentUrl: firstDocAtt?.url || null,
+          },
+        })
+        .catch(() => {});
     }
 
     // 3.5 Merchant AI Studio & Universal Retail Intelligence (Unrestricted)
     // Allows full business, code, website building, document generation, and multilingual queries.
 
     // 4. Load Complete Chat History (merge persisted DB messages OR full client UIMessage[] multi-turn history)
-    const historicalMessages = await prisma.aIChatMessage.findMany({
-      where: { sessionId: chatSession.id },
-      orderBy: { createdAt: "asc" },
-      take: 20,
-    });
+    const historicalMessages = dbSessionPersisted
+      ? await prisma.aIChatMessage
+          .findMany({
+            where: { sessionId: chatSession.id },
+            orderBy: { createdAt: "asc" },
+            take: 20,
+          })
+          .catch(() => [])
+      : [];
 
     const formattedHistory =
       messages.length > historicalMessages.length
@@ -1460,25 +1497,33 @@ ${closedLoopMasterDirective}${progressiveSkillsSnippet}${memoryPromptSnippet}${a
             if (!selfCheck.consistent) {
               console.warn("[HEYUKA SelfCheckGPT]", selfCheck);
             }
-            await prisma.aIChatMessage.create({
-              data: {
-                sessionId: chatSession.id,
-                role: "assistant",
-                content: audited.cleanedText,
-              },
-            });
-            await prisma.aIChatSession.update({
-              where: { id: chatSession.id },
-              data: { updatedAt: new Date() },
-            });
+            if (dbSessionPersisted) {
+              await prisma.aIChatMessage
+                .create({
+                  data: {
+                    sessionId: chatSession.id,
+                    role: "assistant",
+                    content: audited.cleanedText,
+                  },
+                })
+                .catch(() => {});
+              await prisma.aIChatSession
+                .update({
+                  where: { id: chatSession.id },
+                  data: { updatedAt: new Date() },
+                })
+                .catch(() => {});
+            }
 
             if (!isSuperAdmin && tenantId) {
-              await prisma.tenant.update({
-                where: { id: tenantId },
-                data: {
-                  aiMessagesUsedToday: { increment: 1 },
-                },
-              });
+              await prisma.tenant
+                .update({
+                  where: { id: tenantId },
+                  data: {
+                    aiMessagesUsedToday: { increment: 1 },
+                  },
+                })
+                .catch(() => {});
             }
           },
         } as any,
