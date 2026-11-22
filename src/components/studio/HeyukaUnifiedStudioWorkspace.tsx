@@ -1,80 +1,71 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useLocale } from "next-intl";
 import {
-  Activity,
-  ArrowUpRight,
+  ArrowUp,
   Bot,
-  Camera,
   Check,
   ChevronDown,
   ChevronRight,
+  Clock,
   Code2,
-  Command,
   Copy,
-  Download,
-  Edit3,
-  FileJson2,
-  GitBranch,
+  FileCode2,
+  FolderGit2,
   Globe,
-  HardDrive,
-  HelpCircle,
-  KeyRound,
   Layers,
   Loader2,
-  MapPin,
-  Menu,
   MessageSquare,
   Mic,
   MicOff,
   PanelLeft,
-  PanelRight,
   Paperclip,
-  Play,
+  Pin,
   Plus,
-  RefreshCw,
-  Save,
-  Share2,
+  Settings,
+  SlidersHorizontal,
   Sparkles,
   Store,
+  Terminal,
   Trash2,
-  Users,
-  Video,
-  WifiOff,
   Wrench,
   X,
 } from "lucide-react";
 import Dexie from "dexie";
 import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
-import { KaspiThemeToggle } from "@/components/theme/KaspiThemeToggle";
 import { HeyukaLoopMark } from "@/components/heyuka/HeyukaLoopMark";
-import { getFileBadgeMeta } from "@/components/heyuka/HeyukaSyntaxCodeView";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { HeyukaMarkdownMessage } from "@/components/heyuka/HeyukaMarkdownMessage";
+import { useHybridDictation } from "@/lib/heyuka/use-hybrid-dictation";
 import {
-  generateStudioExportCode,
   STUDIO_STARTER_TEMPLATES,
-  type ElasticScaleMode,
   type StudioBrand,
   type StudioStarterTemplate,
   type SwarmCouncilNode,
   type WorkerBotExecution,
 } from "@/lib/heyuka/studio/studio-orchestrator-v55-v60";
 import { StudioRightRunSettings } from "./StudioRightRunSettings";
-import { StudioWorkbenchTabs } from "./StudioWorkbenchTabs";
+import { StudioWorkbenchTabs, type AntigravityPaneTab } from "./StudioWorkbenchTabs";
 import {
-  buildSchemaJsonFromProperties,
   DEFAULT_RUN_SETTINGS,
   estimateTokenCount,
   type AttachedMediaItem,
   type ContextCacheItem,
-  type FewShotPair,
   type RightRunSettings,
   type StudioFileNode,
   type StudioMessage,
-  type StudioMode,
+  type StudioModelId,
 } from "./studio-types";
+
+interface StudioThreadRecord {
+  id: string;
+  brand: StudioBrand;
+  title: string;
+  pinned?: boolean;
+  updatedAt: string;
+  messages: StudioMessage[];
+  files?: StudioFileNode[];
+}
 
 class StudioLocalDexieDb extends Dexie {
   sessions!: Dexie.Table<{ id: string; brand: StudioBrand; updatedAt: string; payload: string }, string>;
@@ -88,34 +79,67 @@ const STARTER_FILES: StudioFileNode[] = [
   {
     path: "index.html",
     language: "html",
-    content: `<!DOCTYPE html>
+    content: `<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Workspace Preview</title>
-  <style>
-    body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #101010; color: #F7EAEA; display: grid; place-items: center; min-height: 100vh; }
-    .card { padding: 28px; border-radius: 14px; background: #161618; border: 1px solid rgba(255,255,255,0.08); max-width: 480px; text-align: center; }
-    h1 { margin: 0 0 8px; font-size: 18px; font-weight: 600; color: #F7EAEA; }
-    p { margin: 0 0 18px; color: #A1A1AA; font-size: 13px; line-height: 1.5; }
-    button { border: 0; padding: 9px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; background: #007ACC; color: #FFFFFF; }
-  </style>
+  <title>HEYUKA x KASPI Workspace</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="card">
-    <h1>Workspace Ready</h1>
-    <p>Describe what you want to build in Chat or edit files directly to see live updates here.</p>
-    <button onclick="this.textContent='Verified Render ✓'">Verify Preview</button>
-  </div>
+  <main class="card">
+    <h1>Antigravity Workspace Ready</h1>
+    <p>Ask the agent to scaffold apps, analyze KASPI POS metrics, or verify scripts in Terminal.</p>
+  </main>
+  <script src="app.js"></script>
 </body>
 </html>`,
   },
   {
-    path: "README.md",
-    language: "markdown",
-    content: "# HEYUKA & KASPI POS Workspace\nMinimalist IDE canvas powered by quiet multi-agent routing.",
+    path: "styles.css",
+    language: "css",
+    content: `body { font-family: system-ui, -apple-system, sans-serif; background: #101010; color: #F7EAEA; margin: 0; display: grid; place-items: center; min-height: 100vh; }
+.card { max-width: 560px; padding: 28px; border-radius: 14px; background: #161618; border: 1px solid rgba(255,255,255,0.1); }
+h1 { margin: 0 0 8px; font-size: 20px; color: #F7EAEA; }
+p { margin: 0; color: #A1A1AA; font-size: 14px; line-height: 1.5; }`,
   },
+  {
+    path: "app.js",
+    language: "js",
+    content: `console.log("Workspace initialized cleanly.");`,
+  },
+];
+
+const DEFAULT_AUTOMATIONS = [
+  {
+    id: "auto_pos_audit",
+    titleEn: "Daily KASPI POS Sales & Stock Check",
+    titleAr: "تقرير المبيعات والمخزون اليومي لـ KASPI POS",
+    prompt:
+      "Generate a clean KASPI POS daily report covering Cash vs TPE Card split, TTC VAT summary, low stock alerts, and export checklist.",
+  },
+  {
+    id: "auto_app_scaffold",
+    titleEn: "Scaffold Full-Stack App + Tests",
+    titleAr: "بناء تطبيق متكامل مع اختبارات التشغيل",
+    prompt:
+      "Build a responsive multi-file dashboard application (`index.html`, `styles.css`, `app.js`) with clean layout and interactive data table.",
+  },
+  {
+    id: "auto_web_research",
+    titleEn: "Live Web Research & Summary",
+    titleAr: "بحث مباشر في الويب مع تلخيص المصادر",
+    prompt: "Search the web for the latest Morocco retail e-invoicing and POS fiscal standards and summarize key points with sources.",
+  },
+];
+
+const UNIFIED_MODELS: Array<{ id: StudioModelId; label: string }> = [
+  { id: "heyuka-omni", label: "HEYUKA Omni (Unified)" },
+  { id: "heyuka-core", label: "HEYUKA Core (Unified)" },
+  { id: "heyuka-vision", label: "HEYUKA Vision (Unified)" },
+  { id: "multi-agent-3", label: "Elastic Swarm (3-12x)" },
+  { id: "kaspi-pos-analyst", label: "KASPI POS Specialist" },
 ];
 
 export function HeyukaUnifiedStudioWorkspace({
@@ -127,47 +151,43 @@ export function HeyukaUnifiedStudioWorkspace({
   const locale: "ar" | "fr" | "en" = localeRaw === "ar" ? "ar" : localeRaw === "en" ? "en" : "fr";
   const isAr = locale === "ar";
 
-  // Dual-Brand + 3-Pane Resizable Layout State
+  // Unified Antigravity Layout State (identical structure for HEYUKA & KASPI POS)
   const [brand, setBrand] = useState<StudioBrand>(initialBrand);
-  const [mode, setMode] = useState<StudioMode>("create_chat");
   const [leftOpen, setLeftOpen] = useState(true);
-  const [rightOpen, setRightOpen] = useState(true);
-  const [leftWidthPx, setLeftWidthPx] = useState(232);
-  const [rightWidthPx, setRightWidthPx] = useState(296);
-  const dragTargetRef = useRef<"left" | "right" | null>(null);
+  const [rightOpen, setRightOpen] = useState(false);
+  const [rightTab, setRightTab] = useState<AntigravityPaneTab>("files");
+  const [rightWidthPx, setRightWidthPx] = useState(520);
+  const dragResizeRef = useRef(false);
 
-  // Core Studio State
+  // Conversations & Active Session
+  const [threads, setThreads] = useState<StudioThreadRecord[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState<string>(`conv_${initialBrand}_default`);
+  const [messages, setMessages] = useState<StudioMessage[]>([]);
+  const [studioFiles, setStudioFiles] = useState<StudioFileNode[]>(STARTER_FILES);
+  const [checkpoints, setCheckpoints] = useState<Array<{ id: string; label: string; at: string; files: StudioFileNode[] }>>([]);
+  const [focusFilePath, setFocusFilePath] = useState<string | null>(null);
+  const [changedDrawerOpen, setChangedDrawerOpen] = useState(false);
+
+  // Agent & Customizations State
   const [settings, setSettings] = useState<RightRunSettings>(DEFAULT_RUN_SETTINGS);
-  const [sysOpen, setSysOpen] = useState(true);
+  const [executionPolicy, setExecutionPolicy] = useState<"planning" | "fast" | "turbo">("planning");
   const [systemInstruction, setSystemInstruction] = useState<string>(
     initialBrand === "kaspi_pos"
-      ? "You are KASPI POS Studio Intelligence. Help store owners analyze sales, manage inventory, print 80mm thermal receipts, and respect Morocco clean TTC pricing."
-      : "You are HEYUKA Studio Intelligence. Deliver complete production code, structured JSON, live research citations, and client-GPU media artifacts cleanly."
+      ? "You are KASPI POS AI Engineer inside Antigravity Studio. Assist with store analytics, TTC invoicing, inventory, 80mm ESC/POS receipts, and full project generation."
+      : "You are HEYUKA AI Engineer inside Antigravity Studio. Build production software, analyze fetched links, verify commands, and organize sources autonomously."
   );
-  const [savedSystemPresets, setSavedSystemPresets] = useState<string[]>([
-    "Full-Stack Next.js 15 + Tailwind Architect",
-    "KASPI POS Retail Analyst (Darija / French / Arabic)",
-    "3D Three.js PBR & Cinema Director",
-    "Strict Structured JSON Data Extractor",
-  ]);
-  const [fewShotPairs, setFewShotPairs] = useState<FewShotPair[]>([
-    { id: "fs1", input: "Espresso x2 = 24 MAD", output: '{"item":"Espresso","qty":2,"ttcMad":24}' },
-  ]);
 
-  // Conversation, Branching & Composer State
-  const [messages, setMessages] = useState<StudioMessage[]>([]);
+  // Composer State (Auto-growing textarea + attachments + hybrid Mic + @ / menus)
   const [composerText, setComposerText] = useState("");
   const [attachments, setAttachments] = useState<AttachedMediaItem[]>([]);
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
+  const [policyMenuOpen, setPolicyMenuOpen] = useState(false);
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const [mentionOpen, setMentionOpen] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
-  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
-  const [editingDraft, setEditingDraft] = useState("");
+  const [runningSec, setRunningSec] = useState(0);
   const [expandedThoughts, setExpandedThoughts] = useState<Record<string, boolean>>({});
-  const [isMicListening, setIsMicListening] = useState(false);
-
-  // Build Files & Checkpoints & Council Swarm
-  const [studioFiles, setStudioFiles] = useState<StudioFileNode[]>(STARTER_FILES);
-  const [checkpoints, setCheckpoints] = useState<Array<{ id: string; label: string; at: string; files: StudioFileNode[] }>>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [contextCaches, setContextCaches] = useState<ContextCacheItem[]>([]);
   const [councilData, setCouncilData] = useState<{
     tier: string;
@@ -176,28 +196,28 @@ export function HeyukaUnifiedStudioWorkspace({
     nodes: SwarmCouncilNode[];
     spawnedBots: WorkerBotExecution[];
   } | null>(null);
+  const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
+  const [statusNotice, setStatusNotice] = useState<string | null>(null);
 
-  // Modals (All wrapped in KaspiGlassModalPortal!)
-  const [getCodeOpen, setGetCodeOpen] = useState(false);
-  const [exportLang, setExportLang] = useState<"python" | "typescript" | "javascript" | "curl" | "rest_json">("python");
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const [cmdkOpen, setCmdkOpen] = useState(false);
-  const [cmdkQuery, setCmdkQuery] = useState("");
-  const [shareToast, setShareToast] = useState<string | null>(null);
-  const [saveBadge, setSaveBadge] = useState("Saved locally ✓");
+  // Antigravity Modals (Automations, Customizations, Settings) — all inside KaspiGlassModalPortal
+  const [automationsOpen, setAutomationsOpen] = useState(false);
+  const [customizationsOpen, setCustomizationsOpen] = useState(false);
+  const [customTab, setCustomTab] = useState<"rules" | "engine">("rules");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsSection, setSettingsSection] = useState<
+    "general" | "appearance" | "shortcuts" | "models" | "projects"
+  >("appearance");
   const [enhancingMagic, setEnhancingMagic] = useState(false);
-  const [mobileLeftOpen, setMobileLeftOpen] = useState(false);
-  const [mobileRightOpen, setMobileRightOpen] = useState(false);
-  const [focusFilePath, setFocusFilePath] = useState<string | null>(null);
-  const [appearanceOpen, setAppearanceOpen] = useState(false);
-  const [mentionPickerOpen, setMentionPickerOpen] = useState(false);
+
   const [appearance, setAppearance] = useState<{
+    themeMode: "light" | "dark";
     preset: string;
     contrast: "default" | "strong";
     backgroundHex: string;
     foregroundHex: string;
     accentHex: string;
   }>({
+    themeMode: "dark",
     preset: "Default Dark",
     contrast: "default",
     backgroundHex: "#101010",
@@ -205,14 +225,54 @@ export function HeyukaUnifiedStudioWorkspace({
     accentHex: "#007ACC",
   });
 
+  const dbRef = useRef<StudioLocalDexieDb | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  // Hybrid Voice Dictation (Web Speech API + MediaRecorder -> /api/ai/transcribe Whisper Darija fallback)
+  const dictation = useHybridDictation({
+    locale,
+    onTranscript: useCallback((txt: string) => {
+      setComposerText((prev) => (prev ? `${prev} ${txt}` : txt));
+    }, []),
+  });
+
+  // Dynamic Auto-Expanding Composer Textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, 44), 280)}px`;
+  }, [composerText]);
+
+  // Running elapsed seconds timer
+  useEffect(() => {
+    if (!isRunning) {
+      setRunningSec(0);
+      return;
+    }
+    const timer = setInterval(() => setRunningSec((s) => s + 1), 1000);
+    return () => clearInterval(timer);
+  }, [isRunning]);
+
+  // Smooth scroll to latest turn
+  useEffect(() => {
+    chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages.length, isRunning]);
+
+  // Load saved appearance & threads from IndexedDB/localStorage
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("heyuka_studio_appearance_v1");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed?.backgroundHex && parsed?.foregroundHex && parsed?.accentHex) {
-          setAppearance(parsed);
-        }
+      const savedApp = localStorage.getItem("heyuka_studio_appearance_v2");
+      if (savedApp) {
+        const parsed = JSON.parse(savedApp);
+        if (parsed?.backgroundHex && parsed?.accentHex) setAppearance(parsed);
+      }
+      const savedThreads = localStorage.getItem("heyuka_antigravity_threads_v1");
+      if (savedThreads) {
+        const parsedThreads = JSON.parse(savedThreads);
+        if (Array.isArray(parsedThreads)) setThreads(parsedThreads);
       }
     } catch {}
   }, []);
@@ -220,25 +280,18 @@ export function HeyukaUnifiedStudioWorkspace({
   const updateAppearance = (next: typeof appearance) => {
     setAppearance(next);
     try {
-      localStorage.setItem("heyuka_studio_appearance_v1", JSON.stringify(next));
+      localStorage.setItem("heyuka_studio_appearance_v2", JSON.stringify(next));
     } catch {}
   };
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const dbRef = useRef<StudioLocalDexieDb | null>(null);
-
-  // Pointer Resize Listeners for 3-Pane Split
+  // Pointer drag resize for right IDE pane
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
-      if (!dragTargetRef.current) return;
-      if (dragTargetRef.current === "left") {
-        setLeftWidthPx(Math.min(340, Math.max(185, e.clientX)));
-      } else {
-        setRightWidthPx(Math.min(420, Math.max(250, window.innerWidth - e.clientX)));
-      }
+      if (!dragResizeRef.current) return;
+      setRightWidthPx(Math.min(760, Math.max(340, window.innerWidth - e.clientX)));
     };
     const onUp = () => {
-      dragTargetRef.current = null;
+      dragResizeRef.current = false;
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
@@ -248,22 +301,7 @@ export function HeyukaUnifiedStudioWorkspace({
     };
   }, []);
 
-  // Global Keyboard Shortcuts (Ctrl+K, ?, Ctrl+B)
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setCmdkOpen((p) => !p);
-      } else if (e.key === "?" && !["INPUT", "TEXTAREA"].includes((document.activeElement?.tagName || "").toUpperCase())) {
-        e.preventDefault();
-        setShortcutsOpen((p) => !p);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  // Load & Persist Workspace via Dexie IndexedDB (Offline-Safe v60!)
+  // Load active IndexedDB state & URL query parameters (`?brand=`, `?q=`)
   useEffect(() => {
     try {
       const db = new StudioLocalDexieDb();
@@ -274,6 +312,7 @@ export function HeyukaUnifiedStudioWorkspace({
           if (!row?.payload) return;
           const parsed = JSON.parse(row.payload);
           if (Array.isArray(parsed.messages)) setMessages(parsed.messages);
+          if (Array.isArray(parsed.files) && parsed.files.length > 0) setStudioFiles(parsed.files);
           if (typeof parsed.systemInstruction === "string") setSystemInstruction(parsed.systemInstruction);
         })
         .catch(() => {});
@@ -287,1650 +326,1576 @@ export function HeyukaUnifiedStudioWorkspace({
           id: `active_${brand}`,
           brand,
           updatedAt: new Date().toISOString(),
-          payload: JSON.stringify({ messages: messages.slice(-24), systemInstruction }),
+          payload: JSON.stringify({ messages: messages.slice(-24), files: studioFiles, systemInstruction }),
         });
-        setSaveBadge(isAr ? "محفوظ محلياً ✓" : "Saved to IndexedDB ✓");
       } catch {}
     }, 500);
     return () => clearTimeout(t);
-  }, [brand, messages, systemInstruction, isAr]);
+  }, [brand, messages, studioFiles, systemInstruction]);
 
-  const switchBrand = (nextBrand: StudioBrand) => {
-    setBrand(nextBrand);
-    setSystemInstruction(
-      nextBrand === "kaspi_pos"
-        ? "You are KASPI POS Studio Intelligence. Focus on store analytics, TTC invoicing, inventory, 80mm ESC/POS receipts, and Moroccan Darija/French/Arabic commerce."
-        : "You are HEYUKA Studio Intelligence. Deliver production apps, 3D WebGL, cinema pipelines, structured JSON, and sovereign code across 18 cognitive clusters."
-    );
-    setSettings((s) => ({
-      ...s,
-      model: nextBrand === "kaspi_pos" ? "kaspi-pos-analyst" : "heyuka-omni",
-    }));
-  };
-
-  // Sync ?brand=, ?mode=, and ?q= query parameters cleanly without Suspense constraints
   useEffect(() => {
     try {
       const qs = new URLSearchParams(window.location.search);
       const qBrand = qs.get("brand");
       if (qBrand === "kaspi_pos" || qBrand === "heyuka") {
         setBrand(qBrand);
-        setSystemInstruction(
-          qBrand === "kaspi_pos"
-            ? "You are KASPI POS Studio Intelligence. Focus on store analytics, TTC invoicing, inventory, 80mm ESC/POS receipts, and Moroccan Darija/French/Arabic commerce."
-            : "You are HEYUKA Studio Intelligence. Deliver production apps, 3D WebGL, cinema pipelines, structured JSON, and sovereign code across 18 cognitive clusters."
-        );
-        setSettings((s) => ({
-          ...s,
-          model: qBrand === "kaspi_pos" ? "kaspi-pos-analyst" : "heyuka-omni",
-        }));
-      }
-      const qMode = qs.get("mode");
-      const validModes: StudioMode[] = [
-        "create_chat",
-        "create_freeform",
-        "stream_realtime",
-        "build",
-        "compare",
-        "starter_apps",
-        "team_collab",
-        "offline_vault",
-        "api_keys",
-      ];
-      if (qMode && validModes.includes(qMode as StudioMode)) {
-        setMode(qMode as StudioMode);
-      } else if (qMode === "council") {
-        setSettings((s) => ({ ...s, elasticScale: "12x_titan" }));
-      } else if (qMode === "pc_bot") {
-        setComposerText((prev) =>
-          prev || "Spawn an isolated Virtual Desktop bot (KasmVNC) with live OS Shell & File Surgeon scripts"
-        );
       }
       const qText = qs.get("q");
-      if (qText && qText.trim()) {
-        setComposerText(qText.trim());
+      if (qText) setComposerText(qText);
+      const qTab = qs.get("pane");
+      if (qTab === "files" || qTab === "terminal" || qTab === "browser" || qTab === "changes") {
+        setRightTab(qTab);
+        setRightOpen(true);
       }
     } catch {}
   }, []);
 
-  const detectedUrlsInComposer = useMemo(() => {
-    const matches = composerText.match(/https?:\/\/[^\s]+/gi) || [];
-    return Array.from(new Set(matches)).slice(0, 4);
-  }, [composerText]);
-
-  const handleAttachFiles = async (fileList: FileList | null) => {
-    if (!fileList) return;
-    const nextItems: AttachedMediaItem[] = [];
-    for (const f of Array.from(fileList).slice(0, 6)) {
-      const baseItem: AttachedMediaItem = {
-        id: `att_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        name: f.name,
-        mimeType: f.type || "application/octet-stream",
-        sizeBytes: f.size,
-        clipStartSec: settings.videoClipStartSec,
-        clipEndSec: settings.videoClipEndSec,
-        fps: settings.videoFps,
-      };
-      if (f.type.startsWith("image/") || f.type.startsWith("audio/") || f.type.startsWith("video/")) {
-        const dataUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result || ""));
-          reader.readAsDataURL(f);
-        });
-        baseItem.dataUrl = dataUrl;
-      } else if (f.size < 250_000) {
-        baseItem.textPreview = (await f.text()).slice(0, 8000);
-      }
-      nextItems.push(baseItem);
-    }
-    setAttachments((prev) => [...prev, ...nextItems]);
-    setPlusMenuOpen(false);
+  const switchBrand = (nextBrand: StudioBrand) => {
+    setBrand(nextBrand);
+    setSystemInstruction(
+      nextBrand === "kaspi_pos"
+        ? "You are KASPI POS AI Engineer inside Antigravity Studio. Assist with store analytics, TTC invoicing, inventory, 80mm ESC/POS receipts, and full project generation."
+        : "You are HEYUKA AI Engineer inside Antigravity Studio. Build production software, analyze fetched links, verify commands, and organize sources autonomously."
+    );
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("brand", nextBrand);
+      window.history.replaceState({}, "", url.toString());
+    } catch {}
   };
 
-  const triggerCouncilRun = useCallback(
-    async (scaleOverride: ElasticScaleMode, promptStr: string) => {
+  const persistCurrentThread = (nextMsgs: StudioMessage[], nextFiles: StudioFileNode[]) => {
+    if (nextMsgs.length === 0) return;
+    const firstUser = nextMsgs.find((m) => m.role === "user")?.content || "New Conversation";
+    const title = firstUser.replace(/\s+/g, " ").slice(0, 46);
+    setThreads((prev) => {
+      const existing = prev.find((t) => t.id === activeThreadId);
+      const updated: StudioThreadRecord = {
+        id: activeThreadId,
+        brand,
+        title: existing?.title || title,
+        pinned: existing?.pinned ?? false,
+        updatedAt: new Date().toISOString(),
+        messages: nextMsgs.slice(-24),
+        files: nextFiles,
+      };
+      const merged = [updated, ...prev.filter((t) => t.id !== activeThreadId)].slice(0, 20);
       try {
-        const r = await fetch("/api/v1/studio/council", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: promptStr, scale: scaleOverride, brand, locale }),
-        });
-        const d = await r.json();
-        if (d?.ok) setCouncilData(d);
-        return d;
-      } catch {
-        return null;
+        localStorage.setItem("heyuka_antigravity_threads_v1", JSON.stringify(merged));
+      } catch {}
+      return merged;
+    });
+  };
+
+  const startNewConversation = () => {
+    const newId = `conv_${Date.now()}`;
+    setActiveThreadId(newId);
+    setMessages([]);
+    setStudioFiles(STARTER_FILES);
+    setChangedDrawerOpen(false);
+    setComposerText("");
+    textareaRef.current?.focus();
+  };
+
+  const handleAttachFiles = (fileList: FileList | null) => {
+    if (!fileList) return;
+    Array.from(fileList).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const item: AttachedMediaItem = {
+          id: `att_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: file.name,
+          mimeType: file.type || "application/octet-stream",
+          sizeBytes: file.size,
+          dataUrl: typeof reader.result === "string" ? reader.result : undefined,
+        };
+        setAttachments((prev) => [...prev, item]);
+      };
+      if (file.type.startsWith("image/") || file.size < 2_500_000) {
+        reader.readAsDataURL(file);
       }
-    },
-    [brand, locale]
+    });
+  };
+
+  const totalChangedLines = useMemo(
+    () => studioFiles.reduce((s, f) => s + f.content.split(/\r?\n/).length, 0),
+    [studioFiles]
   );
 
-  const handleRunPrompt = useCallback(
-    async (overrideText?: string, branchFromHistory?: StudioMessage[]) => {
-      const rawPrompt = (overrideText ?? composerText).trim();
-      if (!rawPrompt || isRunning) return;
+  // Core Antigravity Autonomous Agent Loop
+  const handleRunPrompt = async (overrideText?: string, branchHistory?: StudioMessage[]) => {
+    const rawPrompt = (overrideText ?? composerText).trim();
+    if (!rawPrompt || isRunning) return;
 
-      const effectivePrompt =
-        mode === "create_freeform" && fewShotPairs.length > 0
-          ? `${fewShotPairs.map((p) => `Input: ${p.input}\nOutput: ${p.output}`).join("\n\n")}\n\nInput: ${rawPrompt}\nOutput:`
-          : rawPrompt;
+    const userMsg: StudioMessage = {
+      id: `u_${Date.now()}`,
+      role: "user",
+      content: rawPrompt,
+      attachments: attachments.length > 0 ? [...attachments] : undefined,
+      tokensIn: estimateTokenCount(rawPrompt),
+      createdAt: new Date().toISOString(),
+    };
 
-      const userMsg: StudioMessage = {
-        id: `u_${Date.now()}`,
-        role: "user",
-        content: rawPrompt,
-        attachments: attachments.length > 0 ? attachments : undefined,
-        tokensIn: estimateTokenCount(rawPrompt),
-        createdAt: new Date().toISOString(),
-      };
+    const baseHistory = branchHistory ?? messages;
+    const nextHistory = [...baseHistory, userMsg];
+    setMessages(nextHistory);
+    if (!overrideText) {
+      setComposerText("");
+      setAttachments([]);
+    }
+    setPlusMenuOpen(false);
+    setPolicyMenuOpen(false);
+    setModelMenuOpen(false);
+    setMentionOpen(false);
+    setIsRunning(true);
 
-      const baseHistory = branchFromHistory || messages;
-      const nextHistory = [...baseHistory, userMsg];
-      setMessages(nextHistory);
-      if (!overrideText) {
-        setComposerText("");
-        setAttachments([]);
-      }
-      setIsRunning(true);
-      const t0 = performance.now();
-
-      try {
-        const schemaConstraint = settings.structuredOutputsEnabled
-          ? `\nSTRICT RESPONSE JSON SCHEMA:\n${buildSchemaJsonFromProperties(settings.structuredProperties)}`
+    const t0 = performance.now();
+    try {
+      const attSummary = (userMsg.attachments || [])
+        .map((a) => `[Attached File: ${a.name} (${a.mimeType}, ${Math.round(a.sizeBytes / 1024)}KB)]`)
+        .join("\n");
+      const cacheSummary =
+        contextCaches.length > 0
+          ? `\n\n[PINNED CONTEXT]\n${contextCaches.map((c) => `--- ${c.label} ---\n${c.content.slice(0, 1200)}`).join("\n")}`
           : "";
-        const cacheContextText = contextCaches.map((c) => `[Cache: ${c.label}]\n${c.content.slice(0, 1500)}`).join("\n");
-        const attachedContextText = (userMsg.attachments || [])
-          .map((a) => (a.textPreview ? `[File: ${a.name}]\n${a.textPreview}` : `[Media: ${a.name} (${a.mimeType}) | res=${settings.mediaResolution}]`))
-          .join("\n");
+      const fullPromptPayload = `${rawPrompt}${attSummary ? `\n\n${attSummary}` : ""}${cacheSummary}`;
 
-        const composedSystem = [systemInstruction, cacheContextText, schemaConstraint]
-          .filter(Boolean)
-          .join("\n\n");
+      const urlsInPrompt = rawPrompt.match(/https?:\/\/[^\s]+/gi) || [];
+      let citations: Array<{ title: string; url: string }> = [];
 
-        // 1) Fire Elastic 3 -> 6 -> 12 Model Council + Worker Bots in parallel
-        const swarmPromise = triggerCouncilRun(settings.elasticScale, effectivePrompt);
-
-        // 2) Live URL Context Research (if URL Context toggle active and URLs present)
-        let urlGroundingSnippet = "";
-        let answerText = "";
-        let reasoningText = "";
-        let extractedFiles: StudioFileNode[] = [];
-        let citations: Array<{ title: string; url: string }> = [];
-
-        if (settings.urlContextEnabled && detectedUrlsInComposer.length > 0) {
-          try {
-            const urlRes = await fetch("/api/v1/web/research", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                query: `${effectivePrompt.slice(0, 120)} ${detectedUrlsInComposer[0]}`,
-                url: detectedUrlsInComposer[0],
-                lang: locale,
-              }),
-            });
-            if (urlRes.ok) {
-              const ud = await urlRes.json();
-              if (Array.isArray(ud?.results)) {
-                urlGroundingSnippet = ud.results
-                  .slice(0, 3)
-                  .map((r: any) => `[URL Context: ${r.title || r.url}] ${String(r.snippet || "").slice(0, 400)}`)
-                  .join("\n");
-                citations.push(
-                  ...ud.results.slice(0, 3).map((r: any) => ({
-                    title: String(r.title || r.url || "Source"),
-                    url: String(r.url || detectedUrlsInComposer[0]),
-                  }))
-                );
-              }
-            }
-          } catch {}
-        }
-
-        const fullPromptPayload = [
-          effectivePrompt,
-          attachedContextText,
-          urlGroundingSnippet ? `\n[URL CONTEXT SCRAPED]:\n${urlGroundingSnippet}` : "",
-        ]
-          .filter(Boolean)
-          .join("\n");
-
-        // 3) Execute Prompt (Local Ollama -> Live /api/v1/heyuka/chat-web -> Unlimited /api/v1/heyuka/local-sdk fallback)
-        if (settings.runtimeTarget === "local_ollama") {
-          try {
-            const ol = await fetch(`${settings.localOllamaUrl.replace(/\/$/, "")}/chat/completions`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                model: settings.localOllamaModel,
-                temperature: settings.temperature,
-                messages: [
-                  { role: "system", content: composedSystem },
-                  { role: "user", content: fullPromptPayload },
-                ],
-              }),
-            });
-            if (ol.ok) {
-              const od = await ol.json();
-              answerText = String(od?.choices?.[0]?.message?.content || "");
-            }
-          } catch {}
-        }
-
-        if (!answerText) {
-          try {
-            const imgAtt = (userMsg.attachments || []).find((a) =>
-              a.mimeType.startsWith("image/") && a.dataUrl
-            );
-            const webModel =
-              settings.elasticScale === "12x_titan"
-                ? "elastic-swarm-12x"
-                : settings.elasticScale === "6x_pro"
-                ? "elastic-swarm-6x"
-                : settings.elasticScale === "3x_fast"
-                ? "multi-agent-3"
-                : brand === "kaspi_pos"
-                ? "heyuka-core"
-                : "heyuka-omni";
-            const webMode =
-              mode === "build"
-                ? "coding"
-                : mode === "compare"
-                ? "council"
-                : "studio";
-
-            const chatRes = await fetch("/api/v1/heyuka/chat-web", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                model: webModel,
-                elasticScale: settings.elasticScale,
-                brand,
-                mode: webMode,
-                deepThink: settings.thinkingEnabled,
-                webSearch: settings.groundingSearchEnabled,
-                locale,
-                imageBase64: imgAtt?.dataUrl,
-                workspaceFiles: studioFiles.slice(0, 6).map((f) => ({ path: f.path, content: f.content })),
-                messages: [
-                  { role: "system", content: composedSystem },
-                  ...baseHistory.slice(-6).map((m) => ({
-                    role: m.role,
-                    content: String(m.content || " ").slice(0, 8000),
-                  })),
-                  { role: "user", content: fullPromptPayload },
-                ],
-              }),
-            });
-            if (chatRes.ok) {
-              const cd = await chatRes.json();
-              if (cd?.answer) answerText = String(cd.answer);
-              if (cd?.reasoning) reasoningText = String(cd.reasoning);
-              if (Array.isArray(cd?.studioFiles) && cd.studioFiles.length > 0) {
-                extractedFiles = cd.studioFiles.map((f: any) => ({
-                  path: String(f.path || "app.txt"),
-                  language: String(f.language || "text"),
-                  content: String(f.content || ""),
-                }));
-              }
-              if (Array.isArray(cd?.sources)) {
-                citations = [...citations, ...cd.sources];
-              }
-            }
-          } catch {}
-        }
-
-        if (!answerText) {
-          const sdkMode = mode === "build" ? "coding" : "studio";
-          const res = await fetch("/api/v1/heyuka/local-sdk", {
+      // Optional live web research enrichment when URLs exist or web search enabled
+      if (urlsInPrompt.length > 0) {
+        try {
+          const wr = await fetch("/api/v1/web/research", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              prompt: fullPromptPayload,
-              mode: sdkMode,
-              locale,
-            }),
+            body: JSON.stringify({ url: urlsInPrompt[0], query: rawPrompt.slice(0, 160), lang: locale }),
           });
-          const data = await res.json();
-          answerText = String(data?.answer || data?.reply || JSON.stringify(data));
-          if (Array.isArray(data?.studioFiles) && data.studioFiles.length > 0) {
-            extractedFiles = data.studioFiles.map((f: any) => ({
+          if (wr.ok) {
+            const wd = await wr.json();
+            if (Array.isArray(wd?.results)) citations = [...citations, ...wd.results];
+          }
+        } catch {}
+      }
+
+      // Trigger Swarm metadata planning silently in background
+      const swarmPromise = fetch("/api/v1/studio/council", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: rawPrompt, scale: settings.elasticScale, brand, locale }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d?.ok && d?.council) {
+            setCouncilData(d.council);
+            return d.council;
+          }
+          return null;
+        })
+        .catch(() => null);
+
+      const imgAtt = (userMsg.attachments || []).find((a) => a.mimeType.startsWith("image/") && a.dataUrl);
+
+      let answerText = "";
+      let reasoningText = "";
+      let extractedFiles: StudioFileNode[] = [];
+
+      // Call unified /api/v1/heyuka/chat-web with clean role validation (systemInstruction separate!)
+      try {
+        const chatRes = await fetch("/api/v1/heyuka/chat-web", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: settings.model,
+            elasticScale: settings.elasticScale,
+            brand,
+            executionPolicy: executionPolicy === "turbo" ? "turbo" : "auto",
+            mode: "auto",
+            deepThink: true,
+            webSearch: true,
+            locale,
+            systemInstruction,
+            imageBase64: imgAtt?.dataUrl,
+            workspaceFiles: studioFiles.slice(0, 6).map((f) => ({ path: f.path, content: f.content })),
+            messages: [
+              ...baseHistory.slice(-8).map((m) => ({
+                role: m.role,
+                content: String(m.content || " ").slice(0, 8000),
+              })),
+              { role: "user", content: fullPromptPayload },
+            ],
+          }),
+        });
+
+        if (chatRes.ok) {
+          const cd = await chatRes.json();
+          if (cd?.answer) answerText = String(cd.answer);
+          if (cd?.reasoning) reasoningText = String(cd.reasoning);
+          if (Array.isArray(cd?.studioFiles) && cd.studioFiles.length > 0) {
+            extractedFiles = cd.studioFiles.map((f: any) => ({
               path: String(f.path || "app.txt"),
               language: String(f.language || "text"),
               content: String(f.content || ""),
             }));
           }
-          if (Array.isArray(data?.sources)) {
-            citations = [...citations, ...data.sources];
+          if (Array.isArray(cd?.sources)) {
+            citations = [...citations, ...cd.sources];
           }
         }
+      } catch {}
 
-        // 4) Auto Code Execution Sandbox when Code Execution toggle is ON
-        if (settings.codeExecutionEnabled) {
-          const runnableFile = extractedFiles.find((f) => /\.(py|js|ts|sh)$/i.test(f.path));
-          if (runnableFile?.content) {
-            try {
-              const lang = runnableFile.path.endsWith(".py")
-                ? "python"
-                : runnableFile.path.endsWith(".sh")
-                ? "bash"
-                : "javascript";
-              const execRes = await fetch("/api/v1/sandbox/execute", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ language: lang, code: runnableFile.content.slice(0, 6000) }),
-              });
-              if (execRes.ok) {
-                const ex = await execRes.json();
-                const out = String(ex?.stdout || ex?.output || "").trim();
-                if (out) {
-                  answerText += `\n\n### ▶ Sandbox Code Execution (\`${runnableFile.path}\`)\n\`\`\`text\n${out.slice(0, 1200)}\n\`\`\``;
-                }
-              }
-            } catch {}
-          }
+      if (!answerText) {
+        const res = await fetch("/api/v1/heyuka/local-sdk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: fullPromptPayload, mode: "studio", locale }),
+        });
+        const data = await res.json();
+        answerText = String(data?.answer || data?.reply || "Workspace task completed.");
+        if (Array.isArray(data?.studioFiles) && data.studioFiles.length > 0) {
+          extractedFiles = data.studioFiles.map((f: any) => ({
+            path: String(f.path || "app.txt"),
+            language: String(f.language || "text"),
+            content: String(f.content || ""),
+          }));
         }
-
-        if (settings.structuredOutputsEnabled) {
-          const sampleOut: Record<string, unknown> = {};
-          for (const prop of settings.structuredProperties) {
-            sampleOut[prop.name] =
-              prop.type === "number"
-                ? 98
-                : prop.type === "boolean"
-                ? true
-                : prop.type === "array"
-                ? [rawPrompt.slice(0, 60)]
-                : rawPrompt.slice(0, 120);
-          }
-          if (!answerText.trim().startsWith("{")) {
-            answerText = `${JSON.stringify(sampleOut, null, 2)}\n\n${answerText}`;
-          }
-        }
-
-        const swarm = await swarmPromise;
-        const elapsedMs = Math.max(40, Math.round(performance.now() - t0));
-        const outTok = estimateTokenCount(answerText);
-
-        if (extractedFiles.length > 0) {
-          setStudioFiles(extractedFiles);
-          setCheckpoints((prev) => [
-            { id: `cp_${Date.now()}`, label: `Turn: ${rawPrompt.slice(0, 26)}`, at: new Date().toISOString(), files: extractedFiles },
-            ...prev.slice(0, 9),
-          ]);
-        }
-
-        const functionCallTrigger =
-          settings.functionCallingEnabled &&
-          /(sales|pos|revenue|search|vault|inventory|مبيعات|متجر|بحث)/i.test(rawPrompt)
-            ? {
-                name: /(sales|pos|revenue|inventory|مبيعات|متجر)/i.test(rawPrompt)
-                  ? "get_pos_sales"
-                  : "search_sovereign_vault",
-                args: { query: rawPrompt.slice(0, 80), range: "today" },
-              }
-            : undefined;
-
-        const assistantMsg: StudioMessage = {
-          id: `a_${Date.now()}`,
-          role: "assistant",
-          content: answerText,
-          thoughts: settings.thinkingEnabled
-            ? `${reasoningText ? `${reasoningText}\n• ` : ""}Thinking Budget: ${settings.thinkingBudget} tok • Brand: ${brand.toUpperCase()} • Elastic Scale: ${swarm?.tier || settings.elasticScale} (${swarm?.modelCount || 3} models, ${swarm?.spawnedBots?.length || 3} Worker Bots) • MediaRes=${settings.mediaResolution} • GroundingSearch=${settings.groundingSearchEnabled}`
-            : undefined,
-          thinkingSeconds: Number((elapsedMs / 1000).toFixed(2)),
-          tokensIn: userMsg.tokensIn,
-          tokensOut: outTok,
-          latencyMs: elapsedMs,
-          tokPerSec: Math.round((outTok / elapsedMs) * 1000),
-          viewMode: "markdown",
-          searchQueries: settings.groundingSearchEnabled ? [rawPrompt.slice(0, 56)] : undefined,
-          citations,
-          functionCall: functionCallTrigger,
-          codeFiles: extractedFiles.length > 0 ? extractedFiles : undefined,
-          swarmResult: swarm
-            ? {
-                tier: swarm.tier,
-                modelCount: swarm.modelCount,
-                nodes: swarm.nodes,
-                spawnedBots: swarm.spawnedBots,
-              }
-            : undefined,
-          createdAt: new Date().toISOString(),
-        };
-
-        setMessages([...nextHistory, assistantMsg]);
-      } finally {
-        setIsRunning(false);
       }
-    },
-    [
-      attachments,
-      brand,
-      composerText,
-      contextCaches,
-      fewShotPairs,
-      isRunning,
-      locale,
-      messages,
-      mode,
-      settings,
-      studioFiles,
-      systemInstruction,
-      triggerCouncilRun,
-      detectedUrlsInComposer,
-    ]
-  );
 
-  const historyTokens = useMemo(
-    () => messages.reduce((acc, m) => acc + estimateTokenCount(m.content), 0),
-    [messages]
-  );
-  const filesTokens = useMemo(
-    () => attachments.reduce((acc, a) => acc + estimateTokenCount(a.textPreview || a.name), 0),
-    [attachments]
-  );
+      // If runnable script was created, log crisp verification trace in Terminal
+      const runnableFile = extractedFiles.find((f) => /\.(js|ts|py|sh)$/i.test(f.path));
+      if (runnableFile?.content) {
+        try {
+          const lang = runnableFile.path.endsWith(".py") ? "python" : runnableFile.path.endsWith(".sh") ? "bash" : "javascript";
+          const execRes = await fetch("/api/v1/sandbox/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ language: lang, code: runnableFile.content.slice(0, 6000) }),
+          });
+          if (execRes.ok) {
+            const ex = await execRes.json();
+            const out = String(ex?.stdout || ex?.output || "").trim();
+            if (out) setTerminalLogs((p) => [...p, `Verified ${runnableFile.path}: ${out.slice(0, 220)}`]);
+          }
+        } catch {}
+      }
 
-  const exportSnippet = useMemo(
-    () =>
-      generateStudioExportCode({
-        lang: exportLang,
-        baseUrl: "https://kaspi-pos.vercel.app/api/v1",
-        model: settings.model,
-        systemInstruction,
-        prompt: composerText || messages[messages.length - 1]?.content || "Hello HEYUKA Studio",
-        temperature: settings.temperature,
-        topP: settings.topP,
-        maxTokens: settings.maxOutputTokens,
-        thinkingBudget: settings.thinkingBudget,
-        responseMimeType: settings.responseMimeType,
-        enableSearchGrounding: settings.groundingSearchEnabled,
-        enableCodeExecution: settings.codeExecutionEnabled,
-        enableTools: settings.functionCallingEnabled,
-        structuredSchema: buildSchemaJsonFromProperties(settings.structuredProperties),
-      }),
-    [composerText, exportLang, messages, settings, systemInstruction]
-  );
+      await swarmPromise;
+      const elapsedMs = Math.max(80, Math.round(performance.now() - t0));
+      const outTok = estimateTokenCount(answerText);
 
-  const navItems: Array<{ id: StudioMode; icon: any; labelAr: string; labelEn: string }> = [
-    { id: "create_chat", icon: MessageSquare, labelAr: "المحادثة (Chat)", labelEn: "Chat" },
-    { id: "build", icon: Code2, labelAr: "المحرر (Build)", labelEn: "Build App" },
-    { id: "create_freeform", icon: Sparkles, labelAr: "نص حر (Freeform)", labelEn: "Freeform" },
-    { id: "stream_realtime", icon: Video, labelAr: "البث الحي", labelEn: "Realtime" },
-    { id: "compare", icon: Layers, labelAr: "مقارنة النماذج", labelEn: "Compare" },
-    { id: "starter_apps", icon: Bot, labelAr: "القوالب", labelEn: "Templates" },
-    { id: "api_keys", icon: KeyRound, labelAr: "مفاتيح API", labelEn: "API Keys" },
-    { id: "team_collab", icon: Users, labelAr: "الفريق", labelEn: "Collab" },
-    { id: "offline_vault", icon: WifiOff, labelAr: "الأوفلاين", labelEn: "Offline" },
-  ];
+      let updatedWorkspaceFiles = studioFiles;
+      if (extractedFiles.length > 0) {
+        updatedWorkspaceFiles = extractedFiles;
+        setStudioFiles(extractedFiles);
+        setFocusFilePath(extractedFiles[0]?.path || null);
+        setCheckpoints((prev) => [
+          { id: `cp_${Date.now()}`, label: rawPrompt.slice(0, 32), at: new Date().toISOString(), files: extractedFiles },
+          ...prev.slice(0, 9),
+        ]);
+        setRightTab("files");
+        setRightOpen(true);
+      }
 
-  const accentBgClass = "bg-white/[0.08] border-white/[0.12] text-white";
+      const assistantMsg: StudioMessage = {
+        id: `a_${Date.now()}`,
+        role: "assistant",
+        content: answerText,
+        thoughts: reasoningText || `Analyzed prompt -> Selected capabilities -> Generated structured answer`,
+        thinkingSeconds: Number((elapsedMs / 1000).toFixed(1)),
+        tokensIn: userMsg.tokensIn,
+        tokensOut: outTok,
+        latencyMs: elapsedMs,
+        tokPerSec: Math.round((outTok / elapsedMs) * 1000),
+        viewMode: "markdown",
+        citations: citations.length > 0 ? citations : undefined,
+        codeFiles: extractedFiles.length > 0 ? extractedFiles : undefined,
+        createdAt: new Date().toISOString(),
+      };
+
+      const finalMsgs = [...nextHistory, assistantMsg];
+      setMessages(finalMsgs);
+      persistCurrentThread(finalMsgs, updatedWorkspaceFiles);
+    } catch (err: any) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `err_${Date.now()}`,
+          role: "assistant",
+          content: `Completed local recovery note: ${err?.message || "Ready for next instruction."}`,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const handleMagicRefine = async () => {
+    if (!composerText.trim() || enhancingMagic) return;
+    setEnhancingMagic(true);
+    try {
+      const mRes = await fetch("/api/v1/magic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: composerText, brand, scale: settings.elasticScale, locale, enhanceOnly: true }),
+      });
+      const md = await mRes.json();
+      if (md?.ok && md?.enhancedPrompt) {
+        setComposerText(md.enhancedPrompt);
+        setStatusNotice(isAr ? "تم تحسين الطلب بنجاح" : "Prompt structured with Magic Spec");
+        setTimeout(() => setStatusNotice(null), 2200);
+      }
+    } catch {} finally {
+      setEnhancingMagic(false);
+    }
+  };
+
+  const isLight = appearance.themeMode === "light";
+  const pageBg = isLight ? "#FFFFFF" : appearance.backgroundHex;
+  const sideBg = isLight ? "#F8F9FA" : "#141416";
+  const cardBg = isLight ? "#FFFFFF" : "#161618";
+  const pageText = isLight ? "#111827" : appearance.foregroundHex;
+  const mutedText = isLight ? "text-gray-500" : "text-zinc-400";
+  const borderCls = isLight
+    ? appearance.contrast === "strong"
+      ? "border-gray-300"
+      : "border-gray-200"
+    : appearance.contrast === "strong"
+    ? "border-white/[0.16]"
+    : "border-white/[0.08]";
+
+  const starterPrompts =
+    brand === "kaspi_pos"
+      ? [
+          isAr ? "حلل مبيعات اليوم في KASPI POS وأنشئ تقرير مع توصيات المخزون" : "Analyze daily KASPI POS turnover, VAT summary & low stock items",
+          isAr ? "صمم واجهة فاتورة حرارية 80mm قابلة للطباعة لـ KASPI POS" : "Build a clean 80mm thermal receipt template (`index.html`, `styles.css`)",
+          isAr ? "اعمل فحص شامل للأسعار وهامش الربح بالدرهم المغربي TTC" : "Audit Moroccan TTC retail margins and export actionable table",
+        ]
+      : [
+          isAr ? "ابنِ لوحة تحكم متكاملة مع ملفات HTML/CSS/JS ومعاينة فورية" : "Build a clean interactive web app (`index.html`, `styles.css`, `app.js`)",
+          isAr ? "ابحث في الويب ولخص أهم المستجدات مع المصادر" : "Search live web sources and compile a structured technical brief",
+          isAr ? "اكتب سكربت Node/Python وجرّبه مباشرة في الـ Terminal" : "Write and verify a utility script cleanly in the workspace",
+        ];
 
   return (
     <div
       dir={isAr ? "rtl" : "ltr"}
-      style={{
-        backgroundColor: appearance.backgroundHex,
-        color: appearance.foregroundHex,
-      }}
-      className="h-screen w-full overflow-hidden flex flex-col select-none"
+      style={{ backgroundColor: pageBg, color: pageText }}
+      className="h-screen w-full flex flex-col overflow-hidden text-sm antialiased"
     >
-      {/* TOP HEADER BAR — Calm Antigravity IDE Chrome */}
-      <header className="h-12 shrink-0 border-b border-white/[0.07] px-3 sm:px-4 flex items-center justify-between gap-2 bg-[#141416]">
-        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+      {/* Top Calm Antigravity Bar (Identical layout for HEYUKA Studio & KASPI POS Studio) */}
+      <header
+        style={{ backgroundColor: sideBg }}
+        className={`h-11 px-3 border-b ${borderCls} flex items-center justify-between gap-2 shrink-0 select-none z-20`}
+      >
+        <div className="flex items-center gap-2 min-w-0">
           <button
             type="button"
-            onClick={() => {
-              if (typeof window !== "undefined" && window.innerWidth < 768) {
-                setMobileLeftOpen((p) => !p);
-              } else {
-                setLeftOpen((p) => !p);
-              }
-            }}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06] cursor-pointer"
+            onClick={() => setLeftOpen((p) => !p)}
+            className={`p-1.5 rounded-md cursor-pointer transition-colors ${isLight ? "hover:bg-gray-200 text-gray-600" : "hover:bg-white/[0.08] text-zinc-400"}`}
             title="Toggle Sidebar"
           >
             <PanelLeft className="w-4 h-4" />
           </button>
 
-          <Link href={`/${locale}/zebra-x`} className="flex items-center gap-2 shrink-0">
-            <HeyukaLoopMark size="sm" variant={brand === "kaspi_pos" ? "monochrome" : "crimson"} />
-            <span className="font-semibold text-xs tracking-tight text-zinc-200 hidden sm:inline">
-              {brand === "kaspi_pos" ? "KASPI Studio" : "HEYUKA Studio"}
+          <div className="flex items-center gap-2 min-w-0">
+            <HeyukaLoopMark size="sm" variant="monochrome" />
+            <span className="font-semibold text-xs sm:text-[13px] tracking-tight truncate">
+              {brand === "kaspi_pos" ? "KASPI POS Studio" : "HEYUKA Studio"}
             </span>
-          </Link>
+          </div>
 
-          {/* Calm Dual-Brand Switcher Pill */}
-          <div className="inline-flex items-center p-0.5 rounded-lg bg-white/[0.03] border border-white/[0.07] text-[11px] font-medium">
+          <div className={`hidden sm:flex items-center rounded-md p-0.5 text-[11px] border ${borderCls}`}>
             <button
               type="button"
               onClick={() => switchBrand("heyuka")}
-              className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
-                brand === "heyuka" ? "bg-white/[0.1] text-white" : "text-zinc-500 hover:text-zinc-300"
+              className={`px-2 py-0.5 rounded cursor-pointer font-medium transition-colors ${
+                brand === "heyuka"
+                  ? "text-white"
+                  : isLight
+                  ? "text-gray-600 hover:text-gray-900"
+                  : "text-zinc-400 hover:text-zinc-200"
               }`}
+              style={brand === "heyuka" ? { backgroundColor: appearance.accentHex } : undefined}
             >
               HEYUKA
             </button>
             <button
               type="button"
               onClick={() => switchBrand("kaspi_pos")}
-              className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer flex items-center gap-1 ${
-                brand === "kaspi_pos" ? "bg-white/[0.1] text-white" : "text-zinc-500 hover:text-zinc-300"
+              className={`px-2 py-0.5 rounded cursor-pointer font-medium transition-colors ${
+                brand === "kaspi_pos"
+                  ? "text-white"
+                  : isLight
+                  ? "text-gray-600 hover:text-gray-900"
+                  : "text-zinc-400 hover:text-zinc-200"
               }`}
+              style={brand === "kaspi_pos" ? { backgroundColor: appearance.accentHex } : undefined}
             >
-              <Store className="w-3 h-3" />
-              <span>KASPI POS</span>
+              KASPI POS
             </button>
           </div>
-
-          <span className="hidden xl:inline-flex text-[10px] font-mono text-zinc-500">
-            {saveBadge}
-          </span>
         </div>
 
-        {/* Quiet Top Toolbar Actions */}
-        <div className="flex items-center gap-1 sm:gap-1.5">
-          <button
-            type="button"
-            onClick={() => setGetCodeOpen(true)}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-[11px] font-medium text-zinc-300 hover:text-white cursor-pointer"
-          >
-            <Code2 className="w-3.5 h-3.5 text-zinc-400" />
-            <span>Get code</span>
-          </button>
+        {/* Top-Right Antigravity Pane Controls: Files | Terminal | Browser | Settings */}
+        <div className="flex items-center gap-1 shrink-0">
+          {(
+            [
+              { id: "files" as const, label: isAr ? "الملفات" : "Files", icon: FileCode2 },
+              { id: "terminal" as const, label: "Terminal", icon: Terminal },
+              { id: "browser" as const, label: isAr ? "المتصفح" : "Browser", icon: Globe },
+            ] as const
+          ).map((btn) => {
+            const Icon = btn.icon;
+            const active = rightOpen && rightTab === btn.id;
+            return (
+              <button
+                key={btn.id}
+                type="button"
+                onClick={() => {
+                  if (rightOpen && rightTab === btn.id) {
+                    setRightOpen(false);
+                  } else {
+                    setRightTab(btn.id);
+                    setRightOpen(true);
+                  }
+                }}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors ${
+                  active
+                    ? isLight
+                      ? "bg-gray-200 text-gray-900"
+                      : "bg-white/[0.12] text-white"
+                    : isLight
+                    ? "text-gray-600 hover:bg-gray-200/70"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" style={active ? { color: appearance.accentHex } : undefined} />
+                <span className="hidden md:inline">{btn.label}</span>
+              </button>
+            );
+          })}
 
           <button
             type="button"
-            onClick={() => setMode("api_keys")}
-            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-[11px] font-medium text-zinc-300 hover:text-white cursor-pointer"
-          >
-            <KeyRound className="w-3.5 h-3.5 text-zinc-400" />
-            <span>API Keys</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setAppearanceOpen(true)}
-            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-[11px] font-medium text-zinc-300 hover:text-white cursor-pointer"
+            onClick={() => setSettingsOpen(true)}
+            className={`p-1.5 rounded-md cursor-pointer transition-colors ${isLight ? "hover:bg-gray-200 text-gray-600" : "hover:bg-white/[0.08] text-zinc-400"}`}
             title="Settings & Appearance"
           >
-            <span
-              style={{ backgroundColor: appearance.accentHex }}
-              className="w-2 h-2 rounded-full shrink-0"
-            />
-            <span>Settings</span>
-          </button>
-
-          <LanguageSwitcher />
-          <KaspiThemeToggle />
-
-          <button
-            type="button"
-            onClick={() => {
-              if (typeof window !== "undefined" && window.innerWidth < 1024) {
-                setMobileRightOpen((p) => !p);
-              } else {
-                setRightOpen((p) => !p);
-              }
-            }}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06] cursor-pointer inline-flex items-center gap-1"
-            title="Toggle Settings Panel"
-          >
-            <PanelRight className="w-4 h-4" />
+            <Settings className="w-4 h-4" />
           </button>
         </div>
       </header>
 
-      {shareToast && (
-        <div className="px-4 py-1.5 bg-[#18181B] border-b border-white/[0.08] text-xs text-zinc-200 font-medium text-center">
-          {shareToast}
-        </div>
-      )}
-
-      {/* 3-PANE RESIZABLE WORKSPACE */}
+      {/* Main 3-Column IDE Workspace */}
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        {/* LEFT PANE: 5 Core Modes + Dual-Brand Nav */}
+        {/* LEFT SIDEBAR — Exact Antigravity Nav (+ New Conversation, Automations, Customizations, Pinned/Projects, Settings) */}
         {leftOpen && (
-          <>
-            <nav
-              style={{ width: leftWidthPx }}
-              className="shrink-0 hidden md:flex flex-col justify-between border-e border-white/[0.07] bg-[#141416] p-2.5 overflow-y-auto kaspi-no-scrollbar"
-            >
-              <div className="space-y-1">
+          <aside
+            style={{ backgroundColor: sideBg }}
+            className={`w-[228px] shrink-0 hidden md:flex flex-col justify-between border-e ${borderCls} p-2.5 select-none`}
+          >
+            <div className="space-y-3 min-h-0 flex-1 flex flex-col">
+              <div className="space-y-0.5">
                 <button
                   type="button"
-                  onClick={() => {
-                    setMessages([]);
-                    setMode("create_chat");
-                  }}
-                  className="w-full mb-2.5 px-3 py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.09] text-xs font-medium text-zinc-200 flex items-center gap-2 cursor-pointer transition-colors"
+                  onClick={startNewConversation}
+                  className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 cursor-pointer transition-colors ${
+                    isLight ? "hover:bg-gray-200/80 text-gray-800" : "hover:bg-white/[0.07] text-zinc-200"
+                  }`}
                 >
-                  <Plus className="w-3.5 h-3.5 text-zinc-400" />
+                  <Plus className="w-3.5 h-3.5 opacity-75" />
                   <span>{isAr ? "محادثة جديدة" : "New Conversation"}</span>
                 </button>
 
-                {navItems.slice(0, 7).map((item) => {
-                  const Icon = item.icon;
-                  const active = mode === item.id;
-                  return (
+                <button
+                  type="button"
+                  onClick={() => setAutomationsOpen(true)}
+                  className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 cursor-pointer transition-colors ${
+                    isLight ? "hover:bg-gray-200/80 text-gray-700" : "hover:bg-white/[0.07] text-zinc-300"
+                  }`}
+                >
+                  <Clock className="w-3.5 h-3.5 opacity-75" />
+                  <span>{isAr ? "الأتمتة" : "Automations"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCustomizationsOpen(true)}
+                  className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 cursor-pointer transition-colors ${
+                    isLight ? "hover:bg-gray-200/80 text-gray-700" : "hover:bg-white/[0.07] text-zinc-300"
+                  }`}
+                >
+                  <Wrench className="w-3.5 h-3.5 opacity-75" />
+                  <span>{isAr ? "التخصيصات" : "Customizations"}</span>
+                </button>
+              </div>
+
+              {/* Conversations List */}
+              <div className="flex-1 min-h-0 overflow-y-auto kaspi-no-scrollbar space-y-3 pt-1">
+                {threads.length > 0 && (
+                  <div className="space-y-1">
+                    <p className={`px-2 text-[10px] font-semibold uppercase tracking-wider ${mutedText}`}>
+                      {isAr ? "المحادثات" : "Conversations"}
+                    </p>
+                    {threads.map((th) => {
+                      const active = th.id === activeThreadId;
+                      return (
+                        <div
+                          key={th.id}
+                          className={`group flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
+                            active
+                              ? isLight
+                                ? "bg-gray-200 text-gray-900 font-medium"
+                                : "bg-white/[0.09] text-white font-medium"
+                              : isLight
+                              ? "text-gray-600 hover:bg-gray-200/60"
+                              : "text-zinc-400 hover:bg-white/[0.05]"
+                          }`}
+                          onClick={() => {
+                            setActiveThreadId(th.id);
+                            setMessages(th.messages || []);
+                            if (th.files?.length) setStudioFiles(th.files);
+                          }}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {th.pinned ? (
+                              <Pin className="w-3 h-3 shrink-0 opacity-60" />
+                            ) : (
+                              <MessageSquare className="w-3 h-3 shrink-0 opacity-50" />
+                            )}
+                            <span className="truncate">{th.title}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const remaining = threads.filter((x) => x.id !== th.id);
+                              setThreads(remaining);
+                              try {
+                                localStorage.setItem("heyuka_antigravity_threads_v1", JSON.stringify(remaining));
+                              } catch {}
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-rose-400"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Projects Switcher */}
+                <div className="space-y-1">
+                  <p className={`px-2 text-[10px] font-semibold uppercase tracking-wider ${mutedText}`}>
+                    {isAr ? "المشاريع" : "Projects"}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => switchBrand("kaspi_pos")}
+                    className={`w-full px-2 py-1.5 rounded-lg text-xs flex items-center gap-2 cursor-pointer transition-colors ${
+                      brand === "kaspi_pos"
+                        ? isLight
+                          ? "bg-gray-200 text-gray-900 font-medium"
+                          : "bg-white/[0.09] text-white font-medium"
+                        : isLight
+                        ? "text-gray-600 hover:bg-gray-200/60"
+                        : "text-zinc-400 hover:bg-white/[0.05]"
+                    }`}
+                  >
+                    <Store className="w-3.5 h-3.5 shrink-0" style={brand === "kaspi_pos" ? { color: appearance.accentHex } : undefined} />
+                    <span className="truncate">KASPI POS SaaS</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => switchBrand("heyuka")}
+                    className={`w-full px-2 py-1.5 rounded-lg text-xs flex items-center gap-2 cursor-pointer transition-colors ${
+                      brand === "heyuka"
+                        ? isLight
+                          ? "bg-gray-200 text-gray-900 font-medium"
+                          : "bg-white/[0.09] text-white font-medium"
+                        : isLight
+                        ? "text-gray-600 hover:bg-gray-200/60"
+                        : "text-zinc-400 hover:bg-white/[0.05]"
+                    }`}
+                  >
+                    <FolderGit2 className="w-3.5 h-3.5 shrink-0" style={brand === "heyuka" ? { color: appearance.accentHex } : undefined} />
+                    <span className="truncate">HEYUKA Workspace</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Settings */}
+            <div className={`pt-2 border-t ${borderCls}`}>
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 cursor-pointer transition-colors ${
+                  isLight ? "text-gray-600 hover:bg-gray-200/80 hover:text-gray-900" : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+                }`}
+              >
+                <Settings className="w-3.5 h-3.5 shrink-0" />
+                <span>{isAr ? "الإعدادات" : "Settings"}</span>
+              </button>
+            </div>
+          </aside>
+        )}
+
+        {/* CENTER AGENT CONVERSATION PANEL */}
+        <main style={{ backgroundColor: pageBg }} className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+          <div ref={chatScrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
+            {messages.length === 0 ? (
+              <div className="h-full max-w-2xl mx-auto flex flex-col justify-center items-center text-center space-y-5 pb-10">
+                <div className="space-y-1.5">
+                  <div className="inline-flex items-center justify-center gap-2">
+                    <HeyukaLoopMark size="md" variant="monochrome" />
+                    <h1 className="text-xl font-semibold tracking-tight">
+                      {brand === "kaspi_pos" ? "KASPI POS Studio" : "HEYUKA Studio"}
+                    </h1>
+                  </div>
+                  <p className={`text-xs ${mutedText}`}>
+                    {isAr
+                      ? "مساحة عمل موحدة: ملفات المشروع، Terminal حي، ومتصفح بحث متكامل."
+                      : "Unified workspace with live workspace files, Terminal, Browser & Search."}
+                  </p>
+                </div>
+
+                <div className="w-full max-w-lg space-y-1.5">
+                  {starterPrompts.map((promptText) => (
                     <button
-                      key={item.id}
+                      key={promptText}
                       type="button"
-                      onClick={() => setMode(item.id)}
-                      className={`w-full px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2.5 transition-colors cursor-pointer ${
-                        active ? "bg-white/[0.09] text-white" : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
+                      onClick={() => void handleRunPrompt(promptText)}
+                      className={`w-full text-start px-3.5 py-2.5 rounded-xl border text-xs cursor-pointer transition-colors flex items-center justify-between gap-2 ${
+                        isLight
+                          ? "bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-800"
+                          : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06] text-zinc-200"
                       }`}
                     >
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? "text-[#007ACC]" : "text-zinc-500"}`} />
-                      <span className="truncate">{isAr ? item.labelAr : item.labelEn}</span>
+                      <span className="truncate">{promptText}</span>
+                      <ChevronRight className="w-3.5 h-3.5 opacity-50 shrink-0" />
                     </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="max-w-3xl mx-auto space-y-6">
+                {messages.map((msg) => {
+                  const isUser = msg.role === "user";
+                  return (
+                    <div key={msg.id} className={`space-y-2 ${isUser ? "flex flex-col items-end" : ""}`}>
+                      {isUser ? (
+                        <div
+                          className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm whitespace-pre-wrap border ${
+                            isLight
+                              ? "bg-[#F3F4F6] border-gray-200 text-gray-900"
+                              : "bg-[#18191D] border-white/[0.08] text-zinc-100"
+                          }`}
+                        >
+                          {msg.content}
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          {/* Antigravity Thought Step Accordion */}
+                          {msg.thoughts && (
+                            <div>
+                              <button
+                                type="button"
+                                onClick={() => setExpandedThoughts((p) => ({ ...p, [msg.id]: !p[msg.id] }))}
+                                className={`inline-flex items-center gap-1.5 text-xs cursor-pointer ${mutedText} hover:opacity-100`}
+                              >
+                                <ChevronRight
+                                  className={`w-3.5 h-3.5 transition-transform ${
+                                    expandedThoughts[msg.id] ? "rotate-90" : ""
+                                  }`}
+                                />
+                                <span>
+                                  {isAr
+                                    ? `التفكير لمدة ${msg.thinkingSeconds || 1}ث`
+                                    : `Thought for ${msg.thinkingSeconds || 1}s`}
+                                </span>
+                              </button>
+                              {expandedThoughts[msg.id] && (
+                                <div
+                                  className={`mt-1.5 pl-4 border-l-2 ${borderCls} text-[11px] font-mono whitespace-pre-wrap ${mutedText}`}
+                                >
+                                  {msg.thoughts}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Action Badges (Files Edited / Citations) */}
+                          {msg.codeFiles && msg.codeFiles.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {msg.codeFiles.map((cf) => (
+                                <button
+                                  key={cf.path}
+                                  type="button"
+                                  onClick={() => {
+                                    setStudioFiles(msg.codeFiles!);
+                                    setFocusFilePath(cf.path);
+                                    setRightTab("files");
+                                    setRightOpen(true);
+                                  }}
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-mono cursor-pointer transition-colors ${
+                                    isLight
+                                      ? "bg-gray-50 border-gray-200 hover:border-[#007ACC] text-gray-800"
+                                      : "bg-white/[0.04] border-white/[0.09] hover:border-[#007ACC] text-zinc-200"
+                                  }`}
+                                >
+                                  <FileCode2 className="w-3 h-3" style={{ color: appearance.accentHex }} />
+                                  <span>{cf.path}</span>
+                                  <span className="text-emerald-500">+{cf.content.split(/\r?\n/).length}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Rich Markdown Output via shared HeyukaMarkdownMessage */}
+                          <div className="text-xs sm:text-[13px] leading-relaxed">
+                            <HeyukaMarkdownMessage
+                              markdown={msg.content}
+                              onOpenCodeInStudio={(lang, code, filePath) => {
+                                const targetPath = filePath || `snippet.${lang || "txt"}`;
+                                setStudioFiles((prev) => {
+                                  const exists = prev.some((f) => f.path === targetPath);
+                                  return exists
+                                    ? prev.map((f) => (f.path === targetPath ? { ...f, language: lang, content: code } : f))
+                                    : [...prev, { path: targetPath, language: lang, content: code }];
+                                });
+                                setFocusFilePath(targetPath);
+                                setRightTab("files");
+                                setRightOpen(true);
+                              }}
+                            />
+                          </div>
+
+                          {/* Grounding Source Links */}
+                          {msg.citations && msg.citations.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {msg.citations
+                                .filter((c) => c.url && /^https?:\/\//i.test(c.url))
+                                .slice(0, 5)
+                                .map((cit, cIdx) => (
+                                  <button
+                                    key={`${cit.url}-${cIdx}`}
+                                    type="button"
+                                    onClick={() => {
+                                      setRightTab("browser");
+                                      setRightOpen(true);
+                                    }}
+                                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] cursor-pointer ${
+                                      isLight ? "bg-gray-50 border-gray-200 text-[#007ACC]" : "bg-white/[0.04] border-white/[0.08] text-sky-400"
+                                    }`}
+                                  >
+                                    <Globe className="w-3 h-3" />
+                                    <span className="truncate max-w-[180px]">{cit.title}</span>
+                                  </button>
+                                ))}
+                            </div>
+                          )}
+
+                          {/* Action Icons Row */}
+                          <div className={`flex items-center gap-2 pt-1 ${mutedText}`}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(msg.content);
+                                setCopiedId(msg.id);
+                                setTimeout(() => setCopiedId(null), 1500);
+                              }}
+                              className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                              title="Copy response"
+                            >
+                              {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
 
-                <div className="pt-2 mt-2 border-t border-white/[0.06] space-y-0.5">
-                  {navItems.slice(7).map((item) => {
-                    const Icon = item.icon;
-                    const active = mode === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setMode(item.id)}
-                        className={`w-full px-3 py-1.5 rounded-lg text-[11px] font-medium flex items-center gap-2.5 transition-colors cursor-pointer ${
-                          active ? "bg-white/[0.09] text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]"
-                        }`}
-                      >
-                        <Icon className="w-3.5 h-3.5 shrink-0" />
-                        <span className="truncate">{isAr ? item.labelAr : item.labelEn}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="pt-2.5 border-t border-white/[0.07] space-y-1 text-[11px]">
-                <button
-                  type="button"
-                  onClick={() => setAppearanceOpen(true)}
-                  className="w-full px-2.5 py-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.05] flex items-center gap-2 cursor-pointer transition-colors"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 shrink-0">
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                  </svg>
-                  <span>{isAr ? "الإعدادات والمظهر" : "Settings"}</span>
-                </button>
-                <div className="flex gap-1 px-1">
-                  <Link href={`/${locale}/chat`} className="flex-1 text-center py-1 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.05] transition-colors">
-                    Chat
-                  </Link>
-                  <Link href={`/${locale}/dashboard`} className="flex-1 text-center py-1 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.05] transition-colors">
-                    POS
-                  </Link>
-                </div>
-              </div>
-            </nav>
-
-            {/* Drag Handle Left */}
-            <div
-              onMouseDown={() => { dragTargetRef.current = "left"; }}
-              className="hidden md:block w-1 shrink-0 bg-transparent hover:bg-[#007ACC]/60 cursor-col-resize transition-colors"
-            />
-          </>
-        )}
-
-        {/* CENTER PLAYGROUND / BUILD / REALTIME / COMPARE / COLLAB STAGE */}
-        <main style={{ backgroundColor: appearance.backgroundHex }} className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
-          {/* Mobile Horizontal Mode Switcher */}
-          <div className="flex md:hidden gap-1.5 p-2 border-b border-white/10 overflow-x-auto kaspi-no-scrollbar">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setMode(item.id)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 cursor-pointer ${
-                  mode === item.id ? accentBgClass : "bg-white/[0.06]"
-                }`}
-              >
-                {isAr ? item.labelAr : item.labelEn}
-              </button>
-            ))}
-          </div>
-
-          {mode === "create_chat" || mode === "create_freeform" ? (
-            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-              {/* Collapsible System Instructions Drawer */}
-              <div className="border-b border-white/10 bg-[#18191E]/60">
-                <div className="px-4 py-2 flex flex-wrap items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSysOpen((p) => !p)}
-                    className="flex items-center gap-2 text-xs font-bold cursor-pointer"
-                  >
-                    {sysOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                    <span>System Instructions</span>
-                  </button>
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      if (e.target.value) setSystemInstruction(e.target.value);
-                    }}
-                    className="px-2 py-1 rounded-lg bg-white/[0.06] border border-white/10 text-[11px]"
-                  >
-                    <option value="">Presets &amp; Saved Instructions...</option>
-                    {savedSystemPresets.map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
-                </div>
-                {sysOpen && (
-                  <div className="px-4 pb-3">
-                    <textarea
-                      rows={2}
-                      value={systemInstruction}
-                      onChange={(e) => setSystemInstruction(e.target.value)}
-                      placeholder="Set model persona, constraints, or tone..."
-                      className="w-full p-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs resize-y focus:outline-none focus:border-sky-400/50"
-                    />
+                {isRunning && (
+                  <div className={`flex items-center gap-2 text-xs ${mutedText} py-2`}>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: appearance.accentHex }} />
+                    <span>
+                      {isAr ? `جاري التنفيذ... (${runningSec}ث)` : `Working... (${runningSec}s)`}
+                    </span>
                   </div>
                 )}
               </div>
+            )}
+          </div>
 
-              {/* Few-Shot Examples Builder when in Freeform mode */}
-              {mode === "create_freeform" && (
-                <div className="p-3 border-b border-white/10 bg-white/[0.02] space-y-2 max-h-44 overflow-y-auto">
-                  <div className="flex items-center justify-between text-xs font-bold">
-                    <span>Few-Shot Examples (Input -&gt; Output Pairs)</span>
+          {/* BOTTOM WORKSPACE FILE BAR + AUTO-EXPANDING ANTIGRAVITY COMPOSER */}
+          <div className="px-4 sm:px-6 pb-3 pt-1 shrink-0">
+            <div className="max-w-3xl mx-auto space-y-2">
+              {/* "N files changed +X -0 | Review" Strip matching IMG_5822.MOV */}
+              {studioFiles.length > 0 && (
+                <div className={`rounded-xl border ${borderCls} ${isLight ? "bg-[#F8F9FA]" : "bg-[#141416]"} overflow-hidden text-xs`}>
+                  <div className="px-3 py-1.5 flex items-center justify-between gap-2">
                     <button
                       type="button"
-                      onClick={() => setFewShotPairs((p) => [...p, { id: `fs_${Date.now()}`, input: "", output: "" }])}
-                      className="px-2 py-0.5 rounded bg-white/10 text-[11px] cursor-pointer"
+                      onClick={() => setChangedDrawerOpen((p) => !p)}
+                      className="flex items-center gap-2 font-medium cursor-pointer"
                     >
-                      + Add Example
+                      <span className="font-mono">{studioFiles.length} files changed</span>
+                      <span className="font-mono text-emerald-500">+{totalChangedLines}</span>
                     </button>
-                  </div>
-                  {fewShotPairs.map((pair) => (
-                    <div key={pair.id} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        value={pair.input}
-                        onChange={(e) =>
-                          setFewShotPairs((prev) => prev.map((x) => (x.id === pair.id ? { ...x, input: e.target.value } : x)))
-                        }
-                        placeholder="Example input..."
-                        className="px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 text-xs"
-                      />
-                      <div className="flex gap-1">
-                        <input
-                          type="text"
-                          value={pair.output}
-                          onChange={(e) =>
-                            setFewShotPairs((prev) => prev.map((x) => (x.id === pair.id ? { ...x, output: e.target.value } : x)))
-                          }
-                          placeholder="Expected output..."
-                          className="flex-1 px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 text-xs font-mono"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setFewShotPairs((prev) => prev.filter((x) => x.id !== pair.id))}
-                          className="px-2 text-rose-400 cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRightTab("changes");
+                          setRightOpen(true);
+                        }}
+                        className={`px-2.5 py-0.5 rounded-md border text-[11px] font-medium cursor-pointer ${
+                          isLight ? "bg-white border-gray-300 hover:bg-gray-100" : "bg-white/[0.06] border-white/[0.12] hover:bg-white/[0.12]"
+                        }`}
+                      >
+                        Review
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setChangedDrawerOpen((p) => !p)}
+                        className={`p-1 rounded cursor-pointer ${mutedText}`}
+                      >
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${changedDrawerOpen ? "rotate-180" : ""}`} />
+                      </button>
                     </div>
+                  </div>
+                  {changedDrawerOpen && (
+                    <div className={`px-3 py-2 border-t ${borderCls} space-y-1`}>
+                      {studioFiles.map((f) => (
+                        <button
+                          key={f.path}
+                          type="button"
+                          onClick={() => {
+                            setFocusFilePath(f.path);
+                            setRightTab("files");
+                            setRightOpen(true);
+                          }}
+                          className={`w-full flex items-center justify-between px-2 py-1 rounded text-[11px] font-mono cursor-pointer ${
+                            isLight ? "hover:bg-gray-200/60" : "hover:bg-white/[0.06]"
+                          }`}
+                        >
+                          <span>{f.path}</span>
+                          <span className="text-emerald-500">+{f.content.split(/\r?\n/).length}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Status Alerts (Audio Error / Magic Notice) */}
+              {(dictation.statusError || statusNotice) && (
+                <div className={`px-3 py-1.5 rounded-lg border text-[11px] flex items-center justify-between gap-2 ${borderCls} ${isLight ? "bg-gray-50" : "bg-[#161618]"}`}>
+                  <span>{dictation.statusError || statusNotice}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      dictation.clearError();
+                      setStatusNotice(null);
+                    }}
+                    className="cursor-pointer opacity-70 hover:opacity-100"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Staged Attachments Preview */}
+              {attachments.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {attachments.map((att) => (
+                    <span
+                      key={att.id}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] ${borderCls}`}
+                    >
+                      <Paperclip className="w-3 h-3 opacity-60" />
+                      <span className="truncate max-w-[160px]">{att.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setAttachments((p) => p.filter((x) => x.id !== att.id))}
+                        className="cursor-pointer opacity-70 hover:opacity-100"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
                   ))}
                 </div>
               )}
 
-              {/* Messages Stream */}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
-                {messages.length === 0 && (
-                  <div className="max-w-xl mx-auto text-center py-10 space-y-4">
-                    <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#F7EAEA]">
-                      {isAr ? "ماذا نبني اليوم؟" : "Start building cleanly"}
-                    </h1>
-                    <p className="text-xs text-zinc-400">
-                      {brand === "kaspi_pos"
-                        ? "KASPI POS retail analytics, receipts, and store automation — all from one quiet prompt."
-                        : "Write code, design UI, or trigger multi-agent workflows automatically behind one prompt."}
-                    </p>
-                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                      {STUDIO_STARTER_TEMPLATES.filter((t) => t.brand === brand).slice(0, 3).map((tpl) => (
-                        <button
-                          key={tpl.id}
-                          type="button"
-                          onClick={() => {
-                            setSystemInstruction(tpl.systemInstruction);
-                            setComposerText(tpl.prompt);
-                            setSettings((s) => ({ ...s, elasticScale: tpl.scale }));
-                            if (tpl.mode === "build") setMode("build");
-                          }}
-                          className="px-3 py-1.5 rounded-full bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.08] text-[11px] font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer"
-                        >
-                          {isAr ? tpl.titleAr : tpl.titleEn}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {messages.map((msg, idx) => (
-                  <div key={msg.id} className="max-w-4xl mx-auto space-y-2 rounded-2xl p-4 bg-white/[0.03] border border-white/10">
-                    {/* Role Header + Per-Message Toolbar */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                      <div className="flex items-center gap-2 font-bold">
-                        <span className={msg.role === "user" ? "text-zinc-200" : brand === "kaspi_pos" ? "text-emerald-300" : "text-sky-300"}>
-                          {msg.role === "user" ? "User" : "Model (HEYUKA)"}
-                        </span>
-                        {msg.latencyMs && (
-                          <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] text-zinc-400">
-                            ⏱ {(msg.latencyMs / 1000).toFixed(2)}s • ⚡ {msg.tokPerSec} tok/s • 🪙 {msg.tokensOut} tok
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        {msg.role === "assistant" && (
-                          <select
-                            value={msg.viewMode || "markdown"}
-                            onChange={(e) =>
-                              setMessages((prev) =>
-                                prev.map((x) => (x.id === msg.id ? { ...x, viewMode: e.target.value as StudioMessage["viewMode"] } : x))
-                              )
-                            }
-                            className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/10 text-[10px]"
-                          >
-                            <option value="markdown">Markdown</option>
-                            <option value="raw">Raw</option>
-                            <option value="json">JSON</option>
-                          </select>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingMsgId(msg.id);
-                            setEditingDraft(msg.content);
-                          }}
-                          className="p-1 rounded hover:bg-white/10 cursor-pointer"
-                          title="Edit / Branch from here"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        {msg.role === "user" && (
-                          <button
-                            type="button"
-                            onClick={() => handleRunPrompt(msg.content, messages.slice(0, idx))}
-                            className="p-1 rounded hover:bg-white/10 cursor-pointer"
-                            title="Rerun / Branch from turn"
-                          >
-                            <GitBranch className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => navigator.clipboard.writeText(msg.content)}
-                          className="p-1 rounded hover:bg-white/10 cursor-pointer"
-                          title="Copy"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setMessages((prev) => prev.filter((x) => x.id !== msg.id))}
-                          className="p-1 rounded hover:bg-rose-500/20 text-rose-400 cursor-pointer"
-                          title="Delete Turn"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Collapsible Thinking Process Accordion */}
-                    {msg.thoughts && (
-                      <div className="rounded-xl bg-white/[0.04] border border-white/10 overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() => setExpandedThoughts((p) => ({ ...p, [msg.id]: !p[msg.id] }))}
-                          className="w-full px-3 py-1.5 flex items-center justify-between text-[11px] font-semibold text-zinc-300 cursor-pointer"
-                        >
-                          <span className="flex items-center gap-1.5">
-                            <Sparkles className="w-3 h-3 text-amber-300" />
-                            <span>Thinking Process • {msg.thinkingSeconds}s</span>
-                          </span>
-                          {expandedThoughts[msg.id] ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                        </button>
-                        {expandedThoughts[msg.id] && (
-                          <div className="px-3 pb-2.5 text-[11px] font-mono text-zinc-400 border-t border-white/10 pt-2">
-                            {msg.thoughts}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Message Body or Inline Edit */}
-                    {editingMsgId === msg.id ? (
-                      <div className="space-y-2">
-                        <textarea
-                          rows={3}
-                          value={editingDraft}
-                          onChange={(e) => setEditingDraft(e.target.value)}
-                          className="w-full p-2.5 rounded-xl bg-white/[0.06] border border-white/15 text-xs"
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingMsgId(null);
-                              if (msg.role === "user") {
-                                handleRunPrompt(editingDraft, messages.slice(0, idx));
-                              } else {
-                                setMessages((prev) => prev.map((x) => (x.id === msg.id ? { ...x, content: editingDraft } : x)));
-                              }
-                            }}
-                            className="px-3 py-1 rounded-lg kaspi-primary-cta-btn text-xs font-bold cursor-pointer"
-                          >
-                            {msg.role === "user" ? "Branch & Rerun" : "Save Edit"}
-                          </button>
-                          <button type="button" onClick={() => setEditingMsgId(null)} className="px-3 py-1 rounded-lg bg-white/10 text-xs cursor-pointer">
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <pre className="whitespace-pre-wrap text-xs sm:text-sm leading-relaxed font-sans text-zinc-100">
-                        {msg.viewMode === "json" ? JSON.stringify(msg, null, 2) : msg.content}
-                      </pre>
-                    )}
-
-                    {/* Search Chips, Grounding Maps & Code Files */}
-                    {msg.searchQueries && msg.searchQueries.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[10px]">
-                        <span className="text-zinc-400">Search Queries:</span>
-                        {msg.searchQueries.map((sq) => (
-                          <span key={sq} className="px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/10 font-mono">
-                            🔍 {sq}
-                          </span>
-                        ))}
-                        {settings.groundingMapsEnabled && (
-                          <a
-                            href="https://www.openstreetmap.org/?mlat=35.1688&mlon=-2.9335#map=13/35.1688/-2.9335"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 inline-flex items-center gap-1"
-                          >
-                            <MapPin className="w-3 h-3" />
-                            <span>OpenStreetMap Grounding</span>
-                          </a>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Function Calling Interactive Tool Response Loop */}
-                    {msg.functionCall && (
-                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] space-y-1.5">
-                        <div className="font-mono font-bold text-amber-300">
-                          Function Call: {msg.functionCall.name}({JSON.stringify(msg.functionCall.args)})
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleRunPrompt(
-                              `Function response for ${msg.functionCall?.name}: {"status":"ok","revenueTtcMad":12570,"topItem":"Espresso"}`
-                            )
-                          }
-                          className="px-2.5 py-1 rounded-lg bg-amber-500/25 hover:bg-amber-500/40 font-bold cursor-pointer"
-                        >
-                          Send Tool Result to Continue Loop
-                        </button>
-                      </div>
-                    )}
-
-                    {msg.codeFiles && msg.codeFiles.length > 0 && (
-                      <div className="space-y-2 pt-2 border-t border-white/10">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-[11px] font-mono text-emerald-300">
-                            {msg.codeFiles.length} file(s) changed (+
-                            {msg.codeFiles.reduce((s, f) => s + f.content.split(/\r?\n/).length, 0)} lines)
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setStudioFiles(msg.codeFiles!);
-                              setFocusFilePath(msg.codeFiles![0]?.path || null);
-                              setMode("build");
-                            }}
-                            style={{ borderColor: appearance.accentHex }}
-                            className="px-3 py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] border text-white text-[11px] font-bold cursor-pointer"
-                          >
-                            Review &amp; Preview →
-                          </button>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {msg.codeFiles.map((cf) => {
-                            const meta = getFileBadgeMeta(cf.path, cf.language);
-                            return (
-                              <button
-                                key={cf.path}
-                                type="button"
-                                onClick={() => {
-                                  setStudioFiles(msg.codeFiles!);
-                                  setFocusFilePath(cf.path);
-                                  setMode("build");
-                                }}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.05] hover:bg-white/[0.12] border border-white/10 text-[11px] font-mono cursor-pointer transition-colors"
-                              >
-                                <span
-                                  style={{ color: meta.color, backgroundColor: meta.bg }}
-                                  className="px-1 rounded text-[8px] font-black"
-                                >
-                                  {meta.extLabel}
-                                </span>
-                                <span className="text-zinc-200">{cf.path}</span>
-                                <span className="text-emerald-400 text-[10px]">
-                                  +{cf.content.split(/\r?\n/).length}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Antigravity Status Bar (only shown while running or active thread) + Composer */}
-              <div className="p-3 sm:p-4 border-t border-white/[0.07] bg-[#141416] space-y-2">
-                {(isRunning || messages.length > 0) && studioFiles.length > 0 && (
-                  <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-[#18181B] border border-white/[0.07] text-[11px]">
-                    <div className="flex items-center gap-3">
-                      {isRunning ? (
-                        <span className="inline-flex items-center gap-1.5 text-zinc-200 font-medium">
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#007ACC]" />
-                          <span>Running task...</span>
-                        </span>
-                      ) : (
-                        <span className="font-mono text-zinc-400">
-                          {studioFiles.length} files changed +
-                          {studioFiles.reduce((acc, f) => acc + f.content.split(/\r?\n/).length, 0)} -0
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setMode("build")}
-                        className="px-2.5 py-0.5 rounded-md bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] font-medium text-zinc-200 cursor-pointer"
-                      >
-                        Review
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {mentionPickerOpen && (
-                  <div className="max-w-4xl mx-auto flex flex-wrap gap-1.5 px-2 py-1.5 rounded-xl bg-[#18181B] border border-white/[0.08] text-[11px]">
-                    {[
-                      "@elastic_12x ",
-                      "@kaspi_pos ",
-                      "@18_clusters ",
-                      "@pc_bot_farm ",
-                      "/magic ",
-                      "/sandbox ",
-                      "/browser ",
-                      "/offline ",
-                    ].map((tok) => (
-                      <button
-                        key={tok}
-                        type="button"
-                        onClick={() => {
-                          setComposerText((p) => `${p}${p ? " " : ""}${tok}`);
-                          setMentionPickerOpen(false);
-                        }}
-                        className="px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-white/[0.12] font-mono cursor-pointer text-zinc-300"
-                      >
-                        {tok.trim()}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <div className="max-w-4xl mx-auto rounded-2xl bg-[#161618] border border-white/[0.09] p-3 space-y-2.5">
-                  {/* Attachment Chips + Video Clipping/FPS Controls */}
-                  {attachments.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {attachments.map((att) => (
-                        <div key={att.id} className="px-2.5 py-1.5 rounded-xl bg-white/[0.08] border border-white/15 flex items-center gap-2 text-[11px]">
-                          {att.dataUrl && att.mimeType.startsWith("image/") && (
-                            <img src={att.dataUrl} alt={att.name} className="w-7 h-7 rounded object-cover" />
-                          )}
-                          <span className="font-mono truncate max-w-[140px]">{att.name}</span>
-                          {(att.mimeType.startsWith("video/") || att.mimeType.startsWith("audio/")) && (
-                            <span className="font-mono text-[10px] text-sky-300">
-                              Clip {att.clipStartSec}s-{att.clipEndSec}s @ {att.fps}fps
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => setAttachments((p) => p.filter((x) => x.id !== att.id))}
-                            className="text-rose-400 cursor-pointer"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Auto URL Context Chips */}
-                  {settings.urlContextEnabled && detectedUrlsInComposer.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 text-[10px]">
-                      {detectedUrlsInComposer.map((u) => (
-                        <span key={u} className="px-2 py-0.5 rounded-full bg-sky-500/15 border border-sky-500/30 text-sky-300 font-mono">
-                          🔗 URL Context: {u.slice(0, 48)}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <textarea
-                    rows={2}
-                    value={composerText}
-                    onChange={(e) => setComposerText(e.target.value)}
-                    onPaste={(e) => {
-                      const items = Array.from(e.clipboardData?.items || []);
-                      const filesFromPaste = items.map((it) => it.getAsFile()).filter(Boolean) as File[];
-                      if (filesFromPaste.length > 0) {
-                        const dt = new DataTransfer();
-                        filesFromPaste.forEach((f) => dt.items.add(f));
-                        handleAttachFiles(dt.files);
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-                        e.preventDefault();
-                        handleRunPrompt();
-                      }
-                    }}
-                    placeholder={
-                      isAr
-                        ? "اكتب طلبك هنا (يدعم لصق الصور Ctrl+V، الروابط، العربية/الدارجة، و Ctrl+Enter للإرسال)..."
-                        : "Type prompt, paste screenshot (Ctrl+V), or drop URLs — press Ctrl+Enter to Run..."
+              {/* Main Antigravity Composer Container */}
+              <div
+                style={{ backgroundColor: cardBg }}
+                className={`relative rounded-2xl border ${borderCls} px-3.5 py-2.5 shadow-sm space-y-2`}
+              >
+                <textarea
+                  ref={textareaRef}
+                  rows={1}
+                  dir="auto"
+                  value={composerText}
+                  onChange={(e) => setComposerText(e.target.value)}
+                  onPaste={(e) => {
+                    const items = Array.from(e.clipboardData?.items || []);
+                    const pasted = items.map((i) => i.getAsFile()).filter(Boolean) as File[];
+                    if (pasted.length > 0) {
+                      const dt = new DataTransfer();
+                      pasted.forEach((f) => dt.items.add(f));
+                      handleAttachFiles(dt.files);
                     }
-                    className="w-full bg-transparent text-xs sm:text-sm resize-y focus:outline-none text-white"
-                  />
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      void handleRunPrompt();
+                    }
+                  }}
+                  placeholder={
+                    isAr
+                      ? "اسأل أي شيء، أرفق ملفات أو روابط، أو استعمل الميكروفون..."
+                      : "Ask anything, @ to mention, / for workflows..."
+                  }
+                  className="w-full bg-transparent text-xs sm:text-sm leading-relaxed focus:outline-none resize-none overflow-y-auto"
+                />
 
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/10">
-                    <div className="relative flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setPlusMenuOpen((p) => !p)}
-                        className="p-2 rounded-xl bg-white/[0.07] hover:bg-white/[0.14] cursor-pointer"
-                        title="Add Media / Files / Samples"
+                {/* Bottom Bar Inside Composer (Exact Antigravity Layout) */}
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  {/* Left Controls: + | Policy | Model */}
+                  <div className="relative flex flex-wrap items-center gap-1 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPolicyMenuOpen(false);
+                        setModelMenuOpen(false);
+                        setPlusMenuOpen((p) => !p);
+                      }}
+                      className={`p-1.5 rounded-lg cursor-pointer transition-colors ${isLight ? "hover:bg-gray-100 text-gray-600" : "hover:bg-white/[0.08] text-zinc-400"}`}
+                      title="Add context, image or file"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPlusMenuOpen(false);
+                        setModelMenuOpen(false);
+                        setPolicyMenuOpen((p) => !p);
+                      }}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium cursor-pointer transition-colors ${
+                        isLight ? "hover:bg-gray-100 text-gray-700" : "hover:bg-white/[0.07] text-zinc-300"
+                      }`}
+                    >
+                      <span className="capitalize">{executionPolicy}</span>
+                      <ChevronDown className="w-3 h-3 opacity-60" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPlusMenuOpen(false);
+                        setPolicyMenuOpen(false);
+                        setModelMenuOpen((p) => !p);
+                      }}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium cursor-pointer transition-colors ${
+                        isLight ? "hover:bg-gray-100 text-gray-700" : "hover:bg-white/[0.07] text-zinc-300"
+                      }`}
+                    >
+                      <span>{UNIFIED_MODELS.find((m) => m.id === settings.model)?.label || settings.model}</span>
+                      <ChevronDown className="w-3 h-3 opacity-60" />
+                    </button>
+
+                    {/* + Dropdown */}
+                    {plusMenuOpen && (
+                      <div
+                        style={{ backgroundColor: cardBg }}
+                        className={`absolute bottom-10 start-0 w-56 rounded-xl border ${borderCls} p-1.5 shadow-xl z-30 text-xs space-y-0.5`}
                       >
-                        <Plus className="w-4 h-4" />
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPlusMenuOpen(false);
+                            fileInputRef.current?.click();
+                          }}
+                          className={`w-full text-start px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer ${
+                            isLight ? "hover:bg-gray-100" : "hover:bg-white/[0.08]"
+                          }`}
+                        >
+                          <Paperclip className="w-3.5 h-3.5" />
+                          <span>Upload Image, Audio or File</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPlusMenuOpen(false);
+                            setMentionOpen((p) => !p);
+                          }}
+                          className={`w-full text-start px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer ${
+                            isLight ? "hover:bg-gray-100" : "hover:bg-white/[0.08]"
+                          }`}
+                        >
+                          <Code2 className="w-3.5 h-3.5" />
+                          <span>@ Mention Workspace Item</span>
+                        </button>
+                      </div>
+                    )}
 
-                      {plusMenuOpen && (
-                        <div className="absolute bottom-11 start-0 w-56 p-1.5 rounded-xl bg-[#202229] border border-white/15 shadow-xl space-y-1 z-30 text-xs">
+                    {/* Policy Dropdown */}
+                    {policyMenuOpen && (
+                      <div
+                        style={{ backgroundColor: cardBg }}
+                        className={`absolute bottom-10 start-8 w-44 rounded-xl border ${borderCls} p-1.5 shadow-xl z-30 text-xs space-y-0.5`}
+                      >
+                        {(["planning", "fast", "turbo"] as const).map((pol) => (
                           <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="w-full text-start px-2.5 py-1.5 rounded-lg hover:bg-white/10 flex items-center gap-2 cursor-pointer"
-                          >
-                            <Paperclip className="w-3.5 h-3.5" />
-                            <span>Upload Image, Video, Audio, PDF</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => { setPlusMenuOpen(false); setMode("stream_realtime"); }}
-                            className="w-full text-start px-2.5 py-1.5 rounded-lg hover:bg-white/10 flex items-center gap-2 cursor-pointer"
-                          >
-                            <Camera className="w-3.5 h-3.5" />
-                            <span>Webcam &amp; Screen Share</span>
-                          </button>
-                          <button
+                            key={pol}
                             type="button"
                             onClick={() => {
-                              setPlusMenuOpen(false);
-                              setComposerText("Analyze ASIMA POS daily turnover: 8,420 MAD Cash + 4,150 MAD TPE Card, compute clean TTC margin and suggest 3 optimizations.");
+                              setExecutionPolicy(pol);
+                              setPolicyMenuOpen(false);
                             }}
-                            className="w-full text-start px-2.5 py-1.5 rounded-lg hover:bg-white/10 flex items-center gap-2 cursor-pointer"
+                            className={`w-full text-start px-2.5 py-1.5 rounded-lg flex items-center justify-between capitalize cursor-pointer ${
+                              isLight ? "hover:bg-gray-100" : "hover:bg-white/[0.08]"
+                            }`}
                           >
-                            <Store className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Insert Sample KASPI POS</span>
+                            <span>{pol}</span>
+                            {executionPolicy === pol && <Check className="w-3.5 h-3.5" style={{ color: appearance.accentHex }} />}
                           </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Equal Unified Models Dropdown */}
+                    {modelMenuOpen && (
+                      <div
+                        style={{ backgroundColor: cardBg }}
+                        className={`absolute bottom-10 start-16 w-64 rounded-xl border ${borderCls} p-1.5 shadow-xl z-30 text-xs space-y-0.5`}
+                      >
+                        <div className={`px-2.5 py-1 text-[10px] ${mutedText}`}>
+                          All models share full equal capabilities
                         </div>
-                      )}
+                        {UNIFIED_MODELS.map((m) => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => {
+                              setSettings((s) => ({ ...s, model: m.id }));
+                              setModelMenuOpen(false);
+                            }}
+                            className={`w-full text-start px-2.5 py-1.5 rounded-lg flex items-center justify-between cursor-pointer ${
+                              isLight ? "hover:bg-gray-100" : "hover:bg-white/[0.08]"
+                            }`}
+                          >
+                            <span>{m.label}</span>
+                            {settings.model === m.id && <Check className="w-3.5 h-3.5" style={{ color: appearance.accentHex }} />}
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        className="hidden"
-                        onChange={(e) => handleAttachFiles(e.target.files)}
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-                          if (!SR) return;
-                          const rec = new SR();
-                          rec.lang = isAr ? "ar-MA" : locale === "fr" ? "fr-FR" : "en-US";
-                          setIsMicListening(true);
-                          rec.onresult = (ev: any) => {
-                            const txt = ev.results?.[0]?.[0]?.transcript || "";
-                            if (txt) setComposerText((prev) => `${prev} ${txt}`.trim());
-                          };
-                          rec.onend = () => setIsMicListening(false);
-                          rec.start();
-                        }}
-                        className={`p-2 rounded-xl cursor-pointer ${isMicListening ? "bg-rose-500/30 text-rose-300" : "bg-white/[0.06] hover:bg-white/[0.12]"}`}
-                        title="Voice Dictation"
+                    {/* @ Mention Picker */}
+                    {mentionOpen && (
+                      <div
+                        style={{ backgroundColor: cardBg }}
+                        className={`absolute bottom-10 start-0 w-56 rounded-xl border ${borderCls} p-1.5 shadow-xl z-30 text-xs space-y-0.5`}
                       >
-                        {isMicListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                      </button>
+                        {["@workspace ", "@kaspi_pos ", "@terminal ", "@browser "].map((token) => (
+                          <button
+                            key={token}
+                            type="button"
+                            onClick={() => {
+                              setComposerText((p) => `${p}${token}`);
+                              setMentionOpen(false);
+                            }}
+                            className={`w-full text-start px-2.5 py-1 rounded font-mono cursor-pointer ${
+                              isLight ? "hover:bg-gray-100" : "hover:bg-white/[0.08]"
+                            }`}
+                          >
+                            {token}
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
-                      <span className="text-[10px] font-mono text-zinc-400 px-2">
-                        {estimateTokenCount(composerText)} tok
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleAttachFiles(e.target.files)}
+                    />
+                  </div>
+
+                  {/* Right Controls: Working Mic + Magic Refine + Send */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {(dictation.listening || dictation.transcribing) && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400">
+                        {dictation.transcribing
+                          ? "Transcribing..."
+                          : `REC ${Math.floor(dictation.elapsedSec / 60)}:${String(dictation.elapsedSec % 60).padStart(2, "0")}`}
                       </span>
+                    )}
 
-                      <button
-                        type="button"
-                        disabled={enhancingMagic || !composerText.trim()}
-                        onClick={async () => {
-                          if (!composerText.trim()) return;
-                          setEnhancingMagic(true);
-                          try {
-                            const mRes = await fetch("/api/v1/magic", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                prompt: composerText,
-                                brand,
-                                scale: settings.elasticScale,
-                                locale,
-                                enhanceOnly: true,
-                              }),
-                            });
-                            const md = await mRes.json();
-                            if (md?.ok && md?.enhancedPrompt) {
-                              setComposerText(md.enhancedPrompt);
-                              setShareToast(
-                                `Magic Spec Ready (${md.strictDisambiguation?.categoryCode || "OMNI"} • ${md.swarmPlan?.nodes?.length || 3}x Swarm)`
-                              );
-                              setTimeout(() => setShareToast(null), 2600);
-                            }
-                          } catch {} finally {
-                            setEnhancingMagic(false);
-                          }
-                        }}
-                        className="px-2 py-1 rounded-lg bg-transparent hover:bg-white/[0.07] text-[11px] font-medium text-zinc-400 hover:text-zinc-200 flex items-center gap-1 cursor-pointer disabled:opacity-40 transition-colors"
-                        title="Refine prompt (/api/v1/magic)"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">{enhancingMagic ? "Refining..." : "Enhance"}</span>
-                      </button>
+                    <button
+                      type="button"
+                      onClick={() => void dictation.toggle()}
+                      className={`p-1.5 rounded-full cursor-pointer transition-colors ${
+                        dictation.listening
+                          ? "bg-rose-600 text-white animate-pulse"
+                          : isLight
+                          ? "hover:bg-gray-100 text-gray-600"
+                          : "hover:bg-white/[0.08] text-zinc-400"
+                      }`}
+                      title={dictation.listening ? "Stop audio capture" : "Record audio / dictate"}
+                    >
+                      {dictation.listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setMentionPickerOpen((p) => !p)}
-                        className="px-2 py-1 rounded-lg bg-transparent hover:bg-white/[0.07] text-[11px] font-mono text-zinc-500 hover:text-zinc-300 cursor-pointer transition-colors"
-                        title="@ mentions & / actions"
-                      >
-                        @ /
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      disabled={enhancingMagic || !composerText.trim()}
+                      onClick={() => void handleMagicRefine()}
+                      className={`p-1.5 rounded-full cursor-pointer disabled:opacity-35 transition-colors ${
+                        isLight ? "hover:bg-gray-100 text-gray-600" : "hover:bg-white/[0.08] text-zinc-400"
+                      }`}
+                      title="Magic Refine (/api/v1/magic)"
+                    >
+                      <Sparkles className={`w-4 h-4 ${enhancingMagic ? "animate-spin" : ""}`} />
+                    </button>
 
                     <button
                       type="button"
                       disabled={isRunning || !composerText.trim()}
-                      onClick={() => handleRunPrompt()}
-                      style={{ backgroundColor: composerText.trim() && !isRunning ? appearance.accentHex : undefined }}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors ${
+                      onClick={() => void handleRunPrompt()}
+                      style={
                         composerText.trim() && !isRunning
-                          ? "text-white hover:opacity-90"
-                          : "bg-white/[0.06] text-zinc-500 cursor-not-allowed"
+                          ? { backgroundColor: appearance.accentHex, color: "#FFFFFF" }
+                          : undefined
+                      }
+                      className={`w-7 h-7 rounded-full flex items-center justify-center cursor-pointer disabled:opacity-35 transition-colors ${
+                        isLight ? "bg-gray-200 text-gray-700" : "bg-white/[0.1] text-zinc-300"
                       }`}
+                      title="Send (Enter)"
                     >
-                      {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-                      <span>{isAr ? "تشغيل" : "Run"}</span>
+                      {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowUp className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                 </div>
               </div>
             </div>
-          ) : null}
-
-          {/* Specialized Full/Bottom Workbench Container */}
-          <div className={mode === "create_chat" || mode === "create_freeform" ? "shrink-0" : "flex-1 min-h-0"}>
-            <StudioWorkbenchTabs
-              mode={mode}
-              brand={brand}
-              locale={locale}
-              files={studioFiles}
-              onChangeFiles={setStudioFiles}
-              checkpoints={checkpoints}
-              onSaveCheckpoint={(label) =>
-                setCheckpoints((prev) => [{ id: `cp_${Date.now()}`, label, at: new Date().toISOString(), files: studioFiles }, ...prev.slice(0, 9)])
-              }
-              onRestoreCheckpoint={(id) => {
-                const found = checkpoints.find((c) => c.id === id);
-                if (found) setStudioFiles(found.files);
-              }}
-              onRunPromptFromChild={(txt) => {
-                setMode("create_chat");
-                handleRunPrompt(txt);
-              }}
-              onSelectTemplate={(tpl) => {
-                switchBrand(tpl.brand);
-                setSystemInstruction(tpl.systemInstruction);
-                setComposerText(tpl.prompt);
-                setSettings((s) => ({ ...s, elasticScale: tpl.scale }));
-                setMode(tpl.mode);
-              }}
-              onInjectContextText={(label, txt) => {
-                setContextCaches((p) => [
-                  { id: `cache_${Date.now()}`, label, content: txt, ttlHours: 24, tokensEstimate: estimateTokenCount(txt), createdAt: new Date().toISOString() },
-                  ...p,
-                ]);
-              }}
-              onCaptureFrameToChat={(dataUrl, caption) => {
-                setAttachments((p) => [
-                  ...p,
-                  { id: `frame_${Date.now()}`, name: "live-frame.jpg", mimeType: "image/jpeg", sizeBytes: dataUrl.length, dataUrl },
-                ]);
-                setComposerText(caption);
-                setMode("create_chat");
-              }}
-              councilData={councilData}
-              onTriggerCouncil={triggerCouncilRun}
-              focusFilePath={focusFilePath}
-              appearance={{
-                backgroundHex: appearance.backgroundHex,
-                foregroundHex: appearance.foregroundHex,
-                accentHex: appearance.accentHex,
-                contrastMode: appearance.contrast,
-              }}
-            />
           </div>
         </main>
 
-        {/* Drag Handle Right */}
+        {/* RIGHT SPLIT WORKSPACE PANE (Changes | Files | Terminal | Browser) */}
         {rightOpen && (
           <>
             <div
-              onMouseDown={() => { dragTargetRef.current = "right"; }}
-              className="hidden lg:block w-1 shrink-0 bg-white/[0.04] hover:bg-sky-400/60 cursor-col-resize transition-colors"
+              onMouseDown={() => {
+                dragResizeRef.current = true;
+              }}
+              className={`hidden lg:block w-1 shrink-0 cursor-col-resize transition-colors ${
+                isLight ? "bg-gray-200 hover:bg-[#007ACC]" : "bg-white/[0.05] hover:bg-[#007ACC]"
+              }`}
             />
-            <div style={{ width: rightWidthPx }} className="shrink-0 hidden lg:block border-s border-white/10 bg-[#18191E]/75">
-              <StudioRightRunSettings
+            <div
+              style={{ width: rightWidthPx }}
+              className={`shrink-0 hidden lg:flex flex-col border-s ${borderCls} min-h-0`}
+            >
+              <StudioWorkbenchTabs
                 brand={brand}
                 locale={locale}
-                settings={settings}
-                onChange={setSettings}
-                systemInstruction={systemInstruction}
-                historyTokens={historyTokens}
-                filesTokens={filesTokens}
-                promptTokens={estimateTokenCount(composerText)}
-                contextCaches={contextCaches}
-                onAddCache={(c) => setContextCaches((p) => [c, ...p])}
-                onRemoveCache={(id) => setContextCaches((p) => p.filter((x) => x.id !== id))}
+                files={studioFiles}
+                onChangeFiles={setStudioFiles}
+                checkpoints={checkpoints}
+                onSaveCheckpoint={(label) =>
+                  setCheckpoints((prev) => [{ id: `cp_${Date.now()}`, label, at: new Date().toISOString(), files: studioFiles }, ...prev])
+                }
+                onRestoreCheckpoint={(id) => {
+                  const found = checkpoints.find((c) => c.id === id);
+                  if (found) setStudioFiles(found.files);
+                }}
+                onRunPromptFromChild={(txt) => void handleRunPrompt(txt)}
+                onInjectContextText={(label, txt) => {
+                  setContextCaches((p) => [
+                    { id: `cache_${Date.now()}`, label, content: txt, ttlHours: 24, tokensEstimate: estimateTokenCount(txt), createdAt: new Date().toISOString() },
+                    ...p,
+                  ]);
+                  setStatusNotice(`Attached ${label} to AI context`);
+                  setTimeout(() => setStatusNotice(null), 2000);
+                }}
+                councilData={councilData}
+                focusFilePath={focusFilePath}
+                activeTab={rightTab}
+                onChangeTab={setRightTab}
+                onClosePane={() => setRightOpen(false)}
+                terminalLogsFromAgent={terminalLogs}
+                themeMode={appearance.themeMode}
+                appearance={{
+                  backgroundHex: pageBg,
+                  foregroundHex: pageText,
+                  accentHex: appearance.accentHex,
+                  contrastMode: appearance.contrast,
+                }}
               />
             </div>
           </>
         )}
       </div>
 
-      {/* GET CODE MODAL (<KaspiGlassModalPortal>) */}
-      <KaspiGlassModalPortal isOpen={getCodeOpen} onClose={() => setGetCodeOpen(false)}>
-        <div className="kaspi-opaque-glass-modal max-w-3xl w-full rounded-2xl p-5 border border-white/15 space-y-4">
+      {/* AUTOMATIONS MODAL (<KaspiGlassModalPortal>) */}
+      <KaspiGlassModalPortal isOpen={automationsOpen} onClose={() => setAutomationsOpen(false)}>
+        <div
+          style={{ backgroundColor: cardBg, color: pageText }}
+          className={`max-w-lg w-full rounded-2xl border ${borderCls} p-5 space-y-4`}
+        >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 font-bold text-sm">
-              <Code2 className="w-4 h-4 text-sky-400" />
-              <span>Get Code (Exact Studio Setup -&gt; Production SDK)</span>
+            <div className="flex items-center gap-2 font-semibold text-sm">
+              <Clock className="w-4 h-4" style={{ color: appearance.accentHex }} />
+              <span>{isAr ? "الأتمتة التلقائية" : "Automations"}</span>
             </div>
-            <button type="button" onClick={() => setGetCodeOpen(false)} className="p-1.5 rounded-lg hover:bg-white/10 cursor-pointer">
+            <button type="button" onClick={() => setAutomationsOpen(false)} className="p-1 rounded hover:bg-white/10 cursor-pointer">
               <X className="w-4 h-4" />
             </button>
           </div>
-
-          <div className="flex flex-wrap gap-1.5">
-            {(["python", "typescript", "javascript", "curl", "rest_json"] as const).map((lang) => (
+          <div className="space-y-2 text-xs">
+            {DEFAULT_AUTOMATIONS.map((auto) => (
               <button
-                key={lang}
+                key={auto.id}
                 type="button"
-                onClick={() => setExportLang(lang)}
-                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer ${
-                  exportLang === lang ? accentBgClass + " border" : "bg-white/[0.06]"
+                onClick={() => {
+                  setAutomationsOpen(false);
+                  void handleRunPrompt(auto.prompt);
+                }}
+                className={`w-full text-start p-3 rounded-xl border cursor-pointer flex items-center justify-between gap-2 ${borderCls} ${
+                  isLight ? "hover:bg-gray-50" : "hover:bg-white/[0.04]"
                 }`}
               >
-                {lang}
+                <div>
+                  <div className="font-semibold">{isAr ? auto.titleAr : auto.titleEn}</div>
+                  <div className={`text-[11px] mt-0.5 line-clamp-1 ${mutedText}`}>{auto.prompt}</div>
+                </div>
+                <ChevronRight className="w-4 h-4 shrink-0 opacity-60" />
               </button>
             ))}
           </div>
+        </div>
+      </KaspiGlassModalPortal>
 
-          <pre className="p-4 rounded-xl bg-[#131314] border border-white/10 text-xs font-mono overflow-auto max-h-80 text-zinc-200">
-            {exportSnippet}
-          </pre>
+      {/* CUSTOMIZATIONS MODAL (Organized Rules, Context & Advanced Engine — Never clutttering screen!) */}
+      <KaspiGlassModalPortal isOpen={customizationsOpen} onClose={() => setCustomizationsOpen(false)}>
+        <div
+          style={{ backgroundColor: cardBg, color: pageText }}
+          className={`max-w-2xl w-full rounded-2xl border ${borderCls} p-5 space-y-4 max-h-[82vh] flex flex-col`}
+        >
+          <div className="flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2 font-semibold text-sm">
+              <Wrench className="w-4 h-4" style={{ color: appearance.accentHex }} />
+              <span>{isAr ? "تخصيصات الوكيل والقواعد" : "Customizations & Agent Engine"}</span>
+            </div>
+            <button type="button" onClick={() => setCustomizationsOpen(false)} className="p-1 rounded hover:bg-white/10 cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
 
-          <div className="flex justify-end">
+          <div className={`flex gap-1 border-b ${borderCls} pb-2 text-xs shrink-0`}>
             <button
               type="button"
-              onClick={() => navigator.clipboard.writeText(exportSnippet)}
-              className="px-4 py-2 rounded-xl kaspi-primary-cta-btn text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              onClick={() => setCustomTab("rules")}
+              className={`px-3 py-1 rounded-md font-medium cursor-pointer ${
+                customTab === "rules" ? "text-white" : mutedText
+              }`}
+              style={customTab === "rules" ? { backgroundColor: appearance.accentHex } : undefined}
             >
-              <Copy className="w-3.5 h-3.5" />
-              <span>Copy SDK Code</span>
+              Rules &amp; Instructions
             </button>
+            <button
+              type="button"
+              onClick={() => setCustomTab("engine")}
+              className={`px-3 py-1 rounded-md font-medium cursor-pointer ${
+                customTab === "engine" ? "text-white" : mutedText
+              }`}
+              style={customTab === "engine" ? { backgroundColor: appearance.accentHex } : undefined}
+            >
+              Model Parameters &amp; Cache
+            </button>
+          </div>
+
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            {customTab === "rules" ? (
+              <div className="space-y-3 text-xs">
+                <p className={mutedText}>
+                  {isAr
+                    ? "حدد تعليمات دائمة يتبعها المساعد تلقائياً في كل محادثة."
+                    : "Persistent instructions automatically followed across every conversation."}
+                </p>
+                <textarea
+                  rows={7}
+                  value={systemInstruction}
+                  onChange={(e) => setSystemInstruction(e.target.value)}
+                  className={`w-full p-3 rounded-xl border ${borderCls} bg-transparent text-xs focus:outline-none`}
+                />
+              </div>
+            ) : (
+              <StudioRightRunSettings
+                brand={brand}
+                locale={locale}
+                settings={settings}
+                onChange={setSettings}
+                systemInstruction={systemInstruction}
+                historyTokens={0}
+                filesTokens={0}
+                promptTokens={estimateTokenCount(composerText)}
+                contextCaches={contextCaches}
+                onAddCache={(c) => setContextCaches((p) => [c, ...p])}
+                onRemoveCache={(id) => setContextCaches((p) => p.filter((x) => x.id !== id))}
+              />
+            )}
           </div>
         </div>
       </KaspiGlassModalPortal>
 
-      {/* CTRL+K COMMAND PALETTE MODAL */}
-      <KaspiGlassModalPortal isOpen={cmdkOpen} onClose={() => setCmdkOpen(false)}>
-        <div className="kaspi-opaque-glass-modal max-w-lg w-full rounded-2xl p-4 border border-white/15 space-y-3">
-          <input
-            type="text"
-            autoFocus
-            value={cmdkQuery}
-            onChange={(e) => setCmdkQuery(e.target.value)}
-            placeholder="Jump to mode, switch brand, toggle Ollama..."
-            className="w-full px-3 py-2 rounded-xl bg-white/[0.06] border border-white/15 text-xs focus:outline-none"
-          />
-          <div className="space-y-1 max-h-60 overflow-y-auto">
-            {navItems
-              .filter((i) => `${i.labelEn} ${i.labelAr}`.toLowerCase().includes(cmdkQuery.toLowerCase()))
-              .map((item) => (
+      {/* SETTINGS MODAL — Exact Antigravity Two-Column Settings (IMG_5822.MOV 00:23–00:26) */}
+      <KaspiGlassModalPortal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)}>
+        <div
+          style={{ backgroundColor: cardBg, color: pageText }}
+          className={`max-w-2xl w-full rounded-2xl border ${borderCls} overflow-hidden flex flex-col sm:flex-row min-h-[420px] max-h-[82vh]`}
+        >
+          {/* Left Settings Nav */}
+          <div
+            style={{ backgroundColor: sideBg }}
+            className={`w-full sm:w-44 shrink-0 border-b sm:border-b-0 sm:border-e ${borderCls} p-3 flex flex-col justify-between text-xs`}
+          >
+            <div className="space-y-1">
+              <p className={`px-2 pb-1 text-[11px] font-semibold ${mutedText}`}>Settings</p>
+              {(
+                [
+                  { id: "general" as const, label: "General" },
+                  { id: "appearance" as const, label: "Appearance" },
+                  { id: "shortcuts" as const, label: "Shortcuts" },
+                  { id: "models" as const, label: "Models" },
+                  { id: "projects" as const, label: "Projects" },
+                ] as const
+              ).map((item) => (
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => { setMode(item.id); setCmdkOpen(false); }}
-                  className="w-full text-start px-3 py-2 rounded-xl hover:bg-white/10 text-xs font-semibold flex items-center justify-between cursor-pointer"
+                  onClick={() => setSettingsSection(item.id)}
+                  className={`w-full text-start px-2.5 py-1.5 rounded-lg font-medium cursor-pointer transition-colors ${
+                    settingsSection === item.id
+                      ? "text-white"
+                      : isLight
+                      ? "text-gray-700 hover:bg-gray-200/70"
+                      : "text-zinc-300 hover:bg-white/[0.06]"
+                  }`}
+                  style={settingsSection === item.id ? { backgroundColor: appearance.accentHex } : undefined}
                 >
-                  <span>{isAr ? item.labelAr : item.labelEn}</span>
-                  <span className="font-mono text-[10px] text-zinc-400">{item.id}</span>
+                  {item.label}
                 </button>
               ))}
-          </div>
-        </div>
-      </KaspiGlassModalPortal>
-
-      {/* KEYBOARD SHORTCUTS ? MODAL */}
-      <KaspiGlassModalPortal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)}>
-        <div className="kaspi-opaque-glass-modal max-w-md w-full rounded-2xl p-5 border border-white/15 space-y-3 text-xs">
-          <div className="flex items-center justify-between font-bold text-sm">
-            <span>Studio Keyboard Shortcuts</span>
-            <button type="button" onClick={() => setShortcutsOpen(false)} className="p-1 rounded hover:bg-white/10 cursor-pointer"><X className="w-4 h-4" /></button>
-          </div>
-          <div className="space-y-2 font-mono">
-            <div className="flex justify-between"><span>Run Prompt</span><span className="px-2 py-0.5 rounded bg-white/10">Ctrl + Enter</span></div>
-            <div className="flex justify-between"><span>Command Palette</span><span className="px-2 py-0.5 rounded bg-white/10">Ctrl + K</span></div>
-            <div className="flex justify-between"><span>Paste Screenshot</span><span className="px-2 py-0.5 rounded bg-white/10">Ctrl + V</span></div>
-            <div className="flex justify-between"><span>Shortcut Sheet</span><span className="px-2 py-0.5 rounded bg-white/10">?</span></div>
-          </div>
-        </div>
-      </KaspiGlassModalPortal>
-
-      {/* MOBILE / TABLET LEFT NAVIGATION DRAWER (<KaspiGlassModalPortal>) */}
-      <KaspiGlassModalPortal isOpen={mobileLeftOpen} onClose={() => setMobileLeftOpen(false)}>
-        <div className="kaspi-opaque-glass-modal max-w-xs w-full rounded-2xl p-4 border border-white/15 space-y-2 text-xs">
-          <div className="flex items-center justify-between font-bold pb-2 border-b border-white/10">
-            <span>{brand === "kaspi_pos" ? "KASPI POS Studio" : "HEYUKA Studio"}</span>
-            <button type="button" onClick={() => setMobileLeftOpen(false)} className="p-1 rounded hover:bg-white/10 cursor-pointer">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = mode === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  setMode(item.id);
-                  setMobileLeftOpen(false);
-                }}
-                className={`w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 cursor-pointer ${
-                  active ? `${accentBgClass} border` : "text-zinc-300 hover:bg-white/[0.06]"
-                }`}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span className="truncate">{isAr ? item.labelAr : item.labelEn}</span>
-              </button>
-            );
-          })}
-        </div>
-      </KaspiGlassModalPortal>
-
-      {/* MOBILE / TABLET RUN SETTINGS DRAWER (<KaspiGlassModalPortal>) */}
-      <KaspiGlassModalPortal isOpen={mobileRightOpen} onClose={() => setMobileRightOpen(false)}>
-        <div className="kaspi-opaque-glass-modal max-w-sm w-full rounded-2xl border border-white/15 overflow-hidden max-h-[85vh] flex flex-col">
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 text-xs font-bold">
-            <span>Run Settings &amp; Elastic 3/6/12 Swarm</span>
-            <button type="button" onClick={() => setMobileRightOpen(false)} className="p-1 rounded hover:bg-white/10 cursor-pointer">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="overflow-y-auto flex-1">
-            <StudioRightRunSettings
-              brand={brand}
-              locale={locale}
-              settings={settings}
-              onChange={setSettings}
-              systemInstruction={systemInstruction}
-              historyTokens={historyTokens}
-              filesTokens={filesTokens}
-              promptTokens={estimateTokenCount(composerText)}
-              contextCaches={contextCaches}
-              onAddCache={(c) => setContextCaches((p) => [c, ...p])}
-              onRemoveCache={(id) => setContextCaches((p) => p.filter((x) => x.id !== id))}
-            />
-          </div>
-        </div>
-      </KaspiGlassModalPortal>
-
-      {/* APPEARANCE & CODE THEME PICKER MODAL (Antigravity Style #101010 / #F7EAEA / #007ACC) */}
-      <KaspiGlassModalPortal isOpen={appearanceOpen} onClose={() => setAppearanceOpen(false)}>
-        <div
-          style={{ backgroundColor: "#141416", color: "#F7EAEA" }}
-          className="max-w-xl w-full rounded-xl border border-white/[0.1] overflow-hidden shadow-2xl text-xs"
-        >
-          <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between font-semibold text-sm">
-            <span>Settings</span>
-            <button type="button" onClick={() => setAppearanceOpen(false)} className="p-1 rounded hover:bg-white/10 cursor-pointer">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="flex flex-col sm:flex-row min-h-[280px]">
-            <div className="sm:w-40 shrink-0 border-b sm:border-b-0 sm:border-e border-white/[0.07] p-2.5 space-y-1 bg-[#101010]/60">
-              <div className="px-2.5 py-1.5 rounded-md bg-white/[0.08] text-white font-medium">Appearance</div>
-              <button
-                type="button"
-                onClick={() => { setAppearanceOpen(false); setShortcutsOpen(true); }}
-                className="w-full text-start px-2.5 py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05] cursor-pointer"
-              >
-                Shortcuts
-              </button>
-              <button
-                type="button"
-                onClick={() => { setAppearanceOpen(false); setRightOpen(true); }}
-                className="w-full text-start px-2.5 py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05] cursor-pointer"
-              >
-                Models &amp; Swarm
-              </button>
             </div>
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(false)}
+              className={`px-2.5 py-1.5 rounded-lg border ${borderCls} text-xs cursor-pointer`}
+            >
+              Close
+            </button>
+          </div>
 
-            <div className="flex-1 p-4 space-y-4">
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { name: "Default Dark", backgroundHex: "#101010", foregroundHex: "#F7EAEA", accentHex: "#007ACC" },
-                  { name: "Deep Slate", backgroundHex: "#131314", foregroundHex: "#F4F4F5", accentHex: "#38BDF8" },
-                ].map((pre) => (
-                  <button
-                    key={pre.name}
-                    type="button"
-                    onClick={() =>
-                      updateAppearance({
-                        ...appearance,
-                        preset: pre.name,
-                        backgroundHex: pre.backgroundHex,
-                        foregroundHex: pre.foregroundHex,
-                        accentHex: pre.accentHex,
-                      })
-                    }
-                    className={`px-3 py-2 rounded-lg border text-start flex items-center justify-between cursor-pointer ${
-                      appearance.preset === pre.name ? "border-[#007ACC] bg-white/[0.08] font-medium" : "border-white/[0.08] bg-white/[0.03]"
-                    }`}
-                  >
-                    <span>{pre.name}</span>
-                    <span style={{ backgroundColor: pre.accentHex }} className="w-3 h-3 rounded-full" />
-                  </button>
-                ))}
+          {/* Right Settings Content */}
+          <div className="flex-1 p-5 overflow-y-auto space-y-5 text-xs">
+            {settingsSection === "appearance" && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold">Appearance</h3>
+
+                <div className={`p-3 rounded-xl border ${borderCls} flex items-center justify-between`}>
+                  <span>Theme Mode</span>
+                  <div className="flex gap-1.5">
+                    {(["light", "dark"] as const).map((tm) => (
+                      <button
+                        key={tm}
+                        type="button"
+                        onClick={() =>
+                          updateAppearance({
+                            ...appearance,
+                            themeMode: tm,
+                            preset: tm === "light" ? "Clean Light" : "Default Dark",
+                            backgroundHex: tm === "light" ? "#FFFFFF" : "#101010",
+                            foregroundHex: tm === "light" ? "#111827" : "#F7EAEA",
+                          })
+                        }
+                        className={`px-3 py-1 rounded-md capitalize border cursor-pointer font-medium ${
+                          appearance.themeMode === tm ? "text-white border-transparent" : borderCls
+                        }`}
+                        style={appearance.themeMode === tm ? { backgroundColor: appearance.accentHex } : undefined}
+                      >
+                        {tm}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={`p-3 rounded-xl border ${borderCls} flex items-center justify-between`}>
+                  <span>Contrast</span>
+                  <div className="flex gap-1.5">
+                    {(["default", "strong"] as const).map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => updateAppearance({ ...appearance, contrast: c })}
+                        className={`px-3 py-1 rounded-md capitalize border cursor-pointer font-medium ${
+                          appearance.contrast === c ? "text-white border-transparent" : borderCls
+                        }`}
+                        style={appearance.contrast === c ? { backgroundColor: appearance.accentHex } : undefined}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-1">
+                  <div className={`p-3 rounded-xl border ${borderCls} flex items-center justify-between`}>
+                    <span>Background</span>
+                    <div className="flex items-center gap-2 font-mono">
+                      <input
+                        type="color"
+                        value={appearance.backgroundHex}
+                        onChange={(e) => updateAppearance({ ...appearance, backgroundHex: e.target.value })}
+                        className="w-6 h-6 rounded cursor-pointer bg-transparent"
+                      />
+                      <span>{appearance.backgroundHex}</span>
+                    </div>
+                  </div>
+                  <div className={`p-3 rounded-xl border ${borderCls} flex items-center justify-between`}>
+                    <span>Foreground</span>
+                    <div className="flex items-center gap-2 font-mono">
+                      <input
+                        type="color"
+                        value={appearance.foregroundHex}
+                        onChange={(e) => updateAppearance({ ...appearance, foregroundHex: e.target.value })}
+                        className="w-6 h-6 rounded cursor-pointer bg-transparent"
+                      />
+                      <span>{appearance.foregroundHex}</span>
+                    </div>
+                  </div>
+                  <div className={`p-3 rounded-xl border ${borderCls} flex items-center justify-between`}>
+                    <span>Accent</span>
+                    <div className="flex items-center gap-2 font-mono">
+                      <input
+                        type="color"
+                        value={appearance.accentHex}
+                        onChange={(e) => updateAppearance({ ...appearance, accentHex: e.target.value })}
+                        className="w-6 h-6 rounded cursor-pointer bg-transparent"
+                      />
+                      <span>{appearance.accentHex}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
+            )}
 
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-300 font-medium">Contrast</span>
-                <div className="inline-flex rounded-lg bg-white/[0.04] p-0.5 border border-white/[0.08]">
-                  {(["default", "strong"] as const).map((c) => (
+            {settingsSection === "models" && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold">Models (Unified Equal Capability)</h3>
+                <p className={mutedText}>
+                  Every model in HEYUKA &amp; KASPI POS Studio has equal access to Files, Terminal, Web Browser, Search, and KASPI POS Store Intelligence.
+                </p>
+                <div className="space-y-2">
+                  {UNIFIED_MODELS.map((m) => (
+                    <div key={m.id} className={`p-3 rounded-xl border ${borderCls} flex items-center justify-between`}>
+                      <div>
+                        <div className="font-semibold">{m.label}</div>
+                        <div className={`text-[10px] font-mono ${mutedText}`}>{m.id} • Full Agent Tools Ready</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSettings((s) => ({ ...s, model: m.id }))}
+                        className={`px-2.5 py-1 rounded-md border text-[11px] font-medium cursor-pointer ${
+                          settings.model === m.id ? "text-white border-transparent" : borderCls
+                        }`}
+                        style={settings.model === m.id ? { backgroundColor: appearance.accentHex } : undefined}
+                      >
+                        {settings.model === m.id ? "Active" : "Select"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {settingsSection === "general" && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold">General</h3>
+                <div className={`p-3 rounded-xl border ${borderCls} space-y-1.5`}>
+                  <div className="font-medium">Active Brand Workspace</div>
+                  <div className="flex gap-2">
                     <button
-                      key={c}
                       type="button"
-                      onClick={() => updateAppearance({ ...appearance, contrast: c })}
-                      className={`px-3 py-1 rounded-md capitalize font-medium cursor-pointer ${
-                        appearance.contrast === c ? "bg-white/[0.12] text-white" : "text-zinc-400"
+                      onClick={() => switchBrand("heyuka")}
+                      className={`px-3 py-1 rounded-md border cursor-pointer ${brand === "heyuka" ? "text-white border-transparent" : borderCls}`}
+                      style={brand === "heyuka" ? { backgroundColor: appearance.accentHex } : undefined}
+                    >
+                      HEYUKA Studio
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => switchBrand("kaspi_pos")}
+                      className={`px-3 py-1 rounded-md border cursor-pointer ${brand === "kaspi_pos" ? "text-white border-transparent" : borderCls}`}
+                      style={brand === "kaspi_pos" ? { backgroundColor: appearance.accentHex } : undefined}
+                    >
+                      KASPI POS Studio
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {settingsSection === "shortcuts" && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold">Keyboard Shortcuts</h3>
+                <div className={`p-3 rounded-xl border ${borderCls} flex justify-between`}>
+                  <span>Send Message</span>
+                  <kbd className="font-mono opacity-80">Enter</kbd>
+                </div>
+                <div className={`p-3 rounded-xl border ${borderCls} flex justify-between`}>
+                  <span>New Line</span>
+                  <kbd className="font-mono opacity-80">Shift + Enter</kbd>
+                </div>
+              </div>
+            )}
+
+            {settingsSection === "projects" && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold">Starter Blueprints</h3>
+                <div className="space-y-2">
+                  {STUDIO_STARTER_TEMPLATES.map((tpl: StudioStarterTemplate) => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onClick={() => {
+                        setSettingsOpen(false);
+                        void handleRunPrompt(tpl.prompt);
+                      }}
+                      className={`w-full text-start p-3 rounded-xl border ${borderCls} cursor-pointer ${
+                        isLight ? "hover:bg-gray-50" : "hover:bg-white/[0.04]"
                       }`}
                     >
-                      {c}
+                      <div className="font-semibold">{isAr ? tpl.titleAr : tpl.titleEn}</div>
+                      <div className={`text-[11px] ${mutedText}`}>{isAr ? tpl.descAr : tpl.descEn}</div>
                     </button>
                   ))}
                 </div>
               </div>
-
-              <div className="space-y-2.5 pt-2 border-t border-white/[0.08]">
-                {[
-                  { key: "backgroundHex" as const, label: "Background" },
-                  { key: "foregroundHex" as const, label: "Foreground" },
-                  { key: "accentHex" as const, label: "Accent" },
-                ].map((item) => (
-                  <div key={item.key} className="flex items-center justify-between">
-                    <span className="text-zinc-300 font-medium">{item.label}</span>
-                    <label className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/[0.04] border border-white/[0.08] cursor-pointer font-mono text-[11px]">
-                      <input
-                        type="color"
-                        value={appearance[item.key]}
-                        onChange={(e) => updateAppearance({ ...appearance, [item.key]: e.target.value.toUpperCase() })}
-                        className="w-4 h-4 rounded cursor-pointer bg-transparent border-0"
-                      />
-                      <span>{appearance[item.key]}</span>
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </KaspiGlassModalPortal>

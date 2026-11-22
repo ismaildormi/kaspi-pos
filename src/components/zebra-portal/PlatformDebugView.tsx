@@ -460,7 +460,7 @@ export function PlatformDebugView() {
       </section>
 
       {/* Diagnostic Input Form */}
-      <section className="kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-5 sm:p-7 space-y-5">
+      <section className="rounded-2xl bg-[#161618] border border-white/[0.08] p-5 sm:p-7 space-y-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           <div className="lg:col-span-6 space-y-1.5">
             <label className="text-xs font-bold text-[var(--kaspi-text-secondary)]">

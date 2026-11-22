@@ -65,7 +65,7 @@ export function PlatformSingleStudioView({ productId }: { productId: string }) {
   return (
     <div className="space-y-6">
       {/* Studio Banner */}
-      <section className="kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-5 sm:p-7 space-y-3">
+      <section className="rounded-2xl bg-[#161618] border border-white/[0.08] p-5 sm:p-7 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Link

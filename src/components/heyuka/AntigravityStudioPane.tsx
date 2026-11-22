@@ -150,10 +150,10 @@ function InteractiveImageInpaintEditor({
   };
 
   return (
-    <div className="w-full max-w-2xl rounded-2xl bg-[#1B1D23] border border-rose-500/35 p-4 space-y-3">
+    <div className="w-full max-w-2xl rounded-xl bg-[#161618] border border-white/[0.08] p-4 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-2 font-bold text-white">
-          <Eraser className="w-4 h-4 text-rose-400" />
+        <div className="flex items-center gap-2 font-semibold text-white">
+          <Eraser className="w-4 h-4 text-[#007ACC]" />
           <span>
             {locale === "ar"
               ? "محرر الصور المباشر على معالج جهازك (إزالة الأشخاص / الخلفية)"
@@ -164,14 +164,14 @@ function InteractiveImageInpaintEditor({
           <button
             type="button"
             onClick={() => setMode((m) => (m === "blur_inpaint" ? "erase" : "blur_inpaint"))}
-            className="px-2.5 py-1 rounded-lg bg-white/10 text-zinc-200 text-[11px] font-semibold cursor-pointer"
+            className="px-2.5 py-1 rounded-lg bg-white/[0.06] text-zinc-200 text-[11px] font-medium cursor-pointer"
           >
             {mode === "blur_inpaint" ? "Mode: Smart Patch" : "Mode: Transparent Erase"}
           </button>
           <button
             type="button"
             onClick={paintInitial}
-            className="p-1.5 rounded-lg bg-white/10 text-zinc-300 hover:text-white cursor-pointer"
+            className="p-1.5 rounded-lg bg-white/[0.06] text-zinc-300 hover:text-white cursor-pointer"
             title="Reset image"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -179,7 +179,7 @@ function InteractiveImageInpaintEditor({
           <button
             type="button"
             onClick={handleExport}
-            className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold cursor-pointer"
+            className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#007ACC] hover:bg-[#0B84D8] text-white text-[11px] font-semibold cursor-pointer"
           >
             <Download className="w-3 h-3" />
             <span>Export PNG</span>
@@ -195,9 +195,9 @@ function InteractiveImageInpaintEditor({
           max={72}
           value={brushSize}
           onChange={(e) => setBrushSize(Number(e.target.value))}
-          className="accent-rose-600 cursor-pointer"
+          className="accent-[#007ACC] cursor-pointer"
         />
-        <span className="text-rose-300">
+        <span className="text-zinc-300">
           {locale === "ar"
             ? "مرّر الفرشاة فوق الأشخاص لإزالتهم وتعويض الخلفية"
             : "Paint over objects/people to blend background"}
@@ -867,11 +867,11 @@ export function AntigravityStudioPane({
                   }`}
                 >
                   {art.kind === "video" ? (
-                    <Video className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    <Video className="w-3.5 h-3.5 text-[#007ACC] shrink-0" />
                   ) : art.kind === "audio" ? (
-                    <Volume2 className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    <Volume2 className="w-3.5 h-3.5 text-[#007ACC] shrink-0" />
                   ) : (
-                    <Eye className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    <Eye className="w-3.5 h-3.5 text-[#007ACC] shrink-0" />
                   )}
                   <span className="truncate font-mono text-[11px]">{art.filename}</span>
                 </button>
@@ -882,8 +882,8 @@ export function AntigravityStudioPane({
 
         {/* Right Stage: Antigravity IDE Tabs (Overview | Preview | Code | Review | Terminal | Audio) */}
         <div className="flex-1 min-w-0 flex flex-col">
-          <div className="px-3 py-2 border-b border-white/[0.06] bg-[#141519] flex items-center justify-between gap-2 overflow-x-auto kaspi-no-scrollbar">
-            <div className="inline-flex rounded-lg bg-[#0D0E11] p-0.5 text-[11px] shrink-0">
+          <div className="px-3 py-2 border-b border-white/[0.07] bg-[#141416] flex items-center justify-between gap-2 overflow-x-auto kaspi-no-scrollbar">
+            <div className="inline-flex rounded-lg bg-[#101010] border border-white/[0.06] p-0.5 text-[11px] shrink-0">
               {[
                 { id: "overview" as const, label: "Overview", icon: Layers },
                 { id: "preview" as const, label: "Preview / 3D", icon: Eye },
@@ -899,7 +899,7 @@ export function AntigravityStudioPane({
                     type="button"
                     onClick={() => setStageTab(t.id)}
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md font-medium cursor-pointer transition-colors ${
-                      stageTab === t.id ? "bg-[#23252C] text-white" : "text-zinc-400 hover:text-zinc-200"
+                      stageTab === t.id ? "bg-white/[0.09] text-white" : "text-zinc-400 hover:text-zinc-200"
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -916,7 +916,7 @@ export function AntigravityStudioPane({
                   onClick={() => void handleCopyFile()}
                   className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white/[0.06] hover:bg-white/[0.12] text-[11px] text-zinc-200 cursor-pointer"
                 >
-                  {copiedFile ? <Check className="w-3 h-3 text-rose-400" /> : <Copy className="w-3 h-3" />}
+                  {copiedFile ? <Check className="w-3 h-3 text-[#007ACC]" /> : <Copy className="w-3 h-3" />}
                   <span>{copiedFile ? "Copied" : "Copy"}</span>
                 </button>
                 <button
@@ -935,27 +935,20 @@ export function AntigravityStudioPane({
           <div className="flex-1 min-h-0 overflow-auto p-3 sm:p-4 bg-[#101010]">
             {stageTab === "overview" && (
               <div className="space-y-4 max-w-2xl">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-                  <div className="rounded-lg bg-[#161618] border border-white/[0.07] p-3">
-                    <p className="text-zinc-500 text-[10px]">Active Model</p>
-                    <p className="font-mono font-semibold text-zinc-100 mt-0.5 truncate">{activeModel}</p>
+                <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg bg-[#161618] border border-white/[0.08] text-xs">
+                  <div className="flex items-center gap-2 text-zinc-200 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#007ACC]" />
+                    <span className="font-mono">{activeModel}</span>
+                    <span className="text-zinc-500">•</span>
+                    <span className="text-zinc-400">Local + Edge Workspace</span>
                   </div>
-                  <div className="rounded-lg bg-[#161618] border border-white/[0.07] p-3">
-                    <p className="text-zinc-500 text-[10px]">Policy Mode</p>
-                    <p className="font-mono font-semibold text-zinc-100 mt-0.5 uppercase">{executionPolicy}</p>
-                  </div>
-                  <div className="rounded-lg bg-[#161618] border border-white/[0.07] p-3">
-                    <p className="text-zinc-500 text-[10px]">Client Hardware</p>
-                    <p className="font-mono font-semibold text-zinc-100 mt-0.5">{hw?.cpuCores || 4} CPU Threads</p>
-                  </div>
-                  <div className="rounded-lg bg-[#161618] border border-white/[0.07] p-3">
-                    <p className="text-zinc-500 text-[10px]">Compute Tier</p>
-                    <p className="font-mono font-semibold text-sky-400 mt-0.5">Local + Edge</p>
-                  </div>
+                  <span className="text-[11px] font-mono text-zinc-500">
+                    {files.length} files • {executionPolicy}
+                  </span>
                 </div>
 
                 {thinkingSteps.length > 0 && (
-                  <div className="rounded-lg bg-[#161618] border border-white/[0.07] p-4 space-y-2.5">
+                  <div className="rounded-lg bg-[#161618] border border-white/[0.08] p-4 space-y-2.5">
                     <h4 className="text-xs font-semibold text-zinc-200">Execution Trace</h4>
                     {thinkingSteps.map((s, idx) => (
                       <div key={idx} className="flex items-start justify-between gap-2 text-xs border-t border-white/[0.05] pt-2">
@@ -973,10 +966,30 @@ export function AntigravityStudioPane({
                   </div>
                 )}
 
-                <div className="rounded-lg bg-[#161618] border border-white/[0.07] p-4 space-y-3 text-xs">
-                  <h4 className="font-semibold text-zinc-200">Workspace Templates &amp; Bridge</h4>
+                <div className="rounded-lg bg-[#161618] border border-white/[0.08] p-4 space-y-3 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="font-semibold text-zinc-200">Workspace Templates</h4>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => uploadAppInputRef.current?.click()}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] text-zinc-300 font-medium text-[11px] cursor-pointer"
+                      >
+                        <Upload className="w-3 h-3" />
+                        <span>Upload .ZIP</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDownloadPortableApp}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#007ACC] hover:bg-[#0B84D8] text-white font-medium text-[11px] cursor-pointer"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>Export (.html)</span>
+                      </button>
+                    </div>
+                  </div>
                   <p className="text-zinc-400 leading-relaxed">
-                    Open a project folder, upload `.zip` source files, or scaffold an interactive starter directly inside this quiet IDE stage.
+                    Open a project folder, upload `.zip` source files, or start with a minimal interactive template.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -1003,22 +1016,6 @@ export function AntigravityStudioPane({
                       <Cpu className="w-3.5 h-3.5 text-zinc-400" />
                       <span>Robotics Sim</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => uploadAppInputRef.current?.click()}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] text-zinc-200 font-medium text-[11px] cursor-pointer transition-colors"
-                    >
-                      <Upload className="w-3.5 h-3.5 text-zinc-400" />
-                      <span>Upload .ZIP</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleDownloadPortableApp}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#007ACC] hover:bg-[#0B84D8] text-white font-medium text-[11px] cursor-pointer transition-colors"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Export Portable (.html)</span>
-                    </button>
                   </div>
                 </div>
               </div>
@@ -1027,17 +1024,17 @@ export function AntigravityStudioPane({
             {stageTab === "preview" && (
               <div className="h-full flex flex-col gap-4 items-center justify-center">
                 {isRenderingMedia && (
-                  <div className="w-full max-w-lg rounded-2xl bg-[#1C1E24] border border-rose-500/35 p-5 space-y-2.5 text-center">
-                    <div className="flex items-center justify-center gap-2 text-xs font-bold text-rose-400">
+                  <div className="w-full max-w-lg rounded-xl bg-[#161618] border border-white/[0.1] p-5 space-y-2.5 text-center">
+                    <div className="flex items-center justify-center gap-2 text-xs font-semibold text-[#007ACC]">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span>
-                        Rendering on Your Device CPU/GPU ({hw?.cpuCores || 4} Cores)
+                        Rendering on Client Compute ({hw?.cpuCores || 4} Cores)
                         {videoProgressPct !== null ? ` — ${videoProgressPct}%` : ""}
                       </span>
                     </div>
                     {videoProgressPct !== null && (
-                      <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
-                        <div className="h-full bg-rose-600 transition-all" style={{ width: `${videoProgressPct}%` }} />
+                      <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div className="h-full bg-[#007ACC] transition-all" style={{ width: `${videoProgressPct}%` }} />
                       </div>
                     )}
                   </div>
@@ -1048,19 +1045,18 @@ export function AntigravityStudioPane({
                 )}
 
                 {activeArtifact && (
-                  <div className="w-full max-w-2xl rounded-2xl bg-[#1B1D23] border border-white/[0.08] p-4 space-y-3">
+                  <div className="w-full max-w-2xl rounded-xl bg-[#161618] border border-white/[0.08] p-4 space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                      <span className="font-bold text-white truncate">{activeArtifact.title}</span>
+                      <span className="font-semibold text-white truncate">{activeArtifact.title}</span>
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-[10px] text-zinc-400">
-                          {activeArtifact.cpuCoresUsed} Cores • {activeArtifact.durationMs}ms •{" "}
-                          {Math.round(activeArtifact.bytes / 1024)} KB
+                          {activeArtifact.durationMs}ms • {Math.round(activeArtifact.bytes / 1024)} KB
                         </span>
                         {activeArtifact.objectUrl && (
                           <a
                             href={activeArtifact.objectUrl}
                             download={activeArtifact.filename}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#007ACC] hover:bg-[#0B84D8] text-white text-[11px] font-semibold"
                           >
                             <Download className="w-3 h-3" />
                             <span>Download</span>
@@ -1089,8 +1085,8 @@ export function AntigravityStudioPane({
                         />
                         {activePollinationsUrl && (
                           <details className="rounded-xl bg-black/30 p-2.5 text-xs">
-                            <summary className="cursor-pointer text-rose-400 font-semibold">
-                              View Cloud AI Diffusion Variant (Zero-Key)
+                            <summary className="cursor-pointer text-[#007ACC] font-medium">
+                              View Cloud AI Diffusion Variant
                             </summary>
                             <img src={activePollinationsUrl} alt="AI Diffusion" className="w-full rounded-lg mt-2 object-contain" />
                           </details>
@@ -1242,10 +1238,10 @@ export function AntigravityStudioPane({
             {stageTab === "review" && (
               <div className="space-y-3 max-w-2xl">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-white">
-                    Automated Security &amp; Diff Review ({files.length} files scanned on client CPU)
+                  <h4 className="text-xs font-semibold text-white">
+                    Automated Diff &amp; Safety Check ({files.length} files)
                   </h4>
-                  <span className="px-2 py-0.5 rounded bg-rose-500/15 text-rose-300 font-mono text-[10px] uppercase">
+                  <span className="px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-[#007ACC] font-mono text-[10px] uppercase">
                     Policy: {executionPolicy}
                   </span>
                 </div>
@@ -1256,11 +1252,11 @@ export function AntigravityStudioPane({
                     {reviewFindings.map((item, idx) => (
                       <div
                         key={idx}
-                        className="rounded-xl bg-[#1D1E23] border border-white/[0.07] p-3 flex items-start gap-2.5 text-xs"
+                        className="rounded-xl bg-[#161618] border border-white/[0.08] p-3 flex items-start gap-2.5 text-xs"
                       >
                         <CheckCircle2
                           className={`w-4 h-4 shrink-0 mt-0.5 ${
-                            item.severity === "ok" ? "text-zinc-300" : "text-rose-400"
+                            item.severity === "ok" ? "text-zinc-300" : "text-[#007ACC]"
                           }`}
                         />
                         <div>
@@ -1293,7 +1289,7 @@ export function AntigravityStudioPane({
                     }}
                     className="flex items-center gap-2 border-t border-white/[0.08] pt-2.5 font-mono text-xs"
                   >
-                    <span className="text-rose-400 font-bold shrink-0">PS studio&gt;</span>
+                    <span className="text-[#007ACC] font-bold shrink-0">PS studio&gt;</span>
                     <input
                       type="text"
                       value={terminalCmd}
@@ -1308,13 +1304,13 @@ export function AntigravityStudioPane({
 
             {stageTab === "audio" && (
               <div className="space-y-4 max-w-xl text-xs">
-                <div className="rounded-xl bg-[#1D1E23] border border-white/[0.06] p-4 space-y-3">
-                  <h4 className="font-bold text-white">Client-CPU Audio &amp; Soundtrack Synthesizer (.WAV)</h4>
+                <div className="rounded-xl bg-[#161618] border border-white/[0.08] p-4 space-y-3">
+                  <h4 className="font-semibold text-white">Audio Synthesizer (.WAV)</h4>
                   <input
                     type="text"
                     value={audioSynthPrompt}
                     onChange={(e) => setAudioSynthPrompt(e.target.value)}
-                    className="w-full rounded-xl bg-[#111215] border border-white/10 px-3 py-2 text-zinc-100 focus:outline-none focus:border-rose-500"
+                    className="w-full rounded-xl bg-[#101010] border border-white/[0.1] px-3 py-2 text-zinc-100 focus:outline-none focus:border-[#007ACC]"
                   />
                   <div className="flex items-center justify-between gap-3">
                     <label className="text-zinc-400">Tempo: {audioSynthBpm} BPM</label>
@@ -1324,7 +1320,7 @@ export function AntigravityStudioPane({
                       max={160}
                       value={audioSynthBpm}
                       onChange={(e) => setAudioSynthBpm(Number(e.target.value))}
-                      className="accent-rose-600"
+                      className="accent-[#007ACC]"
                     />
                   </div>
                   <button
@@ -1339,12 +1335,12 @@ export function AntigravityStudioPane({
                       onAddMediaArtifact?.(wav);
                       setStageTab("preview");
                     }}
-                    className="px-4 py-2 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-bold cursor-pointer"
+                    className="px-4 py-2 rounded-full bg-[#007ACC] hover:bg-[#0B84D8] text-white font-semibold cursor-pointer"
                   >
-                    Synthesize .WAV on Client CPU ($0.00)
+                    Generate .WAV
                   </button>
                 </div>
-                <div className="rounded-xl bg-[#1D1E23] border border-white/[0.06] p-4 space-y-1 text-zinc-400 font-mono text-[11px]">
+                <div className="rounded-xl bg-[#161618] border border-white/[0.08] p-4 space-y-1 text-zinc-400 font-mono text-[11px]">
                   <p>AudioContext: {hw?.supportsAudioContext ? "READY" : "UNAVAILABLE"}</p>
                   <p>SpeechSynthesis TTS: {hw?.supportsSpeechSynthesis ? "READY" : "UNAVAILABLE"}</p>
                   <p>SpeechRecognition STT: {hw?.supportsSpeechRecognition ? "READY" : "MediaRecorder Fallback Active"}</p>

@@ -103,16 +103,16 @@ export function PlatformOverviewView() {
         </p>
       </div>
 
-      {/* Top 2 Summary Cards (Screenshot 2 exact match: Balance Card + Total Cost Card) */}
+      {/* Top 2 Summary Cards (Antigravity calm surface) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-xl bg-[#1D1E23] border border-white/[0.06] p-5 flex items-center justify-between gap-4">
+        <div className="rounded-xl bg-[#161618] border border-white/[0.08] p-5 flex items-center justify-between gap-4">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-medium text-zinc-200 inline-flex items-center gap-1">
                 <span>{locale === "ar" ? "التغطية المجانية" : "KASPI Coverage Plan"}</span>
                 <HelpCircle className="w-3.5 h-3.5 text-zinc-400" />
               </span>
-              <span className="px-2 py-0.5 rounded bg-[#007ACC]/15 border border-[#007ACC]/30 text-sky-300 text-[11px] font-medium">
+              <span className="px-2 py-0.5 rounded bg-[#007ACC]/15 border border-[#007ACC]/30 text-[#007ACC] text-[11px] font-medium">
                 100% Free — KASPI Absorbs Cost{" "}
                 <Link href={`/${locale}/zebra-x/docs?tab=pricing`} className="underline ml-1">
                   Details
@@ -133,7 +133,7 @@ export function PlatformOverviewView() {
           </Link>
         </div>
 
-        <div className="rounded-xl bg-[#1D1E23] border border-white/[0.06] p-5 space-y-3">
+        <div className="rounded-xl bg-[#161618] border border-white/[0.08] p-5 space-y-3">
           <span className="text-xs font-medium text-zinc-200 block">
             {locale === "ar" ? "التكلفة الفعلية" : "Total cost"}
           </span>
@@ -143,7 +143,7 @@ export function PlatformOverviewView() {
           </div>
           <p className="text-[11px] text-zinc-400">
             Estimated market value saved:{" "}
-            <span className="text-sky-400 font-mono font-semibold">
+            <span className="text-[#007ACC] font-mono font-semibold">
               ${(data?.global.estimatedMarketValueSavedUsd ?? 0).toFixed(2)} USD
             </span>
           </p>
@@ -153,7 +153,7 @@ export function PlatformOverviewView() {
       {/* Horizontal Divider + Filter Bar */}
       <div className="border-t border-white/[0.07] pt-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2.5">
-          <div className="inline-flex items-center rounded-lg bg-[#1D1E23] border border-white/[0.07] px-3 py-1.5 text-xs gap-2">
+          <div className="inline-flex items-center rounded-lg bg-[#161618] border border-white/[0.08] px-3 py-1.5 text-xs gap-2">
             <span className="text-zinc-400">Time</span>
             <span className="text-white/20">|</span>
             <select
@@ -167,7 +167,7 @@ export function PlatformOverviewView() {
             </select>
           </div>
 
-          <div className="inline-flex items-center rounded-lg bg-[#1D1E23] border border-white/[0.07] px-3 py-1.5 text-xs gap-2">
+          <div className="inline-flex items-center rounded-lg bg-[#161618] border border-white/[0.08] px-3 py-1.5 text-xs gap-2">
             <span className="text-zinc-400">API Key</span>
             <span className="text-white/20">|</span>
             <select

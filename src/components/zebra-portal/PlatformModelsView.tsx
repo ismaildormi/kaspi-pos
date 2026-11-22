@@ -43,25 +43,25 @@ export function PlatformModelsView() {
 
   return (
     <div className="space-y-6">
-      <section className="kaspi-glass-card rounded-3xl p-6 sm:p-8 space-y-3">
+      <section className="rounded-2xl bg-[#161618] border border-white/[0.08] p-6 sm:p-8 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-rose-500">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-medium text-[#007ACC]">
             <Boxes className="w-3.5 h-3.5" />
-            <span>HEYUKA MODELS &amp; CAPABILITIES CENTER (Separated from Downloads)</span>
+            <span>Models &amp; Capabilities Registry</span>
           </div>
           <Link
             href={`/${locale}/zebra-x/apps`}
-            className="kaspi-glass-btn rounded-full px-3.5 py-1.5 text-xs font-bold inline-flex items-center gap-1.5"
+            className="rounded-full bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.08] px-3.5 py-1.5 text-xs font-medium text-zinc-200 inline-flex items-center gap-1.5"
           >
-            <Download className="w-3.5 h-3.5 text-rose-500" />
-            <span>Apps &amp; Download Center →</span>
+            <Download className="w-3.5 h-3.5 text-[#007ACC]" />
+            <span>Apps &amp; Download Center</span>
           </Link>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-[var(--kaspi-text-primary)]">
-          Models Directory &amp; Dynamic Capability Registry
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">
+          Models Directory &amp; Capability Registry
         </h1>
-        <p className="text-xs sm:text-sm text-[var(--kaspi-text-secondary)] max-w-3xl leading-relaxed">
-          All specialized HEYUKA Studios share this unified core model engine with isolated domain system prompts, tool permissions, and project workspaces — never claiming fictional separate neural models per tab.
+        <p className="text-xs sm:text-sm text-zinc-400 max-w-3xl leading-relaxed">
+          All specialized HEYUKA Studios share this unified core model engine with isolated domain system prompts, tool permissions, and project workspaces.
         </p>
       </section>
 
@@ -69,23 +69,23 @@ export function PlatformModelsView() {
         {HEYUKA_MODEL_SPECS.map((model, idx) => (
           <div
             key={model.id}
-            className={`kaspi-glass-card ${
-              idx === 0 ? "kaspi-polar-aurora-orbit relative" : ""
-            } rounded-3xl p-6 flex flex-col justify-between gap-5`}
+            className={`rounded-2xl bg-[#161618] border ${
+              idx === 0 ? "border-[#007ACC]/40" : "border-white/[0.08]"
+            } p-6 flex flex-col justify-between gap-5`}
           >
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full kaspi-glass-surface text-rose-500">
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.08] text-[#007ACC]">
                   {model.badge}
                 </span>
-                <span className="text-[11px] font-mono text-[var(--kaspi-text-muted)]">
+                <span className="text-[11px] font-mono text-zinc-500">
                   {model.contextWindow}
                 </span>
               </div>
 
               <div>
-                <h2 className="text-xl font-black">{model.name}</h2>
-                <div dir="ltr" className="text-xs font-mono text-rose-500 font-bold mt-0.5">
+                <h2 className="text-xl font-bold text-white">{model.name}</h2>
+                <div dir="ltr" className="text-xs font-mono text-[#007ACC] font-semibold mt-0.5">
                   {model.id}
                 </div>
               </div>

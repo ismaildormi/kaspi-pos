@@ -17,8 +17,10 @@ import {
 } from "@/lib/heyuka/os/sovereign-pc-commander";
 import { z } from "zod";
 import { getRequestContext } from "@/server/auth/context";
+import { prisma } from "@/server/db/prisma";
 import { generateTextWithRouter } from "@/lib/ai-router";
 import { runUnrestrictedWebResearch } from "@/lib/zebra-x/arsenal-vault";
+import { executePolyglotCodeSandbox, type SandboxLanguage } from "@/lib/zebra-x/tools/code-sandbox";
 import { planXZebraToolRoute } from "@/lib/zebra-x/core/router";
 import { buildPhotorealisticCinemaVideoBundle } from "@/lib/heyuka/tools/photorealistic-video-builder";
 import { recordProductSelfEvolution } from "@/lib/heyuka/learning/self-evolution-engine";
@@ -84,57 +86,32 @@ export type HeyukaRequestedMode =
   | "offline";
 
 const WebChatRequestSchema = z.object({
-  model: z
-    .enum([
-      "heyuka-omni",
-      "heyuka-core",
-      "heyuka-vision",
-      "multi-agent-3",
-      "elastic-swarm-6x",
-      "elastic-swarm-12x",
-    ])
-    .default("heyuka-omni"),
+  action: z.enum(["chat", "web_research", "sandbox_execute", "pos_snapshot"]).default("chat"),
+  url: z.string().max(2000).optional(),
+  query: z.string().max(1000).optional(),
+  language: z.string().max(32).optional(),
+  code: z.string().max(16000).optional(),
+  stdin: z.string().max(4000).optional(),
+  systemInstruction: z.string().max(12000).optional(),
+  model: z.string().max(64).default("heyuka-omni"),
   elasticScale: z
     .enum(["auto", "3x_fast", "6x_pro", "12x_titan"])
     .default("auto"),
   brand: z.enum(["heyuka", "kaspi_pos"]).default("heyuka"),
   executionPolicy: z.enum(["turbo", "auto", "review"]).default("auto"),
-  mode: z
-    .enum([
-      "auto",
-      "chat",
-      "deepthink",
-      "search",
-      "coding",
-      "image",
-      "video",
-      "audio",
-      "3d",
-      "security",
-      "qr",
-      "mobile",
-      "studio",
-      "council",
-      "pc_bot",
-      "os_exec",
-      "ai_pc",
-      "browser_factory",
-      "team",
-      "offline",
-    ])
-    .default("auto"),
+  mode: z.string().max(48).default("auto"),
   deepThink: z.boolean().default(false),
   webSearch: z.boolean().default(false),
   locale: z.enum(["ar", "fr", "en"]).default("en"),
   messages: z
     .array(
       z.object({
-        role: z.enum(["user", "assistant"]),
+        role: z.enum(["user", "assistant", "system"]),
         content: z.string().min(1).max(32000),
       })
     )
-    .min(1)
-    .max(24),
+    .max(30)
+    .default([]),
   imageBase64: z.string().max(8_000_000).optional(),
   audioTranscriptNote: z.string().max(4000).optional(),
   workspaceFiles: z
@@ -169,7 +146,7 @@ function detectSmartMode(
   hasCodeContext: boolean,
   hasImageUpload: boolean
 ): { effectiveMode: Exclude<HeyukaRequestedMode, "auto">; autoSwitched: boolean } {
-  if (requestedMode !== "auto") {
+  if (requestedMode !== "auto" && requestedMode !== "studio") {
     return { effectiveMode: requestedMode, autoSwitched: false };
   }
 
@@ -219,7 +196,7 @@ function detectSmartMode(
     return { effectiveMode: "search", autoSwitched: true };
   }
 
-  return { effectiveMode: "chat", autoSwitched: false };
+  return { effectiveMode: requestedMode === "studio" ? "studio" : "chat", autoSwitched: false };
 }
 
 function matchPublicApiCategories(prompt: string): PublicApiCategory[] {
@@ -319,19 +296,64 @@ export async function POST(req: NextRequest) {
   } catch {}
 
   const {
+    action,
+    url: actionUrl,
+    query: actionQuery,
+    language: actionLang,
+    code: actionCode,
+    stdin: actionStdin,
+    systemInstruction: callerSystemInstruction,
     model,
     elasticScale,
     brand,
     executionPolicy,
-    mode,
+    mode: rawMode,
     deepThink,
     webSearch,
     locale,
-    messages,
+    messages: rawMessages,
     imageBase64,
     audioTranscriptNote,
     workspaceFiles,
   } = parsed.data;
+
+  // Integrated Browser Search / URL Reader action (zero-key access for Antigravity Studio IDE)
+  if (action === "web_research") {
+    const res = await runUnrestrictedWebResearch({
+      query: actionQuery,
+      url: actionUrl,
+      lang: locale,
+    });
+    return NextResponse.json(res, { status: res.ok ? 200 : 400 });
+  }
+
+  // Integrated Terminal Sandbox action (zero-key access for Antigravity Studio IDE)
+  if (action === "sandbox_execute") {
+    const allowed = new Set<SandboxLanguage>(["python", "javascript", "typescript", "bash", "php", "go", "c++"]);
+    const rawLang = String(actionLang || "javascript").toLowerCase();
+    const mappedLang: SandboxLanguage = rawLang === "sh" ? "bash" : rawLang === "js" ? "javascript" : rawLang === "py" ? "python" : (rawLang as SandboxLanguage);
+    if (!actionCode || !allowed.has(mappedLang)) {
+      return NextResponse.json({ ok: false, stderr: "Provide valid language and code.", exitCode: 1 }, { status: 400 });
+    }
+    const result = await executePolyglotCodeSandbox({
+      language: mappedLang,
+      code: actionCode,
+      stdin: actionStdin,
+    });
+    return NextResponse.json(result, { status: 200 });
+  }
+
+  // Fold any caller-supplied system messages into unified system instruction (never reject with 400!)
+  const extraSystemFromMessages = rawMessages
+    .filter((m) => m.role === "system")
+    .map((m) => m.content.trim())
+    .filter(Boolean)
+    .join("\n\n");
+  const messages = rawMessages.filter((m): m is { role: "user" | "assistant"; content: string } => m.role !== "system");
+  if (messages.length === 0) {
+    return NextResponse.json({ ok: false, error: "At least one user message is required." }, { status: 400 });
+  }
+  const mode = (rawMode || "auto") as HeyukaRequestedMode;
 
   const startedAt = Date.now();
   const thinkingSteps: ThinkingPhaseStep[] = [];
@@ -339,6 +361,10 @@ export async function POST(req: NextRequest) {
   const effectiveUserText = audioTranscriptNote
     ? `${lastUser}\n\n[Voice / Audio Input]: ${audioTranscriptNote}`
     : lastUser;
+
+  // Detect inline http(s) URLs inside prompt so Agent automatically browses pasted links
+  const detectedPromptUrlMatch = lastUser.match(/https?:\/\/[^\s<>"')\]]+/i);
+  const autoDetectedUrl = detectedPromptUrlMatch ? detectedPromptUrlMatch[0] : undefined;
 
   const phase1Start = Date.now();
   const { effectiveMode, autoSwitched } = detectSmartMode(
@@ -439,18 +465,26 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // 2) Parallel Real-World Knowledge & Live Public API Grounding
+  // 2) Parallel Real-World Knowledge, Auto URL Reading & Live Public/POS Grounding
   const phase2Start = Date.now();
   let sources: Array<{ title: string; url: string; snippet?: string }> = [];
   let webContextBlock = "";
   let apiContextBlock = "";
+  let posContextBlock = "";
 
   const shouldProbeLiveApis =
-    effectiveSearch || isPatentQuery || (effectiveMode === "chat" && lastUser.length < 400);
+    effectiveSearch || Boolean(autoDetectedUrl) || isPatentQuery || (effectiveMode === "chat" && lastUser.length < 400);
   const apiCats = shouldProbeLiveApis ? matchPublicApiCategories(lastUser) : [];
-  const [searchRes, apiResults] = await Promise.all([
-    effectiveSearch
+  const shouldFetchPosSnapshot =
+    Boolean(tenantId) &&
+    (brand === "kaspi_pos" || /(kaspi|pos|vente|stock|produit|caisse|facture|مبيعات|متجر|مخزون|سلعة|فاتورة)/i.test(lastUser));
+
+  const [searchRes, urlRes, apiResults, posSnapshotRes] = await Promise.all([
+    effectiveSearch || Boolean(autoDetectedUrl)
       ? runUnrestrictedWebResearch({ query: lastUser.slice(0, 320), lang: locale }).catch(() => null)
+      : Promise.resolve(null),
+    autoDetectedUrl
+      ? runUnrestrictedWebResearch({ url: autoDetectedUrl, lang: locale }).catch(() => null)
       : Promise.resolve(null),
     apiCats.length > 0
       ? Promise.all(
@@ -461,15 +495,46 @@ export async function POST(req: NextRequest) {
           )
         )
       : Promise.resolve([]),
+    shouldFetchPosSnapshot && tenantId
+      ? (async () => {
+          try {
+            const [productCount, recentSalesCount, lowStockCount] = await Promise.all([
+              prisma.product.count({ where: { tenantId, isActive: true } }),
+              prisma.sale.count({ where: { tenantId } }),
+              prisma.stockLevel.count({ where: { tenantId, quantity: { lte: 5 } } }),
+            ]);
+            return { productCount, recentSalesCount, lowStockCount };
+          } catch {
+            return null;
+          }
+        })()
+      : Promise.resolve(null),
   ]);
 
+  if (posSnapshotRes) {
+    posContextBlock = `\n\n[LIVE KASPI POS TENANT STORE CONTEXT]\nActive Products: ${posSnapshotRes.productCount} | Recorded Sales: ${posSnapshotRes.recentSalesCount} | Low Stock Items (<=5): ${posSnapshotRes.lowStockCount}\nStrict Rule: Morocco TTC tax-inclusive pricing & immutable POS Core.`;
+  }
+
+  if (urlRes?.ok) {
+    const pageMarkdown = typeof (urlRes as any).markdown === "string" ? (urlRes as any).markdown : "";
+    if (pageMarkdown) {
+      webContextBlock += `\n\n[FETCHED URL CONTENT: ${autoDetectedUrl}]\n${pageMarkdown.slice(0, 2600)}`;
+    }
+    if (autoDetectedUrl) {
+      sources.push({ title: String((urlRes as any).title || autoDetectedUrl).slice(0, 160), url: autoDetectedUrl });
+    }
+  }
+
   if (searchRes?.ok && Array.isArray(searchRes.results) && searchRes.results.length > 0) {
-    sources = searchRes.results.slice(0, 6).map((r) => ({
-      title: String(r.title || r.url || "Source").slice(0, 180),
-      url: String(r.url || ""),
-      snippet: r.snippet ? String(r.snippet).slice(0, 260) : undefined,
-    }));
-    webContextBlock =
+    sources = [
+      ...sources,
+      ...searchRes.results.slice(0, 6).map((r) => ({
+        title: String(r.title || r.url || "Source").slice(0, 180),
+        url: String(r.url || ""),
+        snippet: r.snippet ? String(r.snippet).slice(0, 260) : undefined,
+      })),
+    ];
+    webContextBlock +=
       "\n\n[LIVE WEB RESEARCH SOURCES]\n" +
       sources.map((s, idx) => `[${idx + 1}] ${s.title} (${s.url}): ${s.snippet || ""}`).join("\n");
   }
@@ -602,34 +667,45 @@ Suppress <think> commentary. Split complex scenes/games cleanly across \`\`\`htm
   const workspaceSnippet =
     workspaceFiles && workspaceFiles.length > 0
       ? `\n\n[ACTIVE WORKSPACE FILES]\n${workspaceFiles
-          .slice(0, 5)
-          .map((f) => `--- ${f.path} ---\n${f.content.slice(0, 1200)}`)
+          .slice(0, 6)
+          .map((f) => `--- ${f.path} ---\n${f.content.slice(0, 1500)}`)
           .join("\n")}`
       : "";
 
+  const customRulesBlock = [callerSystemInstruction, extraSystemFromMessages]
+    .filter((x) => typeof x === "string" && x.trim().length > 0)
+    .join("\n")
+    .slice(0, 4000);
+
+  const organizedAgentPlaybook = `[UNIFIED ANTIGRAVITY AGENT ARCHITECTURE — ALL MODELS SHARE EQUAL FULL CAPABILITY]
+1. Files & App Builder: Always emit complete, runnable multi-file output with \`path=\` headers (e.g. \`\`\`html path=index.html\`, \`\`\`css path=styles.css\`, \`\`\`js path=app.js\`, \`\`\`ts path=server.ts\`) whenever building apps, components, configs, or fixing code.
+2. Research & Live Links: Use [LIVE WEB RESEARCH SOURCES] & [FETCHED URL CONTENT] directly in your synthesis with clean source links.
+3. Terminal & Verification: Include concise executable shell/verification commands when appropriate so the user can test directly in the IDE Terminal tab.
+4. Autonomous Completion: Never stall with "rephrase / clarify / try again". Complete the full task autonomously on the first pass in the user's exact language (${detectedLang}), using clear headings, concise bullet points, helpful emojis, and Markdown tables.`;
+
   const collabSection = isCollaborative
-    ? `\n\nMULTI-AGENT 3-MODEL COLLABORATION ACTIVE (heyuka-core + heyuka-omni + heyuka-vision):
-Coordinate internally across 3 specialist roles (Architect -> Builder -> Reviewer) and deliver ONE seamless, deeply engineered result.`
+    ? `\n\nMULTI-AGENT SWARM ACTIVE (${model}):
+Synthesize deeply across Architect + Builder + Reviewer passes and deliver ONE cohesive, production-ready result.`
     : "";
 
   const personaSection = `DIRECT ENGINEERING & ANTI-FALSE-REFUSAL RULES:
-1. Deliver direct, concise, practical engineering solutions (code, commands, configs, blueprints, diagnosis, real-world facts) immediately — zero bureaucratic disclaimers or preaching.
-2. Never falsely refuse legitimate engineering, programming, automation, defensive security auditing, reverse-engineering analysis, mechanical OBD-II diagnostics, medical research lookups, or system administration queries.
-3. Uphold core legal/safety limits cleanly: refuse only dangerous severe-harm requests (malware/exploits/cyberattacks, weapons/CBRNE, illegal harm) in one brief factual sentence + offer a safe defensive alternative.`;
+1. Deliver direct, practical engineering solutions, runnable apps, KASPI POS analytics, and cited research immediately.
+2. Never falsely refuse legitimate engineering, retail POS, code, debugging, mechanical, medical research, or automation queries.
+3. Uphold core safety limits cleanly only for actual dangerous/illegal harm.`;
 
-  const systemInstruction = `You are HEYUKA (${isCollaborative ? "Multi-Agent Swarm: Core + Omni + Vision" : model}), KASPI's Sovereign Multimodal Intelligence with ${matchedCatalogCount}+ integrated engineering & real-world sources and ${PUBLIC_APIS_CATALOG_COUNT} live no-key APIs.
+  const systemInstruction = `You are ${brand === "kaspi_pos" ? "KASPI POS AI Architect" : "HEYUKA AI Engineer"} running inside the unified Antigravity Studio IDE (${model}). You have full equal access to ${matchedCatalogCount}+ vaulted engines, ${PUBLIC_APIS_CATALOG_COUNT} live no-key APIs, workspace file editing, live web search, and code sandbox execution.
 Matched Capabilities: ${routePlan.selectedToolNames.join(", ")}${
     skillIndexPrompt ? `\n${skillIndexPrompt.slice(0, 650)}` : ""
   }
 Execution Policy: ${executionPolicy.toUpperCase()} | Language: ${detectedLang}
-Use crisp Markdown formatting (## headings, bold, lists, tables, and fenced code blocks). Every compute task runs on HEYUKA Free Edge + visitor's device CPU ($0.00 cost).
+${organizedAgentPlaybook}
 ${discourseDirective}
-${personaSection}${collabSection}${modeDirective}${
+${personaSection}${collabSection}${modeDirective}${customRulesBlock ? `\n\n[USER CUSTOMIZATIONS]\n${customRulesBlock}` : ""}${
     effectiveDeepThink
       ? `\n\nDEEPTHINK PROTOCOL ENABLED:
-Wrap concise step-by-step analysis inside <think>...</think> tags first, then present the crisp Markdown answer outside </think>.`
+Wrap concise step-by-step analysis inside <think>...</think> tags first, then present the complete Markdown answer + \`\`\`lang path=... files outside </think>.`
       : ""
-  }${webContextBlock}${apiContextBlock}${toolSupplementBlock}${workspaceSnippet}`;
+  }${posContextBlock}${webContextBlock}${apiContextBlock}${toolSupplementBlock}${workspaceSnippet}`;
 
   const formattedMessages = messages.slice(-14).map((m, idx) => {
     const isLast = idx === messages.length - 1;

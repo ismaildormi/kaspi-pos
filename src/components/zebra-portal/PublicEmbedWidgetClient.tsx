@@ -65,7 +65,7 @@ export function PublicEmbedWidgetClient({ productId }: { productId: string }) {
 
   return (
     <div className="min-h-screen bg-[var(--kaspi-bg)] text-[var(--kaspi-text-primary)] p-3 flex flex-col">
-      <div className="flex-1 kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-4 flex flex-col gap-3">
+      <div className="flex-1 rounded-2xl bg-[#161618] border border-white/[0.08] p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2 border-b border-[var(--kaspi-border)] pb-2.5">
           <div>
             <div className="text-sm font-black flex items-center gap-1.5">

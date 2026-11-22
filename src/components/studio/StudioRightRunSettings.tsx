@@ -154,9 +154,9 @@ export function StudioRightRunSettings({
         <button
           type="button"
           onClick={() => patch("runtimeTarget", settings.runtimeTarget === "cloud" ? "local_ollama" : "cloud")}
-          className={`px-2 py-1 rounded-lg border text-[10px] font-semibold cursor-pointer ${
+          className={`px-2 py-1 rounded-lg border text-[10px] font-medium cursor-pointer ${
             settings.runtimeTarget === "local_ollama"
-              ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
+              ? "bg-white/[0.1] border-[#007ACC]/50 text-zinc-100"
               : accentBg
           }`}
           title="Switch between Cloud Edge and Local Ollama (localhost:11434)"
@@ -207,263 +207,253 @@ export function StudioRightRunSettings({
           <option value="multi-agent-3">multi-agent-3 (Tri-Brain Council)</option>
           <option value="kaspi-pos-analyst">kaspi-pos-analyst (Retail & DGI)</option>
         </select>
-
-        {/* Elastic Scaling Selector 3 -> 6 -> 12 */}
-        <div className="pt-1 space-y-1">
-          <span className="text-[10px] font-semibold text-[var(--kaspi-text-muted)] flex items-center gap-1">
-            <BrainCircuit className={`w-3 h-3 ${accentText}`} />
-            <span>{isAr ? "سرب العقول المرن (3 -> 6 -> 12)" : "Elastic Swarm Scale"}</span>
-          </span>
-          <div className="grid grid-cols-4 gap-1">
-            {(
-              [
-                { id: "auto", label: "Auto" },
-                { id: "3x_fast", label: "3x" },
-                { id: "6x_pro", label: "6x" },
-                { id: "12x_titan", label: "12x" },
-              ] as Array<{ id: ElasticScaleMode; label: string }>
-            ).map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => patch("elasticScale", opt.id)}
-                className={`py-1 rounded-lg border text-[11px] font-bold cursor-pointer transition-colors ${
-                  settings.elasticScale === opt.id
-                    ? accentBg
-                    : "bg-white/[0.04] border-white/10 text-[var(--kaspi-text-secondary)] hover:bg-white/[0.08]"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/* Live Token Counter + Breakdown */}
-      <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10 space-y-2">
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setTokenPopoverOpen((p) => !p)}
-            className="flex items-center gap-1 text-[11px] font-semibold text-[var(--kaspi-text-primary)] cursor-pointer"
-          >
-            <span>Token count</span>
-            <Info className="w-3 h-3 text-[var(--kaspi-text-muted)]" />
-          </button>
-          <span className="font-mono text-[11px] text-[var(--kaspi-text-secondary)]">
-            {totalTokens.toLocaleString()} / 1,048,576
-          </span>
+      {/* Temperature */}
+      <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.08] space-y-2">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="font-medium text-zinc-200">Temperature</span>
+          <span className="font-mono text-zinc-400">{settings.temperature.toFixed(2)}</span>
         </div>
-        <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-          <div
-            className={`h-full rounded-full ${brand === "kaspi_pos" ? "bg-emerald-400" : "bg-sky-400"}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        {tokenPopoverOpen && (
-          <div className="pt-1.5 border-t border-white/10 space-y-1 text-[10px] text-[var(--kaspi-text-secondary)] font-mono">
-            <div className="flex justify-between"><span>System:</span><span>{sysTokens}</span></div>
-            <div className="flex justify-between"><span>History:</span><span>{historyTokens}</span></div>
-            <div className="flex justify-between"><span>Files:</span><span>{filesTokens}</span></div>
-            <div className="flex justify-between"><span>Cached:</span><span>{cachedTokens}</span></div>
-            <div className="flex justify-between"><span>Composer:</span><span>{promptTokens}</span></div>
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={() => setDryRunTokensMsg(`Exact dry-run: ${totalTokens} input tokens ($0.00 cost)`)}
-          className="w-full py-1 rounded-lg bg-white/[0.05] hover:bg-white/[0.09] border border-white/10 text-[10px] font-semibold text-[var(--kaspi-text-secondary)] cursor-pointer"
-        >
-          {isAr ? "حساب التوكنز قبل الإرسال" : "Count Tokens (Dry Run)"}
-        </button>
-        {dryRunTokensMsg && <p className="text-[10px] font-mono text-emerald-400">{dryRunTokensMsg}</p>}
+        <input
+          type="range"
+          min={0}
+          max={2}
+          step={0.05}
+          value={settings.temperature}
+          onChange={(e) => patch("temperature", Number(e.target.value))}
+          className="w-full accent-[#007ACC] cursor-pointer"
+        />
       </div>
 
-      {/* Temperature & Thinking Budget */}
-      <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10 space-y-3">
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="font-semibold text-[var(--kaspi-text-primary)]">Temperature</span>
-            <span className="font-mono text-[var(--kaspi-text-secondary)]">{settings.temperature.toFixed(2)}</span>
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={2}
-            step={0.05}
-            value={settings.temperature}
-            onChange={(e) => patch("temperature", Number(e.target.value))}
-            className="w-full accent-sky-400 cursor-pointer"
-          />
-        </div>
-
-        <div className="pt-2 border-t border-white/10 space-y-2">
-          <label className="flex items-center justify-between cursor-pointer">
-            <span className="font-semibold text-[11px] text-[var(--kaspi-text-primary)] flex items-center gap-1.5">
-              <Sparkles className={`w-3.5 h-3.5 ${accentText}`} />
-              <span>Thinking Mode</span>
-            </span>
-            <input
-              type="checkbox"
-              checked={settings.thinkingEnabled}
-              onChange={(e) => patch("thinkingEnabled", e.target.checked)}
-              className="accent-sky-400 cursor-pointer"
-            />
-          </label>
-          {settings.thinkingEnabled && (
-            <div className="space-y-1">
-              <div className="flex justify-between text-[10px] text-[var(--kaspi-text-muted)]">
-                <span>Thinking budget</span>
-                <span className="font-mono">{settings.thinkingBudget.toLocaleString()} tok</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={32768}
-                step={512}
-                value={settings.thinkingBudget}
-                onChange={(e) => patch("thinkingBudget", Number(e.target.value))}
-                className="w-full accent-sky-400 cursor-pointer"
-              />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Tools & Grounding */}
-      <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10 space-y-2.5">
-        <div className="font-bold text-[11px] text-[var(--kaspi-text-primary)]">
-          {isAr ? "الأدوات والتحقق الحي (Tools & Grounding)" : "Tools"}
-        </div>
-
-        {/* Structured Outputs */}
-        <div className="flex items-center justify-between gap-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.structuredOutputsEnabled}
-              onChange={(e) => {
-                patch("structuredOutputsEnabled", e.target.checked);
-                if (e.target.checked) patch("responseMimeType", "application/json");
-              }}
-            />
-            <span className="text-[11px] text-[var(--kaspi-text-secondary)]">Structured output</span>
-          </label>
-          <button
-            type="button"
-            onClick={() => setSchemaModalOpen(true)}
-            className="px-2 py-0.5 rounded bg-white/[0.07] hover:bg-white/[0.12] text-[10px] font-semibold cursor-pointer"
-          >
-            Edit
-          </button>
-        </div>
-
-        {/* Function Calling */}
-        <div className="flex items-center justify-between gap-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.functionCallingEnabled}
-              onChange={(e) => patch("functionCallingEnabled", e.target.checked)}
-            />
-            <span className="text-[11px] text-[var(--kaspi-text-secondary)]">
-              Function calling ({settings.functionTools.filter((t) => t.enabled).length})
-            </span>
-          </label>
-          <button
-            type="button"
-            onClick={() => setToolsModalOpen(true)}
-            className="px-2 py-0.5 rounded bg-white/[0.07] hover:bg-white/[0.12] text-[10px] font-semibold cursor-pointer"
-          >
-            Edit
-          </button>
-        </div>
-
-        {/* Code Execution */}
-        <label className="flex items-center justify-between cursor-pointer">
-          <span className="text-[11px] text-[var(--kaspi-text-secondary)] flex items-center gap-1.5">
-            <Code2 className="w-3.5 h-3.5" />
-            <span>Code execution</span>
-          </span>
-          <input
-            type="checkbox"
-            checked={settings.codeExecutionEnabled}
-            onChange={(e) => patch("codeExecutionEnabled", e.target.checked)}
-          />
-        </label>
-
-        {/* Grounding with Search + Threshold */}
-        <div className="space-y-1">
-          <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-[11px] text-[var(--kaspi-text-secondary)] flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5" />
-              <span>Grounding with Live Search</span>
-            </span>
-            <input
-              type="checkbox"
-              checked={settings.groundingSearchEnabled}
-              onChange={(e) => patch("groundingSearchEnabled", e.target.checked)}
-            />
-          </label>
-          {settings.groundingSearchEnabled && (
-            <div className="pl-5 space-y-0.5">
-              <div className="flex justify-between text-[10px] text-[var(--kaspi-text-muted)]">
-                <span>Threshold</span>
-                <span className="font-mono">{settings.groundingThreshold.toFixed(2)}</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={settings.groundingThreshold}
-                onChange={(e) => patch("groundingThreshold", Number(e.target.value))}
-                className="w-full cursor-pointer"
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Grounding with Maps */}
-        <label className="flex items-center justify-between cursor-pointer">
-          <span className="text-[11px] text-[var(--kaspi-text-secondary)] flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5" />
-            <span>Grounding with Maps (OSM)</span>
-          </span>
-          <input
-            type="checkbox"
-            checked={settings.groundingMapsEnabled}
-            onChange={(e) => patch("groundingMapsEnabled", e.target.checked)}
-          />
-        </label>
-
-        {/* URL Context */}
-        <label className="flex items-center justify-between cursor-pointer">
-          <span className="text-[11px] text-[var(--kaspi-text-secondary)]">URL Context Auto-Fetch</span>
-          <input
-            type="checkbox"
-            checked={settings.urlContextEnabled}
-            onChange={(e) => patch("urlContextEnabled", e.target.checked)}
-          />
-        </label>
-      </div>
-
-      {/* Advanced Settings Accordion */}
-      <div className="rounded-xl bg-white/[0.04] border border-white/10 overflow-hidden">
+      {/* Advanced Parameters Accordion (Collapsed by default for Antigravity minimalism) */}
+      <div className="rounded-xl bg-white/[0.03] border border-white/[0.08] overflow-hidden">
         <button
           type="button"
           onClick={() => setAdvancedOpen((p) => !p)}
-          className="w-full px-3 py-2.5 flex items-center justify-between font-semibold text-[11px] text-[var(--kaspi-text-primary)] cursor-pointer hover:bg-white/[0.04]"
+          className="w-full px-3 py-2.5 flex items-center justify-between font-medium text-[11px] text-zinc-300 cursor-pointer hover:bg-white/[0.04]"
         >
-          <span>{isAr ? "إعدادات متقدمة (Advanced Settings)" : "Advanced settings"}</span>
-          {advancedOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+          <span>{isAr ? "المعاملات المتقدمة" : "Advanced Parameters"}</span>
+          {advancedOpen ? <ChevronDown className="w-3.5 h-3.5 text-zinc-400" /> : <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />}
         </button>
 
         {advancedOpen && (
-          <div className="p-3 pt-0 space-y-3 border-t border-white/10">
+          <div className="p-3 pt-2 space-y-3.5 border-t border-white/[0.07]">
+            {/* Elastic Scaling Selector 3 -> 6 -> 12 */}
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-medium text-zinc-400 flex items-center gap-1">
+                <BrainCircuit className={`w-3 h-3 ${accentText}`} />
+                <span>{isAr ? "سرب العقول المرن (3 -> 6 -> 12)" : "Elastic Swarm Scale"}</span>
+              </span>
+              <div className="grid grid-cols-4 gap-1">
+                {(
+                  [
+                    { id: "auto", label: "Auto" },
+                    { id: "3x_fast", label: "3x" },
+                    { id: "6x_pro", label: "6x" },
+                    { id: "12x_titan", label: "12x" },
+                  ] as Array<{ id: ElasticScaleMode; label: string }>
+                ).map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => patch("elasticScale", opt.id)}
+                    className={`py-1 rounded-lg border text-[11px] font-semibold cursor-pointer transition-colors ${
+                      settings.elasticScale === opt.id
+                        ? accentBg
+                        : "bg-white/[0.03] border-white/[0.08] text-zinc-400 hover:bg-white/[0.07]"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Live Token Counter + Breakdown */}
+            <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.07] space-y-2">
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setTokenPopoverOpen((p) => !p)}
+                  className="flex items-center gap-1 text-[11px] font-medium text-zinc-300 cursor-pointer"
+                >
+                  <span>Token count</span>
+                  <Info className="w-3 h-3 text-zinc-500" />
+                </button>
+                <span className="font-mono text-[10px] text-zinc-400">
+                  {totalTokens.toLocaleString()} / 1,048,576
+                </span>
+              </div>
+              <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden">
+                <div className="h-full rounded-full bg-[#007ACC]" style={{ width: `${pct}%` }} />
+              </div>
+              {tokenPopoverOpen && (
+                <div className="pt-1.5 border-t border-white/[0.07] space-y-1 text-[10px] text-zinc-400 font-mono">
+                  <div className="flex justify-between"><span>System:</span><span>{sysTokens}</span></div>
+                  <div className="flex justify-between"><span>History:</span><span>{historyTokens}</span></div>
+                  <div className="flex justify-between"><span>Files:</span><span>{filesTokens}</span></div>
+                  <div className="flex justify-between"><span>Cached:</span><span>{cachedTokens}</span></div>
+                  <div className="flex justify-between"><span>Composer:</span><span>{promptTokens}</span></div>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setDryRunTokensMsg(`Exact dry-run: ${totalTokens} input tokens ($0.00 cost)`)}
+                className="w-full py-1 rounded bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-[10px] font-medium text-zinc-300 cursor-pointer"
+              >
+                {isAr ? "حساب التوكنز قبل الإرسال" : "Count Tokens (Dry Run)"}
+              </button>
+              {dryRunTokensMsg && <p className="text-[10px] font-mono text-[#007ACC]">{dryRunTokensMsg}</p>}
+            </div>
+
+            {/* Thinking Mode */}
+            <div className="pt-2 border-t border-white/[0.07] space-y-2">
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="font-medium text-[11px] text-zinc-300 flex items-center gap-1.5">
+                  <Sparkles className={`w-3.5 h-3.5 ${accentText}`} />
+                  <span>Thinking Mode</span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.thinkingEnabled}
+                  onChange={(e) => patch("thinkingEnabled", e.target.checked)}
+                  className="accent-[#007ACC] cursor-pointer"
+                />
+              </label>
+              {settings.thinkingEnabled && (
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px] text-zinc-500">
+                    <span>Thinking budget</span>
+                    <span className="font-mono">{settings.thinkingBudget.toLocaleString()} tok</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={32768}
+                    step={512}
+                    value={settings.thinkingBudget}
+                    onChange={(e) => patch("thinkingBudget", Number(e.target.value))}
+                    className="w-full accent-[#007ACC] cursor-pointer"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Tools & Grounding */}
+            <div className="pt-2 border-t border-white/[0.07] space-y-2">
+              <div className="font-medium text-[11px] text-zinc-300">
+                {isAr ? "الأدوات والتحقق" : "Tools & Grounding"}
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.structuredOutputsEnabled}
+                    onChange={(e) => {
+                      patch("structuredOutputsEnabled", e.target.checked);
+                      if (e.target.checked) patch("responseMimeType", "application/json");
+                    }}
+                    className="accent-[#007ACC]"
+                  />
+                  <span className="text-[11px] text-zinc-400">Structured output</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setSchemaModalOpen(true)}
+                  className="px-2 py-0.5 rounded bg-white/[0.06] hover:bg-white/[0.12] text-[10px] font-medium cursor-pointer"
+                >
+                  Edit
+                </button>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.functionCallingEnabled}
+                    onChange={(e) => patch("functionCallingEnabled", e.target.checked)}
+                    className="accent-[#007ACC]"
+                  />
+                  <span className="text-[11px] text-zinc-400">
+                    Function calling ({settings.functionTools.filter((t) => t.enabled).length})
+                  </span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setToolsModalOpen(true)}
+                  className="px-2 py-0.5 rounded bg-white/[0.06] hover:bg-white/[0.12] text-[10px] font-medium cursor-pointer"
+                >
+                  Edit
+                </button>
+              </div>
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-[11px] text-zinc-400 flex items-center gap-1.5">
+                  <Code2 className="w-3.5 h-3.5" />
+                  <span>Code execution</span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.codeExecutionEnabled}
+                  onChange={(e) => patch("codeExecutionEnabled", e.target.checked)}
+                  className="accent-[#007ACC]"
+                />
+              </label>
+              <div className="space-y-1">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <span className="text-[11px] text-zinc-400 flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>Grounding with Live Search</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={settings.groundingSearchEnabled}
+                    onChange={(e) => patch("groundingSearchEnabled", e.target.checked)}
+                    className="accent-[#007ACC]"
+                  />
+                </label>
+                {settings.groundingSearchEnabled && (
+                  <div className="pl-5 space-y-0.5">
+                    <div className="flex justify-between text-[10px] text-zinc-500">
+                      <span>Threshold</span>
+                      <span className="font-mono">{settings.groundingThreshold.toFixed(2)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={settings.groundingThreshold}
+                      onChange={(e) => patch("groundingThreshold", Number(e.target.value))}
+                      className="w-full accent-[#007ACC] cursor-pointer"
+                    />
+                  </div>
+                )}
+              </div>
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-[11px] text-zinc-400 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>Grounding with Maps (OSM)</span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={settings.groundingMapsEnabled}
+                  onChange={(e) => patch("groundingMapsEnabled", e.target.checked)}
+                  className="accent-[#007ACC]"
+                />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-[11px] text-zinc-400">URL Context Auto-Fetch</span>
+                <input
+                  type="checkbox"
+                  checked={settings.urlContextEnabled}
+                  onChange={(e) => patch("urlContextEnabled", e.target.checked)}
+                  className="accent-[#007ACC]"
+                />
+              </label>
+            </div>
+
             {/* Safety & Context Caching Triggers */}
-            <div className="grid grid-cols-2 gap-1.5 pt-2.5">
+            <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-white/[0.07]">
               <button
                 type="button"
                 onClick={() => setSafetyModalOpen(true)}
@@ -602,7 +592,7 @@ export function StudioRightRunSettings({
                       <button
                         type="button"
                         onClick={() => patch("stopSequences", settings.stopSequences.filter((x) => x !== tag))}
-                        className="hover:text-rose-400 cursor-pointer"
+                        className="text-zinc-400 hover:text-zinc-100 cursor-pointer"
                       >
                         <X className="w-2.5 h-2.5" />
                       </button>
@@ -631,13 +621,13 @@ export function StudioRightRunSettings({
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {settings.structuredProperties.map((p) => (
               <div key={p.id} className="flex items-center gap-2 p-2 rounded-xl bg-white/[0.05] border border-white/10 text-xs">
-                <span className="font-mono font-bold text-sky-400">{p.name}</span>
+                <span className="font-mono font-bold text-[#007ACC]">{p.name}</span>
                 <span className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-[10px]">{p.type}</span>
                 <span className="text-[var(--kaspi-text-muted)] truncate flex-1">{p.description}</span>
                 <button
                   type="button"
                   onClick={() => patch("structuredProperties", settings.structuredProperties.filter((x) => x.id !== p.id))}
-                  className="text-rose-400 hover:text-rose-300 cursor-pointer"
+                  className="text-zinc-400 hover:text-zinc-100 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -721,7 +711,7 @@ export function StudioRightRunSettings({
                 <button
                   type="button"
                   onClick={() => patch("functionTools", settings.functionTools.filter((x) => x.id !== fn.id))}
-                  className="text-rose-400 cursor-pointer"
+                  className="text-zinc-400 hover:text-zinc-100 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -769,7 +759,7 @@ export function StudioRightRunSettings({
         <div className="kaspi-opaque-glass-modal max-w-lg w-full rounded-2xl p-5 border border-white/15 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 font-bold text-sm">
-              <Shield className="w-4 h-4 text-rose-400" />
+              <Shield className="w-4 h-4 text-[#007ACC]" />
               <span>Run Safety Settings (4 Granular Levels)</span>
             </div>
             <button type="button" onClick={() => setSafetyModalOpen(false)} className="p-1.5 rounded-lg hover:bg-white/10 cursor-pointer">
@@ -816,7 +806,7 @@ export function StudioRightRunSettings({
         <div className="kaspi-opaque-glass-modal max-w-xl w-full rounded-2xl p-5 border border-white/15 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 font-bold text-sm">
-              <Database className="w-4 h-4 text-emerald-400" />
+              <Database className="w-4 h-4 text-[#007ACC]" />
               <span>Context Caching Manager (Local + TTL)</span>
             </div>
             <button type="button" onClick={() => setCacheModalOpen(false)} className="p-1.5 rounded-lg hover:bg-white/10 cursor-pointer">
@@ -833,7 +823,7 @@ export function StudioRightRunSettings({
                     ~{c.tokensEstimate} tok • TTL {c.ttlHours === 0 ? "Forever" : `${c.ttlHours}h`}
                   </div>
                 </div>
-                <button type="button" onClick={() => onRemoveCache(c.id)} className="text-rose-400 cursor-pointer">
+                <button type="button" onClick={() => onRemoveCache(c.id)} className="text-zinc-400 hover:text-zinc-100 cursor-pointer">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>

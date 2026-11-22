@@ -87,14 +87,11 @@ export function runPreReplyReflectionGate(params: {
 
   let finalText = scrubbed;
 
-  // Fallback friendly response if reasoning leak consumed the entire output (broken stream)
+  // Fallback salvage if reasoning stripped left an empty draft (avoid vague "please rephrase" loops)
   if (!finalText) {
-    finalText =
-      params.expectedLocale === "ar"
-        ? "مرحباً، أعد صياغة طلبك قليلاً وسأجهز لك النتيجة مباشرة بشكل منسق ودقيق."
-        : params.expectedLocale === "fr"
-        ? "Bonjour, veuillez préciser votre demande afin que je prépare un résultat clair et structuré."
-        : "Please clarify your request slightly so I can prepare a clean, structured result.";
+    finalText = stripHiddenReasoningAndArtifacts(
+      params.draftText.replace(/<\/?think>/gi, "")
+    ).text.trim();
   }
 
   // Quality rubric (0..10)

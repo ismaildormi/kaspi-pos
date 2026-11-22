@@ -82,7 +82,7 @@ export function PlatformProductsFactoryView() {
 
   return (
     <div className="space-y-6">
-      <section className="kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-6 sm:p-8 space-y-3">
+      <section className="rounded-2xl bg-[#161618] border border-white/[0.08] p-6 sm:p-8 space-y-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-rose-500">
           <PackagePlus className="w-3.5 h-3.5" />
           <span>Tenant-Isolated Mini-Product Factory &amp; Website Embeds</span>

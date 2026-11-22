@@ -60,7 +60,7 @@ export function PlatformDocsView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [bannerOpen, setBannerOpen] = useState(true);
+  const [bannerOpen, setBannerOpen] = useState(false);
   const [activeKey, setActiveKey] = useState("hk-live-YOUR_API_KEY");
   const [activeKeyId, setActiveKeyId] = useState("hk_YOUR_KEY_ID");
 
@@ -119,11 +119,11 @@ export function PlatformDocsView() {
   return (
     <div
       dir={isRtl ? "rtl" : "ltr"}
-      className="min-h-screen flex flex-col bg-[var(--kaspi-bg)] text-[var(--kaspi-text-primary)] selection:bg-rose-600 selection:text-white"
+      className="min-h-screen flex flex-col bg-[var(--kaspi-bg)] text-[var(--kaspi-text-primary)] selection:bg-[#007ACC] selection:text-white"
     >
-      {/* Top Crimson Announcement Strip (Screenshot 3 photocopy in Red instead of Blue) */}
+      {/* Top Announcement Strip (Collapsed by default for Antigravity minimalism) */}
       {bannerOpen && (
-        <div className="relative bg-[#DC2626] text-white text-xs text-center py-2 px-4 font-medium">
+        <div className="relative bg-[#161618] border-b border-white/[0.08] text-zinc-200 text-xs text-center py-2 px-4 font-medium">
           <span>
             The full suite of HEYUKA APIs is live: web search, DeepThink, TTS audio, and $0.00 sovereign keys.{" "}
             <Link href={`/${locale}/zebra-x/api-keys`} className="underline font-bold">
@@ -175,7 +175,7 @@ export function PlatformDocsView() {
                 onClick={() => setTab(item.id)}
                 className={`py-4 border-b-2 transition-colors cursor-pointer ${
                   tab === item.id
-                    ? "border-rose-500 text-rose-500 font-semibold"
+                    ? "border-[#007ACC] text-[#007ACC] font-semibold"
                     : "border-transparent text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
                 }`}
               >
@@ -189,7 +189,7 @@ export function PlatformDocsView() {
           <LanguageSwitcher />
           <Link
             href={`/${locale}/zebra-x`}
-            className="inline-flex items-center gap-1 font-medium text-[var(--kaspi-text-secondary)] hover:text-rose-500"
+            className="inline-flex items-center gap-1 font-medium text-[var(--kaspi-text-secondary)] hover:text-[#007ACC]"
           >
             <span>HEYUKA Platform</span>
             <ExternalLink className="w-3.5 h-3.5" />
@@ -213,7 +213,7 @@ export function PlatformDocsView() {
               onClick={() => setTab(item.id)}
               className={`w-full text-start px-3 py-2 rounded-lg font-medium cursor-pointer transition-colors ${
                 tab === item.id
-                  ? "bg-rose-500/15 text-rose-500 font-semibold"
+                  ? "bg-[#007ACC]/15 text-[#007ACC] font-semibold"
                   : "text-[var(--kaspi-text-secondary)] hover:bg-white/[0.05]"
               }`}
             >
@@ -226,19 +226,19 @@ export function PlatformDocsView() {
             </p>
             <Link
               href={`/${locale}/zebra-x/debug`}
-              className="block px-3 py-1.5 rounded-lg text-[var(--kaspi-text-secondary)] hover:text-rose-500"
+              className="block px-3 py-1.5 rounded-lg text-[var(--kaspi-text-secondary)] hover:text-[#007ACC]"
             >
               7-Point Live API Debugger
             </Link>
             <Link
               href={`/${locale}/chat`}
-              className="block px-3 py-1.5 rounded-lg text-[var(--kaspi-text-secondary)] hover:text-rose-500"
+              className="block px-3 py-1.5 rounded-lg text-[var(--kaspi-text-secondary)] hover:text-[#007ACC]"
             >
               HEYUKA Free Web Chat
             </Link>
             <Link
               href={`/${locale}/zebra-x/contact`}
-              className="block px-3 py-1.5 rounded-lg text-[var(--kaspi-text-secondary)] hover:text-rose-500"
+              className="block px-3 py-1.5 rounded-lg text-[var(--kaspi-text-secondary)] hover:text-[#007ACC]"
             >
               Help, Messaging &amp; Feedback
             </Link>
@@ -260,7 +260,7 @@ export function PlatformDocsView() {
                   }
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--kaspi-border)] text-xs font-medium cursor-pointer"
                 >
-                  {copiedId === "md" ? <Check className="w-3.5 h-3.5 text-rose-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedId === "md" ? <Check className="w-3.5 h-3.5 text-[#007ACC]" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedId === "md" ? "Copied" : "Copy Markdown"}</span>
                 </button>
               </div>
@@ -281,7 +281,7 @@ export function PlatformDocsView() {
                   <tbody className="divide-y divide-[var(--kaspi-border)]">
                     <tr>
                       <td className="py-3 px-4 font-semibold">base_url (OpenAI)</td>
-                      <td className="py-3 px-4 font-mono text-rose-500">{OFFICIAL_ROOT_V1_URL}</td>
+                      <td className="py-3 px-4 font-mono text-[#007ACC]">{OFFICIAL_ROOT_V1_URL}</td>
                     </tr>
                     <tr>
                       <td className="py-3 px-4 font-semibold">base_url (Full API)</td>
@@ -291,7 +291,7 @@ export function PlatformDocsView() {
                       <td className="py-3 px-4 font-semibold">api_key</td>
                       <td className="py-3 px-4">
                         apply for a{" "}
-                        <Link href={`/${locale}/zebra-x/api-keys`} className="text-rose-500 underline font-semibold">
+                        <Link href={`/${locale}/zebra-x/api-keys`} className="text-[#007ACC] underline font-semibold">
                           free API key
                         </Link>
                       </td>
@@ -323,7 +323,7 @@ export function PlatformDocsView() {
                         onClick={() => setSdkLang(lang)}
                         className={`px-2.5 py-1 rounded text-xs font-semibold uppercase cursor-pointer ${
                           sdkLang === lang
-                            ? "bg-rose-600 text-white"
+                            ? "bg-[#007ACC] text-white"
                             : "text-[var(--kaspi-text-muted)]"
                         }`}
                       >
@@ -334,7 +334,7 @@ export function PlatformDocsView() {
                   <button
                     type="button"
                     onClick={() => void handleCopy("code", activeSnippet)}
-                    className="text-xs text-rose-500 font-semibold cursor-pointer"
+                    className="text-xs text-[#007ACC] font-semibold cursor-pointer"
                   >
                     {copiedId === "code" ? "Copied" : "Copy"}
                   </button>
@@ -364,7 +364,7 @@ export function PlatformDocsView() {
                   <tbody className="divide-y divide-[var(--kaspi-border)]">
                     {HEYUKA_MODEL_SPECS.map((m) => (
                       <tr key={m.id}>
-                        <td className="py-3 px-4 font-mono font-bold text-rose-500">{m.id}</td>
+                        <td className="py-3 px-4 font-mono font-bold text-[#007ACC]">{m.id}</td>
                         <td className="py-3 px-4">{m.contextWindow}</td>
                         <td className="py-3 px-4 text-end font-mono font-bold">$0.00 (Free)</td>
                       </tr>
@@ -383,7 +383,7 @@ export function PlatformDocsView() {
               </p>
               <Link
                 href={`/${locale}/zebra-x/debug`}
-                className="inline-block px-4 py-2 rounded-lg bg-rose-600 text-white text-xs font-bold"
+                className="inline-block px-4 py-2 rounded-lg bg-[#007ACC] text-white text-xs font-bold"
               >
                 Open 7-Point Live API Debugger →
               </Link>
@@ -404,7 +404,7 @@ export function PlatformDocsView() {
                         className="w-full px-4 py-3 flex items-center justify-between text-start text-xs font-bold cursor-pointer"
                       >
                         <span>{item.q}</span>
-                        {open ? <ChevronDown className="w-4 h-4 text-rose-500" /> : <ChevronRight className="w-4 h-4" />}
+                        {open ? <ChevronDown className="w-4 h-4 text-[#007ACC]" /> : <ChevronRight className="w-4 h-4" />}
                       </button>
                       {open && (
                         <div className="px-4 pb-3 text-xs text-[var(--kaspi-text-secondary)] border-t border-[var(--kaspi-border)] pt-2">
@@ -425,7 +425,7 @@ export function PlatformDocsView() {
             ON THIS PAGE
           </p>
           <ul className="space-y-1.5 border-l border-[var(--kaspi-border)] pl-3 text-[var(--kaspi-text-secondary)]">
-            <li className="text-rose-500 font-semibold">Invoke The Chat API</li>
+            <li className="text-[#007ACC] font-semibold">Invoke The Chat API</li>
             <li>Base URL & SDKs</li>
             <li>Zero-Cost Coverage ($0.00)</li>
           </ul>
@@ -435,7 +435,7 @@ export function PlatformDocsView() {
       <KaspiGlassModalPortal isOpen={searchOpen} onClose={() => setSearchOpen(false)} dir={isRtl ? "rtl" : "ltr"}>
         <div className="w-full max-w-lg rounded-2xl kaspi-opaque-glass-modal p-4 space-y-3">
           <div className="flex items-center gap-2 border-b border-[var(--kaspi-border)] pb-2">
-            <Search className="w-4 h-4 text-rose-500" />
+            <Search className="w-4 h-4 text-[#007ACC]" />
             <input
               type="text"
               autoFocus

@@ -175,7 +175,7 @@ export function PlatformWorkersView() {
   return (
     <div className="space-y-6">
       {/* Zero-Cost Financial Architecture Banner */}
-      <section className="kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-6 sm:p-8 space-y-4">
+      <section className="rounded-2xl bg-[#161618] border border-white/[0.08] p-6 sm:p-8 space-y-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-rose-500">
           <ShieldCheck className="w-3.5 h-3.5" />
           <span>ZERO-COST DISTRIBUTED COMPUTE • STRICT $0.00 OWNER EXPOSURE</span>

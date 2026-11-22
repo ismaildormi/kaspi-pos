@@ -136,8 +136,8 @@ export function PlatformKeysView() {
         </button>
       </div>
 
-      {/* Table Box matching Screenshot 1 */}
-      <div className="rounded-xl bg-[#1D1E23] border border-white/[0.06] overflow-hidden">
+      {/* Table Box matching Antigravity calm surface */}
+      <div className="rounded-xl bg-[#161618] border border-white/[0.08] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
@@ -164,7 +164,7 @@ export function PlatformKeysView() {
                     <button
                       type="button"
                       onClick={() => setCreateOpen(true)}
-                      className="text-white font-semibold underline underline-offset-4 hover:text-rose-400 cursor-pointer"
+                      className="text-white font-semibold underline underline-offset-4 hover:text-[#007ACC] cursor-pointer"
                     >
                       Create new API key
                     </button>
@@ -182,11 +182,11 @@ export function PlatformKeysView() {
                       <button
                         type="button"
                         onClick={() => void handleCopy(`id-${row.id}`, row.id)}
-                        className="inline-flex items-center gap-1.5 hover:text-rose-400 cursor-pointer"
+                        className="inline-flex items-center gap-1.5 hover:text-[#007ACC] cursor-pointer"
                       >
                         <span>{row.id}</span>
                         {copiedId === `id-${row.id}` ? (
-                          <Check className="w-3 h-3 text-rose-500" />
+                          <Check className="w-3 h-3 text-[#007ACC]" />
                         ) : (
                           <Copy className="w-3 h-3 opacity-60" />
                         )}
@@ -207,7 +207,7 @@ export function PlatformKeysView() {
                       <button
                         type="button"
                         onClick={() => void handleRevoke(row.id)}
-                        className="p-1.5 rounded hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 cursor-pointer"
+                        className="p-1.5 rounded hover:bg-white/[0.08] text-zinc-400 hover:text-zinc-100 cursor-pointer"
                         title="Delete key"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -230,7 +230,7 @@ export function PlatformKeysView() {
         <div className="w-full max-w-md rounded-2xl kaspi-opaque-glass-modal p-6 space-y-5">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-zinc-100 flex items-center gap-2">
-              <KeyRound className="w-4 h-4 text-rose-500" />
+              <KeyRound className="w-4 h-4 text-[#007ACC]" />
               <span>{revealedSecret ? "Save your API key" : "Create new API key"}</span>
             </h3>
             <button
@@ -246,7 +246,7 @@ export function PlatformKeysView() {
             <HEYUKAGmailAccessCard locale={locale} compact onAuthenticated={fetchKeys} />
           ) : revealedSecret ? (
             <div className="space-y-4">
-              <p className="text-xs text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-lg p-3">
+              <p className="text-xs text-zinc-300 bg-[#007ACC]/10 border border-[#007ACC]/30 rounded-lg p-3">
                 Copy this key now. For security, you won&apos;t be able to see it again.
               </p>
               {revealedKeyId && (
@@ -256,12 +256,12 @@ export function PlatformKeysView() {
                     <button
                       type="button"
                       onClick={() => void handleCopy("new-id", revealedKeyId)}
-                      className="text-rose-400 cursor-pointer"
+                      className="text-[#007ACC] cursor-pointer"
                     >
                       {copiedId === "new-id" ? "Copied" : "Copy"}
                     </button>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-[#141519] font-mono text-[11px] break-all select-all">
+                  <div className="p-2.5 rounded-lg bg-[#101010] font-mono text-[11px] break-all select-all">
                     {revealedKeyId}
                   </div>
                 </div>
@@ -272,19 +272,19 @@ export function PlatformKeysView() {
                   <button
                     type="button"
                     onClick={() => void handleCopy("new-sec", revealedSecret)}
-                    className="text-rose-400 cursor-pointer"
+                    className="text-[#007ACC] cursor-pointer"
                   >
                     {copiedId === "new-sec" ? "Copied" : "Copy"}
                   </button>
                 </div>
-                <div className="p-2.5 rounded-lg bg-[#141519] border border-rose-500/40 font-mono text-[11px] break-all select-all text-rose-300">
+                <div className="p-2.5 rounded-lg bg-[#101010] border border-[#007ACC]/40 font-mono text-[11px] break-all select-all text-zinc-100">
                   {revealedSecret}
                 </div>
               </div>
               <div className="flex justify-between items-center pt-1">
                 <Link
                   href={`/${locale}/zebra-x/debug`}
-                  className="text-xs text-rose-400 hover:underline"
+                  className="text-xs text-[#007ACC] hover:underline"
                 >
                   Test in Live Debugger →
                 </Link>

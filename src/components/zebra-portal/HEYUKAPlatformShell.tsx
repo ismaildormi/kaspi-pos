@@ -134,7 +134,7 @@ export function HEYUKAPlatformShell({
   const pathname = usePathname();
 
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [bannerVisible, setBannerVisible] = useState(true);
+  const [bannerVisible, setBannerVisible] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -279,7 +279,7 @@ export function HEYUKAPlatformShell({
               >
                 <Icon
                   className={`w-4 h-4 shrink-0 ${
-                    active ? "text-rose-500" : "text-[var(--kaspi-text-muted)]"
+                    active ? "text-[#007ACC]" : "text-[var(--kaspi-text-muted)]"
                   }`}
                 />
                 <span className="truncate">{item.label}</span>
@@ -329,7 +329,7 @@ export function HEYUKAPlatformShell({
                 : "hover:bg-white/[0.06]"
             }`}
           >
-            <div className="w-7 h-7 rounded-full bg-rose-600/20 border border-rose-500/40 flex items-center justify-center text-xs font-bold text-rose-400 shrink-0 uppercase">
+            <div className="w-7 h-7 rounded-full bg-white/[0.06] border border-white/[0.12] flex items-center justify-center text-xs font-bold text-[#007ACC] shrink-0 uppercase">
               {(displayName || userEmail || "H").slice(0, 1)}
             </div>
             <span className="text-[13px] font-medium text-[var(--kaspi-text-primary)] truncate">
@@ -340,9 +340,9 @@ export function HEYUKAPlatformShell({
           <button
             type="button"
             onClick={() => setAuthModalOpen(true)}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.11] text-[13px] font-medium text-[var(--kaspi-text-primary)] cursor-pointer transition-colors"
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.09] text-[13px] font-medium text-[var(--kaspi-text-primary)] cursor-pointer transition-colors"
           >
-            <div className="w-7 h-7 rounded-full bg-rose-600/20 border border-rose-500/40 flex items-center justify-center text-rose-400 shrink-0">
+            <div className="w-7 h-7 rounded-full bg-white/[0.06] border border-white/[0.12] flex items-center justify-center text-[#007ACC] shrink-0">
               <User className="w-3.5 h-3.5" />
             </div>
             <span className="truncate">{t.guestLabel}</span>
@@ -355,16 +355,16 @@ export function HEYUKAPlatformShell({
   return (
     <div
       dir={isRtl ? "rtl" : "ltr"}
-      className="min-h-screen flex flex-col bg-[#141518] text-zinc-100 selection:bg-rose-600 selection:text-white"
+      className="min-h-screen flex flex-col bg-[#101010] text-[#F7EAEA] selection:bg-[#007ACC] selection:text-white"
     >
-      {/* Top Crimson Banner (Exact Screenshot 1/2/4 top bar slot in Red instead of Blue) */}
+      {/* Top Announcement Strip (Disabled by default for calm Antigravity minimalism) */}
       {bannerVisible && (
-        <div className="relative bg-[#DC2626] text-white px-4 py-2 text-center text-xs font-medium flex items-center justify-center gap-2 z-30">
+        <div className="relative bg-[#161618] border-b border-white/[0.08] text-zinc-200 px-4 py-2 text-center text-xs font-medium flex items-center justify-center gap-2 z-30">
           <span className="truncate max-w-4xl">
             {t.bannerText}{" "}
             <Link
               href={`/${locale}/zebra-x/docs`}
-              className="underline underline-offset-2 font-semibold hover:text-rose-100"
+              className="underline underline-offset-2 font-semibold text-[#007ACC] hover:text-zinc-100"
             >
               {t.bannerLink}
             </Link>

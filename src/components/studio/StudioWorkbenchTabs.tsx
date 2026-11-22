@@ -1,68 +1,59 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import * as Y from "yjs";
 import * as Diff from "diff";
-import { zipSync, strToU8 } from "fflate";
+import { strToU8, zipSync } from "fflate";
 import {
-  Activity,
-  Award,
-  Bot,
-  Camera,
+  ArrowLeft,
+  ArrowRight,
   Check,
-  Cloud,
   Code2,
   Copy,
   Download,
+  Edit3,
   ExternalLink,
   Eye,
   FileCode2,
-  Flame,
+  FileText,
   FolderOpen,
   Globe,
-  HardDrive,
-  KeyRound,
   Monitor,
-  MonitorUp,
-  Pause,
-  Pencil,
   Play,
   Plus,
   RefreshCw,
   RotateCcw,
+  Search,
   ShieldCheck,
   Smartphone,
-  Sparkles,
   Tablet,
   Terminal,
-  Trophy,
-  Users,
-  Video,
-  WifiOff,
-  Wrench,
+  Trash2,
+  Upload,
+  X,
 } from "lucide-react";
+import { HeyukaMarkdownMessage } from "@/components/heyuka/HeyukaMarkdownMessage";
 import { HeyukaSyntaxCodeView, getFileBadgeMeta } from "@/components/heyuka/HeyukaSyntaxCodeView";
-import {
-  Bar,
-  BarChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { assembleMultiFilePreviewDocument } from "@/lib/heyuka/autonomous-builder-v24-v28";
-import {
-  STUDIO_STARTER_TEMPLATES,
-  type ElasticScaleMode,
-  type StudioBrand,
-  type StudioStarterTemplate,
-  type SwarmCouncilNode,
-  type WorkerBotExecution,
+import { scanSourceCodeForVulnerabilities } from "@/lib/zebra-x/tools/security-sast-auditor";
+import type {
+  ElasticScaleMode,
+  StudioBrand,
+  StudioStarterTemplate,
+  SwarmCouncilNode,
+  WorkerBotExecution,
 } from "@/lib/heyuka/studio/studio-orchestrator-v55-v60";
-import type { KanbanTaskItem, StudioFileNode, StudioMode } from "./studio-types";
+import type { StudioFileNode, StudioMode } from "./studio-types";
+
+export type AntigravityPaneTab = "changes" | "files" | "terminal" | "browser";
+
+interface BrowserSearchHit {
+  title: string;
+  url: string;
+  snippet?: string;
+}
 
 interface StudioWorkbenchTabsProps {
-  mode: StudioMode;
+  mode?: StudioMode;
   brand: StudioBrand;
   locale: "ar" | "fr" | "en";
   files: StudioFileNode[];
@@ -71,18 +62,23 @@ interface StudioWorkbenchTabsProps {
   onSaveCheckpoint: (label: string) => void;
   onRestoreCheckpoint: (id: string) => void;
   onRunPromptFromChild: (promptText: string) => void;
-  onSelectTemplate: (tpl: StudioStarterTemplate) => void;
+  onSelectTemplate?: (tpl: StudioStarterTemplate) => void;
   onInjectContextText: (label: string, text: string) => void;
-  onCaptureFrameToChat: (dataUrl: string, caption: string) => void;
-  councilData: {
+  onCaptureFrameToChat?: (dataUrl: string, caption: string) => void;
+  councilData?: {
     tier: string;
     modelCount: number;
     complexityScore: number;
     nodes: SwarmCouncilNode[];
     spawnedBots: WorkerBotExecution[];
   } | null;
-  onTriggerCouncil: (scale: ElasticScaleMode, promptText: string) => Promise<void>;
+  onTriggerCouncil?: (scale: ElasticScaleMode, promptText: string) => Promise<void>;
   focusFilePath?: string | null;
+  activeTab?: AntigravityPaneTab;
+  onChangeTab?: (tab: AntigravityPaneTab) => void;
+  onClosePane?: () => void;
+  terminalLogsFromAgent?: string[];
+  themeMode?: "light" | "dark";
   appearance?: {
     backgroundHex: string;
     foregroundHex: string;
@@ -92,1255 +88,1054 @@ interface StudioWorkbenchTabsProps {
 }
 
 export function StudioWorkbenchTabs({
-  mode,
   brand,
   locale,
   files,
   onChangeFiles,
   checkpoints,
-  onSaveCheckpoint,
   onRestoreCheckpoint,
   onRunPromptFromChild,
-  onSelectTemplate,
   onInjectContextText,
-  onCaptureFrameToChat,
-  councilData,
-  onTriggerCouncil,
   focusFilePath,
+  activeTab,
+  onChangeTab,
+  onClosePane,
+  terminalLogsFromAgent = [],
+  themeMode = "dark",
   appearance,
 }: StudioWorkbenchTabsProps) {
   const isAr = locale === "ar";
-  const accentBtn = "bg-[#007ACC] text-white";
+  const isLight = themeMode === "light";
+  const accentHex = appearance?.accentHex || "#007ACC";
 
-  // Build Canvas State
+  const [internalTab, setInternalTab] = useState<AntigravityPaneTab>("files");
+  const currentTab = activeTab ?? internalTab;
+  const setTab = (next: AntigravityPaneTab) => {
+    setInternalTab(next);
+    onChangeTab?.(next);
+  };
+
+  // Files & Code Editor state
   const [selectedPath, setSelectedPath] = useState<string>(files[0]?.path || "index.html");
-  const [codeViewMode, setCodeViewMode] = useState<"syntax" | "edit">("syntax");
-  const [viewSplit, setViewSplit] = useState<"split" | "code" | "preview">("split");
+  const [fileFilter, setFileFilter] = useState("");
+  const [isEditingCode, setIsEditingCode] = useState(false);
+  const [mdRenderMode, setMdRenderMode] = useState<"rendered" | "source">("rendered");
+  const [copiedPath, setCopiedPath] = useState<string | null>(null);
+  const [newFilePrompt, setNewFilePrompt] = useState(false);
+  const [newFileName, setNewFileName] = useState("");
+
+  // Interactive Terminal state
+  const [termLang, setTermLang] = useState<"shell" | "javascript" | "python" | "bash">("shell");
+  const [termInput, setTermInput] = useState("");
+  const [termBusy, setTermBusy] = useState(false);
+  const [termHistory, setTermHistory] = useState<string[]>([]);
+  const [histCursor, setHistCursor] = useState<number>(-1);
+  const [termOutput, setTermOutput] = useState<Array<{ cmd?: string; out: string; isErr?: boolean }>>([
+    {
+      out: `HEYUKA x KASPI Antigravity Terminal ready (${brand === "kaspi_pos" ? "KASPI POS Workspace" : "HEYUKA Workspace"}).\nType 'ls', 'cat index.html', 'sast', 'node <code/file>', 'python <code>', or 'help'.`,
+    },
+  ]);
+  const termInputRef = useRef<HTMLInputElement>(null);
+  const termEndRef = useRef<HTMLDivElement>(null);
+
+  // Embedded Google Search + Link Browser + Live App Preview state
+  const [browserSubMode, setBrowserSubMode] = useState<"web" | "preview">("web");
+  const [addressInput, setAddressInput] = useState("https://www.google.com");
+  const [navHistory, setNavHistory] = useState<string[]>([]);
+  const [navIdx, setNavIdx] = useState(-1);
+  const [browserLoading, setBrowserLoading] = useState(false);
+  const [browserPageTitle, setBrowserPageTitle] = useState("Antigravity Browser & Search");
+  const [browserPageMarkdown, setBrowserPageMarkdown] = useState("");
+  const [browserSearchHits, setBrowserSearchHits] = useState<BrowserSearchHit[]>([]);
+  const [browserError, setBrowserError] = useState<string | null>(null);
+  const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [previewConsoleLogs, setPreviewConsoleLogs] = useState<string[]>([]);
+
+  const uploadRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (focusFilePath && files.some((f) => f.path === focusFilePath)) {
       setSelectedPath(focusFilePath);
-    }
-  }, [focusFilePath, files]);
-  const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
-  const [annotateMode, setAnnotateMode] = useState(false);
-  const [diffMode, setDiffMode] = useState(false);
-  const [newFilePath, setNewFilePath] = useState("");
-  const [previewLogs, setPreviewLogs] = useState<string[]>([]);
-  const [bottomUtilityTab, setBottomUtilityTab] = useState<"none" | "browser" | "terminal" | "swarm">("none");
-  const annotateCanvasRef = useRef<HTMLCanvasElement>(null);
-  const drawingRef = useRef(false);
-
-  // Embedded Live Browser + OAuth Handshake (v57)
-  const [browserUrl, setBrowserUrl] = useState("https://github.com/ismaildormi/kaspi-pos");
-  const [browserSnapshot, setBrowserSnapshot] = useState<string>("");
-  const [browserLoading, setBrowserLoading] = useState(false);
-  const [gmailSignedIn, setGmailSignedIn] = useState(false);
-  const [oauthPausedForUser, setOauthPausedForUser] = useState(false);
-  const [cloudProjectName, setCloudProjectName] = useState("kaspi-next-app");
-  const [factoryOutput, setFactoryOutput] = useState<any>(null);
-
-  // Embedded Terminal / PowerShell (v53 + v55)
-  const [termLang, setTermLang] = useState<"python" | "bash" | "javascript" | "powershell">("powershell");
-  const [termCmd, setTermCmd] = useState("Get-Process | Select-Object -First 5");
-  const [termOut, setTermOut] = useState<string>("Ready • Local/Sandbox PowerShell & Python Bridge");
-  const [termBusy, setTermBusy] = useState(false);
-
-  // Stream Realtime WebRTC State
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const [streamKind, setStreamKind] = useState<"off" | "camera" | "screen">("off");
-  const [voiceName, setVoiceName] = useState("Kore (Multilingual Warm)");
-  const [liveSeconds, setLiveSeconds] = useState(0);
-
-  // Compare Mode State
-  const [comparePrompt, setComparePrompt] = useState("اشرح الفرق بين WebGPU و WebAssembly باختصار مع مثال عملي.");
-  const [compareBusy, setCompareBusy] = useState(false);
-  const [compareLeft, setCompareLeft] = useState<{ model: string; text: string; ms: number }>({ model: "heyuka-omni", text: "", ms: 0 });
-  const [compareRight, setCompareRight] = useState<{ model: string; text: string; ms: number }>({ model: "heyuka-core", text: "", ms: 0 });
-
-  // Team Multiplayer Yjs + Kanban + Gamification + Offline Vault State (v59 + v60)
-  const [yjsSharedText, setYjsSharedText] = useState("HEYUKA x KASPI POS Sprint Board — Shared Live Document");
-  const [peerCount, setPeerCount] = useState(1);
-  const [rbacRole, setRbacRole] = useState<"Owner" | "Admin" | "Developer" | "Designer" | "Cashier" | "Viewer">("Owner");
-  const [kanbanTasks, setKanbanTasks] = useState<KanbanTaskItem[]>([
-    { id: "k1", title: "Google AI Studio Dual-Brand UI Parity", assignee: "Ismail (Owner)", status: "done", xpReward: 150 },
-    { id: "k2", title: "Elastic 12-Model Swarm Verification", assignee: "@heyuka (AI Teammate)", status: "in_progress", xpReward: 200 },
-    { id: "k3", title: "KASPI POS 80mm Receipt Export", assignee: "Cashier Lead", status: "backlog", xpReward: 120 },
-  ]);
-  const [teamStats, setTeamStats] = useState<any>(null);
-  const [pomodoroSec, setPomodoroSec] = useState(25 * 60);
-  const [pomodoroRunning, setPomodoroRunning] = useState(false);
-
-  // API Keys & Usage State
-  const [apiKeys, setApiKeys] = useState<any[]>([]);
-  const [telemetry, setTelemetry] = useState<any>(null);
-  const [newKeyLabel, setNewKeyLabel] = useState("");
-  const [freshKeyOnce, setFreshKeyOnce] = useState<string | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  const yDocRef = useRef<Y.Doc | null>(null);
-
-  useEffect(() => {
-    if (!files.some((f) => f.path === selectedPath) && files[0]) {
+    } else if (!files.some((f) => f.path === selectedPath) && files[0]) {
       setSelectedPath(files[0].path);
     }
-  }, [files, selectedPath]);
+  }, [files, focusFilePath, selectedPath]);
+
+  useEffect(() => {
+    if (currentTab === "terminal") {
+      setTimeout(() => termInputRef.current?.focus(), 60);
+    }
+  }, [currentTab]);
+
+  useEffect(() => {
+    if (terminalLogsFromAgent.length > 0) {
+      const latest = terminalLogsFromAgent[terminalLogsFromAgent.length - 1];
+      setTermOutput((prev) => [...prev, { out: `[Agent] ${latest}` }]);
+    }
+  }, [terminalLogsFromAgent]);
+
+  useEffect(() => {
+    termEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [termOutput, termBusy]);
 
   useEffect(() => {
     const onMsg = (ev: MessageEvent) => {
       if (ev?.data?.source === "heyuka-preview-console") {
-        setPreviewLogs((prev) => [`[${ev.data.level}] ${ev.data.message}`, ...prev].slice(0, 30));
+        setPreviewConsoleLogs((prev) => [`[${ev.data.level}] ${ev.data.message}`, ...prev].slice(0, 20));
       }
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
   }, []);
 
-  useEffect(() => {
-    if (streamKind === "off") return;
-    const t = setInterval(() => setLiveSeconds((s) => s + 1), 1000);
-    return () => clearInterval(t);
-  }, [streamKind]);
+  const activeFile = useMemo(
+    () => files.find((f) => f.path === selectedPath) || files[0] || { path: "index.html", language: "html", content: "" },
+    [files, selectedPath]
+  );
 
-  useEffect(() => {
-    if (!pomodoroRunning) return;
-    const t = setInterval(() => setPomodoroSec((s) => (s > 0 ? s - 1 : 0)), 1000);
-    return () => clearInterval(t);
-  }, [pomodoroRunning]);
-
-  // Real Yjs CRDT + BroadcastChannel cross-tab sync
-  useEffect(() => {
-    if (mode !== "team_collab" && mode !== "offline_vault") return;
-    const doc = new Y.Doc();
-    yDocRef.current = doc;
-    const yText = doc.getText("sharedBrief");
-    const bc = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("heyuka_studio_yjs_room_v59") : null;
-
-    const onUpdate = (u: Uint8Array, origin: unknown) => {
-      if (origin !== "remote" && bc) {
-        bc.postMessage({ type: "yjs_update", data: Array.from(u) });
-      }
-      const nextVal = yText.toString();
-      if (nextVal) setYjsSharedText(nextVal);
-    };
-    doc.on("update", onUpdate);
-    if (bc) {
-      bc.postMessage({ type: "peer_ping" });
-      bc.onmessage = (e) => {
-        if (e.data?.type === "peer_ping") {
-          setPeerCount((p) => Math.max(2, p));
-          bc.postMessage({ type: "yjs_update", data: Array.from(Y.encodeStateAsUpdate(doc)) });
-        } else if (e.data?.type === "yjs_update" && Array.isArray(e.data.data)) {
-          Y.applyUpdate(doc, new Uint8Array(e.data.data), "remote");
-        }
-      };
-    }
-    fetch("/api/v1/studio/team", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => setTeamStats(d))
-      .catch(() => {});
-
-    return () => {
-      doc.destroy();
-      bc?.close();
-    };
-  }, [mode]);
-
-  useEffect(() => {
-    if (mode !== "api_keys") return;
-    fetch("/api/v1/zebra-x/keys", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => setApiKeys(Array.isArray(d?.keys) ? d.keys : []))
-      .catch(() => {});
-    fetch("/api/v1/zebra-x/telemetry?days=14", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => setTelemetry(d))
-      .catch(() => {});
-  }, [mode]);
-
-  const activeFile = files.find((f) => f.path === selectedPath) || files[0] || { path: "index.html", language: "html", content: "" };
+  const filteredFiles = useMemo(() => {
+    const q = fileFilter.trim().toLowerCase();
+    if (!q) return files;
+    return files.filter((f) => f.path.toLowerCase().includes(q));
+  }, [files, fileFilter]);
 
   const previewHtmlDoc = useMemo(() => {
-    const raw = assembleMultiFilePreviewDocument(files) || "<html><head></head><body></body></html>";
-    const consoleBridge = `<script>(function(){var ow=console.warn,oe=console.error;function s(l,a){try{parent.postMessage({source:"heyuka-preview-console",level:l,message:[].slice.call(a).join(" ")},"*")}catch{}}console.error=function(){s("error",arguments);oe.apply(console,arguments)};window.onerror=function(m){s("error",[m])};})();</script>`;
-    return raw.includes("</head>") ? raw.replace("</head>", `${consoleBridge}</head>`) : `${consoleBridge}${raw}`;
+    const raw = assembleMultiFilePreviewDocument(files) || "<html><body></body></html>";
+    const bridge = `<script>(function(){var oe=console.error;function s(l,a){try{parent.postMessage({source:"heyuka-preview-console",level:l,message:[].slice.call(a).join(" ")},"*")}catch{}}console.error=function(){s("error",arguments);oe.apply(console,arguments)};window.onerror=function(m){s("error",[m])};})();</script>`;
+    return raw.includes("</head>") ? raw.replace("</head>", `${bridge}</head>`) : `${bridge}${raw}`;
   }, [files]);
 
   const handleDownloadZip = () => {
-    const zipEntries: Record<string, Uint8Array> = {};
-    for (const f of files) {
-      zipEntries[f.path.replace(/^\/+/, "")] = strToU8(f.content);
-    }
-    const zipped = zipSync(zipEntries);
+    const entries: Record<string, Uint8Array> = {};
+    for (const f of files) entries[f.path.replace(/^\/+/, "")] = strToU8(f.content);
+    const zipped = zipSync(entries);
     const ab = zipped.buffer.slice(zipped.byteOffset, zipped.byteOffset + zipped.byteLength) as ArrayBuffer;
     const blob = new Blob([ab], { type: "application/zip" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${brand === "kaspi_pos" ? "kaspi-pos" : "heyuka"}-studio-project.zip`;
+    a.download = `${brand === "kaspi_pos" ? "kaspi-pos" : "heyuka"}-project.zip`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const runLiveBrowserFetch = async () => {
-    setBrowserLoading(true);
-    try {
-      const r = await fetch("/api/v1/web/research", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: browserUrl, query: browserUrl }),
-      });
-      const d = await r.json();
-      setBrowserSnapshot(
-        typeof d?.markdown === "string"
-          ? d.markdown.slice(0, 2600)
-          : JSON.stringify(d?.results || d, null, 2).slice(0, 2600)
-      );
-    } catch (e: any) {
-      setBrowserSnapshot(`Fetch note: ${e?.message || "Network unavailable"}`);
-    } finally {
-      setBrowserLoading(false);
+  const runCommand = async (rawCmd: string) => {
+    const cmd = rawCmd.trim();
+    if (!cmd) return;
+    setTermHistory((p) => [cmd, ...p.slice(0, 29)]);
+    setHistCursor(-1);
+
+    if (cmd === "clear" || cmd === "cls") {
+      setTermOutput([]);
+      return;
     }
-  };
 
-  const runCloudFactoryProvision = async () => {
-    const r = await fetch("/api/v1/studio/browser-factory", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        projectName: cloudProjectName,
-        gmailSignedIn,
-        cloudTargets: ["GitHub", "Vercel", "Supabase", "Cloudflare"],
-      }),
-    });
-    const d = await r.json();
-    setFactoryOutput(d);
-  };
+    if (termLang === "shell") {
+      const parts = cmd.split(/\s+/);
+      const bin = parts[0]?.toLowerCase() || "";
+      const arg = parts.slice(1).join(" ").trim();
 
-  const runTerminalExec = async () => {
+      if (bin === "help") {
+        setTermOutput((p) => [
+          ...p,
+          {
+            cmd,
+            out: [
+              "Available workspace commands:",
+              "  ls / tree           - list workspace files",
+              "  cat <filename>      - inspect file contents",
+              "  grep <pattern>      - search across workspace files",
+              "  sast                - run security audit on current workspace",
+              "  node <expr>         - evaluate JS/Node in sandbox",
+              "  python <expr>       - run Python code in cloud sandbox",
+              "  bash <cmd>          - run Bash command in cloud sandbox",
+              "  clear               - clear terminal output",
+            ].join("\n"),
+          },
+        ]);
+        return;
+      }
+
+      if (bin === "ls" || bin === "dir" || bin === "tree") {
+        const list = files
+          .map((f) => `${f.path.padEnd(28, " ")} ${f.content.length}B  (${f.content.split(/\r?\n/).length} lines)`)
+          .join("\n");
+        setTermOutput((p) => [...p, { cmd, out: list || "(empty workspace)" }]);
+        return;
+      }
+
+      if (bin === "pwd") {
+        setTermOutput((p) => [...p, { cmd, out: `/workspace/${brand}` }]);
+        return;
+      }
+
+      if (bin === "echo") {
+        setTermOutput((p) => [...p, { cmd, out: arg }]);
+        return;
+      }
+
+      if (bin === "cat" || bin === "head") {
+        const match = files.find((f) => f.path === arg || f.path.endsWith(arg));
+        if (!match) {
+          setTermOutput((p) => [...p, { cmd, out: `cat: ${arg || "<file>"}: No such file in workspace`, isErr: true }]);
+          return;
+        }
+        setSelectedPath(match.path);
+        const body = bin === "head" ? match.content.split(/\r?\n/).slice(0, 20).join("\n") : match.content;
+        setTermOutput((p) => [...p, { cmd, out: body.slice(0, 4000) }]);
+        return;
+      }
+
+      if (bin === "grep") {
+        const q = arg.replace(/^["']|["']$/g, "").toLowerCase();
+        if (!q) {
+          setTermOutput((p) => [...p, { cmd, out: "Usage: grep <search-term>", isErr: true }]);
+          return;
+        }
+        const hits: string[] = [];
+        for (const f of files) {
+          f.content.split(/\r?\n/).forEach((line, idx) => {
+            if (line.toLowerCase().includes(q)) hits.push(`${f.path}:${idx + 1}: ${line.trim()}`);
+          });
+        }
+        setTermOutput((p) => [...p, { cmd, out: hits.slice(0, 40).join("\n") || "No matches found." }]);
+        return;
+      }
+
+      if (bin === "sast") {
+        const findings: string[] = [];
+        for (const f of files) {
+          const audit = scanSourceCodeForVulnerabilities(f.content);
+          findings.push(
+            `${f.path}: risk=${audit.riskScore}/100 | ${audit.clean ? "CLEAN" : `${audit.findings.length} finding(s)`}`
+          );
+          for (const item of audit.findings.slice(0, 4)) {
+            findings.push(`  - [${item.severity}] ${item.cwe}: ${item.title}`);
+          }
+        }
+        setTermOutput((p) => [...p, { cmd, out: findings.join("\n") }]);
+        return;
+      }
+    }
+
+    // Determine sandbox language and payload
+    let execLang: "javascript" | "python" | "bash" = termLang === "shell" ? "bash" : termLang;
+    let execCode = cmd;
+    if (termLang === "shell") {
+      if (/^(node|js)\s+/i.test(cmd)) {
+        execLang = "javascript";
+        const rest = cmd.replace(/^(node|js)\s+/i, "").trim();
+        const fileMatch = files.find((f) => f.path === rest);
+        execCode = fileMatch ? fileMatch.content : rest;
+      } else if (/^(python|python3|py)\s+/i.test(cmd)) {
+        execLang = "python";
+        const rest = cmd.replace(/^(python|python3|py)\s+/i, "").trim();
+        const fileMatch = files.find((f) => f.path === rest);
+        execCode = fileMatch ? fileMatch.content : rest;
+      } else if (/^bash\s+/i.test(cmd)) {
+        execLang = "bash";
+        execCode = cmd.replace(/^bash\s+/i, "").trim();
+      }
+    }
+
     setTermBusy(true);
     try {
-      if (termLang === "powershell") {
-        const r = await fetch("/api/v1/os/exec", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "shell", command: termCmd }),
-        });
-        const d = await r.json();
-        setTermOut(
-          `[v53 Sovereign OS Plan • POS_CORE_LOCK=true]\nPowerShell:\n${d?.generatedScripts?.powershell || termCmd}\n\nBash Equivalent:\n${d?.generatedScripts?.bash || ""}`
-        );
+      let result: any = null;
+      const sandboxRes = await fetch("/api/v1/sandbox/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: execLang, code: execCode.slice(0, 12000) }),
+      });
+
+      if (sandboxRes.ok) {
+        result = await sandboxRes.json();
       } else {
-        const r = await fetch("/api/v1/sandbox/execute", {
+        // Zero-key Studio web execution fallback when visitor is not authenticated with an API key
+        const webExec = await fetch("/api/v1/heyuka/chat-web", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ language: termLang, code: termCmd }),
+          body: JSON.stringify({ action: "sandbox_execute", language: execLang, code: execCode.slice(0, 12000) }),
         });
-        const d = await r.json();
-        setTermOut(
-          `[Sandbox exit=${d?.exitCode ?? "?"} • ${d?.engine || "HEYUKA VM"}]\n${d?.stdout || ""}${d?.stderr ? `\nERR:\n${d.stderr}` : ""}`
-        );
+        result = await webExec.json().catch(() => null);
       }
-    } catch (e: any) {
-      setTermOut(`Error: ${e?.message || "Execution failed"}`);
+
+      if (result && (result.stdout || result.stderr || typeof result.exitCode === "number")) {
+        const text = [result.stdout, result.stderr ? `[stderr]\n${result.stderr}` : ""]
+          .filter(Boolean)
+          .join("\n");
+        setTermOutput((p) => [
+          ...p,
+          {
+            cmd,
+            out: text || `(completed with exitCode ${result.exitCode ?? 0} • ${result.engine || "Sandbox"})`,
+            isErr: Boolean(result.stderr && !result.stdout),
+          },
+        ]);
+      } else {
+        setTermOutput((p) => [...p, { cmd, out: "Execution completed with empty output." }]);
+      }
+    } catch (err: any) {
+      setTermOutput((p) => [...p, { cmd, out: `Error: ${err?.message || "Execution failed"}`, isErr: true }]);
     } finally {
       setTermBusy(false);
     }
   };
 
-  const startMediaStream = async (kind: "camera" | "screen") => {
-    stopMediaStream();
+  const navigateBrowser = async (targetRaw: string, pushHistory = true) => {
+    const clean = targetRaw.trim();
+    if (!clean) return;
+    setBrowserSubMode("web");
+    setAddressInput(clean);
+    setBrowserLoading(true);
+    setBrowserError(null);
+
+    if (pushHistory) {
+      const sliced = navHistory.slice(0, navIdx + 1);
+      const nextHist = [...sliced, clean];
+      setNavHistory(nextHist);
+      setNavIdx(nextHist.length - 1);
+    }
+
+    const isUrl = /^https?:\/\//i.test(clean) || (/^[a-z0-9.-]+\.[a-z]{2,}(\/|$)/i.test(clean) && !/\s/.test(clean));
+    const resolvedUrl = isUrl ? (clean.startsWith("http") ? clean : `https://${clean}`) : undefined;
+
     try {
-      const stream =
-        kind === "screen"
-          ? await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
-          : await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      mediaStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setStreamKind(kind);
-      setLiveSeconds(0);
-    } catch (e: any) {
-      setPreviewLogs((p) => [`[media] ${e?.message || "Permission denied"}`, ...p]);
-    }
-  };
-
-  const stopMediaStream = () => {
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
-      mediaStreamRef.current = null;
-    }
-    if (videoRef.current) videoRef.current.srcObject = null;
-    setStreamKind("off");
-  };
-
-  const runCompareArena = async () => {
-    setCompareBusy(true);
-    const runOne = async (modelId: string) => {
-      const t0 = performance.now();
-      const res = await fetch("/api/v1/heyuka/local-sdk", {
+      const payload = resolvedUrl ? { url: resolvedUrl, query: clean, lang: locale } : { query: clean, lang: locale };
+      let res = await fetch("/api/v1/web/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: comparePrompt, mode: modelId.includes("core") ? "coding" : "auto", locale }),
+        body: JSON.stringify(payload),
       });
-      const d = await res.json();
-      return { model: modelId, text: String(d?.answer || d?.reply || ""), ms: Math.round(performance.now() - t0) };
-    };
-    try {
-      const [a, b] = await Promise.all([runOne(compareLeft.model), runOne(compareRight.model)]);
-      setCompareLeft(a);
-      setCompareRight(b);
+
+      if (!res.ok) {
+        res = await fetch("/api/v1/heyuka/chat-web", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "web_research", ...payload, locale }),
+        });
+      }
+
+      const data = await res.json();
+      if (!data?.ok && !Array.isArray(data?.results) && !data?.markdown) {
+        setBrowserError(data?.error || "Could not load page or search results.");
+        return;
+      }
+
+      setBrowserPageTitle(data?.title || (resolvedUrl ? resolvedUrl : `Search: ${clean}`));
+      setBrowserPageMarkdown(typeof data?.markdown === "string" ? data.markdown : "");
+      setBrowserSearchHits(Array.isArray(data?.results) ? data.results : []);
+    } catch (err: any) {
+      setBrowserError(err?.message || "Network error while browsing.");
     } finally {
-      setCompareBusy(false);
+      setBrowserLoading(false);
     }
   };
 
-  const handleAwardXp = async (xp: number, reason: string, badge?: string) => {
-    const r = await fetch("/api/v1/studio/team", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ member: `Member (${rbacRole})`, xp, reason, badge }),
-    });
-    const d = await r.json();
-    setTeamStats((prev: any) => ({ ...(prev || {}), ...d }));
-  };
+  const surfaceCls = isLight ? "bg-white text-gray-900 border-gray-200" : "bg-[#101010] text-zinc-100 border-white/[0.08]";
+  const chromeCls = isLight ? "bg-[#F8F9FA] border-gray-200" : "bg-[#141416] border-white/[0.08]";
+  const subtleBtn = isLight
+    ? "bg-gray-100 hover:bg-gray-200 text-gray-700"
+    : "bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300";
 
-  // --- RENDER BY SPECIALIZED MODE ---
-  if (mode === "starter_apps") {
-    return (
-      <div className="p-4 sm:p-6 space-y-5 overflow-y-auto h-full">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-lg font-bold text-[var(--kaspi-text-primary)]">
-              {isAr ? "معرض القوالب والتطبيقات الجاهزة (Starter Apps)" : "Starter Apps & Prompt Gallery"}
-            </h2>
-            <p className="text-xs text-[var(--kaspi-text-muted)]">
-              {isAr ? "تشمل قوالب HEYUKA للبرمجة والـ 3D وقوالب KASPI POS للتجارة والفواتير." : "One-click starter blueprints for HEYUKA & KASPI POS."}
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {STUDIO_STARTER_TEMPLATES.map((tpl) => (
-            <div
-              key={tpl.id}
-              className="p-4 rounded-xl bg-[#161618] border border-white/[0.08] hover:border-white/[0.16] transition-colors flex flex-col justify-between gap-3"
-            >
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="px-2 py-0.5 rounded-md bg-white/[0.05] border border-white/[0.08] text-zinc-300 text-[10px] font-medium">
-                    {tpl.brand === "kaspi_pos" ? "KASPI POS" : "HEYUKA"} • {tpl.category}
-                  </span>
-                  <span className="font-mono text-[10px] text-zinc-500">{tpl.scale}</span>
-                </div>
-                <h3 className="text-sm font-semibold text-zinc-100">
-                  {isAr ? tpl.titleAr : tpl.titleEn}
-                </h3>
-                <p className="text-xs text-zinc-400">{isAr ? tpl.descAr : tpl.descEn}</p>
-              </div>
+  return (
+    <div className={`flex flex-col h-full min-h-0 select-text ${surfaceCls}`}>
+      {/* Top IDE Split Header: Changes | Files | Terminal | Browser */}
+      <div className={`px-2.5 h-10 border-b flex items-center justify-between gap-2 shrink-0 ${chromeCls}`}>
+        <div className="flex items-center gap-0.5 text-[11px] font-medium overflow-x-auto kaspi-no-scrollbar">
+          {(
+            [
+              { id: "changes" as const, label: isAr ? "التغييرات" : "Changes", icon: FileText },
+              { id: "files" as const, label: isAr ? "الملفات" : "Files", icon: FolderOpen },
+              { id: "terminal" as const, label: "Terminal", icon: Terminal },
+              { id: "browser" as const, label: isAr ? "المتصفح وبحث" : "Browser", icon: Globe },
+            ] as const
+          ).map((tb) => {
+            const Icon = tb.icon;
+            const active = currentTab === tb.id;
+            return (
               <button
+                key={tb.id}
                 type="button"
-                onClick={() => onSelectTemplate(tpl)}
-                className="w-full py-1.5 rounded-lg bg-white/[0.07] hover:bg-[#007ACC] text-zinc-100 hover:text-white text-xs font-medium cursor-pointer transition-colors"
+                onClick={() => setTab(tb.id)}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md cursor-pointer transition-colors ${
+                  active
+                    ? isLight
+                      ? "bg-white text-gray-900 shadow-xs border border-gray-200"
+                      : "bg-white/[0.1] text-white"
+                    : isLight
+                    ? "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]"
+                }`}
               >
-                {isAr ? "فتح القالب" : "Use Template"}
+                <Icon className="w-3.5 h-3.5" style={active ? { color: accentHex } : undefined} />
+                <span>{tb.label}</span>
               </button>
-            </div>
-          ))}
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={handleDownloadZip}
+            className={`px-2 py-1 rounded-md text-[11px] font-medium inline-flex items-center gap-1 cursor-pointer ${subtleBtn}`}
+            title="Download workspace ZIP"
+          >
+            <Download className="w-3 h-3" />
+            <span className="hidden sm:inline">.zip</span>
+          </button>
+          {onClosePane && (
+            <button
+              type="button"
+              onClick={onClosePane}
+              className={`p-1 rounded-md cursor-pointer ${subtleBtn}`}
+              title="Close Right Pane"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
-    );
-  }
 
-  if (mode === "stream_realtime") {
-    return (
-      <div className="p-4 sm:p-6 space-y-4 overflow-y-auto h-full">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <Video className="w-5 h-5 text-rose-400" />
-              <span>{isAr ? "البث التفاعلي الحي (Stream Realtime — صوت، كاميرا، وشاشة)" : "Stream Realtime (Voice, Webcam & Screen Share)"}</span>
-            </h2>
-            <p className="text-xs text-[var(--kaspi-text-muted)]">
-              WebRTC MediaDevices + Screen Capture -&gt; HEYUKA Vision (v54 + v55).
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-full bg-white/[0.06] font-mono text-xs">
-              {String(Math.floor(liveSeconds / 60)).padStart(2, "0")}:{String(liveSeconds % 60).padStart(2, "0")}
+      {/* TAB 1: CHANGES / REVIEW */}
+      {currentTab === "changes" && (
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-semibold">
+              {files.length} {files.length === 1 ? "file" : "files"} in workspace
             </span>
-            <select
-              value={voiceName}
-              onChange={(e) => setVoiceName(e.target.value)}
-              className="px-2.5 py-1.5 rounded-xl bg-white/[0.06] border border-white/15 text-xs"
-            >
-              <option value="Kore (Multilingual Warm)">Voice: Kore (Warm)</option>
-              <option value="Puck (Fast Studio)">Voice: Puck (Fast)</option>
-              <option value="Atlas (Darija & Arabic)">Voice: Atlas (Arabic/Darija)</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => startMediaStream("camera")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer ${accentBtn}`}
-          >
-            <Camera className="w-4 h-4" />
-            <span>Turn on Webcam</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => startMediaStream("screen")}
-            className="px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/15 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-          >
-            <MonitorUp className="w-4 h-4" />
-            <span>Share Screen</span>
-          </button>
-          {streamKind !== "off" && (
-            <>
+            <div className="flex items-center gap-1.5">
+              {checkpoints.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onRestoreCheckpoint(checkpoints[0].id)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium inline-flex items-center gap-1 cursor-pointer ${subtleBtn}`}
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Restore Last</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
-                  const v = videoRef.current;
-                  if (!v) return;
-                  const c = document.createElement("canvas");
-                  c.width = Math.min(1280, v.videoWidth || 640);
-                  c.height = Math.min(720, v.videoHeight || 360);
-                  c.getContext("2d")?.drawImage(v, 0, 0, c.width, c.height);
-                  onCaptureFrameToChat(c.toDataURL("image/jpeg", 0.85), `Captured ${streamKind} frame for HEYUKA Vision analysis.`);
+                  setTab("browser");
+                  setBrowserSubMode("preview");
                 }}
-                className="px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold cursor-pointer"
+                className="px-2.5 py-1 rounded-md text-[11px] font-medium text-white inline-flex items-center gap-1 cursor-pointer"
+                style={{ backgroundColor: accentHex }}
               >
-                Analyze Current Frame with Vision
+                <Play className="w-3 h-3" />
+                <span>Preview App</span>
               </button>
-              <button
-                type="button"
-                onClick={stopMediaStream}
-                className="px-4 py-2 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold cursor-pointer"
-              >
-                Stop Stream
-              </button>
-            </>
-          )}
-        </div>
-
-        <div className="rounded-2xl bg-[#18191E] border border-white/10 min-h-[280px] flex items-center justify-center overflow-hidden">
-          <video ref={videoRef} autoPlay playsInline muted className={streamKind === "off" ? "hidden" : "w-full max-h-[380px] object-contain"} />
-          {streamKind === "off" && (
-            <div className="text-center p-8 space-y-2 text-[var(--kaspi-text-muted)] text-xs">
-              <MonitorUp className="w-10 h-10 mx-auto opacity-50" />
-              <p>Select Webcam or Share Screen above to inspect documents, barcodes, or UI errors live.</p>
             </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+          </div>
 
-  if (mode === "compare") {
-    return (
-      <div className="p-4 sm:p-6 space-y-4 overflow-y-auto h-full">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-bold">{isAr ? "وضع المقارنة المتوازية (Compare Arena)" : "Compare Mode (Side-by-Side)"}</h2>
-          <button
-            type="button"
-            disabled={compareBusy}
-            onClick={runCompareArena}
-            className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer ${accentBtn}`}
-          >
-            {compareBusy ? "Running..." : "Run Both Models"}
-          </button>
-        </div>
-        <textarea
-          rows={2}
-          value={comparePrompt}
-          onChange={(e) => setComparePrompt(e.target.value)}
-          className="w-full p-3 rounded-xl bg-white/[0.05] border border-white/15 text-xs"
-        />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {[
-            { label: "Model A", state: compareLeft, setModel: (m: string) => setCompareLeft((p) => ({ ...p, model: m })) },
-            { label: "Model B", state: compareRight, setModel: (m: string) => setCompareRight((p) => ({ ...p, model: m })) },
-          ].map((col) => (
-            <div key={col.label} className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <select
-                  value={col.state.model}
-                  onChange={(e) => col.setModel(e.target.value)}
-                  className="px-2.5 py-1 rounded-lg bg-white/[0.07] border border-white/15 text-xs font-bold"
+          <div className="space-y-2">
+            {files.map((file) => {
+              const badge = getFileBadgeMeta(file.path, file.language);
+              const lineCount = file.content.split(/\r?\n/).length;
+              const diffParts = Diff.diffLines("", file.content);
+              return (
+                <div
+                  key={file.path}
+                  className={`rounded-lg border overflow-hidden ${isLight ? "border-gray-200 bg-gray-50/70" : "border-white/[0.08] bg-[#161618]"}`}
                 >
-                  <option value="heyuka-omni">heyuka-omni</option>
-                  <option value="heyuka-core">heyuka-core</option>
-                  <option value="heyuka-vision">heyuka-vision</option>
-                </select>
-                <span className="font-mono text-[11px] text-[var(--kaspi-text-muted)]">{col.state.ms} ms</span>
-              </div>
-              <pre className="whitespace-pre-wrap text-xs text-[var(--kaspi-text-secondary)] max-h-80 overflow-y-auto">
-                {col.state.text || "Click 'Run Both Models' to compare outputs side by side."}
-              </pre>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (mode === "team_collab") {
-    return (
-      <div className="p-4 sm:p-6 space-y-5 overflow-y-auto h-full">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <Users className="w-5 h-5 text-amber-400" />
-              <span>{isAr ? "فضاء العمل الجماعي (Yjs CRDT + Kanban + نظام الحوافز XP)" : "Multiplayer CRDT, Team Kanban & Gamified XP (v59.0)"}</span>
-            </h2>
-            <p className="text-xs text-[var(--kaspi-text-muted)]">
-              Yjs CRDT Active ({peerCount} synced peer tab(s)) • Role RBAC: {rbacRole}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={rbacRole}
-              onChange={(e) => setRbacRole(e.target.value as typeof rbacRole)}
-              className="px-2.5 py-1.5 rounded-xl bg-white/[0.06] border border-white/15 text-xs font-semibold"
-            >
-              {(["Owner", "Admin", "Developer", "Designer", "Cashier", "Viewer"] as const).map((r) => (
-                <option key={r} value={r}>Role: {r}</option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => setPomodoroRunning((p) => !p)}
-              className="px-3 py-1.5 rounded-xl bg-white/[0.07] border border-white/15 text-xs font-mono cursor-pointer"
-            >
-              🍅 {String(Math.floor(pomodoroSec / 60)).padStart(2, "0")}:{String(pomodoroSec % 60).padStart(2, "0")} {pomodoroRunning ? "Pause" : "Focus"}
-            </button>
-          </div>
-        </div>
-
-        {/* Team Telemetry Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="p-3 rounded-xl bg-[#161618] border border-white/[0.08]">
-            <div className="text-[11px] text-zinc-400 flex items-center gap-1"><Trophy className="w-3.5 h-3.5 text-zinc-400" /><span>Level</span></div>
-            <div className="text-sm font-semibold text-zinc-100 mt-1">{teamStats?.gamification?.level || "Architect"}</div>
-          </div>
-          <div className="p-3 rounded-xl bg-[#161618] border border-white/[0.08]">
-            <div className="text-[11px] text-zinc-400 flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-zinc-400" /><span>Activity</span></div>
-            <div className="text-sm font-semibold text-zinc-100 mt-1">{teamStats?.gamification?.totalXp ?? 770} pts</div>
-          </div>
-          <div className="p-3 rounded-xl bg-[#161618] border border-white/[0.08]">
-            <div className="text-[11px] text-zinc-400 flex items-center gap-1"><Flame className="w-3.5 h-3.5 text-zinc-400" /><span>Streak</span></div>
-            <div className="text-sm font-semibold text-zinc-100 mt-1">12 Days</div>
-          </div>
-          <div className="p-3 rounded-xl bg-[#161618] border border-white/[0.08] flex flex-col justify-between">
-            <span className="text-[11px] text-zinc-400">Recognition</span>
-            <button
-              type="button"
-              onClick={() => handleAwardXp(50, "Sent Peer Kudos in Studio", "Team Catalyst")}
-              className="mt-1 px-2.5 py-1 rounded-lg bg-white/[0.08] hover:bg-[#007ACC] text-zinc-200 hover:text-white text-[11px] font-medium cursor-pointer transition-colors"
-            >
-              Send Kudos
-            </button>
-          </div>
-        </div>
-
-        {/* Real Yjs Live Shared Editor */}
-        <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 space-y-2">
-          <div className="flex items-center justify-between text-xs font-bold">
-            <span>Yjs Live Shared Team Brief (Open a 2nd browser tab to watch instant CRDT sync)</span>
-            <span className="text-emerald-400 font-mono">yjs • BroadcastChannel</span>
-          </div>
-          <textarea
-            rows={3}
-            value={yjsSharedText}
-            onChange={(e) => {
-              const val = e.target.value;
-              setYjsSharedText(val);
-              const doc = yDocRef.current;
-              if (doc) {
-                const t = doc.getText("sharedBrief");
-                doc.transact(() => {
-                  t.delete(0, t.length);
-                  t.insert(0, val);
-                });
-              }
-            }}
-            className="w-full p-2.5 rounded-xl bg-white/[0.05] border border-white/15 text-xs"
-          />
-        </div>
-
-        {/* Team Kanban Board */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {(["backlog", "in_progress", "done"] as const).map((col) => (
-            <div key={col} className="p-3 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2">
-              <div className="text-xs font-bold uppercase tracking-wider text-[var(--kaspi-text-muted)]">
-                {col.replace("_", " ")}
-              </div>
-              {kanbanTasks
-                .filter((t) => t.status === col)
-                .map((task) => (
-                  <div key={task.id} className="p-2.5 rounded-xl bg-white/[0.05] border border-white/10 space-y-1.5 text-xs">
-                    <div className="font-semibold">{task.title}</div>
-                    <div className="flex items-center justify-between text-[10px] text-[var(--kaspi-text-muted)]">
-                      <span>{task.assignee}</span>
-                      <span className="font-mono text-amber-300">+{task.xpReward} XP</span>
-                    </div>
-                    {col !== "done" && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextStatus = col === "backlog" ? "in_progress" : "done";
-                          setKanbanTasks((prev) => prev.map((x) => (x.id === task.id ? { ...x, status: nextStatus } : x)));
-                          if (nextStatus === "done") handleAwardXp(task.xpReward, `Completed ${task.title}`, "🚀 Milestone Shipper");
-                        }}
-                        className="w-full py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-[10px] font-bold cursor-pointer"
+                  <div className="px-3 py-2 flex items-center justify-between gap-2 border-b border-inherit">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPath(file.path);
+                        setTab("files");
+                      }}
+                      className="flex items-center gap-2 font-mono text-[11px] font-semibold hover:underline cursor-pointer truncate"
+                    >
+                      <span
+                        style={{ color: badge.color, backgroundColor: badge.bg }}
+                        className="px-1.5 py-0.5 rounded text-[9px] font-bold"
                       >
-                        {col === "backlog" ? "Start Task ->" : "Mark Done (+XP)"}
-                      </button>
-                    )}
+                        {badge.extLabel}
+                      </span>
+                      <span className="truncate">{file.path}</span>
+                    </button>
+                    <span className="font-mono text-[11px] text-emerald-500 shrink-0">+{lineCount}</span>
                   </div>
-                ))}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (mode === "offline_vault") {
-    const manifest = teamStats?.offlineManifest;
-    return (
-      <div className="p-4 sm:p-6 space-y-4 overflow-y-auto h-full">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <WifiOff className="w-5 h-5 text-emerald-400" />
-              <span>{isAr ? "الخزنة المحلية المعزولة 100% والشبكة المحلية (v60.0 Offline Vault)" : "Air-Gapped Sovereign Offline Vault & LAN Mesh (v60.0)"}</span>
-            </h2>
-            <p className="text-xs text-[var(--kaspi-text-muted)]">
-              Workbox PWA • IndexedDB • OPFS • Kiwix OpenZIM • Ollama/Llamafile • Zero-WiFi LAN WebRTC Mesh.
-            </p>
+                  <pre className="p-2.5 text-[11px] font-mono overflow-x-auto max-h-40 leading-relaxed opacity-85">
+                    {diffParts
+                      .map((p) => p.value)
+                      .join("")
+                      .split(/\r?\n/)
+                      .slice(0, 12)
+                      .map((line, i) => `${String(i + 1).padStart(3, " ")} | ${line}`)
+                      .join("\n")}
+                  </pre>
+                </div>
+              );
+            })}
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              const blob = new Blob([JSON.stringify(manifest || {}, null, 2)], { type: "application/json" });
-              const u = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = u;
-              a.download = "heyuka-airgapped-offline-manifest.json";
-              a.click();
-              URL.revokeObjectURL(u);
-            }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold cursor-pointer ${accentBtn}`}
-          >
-            Export Offline Manifest (.JSON)
-          </button>
         </div>
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {(manifest?.tiers || []).map((tier: any) => (
-            <div key={tier.tierId} className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 space-y-2">
-              <div className="text-xs font-bold text-emerald-300">{tier.title}</div>
-              <div className="flex flex-wrap gap-1.5">
-                {(tier.engines || []).map((eng: string) => (
-                  <span key={eng} className="px-2 py-0.5 rounded-full bg-white/[0.07] text-[10px] font-mono">
-                    {eng}
-                  </span>
-                ))}
+      {/* TAB 2: FILES & MARKDOWN/CODE VIEWER */}
+      {currentTab === "files" && (
+        <div className="flex-1 min-h-0 flex flex-col">
+          {/* Search & File Tabs Row */}
+          <div className={`px-2.5 py-2 border-b space-y-2 ${isLight ? "border-gray-200" : "border-white/[0.07]"}`}>
+            <div className="flex items-center gap-1.5">
+              <div className={`flex-1 flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] ${isLight ? "bg-white border-gray-200" : "bg-white/[0.04] border-white/[0.08]"}`}>
+                <Search className="w-3 h-3 opacity-60 shrink-0" />
+                <input
+                  type="text"
+                  value={fileFilter}
+                  onChange={(e) => setFileFilter(e.target.value)}
+                  placeholder="Search files..."
+                  className="w-full bg-transparent focus:outline-none"
+                />
               </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 space-y-2">
-          <div className="text-xs font-bold">v60.0 Vaulted Offline Engines ({manifest?.v60Engines?.length || 15})</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {(manifest?.v60Engines || []).map((v: any) => (
-              <a
-                key={v.id}
-                href={v.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs flex items-center justify-between gap-2"
+              <button
+                type="button"
+                onClick={() => setNewFilePrompt((p) => !p)}
+                className={`p-1.5 rounded-md cursor-pointer ${subtleBtn}`}
+                title="New File"
               >
-                <span className="truncate font-semibold">{v.name}</span>
-                <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-60" />
-              </a>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => uploadRef.current?.click()}
+                className={`p-1.5 rounded-md cursor-pointer ${subtleBtn}`}
+                title="Upload files"
+              >
+                <Upload className="w-3.5 h-3.5" />
+              </button>
+              <input
+                ref={uploadRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={async (e) => {
+                  const list = Array.from(e.target.files || []);
+                  if (!list.length) return;
+                  const added: StudioFileNode[] = [];
+                  for (const f of list) {
+                    const text = await f.text().catch(() => "");
+                    if (text) {
+                      const ext = f.name.split(".").pop()?.toLowerCase() || "text";
+                      added.push({ path: f.name, language: ext, content: text.slice(0, 60000) });
+                    }
+                  }
+                  if (added.length) {
+                    onChangeFiles([...files.filter((x) => !added.some((a) => a.path === x.path)), ...added]);
+                    setSelectedPath(added[0].path);
+                  }
+                  e.target.value = "";
+                }}
+              />
+            </div>
 
-  if (mode === "api_keys") {
-    const chartData = Array.isArray(telemetry?.dailySeries) && telemetry.dailySeries.length > 0
-      ? telemetry.dailySeries
-      : [{ date: "Today", requests: 12, estimatedTokens: 4800 }];
-
-    return (
-      <div className="p-4 sm:p-6 space-y-5 overflow-y-auto h-full">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <KeyRound className="w-5 h-5 text-sky-400" />
-              <span>API Keys & Real-Time Usage Charts ($0.00 Unlimited)</span>
-            </h2>
-            <p className="text-xs text-[var(--kaspi-text-muted)]">
-              Create unlimited `hk-live-...` keys scoped to your workspace. Works drop-in with OpenAI SDKs.
-            </p>
-          </div>
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const res = await fetch("/api/v1/zebra-x/keys", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ label: newKeyLabel || `${brand.toUpperCase()} Studio Key`, tokenPrefix: "hk-live" }),
-              });
-              const d = await res.json();
-              if (d?.secretKeyOnce) setFreshKeyOnce(d.secretKeyOnce);
-              setNewKeyLabel("");
-              const list = await fetch("/api/v1/zebra-x/keys").then((r) => r.json()).catch(() => ({}));
-              setApiKeys(Array.isArray(list?.keys) ? list.keys : []);
-            }}
-            className="flex gap-2"
-          >
-            <input
-              type="text"
-              value={newKeyLabel}
-              onChange={(e) => setNewKeyLabel(e.target.value)}
-              placeholder="New key label..."
-              className="px-3 py-1.5 rounded-xl bg-white/[0.06] border border-white/15 text-xs"
-            />
-            <button type="submit" className="px-3.5 py-1.5 rounded-lg bg-[#007ACC] hover:bg-[#0B84D8] text-white text-xs font-medium cursor-pointer transition-colors">
-              + Create API Key
-            </button>
-          </form>
-        </div>
-
-        {freshKeyOnce && (
-          <div className="p-3 rounded-lg bg-[#161618] border border-[#007ACC]/40 flex items-center justify-between gap-2 text-xs">
-            <span className="font-mono font-medium truncate text-zinc-100">New Secret Key: {freshKeyOnce}</span>
-            <button
-              type="button"
-              onClick={() => {
-                navigator.clipboard.writeText(freshKeyOnce);
-                setCopiedId("fresh");
-              }}
-              className="px-2.5 py-1 rounded-md bg-white/[0.08] hover:bg-white/[0.14] text-white font-medium cursor-pointer"
-            >
-              {copiedId === "fresh" ? "Copied" : "Copy"}
-            </button>
-          </div>
-        )}
-
-        <div className="h-56 p-4 rounded-xl bg-[#161618] border border-white/[0.08]">
-          <div className="text-xs font-medium text-zinc-300 mb-2">Daily Requests</div>
-          <ResponsiveContainer width="100%" height="88%">
-            <BarChart data={chartData}>
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#9ca3af" }} />
-              <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} />
-              <Tooltip />
-              <Bar dataKey="requests" fill="#007ACC" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="rounded-2xl bg-white/[0.04] border border-white/10 overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-white/10 text-[var(--kaspi-text-muted)]">
-                <th className="py-2.5 px-4 text-start">Label</th>
-                <th className="py-2.5 px-4 text-start">Prefix</th>
-                <th className="py-2.5 px-4 text-start">Created</th>
-                <th className="py-2.5 px-4 text-end">Usage</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/[0.06]">
-              {apiKeys.map((k) => (
-                <tr key={k.id}>
-                  <td className="py-2.5 px-4 font-semibold">{k.label}</td>
-                  <td className="py-2.5 px-4 font-mono">{k.prefix}...{k.last4}</td>
-                  <td className="py-2.5 px-4 text-[var(--kaspi-text-muted)]">{String(k.createdAt || "").slice(0, 10)}</td>
-                  <td className="py-2.5 px-4 text-end font-mono">{k.usageCount || 0} reqs ($0.00)</td>
-                </tr>
-              ))}
-              {apiKeys.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="py-4 px-4 text-center text-[var(--kaspi-text-muted)]">
-                    Sign in via /zebra-x/api-keys to manage persistent tenant keys, or use unlimited zero-key mode directly.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  }
-
-  // DEFAULT WORKBENCH PANEL: Build Mode + Bottom Embedded Browser / Terminal / Elastic Swarm Utility
-  return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {mode === "build" && (
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          {/* Build Toolbar */}
-          <div className="px-3 py-1.5 border-b border-white/[0.07] flex flex-wrap items-center justify-between gap-2 bg-[#141416]">
-            <div className="flex items-center gap-1">
-              {(["split", "preview", "code"] as const).map((v) => (
+            {newFilePrompt && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const cleanName = newFileName.trim();
+                  if (!cleanName) return;
+                  const ext = cleanName.split(".").pop()?.toLowerCase() || "text";
+                  if (!files.some((f) => f.path === cleanName)) {
+                    onChangeFiles([...files, { path: cleanName, language: ext, content: `// ${cleanName}\n` }]);
+                  }
+                  setSelectedPath(cleanName);
+                  setNewFileName("");
+                  setNewFilePrompt(false);
+                }}
+                className="flex gap-1.5"
+              >
+                <input
+                  type="text"
+                  autoFocus
+                  value={newFileName}
+                  onChange={(e) => setNewFileName(e.target.value)}
+                  placeholder="e.g. notes.md or utils.ts"
+                  className={`flex-1 px-2.5 py-1 rounded-md border text-[11px] font-mono ${isLight ? "bg-white border-gray-300" : "bg-white/[0.05] border-white/[0.12]"}`}
+                />
                 <button
-                  key={v}
-                  type="button"
-                  onClick={() => setViewSplit(v)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium capitalize cursor-pointer transition-colors ${
-                    viewSplit === v ? "bg-white/[0.1] text-white" : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]"
-                  }`}
+                  type="submit"
+                  className="px-2.5 py-1 rounded-md text-[11px] font-medium text-white cursor-pointer"
+                  style={{ backgroundColor: accentHex }}
                 >
-                  {v}
+                  Create
                 </button>
-              ))}
-              <div className="h-4 w-px bg-white/[0.08] mx-1" />
-              <button type="button" onClick={() => setViewport("desktop")} className={`p-1 rounded-md cursor-pointer ${viewport === "desktop" ? "bg-white/[0.1] text-white" : "text-zinc-400 hover:text-zinc-200"}`} title="Desktop"><Monitor className="w-3.5 h-3.5" /></button>
-              <button type="button" onClick={() => setViewport("tablet")} className={`p-1 rounded-md cursor-pointer ${viewport === "tablet" ? "bg-white/[0.1] text-white" : "text-zinc-400 hover:text-zinc-200"}`} title="Tablet"><Tablet className="w-3.5 h-3.5" /></button>
-              <button type="button" onClick={() => setViewport("mobile")} className={`p-1 rounded-md cursor-pointer ${viewport === "mobile" ? "bg-white/[0.1] text-white" : "text-zinc-400 hover:text-zinc-200"}`} title="Mobile"><Smartphone className="w-3.5 h-3.5" /></button>
-            </div>
+              </form>
+            )}
 
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setDiffMode((d) => !d)}
-                className={`px-2.5 py-1 rounded-md border text-[11px] font-medium cursor-pointer ${diffMode ? "bg-[#007ACC]/20 border-[#007ACC]/50 text-sky-300" : "bg-white/[0.04] border-white/[0.08] text-zinc-300 hover:bg-white/[0.08]"}`}
-              >
-                Diff
-              </button>
-              <button
-                type="button"
-                onClick={() => setAnnotateMode((a) => !a)}
-                className={`px-2.5 py-1 rounded-md border text-[11px] font-medium flex items-center gap-1 cursor-pointer ${annotateMode ? "bg-[#007ACC]/20 border-[#007ACC]/50 text-sky-300" : "bg-white/[0.04] border-white/[0.08] text-zinc-300 hover:bg-white/[0.08]"}`}
-              >
-                <Pencil className="w-3 h-3" />
-                <span>Annotate</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onSaveCheckpoint(`Checkpoint #${checkpoints.length + 1}`)}
-                className="px-2.5 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-[11px] font-medium text-zinc-300 cursor-pointer"
-              >
-                Checkpoint
-              </button>
-              <button
-                type="button"
-                onClick={handleDownloadZip}
-                className="px-2.5 py-1 rounded-md bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-zinc-200 text-[11px] font-medium flex items-center gap-1 cursor-pointer"
-              >
-                <Download className="w-3 h-3 text-zinc-400" />
-                <span>.ZIP</span>
-              </button>
-            </div>
-          </div>
-
-          {/* File Tree + Code + Live Preview */}
-          <div className="flex-1 flex min-h-0 overflow-hidden">
-            {/* File Tree */}
-            <div className="w-48 shrink-0 border-e border-white/10 p-2 overflow-y-auto bg-white/[0.02] space-y-2 hidden sm:block">
-              <div className="text-[10px] font-bold uppercase text-[var(--kaspi-text-muted)] px-1">Project Files ({files.length})</div>
-              <div className="space-y-0.5">
-                {files.map((f) => (
+            {/* Open file pills */}
+            <div className="flex items-center gap-1 overflow-x-auto kaspi-no-scrollbar">
+              {filteredFiles.map((f) => {
+                const active = activeFile.path === f.path;
+                const badge = getFileBadgeMeta(f.path, f.language);
+                return (
                   <button
                     key={f.path}
                     type="button"
-                    onClick={() => setSelectedPath(f.path)}
-                    className={`w-full text-start px-2 py-1.5 rounded-lg text-[11px] font-mono truncate cursor-pointer ${
-                      f.path === activeFile.path ? "bg-white/15 font-bold text-[var(--kaspi-text-primary)]" : "text-[var(--kaspi-text-secondary)] hover:bg-white/[0.06]"
+                    onClick={() => {
+                      setSelectedPath(f.path);
+                      setIsEditingCode(false);
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono shrink-0 cursor-pointer border transition-colors ${
+                      active
+                        ? isLight
+                          ? "bg-white border-gray-300 text-gray-900 font-semibold"
+                          : "bg-white/[0.09] border-white/[0.16] text-white font-semibold"
+                        : isLight
+                        ? "border-transparent text-gray-600 hover:bg-gray-100"
+                        : "border-transparent text-zinc-400 hover:bg-white/[0.05]"
                     }`}
                   >
-                    {f.path}
+                    <span style={{ color: badge.color }}>{badge.extLabel}</span>
+                    <span>{f.path}</span>
                   </button>
-                ))}
-              </div>
-              <div className="pt-2 border-t border-white/10 flex gap-1">
-                <input
-                  type="text"
-                  value={newFilePath}
-                  onChange={(e) => setNewFilePath(e.target.value)}
-                  placeholder="app.tsx"
-                  className="w-full px-1.5 py-1 rounded bg-white/[0.06] border border-white/10 text-[10px] font-mono"
-                />
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Editor Action Toolbar */}
+          <div className={`px-3 py-1.5 border-b flex items-center justify-between gap-2 text-[11px] ${isLight ? "border-gray-200 bg-gray-50" : "border-white/[0.06] bg-[#141416]"}`}>
+            <span className="font-mono opacity-75 truncate">{activeFile.path}</span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {activeFile.path.toLowerCase().endsWith(".md") && (
                 <button
                   type="button"
-                  onClick={() => {
-                    const p = newFilePath.trim();
-                    if (!p || files.some((x) => x.path === p)) return;
-                    onChangeFiles([...files, { path: p, language: p.split(".").pop() || "text", content: `// ${p}\n` }]);
-                    setSelectedPath(p);
-                    setNewFilePath("");
-                  }}
-                  className="px-2 py-1 rounded bg-white/10 text-[10px] font-bold cursor-pointer"
+                  onClick={() => setMdRenderMode((m) => (m === "rendered" ? "source" : "rendered"))}
+                  className={`px-2 py-0.5 rounded cursor-pointer font-medium ${subtleBtn}`}
                 >
-                  +
+                  {mdRenderMode === "rendered" ? "Code" : "Preview"}
                 </button>
-              </div>
-              {checkpoints.length > 0 && (
-                <div className="pt-2 border-t border-white/10 space-y-1">
-                  <div className="text-[10px] font-bold text-[var(--kaspi-text-muted)]">Checkpoints</div>
-                  {checkpoints.slice(0, 4).map((cp) => (
-                    <button
-                      key={cp.id}
-                      type="button"
-                      onClick={() => onRestoreCheckpoint(cp.id)}
-                      className="w-full text-start px-2 py-1 rounded bg-white/[0.04] hover:bg-white/[0.1] text-[10px] flex items-center justify-between cursor-pointer"
-                    >
-                      <span className="truncate">{cp.label}</span>
-                      <RotateCcw className="w-2.5 h-2.5 shrink-0" />
-                    </button>
-                  ))}
-                </div>
               )}
+              <button
+                type="button"
+                onClick={() => setIsEditingCode((p) => !p)}
+                className={`px-2 py-0.5 rounded inline-flex items-center gap-1 cursor-pointer ${subtleBtn}`}
+              >
+                <Edit3 className="w-3 h-3" />
+                <span>{isEditingCode ? "View" : "Edit"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(activeFile.content);
+                  setCopiedPath(activeFile.path);
+                  setTimeout(() => setCopiedPath(null), 1500);
+                }}
+                className={`px-2 py-0.5 rounded inline-flex items-center gap-1 cursor-pointer ${subtleBtn}`}
+              >
+                {copiedPath === activeFile.path ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                <span>{copiedPath === activeFile.path ? "Copied" : "Copy"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onInjectContextText(activeFile.path, activeFile.content)}
+                className={`px-2 py-0.5 rounded inline-flex items-center gap-1 cursor-pointer ${subtleBtn}`}
+                title="Attach file to agent prompt"
+              >
+                <Code2 className="w-3 h-3" />
+                <span>Ask AI</span>
+              </button>
             </div>
+          </div>
 
-            {/* Code Editor & Antigravity Syntax Code View */}
-            {(viewSplit === "split" || viewSplit === "code") && (
-              <div className="flex-1 flex flex-col min-w-0 border-e border-white/10 overflow-hidden">
-                {/* Multi-Tab Bar like Antigravity IDE */}
-                <div className="px-2 py-1 border-b border-white/10 flex items-center gap-1 overflow-x-auto bg-white/[0.02] kaspi-no-scrollbar">
-                  {files.map((f) => {
-                    const meta = getFileBadgeMeta(f.path, f.language);
-                    const isAct = f.path === activeFile.path;
-                    return (
-                      <button
-                        key={f.path}
-                        type="button"
-                        onClick={() => setSelectedPath(f.path)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono shrink-0 cursor-pointer transition-colors ${
-                          isAct
-                            ? "bg-white/[0.12] text-white border border-white/20 font-bold"
-                            : "text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200"
-                        }`}
-                      >
-                        <span
-                          style={{ color: meta.color, backgroundColor: meta.bg }}
-                          className="px-1 py-0.2 rounded text-[8px] font-black"
-                        >
-                          {meta.extLabel}
-                        </span>
-                        <span className="truncate max-w-[140px]">{meta.fileName}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Toolbar: Syntax / Edit / Diff */}
-                <div className="px-3 py-1.5 border-b border-white/10 flex items-center justify-between text-[11px] font-mono bg-white/[0.02]">
-                  <span className="truncate text-zinc-300">{activeFile.path}</span>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[10px] text-zinc-400 hidden sm:inline">
-                      {activeFile.content.split(/\r?\n/).length} lines • +{activeFile.content.length} chars
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setCodeViewMode((m) => (m === "syntax" ? "edit" : "syntax"))}
-                      className={`px-2 py-0.5 rounded-md border text-[10px] font-medium cursor-pointer transition-colors ${
-                        codeViewMode === "edit"
-                          ? "bg-[#007ACC] border-[#007ACC] text-white"
-                          : "bg-white/[0.04] border-white/[0.08] text-zinc-300 hover:bg-white/[0.08]"
-                      }`}
-                    >
-                      {codeViewMode === "syntax" ? "Edit" : "Preview Syntax"}
-                    </button>
-                  </div>
-                </div>
-                {diffMode && checkpoints[0] ? (
-                  <div className="flex-1 overflow-auto p-3 font-mono text-[11px] space-y-0.5">
-                    {Diff.diffLines(
-                      checkpoints[0].files.find((f) => f.path === activeFile.path)?.content || "",
-                      activeFile.content
-                    ).map((part, i) => (
-                      <div
-                        key={i}
-                        className={
-                          part.added
-                            ? "bg-emerald-500/15 text-emerald-300"
-                            : part.removed
-                            ? "bg-rose-500/15 text-rose-300"
-                            : "text-[var(--kaspi-text-secondary)]"
-                        }
-                      >
-                        <pre className="whitespace-pre-wrap">{part.value}</pre>
-                      </div>
-                    ))}
-                  </div>
-                ) : codeViewMode === "syntax" ? (
-                  <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-                    <HeyukaSyntaxCodeView
-                      code={activeFile.content}
-                      language={activeFile.language}
-                      filePath={activeFile.path}
-                      maxHeightClass="flex-1 h-full"
-                      backgroundHex={appearance?.backgroundHex || "#101010"}
-                      foregroundHex={appearance?.foregroundHex || "#F7EAEA"}
-                      accentHex={appearance?.accentHex || "#007ACC"}
-                      contrastMode={appearance?.contrastMode || "default"}
-                      showHeaderBreadcrumb
-                    />
-                  </div>
-                ) : (
-                  <textarea
-                    value={activeFile.content}
-                    onChange={(e) =>
-                      onChangeFiles(
-                        files.map((f) => (f.path === activeFile.path ? { ...f, content: e.target.value } : f))
-                      )
-                    }
-                    spellCheck={false}
-                    style={{
-                      backgroundColor: appearance?.backgroundHex || "#101010",
-                      color: appearance?.foregroundHex || "#F7EAEA",
-                    }}
-                    className="flex-1 w-full p-3 font-mono text-xs resize-none focus:outline-none"
-                  />
-                )}
+          {/* Code Editor / Syntax Viewer / Markdown Rendered View */}
+          <div className="flex-1 min-h-0 overflow-auto p-3">
+            {isEditingCode ? (
+              <textarea
+                value={activeFile.content}
+                onChange={(e) =>
+                  onChangeFiles(files.map((f) => (f.path === activeFile.path ? { ...f, content: e.target.value } : f)))
+                }
+                spellCheck={false}
+                className={`w-full h-full min-h-[260px] p-3 rounded-lg font-mono text-xs focus:outline-none border resize-none ${
+                  isLight ? "bg-gray-50 border-gray-200 text-gray-900" : "bg-[#141416] border-white/[0.08] text-zinc-100"
+                }`}
+              />
+            ) : activeFile.path.toLowerCase().endsWith(".md") && mdRenderMode === "rendered" ? (
+              <div className={`rounded-xl p-4 border text-sm ${isLight ? "bg-white border-gray-200" : "bg-[#141416] border-white/[0.08]"}`}>
+                <HeyukaMarkdownMessage markdown={activeFile.content} />
               </div>
-            )}
-
-            {/* Live Sandpack-Style Preview Frame */}
-            {(viewSplit === "split" || viewSplit === "preview") && (
-              <div className="flex-1 flex flex-col min-w-0 relative bg-[#18191E]">
-                <div className="flex-1 flex items-center justify-center p-2 overflow-auto relative">
-                  <iframe
-                    title="HEYUKA Live Preview"
-                    srcDoc={previewHtmlDoc}
-                    sandbox="allow-scripts allow-forms allow-modals"
-                    className={`bg-white rounded-xl border border-white/15 transition-all h-full ${
-                      viewport === "mobile" ? "w-[375px]" : viewport === "tablet" ? "w-[768px]" : "w-full"
-                    }`}
-                  />
-                  {annotateMode && (
-                    <canvas
-                      ref={annotateCanvasRef}
-                      width={680}
-                      height={420}
-                      onMouseDown={() => { drawingRef.current = true; }}
-                      onMouseUp={() => { drawingRef.current = false; }}
-                      onMouseMove={(e) => {
-                        if (!drawingRef.current || !annotateCanvasRef.current) return;
-                        const rect = annotateCanvasRef.current.getBoundingClientRect();
-                        const ctx = annotateCanvasRef.current.getContext("2d");
-                        if (!ctx) return;
-                        ctx.fillStyle = "#f43f5e";
-                        ctx.beginPath();
-                        ctx.arc(((e.clientX - rect.left) / rect.width) * 680, ((e.clientY - rect.top) / rect.height) * 420, 6, 0, Math.PI * 2);
-                        ctx.fill();
-                      }}
-                      className="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-16px)] cursor-crosshair rounded-xl border-2 border-rose-500/60"
-                    />
-                  )}
-                </div>
-
-                {/* Vibe Coding Suggestion Chips + Console Error Catcher */}
-                <div className="px-3 py-2 border-t border-white/10 space-y-1.5 bg-white/[0.03]">
-                  <div className="flex flex-wrap gap-1.5">
-                    {["Add Dark Mode", "Add CSV Export", "Make Mobile Responsive", "Connect KASPI POS API"].map((chip) => (
-                      <button
-                        key={chip}
-                        type="button"
-                        onClick={() => onRunPromptFromChild(`${chip} to the current Build project.`)}
-                        className="px-2 py-0.5 rounded-full bg-white/[0.07] hover:bg-white/[0.14] text-[10px] font-semibold cursor-pointer"
-                      >
-                        ✨ {chip}
-                      </button>
-                    ))}
-                  </div>
-                  {previewLogs.length > 0 && (
-                    <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-rose-300 bg-rose-500/10 px-2 py-1 rounded">
-                      <span className="truncate">{previewLogs[0]}</span>
-                      <button
-                        type="button"
-                        onClick={() => onRunPromptFromChild(`Fix this preview console error cleanly: ${previewLogs[0]}`)}
-                        className="px-2 py-0.5 rounded bg-rose-500/30 font-bold cursor-pointer shrink-0"
-                      >
-                        Fix with AI
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+            ) : (
+              <HeyukaSyntaxCodeView code={activeFile.content} filePath={activeFile.path} language={activeFile.language} />
             )}
           </div>
         </div>
       )}
 
-      {/* Embedded Live Browser + PowerShell Terminal + Elastic 3/6/12 Swarm & Worker Bots Utility Bar */}
-      <div className="border-t border-white/10 bg-white/[0.03]">
-        <div className="px-3 py-1 flex flex-wrap items-center justify-between gap-2 bg-[#141416]">
-          <div className="flex flex-wrap items-center gap-1">
-            {[
-              { id: "swarm", icon: Activity, label: `Swarm (${councilData?.modelCount || 3}/6/12)` },
-              { id: "browser", icon: Globe, label: "Browser" },
-              { id: "terminal", icon: Terminal, label: "Terminal" },
-              { id: "none", icon: Eye, label: "Collapse" },
-            ].map((tb) => {
-              const Icon = tb.icon;
-              const isAct = bottomUtilityTab === tb.id && tb.id !== "none";
-              return (
-                <button
-                  key={tb.id}
-                  type="button"
-                  onClick={() => setBottomUtilityTab(tb.id as typeof bottomUtilityTab)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium inline-flex items-center gap-1.5 cursor-pointer transition-colors ${
-                    isAct
-                      ? "bg-white/[0.1] text-white"
-                      : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]"
-                  }`}
-                >
-                  <Icon className="w-3 h-3" />
-                  <span>{tb.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {bottomUtilityTab === "swarm" && (
-          <div className="p-3 border-t border-white/10 space-y-3 max-h-64 overflow-y-auto">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="font-bold">
-                {councilData
-                  ? `Active Tier: ${councilData.tier.toUpperCase()} (${councilData.modelCount} Models + ${councilData.spawnedBots.length} Worker Bots)`
-                  : "Elastic 3 -> 6 -> 12 Model Swarm Ready"}
-              </div>
-              <div className="flex gap-1.5">
-                {(["3x_fast", "6x_pro", "12x_titan"] as const).map((tier) => (
-                  <button
-                    key={tier}
-                    type="button"
-                    onClick={() => onTriggerCouncil(tier, activeFile.path || "Build full-stack app")}
-                    className="px-2.5 py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.16] text-[10px] font-bold cursor-pointer"
-                  >
-                    Run {tier.replace("_", " ")}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {councilData && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-[11px]">
-                <div className="flex flex-wrap gap-1.5">
-                  {councilData.nodes.map((n) => (
-                    <div key={n.id} className="px-2.5 py-1.5 rounded-xl bg-white/[0.05] border border-white/10">
-                      <div className="font-bold text-sky-300">{n.role}</div>
-                      <div className="text-[10px] font-mono text-[var(--kaspi-text-muted)]">{n.model} • {n.latencyMs}ms</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="space-y-1">
-                  {councilData.spawnedBots.map((b) => (
-                    <div key={b.botId} className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-between gap-2">
-                      <span className="font-mono font-bold text-emerald-300">{b.botType}</span>
-                      <span className="truncate text-[10px]">{b.outputPreview}</span>
-                      <span className="font-mono text-[10px]">exit={b.exitCode}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {bottomUtilityTab === "browser" && (
-          <div className="p-3 border-t border-white/10 space-y-2.5 max-h-72 overflow-y-auto">
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="text"
-                value={browserUrl}
-                onChange={(e) => setBrowserUrl(e.target.value)}
-                className="flex-1 min-w-[200px] px-2.5 py-1.5 rounded-lg bg-white/[0.06] border border-white/15 text-xs font-mono"
-              />
-              <button type="button" onClick={runLiveBrowserFetch} className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${accentBtn}`}>
-                {browserLoading ? "Loading..." : "Fetch Live URL"}
-              </button>
-              <button
-                type="button"
-                onClick={() => browserSnapshot && onInjectContextText(browserUrl, browserSnapshot)}
-                className="px-2.5 py-1.5 rounded-lg bg-white/[0.07] text-[11px] font-semibold cursor-pointer"
-              >
-                Send to Context
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setOauthPausedForUser((p) => !p);
-                  if (oauthPausedForUser) setGmailSignedIn(true);
-                }}
-                className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-bold cursor-pointer ${
-                  gmailSignedIn
-                    ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                    : "bg-amber-500/15 border-amber-500/40 text-amber-300"
-                }`}
-              >
-                {oauthPausedForUser ? "Resume AI After Gmail Login" : gmailSignedIn ? "OAuth Session Ready ✓" : "Human OAuth Handshake"}
-              </button>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <input
-                type="text"
-                value={cloudProjectName}
-                onChange={(e) => setCloudProjectName(e.target.value)}
-                className="px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/15 text-xs font-mono"
-                placeholder="project-slug"
-              />
-              <button type="button" onClick={runCloudFactoryProvision} className="px-3 py-1 rounded-lg bg-white/[0.09] hover:bg-white/[0.15] text-[11px] font-bold cursor-pointer">
-                Generate GitHub + Vercel + Supabase + Docker Provisioning
-              </button>
-            </div>
-            {(browserSnapshot || factoryOutput) && (
-              <pre className="p-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-[11px] font-mono max-h-36 overflow-auto whitespace-pre-wrap">
-                {factoryOutput ? `${factoryOutput.cliProvisionScript}\n\n${factoryOutput.privacyShield}` : browserSnapshot}
-              </pre>
-            )}
-          </div>
-        )}
-
-        {bottomUtilityTab === "terminal" && (
-          <div className="p-3 border-t border-white/10 space-y-2 max-h-64 overflow-y-auto">
-            <div className="flex flex-wrap items-center gap-2">
+      {/* TAB 3: INTERACTIVE TERMINAL (100% WORKING) */}
+      {currentTab === "terminal" && (
+        <div className="flex-1 min-h-0 flex flex-col bg-[#0D0E11] text-zinc-100">
+          {/* Terminal Sub-bar */}
+          <div className="px-3 py-1.5 border-b border-white/[0.08] bg-[#141416] flex flex-wrap items-center justify-between gap-2 text-[11px]">
+            <div className="flex items-center gap-1.5">
               <select
                 value={termLang}
                 onChange={(e) => setTermLang(e.target.value as typeof termLang)}
-                className="px-2.5 py-1.5 rounded-lg bg-white/[0.07] border border-white/15 text-xs font-mono"
+                className="px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.1] font-mono text-[11px] focus:outline-none"
               >
-                <option value="powershell">PowerShell 7</option>
-                <option value="python">Python 3 Sandbox</option>
-                <option value="bash">Bash</option>
+                <option value="shell">Shell (Workspace)</option>
                 <option value="javascript">Node.js</option>
+                <option value="python">Python 3</option>
+                <option value="bash">Bash</option>
               </select>
-              <input
-                type="text"
-                value={termCmd}
-                onChange={(e) => setTermCmd(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && runTerminalExec()}
-                className="flex-1 px-2.5 py-1.5 rounded-lg bg-white/[0.06] border border-white/15 text-xs font-mono"
-              />
-              <button type="button" onClick={runTerminalExec} disabled={termBusy} className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${accentBtn}`}>
-                {termBusy ? "Running..." : "Execute"}
+              {["ls", "sast", "cat index.html", "node console.log(2+2)"].map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => void runCommand(q)}
+                  className="hidden sm:inline-block px-2 py-0.5 rounded bg-white/[0.05] hover:bg-white/[0.12] font-mono text-[10px] text-zinc-300 cursor-pointer"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => onRunPromptFromChild(`Analyze this terminal output and help fix or extend it:\n${termOutput.slice(-4).map((x) => x.out).join("\n")}`)}
+                className="px-2 py-0.5 rounded bg-white/[0.06] hover:bg-white/[0.12] text-[10px] text-zinc-300 cursor-pointer"
+              >
+                Send Output to AI
               </button>
               <button
                 type="button"
-                onClick={() => onRunPromptFromChild(`Analyze and explain/fix this terminal output:\n${termOut}`)}
-                className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[11px] font-bold cursor-pointer"
+                onClick={() => setTermOutput([])}
+                className="p-1 rounded hover:bg-white/[0.1] text-zinc-400 cursor-pointer"
+                title="Clear terminal"
               >
-                Fix Error with AI
+                <Trash2 className="w-3 h-3" />
               </button>
             </div>
-            <pre className="p-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-[11px] font-mono max-h-32 overflow-auto whitespace-pre-wrap">
-              {termOut}
-            </pre>
           </div>
-        )}
-      </div>
+
+          {/* Live Scrollable Terminal Console */}
+          <div
+            onClick={() => termInputRef.current?.focus()}
+            className="flex-1 min-h-0 overflow-y-auto p-3 font-mono text-[11px] space-y-2.5 cursor-text"
+          >
+            {termOutput.map((entry, idx) => (
+              <div key={idx} className="space-y-1">
+                {entry.cmd && (
+                  <div className="flex items-center gap-2 text-zinc-300">
+                    <span style={{ color: accentHex }} className="font-bold">
+                      kaspi@antigravity:~/workspace$
+                    </span>
+                    <span>{entry.cmd}</span>
+                  </div>
+                )}
+                <pre className={`whitespace-pre-wrap leading-relaxed break-words ${entry.isErr ? "text-rose-400" : "text-zinc-300"}`}>
+                  {entry.out}
+                </pre>
+              </div>
+            ))}
+
+            {termBusy && <div className="text-zinc-400 animate-pulse">Executing...</div>}
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const val = termInput;
+                setTermInput("");
+                void runCommand(val);
+              }}
+              className="flex items-center gap-2 pt-1"
+            >
+              <span style={{ color: accentHex }} className="font-bold shrink-0">
+                kaspi@antigravity:~/workspace$
+              </span>
+              <input
+                ref={termInputRef}
+                type="text"
+                value={termInput}
+                onChange={(e) => setTermInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowUp" && termHistory.length > 0) {
+                    e.preventDefault();
+                    const nextIdx = Math.min(histCursor + 1, termHistory.length - 1);
+                    setHistCursor(nextIdx);
+                    setTermInput(termHistory[nextIdx] || "");
+                  } else if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    const nextIdx = histCursor - 1;
+                    setHistCursor(nextIdx);
+                    setTermInput(nextIdx >= 0 ? termHistory[nextIdx] || "" : "");
+                  }
+                }}
+                placeholder="Type command (ls, cat index.html, node ..., python ..., help)..."
+                className="flex-1 bg-transparent text-zinc-100 placeholder:text-zinc-600 focus:outline-none"
+              />
+            </form>
+            <div ref={termEndRef} />
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: EMBEDDED GOOGLE SEARCH + LINK BROWSER + APP PREVIEW */}
+      {currentTab === "browser" && (
+        <div className="flex-1 min-h-0 flex flex-col">
+          {/* Antigravity Mini Browser Toolbar */}
+          <div className={`px-2.5 py-2 border-b space-y-2 ${chromeCls}`}>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={navIdx <= 0}
+                onClick={() => {
+                  if (navIdx > 0) {
+                    const prevUrl = navHistory[navIdx - 1];
+                    setNavIdx(navIdx - 1);
+                    void navigateBrowser(prevUrl, false);
+                  }
+                }}
+                className={`p-1.5 rounded-md cursor-pointer disabled:opacity-40 ${subtleBtn}`}
+                title="Back"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                disabled={navIdx >= navHistory.length - 1}
+                onClick={() => {
+                  if (navIdx < navHistory.length - 1) {
+                    const nextUrl = navHistory[navIdx + 1];
+                    setNavIdx(navIdx + 1);
+                    void navigateBrowser(nextUrl, false);
+                  }
+                }}
+                className={`p-1.5 rounded-md cursor-pointer disabled:opacity-40 ${subtleBtn}`}
+                title="Forward"
+              >
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => void navigateBrowser(addressInput, false)}
+                className={`p-1.5 rounded-md cursor-pointer ${subtleBtn}`}
+                title="Reload"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${browserLoading ? "animate-spin" : ""}`} />
+              </button>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void navigateBrowser(addressInput, true);
+                }}
+                className="flex-1 flex items-center gap-1.5"
+              >
+                <input
+                  type="text"
+                  value={addressInput}
+                  onChange={(e) => setAddressInput(e.target.value)}
+                  placeholder="Search Google / Web or paste URL (https://...)..."
+                  className={`w-full px-3 py-1 rounded-full border text-xs focus:outline-none ${
+                    isLight
+                      ? "bg-white border-gray-300 text-gray-900 focus:border-[#007ACC]"
+                      : "bg-[#101010] border-white/[0.12] text-zinc-100 focus:border-[#007ACC]"
+                  }`}
+                />
+                <button
+                  type="submit"
+                  disabled={browserLoading}
+                  className="px-3 py-1 rounded-full text-xs font-medium text-white cursor-pointer shrink-0"
+                  style={{ backgroundColor: accentHex }}
+                >
+                  {browserLoading ? "..." : "Go"}
+                </button>
+              </form>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setBrowserSubMode("web")}
+                  className={`px-2.5 py-1 rounded-md font-medium cursor-pointer ${
+                    browserSubMode === "web" ? "text-white" : subtleBtn
+                  }`}
+                  style={browserSubMode === "web" ? { backgroundColor: accentHex } : undefined}
+                >
+                  Google &amp; Web Browser
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBrowserSubMode("preview")}
+                  className={`px-2.5 py-1 rounded-md font-medium cursor-pointer ${
+                    browserSubMode === "preview" ? "text-white" : subtleBtn
+                  }`}
+                  style={browserSubMode === "preview" ? { backgroundColor: accentHex } : undefined}
+                >
+                  App Preview ({files.length} files)
+                </button>
+              </div>
+
+              {browserSubMode === "web" ? (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const content = browserPageMarkdown || browserSearchHits.map((h) => `- [${h.title}](${h.url}): ${h.snippet || ""}`).join("\n");
+                      if (content) onInjectContextText(browserPageTitle, content);
+                    }}
+                    disabled={!browserPageMarkdown && browserSearchHits.length === 0}
+                    className={`px-2 py-0.5 rounded-md cursor-pointer disabled:opacity-40 ${subtleBtn}`}
+                  >
+                    Attach to AI
+                  </button>
+                  {/^https?:\/\//i.test(addressInput) && (
+                    <a
+                      href={addressInput}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`p-1 rounded-md inline-flex items-center ${subtleBtn}`}
+                      title="Open in new tab"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  {[
+                    { id: "desktop" as const, icon: Monitor },
+                    { id: "tablet" as const, icon: Tablet },
+                    { id: "mobile" as const, icon: Smartphone },
+                  ].map((vp) => {
+                    const Icon = vp.icon;
+                    return (
+                      <button
+                        key={vp.id}
+                        type="button"
+                        onClick={() => setViewport(vp.id)}
+                        className={`p-1 rounded cursor-pointer ${viewport === vp.id ? "text-white" : subtleBtn}`}
+                        style={viewport === vp.id ? { backgroundColor: accentHex } : undefined}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Browser Viewport Content */}
+          <div className="flex-1 min-h-0 overflow-auto p-3">
+            {browserSubMode === "preview" ? (
+              <div className="h-full flex flex-col gap-2">
+                <div className="flex-1 min-h-[280px] flex justify-center">
+                  <iframe
+                    title="Antigravity App Preview"
+                    srcDoc={previewHtmlDoc}
+                    sandbox="allow-scripts allow-forms allow-modals"
+                    className={`bg-white rounded-lg border border-white/10 transition-all ${
+                      viewport === "mobile"
+                        ? "w-[360px] h-full"
+                        : viewport === "tablet"
+                        ? "w-[740px] max-w-full h-full"
+                        : "w-full h-full"
+                    }`}
+                  />
+                </div>
+                {previewConsoleLogs.length > 0 && (
+                  <div className="p-2 rounded-lg bg-black/40 border border-white/10 font-mono text-[10px] text-amber-300 max-h-24 overflow-y-auto">
+                    {previewConsoleLogs.join("\n")}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {!browserPageMarkdown && browserSearchHits.length === 0 && !browserLoading && !browserError && (
+                  <div className="max-w-md mx-auto py-10 text-center space-y-4">
+                    <div className="text-2xl font-bold tracking-tight">
+                      <span className="text-[#4285F4]">G</span>
+                      <span className="text-[#EA4335]">o</span>
+                      <span className="text-[#FBBC05]">o</span>
+                      <span className="text-[#4285F4]">g</span>
+                      <span className="text-[#34A853]">l</span>
+                      <span className="text-[#EA4335]">e</span>
+                      <span className="text-xs font-normal opacity-60 ml-2">&amp; Web Browser</span>
+                    </div>
+                    <p className="text-xs opacity-70">
+                      {isAr
+                        ? "ابحث مباشرة أو أدخل أي رابط موقع لعرضه واستخدامه مع المساعد."
+                        : "Search the open web or paste any URL to open & extract directly."}
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-2 text-xs">
+                      {[
+                        "kaspi pos morocco",
+                        "https://nextjs.org/docs",
+                        "https://news.ycombinator.com",
+                        "morocco tva invoice rules",
+                      ].map((sample) => (
+                        <button
+                          key={sample}
+                          type="button"
+                          onClick={() => void navigateBrowser(sample, true)}
+                          className={`px-3 py-1.5 rounded-full cursor-pointer ${subtleBtn}`}
+                        >
+                          {sample}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {browserError && (
+                  <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-xs text-rose-400">
+                    {browserError}
+                  </div>
+                )}
+
+                {browserSearchHits.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="text-xs font-semibold opacity-75">
+                      Results for &ldquo;{addressInput}&rdquo;
+                    </div>
+                    {browserSearchHits.map((hit, idx) => (
+                      <div
+                        key={`${hit.url}-${idx}`}
+                        className={`p-3 rounded-lg border space-y-1 ${isLight ? "bg-white border-gray-200 hover:border-[#007ACC]" : "bg-[#161618] border-white/[0.08] hover:border-[#007ACC]/50"}`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => void navigateBrowser(hit.url, true)}
+                          className="text-start text-sm font-medium hover:underline cursor-pointer"
+                          style={{ color: accentHex }}
+                        >
+                          {hit.title}
+                        </button>
+                        <div className="text-[11px] font-mono opacity-60 truncate">{hit.url}</div>
+                        {hit.snippet && <p className="text-xs opacity-80 leading-relaxed">{hit.snippet}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {browserPageMarkdown && (
+                  <div className={`p-4 rounded-xl border space-y-3 ${isLight ? "bg-white border-gray-200" : "bg-[#141416] border-white/[0.08]"}`}>
+                    <div className="flex items-center justify-between gap-2 pb-2 border-b border-inherit">
+                      <span className="text-xs font-semibold truncate">{browserPageTitle}</span>
+                      <button
+                        type="button"
+                        onClick={() => onRunPromptFromChild(`Summarize & analyze this fetched page (${addressInput}):\n\n${browserPageMarkdown.slice(0, 2500)}`)}
+                        className="px-2.5 py-1 rounded-md text-[11px] font-medium text-white cursor-pointer shrink-0"
+                        style={{ backgroundColor: accentHex }}
+                      >
+                        Analyze with AI
+                      </button>
+                    </div>
+                    <HeyukaMarkdownMessage markdown={browserPageMarkdown.slice(0, 8000)} />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
