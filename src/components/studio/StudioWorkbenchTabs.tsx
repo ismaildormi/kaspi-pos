@@ -416,14 +416,30 @@ export function StudioWorkbenchTabs({
       }
 
       const data = await res.json();
-      if (!data?.ok && !Array.isArray(data?.results) && !data?.markdown) {
+      const bodyText =
+        typeof data?.extractedText === "string"
+          ? data.extractedText
+          : typeof data?.markdown === "string"
+          ? data.markdown
+          : "";
+      const hits: BrowserSearchHit[] = Array.isArray(data?.results) ? data.results : [];
+
+      if (!data?.ok && hits.length === 0 && !bodyText) {
         setBrowserError(data?.error || "Could not load page or search results.");
         return;
       }
 
+      if (!resolvedUrl && hits.length === 0 && !bodyText) {
+        setBrowserPageTitle(`Search: ${clean}`);
+        setBrowserPageMarkdown("");
+        setBrowserSearchHits([]);
+        setBrowserError(`No direct instant results found for "${clean}". Try entering a broader keyword or a direct URL (https://...).`);
+        return;
+      }
+
       setBrowserPageTitle(data?.title || (resolvedUrl ? resolvedUrl : `Search: ${clean}`));
-      setBrowserPageMarkdown(typeof data?.markdown === "string" ? data.markdown : "");
-      setBrowserSearchHits(Array.isArray(data?.results) ? data.results : []);
+      setBrowserPageMarkdown(bodyText);
+      setBrowserSearchHits(hits);
     } catch (err: any) {
       setBrowserError(err?.message || "Network error while browsing.");
     } finally {

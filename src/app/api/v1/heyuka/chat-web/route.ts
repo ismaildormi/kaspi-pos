@@ -516,7 +516,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (urlRes?.ok) {
-    const pageMarkdown = typeof (urlRes as any).markdown === "string" ? (urlRes as any).markdown : "";
+    const pageMarkdown =
+      typeof (urlRes as any).extractedText === "string"
+        ? (urlRes as any).extractedText
+        : typeof (urlRes as any).markdown === "string"
+        ? (urlRes as any).markdown
+        : "";
     if (pageMarkdown) {
       webContextBlock += `\n\n[FETCHED URL CONTENT: ${autoDetectedUrl}]\n${pageMarkdown.slice(0, 2600)}`;
     }
