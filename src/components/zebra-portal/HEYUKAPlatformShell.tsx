@@ -43,7 +43,8 @@ export type PlatformNavId =
   | "vault"
   | "products"
   | "workers"
-  | "apps";
+  | "apps"
+  | "studio";
 
 interface HEYUKAPlatformShellProps {
   activeNav: PlatformNavId;
@@ -192,6 +193,13 @@ export function HEYUKAPlatformShell({
   ];
 
   const secondaryNav = [
+    {
+      id: "studio" as const,
+      href: `/${locale}/studio`,
+      label: "HEYUKA AI Studio",
+      icon: MessageSquare,
+      external: false,
+    },
     {
       id: "docs" as const,
       href: `/${locale}/zebra-x/docs`,

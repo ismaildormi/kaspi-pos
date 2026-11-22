@@ -45,12 +45,15 @@ export async function GET() {
         clientComputeHeader: "X-HEYUKA-Compute-URL",
         models: ["heyuka-omni", "heyuka-core", "heyuka-vision"],
         noKeyPublicApisCount: PUBLIC_APIS_CATALOG_COUNT,
-        cognitiveClustersCount: 13,
+        cognitiveClustersCount: 18,
         sovereignVaultEndpoint: "/api/v1/heyuka/local-sdk?vault=1",
         osAndBotEndpoints: [
           "/api/v1/desktops/spawn",
           "/api/v1/os/exec",
           "/api/v1/ai-pc/control",
+          "/api/v1/studio/council",
+          "/api/v1/studio/browser-factory",
+          "/api/v1/studio/team",
         ],
         openaiCompatible: true,
         debugEndpoint: "/api/v1/debug",
@@ -186,6 +189,37 @@ export async function GET() {
           summary:
             "Execute v54.0 smooth mouse Scroll/Zoom, self-unblocking fallback chain, live OpenCV/MediaPipe Webcam sight, or 0ms Esc+Esc Hardware Panic Stop.",
           responses: { "200": { description: "AI Computer action dispatch JSON" } },
+        },
+      },
+      "/api/v1/studio/council": {
+        get: {
+          operationId: "getStudioElasticCouncilPresets",
+          summary: "List Dual-Brand Studio starter templates & Elastic 3->6->12 swarm configurations (v55.0 + v56.0).",
+          responses: { "200": { description: "Elastic council config JSON" } },
+        },
+        post: {
+          operationId: "runElasticModelCouncilSwarm",
+          summary: "Evaluate complexity and dispatch 3, 6, or 12 cooperating specialist models + Worker Bots (v56.0).",
+          responses: { "200": { description: "12-node swarm plan, edges & worker bot logs" } },
+        },
+      },
+      "/api/v1/studio/browser-factory": {
+        post: {
+          operationId: "planBrowserAutopilotCloudFactory",
+          summary: "Orchestrate Human-in-the-Loop OAuth/Gmail handshake & multi-cloud GitHub/Vercel/Supabase/Docker provisioning (v57.0).",
+          responses: { "200": { description: "Persistent browser & CLI cloud factory manifest" } },
+        },
+      },
+      "/api/v1/studio/team": {
+        get: {
+          operationId: "getStudioTeamGamificationAndOffline",
+          summary: "Inspect v59.0 Multiplayer Kanban/RBAC/Gamification XP & v60.0 Air-Gapped Offline Manifest.",
+          responses: { "200": { description: "Team XP/badges + offline manifest" } },
+        },
+        post: {
+          operationId: "awardStudioTeamXpOrFetchOffline",
+          summary: "Record collaborative XP/badge milestones or fetch v60.0 air-gapped bundle manifest.",
+          responses: { "200": { description: "Updated XP progression JSON" } },
         },
       },
     },

@@ -16,6 +16,9 @@ import { V38_V39_DIRECTOR_AND_RESEARCH } from "@/lib/zebra-x/core/v38-v39-projec
 import { V52_PC_CONTROL_AND_BOT_FARM_100 } from "@/lib/zebra-x/core/v52-pc-control-bots-arsenal";
 import { V53_OS_SHELL_FILES_SENTINEL_100 } from "@/lib/zebra-x/core/v53-os-shell-files-sentinel-arsenal";
 import { V54_AI_COMPUTER_UNBLOCK_CAM_100 } from "@/lib/zebra-x/core/v54-ai-computer-unblock-cam-arsenal";
+import { V55_V56_STUDIO_ELASTIC_SWARM_200 } from "@/lib/zebra-x/core/v55-v56-studio-elastic-swarm-arsenal";
+import { V57_V58_BROWSER_FACTORY_GRANULAR_200 } from "@/lib/zebra-x/core/v57-v58-browser-factory-granular-arsenal";
+import { V59_V60_MULTIPLAYER_OFFLINE_115 } from "@/lib/zebra-x/core/v59-v60-multiplayer-offline-arsenal";
 
 /**
  * HEYUKA Sovereign Cognitive Brain Registry & Pre-Search Domain Classifier
@@ -39,7 +42,12 @@ export type CognitiveClusterId =
   | "hardware_cad_voip_testing_and_physics"
   | "pc_keyboard_mouse_and_virtual_desktop_bots"
   | "sovereign_os_shell_file_surgeon_and_sentinel"
-  | "ai_computer_os_webcam_and_self_unblocking";
+  | "ai_computer_os_webcam_and_self_unblocking"
+  | "google_ai_studio_dual_brand_workspace"
+  | "elastic_swarm_3_6_12_and_worker_bots"
+  | "browser_autopilot_oauth_cloud_factory"
+  | "multiplayer_crdt_huddles_and_gamification"
+  | "airgapped_offline_vault_and_lan_mesh";
 
 export interface CognitiveClusterSpec {
   id: CognitiveClusterId;
@@ -319,6 +327,93 @@ export const COGNITIVE_BRAIN_CLUSTERS: readonly CognitiveClusterSpec[] = [
     roleEn:
       "Zero-deadlock self-unblocking execution (GUI<->CLI fallback, scroll/zoom, modal/dependency healers), real-time OpenCV/MediaPipe/VL webcam inspection, and Elon-style unified AI Computer OS orchestration.",
   },
+  {
+    id: "google_ai_studio_dual_brand_workspace",
+    badgeIcon: "🎛️",
+    titleAr: "استوديو HEYUKA & KASPI POS المزدوج المطابق لـ Google AI Studio بالكامل (v55.0 + v58.0)",
+    titleEn: "Dual-Brand HEYUKA & KASPI POS Studio (100% Google AI Studio Parity + Live Browser & Terminal, v55.0 + v58.0)",
+    enginesCount: 200,
+    outputFormats: ["Multi-File App ZIP", "Structured JSON Schema", "cURL/JS/Python SDK", "Interactive Preview"],
+    keyEngines: [
+      "5 Core Modes: Create Prompt (Chat + Few-Shot), Stream Realtime, Build / Vibe Coding, Compare Mode, Starter Apps",
+      "Run Settings: Temperature, Top-P, Thinking Budget, Media Resolution, Video Clipping/FPS, Context Cache TTL, 4 Safety Sliders",
+      "Visual JSON Schema Builder, Interactive Function Calling Loop, Maps/Web Grounding + Threshold, Get Code Modal",
+      "Embedded Live Browser Tab + Interactive PowerShell/Shell Terminal + Native Speech/Image/Video/3D Studio",
+    ],
+    roleAr:
+      "توفير تجربة Google AI Studio كاملة بنسبة 100% مع التبديل الفوري بين HEYUKA Studio وKASPI POS Studio ومتصفح وتيرمينال مدمجين وإنتاج كافة أنواع الملفات.",
+    roleEn:
+      "Complete 100% Google AI Studio feature parity with Dual-Brand switching (HEYUKA Studio <-> KASPI POS Studio), resizable multi-pane layout, live app preview, embedded browser, and PowerShell terminal.",
+  },
+  {
+    id: "elastic_swarm_3_6_12_and_worker_bots",
+    badgeIcon: "🐝",
+    titleAr: "التوسع الديناميكي (3 -> 6 -> 12 موديل متعاون) وجيش الروبوتات التنفيذية (v56.0)",
+    titleEn: "Elastic 3 -> 6 -> 12 Cooperative Model Scaling Swarm & Worker-Bot Legion (v56.0)",
+    enginesCount: 100,
+    outputFormats: ["Council Consensus JSON", "12-Node Brain Map", "Worker-Bot Execution Logs", "Patch Diffs"],
+    keyEngines: [
+      "RouteLLM Complexity-Router (Auto Scale: 3x Fast Trio | 6x Pro Squad | 12x Titan Swarm)",
+      "MoA Layered + Ray / LangGraph MapReduce Parallel Execution + Infinite Continuation Stitcher",
+      "Autonomous Worker Bots: Scout-Bot, Shell-Bot, Code-Surgeon-Bot, QA-Tester-Bot, UI-Vision-Bot, Deploy-Ops-Bot",
+    ],
+    roleAr:
+      "مضاعفة العقول تلقائياً من 3 إلى 6 إلى 12 نموذجاً متعاوناً حسب ضخامة المشروع وإطلاق روبوتات تنفيذية تتحقق من النتيجة بنسبة 100%.",
+    roleEn:
+      "Automatic complexity scaling from 3 Fast Trio -> 6 Pro Squad -> 12 Titan Swarm cooperative models spawning Scout/Shell/Code/QA Worker Bots.",
+  },
+  {
+    id: "browser_autopilot_oauth_cloud_factory",
+    badgeIcon: "🌐",
+    titleAr: "قيادة المتصفح الحقيقي، جلسات Gmail/OAuth الآمنة، وبناء المشاريع السحابية A-to-Z (v57.0)",
+    titleEn: "Autonomous Browser Autopilot, OAuth/Gmail Session Handshake & Cloud Provisioning Factory (v57.0)",
+    enginesCount: 100,
+    outputFormats: ["Cloud Deploy Blueprint", "Docker/Terraform Config", "OAuth Handshake State", "Kanban Roadmap"],
+    keyEngines: [
+      "Playwright Persistent Context + CDP + Skyvern + Stagehand Multi-Tab Commander",
+      "Human-in-the-Loop OAuth/Gmail Handshake (Pause AI / Human Takeover -> Auto-Resume)",
+      "GitHub CLI / Vercel / Cloudflare Wrangler / Supabase CLI / Coolify / Dokploy End-to-End Provisioning",
+    ],
+    roleAr:
+      "فتح تبويبات المتصفح الحقيقي بعد تسجيل الدخول الأول، إنشاء المستودعات وقواعد البيانات والسيرفرات باسمك، ونشر المشاريع من الألف إلى الياء بأمان وحجب كلمات المرور.",
+    roleEn:
+      "Persistent real-browser automation after user OAuth/Gmail login, multi-tab GitHub/Vercel/Supabase/Cloudflare provisioning, and Presidio secret shielding.",
+  },
+  {
+    id: "multiplayer_crdt_huddles_and_gamification",
+    badgeIcon: "🎮",
+    titleAr: "العمل الجماعي الحي (Yjs CRDT)، المكالمات مع الـ AI، لوحة المهام، ونظام الحوافز والأبطال (v59.0)",
+    titleEn: "Multiplayer CRDT Co-Editing, Live Audio/Video Huddles, Team Kanban RBAC & Gamified Rewards (v59.0)",
+    enginesCount: 100,
+    outputFormats: ["CRDT Sync State", "Kanban Sprint Board", "XP & Badges Leaderboard", "Huddle Transcript"],
+    keyEngines: [
+      "Yjs CRDT Live Cursors + Follow-Me Mode + y-webrtc LAN Zero-Server Fallback + BroadcastChannel",
+      "LiveKit WebRTC Audio/Video Huddles with WhisperX Diarization & @heyuka AI Co-Host",
+      "Team Gamification: XP Levels (Novice -> Grandmaster), 50+ Badges, Quests (2x XP), Streak 🔥, Peer Kudos, KASPI POS Commissions",
+      "Plane-style Team Kanban & Casbin RBAC (Owner, Admin, Developer, Designer, Cashier, Viewer)",
+    ],
+    roleAr:
+      "تزامن العمل الجماعي في نفس الغرفة بمؤشرات حية ومكالمات صوتية مع الموديل، وتوزيع المهام في Kanban مع نظام حوافز XP والأوسمة ولوحة الأبطال.",
+    roleEn:
+      "Zero-conflict Yjs CRDT co-editing, live WebRTC team huddles with @heyuka AI co-host, Kanban RBAC governance, and full XP/Badges/Leaderboard gamification.",
+  },
+  {
+    id: "airgapped_offline_vault_and_lan_mesh",
+    badgeIcon: "📡",
+    titleAr: "الخزنة المحلية المعزولة 100% بدون إنترنت والشبكة المحلية (v60.0 Offline & LAN Mesh)",
+    titleEn: "Total Air-Gapped Offline Sovereign Vault, Local Mirrors & Zero-WiFi LAN Mesh (v60.0)",
+    enginesCount: 15,
+    outputFormats: ["Offline PWA Bundle", "OPFS SQLite Export", "Gitea/ZIM Manifest", "LAN Mesh Peer Packet"],
+    keyEngines: [
+      "Kiwix OpenZIM + DevDocs Offline + Verdaccio (NPM) + Devpi (PyPI) + Zot + Gitea Self-Hosted",
+      "Llamafile Single-Executable + Ollama Portable GGUF + HF Hub Offline + Workbox PWA + OPFS wa-sqlite",
+      "Tauri v2 / Capacitor Offline Packagers + PolyHaven Local Asset Pack + Zero-WiFi WebRTC LAN Mesh",
+    ],
+    roleAr:
+      "تشغيل المنظومة والـ APIs والمصادر بالكامل بدون إنترنت عبر الكاش المحلي، OpenZIM، Llamafile، وتزامن الشبكة المحلية للمتاجر والفرق.",
+    roleEn:
+      "100% internet-free operation via Browser OPFS/PWA + IndexedDB caches, Kiwix ZIM / DevDocs / Verdaccio / Llamafile local mirrors, and LAN peer sync.",
+  },
 ];
 
 export function getTotalIntegratedCapabilitiesCount(): {
@@ -335,6 +430,9 @@ export function getTotalIntegratedCapabilitiesCount(): {
   v52PcBotsCount: number;
   v53OsSurgeonCount: number;
   v54AiComputerCount: number;
+  v55V56StudioSwarmCount: number;
+  v57V58BrowserGranularCount: number;
+  v59V60CollabOfflineCount: number;
   grandTotalSources: number;
 } {
   const sovereignCatalogCount = ALL_SOVEREIGN_MASTER_CATALOG.length;
@@ -349,6 +447,9 @@ export function getTotalIntegratedCapabilitiesCount(): {
   const v52PcBotsCount = V52_PC_CONTROL_AND_BOT_FARM_100.length;
   const v53OsSurgeonCount = V53_OS_SHELL_FILES_SENTINEL_100.length;
   const v54AiComputerCount = V54_AI_COMPUTER_UNBLOCK_CAM_100.length;
+  const v55V56StudioSwarmCount = V55_V56_STUDIO_ELASTIC_SWARM_200.length;
+  const v57V58BrowserGranularCount = V57_V58_BROWSER_FACTORY_GRANULAR_200.length;
+  const v59V60CollabOfflineCount = V59_V60_MULTIPLAYER_OFFLINE_115.length;
   return {
     clustersCount: COGNITIVE_BRAIN_CLUSTERS.length,
     sovereignCatalogCount,
@@ -363,6 +464,9 @@ export function getTotalIntegratedCapabilitiesCount(): {
     v52PcBotsCount,
     v53OsSurgeonCount,
     v54AiComputerCount,
+    v55V56StudioSwarmCount,
+    v57V58BrowserGranularCount,
+    v59V60CollabOfflineCount,
     grandTotalSources:
       sovereignCatalogCount +
       reasoningEvalCount +
@@ -375,7 +479,10 @@ export function getTotalIntegratedCapabilitiesCount(): {
       v38V39DirectorCount +
       v52PcBotsCount +
       v53OsSurgeonCount +
-      v54AiComputerCount,
+      v54AiComputerCount +
+      v55V56StudioSwarmCount +
+      v57V58BrowserGranularCount +
+      v59V60CollabOfflineCount,
   };
 }
 
@@ -569,6 +676,86 @@ export function classifyCognitiveIntentAndSources(
     });
   }
 
+  if (
+    /(google ai studio|ai studio|system instructions|structured output|json schema|function calling|run settings|thinking budget|get code|compare mode|freeform|few-shot|media resolution|context cach|safety settings|vibe coding|dual.?brand|استوديو|برومبت|تعليمات النظام)/i.test(
+      p
+    )
+  ) {
+    matchedIds.add("google_ai_studio_dual_brand_workspace");
+    stageBadges.push({
+      icon: "🎛️",
+      label:
+        locale === "ar"
+          ? "استوديو HEYUKA & KASPI POS المزدوج (v55.0 + v58.0)"
+          : "Dual-Brand Google AI Studio Parity (v55.0 + v58.0)",
+      domain: "/studio",
+    });
+  }
+
+  if (
+    /(3.?model|6.?model|12.?model|elastic swarm|titan swarm|pro squad|moa|routellm|worker.?bot|scout.?bot|shell.?bot|qa.?tester|توسع|عقول|مجلس النماذج|سرب الموديلات|روبوت تنفيذ)/i.test(
+      p
+    )
+  ) {
+    matchedIds.add("elastic_swarm_3_6_12_and_worker_bots");
+    stageBadges.push({
+      icon: "🐝",
+      label:
+        locale === "ar"
+          ? "التوسع المرن 3->6->12 موديل وجيش الروبوتات (v56.0)"
+          : "Elastic 3->6->12 Model Swarm & Worker Bots (v56.0)",
+      domain: "/api/v1/studio/council",
+    });
+  }
+
+  if (
+    /(persistent browser|oauth handshake|gmail handshake|coolify|dokploy|supabase cli|wrangler|provision|metagpt sop|get shit done|cloud deploy|تصفح آلي|ربط السيرفرات|جلسة جيميل)/i.test(
+      p
+    )
+  ) {
+    matchedIds.add("browser_autopilot_oauth_cloud_factory");
+    stageBadges.push({
+      icon: "🌐",
+      label:
+        locale === "ar"
+          ? "قيادة المتصفح وجلسات Gmail ومصنع المشاريع (v57.0)"
+          : "Browser Autopilot & Cloud Project Factory (v57.0)",
+      domain: "/api/v1/studio/browser-factory",
+    });
+  }
+
+  if (
+    /(multiplayer|yjs|crdt|hocuspocus|live cursor|huddle|livekit|kanban|casbin|rbac|gamif|leaderboard|badges|quest|streak|kudos|\bxp\b|عمل جماعي|نقاط الخبرة|أوسمة|متصدرين)/i.test(
+      p
+    )
+  ) {
+    matchedIds.add("multiplayer_crdt_huddles_and_gamification");
+    stageBadges.push({
+      icon: "🎮",
+      label:
+        locale === "ar"
+          ? "العمل الجماعي الحي Yjs والحوافز XP والأوسمة (v59.0)"
+          : "Multiplayer CRDT, Live Huddles & Gamification (v59.0)",
+      domain: "/api/v1/studio/team",
+    });
+  }
+
+  if (
+    /(air-?gapped|offline vault|kiwix|openzim|devdocs|verdaccio|devpi|llamafile|opfs|wa-sqlite|workbox|lan mesh|zero.?wifi|بدون إنترنت|بلا ويفي|أوفلاين|معزول)/i.test(
+      p
+    )
+  ) {
+    matchedIds.add("airgapped_offline_vault_and_lan_mesh");
+    stageBadges.push({
+      icon: "📡",
+      label:
+        locale === "ar"
+          ? "الخزنة المحلية المعزولة 100% والشبكة المحلية LAN (v60.0)"
+          : "Air-Gapped Offline Vault & LAN Mesh (v60.0)",
+      domain: "/api/v1/heyuka/local-sdk?offline=1",
+    });
+  }
+
   if (matchedIds.size === 0) {
     matchedIds.add("live_search_and_47_public_apis");
     matchedIds.add("pdf_office_and_documents");
@@ -636,6 +823,46 @@ export function resolveStrictCategoryDisambiguation(prompt: string): {
       reason: "Matched live webcam vision, smooth scroll/zoom, self-unblocking fallback, or Esc+Esc panic interrupt.",
     };
   }
+  if (/(3.?model|6.?model|12.?model|elastic swarm|titan swarm|pro squad|worker.?bot|scout.?bot|توسع.*موديل|مجلس النماذج)/i.test(p)) {
+    return {
+      clusterId: "elastic_swarm_3_6_12_and_worker_bots",
+      categoryCode: "V56_ELASTIC_SWARM_12",
+      targetEndpoint: "/api/v1/studio/council",
+      reason: "Matched Elastic 3->6->12 cooperative model swarm & model-spawned worker bots.",
+    };
+  }
+  if (/(multiplayer|yjs|crdt|live cursor|huddle|livekit|kanban|rbac|gamif|leaderboard|kudos|\bxp\b|عمل جماعي|نقاط الخبرة)/i.test(p)) {
+    return {
+      clusterId: "multiplayer_crdt_huddles_and_gamification",
+      categoryCode: "V59_MULTIPLAYER_GAMIFIED",
+      targetEndpoint: "/api/v1/studio/team",
+      reason: "Matched Yjs CRDT multiplayer co-editing, live WebRTC huddles, Kanban RBAC, or XP gamification.",
+    };
+  }
+  if (/(air-?gapped|offline vault|kiwix|openzim|verdaccio|llamafile|opfs|wa-sqlite|lan mesh|zero.?wifi|بدون إنترنت|بلا ويفي)/i.test(p)) {
+    return {
+      clusterId: "airgapped_offline_vault_and_lan_mesh",
+      categoryCode: "V60_OFFLINE_AIRGAPPED",
+      targetEndpoint: "/api/v1/heyuka/local-sdk",
+      reason: "Matched air-gapped 100% offline local bundle (Kiwix/OPFS/Llamafile) or Zero-WiFi LAN Mesh.",
+    };
+  }
+  if (/(persistent browser|oauth handshake|gmail handshake|coolify|dokploy|supabase cli|provision|cloud factory|جلسة جيميل|ربط السيرفرات)/i.test(p)) {
+    return {
+      clusterId: "browser_autopilot_oauth_cloud_factory",
+      categoryCode: "V57_BROWSER_CLOUD_FACTORY",
+      targetEndpoint: "/api/v1/studio/browser-factory",
+      reason: "Matched persistent browser autopilot, Human-in-the-Loop OAuth handshake, or cloud/DB provisioning.",
+    };
+  }
+  if (/(google ai studio|ai studio|system instructions|structured output|json schema|function calling|run settings|thinking budget|get code|compare mode|vibe coding|استوديو)/i.test(p)) {
+    return {
+      clusterId: "google_ai_studio_dual_brand_workspace",
+      categoryCode: "V55_V58_AI_STUDIO_PARITY",
+      targetEndpoint: "/api/v1/chat/completions",
+      reason: "Matched Dual-Brand HEYUKA & KASPI POS Studio (Google AI Studio parity & granular tuning).",
+    };
+  }
   if (/(skyreels|framepack|mmaudio|cinema|long video|webm|mp4|video|فيديو|فيلم|مونتاج)/i.test(p)) {
     return {
       clusterId: "games_3d_video_and_audio",
@@ -644,7 +871,7 @@ export function resolveStrictCategoryDisambiguation(prompt: string): {
       reason: "Matched long photorealistic cinema video & Foley audio synthesis.",
     };
   }
-  if (/(fur|cornea|eyeball|trellis|hunyuan3d|mesh|glb|three|3d|فرو|عيون|مجسم)/i.test(p)) {
+  if (/(fur|cornea|eyeball|trellis|hunyuan3d|3d mesh|polygon mesh|glb|three|3d|فرو|عيون|مجسم)/i.test(p)) {
     return {
       clusterId: "games_3d_video_and_audio",
       categoryCode: "V37_3D_FUR_EYES_REALISM",
@@ -739,7 +966,7 @@ export function buildFullCapabilitiesAndSourcesMarkdown(
 
     return `## 🧠 الخريطة الشاملة لقدرات ومصادر HEYUKA المدمجة (\`${totals.grandTotalSources}+\` مصدر ومحرك مفتوح • \`100% Free & Zero-Key\`)
 
-تم تنظيم وترتيب جميع المصادر والمكتبات وقواعد البيانات في عقل **HEYUKA (KASPI AI)** ضمن **${totals.clustersCount} مجموعة معرفية مصنفة مسبقاً (Pre-Classified Cognitive Clusters)** مربوطة مباشرة بـ **${totals.githubSignalsCount} مستودعاً ومصدراً فائقاً جديداً (v30 + v31 GithubSignals & AskGPTs Pack)** بالإضافة إلى حزم **\`v34.0–v54.0\`** بحيث بمجرد تحديد المجال يشتغل المحرك ومصادره تلقائياً بلا أي خلط بين الفئات:
+تم تنظيم وترتيب جميع المصادر والمكتبات وقواعد البيانات في عقل **HEYUKA (KASPI AI)** ضمن **${totals.clustersCount} مجموعة معرفية مصنفة مسبقاً (Pre-Classified Cognitive Clusters)** مربوطة مباشرة بـ **${totals.githubSignalsCount} مستودعاً ومصدراً فائقاً جديداً (v30 + v31 GithubSignals & AskGPTs Pack)** بالإضافة إلى حزم **\`v34.0–v60.0\`** بحيث بمجرد تحديد المجال يشتغل المحرك ومصادره تلقائياً بلا أي خلط بين الفئات:
 
 | المجموعة المعرفية في عقل HEYUKA | عدد المحركات | أبرز المصادر والمكتبات المفتوحة المدمجة | الملفات والمخرجات التي يصنعها | الدور المباشر وكيف يستفيد منه المستخدم |
 | :--- | :---: | :--- | :--- | :--- |
@@ -747,7 +974,7 @@ ${rowsMd}
 
 ---
 
-### 🏛️ الحزم السيادية الجديدة المدمجة والأرشفة الدائمة (\`v34.0\` – \`v54.0 Sovereign Permanent Vault • Unlimited & Client-Compute\`)
+### 🏛️ الحزم السيادية الجديدة المدمجة والأرشفة الدائمة (\`v34.0\` – \`v60.0 Sovereign Permanent Vault • Unlimited & Client-Compute\`)
 
 | الحزمة السيادية المصنفة | عدد المصادر | الدور في المحرك والـ API (بدون أي سقف يومي وعلى عتاد المستخدم) |
 | :--- | :---: | :--- |
@@ -759,6 +986,10 @@ ${rowsMd}
 | **6. \`v52.0\` — التحكم بالبيسي، الكلافيي/الماوس، وأسطح المكتب الافتراضية** | \`${totals.v52PcBotsCount}\` | \`pynput / PyDirectInput / Enigo / AutoHotkey\`, مزرعة روبوتات \`KasmVNC / Neko / Webtop\` (\`/api/v1/desktops/spawn\`), ورؤية الشاشة وسمع الصوت (\`DXcam / OmniParser / WASAPI\`) |
 | **7. \`v53.0\` — نواة OS (PowerShell/Bash)، جراح الملفات، والمراقبة 24/7** | \`${totals.v53OsSurgeonCount}\` | أوامر \`PowerShell 7 / Bash / Nushell\`, تعديل وحذف آمن للملفات عبر \`Tree-Sitter / OpenPyXL / Send2Trash\`, ومراقب \`Watchdog / osquery\` (\`/api/v1/os/exec\`) |
 | **8. \`v54.0\` — الحاسوب الذكي الشامل، الكاميرا الحية، وحل العوائق ذاتياً** | \`${totals.v54AiComputerCount}\` | التمرير والتكبير، حل العوائق ذاتياً \`Unstuck-Watchdog\`, الكاميرا الحية \`OpenCV / MediaPipe / Qwen2.5-VL\`, وزر الطوارئ \`Esc+Esc\` (\`/api/v1/ai-pc/control\`) |
+| **9. \`v55.0 + v58.0\` — استوديو HEYUKA & KASPI POS المزدوج (تطابق Google AI Studio 100%)** | \`200\` | تقسيم قابل للسحب، \`System Instructions\`، \`Thinking Budget\`، \`Structured JSON\`، \`Function Calling\`، \`Maps Grounding\`، \`Live Browser & PowerShell\`، و\`Media Studios\` |
+| **10. \`v56.0\` — التوسع المرن \`3 -> 6 -> 12\` موديل وجيش الروبوتات التنفيذية** | \`100\` | توزيع المهام التلقائي على 3/6/12 نموذجاً متعاوناً عبر \`MoA / RouteLLM / LangGraph\` مع روبوتات \`Scout / Shell / Code-Surgeon / QA / Deploy\` (\`/api/v1/studio/council\`) |
+| **11. \`v57.0\` — قيادة المتصفح وجلسات Gmail الآمنة وبناء المشاريع السحابية** | \`100\` | \`Playwright Persistent / CDP / OAuth Handshake (Pause AI / Resume)\` + نشر وربط \`GitHub / Vercel / Cloudflare / Supabase / Coolify\` (\`/api/v1/studio/browser-factory\`) |
+| **12. \`v59.0 + v60.0\` — العمل الجماعي \`Yjs\` والحوافز \`XP\` والخزنة المعزولة \`Offline\`** | \`${totals.v59V60CollabOfflineCount}\` | التعديل الجماعي \`Yjs\`، مكالمات \`LiveKit\`، \`Kanban RBAC\`، تحفيز \`XP / Badges / Leaderboard\` + العمل أوفلاين 100% بـ \`Kiwix / OPFS / Llamafile / LAN Mesh\` |
 
 ---
 

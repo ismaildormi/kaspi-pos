@@ -44,6 +44,15 @@ import {
 import {
   V54_AI_COMPUTER_UNBLOCK_CAM_100,
 } from "@/lib/zebra-x/core/v54-ai-computer-unblock-cam-arsenal";
+import {
+  V55_V56_STUDIO_ELASTIC_SWARM_200,
+} from "@/lib/zebra-x/core/v55-v56-studio-elastic-swarm-arsenal";
+import {
+  V57_V58_BROWSER_FACTORY_GRANULAR_200,
+} from "@/lib/zebra-x/core/v57-v58-browser-factory-granular-arsenal";
+import {
+  V59_V60_MULTIPLAYER_OFFLINE_115,
+} from "@/lib/zebra-x/core/v59-v60-multiplayer-offline-arsenal";
 import type { CognitiveClusterId } from "@/lib/zebra-x/core/cognitive-brain-registry";
 import type { SovereignMirrorStrategy } from "@/lib/zebra-x/core/sovereign-pack-types";
 
@@ -157,6 +166,9 @@ export function getSovereignVaultUnifiedEntries(): UnifiedVaultEntry[] {
     ...V52_PC_CONTROL_AND_BOT_FARM_100,
     ...V53_OS_SHELL_FILES_SENTINEL_100,
     ...V54_AI_COMPUTER_UNBLOCK_CAM_100,
+    ...V55_V56_STUDIO_ELASTIC_SWARM_200,
+    ...V57_V58_BROWSER_FACTORY_GRANULAR_200,
+    ...V59_V60_MULTIPLAYER_OFFLINE_115,
   ];
   for (const item of v34PlusPacks) {
     pushEntry({

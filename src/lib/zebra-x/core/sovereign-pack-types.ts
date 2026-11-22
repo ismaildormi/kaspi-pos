@@ -10,7 +10,13 @@ export type SovereignPackVersion =
   | "v39.0"
   | "v52.0"
   | "v53.0"
-  | "v54.0";
+  | "v54.0"
+  | "v55.0"
+  | "v56.0"
+  | "v57.0"
+  | "v58.0"
+  | "v59.0"
+  | "v60.0";
 
 export type SovereignMirrorStrategy =
   | "git_bundle_mirror"

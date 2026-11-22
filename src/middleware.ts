@@ -50,6 +50,7 @@ const PUBLIC_API_PATHS = [
   "/api/v1/desktops/spawn",
   "/api/v1/os/exec",
   "/api/v1/ai-pc/control",
+  "/api/v1/studio",
   "/api/v1/qr/dynamic",
   "/api/v1/models",
   "/api/v1/debug",
@@ -162,6 +163,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/api/v1/desktops/") ||
     pathname.startsWith("/api/v1/os/") ||
     pathname.startsWith("/api/v1/ai-pc/") ||
+    pathname.startsWith("/api/v1/studio/") ||
     pathname === "/api/v1/chat/completions" ||
     pathname === "/api/v1/models";
 

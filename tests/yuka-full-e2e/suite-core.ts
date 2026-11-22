@@ -48,6 +48,17 @@ import {
 import { V52_PC_CONTROL_AND_BOT_FARM_100 } from "../../src/lib/zebra-x/core/v52-pc-control-bots-arsenal";
 import { V53_OS_SHELL_FILES_SENTINEL_100 } from "../../src/lib/zebra-x/core/v53-os-shell-files-sentinel-arsenal";
 import { V54_AI_COMPUTER_UNBLOCK_CAM_100 } from "../../src/lib/zebra-x/core/v54-ai-computer-unblock-cam-arsenal";
+import { V55_V56_STUDIO_ELASTIC_SWARM_200 } from "../../src/lib/zebra-x/core/v55-v56-studio-elastic-swarm-arsenal";
+import { V57_V58_BROWSER_FACTORY_GRANULAR_200 } from "../../src/lib/zebra-x/core/v57-v58-browser-factory-granular-arsenal";
+import { V59_V60_MULTIPLAYER_OFFLINE_115 } from "../../src/lib/zebra-x/core/v59-v60-multiplayer-offline-arsenal";
+import {
+  buildAirGappedOfflineManifest,
+  buildBrowserFactoryPlan,
+  computeTeamGamificationSummary,
+  generateStudioExportCode,
+  planAndRunElasticCouncilSwarm,
+  STUDIO_STARTER_TEMPLATES,
+} from "../../src/lib/heyuka/studio/studio-orchestrator-v55-v60";
 import {
   spawnVirtualDesktopBot,
   manageVirtualDesktopBot,
@@ -1137,8 +1148,8 @@ async function main() {
     const chatWebSrc = fs.readFileSync(path.join(process.cwd(), "src/app/api/v1/heyuka/chat-web/route.ts"), "utf8");
     assert.ok(chatWebSrc.includes("detectTruncationState") && chatWebSrc.includes("mergeContinuationChunk") && chatWebSrc.includes("repairTruncatedMarkdownAndCode"));
 
-    // H) Cognitive Brain Pre-Classification (13 Clusters) + Google Patents 150M+ Blueprint & PDF Marker
-    assert.equal(COGNITIVE_BRAIN_CLUSTERS.length, 13);
+    // H) Cognitive Brain Pre-Classification (18 Clusters) + Google Patents 150M+ Blueprint & PDF Marker
+    assert.equal(COGNITIVE_BRAIN_CLUSTERS.length, 18);
     assert.equal(
       isCapabilitiesOrSourcesTableRequest("ابحث عن كل قدراتك و المصادر المفتوحة لك لاستعمالها و اعطها اليا في جدول كلها"),
       true
@@ -1339,7 +1350,7 @@ async function main() {
     assert.equal(V52_PC_CONTROL_AND_BOT_FARM_100.length, 100);
     assert.equal(V53_OS_SHELL_FILES_SENTINEL_100.length, 100);
     assert.equal(V54_AI_COMPUTER_UNBLOCK_CAM_100.length, 100);
-    assert.equal(COGNITIVE_BRAIN_CLUSTERS.length, 13);
+    assert.equal(COGNITIVE_BRAIN_CLUSTERS.length, 18);
 
     // Confirm no category confusion via Strict Category Disambiguator
     const dBot = resolveStrictCategoryDisambiguation("Spawn an isolated KasmVNC virtual desktop bot farm with pynput");
@@ -1424,7 +1435,86 @@ async function main() {
       (aiPc.generatedScripts.python?.length || 0);
     return {
       artifactBytes: bytes,
-      detail: `v52..v54 (300 engines) + 13 Clusters + Strict Disambiguator + ${unified.length} Vault Entries (0 dead links: ${linkAudit.totalAudited}) + 7 Skills + CUT- Python DISPATCH verified (${bytes}B)`,
+      detail: `v52..v54 (300 engines) + 18 Clusters + Strict Disambiguator + ${unified.length} Vault Entries (0 dead links: ${linkAudit.totalAudited}) + 7 Skills + CUT- Python DISPATCH verified (${bytes}B)`,
+    };
+  });
+
+  // 24. v55..v60 DUAL-BRAND GOOGLE AI STUDIO PARITY, ELASTIC 3/6/12 SWARM, BROWSER FACTORY, YJS GAMIFICATION & OFFLINE VAULT
+  await runCheck("v55_v60_dual_studio_elastic_swarm_multiplayer_offline", "v55-v60 Google AI Studio Parity, 12x Swarm, Browser Factory & Offline", async () => {
+    assert.equal(V55_V56_STUDIO_ELASTIC_SWARM_200.length, 200);
+    assert.equal(V57_V58_BROWSER_FACTORY_GRANULAR_200.length, 200);
+    assert.equal(V59_V60_MULTIPLAYER_OFFLINE_115.length, 115);
+    assert.equal(COGNITIVE_BRAIN_CLUSTERS.length, 18);
+
+    // Strict Category Disambiguation across v55..v60
+    assert.equal(resolveStrictCategoryDisambiguation("Launch 12-model titan swarm with worker bots").categoryCode, "V56_ELASTIC_SWARM_12");
+    assert.equal(resolveStrictCategoryDisambiguation("Persistent browser OAuth Gmail handshake and Supabase deploy").categoryCode, "V57_BROWSER_CLOUD_FACTORY");
+    assert.equal(resolveStrictCategoryDisambiguation("Yjs CRDT multiplayer Kanban RBAC and XP leaderboard").categoryCode, "V59_MULTIPLAYER_GAMIFIED");
+    assert.equal(resolveStrictCategoryDisambiguation("Air-gapped offline Kiwix OPFS Llamafile LAN mesh").categoryCode, "V60_OFFLINE_AIRGAPPED");
+    assert.equal(resolveStrictCategoryDisambiguation("Open Google AI Studio Structured Output Schema and Get Code").categoryCode, "V55_V58_AI_STUDIO_PARITY");
+
+    // Elastic 3 -> 6 -> 12 Swarm Verification
+    const s3 = planAndRunElasticCouncilSwarm({ prompt: "hello", scale: "3x_fast", brand: "heyuka", locale: "en" });
+    const s6 = planAndRunElasticCouncilSwarm({ prompt: "build retail store app", scale: "6x_pro", brand: "kaspi_pos", locale: "ar" });
+    const s12 = planAndRunElasticCouncilSwarm({ prompt: "build fullstack e-commerce platform", scale: "12x_titan", brand: "heyuka", locale: "en" });
+    assert.equal(s3.modelCount, 3);
+    assert.equal(s6.modelCount, 6);
+    assert.equal(s12.modelCount, 12);
+    assert.ok(s12.nodes.length === 12 && s12.spawnedBots.every((b) => b.exitCode === 0));
+
+    // Browser Factory + Offline Air-Gapped + Gamification + Export Code + Dual-Brand Templates
+    const bf = buildBrowserFactoryPlan({ projectName: "kaspi-test-app", gmailSignedIn: false });
+    assert.ok(bf.playwrightHandshakeScript.includes("launchPersistentContext") && bf.cliProvisionScript.includes("vercel deploy"));
+    const off = buildAirGappedOfflineManifest();
+    assert.ok(off.airGappedReady && off.tiers.length === 3 && off.v60Engines.length === 15);
+    const gam = computeTeamGamificationSummary([{ xp: 520, badge: "🧠 Prompt Master" }]);
+    assert.equal(gam.level, "Architect");
+
+    const pyExport = generateStudioExportCode({
+      lang: "python",
+      baseUrl: "https://kaspi-pos.vercel.app/api/v1",
+      model: "heyuka-omni",
+      systemInstruction: "Be concise.",
+      prompt: "Test structured output",
+      temperature: 0.7,
+      topP: 0.95,
+      maxTokens: 4096,
+      thinkingBudget: 8192,
+      responseMimeType: "application/json",
+      enableSearchGrounding: true,
+      enableCodeExecution: true,
+      enableTools: true,
+    });
+    assert.ok(pyExport.includes("import requests") && pyExport.includes("thinking_budget"));
+
+    assert.ok(STUDIO_STARTER_TEMPLATES.some((t) => t.brand === "heyuka") && STUDIO_STARTER_TEMPLATES.some((t) => t.brand === "kaspi_pos"));
+
+    const unified = getSovereignVaultUnifiedEntries();
+    assert.ok(unified.length >= 2450, `Expected >= 2450 unified sources after v55..v60 merge, got ${unified.length}`);
+    const lockManifest = writeSovereignVaultLockManifest();
+    assert.equal(lockManifest.manifest.totalClassifiedEntries, unified.length);
+    const linkAudit = verifyVaultLinkIntegrityAndHeal();
+    assert.equal(linkAudit.totalAudited, unified.length);
+
+    const caps = await discoverDynamicCapabilities();
+    assert.ok(caps.capabilities.some((c) => c.id === "v55_v58_dual_brand_google_ai_studio_parity"));
+    assert.ok(caps.capabilities.some((c) => c.id === "v56_elastic_swarm_3_6_12_and_bots"));
+    assert.ok(caps.capabilities.some((c) => c.id === "v57_v60_browser_cloud_multiplayer_offline"));
+
+    for (const rel of [
+      "src/app/[locale]/studio/page.tsx",
+      "src/app/[locale]/zebra-x/studio/page.tsx",
+      "src/components/studio/HeyukaUnifiedStudioWorkspace.tsx",
+      "src/components/studio/StudioRightRunSettings.tsx",
+      "src/components/studio/StudioWorkbenchTabs.tsx",
+    ]) {
+      assert.ok(fs.existsSync(path.join(process.cwd(), rel)), `Missing studio file: ${rel}`);
+    }
+
+    const bytes = JSON.stringify(s12).length + bf.playwrightHandshakeScript.length + pyExport.length;
+    return {
+      artifactBytes: bytes,
+      detail: `v55..v60 (515 engines) + 18 Clusters + ${unified.length} Vault Sources + 3/6/12 Swarm + Dual Studio UI verified (${bytes}B)`,
     };
   });
 

@@ -1261,6 +1261,13 @@ export function HeyukaChatWorkspace() {
                 {profileMenuOpen && (
                   <div className="absolute bottom-14 left-0 right-0 z-40 rounded-xl bg-[#25272D] border border-white/10 p-1.5 shadow-2xl space-y-0.5 text-xs">
                     <Link
+                      href={`/${locale}/studio`}
+                      className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/10 text-sky-300 font-semibold"
+                    >
+                      <span>HEYUKA AI Studio</span>
+                      <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                    </Link>
+                    <Link
                       href={`/${locale}/zebra-x`}
                       className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/10 text-zinc-200"
                     >
