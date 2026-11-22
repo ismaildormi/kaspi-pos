@@ -1402,21 +1402,18 @@ export function HeyukaChatWorkspace() {
             <div className="flex items-center gap-1.5 shrink-0">
               <Link
                 href={`/${locale}/studio?brand=heyuka`}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-rose-500/50 bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 hover:text-white transition-colors"
-                title="Open Full HEYUKA Google-Style AI Studio (System Prompt + Chat + Run Settings + 3/6/12 Swarm)"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300 hover:text-white transition-colors"
+                title="Open HEYUKA AI Studio"
               >
-                <Sparkles className="w-3.5 h-3.5 text-rose-400" />
-                <span>AI Studio</span>
-                <span className="hidden md:inline px-1.5 py-0.5 rounded bg-rose-500/25 text-[9px] font-mono">
-                  3/6/12x
-                </span>
+                <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
+                <span>Studio</span>
               </Link>
               <Link
                 href={`/${locale}/studio?brand=kaspi_pos`}
-                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold border border-emerald-500/35 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 hover:text-white transition-colors"
-                title="Switch directly into KASPI POS Studio"
+                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-zinc-400 hover:text-white transition-colors"
+                title="Open KASPI POS Studio"
               >
-                <span>KASPI Studio</span>
+                <span>KASPI POS</span>
               </Link>
               <button
                 type="button"
@@ -1425,12 +1422,12 @@ export function HeyukaChatWorkspace() {
                   setStudioOpen(next);
                   if (next) setSelectedMode((m) => (m === "auto" ? "coding" : m));
                 }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border cursor-pointer transition-colors ${
                   studioOpen
-                    ? "bg-rose-500/15 border-rose-500/60 text-rose-400"
-                    : "bg-[#24262B] border-white/[0.08] text-zinc-300 hover:text-white"
+                    ? "bg-[#007ACC]/15 border-[#007ACC]/50 text-sky-300"
+                    : "bg-white/[0.03] border-white/[0.08] text-zinc-300 hover:text-white hover:bg-white/[0.07]"
                 }`}
-                title="Toggle Antigravity Coding & Media Drawer"
+                title="Toggle Workbench Drawer"
               >
                 <PanelRight className="w-3.5 h-3.5" />
                 <span className="hidden lg:inline">Workbench</span>
@@ -1502,39 +1499,7 @@ export function HeyukaChatWorkspace() {
 
                 {renderComposer()}
 
-                <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-1">
-                  <Link
-                    href={`/${locale}/studio?brand=heyuka`}
-                    className="group rounded-2xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 px-3.5 py-2.5 text-start transition-colors"
-                  >
-                    <div className="flex items-center justify-between text-xs font-bold text-white">
-                      <span className="flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-rose-400" />
-                        HEYUKA AI Studio
-                      </span>
-                      <span className="text-[10px] font-mono text-rose-300">Open →</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 mt-1 line-clamp-1">
-                      System Instructions + Run Settings + 12x Swarm + Get Code
-                    </p>
-                  </Link>
-
-                  <Link
-                    href={`/${locale}/studio?brand=kaspi_pos`}
-                    className="group rounded-2xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 px-3.5 py-2.5 text-start transition-colors"
-                  >
-                    <div className="flex items-center justify-between text-xs font-bold text-white">
-                      <span className="flex items-center gap-1.5">
-                        <Cpu className="w-3.5 h-3.5 text-emerald-400" />
-                        KASPI POS Studio
-                      </span>
-                      <span className="text-[10px] font-mono text-emerald-300">Open →</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 mt-1 line-clamp-1">
-                      Retail ERP, 80mm ESC/POS, TVA Audits & Store Bot Farm
-                    </p>
-                  </Link>
-
+                <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -1542,23 +1507,23 @@ export function HeyukaChatWorkspace() {
                       setElasticScale("12x_titan");
                       setInput(
                         locale === "ar"
-                          ? "شغّل أسطول 12 نموذج متعاون وبوتات مستقلة لبناء منصة تطبيق متكاملة مع ملفات Studio"
-                          : "Run a 12-model cooperating Elastic Swarm + worker bots to architect a complete full-stack app"
+                          ? "ابنِ منصة متكاملة بملفات جاهزة على Workbench"
+                          : "Architect and build a full-stack app with clean starter files"
                       );
                     }}
-                    className="rounded-2xl border border-white/[0.08] bg-[#22242A]/80 hover:bg-[#2A2D35] px-3.5 py-2.5 text-start cursor-pointer transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-zinc-300 hover:text-white cursor-pointer transition-colors"
                   >
-                    <div className="flex items-center justify-between text-xs font-bold text-zinc-100">
-                      <span className="flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5 text-rose-400" />
-                        12x Elastic Swarm
-                      </span>
-                      <span className="text-[10px] font-mono text-zinc-400">v56.0</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 mt-1 line-clamp-1">
-                      Auto 3 → 6 → 12 Cooperating Models • 2,492 Vault Sources
-                    </p>
+                    <Sparkles className="w-3 h-3 text-zinc-400" />
+                    <span>{locale === "ar" ? "بناء تطبيق كامل" : "Build App"}</span>
                   </button>
+
+                  <Link
+                    href={`/${locale}/studio?brand=kaspi_pos`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-zinc-300 hover:text-white transition-colors"
+                  >
+                    <Cpu className="w-3 h-3 text-zinc-400" />
+                    <span>KASPI POS Studio</span>
+                  </Link>
 
                   <button
                     type="button"
@@ -1567,61 +1532,22 @@ export function HeyukaChatWorkspace() {
                       setStudioOpen(true);
                       setInput(
                         locale === "ar"
-                          ? "اصنع مشهد 3D تفاعلي مع إضاءة واقعية وفيديو سينمائي على معالج الجهاز"
-                          : "Build an interactive 3D studio scene + cinema video frame on client GPU"
+                          ? "اصنع مشهد 3D تفاعلي على المتصفح"
+                          : "Build an interactive 3D scene directly on client GPU"
                       );
                     }}
-                    className="rounded-2xl border border-white/[0.08] bg-[#22242A]/80 hover:bg-[#2A2D35] px-3.5 py-2.5 text-start cursor-pointer transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-zinc-300 hover:text-white cursor-pointer transition-colors"
                   >
-                    <div className="flex items-center justify-between text-xs font-bold text-zinc-100">
-                      <span className="flex items-center gap-1.5">
-                        <Box className="w-3.5 h-3.5 text-rose-400" />
-                        3D & Cinema Studio
-                      </span>
-                      <span className="text-[10px] font-mono text-zinc-400">v34-v37</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 mt-1 line-clamp-1">
-                      Three.js GLB, SVG/PNG Cutout & Client-CPU WebM Render
-                    </p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setInput(
-                        locale === "ar"
-                          ? "شغّل روبوت سطح مكتب افتراضي KasmVNC وتحكم بالماوس والكلافيي وأوامر PowerShell بأمان"
-                          : "Spawn an isolated KasmVNC Virtual Desktop bot with OS Shell & File Surgeon scripts"
-                      );
-                    }}
-                    className="rounded-2xl border border-white/[0.08] bg-[#22242A]/80 hover:bg-[#2A2D35] px-3.5 py-2.5 text-start cursor-pointer transition-colors"
-                  >
-                    <div className="flex items-center justify-between text-xs font-bold text-zinc-100">
-                      <span className="flex items-center gap-1.5">
-                        <ShieldCheck className="w-3.5 h-3.5 text-rose-400" />
-                        PC Bots & OS Surgeon
-                      </span>
-                      <span className="text-[10px] font-mono text-zinc-400">v52-v54</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 mt-1 line-clamp-1">
-                      Virtual Desktop Bots, Reversible File Edits & Esc+Esc Panic Stop
-                    </p>
+                    <Box className="w-3 h-3 text-zinc-400" />
+                    <span>{locale === "ar" ? "مشهد 3D" : "3D Scene"}</span>
                   </button>
 
                   <Link
                     href={`/${locale}/zebra-x/playground`}
-                    className="rounded-2xl border border-white/[0.08] bg-[#22242A]/80 hover:bg-[#2A2D35] px-3.5 py-2.5 text-start transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-zinc-400 hover:text-white transition-colors"
                   >
-                    <div className="flex items-center justify-between text-xs font-bold text-zinc-100">
-                      <span className="flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5 text-rose-400" />
-                        API Playground & SDK
-                      </span>
-                      <span className="text-[10px] font-mono text-zinc-400">21 Endpoints</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 mt-1 line-clamp-1">
-                      Unlimited Client-Compute REST API, Magic & Air-Gapped Kits
-                    </p>
+                    <Globe className="w-3 h-3 text-zinc-400" />
+                    <span>API Playground</span>
                   </Link>
                 </div>
               </div>
@@ -2094,7 +2020,7 @@ export function HeyukaChatWorkspace() {
     const ActiveModeIcon = activeModeMeta.icon;
 
     return (
-      <div className="relative w-full rounded-[24px] bg-[#22242A] border border-white/[0.08] px-4 py-3.5 space-y-3">
+      <div className="relative w-full rounded-2xl bg-[#161618] border border-white/[0.08] px-4 py-3 space-y-2.5">
         {(attachedImage || audioNote || recordedAudioUrl) && (
           <div className="flex flex-wrap items-center gap-2">
             {attachedImage && (
@@ -2137,7 +2063,7 @@ export function HeyukaChatWorkspace() {
         />
 
         <div className="flex flex-wrap items-center justify-between gap-2">
-          {/* Left: Unified Mode & Policy Dropdown + 3-Model Multi-Agent Selector */}
+          {/* Left: Unified Mode & Policy Dropdown + Model Selector */}
           <div className="relative flex flex-wrap items-center gap-1.5">
             <button
               type="button"
@@ -2145,25 +2071,17 @@ export function HeyukaChatWorkspace() {
                 setModelMenuOpen(false);
                 setModeMenuOpen((p) => !p);
               }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
-                selectedMode !== "auto" || deepThink || webSearch || executionPolicy !== "auto"
-                  ? "bg-rose-500/15 border-rose-500/60 text-rose-300"
-                  : "bg-white/[0.04] border-white/[0.12] text-zinc-200 hover:bg-white/[0.08]"
-              }`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-white/[0.03] border-white/[0.09] text-zinc-300 hover:text-white hover:bg-white/[0.07] cursor-pointer transition-colors"
             >
-              <ActiveModeIcon className="w-3.5 h-3.5 text-rose-400" />
-              <span className="max-w-[130px] truncate">{activeModeMeta.label}</span>
+              <ActiveModeIcon className="w-3.5 h-3.5 text-zinc-400" />
+              <span className="max-w-[120px] truncate">{activeModeMeta.label}</span>
               {deepThink && (
-                <span className="px-1.5 py-0.5 rounded bg-rose-500/20 text-[10px] font-bold">
-                  DeepThink
+                <span className="inline-flex items-center gap-1 text-[10px] text-zinc-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#007ACC]" />
+                  <span>Think</span>
                 </span>
               )}
-              {webSearch && (
-                <span className="px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-bold">
-                  Search
-                </span>
-              )}
-              <ChevronDown className="w-3.5 h-3.5 opacity-80" />
+              <ChevronDown className="w-3.5 h-3.5 opacity-70" />
             </button>
 
             <button
@@ -2172,49 +2090,42 @@ export function HeyukaChatWorkspace() {
                 setModeMenuOpen(false);
                 setModelMenuOpen((p) => !p);
               }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
-                selectedModel === "multi-agent-3"
-                  ? "bg-rose-600/20 border-rose-500 text-rose-300"
-                  : "bg-white/[0.04] border-white/[0.12] text-zinc-300 hover:bg-white/[0.08]"
-              }`}
-              title="Select HEYUKA Model or All 3 Agents Collaborating"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-white/[0.03] border-white/[0.09] text-zinc-300 hover:text-white hover:bg-white/[0.07] cursor-pointer transition-colors"
+              title="Select HEYUKA Model or Swarm Tier"
             >
               {selectedModel === "multi-agent-3" ? (
-                <Users className="w-3.5 h-3.5 text-rose-400" />
+                <Users className="w-3.5 h-3.5 text-zinc-400" />
               ) : (
-                <Zap className="w-3.5 h-3.5 text-rose-400" />
+                <Zap className="w-3.5 h-3.5 text-zinc-400" />
               )}
               <span>
-                {selectedModel === "multi-agent-3" ? "3-Agent Swarm" : selectedModel}
+                {selectedModel === "multi-agent-3" ? "Swarm" : selectedModel}
               </span>
               {elasticScale !== "auto" && (
-                <span className="px-1.5 py-0.5 rounded bg-rose-500/25 text-[9px] font-mono text-rose-300">
+                <span className="text-[10px] font-mono text-zinc-400">
                   {elasticScale.replace("_", " ")}
                 </span>
               )}
-              <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-white/10 text-[9px] font-mono uppercase">
-                {executionPolicy}
-              </span>
-              <ChevronDown className="w-3 h-3 opacity-80" />
+              <ChevronDown className="w-3 h-3 opacity-70" />
             </button>
 
             {modeMenuOpen && (
               <div
-                style={{ backgroundColor: "#15171E", zIndex: 140 }}
+                style={{ backgroundColor: "#141416", zIndex: 140 }}
                 className={`absolute ${
                   messages.length === 0 ? "top-full mt-2" : "bottom-11"
                 } ${
                   isRtl ? "right-0" : "left-0"
-                } w-72 sm:w-80 rounded-2xl border border-white/15 p-2.5 shadow-2xl space-y-2`}
+                } w-72 sm:w-80 rounded-xl border border-white/[0.1] p-2.5 shadow-2xl space-y-2`}
               >
                 <div className="grid grid-cols-2 gap-1.5 pb-2 border-b border-white/[0.08]">
                   <button
                     type="button"
                     onClick={() => setDeepThink((p) => !p)}
-                    className={`flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-semibold border cursor-pointer ${
+                    className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border cursor-pointer ${
                       deepThink
-                        ? "bg-rose-500/20 border-rose-500 text-rose-300"
-                        : "bg-white/[0.04] border-white/10 text-zinc-400"
+                        ? "bg-[#007ACC]/15 border-[#007ACC]/50 text-sky-300"
+                        : "bg-white/[0.03] border-white/[0.08] text-zinc-400"
                     }`}
                   >
                     <Atom className="w-3.5 h-3.5" />
@@ -2223,10 +2134,10 @@ export function HeyukaChatWorkspace() {
                   <button
                     type="button"
                     onClick={() => setWebSearch((p) => !p)}
-                    className={`flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-semibold border cursor-pointer ${
+                    className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border cursor-pointer ${
                       webSearch
-                        ? "bg-rose-500/20 border-rose-500 text-rose-300"
-                        : "bg-white/[0.04] border-white/10 text-zinc-400"
+                        ? "bg-[#007ACC]/15 border-[#007ACC]/50 text-sky-300"
+                        : "bg-white/[0.03] border-white/[0.08] text-zinc-400"
                     }`}
                   >
                     <Globe className="w-3.5 h-3.5" />
@@ -2234,7 +2145,7 @@ export function HeyukaChatWorkspace() {
                   </button>
                 </div>
 
-                {/* Antigravity Execution Speed & Review Policy */}
+                {/* Execution Policy */}
                 <div className="grid grid-cols-3 gap-1 pb-2 border-b border-white/[0.08] text-[11px]">
                   {(
                     [
@@ -2247,10 +2158,10 @@ export function HeyukaChatWorkspace() {
                       key={pol.id}
                       type="button"
                       onClick={() => setExecutionPolicy(pol.id)}
-                      className={`py-1.5 px-2 rounded-lg font-semibold cursor-pointer transition-colors ${
+                      className={`py-1.5 px-2 rounded-lg font-medium cursor-pointer transition-colors ${
                         executionPolicy === pol.id
-                          ? "bg-rose-600 text-white"
-                          : "bg-white/[0.04] text-zinc-400 hover:text-white"
+                          ? "bg-[#007ACC] text-white"
+                          : "bg-white/[0.03] text-zinc-400 hover:text-white"
                       }`}
                     >
                       {pol.label}
@@ -2280,20 +2191,20 @@ export function HeyukaChatWorkspace() {
                             setStudioOpen(true);
                           }
                         }}
-                        className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-start text-xs cursor-pointer transition-colors ${
+                        className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-start text-xs cursor-pointer transition-colors ${
                           active
-                            ? "bg-rose-500/20 text-white font-semibold"
-                            : "text-zinc-300 hover:bg-white/[0.06]"
+                            ? "bg-white/[0.1] text-white font-medium"
+                            : "text-zinc-300 hover:bg-white/[0.05]"
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <Icon className={`w-4 h-4 shrink-0 ${active ? "text-rose-400" : "text-zinc-400"}`} />
+                          <Icon className={`w-4 h-4 shrink-0 ${active ? "text-[#007ACC]" : "text-zinc-400"}`} />
                           <div className="min-w-0">
                             <p className="truncate">{opt.label}</p>
                             <p className="text-[10px] text-zinc-500 truncate">{opt.hint}</p>
                           </div>
                         </div>
-                        {active && <Check className="w-3.5 h-3.5 text-rose-400 shrink-0" />}
+                        {active && <Check className="w-3.5 h-3.5 text-[#007ACC] shrink-0" />}
                       </button>
                     );
                   })}
@@ -2303,34 +2214,34 @@ export function HeyukaChatWorkspace() {
 
             {modelMenuOpen && (
               <div
-                style={{ backgroundColor: "#15171E", zIndex: 140 }}
+                style={{ backgroundColor: "#141416", zIndex: 140 }}
                 className={`absolute ${
                   messages.length === 0 ? "top-full mt-2" : "bottom-11"
                 } ${
                   isRtl ? "right-0" : "left-16"
-                } w-72 rounded-2xl border border-white/15 p-2 shadow-2xl space-y-1 text-xs`}
+                } w-72 rounded-xl border border-white/[0.1] p-2 shadow-2xl space-y-1 text-xs`}
               >
                 {(
                   [
                     {
                       id: "heyuka-omni" as const,
                       label: "heyuka-omni",
-                      desc: "Flagship full-stack coding, search & multimodal builder",
+                      desc: "Flagship coding, search & multimodal builder",
                     },
                     {
                       id: "heyuka-core" as const,
                       label: "heyuka-core",
-                      desc: "Ultra-fast logic, math, security SAST & architecture",
+                      desc: "Ultra-fast logic, math, security & architecture",
                     },
                     {
                       id: "heyuka-vision" as const,
                       label: "heyuka-vision",
-                      desc: "Image understanding, OCR, editing & UI visual inspection",
+                      desc: "Image understanding, OCR & UI inspection",
                     },
                     {
                       id: "multi-agent-3" as const,
-                      label: "All 3 Agents Collaborating",
-                      desc: "Core plans -> Omni builds -> Vision audits together",
+                      label: "Auto Elastic Swarm",
+                      desc: "Routes 3 -> 6 -> 12 models behind the scenes",
                     },
                   ]
                 ).map((m) => (
@@ -2341,30 +2252,30 @@ export function HeyukaChatWorkspace() {
                       setSelectedModel(m.id);
                       setModelMenuOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-start cursor-pointer ${
+                    className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-start cursor-pointer ${
                       selectedModel === m.id
-                        ? "bg-rose-500/20 text-white font-semibold"
-                        : "text-zinc-300 hover:bg-white/[0.06]"
+                        ? "bg-white/[0.1] text-white font-medium"
+                        : "text-zinc-300 hover:bg-white/[0.05]"
                     }`}
                   >
                     <div className="min-w-0">
                       <p className="font-mono text-[11px]">{m.label}</p>
                       <p className="text-[10px] text-zinc-500 truncate">{m.desc}</p>
                     </div>
-                    {selectedModel === m.id && <Check className="w-3.5 h-3.5 text-rose-400 shrink-0" />}
+                    {selectedModel === m.id && <Check className="w-3.5 h-3.5 text-[#007ACC] shrink-0" />}
                   </button>
                 ))}
                 <div className="pt-1.5 mt-1.5 border-t border-white/[0.08] space-y-1">
-                  <div className="px-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                    Elastic Swarm Tiers (3 → 6 → 12)
+                  <div className="px-1 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+                    Elastic Routing Tier
                   </div>
                   <div className="grid grid-cols-4 gap-1 text-[10px]">
                     {(
                       [
                         { id: "auto", label: "Auto" },
-                        { id: "3x_fast", label: "3x Fast" },
-                        { id: "6x_pro", label: "6x Pro" },
-                        { id: "12x_titan", label: "12x Titan" },
+                        { id: "3x_fast", label: "3x" },
+                        { id: "6x_pro", label: "6x" },
+                        { id: "12x_titan", label: "12x" },
                       ] as const
                     ).map((tier) => (
                       <button
@@ -2374,9 +2285,9 @@ export function HeyukaChatWorkspace() {
                           setElasticScale(tier.id);
                           if (tier.id !== "auto") setSelectedModel("multi-agent-3");
                         }}
-                        className={`py-1 px-1.5 rounded-lg font-mono font-bold cursor-pointer transition-colors ${
+                        className={`py-1 px-1.5 rounded-md font-mono font-semibold cursor-pointer transition-colors ${
                           elasticScale === tier.id
-                            ? "bg-rose-600 text-white"
+                            ? "bg-[#007ACC] text-white"
                             : "bg-white/[0.04] text-zinc-400 hover:text-white"
                         }`}
                       >
@@ -2389,15 +2300,15 @@ export function HeyukaChatWorkspace() {
             )}
           </div>
 
-          {/* Right: Auto-Voice + Upload App/.ZIP + Dual Mic + Attach Photo + Send */}
+          {/* Right: Quiet Tools + Send */}
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setAutoReadAloud((p) => !p)}
               className={`p-2 rounded-full cursor-pointer transition-colors ${
                 autoReadAloud
-                  ? "bg-rose-500/20 text-rose-400"
-                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/10"
+                  ? "bg-[#007ACC]/20 text-sky-300"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]"
               }`}
               title={autoReadAloud ? "Auto Voice Reply: ON" : "Auto Voice Reply: OFF"}
             >
@@ -2407,8 +2318,8 @@ export function HeyukaChatWorkspace() {
             <button
               type="button"
               onClick={() => uploadBundleInputRef.current?.click()}
-              className="p-2 rounded-full text-zinc-400 hover:text-rose-400 hover:bg-white/10 cursor-pointer"
-              title="Upload App (.zip or source files) into Studio"
+              className="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/[0.06] cursor-pointer"
+              title="Upload project (.zip or files)"
             >
               <Upload className="w-4 h-4" />
             </button>
@@ -2417,7 +2328,7 @@ export function HeyukaChatWorkspace() {
               type="button"
               onClick={() => void handleToggleAudioMic()}
               className={`p-2 rounded-full cursor-pointer transition-colors ${
-                listening ? "bg-rose-600 text-white animate-pulse" : "text-zinc-400 hover:text-rose-400 hover:bg-white/10"
+                listening ? "bg-[#007ACC] text-white animate-pulse" : "text-zinc-400 hover:text-white hover:bg-white/[0.06]"
               }`}
               title={listening ? t.audioStop : t.audioStart}
             >
@@ -2427,7 +2338,7 @@ export function HeyukaChatWorkspace() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 cursor-pointer"
+              className="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/[0.06] cursor-pointer"
               title="Attach image"
             >
               <Paperclip className="w-4 h-4" />
@@ -2439,8 +2350,8 @@ export function HeyukaChatWorkspace() {
               onClick={() => void handleSend()}
               className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
                 input.trim() || attachedImage || audioNote
-                  ? "bg-[#DC2626] hover:bg-[#EF4444] text-white"
-                  : "bg-[#3A3D46] text-zinc-500 cursor-not-allowed"
+                  ? "bg-[#007ACC] hover:bg-[#0B84D8] text-white"
+                  : "bg-[#2A2B30] text-zinc-500 cursor-not-allowed"
               }`}
               aria-label="Send"
             >

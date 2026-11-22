@@ -89,24 +89,24 @@ const STARTER_FILES: StudioFileNode[] = [
     path: "index.html",
     language: "html",
     content: `<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HEYUKA & KASPI POS Live Canvas</title>
+  <title>Workspace Preview</title>
   <style>
-    body { margin: 0; font-family: system-ui, sans-serif; background: #131314; color: #f4f4f5; display: grid; place-items: center; min-height: 100vh; }
-    .card { padding: 28px; border-radius: 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); max-width: 520px; text-align: center; }
-    h1 { margin: 0 0 8px; font-size: 22px; color: #38bdf8; }
-    p { margin: 0 0 16px; color: #cbd5e1; font-size: 14px; }
-    button { border: 0; padding: 10px 18px; border-radius: 12px; font-weight: 700; cursor: pointer; background: #10b981; color: #052e16; }
+    body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #101010; color: #F7EAEA; display: grid; place-items: center; min-height: 100vh; }
+    .card { padding: 28px; border-radius: 14px; background: #161618; border: 1px solid rgba(255,255,255,0.08); max-width: 480px; text-align: center; }
+    h1 { margin: 0 0 8px; font-size: 18px; font-weight: 600; color: #F7EAEA; }
+    p { margin: 0 0 18px; color: #A1A1AA; font-size: 13px; line-height: 1.5; }
+    button { border: 0; padding: 9px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; background: #007ACC; color: #FFFFFF; }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>HEYUKA &amp; KASPI POS Studio Ready</h1>
-    <p>Ask HEYUKA in Chat or Vibe-Code right inside Build Mode to see instant multi-file updates live here.</p>
-    <button onclick="this.textContent='Live JS + Preview Verified ✓'">Test Interactive Preview</button>
+    <h1>Workspace Ready</h1>
+    <p>Describe what you want to build in Chat or edit files directly to see live updates here.</p>
+    <button onclick="this.textContent='Verified Render ✓'">Verify Preview</button>
   </div>
 </body>
 </html>`,
@@ -114,7 +114,7 @@ const STARTER_FILES: StudioFileNode[] = [
   {
     path: "README.md",
     language: "markdown",
-    content: "# HEYUKA & KASPI POS Studio Project\nGenerated with 100% Google AI Studio Parity + Elastic 3/6/12 Model Swarm.",
+    content: "# HEYUKA & KASPI POS Workspace\nMinimalist IDE canvas powered by quiet multi-agent routing.",
   },
 ];
 
@@ -752,18 +752,18 @@ export function HeyukaUnifiedStudioWorkspace({
   );
 
   const navItems: Array<{ id: StudioMode; icon: any; labelAr: string; labelEn: string }> = [
-    { id: "create_chat", icon: MessageSquare, labelAr: "إنشاء برومبت (Chat)", labelEn: "Create Prompt" },
-    { id: "create_freeform", icon: Sparkles, labelAr: "نص حر + أمثلة Few-Shot", labelEn: "Freeform & Few-Shot" },
-    { id: "stream_realtime", icon: Video, labelAr: "البث الحي (صوت/شاشة)", labelEn: "Stream Realtime" },
-    { id: "build", icon: Code2, labelAr: "بناء التطبيقات (Build)", labelEn: "Build App Studio" },
-    { id: "compare", icon: Layers, labelAr: "مقارنة النماذج", labelEn: "Compare Arena" },
-    { id: "starter_apps", icon: Bot, labelAr: "معرض القوالب الجاهزة", labelEn: "Starter Apps" },
-    { id: "team_collab", icon: Users, labelAr: "العمل الجماعي + XP", labelEn: "Team Collab & XP" },
-    { id: "offline_vault", icon: WifiOff, labelAr: "الخزنة أوفلاين (v60)", labelEn: "Offline Vault (v60)" },
-    { id: "api_keys", icon: KeyRound, labelAr: "مفاتيح الـ API", labelEn: "API Keys & Usage" },
+    { id: "create_chat", icon: MessageSquare, labelAr: "المحادثة (Chat)", labelEn: "Chat" },
+    { id: "build", icon: Code2, labelAr: "المحرر (Build)", labelEn: "Build App" },
+    { id: "create_freeform", icon: Sparkles, labelAr: "نص حر (Freeform)", labelEn: "Freeform" },
+    { id: "stream_realtime", icon: Video, labelAr: "البث الحي", labelEn: "Realtime" },
+    { id: "compare", icon: Layers, labelAr: "مقارنة النماذج", labelEn: "Compare" },
+    { id: "starter_apps", icon: Bot, labelAr: "القوالب", labelEn: "Templates" },
+    { id: "api_keys", icon: KeyRound, labelAr: "مفاتيح API", labelEn: "API Keys" },
+    { id: "team_collab", icon: Users, labelAr: "الفريق", labelEn: "Collab" },
+    { id: "offline_vault", icon: WifiOff, labelAr: "الأوفلاين", labelEn: "Offline" },
   ];
 
-  const accentBgClass = brand === "kaspi_pos" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "bg-sky-500/20 border-sky-500/40 text-sky-300";
+  const accentBgClass = "bg-white/[0.08] border-white/[0.12] text-white";
 
   return (
     <div
@@ -774,9 +774,9 @@ export function HeyukaUnifiedStudioWorkspace({
       }}
       className="h-screen w-full overflow-hidden flex flex-col select-none"
     >
-      {/* TOP HEADER BAR — Google AI Studio Aesthetic + Dual-Brand Switcher */}
-      <header className="h-14 shrink-0 border-b border-white/10 px-3 sm:px-4 flex items-center justify-between gap-2 bg-[#18191E]/95 backdrop-blur-xl">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+      {/* TOP HEADER BAR — Calm Antigravity IDE Chrome */}
+      <header className="h-12 shrink-0 border-b border-white/[0.07] px-3 sm:px-4 flex items-center justify-between gap-2 bg-[#141416]">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           <button
             type="button"
             onClick={() => {
@@ -786,26 +786,26 @@ export function HeyukaUnifiedStudioWorkspace({
                 setLeftOpen((p) => !p);
               }
             }}
-            className="p-2 rounded-xl hover:bg-white/10 cursor-pointer"
-            title="Toggle Left Navigation"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06] cursor-pointer"
+            title="Toggle Sidebar"
           >
             <PanelLeft className="w-4 h-4" />
           </button>
 
           <Link href={`/${locale}/zebra-x`} className="flex items-center gap-2 shrink-0">
             <HeyukaLoopMark size="sm" variant={brand === "kaspi_pos" ? "monochrome" : "crimson"} />
-            <span className="font-black text-sm tracking-tight hidden sm:inline">
-              {brand === "kaspi_pos" ? "KASPI POS Studio" : "HEYUKA Studio"}
+            <span className="font-semibold text-xs tracking-tight text-zinc-200 hidden sm:inline">
+              {brand === "kaspi_pos" ? "KASPI Studio" : "HEYUKA Studio"}
             </span>
           </Link>
 
-          {/* Dual-Brand Switcher Pill */}
-          <div className="inline-flex items-center p-0.5 rounded-xl bg-white/[0.06] border border-white/10 text-[11px] font-bold">
+          {/* Calm Dual-Brand Switcher Pill */}
+          <div className="inline-flex items-center p-0.5 rounded-lg bg-white/[0.03] border border-white/[0.07] text-[11px] font-medium">
             <button
               type="button"
               onClick={() => switchBrand("heyuka")}
-              className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                brand === "heyuka" ? "bg-sky-500/25 text-sky-300" : "text-zinc-400 hover:text-white"
+              className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
+                brand === "heyuka" ? "bg-white/[0.1] text-white" : "text-zinc-500 hover:text-zinc-300"
               }`}
             >
               HEYUKA
@@ -813,8 +813,8 @@ export function HeyukaUnifiedStudioWorkspace({
             <button
               type="button"
               onClick={() => switchBrand("kaspi_pos")}
-              className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
-                brand === "kaspi_pos" ? "bg-emerald-500/25 text-emerald-300" : "text-zinc-400 hover:text-white"
+              className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer flex items-center gap-1 ${
+                brand === "kaspi_pos" ? "bg-white/[0.1] text-white" : "text-zinc-500 hover:text-zinc-300"
               }`}
             >
               <Store className="w-3 h-3" />
@@ -822,91 +822,42 @@ export function HeyukaUnifiedStudioWorkspace({
             </button>
           </div>
 
-          <span className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-[10px] font-mono text-emerald-300">
+          <span className="hidden xl:inline-flex text-[10px] font-mono text-zinc-500">
             {saveBadge}
           </span>
         </div>
 
-        {/* Right Top Toolbar Actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <button
-            type="button"
-            onClick={() => setCmdkOpen(true)}
-            className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-[11px] text-zinc-300 cursor-pointer"
-          >
-            <Command className="w-3 h-3" />
-            <span>Ctrl+K</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMode(mode === "compare" ? "create_chat" : "compare")}
-            className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold cursor-pointer ${
-              mode === "compare" ? accentBgClass : "bg-white/[0.05] border-white/10 hover:bg-white/[0.1]"
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Compare</span>
-          </button>
-
+        {/* Quiet Top Toolbar Actions */}
+        <div className="flex items-center gap-1 sm:gap-1.5">
           <button
             type="button"
             onClick={() => setGetCodeOpen(true)}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/15 text-[11px] font-bold cursor-pointer"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-[11px] font-medium text-zinc-300 hover:text-white cursor-pointer"
           >
-            <Code2 className="w-3.5 h-3.5 text-sky-400" />
+            <Code2 className="w-3.5 h-3.5 text-zinc-400" />
             <span>Get code</span>
           </button>
 
           <button
             type="button"
             onClick={() => setMode("api_keys")}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/15 text-[11px] font-bold cursor-pointer"
+            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-[11px] font-medium text-zinc-300 hover:text-white cursor-pointer"
           >
-            <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">Get API key</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              const payload = JSON.stringify({ brand, systemInstruction, settings, messages }, null, 2);
-              const blob = new Blob([payload], { type: "application/json" });
-              const u = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = u;
-              a.download = `${brand}-studio-session.json`;
-              a.click();
-              URL.revokeObjectURL(u);
-              setShareToast("Exported .json session");
-              setTimeout(() => setShareToast(null), 2000);
-            }}
-            className="hidden md:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-[11px] cursor-pointer"
-            title="Save / Export Session"
-          >
-            <Save className="w-3.5 h-3.5" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShortcutsOpen(true)}
-            className="p-2 rounded-xl hover:bg-white/10 cursor-pointer"
-            title="Keyboard Shortcuts (?)"
-          >
-            <HelpCircle className="w-4 h-4" />
+            <KeyRound className="w-3.5 h-3.5 text-zinc-400" />
+            <span>API Keys</span>
           </button>
 
           <button
             type="button"
             onClick={() => setAppearanceOpen(true)}
-            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-[11px] font-bold cursor-pointer"
-            title="Appearance & Code Colors (#101010 / #F7EAEA / #007ACC)"
+            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-[11px] font-medium text-zinc-300 hover:text-white cursor-pointer"
+            title="Settings & Appearance"
           >
             <span
               style={{ backgroundColor: appearance.accentHex }}
-              className="w-2.5 h-2.5 rounded-full border border-white/40 shrink-0"
+              className="w-2 h-2 rounded-full shrink-0"
             />
-            <span>Theme</span>
+            <span>Settings</span>
           </button>
 
           <LanguageSwitcher />
@@ -921,17 +872,16 @@ export function HeyukaUnifiedStudioWorkspace({
                 setRightOpen((p) => !p);
               }
             }}
-            className="p-2 rounded-xl hover:bg-white/10 cursor-pointer inline-flex items-center gap-1"
-            title="Toggle Run Settings Drawer (Temperature, Thinking, Swarm 3/6/12)"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06] cursor-pointer inline-flex items-center gap-1"
+            title="Toggle Settings Panel"
           >
             <PanelRight className="w-4 h-4" />
-            <span className="hidden sm:inline lg:hidden text-[11px] font-bold">Run Settings</span>
           </button>
         </div>
       </header>
 
       {shareToast && (
-        <div className="px-4 py-1.5 bg-emerald-500/20 border-b border-emerald-500/40 text-xs text-emerald-200 font-semibold text-center">
+        <div className="px-4 py-1.5 bg-[#18181B] border-b border-white/[0.08] text-xs text-zinc-200 font-medium text-center">
           {shareToast}
         </div>
       )}
@@ -943,7 +893,7 @@ export function HeyukaUnifiedStudioWorkspace({
           <>
             <nav
               style={{ width: leftWidthPx }}
-              className="shrink-0 hidden md:flex flex-col justify-between border-e border-white/10 bg-[#18191E]/75 p-2.5 overflow-y-auto kaspi-no-scrollbar"
+              className="shrink-0 hidden md:flex flex-col justify-between border-e border-white/[0.07] bg-[#141416] p-2.5 overflow-y-auto kaspi-no-scrollbar"
             >
               <div className="space-y-1">
                 <button
@@ -952,13 +902,13 @@ export function HeyukaUnifiedStudioWorkspace({
                     setMessages([]);
                     setMode("create_chat");
                   }}
-                  className="w-full mb-2 px-3 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/15 text-xs font-bold flex items-center gap-2 cursor-pointer"
+                  className="w-full mb-2.5 px-3 py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.09] text-xs font-medium text-zinc-200 flex items-center gap-2 cursor-pointer transition-colors"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>{isAr ? "برومبت جديد" : "New Prompt"}</span>
+                  <Plus className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>{isAr ? "محادثة جديدة" : "New Conversation"}</span>
                 </button>
 
-                {navItems.map((item) => {
+                {navItems.slice(0, 7).map((item) => {
                   const Icon = item.icon;
                   const active = mode === item.id;
                   return (
@@ -966,27 +916,54 @@ export function HeyukaUnifiedStudioWorkspace({
                       key={item.id}
                       type="button"
                       onClick={() => setMode(item.id)}
-                      className={`w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-colors cursor-pointer ${
-                        active ? `${accentBgClass} border` : "text-zinc-300 hover:bg-white/[0.06]"
+                      className={`w-full px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2.5 transition-colors cursor-pointer ${
+                        active ? "bg-white/[0.09] text-white" : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
                       }`}
                     >
-                      <Icon className="w-4 h-4 shrink-0" />
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? "text-[#007ACC]" : "text-zinc-500"}`} />
                       <span className="truncate">{isAr ? item.labelAr : item.labelEn}</span>
                     </button>
                   );
                 })}
+
+                <div className="pt-2 mt-2 border-t border-white/[0.06] space-y-0.5">
+                  {navItems.slice(7).map((item) => {
+                    const Icon = item.icon;
+                    const active = mode === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setMode(item.id)}
+                        className={`w-full px-3 py-1.5 rounded-lg text-[11px] font-medium flex items-center gap-2.5 transition-colors cursor-pointer ${
+                          active ? "bg-white/[0.09] text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]"
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{isAr ? item.labelAr : item.labelEn}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div className="pt-3 border-t border-white/10 space-y-1.5 text-[11px]">
-                <div className="px-2 py-2 rounded-xl bg-white/[0.04] border border-white/10">
-                  <div className="font-bold text-emerald-300">2,496+ Vaulted Sources</div>
-                  <div className="text-[10px] text-zinc-400">18 Clusters • Unlimited • $0.00</div>
-                </div>
-                <div className="flex gap-1">
-                  <Link href={`/${locale}/chat`} className="flex-1 text-center py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300">
+              <div className="pt-2.5 border-t border-white/[0.07] space-y-1 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setAppearanceOpen(true)}
+                  className="w-full px-2.5 py-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.05] flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 shrink-0">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
+                  <span>{isAr ? "الإعدادات والمظهر" : "Settings"}</span>
+                </button>
+                <div className="flex gap-1 px-1">
+                  <Link href={`/${locale}/chat`} className="flex-1 text-center py-1 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.05] transition-colors">
                     Chat
                   </Link>
-                  <Link href={`/${locale}/dashboard`} className="flex-1 text-center py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300">
+                  <Link href={`/${locale}/dashboard`} className="flex-1 text-center py-1 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.05] transition-colors">
                     POS
                   </Link>
                 </div>
@@ -996,13 +973,13 @@ export function HeyukaUnifiedStudioWorkspace({
             {/* Drag Handle Left */}
             <div
               onMouseDown={() => { dragTargetRef.current = "left"; }}
-              className="hidden md:block w-1 shrink-0 bg-white/[0.04] hover:bg-sky-400/60 cursor-col-resize transition-colors"
+              className="hidden md:block w-1 shrink-0 bg-transparent hover:bg-[#007ACC]/60 cursor-col-resize transition-colors"
             />
           </>
         )}
 
         {/* CENTER PLAYGROUND / BUILD / REALTIME / COMPARE / COLLAB STAGE */}
-        <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden bg-[#131314]">
+        <main style={{ backgroundColor: appearance.backgroundHex }} className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
           {/* Mobile Horizontal Mode Switcher */}
           <div className="flex md:hidden gap-1.5 p-2 border-b border-white/10 overflow-x-auto kaspi-no-scrollbar">
             {navItems.map((item) => (
@@ -1108,20 +1085,17 @@ export function HeyukaUnifiedStudioWorkspace({
               {/* Messages Stream */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
                 {messages.length === 0 && (
-                  <div className="max-w-2xl mx-auto text-center py-8 space-y-4">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.06] border border-white/10 text-xs font-semibold">
-                      <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-                      <span>
-                        {brand === "kaspi_pos"
-                          ? "KASPI POS Studio • Store Analytics, Receipts & 18 Cognitive Clusters"
-                          : "HEYUKA Studio • Full Google AI Studio Parity + Elastic 12-Model Swarm"}
-                      </span>
-                    </div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-white">
-                      {isAr ? "ماذا سنبني ونشغل اليوم؟" : "Start building cleanly in one studio"}
+                  <div className="max-w-xl mx-auto text-center py-10 space-y-4">
+                    <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#F7EAEA]">
+                      {isAr ? "ماذا نبني اليوم؟" : "Start building cleanly"}
                     </h1>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-start">
-                      {STUDIO_STARTER_TEMPLATES.filter((t) => t.brand === brand).map((tpl) => (
+                    <p className="text-xs text-zinc-400">
+                      {brand === "kaspi_pos"
+                        ? "KASPI POS retail analytics, receipts, and store automation — all from one quiet prompt."
+                        : "Write code, design UI, or trigger multi-agent workflows automatically behind one prompt."}
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                      {STUDIO_STARTER_TEMPLATES.filter((t) => t.brand === brand).slice(0, 3).map((tpl) => (
                         <button
                           key={tpl.id}
                           type="button"
@@ -1131,10 +1105,9 @@ export function HeyukaUnifiedStudioWorkspace({
                             setSettings((s) => ({ ...s, elasticScale: tpl.scale }));
                             if (tpl.mode === "build") setMode("build");
                           }}
-                          className="p-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs transition-colors cursor-pointer"
+                          className="px-3 py-1.5 rounded-full bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.08] text-[11px] font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer"
                         >
-                          <div className="font-bold text-white">{isAr ? tpl.titleAr : tpl.titleEn}</div>
-                          <div className="text-[11px] text-zinc-400 mt-0.5 line-clamp-2">{isAr ? tpl.descAr : tpl.descEn}</div>
+                          {isAr ? tpl.titleAr : tpl.titleEn}
                         </button>
                       ))}
                     </div>
@@ -1366,44 +1339,37 @@ export function HeyukaUnifiedStudioWorkspace({
                 ))}
               </div>
 
-              {/* Antigravity Status Bar: Running Task + Files Changed Review + Composer */}
-              <div className="p-3 sm:p-4 border-t border-white/10 bg-[#18191E]/85 space-y-2">
-                {(isRunning || studioFiles.length > 0) && (
-                  <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-[11px]">
+              {/* Antigravity Status Bar (only shown while running or active thread) + Composer */}
+              <div className="p-3 sm:p-4 border-t border-white/[0.07] bg-[#141416] space-y-2">
+                {(isRunning || messages.length > 0) && studioFiles.length > 0 && (
+                  <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-[#18181B] border border-white/[0.07] text-[11px]">
                     <div className="flex items-center gap-3">
                       {isRunning ? (
-                        <span className="inline-flex items-center gap-1.5 text-amber-300 font-semibold">
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>1 task running ({settings.elasticScale.replace("_", " ")} Swarm)</span>
+                        <span className="inline-flex items-center gap-1.5 text-zinc-200 font-medium">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#007ACC]" />
+                          <span>Running task...</span>
                         </span>
                       ) : (
-                        <span className="font-mono text-zinc-300">
-                          {studioFiles.length} files staged (+
-                          {studioFiles.reduce((acc, f) => acc + f.content.split(/\r?\n/).length, 0)} -0)
+                        <span className="font-mono text-zinc-400">
+                          {studioFiles.length} files changed +
+                          {studioFiles.reduce((acc, f) => acc + f.content.split(/\r?\n/).length, 0)} -0
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setMentionPickerOpen((p) => !p)}
-                        className="px-2 py-0.5 rounded bg-white/[0.06] hover:bg-white/[0.12] font-mono text-[10px] cursor-pointer"
-                      >
-                        @ / Mentions
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => setMode("build")}
-                        className="px-2.5 py-0.5 rounded bg-white/[0.1] hover:bg-white/[0.2] font-bold text-white cursor-pointer"
+                        className="px-2.5 py-0.5 rounded-md bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] font-medium text-zinc-200 cursor-pointer"
                       >
-                        Review Code
+                        Review
                       </button>
                     </div>
                   </div>
                 )}
 
                 {mentionPickerOpen && (
-                  <div className="max-w-4xl mx-auto flex flex-wrap gap-1.5 px-2 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-[11px]">
+                  <div className="max-w-4xl mx-auto flex flex-wrap gap-1.5 px-2 py-1.5 rounded-xl bg-[#18181B] border border-white/[0.08] text-[11px]">
                     {[
                       "@elastic_12x ",
                       "@kaspi_pos ",
@@ -1421,7 +1387,7 @@ export function HeyukaUnifiedStudioWorkspace({
                           setComposerText((p) => `${p}${p ? " " : ""}${tok}`);
                           setMentionPickerOpen(false);
                         }}
-                        className="px-2 py-0.5 rounded-md bg-white/[0.07] hover:bg-white/[0.15] font-mono cursor-pointer text-sky-300"
+                        className="px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-white/[0.12] font-mono cursor-pointer text-zinc-300"
                       >
                         {tok.trim()}
                       </button>
@@ -1429,7 +1395,7 @@ export function HeyukaUnifiedStudioWorkspace({
                   </div>
                 )}
 
-                <div className="max-w-4xl mx-auto rounded-2xl bg-white/[0.04] border border-white/15 p-3 space-y-2.5">
+                <div className="max-w-4xl mx-auto rounded-2xl bg-[#161618] border border-white/[0.09] p-3 space-y-2.5">
                   {/* Attachment Chips + Video Clipping/FPS Controls */}
                   {attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2">
@@ -1600,11 +1566,20 @@ export function HeyukaUnifiedStudioWorkspace({
                             setEnhancingMagic(false);
                           }
                         }}
-                        className="px-2.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-[11px] font-bold text-amber-300 flex items-center gap-1 cursor-pointer disabled:opacity-40"
-                        title="Magic Enhance & Strict Category Disambiguation (/api/v1/magic)"
+                        className="px-2 py-1 rounded-lg bg-transparent hover:bg-white/[0.07] text-[11px] font-medium text-zinc-400 hover:text-zinc-200 flex items-center gap-1 cursor-pointer disabled:opacity-40 transition-colors"
+                        title="Refine prompt (/api/v1/magic)"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">{enhancingMagic ? "Enhancing..." : "Magic"}</span>
+                        <span className="hidden sm:inline">{enhancingMagic ? "Refining..." : "Enhance"}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setMentionPickerOpen((p) => !p)}
+                        className="px-2 py-1 rounded-lg bg-transparent hover:bg-white/[0.07] text-[11px] font-mono text-zinc-500 hover:text-zinc-300 cursor-pointer transition-colors"
+                        title="@ mentions & / actions"
+                      >
+                        @ /
                       </button>
                     </div>
 
@@ -1612,12 +1587,15 @@ export function HeyukaUnifiedStudioWorkspace({
                       type="button"
                       disabled={isRunning || !composerText.trim()}
                       onClick={() => handleRunPrompt()}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-40 ${
-                        brand === "kaspi_pos" ? "kaspi-emerald-checkout-btn" : "kaspi-primary-cta-btn"
+                      style={{ backgroundColor: composerText.trim() && !isRunning ? appearance.accentHex : undefined }}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors ${
+                        composerText.trim() && !isRunning
+                          ? "text-white hover:opacity-90"
+                          : "bg-white/[0.06] text-zinc-500 cursor-not-allowed"
                       }`}
                     >
-                      {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-                      <span>{isAr ? "تشغيل (Run)" : "Run Ctrl+Enter"}</span>
+                      {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                      <span>{isAr ? "تشغيل" : "Run"}</span>
                     </button>
                   </div>
                 </div>
@@ -1856,83 +1834,103 @@ export function HeyukaUnifiedStudioWorkspace({
 
       {/* APPEARANCE & CODE THEME PICKER MODAL (Antigravity Style #101010 / #F7EAEA / #007ACC) */}
       <KaspiGlassModalPortal isOpen={appearanceOpen} onClose={() => setAppearanceOpen(false)}>
-        <div className="kaspi-opaque-glass-modal max-w-lg w-full rounded-2xl p-5 border border-white/15 space-y-4 text-xs">
-          <div className="flex items-center justify-between font-bold text-sm pb-2 border-b border-white/10">
-            <span>Appearance &amp; Code Color Theme</span>
+        <div
+          style={{ backgroundColor: "#141416", color: "#F7EAEA" }}
+          className="max-w-xl w-full rounded-xl border border-white/[0.1] overflow-hidden shadow-2xl text-xs"
+        >
+          <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between font-semibold text-sm">
+            <span>Settings</span>
             <button type="button" onClick={() => setAppearanceOpen(false)} className="p-1 rounded hover:bg-white/10 cursor-pointer">
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="space-y-2">
-            <div className="font-bold text-zinc-300">Preset Themes</div>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { name: "Default Dark", backgroundHex: "#101010", foregroundHex: "#F7EAEA", accentHex: "#007ACC" },
-                { name: "HEYUKA Crimson", backgroundHex: "#101010", foregroundHex: "#F7EAEA", accentHex: "#E11D48" },
-                { name: "KASPI Emerald", backgroundHex: "#101010", foregroundHex: "#EAF7F2", accentHex: "#10B981" },
-                { name: "Deep Slate", backgroundHex: "#131314", foregroundHex: "#F4F4F5", accentHex: "#38BDF8" },
-              ].map((pre) => (
-                <button
-                  key={pre.name}
-                  type="button"
-                  onClick={() =>
-                    updateAppearance({
-                      ...appearance,
-                      preset: pre.name,
-                      backgroundHex: pre.backgroundHex,
-                      foregroundHex: pre.foregroundHex,
-                      accentHex: pre.accentHex,
-                    })
-                  }
-                  className={`px-3 py-2 rounded-xl border text-start flex items-center justify-between cursor-pointer ${
-                    appearance.preset === pre.name ? "border-sky-400 bg-white/10 font-bold" : "border-white/10 bg-white/[0.04]"
-                  }`}
-                >
-                  <span>{pre.name}</span>
-                  <span style={{ backgroundColor: pre.accentHex }} className="w-3.5 h-3.5 rounded-full border border-white/40" />
-                </button>
-              ))}
+          <div className="flex flex-col sm:flex-row min-h-[280px]">
+            <div className="sm:w-40 shrink-0 border-b sm:border-b-0 sm:border-e border-white/[0.07] p-2.5 space-y-1 bg-[#101010]/60">
+              <div className="px-2.5 py-1.5 rounded-md bg-white/[0.08] text-white font-medium">Appearance</div>
+              <button
+                type="button"
+                onClick={() => { setAppearanceOpen(false); setShortcutsOpen(true); }}
+                className="w-full text-start px-2.5 py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05] cursor-pointer"
+              >
+                Shortcuts
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAppearanceOpen(false); setRightOpen(true); }}
+                className="w-full text-start px-2.5 py-1.5 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05] cursor-pointer"
+              >
+                Models &amp; Swarm
+              </button>
             </div>
-          </div>
 
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-zinc-300">Contrast</span>
-            <div className="inline-flex rounded-xl bg-white/[0.06] p-0.5 border border-white/10">
-              {(["default", "strong"] as const).map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => updateAppearance({ ...appearance, contrast: c })}
-                  className={`px-3 py-1 rounded-lg capitalize font-semibold cursor-pointer ${
-                    appearance.contrast === c ? "bg-white/15 text-white" : "text-zinc-400"
-                  }`}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2.5 pt-1 border-t border-white/10">
-            {[
-              { key: "backgroundHex" as const, label: "Background" },
-              { key: "foregroundHex" as const, label: "Foreground" },
-              { key: "accentHex" as const, label: "Accent" },
-            ].map((item) => (
-              <div key={item.key} className="flex items-center justify-between">
-                <span className="font-semibold text-zinc-200">{item.label}</span>
-                <label className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/15 cursor-pointer font-mono">
-                  <input
-                    type="color"
-                    value={appearance[item.key]}
-                    onChange={(e) => updateAppearance({ ...appearance, [item.key]: e.target.value.toUpperCase() })}
-                    className="w-5 h-5 rounded cursor-pointer bg-transparent border-0"
-                  />
-                  <span>{appearance[item.key]}</span>
-                </label>
+            <div className="flex-1 p-4 space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { name: "Default Dark", backgroundHex: "#101010", foregroundHex: "#F7EAEA", accentHex: "#007ACC" },
+                  { name: "Deep Slate", backgroundHex: "#131314", foregroundHex: "#F4F4F5", accentHex: "#38BDF8" },
+                ].map((pre) => (
+                  <button
+                    key={pre.name}
+                    type="button"
+                    onClick={() =>
+                      updateAppearance({
+                        ...appearance,
+                        preset: pre.name,
+                        backgroundHex: pre.backgroundHex,
+                        foregroundHex: pre.foregroundHex,
+                        accentHex: pre.accentHex,
+                      })
+                    }
+                    className={`px-3 py-2 rounded-lg border text-start flex items-center justify-between cursor-pointer ${
+                      appearance.preset === pre.name ? "border-[#007ACC] bg-white/[0.08] font-medium" : "border-white/[0.08] bg-white/[0.03]"
+                    }`}
+                  >
+                    <span>{pre.name}</span>
+                    <span style={{ backgroundColor: pre.accentHex }} className="w-3 h-3 rounded-full" />
+                  </button>
+                ))}
               </div>
-            ))}
+
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-300 font-medium">Contrast</span>
+                <div className="inline-flex rounded-lg bg-white/[0.04] p-0.5 border border-white/[0.08]">
+                  {(["default", "strong"] as const).map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => updateAppearance({ ...appearance, contrast: c })}
+                      className={`px-3 py-1 rounded-md capitalize font-medium cursor-pointer ${
+                        appearance.contrast === c ? "bg-white/[0.12] text-white" : "text-zinc-400"
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2.5 pt-2 border-t border-white/[0.08]">
+                {[
+                  { key: "backgroundHex" as const, label: "Background" },
+                  { key: "foregroundHex" as const, label: "Foreground" },
+                  { key: "accentHex" as const, label: "Accent" },
+                ].map((item) => (
+                  <div key={item.key} className="flex items-center justify-between">
+                    <span className="text-zinc-300 font-medium">{item.label}</span>
+                    <label className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/[0.04] border border-white/[0.08] cursor-pointer font-mono text-[11px]">
+                      <input
+                        type="color"
+                        value={appearance[item.key]}
+                        onChange={(e) => updateAppearance({ ...appearance, [item.key]: e.target.value.toUpperCase() })}
+                        className="w-4 h-4 rounded cursor-pointer bg-transparent border-0"
+                      />
+                      <span>{appearance[item.key]}</span>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </KaspiGlassModalPortal>

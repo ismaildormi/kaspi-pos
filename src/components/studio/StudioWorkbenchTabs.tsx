@@ -110,7 +110,7 @@ export function StudioWorkbenchTabs({
   appearance,
 }: StudioWorkbenchTabsProps) {
   const isAr = locale === "ar";
-  const accentBtn = brand === "kaspi_pos" ? "kaspi-emerald-checkout-btn" : "kaspi-primary-cta-btn";
+  const accentBtn = "bg-[#007ACC] text-white";
 
   // Build Canvas State
   const [selectedPath, setSelectedPath] = useState<string>(files[0]?.path || "index.html");
@@ -127,7 +127,7 @@ export function StudioWorkbenchTabs({
   const [diffMode, setDiffMode] = useState(false);
   const [newFilePath, setNewFilePath] = useState("");
   const [previewLogs, setPreviewLogs] = useState<string[]>([]);
-  const [bottomUtilityTab, setBottomUtilityTab] = useState<"none" | "browser" | "terminal" | "swarm">("swarm");
+  const [bottomUtilityTab, setBottomUtilityTab] = useState<"none" | "browser" | "terminal" | "swarm">("none");
   const annotateCanvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
 
@@ -425,32 +425,26 @@ export function StudioWorkbenchTabs({
           {STUDIO_STARTER_TEMPLATES.map((tpl) => (
             <div
               key={tpl.id}
-              className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 hover:border-white/25 transition-all flex flex-col justify-between gap-3"
+              className="p-4 rounded-xl bg-[#161618] border border-white/[0.08] hover:border-white/[0.16] transition-colors flex flex-col justify-between gap-3"
             >
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      tpl.brand === "kaspi_pos" ? "bg-emerald-500/20 text-emerald-300" : "bg-sky-500/20 text-sky-300"
-                    }`}
-                  >
+                  <span className="px-2 py-0.5 rounded-md bg-white/[0.05] border border-white/[0.08] text-zinc-300 text-[10px] font-medium">
                     {tpl.brand === "kaspi_pos" ? "KASPI POS" : "HEYUKA"} • {tpl.category}
                   </span>
-                  <span className="font-mono text-[10px] text-[var(--kaspi-text-muted)]">{tpl.scale}</span>
+                  <span className="font-mono text-[10px] text-zinc-500">{tpl.scale}</span>
                 </div>
-                <h3 className="text-sm font-bold text-[var(--kaspi-text-primary)]">
+                <h3 className="text-sm font-semibold text-zinc-100">
                   {isAr ? tpl.titleAr : tpl.titleEn}
                 </h3>
-                <p className="text-xs text-[var(--kaspi-text-secondary)]">{isAr ? tpl.descAr : tpl.descEn}</p>
+                <p className="text-xs text-zinc-400">{isAr ? tpl.descAr : tpl.descEn}</p>
               </div>
               <button
                 type="button"
                 onClick={() => onSelectTemplate(tpl)}
-                className={`w-full py-2 rounded-xl text-xs font-bold cursor-pointer ${
-                  tpl.brand === "kaspi_pos" ? "kaspi-emerald-checkout-btn" : "kaspi-primary-cta-btn"
-                }`}
+                className="w-full py-1.5 rounded-lg bg-white/[0.07] hover:bg-[#007ACC] text-zinc-100 hover:text-white text-xs font-medium cursor-pointer transition-colors"
               >
-                {isAr ? "تشغيل القالب فوراً" : "Load Starter Template"}
+                {isAr ? "فتح القالب" : "Use Template"}
               </button>
             </div>
           ))}
@@ -627,28 +621,28 @@ export function StudioWorkbenchTabs({
           </div>
         </div>
 
-        {/* Gamification Telemetry Bar */}
+        {/* Team Telemetry Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/10">
-            <div className="text-[11px] text-[var(--kaspi-text-muted)] flex items-center gap-1"><Trophy className="w-3.5 h-3.5 text-amber-400" /><span>Level</span></div>
-            <div className="text-base font-black text-amber-300 mt-1">{teamStats?.gamification?.level || "Architect"}</div>
+          <div className="p-3 rounded-xl bg-[#161618] border border-white/[0.08]">
+            <div className="text-[11px] text-zinc-400 flex items-center gap-1"><Trophy className="w-3.5 h-3.5 text-zinc-400" /><span>Level</span></div>
+            <div className="text-sm font-semibold text-zinc-100 mt-1">{teamStats?.gamification?.level || "Architect"}</div>
           </div>
-          <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/10">
-            <div className="text-[11px] text-[var(--kaspi-text-muted)] flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-sky-400" /><span>Total XP</span></div>
-            <div className="text-base font-black mt-1">{teamStats?.gamification?.totalXp ?? 770} XP</div>
+          <div className="p-3 rounded-xl bg-[#161618] border border-white/[0.08]">
+            <div className="text-[11px] text-zinc-400 flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-zinc-400" /><span>Activity</span></div>
+            <div className="text-sm font-semibold text-zinc-100 mt-1">{teamStats?.gamification?.totalXp ?? 770} pts</div>
           </div>
-          <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/10">
-            <div className="text-[11px] text-[var(--kaspi-text-muted)] flex items-center gap-1"><Flame className="w-3.5 h-3.5 text-rose-400" /><span>Team Streak</span></div>
-            <div className="text-base font-black text-rose-300 mt-1">12 Days 🔥</div>
+          <div className="p-3 rounded-xl bg-[#161618] border border-white/[0.08]">
+            <div className="text-[11px] text-zinc-400 flex items-center gap-1"><Flame className="w-3.5 h-3.5 text-zinc-400" /><span>Streak</span></div>
+            <div className="text-sm font-semibold text-zinc-100 mt-1">12 Days</div>
           </div>
-          <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/10 flex flex-col justify-between">
-            <span className="text-[11px] text-[var(--kaspi-text-muted)]">Peer Kudos</span>
+          <div className="p-3 rounded-xl bg-[#161618] border border-white/[0.08] flex flex-col justify-between">
+            <span className="text-[11px] text-zinc-400">Recognition</span>
             <button
               type="button"
-              onClick={() => handleAwardXp(50, "Sent Peer Kudos in Studio", "🤝 Team Catalyst")}
-              className="mt-1 px-2.5 py-1 rounded-lg kaspi-emerald-checkout-btn text-[11px] font-bold cursor-pointer"
+              onClick={() => handleAwardXp(50, "Sent Peer Kudos in Studio", "Team Catalyst")}
+              className="mt-1 px-2.5 py-1 rounded-lg bg-white/[0.08] hover:bg-[#007ACC] text-zinc-200 hover:text-white text-[11px] font-medium cursor-pointer transition-colors"
             >
-              +50 XP Kudos
+              Send Kudos
             </button>
           </div>
         </div>
@@ -823,36 +817,36 @@ export function StudioWorkbenchTabs({
               placeholder="New key label..."
               className="px-3 py-1.5 rounded-xl bg-white/[0.06] border border-white/15 text-xs"
             />
-            <button type="submit" className={`px-4 py-1.5 rounded-xl text-xs font-bold cursor-pointer ${accentBtn}`}>
+            <button type="submit" className="px-3.5 py-1.5 rounded-lg bg-[#007ACC] hover:bg-[#0B84D8] text-white text-xs font-medium cursor-pointer transition-colors">
               + Create API Key
             </button>
           </form>
         </div>
 
         {freshKeyOnce && (
-          <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-between gap-2 text-xs">
-            <span className="font-mono font-bold truncate">New Secret Key: {freshKeyOnce}</span>
+          <div className="p-3 rounded-lg bg-[#161618] border border-[#007ACC]/40 flex items-center justify-between gap-2 text-xs">
+            <span className="font-mono font-medium truncate text-zinc-100">New Secret Key: {freshKeyOnce}</span>
             <button
               type="button"
               onClick={() => {
                 navigator.clipboard.writeText(freshKeyOnce);
                 setCopiedId("fresh");
               }}
-              className="px-2.5 py-1 rounded-lg bg-emerald-500/30 font-bold cursor-pointer"
+              className="px-2.5 py-1 rounded-md bg-white/[0.08] hover:bg-white/[0.14] text-white font-medium cursor-pointer"
             >
               {copiedId === "fresh" ? "Copied" : "Copy"}
             </button>
           </div>
         )}
 
-        <div className="h-56 p-4 rounded-2xl bg-white/[0.04] border border-white/10">
-          <div className="text-xs font-bold mb-2">Daily Requests Telemetry (RPM / Daily Volume)</div>
+        <div className="h-56 p-4 rounded-xl bg-[#161618] border border-white/[0.08]">
+          <div className="text-xs font-medium text-zinc-300 mb-2">Daily Requests</div>
           <ResponsiveContainer width="100%" height="88%">
             <BarChart data={chartData}>
               <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#9ca3af" }} />
               <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} />
               <Tooltip />
-              <Bar dataKey="requests" fill={brand === "kaspi_pos" ? "#34d399" : "#38bdf8"} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="requests" fill="#007ACC" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -896,38 +890,38 @@ export function StudioWorkbenchTabs({
       {mode === "build" && (
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Build Toolbar */}
-          <div className="px-3 py-2 border-b border-white/10 flex flex-wrap items-center justify-between gap-2 bg-white/[0.03]">
-            <div className="flex items-center gap-1.5">
+          <div className="px-3 py-1.5 border-b border-white/[0.07] flex flex-wrap items-center justify-between gap-2 bg-[#141416]">
+            <div className="flex items-center gap-1">
               {(["split", "preview", "code"] as const).map((v) => (
                 <button
                   key={v}
                   type="button"
                   onClick={() => setViewSplit(v)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold capitalize cursor-pointer ${
-                    viewSplit === v ? accentBtn : "bg-white/[0.06] text-[var(--kaspi-text-secondary)]"
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium capitalize cursor-pointer transition-colors ${
+                    viewSplit === v ? "bg-white/[0.1] text-white" : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]"
                   }`}
                 >
                   {v}
                 </button>
               ))}
-              <div className="h-4 w-px bg-white/10 mx-1" />
-              <button type="button" onClick={() => setViewport("desktop")} className={`p-1.5 rounded-lg cursor-pointer ${viewport === "desktop" ? "bg-white/15" : ""}`} title="Desktop"><Monitor className="w-3.5 h-3.5" /></button>
-              <button type="button" onClick={() => setViewport("tablet")} className={`p-1.5 rounded-lg cursor-pointer ${viewport === "tablet" ? "bg-white/15" : ""}`} title="Tablet"><Tablet className="w-3.5 h-3.5" /></button>
-              <button type="button" onClick={() => setViewport("mobile")} className={`p-1.5 rounded-lg cursor-pointer ${viewport === "mobile" ? "bg-white/15" : ""}`} title="Mobile"><Smartphone className="w-3.5 h-3.5" /></button>
+              <div className="h-4 w-px bg-white/[0.08] mx-1" />
+              <button type="button" onClick={() => setViewport("desktop")} className={`p-1 rounded-md cursor-pointer ${viewport === "desktop" ? "bg-white/[0.1] text-white" : "text-zinc-400 hover:text-zinc-200"}`} title="Desktop"><Monitor className="w-3.5 h-3.5" /></button>
+              <button type="button" onClick={() => setViewport("tablet")} className={`p-1 rounded-md cursor-pointer ${viewport === "tablet" ? "bg-white/[0.1] text-white" : "text-zinc-400 hover:text-zinc-200"}`} title="Tablet"><Tablet className="w-3.5 h-3.5" /></button>
+              <button type="button" onClick={() => setViewport("mobile")} className={`p-1 rounded-md cursor-pointer ${viewport === "mobile" ? "bg-white/[0.1] text-white" : "text-zinc-400 hover:text-zinc-200"}`} title="Mobile"><Smartphone className="w-3.5 h-3.5" /></button>
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => setDiffMode((d) => !d)}
-                className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold cursor-pointer ${diffMode ? "bg-amber-500/20 border-amber-500/40 text-amber-300" : "bg-white/[0.05] border-white/10"}`}
+                className={`px-2.5 py-1 rounded-md border text-[11px] font-medium cursor-pointer ${diffMode ? "bg-[#007ACC]/20 border-[#007ACC]/50 text-sky-300" : "bg-white/[0.04] border-white/[0.08] text-zinc-300 hover:bg-white/[0.08]"}`}
               >
-                View Changes
+                Diff
               </button>
               <button
                 type="button"
                 onClick={() => setAnnotateMode((a) => !a)}
-                className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold flex items-center gap-1 cursor-pointer ${annotateMode ? "bg-rose-500/20 border-rose-500/40 text-rose-300" : "bg-white/[0.05] border-white/10"}`}
+                className={`px-2.5 py-1 rounded-md border text-[11px] font-medium flex items-center gap-1 cursor-pointer ${annotateMode ? "bg-[#007ACC]/20 border-[#007ACC]/50 text-sky-300" : "bg-white/[0.04] border-white/[0.08] text-zinc-300 hover:bg-white/[0.08]"}`}
               >
                 <Pencil className="w-3 h-3" />
                 <span>Annotate</span>
@@ -935,16 +929,16 @@ export function StudioWorkbenchTabs({
               <button
                 type="button"
                 onClick={() => onSaveCheckpoint(`Checkpoint #${checkpoints.length + 1}`)}
-                className="px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[11px] font-semibold cursor-pointer"
+                className="px-2.5 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-[11px] font-medium text-zinc-300 cursor-pointer"
               >
-                Save Checkpoint
+                Checkpoint
               </button>
               <button
                 type="button"
                 onClick={handleDownloadZip}
-                className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                className="px-2.5 py-1 rounded-md bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-zinc-200 text-[11px] font-medium flex items-center gap-1 cursor-pointer"
               >
-                <Download className="w-3 h-3" />
+                <Download className="w-3 h-3 text-zinc-400" />
                 <span>.ZIP</span>
               </button>
             </div>
@@ -1050,13 +1044,13 @@ export function StudioWorkbenchTabs({
                     <button
                       type="button"
                       onClick={() => setCodeViewMode((m) => (m === "syntax" ? "edit" : "syntax"))}
-                      className={`px-2 py-0.5 rounded border text-[10px] font-bold cursor-pointer ${
-                        codeViewMode === "syntax"
-                          ? "bg-sky-500/20 border-sky-500/40 text-sky-300"
-                          : "bg-white/[0.06] border-white/15 text-zinc-300"
+                      className={`px-2 py-0.5 rounded-md border text-[10px] font-medium cursor-pointer transition-colors ${
+                        codeViewMode === "edit"
+                          ? "bg-[#007ACC] border-[#007ACC] text-white"
+                          : "bg-white/[0.04] border-white/[0.08] text-zinc-300 hover:bg-white/[0.08]"
                       }`}
                     >
-                      {codeViewMode === "syntax" ? "Syntax Color ✓ (Edit)" : "Editing (Syntax)"}
+                      {codeViewMode === "syntax" ? "Edit" : "Preview Syntax"}
                     </button>
                   </div>
                 </div>
@@ -1182,25 +1176,28 @@ export function StudioWorkbenchTabs({
 
       {/* Embedded Live Browser + PowerShell Terminal + Elastic 3/6/12 Swarm & Worker Bots Utility Bar */}
       <div className="border-t border-white/10 bg-white/[0.03]">
-        <div className="px-3 py-1.5 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5">
+        <div className="px-3 py-1 flex flex-wrap items-center justify-between gap-2 bg-[#141416]">
+          <div className="flex flex-wrap items-center gap-1">
             {[
-              { id: "swarm", icon: Activity, label: `Elastic Swarm (${councilData?.modelCount || 3}/6/12) & Worker Bots` },
-              { id: "browser", icon: Globe, label: "Live Browser & Cloud Factory (v57)" },
-              { id: "terminal", icon: Terminal, label: "PowerShell / Python Terminal" },
-              { id: "none", icon: Eye, label: "Minimize" },
+              { id: "swarm", icon: Activity, label: `Swarm (${councilData?.modelCount || 3}/6/12)` },
+              { id: "browser", icon: Globe, label: "Browser" },
+              { id: "terminal", icon: Terminal, label: "Terminal" },
+              { id: "none", icon: Eye, label: "Collapse" },
             ].map((tb) => {
               const Icon = tb.icon;
+              const isAct = bottomUtilityTab === tb.id && tb.id !== "none";
               return (
                 <button
                   key={tb.id}
                   type="button"
                   onClick={() => setBottomUtilityTab(tb.id as typeof bottomUtilityTab)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1.5 cursor-pointer ${
-                    bottomUtilityTab === tb.id ? accentBtn : "bg-white/[0.05] text-[var(--kaspi-text-secondary)] hover:bg-white/[0.1]"
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium inline-flex items-center gap-1.5 cursor-pointer transition-colors ${
+                    isAct
+                      ? "bg-white/[0.1] text-white"
+                      : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]"
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-3 h-3" />
                   <span>{tb.label}</span>
                 </button>
               );

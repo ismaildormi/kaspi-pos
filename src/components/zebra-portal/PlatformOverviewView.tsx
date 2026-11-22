@@ -112,7 +112,7 @@ export function PlatformOverviewView() {
                 <span>{locale === "ar" ? "التغطية المجانية" : "KASPI Coverage Plan"}</span>
                 <HelpCircle className="w-3.5 h-3.5 text-zinc-400" />
               </span>
-              <span className="px-2 py-0.5 rounded bg-rose-500/15 text-rose-400 text-[11px] font-medium">
+              <span className="px-2 py-0.5 rounded bg-[#007ACC]/15 border border-[#007ACC]/30 text-sky-300 text-[11px] font-medium">
                 100% Free — KASPI Absorbs Cost{" "}
                 <Link href={`/${locale}/zebra-x/docs?tab=pricing`} className="underline ml-1">
                   Details
@@ -143,7 +143,7 @@ export function PlatformOverviewView() {
           </div>
           <p className="text-[11px] text-zinc-400">
             Estimated market value saved:{" "}
-            <span className="text-rose-400 font-mono font-semibold">
+            <span className="text-sky-400 font-mono font-semibold">
               ${(data?.global.estimatedMarketValueSavedUsd ?? 0).toFixed(2)} USD
             </span>
           </p>
@@ -234,9 +234,9 @@ export function PlatformOverviewView() {
           </div>
         </div>
 
-        <div className="rounded-xl bg-[#1D1E23] border border-white/[0.06] p-5 space-y-2">
+        <div className="rounded-xl bg-[#161618] border border-white/[0.08] p-5 space-y-2">
           <p className="text-xs font-medium text-zinc-300">
-            Tokens <span className="text-[10px] text-rose-400">(Est. / $0 Cost)</span>
+            Tokens <span className="text-[10px] text-sky-400">(Est. / $0 Cost)</span>
           </p>
           <p className="text-3xl font-bold text-white font-mono">
             {(data?.global.estimatedTokensProcessed ?? 0).toLocaleString()}
@@ -244,8 +244,8 @@ export function PlatformOverviewView() {
         </div>
       </div>
 
-      {/* Chart Container matching Screenshot 2 */}
-      <div className="rounded-xl bg-[#1D1E23] border border-white/[0.06] p-5 space-y-4">
+      {/* Chart Container */}
+      <div className="rounded-xl bg-[#161618] border border-white/[0.08] p-5 space-y-4">
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs font-medium text-zinc-200">
             {chartTab === "type" ? "Cost & Traffic ($0.00 / Covered)" : "Breakdown by API Key"}
@@ -293,7 +293,7 @@ export function PlatformOverviewView() {
                     >
                       <div
                         className={`w-full max-w-[12px] rounded-t-sm transition-colors ${
-                          metric > 0 ? "bg-rose-500 group-hover:bg-rose-400" : "bg-white/[0.07]"
+                          metric > 0 ? "bg-[#007ACC] group-hover:bg-[#38BDF8]" : "bg-white/[0.07]"
                         }`}
                         style={{ height: `${h}%` }}
                       />

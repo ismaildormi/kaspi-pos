@@ -698,14 +698,14 @@ export function AntigravityStudioPane({
       />
 
       {/* Top Antigravity IDE Toolbar */}
-      <header className="min-h-12 px-2.5 py-1.5 border-b border-white/[0.07] bg-[#141519] flex flex-wrap items-center justify-between gap-1.5 shrink-0">
-        <div className="flex items-center gap-1.5 shrink-0">
-          <div className="px-2 py-1 rounded-md bg-rose-500/15 border border-rose-500/35 text-rose-400 text-[11px] font-bold flex items-center gap-1.5">
-            <Cpu className="w-3.5 h-3.5" />
+      <header className="min-h-11 px-3 py-1.5 border-b border-white/[0.07] bg-[#141416] flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.08] text-zinc-200 text-[11px] font-medium flex items-center gap-1.5">
+            <Cpu className="w-3.5 h-3.5 text-[#007ACC]" />
             <span>Antigravity Studio</span>
           </div>
-          <span className="hidden 2xl:inline-flex text-[10px] font-mono text-zinc-400">
-            {hw?.cpuCores || 4} Cores • {executionPolicy.toUpperCase()} • $0.00
+          <span className="hidden 2xl:inline-flex text-[10px] font-mono text-zinc-500">
+            {hw?.cpuCores || 4} threads • {executionPolicy}
           </span>
         </div>
 
@@ -713,30 +713,30 @@ export function AntigravityStudioPane({
           <button
             type="button"
             onClick={() => uploadAppInputRef.current?.click()}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-[11px] font-medium cursor-pointer"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-transparent hover:bg-white/[0.06] border border-white/[0.07] text-zinc-300 hover:text-white text-[11px] font-medium cursor-pointer transition-colors"
             title="Upload App (.zip or files) into Studio"
           >
-            <Upload className="w-3.5 h-3.5 text-rose-400" />
+            <Upload className="w-3.5 h-3.5 text-zinc-400" />
             <span className="hidden xl:inline">Upload</span>
           </button>
 
           <button
             type="button"
             onClick={() => void handleOpenLocalFolder()}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-[11px] font-medium cursor-pointer"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-transparent hover:bg-white/[0.06] border border-white/[0.07] text-zinc-300 hover:text-white text-[11px] font-medium cursor-pointer transition-colors"
             title="Connect Local Computer Folder"
           >
-            <FolderOpen className="w-3.5 h-3.5 text-zinc-300" />
+            <FolderOpen className="w-3.5 h-3.5 text-zinc-400" />
             <span className="hidden xl:inline">Folder</span>
           </button>
 
           <button
             type="button"
             onClick={handleDownloadPortableApp}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-[11px] font-medium cursor-pointer"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-transparent hover:bg-white/[0.06] border border-white/[0.07] text-zinc-300 hover:text-white text-[11px] font-medium cursor-pointer transition-colors"
             title="Export Portable HEYUKA Studio App (.html)"
           >
-            <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+            <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
             <span className="hidden xl:inline">Export</span>
           </button>
 
@@ -744,7 +744,7 @@ export function AntigravityStudioPane({
             type="button"
             onClick={() => void handleRunOnClientCpu()}
             disabled={workerRunning}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#E11D48] hover:bg-rose-500 text-white text-[11px] font-bold cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#007ACC] hover:bg-[#0B84D8] text-white text-[11px] font-medium cursor-pointer disabled:opacity-50 transition-colors"
             title="Run or Preview on Client CPU ($0.00)"
           >
             {workerRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
@@ -755,17 +755,17 @@ export function AntigravityStudioPane({
             type="button"
             onClick={handleDownloadZip}
             disabled={files.length === 0}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white text-zinc-900 hover:bg-zinc-200 text-[11px] font-bold cursor-pointer disabled:opacity-40"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] text-zinc-200 text-[11px] font-medium cursor-pointer disabled:opacity-40 transition-colors"
             title="Download All Workspace Files as .ZIP"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3.5 h-3.5 text-zinc-400" />
             <span>.ZIP</span>
           </button>
 
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 cursor-pointer"
+            className="p-1 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.06] cursor-pointer"
             aria-label="Close studio"
           >
             <X className="w-4 h-4" />
@@ -820,12 +820,12 @@ export function AntigravityStudioPane({
                           setStageTab("code");
                         }}
                         title={f.path}
-                        className={`w-full flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-lg text-xs text-start shrink-0 cursor-pointer transition-colors ${
+                        className={`w-full flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-md text-xs text-start shrink-0 cursor-pointer transition-colors ${
                           folder !== "/" ? "sm:pl-3.5" : ""
                         } ${
                           active
-                            ? "bg-rose-500/15 text-white font-semibold border border-rose-500/35"
-                            : "text-zinc-300 hover:bg-white/[0.06]"
+                            ? "bg-white/[0.08] text-white font-medium border-l-2 border-[#007ACC]"
+                            : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
                         }`}
                       >
                         <div className="flex items-center gap-1.5 min-w-0">
@@ -932,35 +932,35 @@ export function AntigravityStudioPane({
           </div>
 
           {/* Active Stage Viewport */}
-          <div className="flex-1 min-h-0 overflow-auto p-3 sm:p-4 bg-[#15161A]">
+          <div className="flex-1 min-h-0 overflow-auto p-3 sm:p-4 bg-[#101010]">
             {stageTab === "overview" && (
               <div className="space-y-4 max-w-2xl">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-                  <div className="rounded-xl bg-[#1D1E23] border border-white/[0.06] p-3">
-                    <p className="text-zinc-400 text-[10px]">Active Model</p>
-                    <p className="font-mono font-bold text-rose-300 mt-0.5 truncate">{activeModel}</p>
+                  <div className="rounded-lg bg-[#161618] border border-white/[0.07] p-3">
+                    <p className="text-zinc-500 text-[10px]">Active Model</p>
+                    <p className="font-mono font-semibold text-zinc-100 mt-0.5 truncate">{activeModel}</p>
                   </div>
-                  <div className="rounded-xl bg-[#1D1E23] border border-white/[0.06] p-3">
-                    <p className="text-zinc-400 text-[10px]">Policy Mode</p>
-                    <p className="font-mono font-bold text-white mt-0.5 uppercase">{executionPolicy}</p>
+                  <div className="rounded-lg bg-[#161618] border border-white/[0.07] p-3">
+                    <p className="text-zinc-500 text-[10px]">Policy Mode</p>
+                    <p className="font-mono font-semibold text-zinc-100 mt-0.5 uppercase">{executionPolicy}</p>
                   </div>
-                  <div className="rounded-xl bg-[#1D1E23] border border-white/[0.06] p-3">
-                    <p className="text-zinc-400 text-[10px]">Client Hardware</p>
-                    <p className="font-mono font-bold text-white mt-0.5">{hw?.cpuCores || 4} CPU Threads</p>
+                  <div className="rounded-lg bg-[#161618] border border-white/[0.07] p-3">
+                    <p className="text-zinc-500 text-[10px]">Client Hardware</p>
+                    <p className="font-mono font-semibold text-zinc-100 mt-0.5">{hw?.cpuCores || 4} CPU Threads</p>
                   </div>
-                  <div className="rounded-xl bg-[#1D1E23] border border-white/[0.06] p-3">
-                    <p className="text-zinc-400 text-[10px]">Server Cost</p>
-                    <p className="font-mono font-bold text-rose-400 mt-0.5">$0.00 Free</p>
+                  <div className="rounded-lg bg-[#161618] border border-white/[0.07] p-3">
+                    <p className="text-zinc-500 text-[10px]">Compute Tier</p>
+                    <p className="font-mono font-semibold text-sky-400 mt-0.5">Local + Edge</p>
                   </div>
                 </div>
 
                 {thinkingSteps.length > 0 && (
-                  <div className="rounded-xl bg-[#1D1E23] border border-white/[0.06] p-4 space-y-2.5">
-                    <h4 className="text-xs font-bold text-white">Latest Agent Execution Pipeline</h4>
+                  <div className="rounded-lg bg-[#161618] border border-white/[0.07] p-4 space-y-2.5">
+                    <h4 className="text-xs font-semibold text-zinc-200">Execution Trace</h4>
                     {thinkingSteps.map((s, idx) => (
                       <div key={idx} className="flex items-start justify-between gap-2 text-xs border-t border-white/[0.05] pt-2">
                         <div className="min-w-0">
-                          <p className="font-semibold text-rose-300">
+                          <p className="font-medium text-zinc-200">
                             {idx + 1}. {s.phase} <span className="text-zinc-500 font-mono">[{s.agentModel}]</span>
                           </p>
                           <p className="text-zinc-400 text-[11px]">{s.summary}</p>
@@ -973,51 +973,51 @@ export function AntigravityStudioPane({
                   </div>
                 )}
 
-                <div className="rounded-xl bg-[#1D1E23] border border-white/[0.06] p-4 space-y-2.5 text-xs">
-                  <h4 className="font-bold text-white">Portable HEYUKA App &amp; Local Machine Bridge</h4>
+                <div className="rounded-lg bg-[#161618] border border-white/[0.07] p-4 space-y-3 text-xs">
+                  <h4 className="font-semibold text-zinc-200">Workspace Templates &amp; Bridge</h4>
                   <p className="text-zinc-400 leading-relaxed">
-                    Download the standalone portable HTML studio app or upload your own `.zip` / project folder from your PC to edit, preview, review SAST security, or execute scripts directly on your CPU.
+                    Open a project folder, upload `.zip` source files, or scaffold an interactive starter directly inside this quiet IDE stage.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={() => loadSelfContainedBlueprint("game3d")}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] text-white font-semibold text-[11px] cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] text-zinc-200 font-medium text-[11px] cursor-pointer transition-colors"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-rose-400" />
-                      <span>Build 3D Game (Yuka AI)</span>
+                      <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
+                      <span>3D Scene Blueprint</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => loadSelfContainedBlueprint("website")}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] text-white font-semibold text-[11px] cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] text-zinc-200 font-medium text-[11px] cursor-pointer transition-colors"
                     >
-                      <FolderOpen className="w-3.5 h-3.5 text-rose-400" />
-                      <span>Build Multi-Page Site</span>
+                      <FolderOpen className="w-3.5 h-3.5 text-zinc-400" />
+                      <span>Web App Scaffold</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => loadSelfContainedBlueprint("robotics")}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] text-white font-semibold text-[11px] cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] text-zinc-200 font-medium text-[11px] cursor-pointer transition-colors"
                     >
-                      <Cpu className="w-3.5 h-3.5 text-rose-400" />
-                      <span>Build Robotics Kit</span>
+                      <Cpu className="w-3.5 h-3.5 text-zinc-400" />
+                      <span>Robotics Sim</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => uploadAppInputRef.current?.click()}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white text-zinc-900 font-bold text-[11px] cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] text-zinc-200 font-medium text-[11px] cursor-pointer transition-colors"
                     >
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Upload App / .ZIP</span>
+                      <Upload className="w-3.5 h-3.5 text-zinc-400" />
+                      <span>Upload .ZIP</span>
                     </button>
                     <button
                       type="button"
                       onClick={handleDownloadPortableApp}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-rose-600 text-white font-bold text-[11px] cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#007ACC] hover:bg-[#0B84D8] text-white font-medium text-[11px] cursor-pointer transition-colors"
                     >
                       <Download className="w-3.5 h-3.5" />
-                      <span>Download Portable HEYUKA App (.html)</span>
+                      <span>Export Portable (.html)</span>
                     </button>
                   </div>
                 </div>
@@ -1110,25 +1110,25 @@ export function AntigravityStudioPane({
 
                 {assembledHtmlSrcDoc && (
                   <div className="w-full h-full min-h-[320px] flex flex-col rounded-xl border border-white/10 overflow-hidden bg-white">
-                    <div className="px-3 py-1.5 bg-[#1C1D22] border-b border-white/10 flex items-center justify-between text-[11px] text-zinc-300 font-mono">
-                      <span>Live Browser DOM Preview ($0.00)</span>
-                      <span className="text-rose-400">Client CPU</span>
+                    <div className="px-3 py-1.5 bg-[#141416] border-b border-white/[0.07] flex items-center justify-between text-[11px] text-zinc-400 font-mono">
+                      <span>Live Preview</span>
+                      <span className="text-sky-400">Client CPU</span>
                     </div>
                     <iframe
                       title="HEYUKA Antigravity Live Preview"
                       sandbox="allow-scripts"
                       srcDoc={assembledHtmlSrcDoc}
-                      className="w-full flex-1 min-h-[300px] border-0 bg-[#111215]"
+                      className="w-full flex-1 min-h-[300px] border-0 bg-[#101010]"
                     />
                   </div>
                 )}
 
                 {!activeArtifact && !assembledHtmlSrcDoc && !editableImageUrl && !isRenderingMedia && (
                   <div className="text-center max-w-sm space-y-3 py-10">
-                    <div className="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center mx-auto text-rose-400">
-                      <HardDrive className="w-6 h-6" />
+                    <div className="w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mx-auto text-[#007ACC]">
+                      <HardDrive className="w-5 h-5" />
                     </div>
-                    <h3 className="text-sm font-bold text-white">Antigravity Studio Ready</h3>
+                    <h3 className="text-sm font-semibold text-zinc-100">Workbench Ready</h3>
                     <p className="text-xs text-zinc-400 leading-relaxed">
                       Upload a `.zip` or folder, draw or edit photos on GPU, render 30fps WebM videos, inspect 3D geometry, or run code in the Terminal tab at $0.00 server cost.
                     </p>
@@ -1143,8 +1143,8 @@ export function AntigravityStudioPane({
                   <>
                     {/* Multi-File IDE Tab Strip */}
                     <div
-                      style={{ backgroundColor: "#111319" }}
-                      className="flex items-center gap-1 overflow-x-auto rounded-lg border border-white/[0.08] p-1 shrink-0 kaspi-no-scrollbar"
+                      style={{ backgroundColor: "#141416" }}
+                      className="flex items-center gap-1 overflow-x-auto rounded-lg border border-white/[0.07] p-1 shrink-0 kaspi-no-scrollbar"
                     >
                       {files.map((f) => {
                         const isTabActive = f.path === activeFile.path;
@@ -1156,8 +1156,8 @@ export function AntigravityStudioPane({
                             onClick={() => setSelectedPath(f.path)}
                             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono shrink-0 cursor-pointer transition-colors ${
                               isTabActive
-                                ? "bg-rose-500/20 text-white font-semibold border border-rose-500/35"
-                                : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]"
+                                ? "bg-[#101010] text-white font-semibold border-b-2 border-[#007ACC]"
+                                : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
                             }`}
                           >
                             <span
@@ -1174,13 +1174,13 @@ export function AntigravityStudioPane({
 
                     {/* Active File Breadcrumb & Syntax/Edit Switch */}
                     <div
-                      style={{ backgroundColor: "#181A22" }}
-                      className="px-3 py-1.5 rounded-t-xl border border-b-0 border-white/[0.08] flex flex-wrap items-center justify-between gap-2 text-[11px]"
+                      style={{ backgroundColor: "#141416" }}
+                      className="px-3 py-1.5 rounded-t-xl border border-b-0 border-white/[0.07] flex flex-wrap items-center justify-between gap-2 text-[11px]"
                     >
-                      <div className="flex items-center gap-1.5 font-mono text-zinc-300 truncate">
+                      <div className="flex items-center gap-1.5 font-mono text-zinc-400 truncate">
                         {activeFile.path.split("/").map((seg, idx, arr) => (
                           <React.Fragment key={idx}>
-                            <span className={idx === arr.length - 1 ? "text-white font-bold" : "text-zinc-400"}>
+                            <span className={idx === arr.length - 1 ? "text-[#F7EAEA] font-medium" : "text-zinc-500"}>
                               {seg}
                             </span>
                             {idx < arr.length - 1 && <span className="text-zinc-600">›</span>}
@@ -1188,19 +1188,19 @@ export function AntigravityStudioPane({
                         ))}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="font-mono text-[10px] text-zinc-400">
+                        <span className="font-mono text-[10px] text-zinc-500">
                           {activeFile.content.split(/\r?\n/).length} lines • {activeFile.content.length}B
                         </span>
                         <button
                           type="button"
                           onClick={() => setIsEditingCode((p) => !p)}
-                          className={`px-2.5 py-0.5 rounded-md font-semibold cursor-pointer transition-colors ${
+                          className={`px-2.5 py-0.5 rounded-md font-medium cursor-pointer transition-colors ${
                             isEditingCode
-                              ? "bg-rose-600 text-white"
-                              : "bg-white/[0.07] text-zinc-200 hover:bg-white/[0.12]"
+                              ? "bg-[#007ACC] text-white"
+                              : "bg-white/[0.05] text-zinc-300 hover:bg-white/[0.1]"
                           }`}
                         >
-                          {isEditingCode ? "✓ Done Editing" : "✎ Edit Raw"}
+                          {isEditingCode ? "Done" : "Edit Raw"}
                         </button>
                       </div>
                     </div>
@@ -1215,8 +1215,8 @@ export function AntigravityStudioPane({
                           );
                         }}
                         spellCheck={false}
-                        style={{ backgroundColor: "#111319" }}
-                        className="w-full flex-1 min-h-[380px] rounded-b-xl border border-white/[0.08] p-4 font-mono text-xs text-zinc-100 leading-relaxed focus:outline-none focus:border-rose-500 resize-none select-text"
+                        style={{ backgroundColor: "#101010", color: "#F7EAEA" }}
+                        className="w-full flex-1 min-h-[380px] rounded-b-xl border border-white/[0.08] p-4 font-mono text-xs leading-relaxed focus:outline-none focus:border-[#007ACC] resize-none select-text"
                       />
                     ) : (
                       <div className="flex-1 min-h-[380px] rounded-b-xl border border-white/[0.08] overflow-hidden">
@@ -1225,6 +1225,10 @@ export function AntigravityStudioPane({
                           language={activeFile.language}
                           filePath={activeFile.path}
                           maxHeightClass="h-full min-h-[380px]"
+                          backgroundHex="#101010"
+                          foregroundHex="#F7EAEA"
+                          accentHex="#007ACC"
+                          showHeaderBreadcrumb
                         />
                       </div>
                     )}

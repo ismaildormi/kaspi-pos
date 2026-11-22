@@ -71,8 +71,8 @@ export function StudioRightRunSettings({
   onRemoveCache,
 }: StudioRightRunSettingsProps) {
   const isAr = locale === "ar";
-  const accentText = brand === "kaspi_pos" ? "text-emerald-400" : "text-sky-400";
-  const accentBg = brand === "kaspi_pos" ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-300" : "bg-sky-500/15 border-sky-500/35 text-sky-300";
+  const accentText = "text-[#007ACC]";
+  const accentBg = "bg-white/[0.06] border-white/[0.12] text-zinc-200";
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [tokenPopoverOpen, setTokenPopoverOpen] = useState(false);

@@ -377,24 +377,23 @@ export function PlatformPlaygroundView() {
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           <Link
             href={`/${locale}/studio?brand=heyuka`}
-            className="kaspi-primary-cta-btn rounded-2xl px-4 py-2.5 text-xs font-bold inline-flex items-center gap-2 shadow-lg"
+            className="rounded-lg px-3 py-1.5 text-xs font-medium inline-flex items-center gap-1.5 bg-[#007ACC] hover:bg-[#0B84D8] text-white transition-colors"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>{locale === "ar" ? "فتح HEYUKA Studio" : "Open HEYUKA AI Studio"}</span>
+            <span>{locale === "ar" ? "فتح HEYUKA Studio" : "Open HEYUKA Studio"}</span>
           </Link>
           <Link
             href={`/${locale}/studio?brand=kaspi_pos`}
-            className="rounded-2xl px-4 py-2.5 text-xs font-bold inline-flex items-center gap-2 border border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:text-white transition-colors"
+            className="rounded-lg px-3 py-1.5 text-xs font-medium inline-flex items-center gap-1.5 border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 hover:text-white transition-colors"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{locale === "ar" ? "فتح KASPI POS Studio" : "KASPI POS Studio"}</span>
+            <span>KASPI POS Studio</span>
           </Link>
         </div>
       </section>
 
       {/* Credentials Bar */}
-      <section className="kaspi-glass-card rounded-3xl p-5 space-y-3">
-        <div className="text-xs font-bold text-[var(--kaspi-text-secondary)]">{t.authTitle}</div>
+      <section className="rounded-xl bg-[#161618] border border-white/[0.08] p-4 space-y-3">
+        <div className="text-xs font-medium text-zinc-400">{t.authTitle}</div>
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
           <div className="md:col-span-7 relative">
             <input
@@ -403,12 +402,12 @@ export function PlatformPlaygroundView() {
               value={bearerKey}
               onChange={(e) => setBearerKey(e.target.value)}
               placeholder={t.keyPlaceholder}
-              className="w-full rounded-2xl kaspi-glass-surface px-4 py-2.5 pe-11 text-xs font-mono text-[var(--kaspi-text-primary)] placeholder:text-[var(--kaspi-text-muted)] focus:outline-none"
+              className="w-full rounded-lg bg-[#101010] border border-white/[0.08] px-3.5 py-2 pe-10 text-xs font-mono text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-[#007ACC]"
             />
             <button
               type="button"
               onClick={() => setShowKey((s) => !s)}
-              className="absolute inset-y-0 right-3 flex items-center text-[var(--kaspi-text-muted)] hover:text-[var(--kaspi-text-primary)] cursor-pointer"
+              className="absolute inset-y-0 right-3 flex items-center text-zinc-400 hover:text-zinc-200 cursor-pointer"
               aria-label="Toggle Key Visibility"
             >
               {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -421,7 +420,7 @@ export function PlatformPlaygroundView() {
               value={keyId}
               onChange={(e) => setKeyId(e.target.value)}
               placeholder={t.keyIdPlaceholder}
-              className="w-full rounded-2xl kaspi-glass-surface px-4 py-2.5 text-xs font-mono text-[var(--kaspi-text-primary)] placeholder:text-[var(--kaspi-text-muted)] focus:outline-none"
+              className="w-full rounded-lg bg-[#101010] border border-white/[0.08] px-3.5 py-2 text-xs font-mono text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-[#007ACC]"
             />
           </div>
         </div>
@@ -429,23 +428,43 @@ export function PlatformPlaygroundView() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* Left: Controls & Payload */}
-        <section className="lg:col-span-6 kaspi-glass-card kaspi-polar-aurora-orbit relative rounded-3xl p-5 space-y-4">
+        <section className="lg:col-span-6 rounded-xl bg-[#161618] border border-white/[0.08] p-4 space-y-4">
           <div className="space-y-2">
-            <div className="text-xs font-bold text-[var(--kaspi-text-secondary)]">
-              {t.endpointLabel}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-medium text-zinc-400">{t.endpointLabel}</span>
+              <span className="text-[10px] font-mono text-zinc-500">{ENDPOINT_LIST.length} endpoints</span>
             </div>
+            <select
+              dir="ltr"
+              value={endpoint}
+              onChange={(e) => selectEndpoint(e.target.value as EndpointId)}
+              className="w-full rounded-lg bg-[#101010] border border-white/[0.1] px-3 py-2 font-mono text-xs text-zinc-100 focus:outline-none focus:border-[#007ACC] cursor-pointer"
+            >
+              {ENDPOINT_LIST.map((ep) => (
+                <option key={ep} value={ep}>
+                  {ep}
+                </option>
+              ))}
+            </select>
             <div dir="ltr" className="flex flex-wrap gap-1.5">
-              {ENDPOINT_LIST.map((ep) => {
+              {(
+                [
+                  "/api/v1/chat/completions",
+                  "/api/v1/magic",
+                  "/api/v1/studio/council",
+                  "/api/v1/desktops/spawn",
+                ] as const
+              ).map((ep) => {
                 const active = endpoint === ep;
                 return (
                   <button
                     key={ep}
                     type="button"
                     onClick={() => selectEndpoint(ep)}
-                    className={`px-2.5 py-1.5 rounded-xl font-mono text-[11px] font-bold transition-all cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-md font-mono text-[11px] font-medium transition-colors cursor-pointer border ${
                       active
-                        ? "kaspi-orbit-active text-rose-500"
-                        : "kaspi-glass-surface text-[var(--kaspi-text-secondary)] hover:text-[var(--kaspi-text-primary)]"
+                        ? "bg-white/[0.1] border-[#007ACC] text-white"
+                        : "bg-white/[0.03] border-white/[0.07] text-zinc-400 hover:text-zinc-200"
                     }`}
                   >
                     {ep.replace("/api/v1", "")}
@@ -466,10 +485,10 @@ export function PlatformPlaygroundView() {
                     key={m}
                     type="button"
                     onClick={() => syncChatOptions(m, enableTools, stream)}
-                    className={`px-2.5 py-1 rounded-full font-mono text-[11px] font-bold cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-md font-mono text-[11px] font-medium cursor-pointer border transition-colors ${
                       model === m
-                        ? "kaspi-orbit-active text-rose-500"
-                        : "kaspi-glass-surface text-[var(--kaspi-text-muted)]"
+                        ? "bg-[#007ACC]/20 border-[#007ACC] text-white"
+                        : "bg-white/[0.03] border-white/[0.07] text-zinc-400 hover:text-zinc-200"
                     }`}
                   >
                     {m}
@@ -480,10 +499,10 @@ export function PlatformPlaygroundView() {
                 <button
                   type="button"
                   onClick={() => syncChatOptions(model, !enableTools, stream)}
-                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold cursor-pointer ${
+                  className={`px-3 py-1 rounded-md text-[11px] font-medium cursor-pointer border transition-colors ${
                     enableTools
-                      ? "kaspi-orbit-active text-rose-500"
-                      : "kaspi-glass-surface text-[var(--kaspi-text-muted)]"
+                      ? "bg-[#007ACC]/20 border-[#007ACC] text-white"
+                      : "bg-white/[0.03] border-white/[0.07] text-zinc-400 hover:text-zinc-200"
                   }`}
                 >
                   <Sparkles className="w-3 h-3 inline me-1" />
@@ -492,10 +511,10 @@ export function PlatformPlaygroundView() {
                 <button
                   type="button"
                   onClick={() => syncChatOptions(model, enableTools, !stream)}
-                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold cursor-pointer ${
+                  className={`px-3 py-1 rounded-md text-[11px] font-medium cursor-pointer border transition-colors ${
                     stream
-                      ? "kaspi-orbit-active text-rose-500"
-                      : "kaspi-glass-surface text-[var(--kaspi-text-muted)]"
+                      ? "bg-[#007ACC]/20 border-[#007ACC] text-white"
+                      : "bg-white/[0.03] border-white/[0.07] text-zinc-400 hover:text-zinc-200"
                   }`}
                 >
                   {t.streamToggle}: {stream ? "ON" : "OFF"}
@@ -522,7 +541,7 @@ export function PlatformPlaygroundView() {
               type="button"
               disabled={busy}
               onClick={runRequest}
-              className="flex-1 kaspi-primary-cta-btn rounded-2xl px-4 py-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              className="flex-1 rounded-lg bg-[#007ACC] hover:bg-[#0B84D8] text-white px-4 py-2.5 text-xs sm:text-sm font-medium flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 transition-colors"
             >
               <Play className="w-4 h-4" />
               <span>{busy ? t.sendingBtn : t.sendBtn}</span>
@@ -537,10 +556,10 @@ export function PlatformPlaygroundView() {
                   setTimeout(() => setCopiedCurl(false), 1800);
                 } catch {}
               }}
-              className="kaspi-glass-btn rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              className="rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-zinc-200 px-3.5 py-2.5 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
             >
               {copiedCurl ? (
-                <Check className="w-3.5 h-3.5 text-rose-500" />
+                <Check className="w-3.5 h-3.5 text-[#007ACC]" />
               ) : (
                 <Copy className="w-3.5 h-3.5" />
               )}
@@ -550,7 +569,7 @@ export function PlatformPlaygroundView() {
         </section>
 
         {/* Right: Output & Headers */}
-        <section className="lg:col-span-6 kaspi-glass-card rounded-3xl p-5 space-y-4">
+        <section className="lg:col-span-6 rounded-xl bg-[#161618] border border-white/[0.08] p-4 space-y-4">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <span className="text-xs font-bold text-[var(--kaspi-text-secondary)]">
               {t.responseLabel}
