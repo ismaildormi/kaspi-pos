@@ -47,6 +47,9 @@ const PUBLIC_API_PATHS = [
   "/api/v1/heyuka/chat-threads",
   "/api/v1/heyuka/share",
   "/api/v1/heyuka/feedback",
+  "/api/v1/desktops/spawn",
+  "/api/v1/os/exec",
+  "/api/v1/ai-pc/control",
   "/api/v1/qr/dynamic",
   "/api/v1/models",
   "/api/v1/debug",
@@ -152,8 +155,17 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Rate Limiting for all API endpoints + Automated IPS Quarantine on abuse
-  if (pathname.startsWith("/api/")) {
+  // Rate Limiting for POS/Auth API endpoints + Automated IPS Quarantine on abuse
+  // (Sovereign Unlimited Client-Compute HEYUKA API endpoints execute at caller cost $0 with no request cap)
+  const isUnlimitedHeyukaSovereignApi =
+    pathname.startsWith("/api/v1/heyuka/") ||
+    pathname.startsWith("/api/v1/desktops/") ||
+    pathname.startsWith("/api/v1/os/") ||
+    pathname.startsWith("/api/v1/ai-pc/") ||
+    pathname === "/api/v1/chat/completions" ||
+    pathname === "/api/v1/models";
+
+  if (pathname.startsWith("/api/") && !isUnlimitedHeyukaSovereignApi) {
     const ip = extractClientIpEdge(request);
     const isAuthPath = pathname.startsWith("/api/v1/auth");
     const isSensitive = isAuthPath || pathname.startsWith("/api/ai");
