@@ -159,13 +159,34 @@ function detectSmartMode(
   ) {
     return { effectiveMode: "image", autoSwitched: true };
   }
-  if (/(فيديو|مونتاج|أنيميشن|reel|video|clip|mp4|webm|motion|tiktok|animation)/i.test(p)) {
+  const looksLikeCodeOrEngineering =
+    hasCodeContext ||
+    /(```|كود|برمج|تطبيق|موقع|واجهة|ستوديو|سكربت|بوت|playwright|selenium|puppeteer|httpx|beautifulsoup|build|create app|website|dashboard|react|html|css|python|typescript|javascript|script|api|component|game|calculator|scrape|crawler|csv|sql)/i.test(
+      p
+    );
+  const explicitVideoStart =
+    /^\s*(?:please\s+|can\s+you\s+)?(?:اصنع\s*فيديو|فيديو|مونتاج|أنيميشن|generate\s+(?:a\s+)?video|create\s+(?:a\s+)?(?:video|clip|reel|animation))\b/i.test(
+      prompt
+    );
+  const explicitAudioStart =
+    /^\s*(?:please\s+|can\s+you\s+)?(?:اصنع\s*صوت|موسيقى|نغمة|أغنية|generate\s+(?:an?\s+)?(?:audio|music|beat|soundtrack)|compose\s+)/i.test(
+      prompt
+    );
+  const explicitImageStart =
+    /^\s*(?:please\s+|can\s+you\s+)?(?:رسم|ارسم|صاوب\s*صورة|صمم\s*صورة|توليد\s*صورة|draw\s+(?:a|an)?|generate\s+(?:an?\s+)?(?:image|logo|poster|illustration|photo)|create\s+(?:an?\s+)?(?:image|logo|poster|illustration))\b/i.test(
+      prompt
+    );
+
+  if (looksLikeCodeOrEngineering) {
+    return { effectiveMode: "coding", autoSwitched: true };
+  }
+  if (explicitVideoStart) {
     return { effectiveMode: "video", autoSwitched: true };
   }
-  if (/(أوديو|موسيقى|نغمة|أغنية|صوتية|wav|mp3|audio|music|beat|melody|soundtrack|sfx)/i.test(p)) {
+  if (explicitAudioStart) {
     return { effectiveMode: "audio", autoSwitched: true };
   }
-  if (/(صورة|تصويرة|رسم|لوجو|شعار|بوستر|غلاف|draw|image|logo|poster|illustration|artwork|photo|banner)/i.test(p)) {
+  if (explicitImageStart) {
     return { effectiveMode: "image", autoSwitched: true };
   }
   if (/(3d|glb|gltf|cad|stl|مجسم|ثلاثي الأبعاد|three\.?js|mesh)/i.test(p)) {
@@ -179,14 +200,6 @@ function detectSmartMode(
   }
   if (/(\badb\b|iphone|android|battery health|imei|repair ticket|إصلاح الهاتف|بطارية)/i.test(p)) {
     return { effectiveMode: "mobile", autoSwitched: true };
-  }
-  if (
-    hasCodeContext ||
-    /(كود|برمج|تطبيق|موقع|واجهة|ستوديو|سكربت|بوت|build|create app|website|dashboard|react|html|css|python|typescript|javascript|script|api|component|game|calculator)/i.test(
-      p
-    )
-  ) {
-    return { effectiveMode: "coding", autoSwitched: true };
   }
   if (
     /(بحث|قلب|أخبار|ثمن|سعر|الطقس|الناظور|طريق|مسافة|زلزال|ناسا|طيران|مطار|دواء|وصفة|طبخ|كتاب|سيارة|محرك|workout|recipe|flight|airport|earthquake|route|distance|distance between|obd|recall|drug|book|species|crypto|bitcoin|usd|mad|fx|search|news|weather|price|btc|today|latest|wikipedia)/i.test(
@@ -748,11 +761,12 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     });
     rawText = String(gen.text || "").trim();
 
-    // v24.0 Infinite Auto-Continuation Loop: silently resumes mid-code ~1024-token cuts (up to 2 hops)
+    let currentFinishReason = (gen as any).finishReason;
+    // v24.0 Infinite Auto-Continuation Loop: silently resumes MAX_TOKENS (`length`) & mid-code cuts (up to 2 hops)
     let continuationHops = 0;
-    while (continuationHops < 2 && Date.now() - startedAt < 34_000 && !imageBase64) {
+    while (continuationHops < 2 && Date.now() - startedAt < 46_000 && !imageBase64) {
       const truncCheck = detectTruncationState(rawText);
-      if (!truncCheck.truncated) break;
+      if (!truncCheck.truncated && currentFinishReason !== "length") break;
       continuationHops += 1;
       const hopStart = Date.now();
       try {
@@ -761,7 +775,7 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
           messages: [
             {
               role: "user",
-              content: `Original task: ${effectiveUserText.slice(0, 260)}\n\nContinue seamlessly from the exact end below:\n${truncCheck.tailSnippet}`,
+              content: `Original task: ${effectiveUserText.slice(0, 260)}\n\nContinue seamlessly from the exact end below:\n${truncCheck.tailSnippet || rawText.slice(-420)}`,
             },
           ],
           temperature: 0.25,
@@ -770,10 +784,11 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
         const nextChunk = String(cont.text || "").trim();
         if (!nextChunk) break;
         rawText = mergeContinuationChunk(rawText, nextChunk);
+        currentFinishReason = (cont as any).finishReason;
         thinkingSteps.push({
           phase: `Auto-Continuation Hop #${continuationHops} (v24.0)`,
           agentModel: resolvedModel,
-          summary: `Stitched +${nextChunk.length} chars after detecting ${truncCheck.reasons.join(", ")}`,
+          summary: `Stitched +${nextChunk.length} chars (${currentFinishReason === "length" ? "MAX_TOKENS" : truncCheck.reasons.join(", ")})`,
           durationMs: Math.max(1, Date.now() - hopStart),
           timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
         });

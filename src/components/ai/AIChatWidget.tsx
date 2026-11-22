@@ -357,6 +357,11 @@ export function AIChatWidget() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const lastSpokenMessageIdRef = useRef<string | null>(null);
+  const activeAbortRef = useRef<AbortController | null>(null);
+  const lastSubmittedPromptRef = useRef<string>("");
+  const lastSubmittedAttachmentRef = useRef<{ name: string; type: string; url: string } | null>(null);
+  const lastActivitySnapshotRef = useRef<string>("");
+  const isRecoveringRef = useRef(false);
 
   // Real-time Audio Waveform Visualizer States (Web Audio API)
   const [audioWave, setAudioWave] = useState<number[]>([4, 6, 8, 12, 16, 20, 16, 12, 8, 14, 18, 12, 8, 6, 4, 3]);
@@ -539,13 +544,31 @@ export function AIChatWidget() {
     };
   }, [isDragging]);
 
-  // Memoize transport with activeLocale passed in body and headers
+  // Memoize transport with 45s AbortController timeout & strict finally cleanup
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: "/api/ai/chat",
         body: { locale: activeLocale },
         headers: { "x-app-locale": activeLocale },
+        fetch: async (inputUrl, init) => {
+          const controller = new AbortController();
+          activeAbortRef.current = controller;
+          const timeoutId = setTimeout(() => controller.abort(), 45_000);
+          const upstreamSignal = init?.signal;
+          const onUpstreamAbort = () => controller.abort();
+          upstreamSignal?.addEventListener("abort", onUpstreamAbort, { once: true });
+
+          try {
+            return await fetch(inputUrl, { ...init, signal: controller.signal });
+          } finally {
+            clearTimeout(timeoutId);
+            upstreamSignal?.removeEventListener("abort", onUpstreamAbort);
+            if (activeAbortRef.current === controller) {
+              activeAbortRef.current = null;
+            }
+          }
+        },
       }),
     [activeLocale]
   );
@@ -561,6 +584,61 @@ export function AIChatWidget() {
     regenerate,
   } = useChat({
     transport,
+    onFinish: () => {
+      setIsLocalThinking(false);
+    },
+    onError: async () => {
+      if (isRecoveringRef.current) return;
+      isRecoveringRef.current = true;
+      setIsLocalThinking(true);
+      try {
+        const promptForRecovery = lastSubmittedPromptRef.current.trim();
+        if (!promptForRecovery) return;
+
+        const webRes = await fetch("/api/v1/heyuka/chat-web", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            brand: "kaspi_pos",
+            model: "heyuka-omni",
+            executionPolicy: "auto",
+            mode: "auto",
+            deepThink: true,
+            webSearch: true,
+            locale: activeLocale,
+            messages: [{ role: "user", content: promptForRecovery }],
+          }),
+          signal: AbortSignal.timeout(45_000),
+        });
+
+        let recoveredText = "";
+        if (webRes.ok) {
+          const wd = await webRes.json().catch(() => null);
+          recoveredText = String(wd?.answer || "").trim();
+        }
+        if (!recoveredText) {
+          recoveredText = await tryDeviceCoreFallback(
+            promptForRecovery,
+            activeLocale,
+            lastActivitySnapshotRef.current
+          );
+        }
+
+        if (recoveredText) {
+          clearError?.();
+          const assistantId = `recovered-a-${Date.now()}`;
+          setLocalFallbackMessages((prev) => [
+            ...prev,
+            { id: assistantId, role: "assistant", content: recoveredText },
+          ]);
+        }
+      } catch {
+        // Leave clean retry banner available only if every recovery layer failed
+      } finally {
+        setIsLocalThinking(false);
+        isRecoveringRef.current = false;
+      }
+    },
   });
 
   const isLoading = status === "submitted" || status === "streaming" || isLocalThinking;
@@ -1058,13 +1136,16 @@ export function AIChatWidget() {
       };
     }
 
-    // 2. Real Product Image Generation
-    if (
-      !attachedFile &&
-      /(generate.*image|create.*image|product.*photo|رسم\s*صورة|صنع\s*صورة|توليد\s*صورة|صوب\s*لي\s*صورة|دير\s*صورة)/i.test(
+    // 2. Real Product Image Generation (Strictly anchored to explicit image creation requests)
+    const hasCodingDirectives =
+      /(```|\bpython\b|\bplaywright\b|\bselenium\b|\bhttpx\b|\bhtml\b|\bcss\b|\bjavascript\b|\btypescript\b|\bfunction\b|\bselect\b|\bcsv\b|\bapi\b|\bscrape\b)/i.test(
         lower
-      )
-    ) {
+      );
+    const isExplicitVisualCreate =
+      /^\s*(?:please\s+|can\s+you\s+|could\s+you\s+)?(?:رسم\s*صورة|ارسم|صاوب\s*صورة|صمم\s*صورة|صنع\s*صورة|توليد\s*صورة|صوب\s*لي\s*صورة|دير\s*صورة|generate\s+(?:an?\s+)?(?:image|photo|poster|logo)|create\s+(?:an?\s+)?(?:image|photo|poster|logo)|draw\s+(?:an?\s+)?(?:image|picture|logo))\b/i.test(
+        q
+      );
+    if (!attachedFile && isExplicitVisualCreate && !hasCodingDirectives) {
       const res = await fetch(getApiUrl("/api/ai/media-tools"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1092,11 +1173,12 @@ export function AIChatWidget() {
       }
     }
 
-    // 3. Real Web Product Photo Search
-    if (
-      !attachedFile &&
-      /(search.*image|find.*photo|web.*image|جيب\s*صور|ابحث\s*عن\s*صور|صور\s*من\s*الويب)/i.test(lower)
-    ) {
+    // 3. Real Web Product Photo Search (Explicit image-search commands only)
+    const isExplicitWebImageSearch =
+      /^\s*(?:search\s+(?:for\s+)?images?|find\s+photos?|web\s+images?|جيب\s*صور|ابحث\s*عن\s*صور|صور\s*من\s*الويب)/i.test(
+        q
+      );
+    if (!attachedFile && isExplicitWebImageSearch && !hasCodingDirectives) {
       const cleanQuery = q
         .replace(/(search.*image|find.*photo|web.*image|جيب\s*صور|ابحث\s*عن\s*صور|صور\s*من\s*الويب)/gi, "")
         .trim() || q;
@@ -1354,6 +1436,11 @@ export function AIChatWidget() {
     setIsLocalThinking(false);
 
     try {
+      lastSubmittedPromptRef.current = enrichedMessageText || messageText || t.analyzePrompt;
+      lastSubmittedAttachmentRef.current = currentAttachment;
+      lastActivitySnapshotRef.current = activitySnapshot;
+      clearError?.();
+
       if (
         currentAttachment &&
         (currentAttachment.type?.startsWith("image/") || currentAttachment.type === "application/pdf")
@@ -1392,14 +1479,14 @@ export function AIChatWidget() {
         );
       }
     } catch {
-      setIsLocalThinking(true);
       const fallbackReply = await tryDeviceCoreFallback(
         enrichedMessageText,
         activeLocale,
         activitySnapshot
       );
-      setIsLocalThinking(false);
       appendLocalExchange(messageText, fallbackReply, currentAttachment);
+    } finally {
+      setIsLocalThinking(false);
     }
   };
 
@@ -2580,7 +2667,6 @@ export function AIChatWidget() {
                         }}
                         onPaste={handleComposerPaste}
                         placeholder={t.inputPlaceholder}
-                        disabled={isLoading}
                         className="w-full ps-3.5 pe-9 py-2 text-xs kaspi-translucent-input rounded-2xl focus:outline-none transition-all placeholder:text-[var(--kaspi-text-muted)] border border-[var(--kaspi-border-glass)] text-[var(--kaspi-text-primary)] focus:border-emerald-500/60 resize-none max-h-36 overflow-y-auto kaspi-no-scrollbar leading-5"
                       />
 
@@ -2596,19 +2682,35 @@ export function AIChatWidget() {
                       </button>
                     </div>
 
-                    {/* Far Right: Circular [↑] Submit Button */}
-                    <button
-                      type="submit"
-                      disabled={isLoading || (!input.trim() && !attachment)}
-                      className="w-8 h-8 rounded-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-30 disabled:cursor-not-allowed text-black transition-all shadow-md shadow-emerald-500/20 cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
-                      aria-label="Send Message"
-                    >
-                      {isLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-black" />
-                      ) : (
+                    {/* Far Right: Instant Stop OR Circular [↑] Submit Button */}
+                    {isLoading ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          try {
+                            activeAbortRef.current?.abort();
+                            stop?.();
+                            clearError?.();
+                          } finally {
+                            setIsLocalThinking(false);
+                          }
+                        }}
+                        className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all cursor-pointer flex items-center justify-center shrink-0"
+                        title="Stop generation"
+                        aria-label="Stop generation"
+                      >
+                        <Square className="w-3.5 h-3.5 fill-current" />
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={!input.trim() && !attachment}
+                        className="w-8 h-8 rounded-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-30 disabled:cursor-not-allowed text-black transition-all shadow-md shadow-emerald-500/20 cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
+                        aria-label="Send Message"
+                      >
                         <ArrowUp className="w-4 h-4 text-black stroke-[2.5]" />
-                      )}
-                    </button>
+                      </button>
+                    )}
                   </form>
                 </div>
               )}

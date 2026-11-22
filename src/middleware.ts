@@ -172,8 +172,8 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/api/") && !isUnlimitedHeyukaSovereignApi) {
     const ip = extractClientIpEdge(request);
     const isAuthPath = pathname.startsWith("/api/v1/auth");
-    const isSensitive = isAuthPath || pathname.startsWith("/api/ai");
-    const limit = isAuthPath ? 5 : isSensitive ? 20 : 120;
+    const isSensitive = isAuthPath;
+    const limit = isAuthPath ? 5 : 120;
     const windowSec = isAuthPath ? 120 : 60;
 
     const rateResult = await checkRateLimit(

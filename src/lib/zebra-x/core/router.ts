@@ -137,7 +137,12 @@ export function planXZebraToolRoute(prompt: string, isOwner: boolean): RoutePlan
   if (/(مبيعات|أرباح|توقع|نفاد|sales|revenue|forecast|ventes|top|best)/i.test(p)) {
     intents.push("pos_metrics");
   }
-  if (/(صاوب صورة|ارسم|توليد صورة|صورة|تصويرة|خلفية|شعار|بوستر|draw|generate image|generate photo|poster|logo|image|photo|picture|background)/i.test(p)) {
+  if (
+    /^\s*(?:please\s+|can\s+you\s+|could\s+you\s+)?(?:صاوب\s*صورة|ارسم|توليد\s*صورة|صمم\s*صورة|generate\s+(?:an?\s+)?(?:image|photo|poster|logo)|create\s+(?:an?\s+)?(?:image|photo|poster|logo)|draw\s+(?:an?\s+)?(?:image|picture|logo))\b/i.test(
+      p
+    ) ||
+    /(search.*image|find.*photo|web.*image|صور\s*من\s*الويب|جيب\s*صور)/i.test(p)
+  ) {
     intents.push("media_and_vision");
   }
   if (/(مهارة|مهارات|سكيلز|مجلد|ملفات|جلسة|مهام|تعاون|skill\.md|skills|cowork|checkpoint|workspace|sub-?agent|وكلاء فرعي)/i.test(p)) {
@@ -303,6 +308,10 @@ export function selectMaskedActiveTools<T extends Record<string, any>>(
   }
 
   const alwaysReady = [
+    "getTodaySales",
+    "getLowStockProducts",
+    "getTopSellingProducts",
+    "predictStockDemand",
     "unrestrictedWebSearch",
     "queryPublicApi",
     "evaluateMathAndFinance",

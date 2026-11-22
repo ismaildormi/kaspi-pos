@@ -16,6 +16,7 @@ import {
 } from "ai";
 
 import { runLocalOnDeviceHeyukaBrain } from "@/lib/heyuka/local-sovereign-brain";
+import { detectTruncationState, mergeContinuationChunk } from "@/lib/heyuka/autonomous-builder-v24-v28";
 
 export interface RouterGovernanceScope {
   tenantId?: string;
@@ -606,23 +607,32 @@ export async function streamUiResponseWithRouter(
 
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
+      const streamStartedAt = Date.now();
       let succeeded = false;
       let streamStartedOnWriter = false;
       let lastErrMsg = "All HEYUKA cloud gateways unavailable";
 
-      for (const { candidate, stripTools } of attempts) {
+      for (let attemptIdx = 0; attemptIdx < attempts.length; attemptIdx++) {
+        // Leave clean safety margin before 60s serverless cutoff so fallback ALWAYS finishes in time
+        if (attemptIdx > 0 && Date.now() - streamStartedAt > 44_000) break;
+
+        const { candidate, stripTools } = attempts[attemptIdx];
         let emittedToClient = false;
         const bufferedHeaderChunks: any[] = [];
         let collectedText = "";
+        let openTextPartId: string | null = null;
+        let heldFinishChunks: any[] = [];
 
         try {
           const callConfig = { ...restOptions };
           if (stripTools) delete callConfig.tools;
+          const remainingMs = Math.max(8_000, 48_000 - (Date.now() - streamStartedAt));
+          const attemptTimeoutMs = Math.min(remainingMs, attemptIdx === 0 ? 22_000 : 15_000);
 
           const res = streamText({
             model: candidate.model as any,
             maxRetries: 0,
-            abortSignal: AbortSignal.timeout(stripTools ? 32_000 : 42_000),
+            abortSignal: AbortSignal.timeout(attemptTimeoutMs),
             ...callConfig,
           });
 
@@ -635,9 +645,19 @@ export async function streamUiResponseWithRouter(
               throw new Error("Upstream stream aborted before content");
             }
 
-            if (c.type === "text-delta") {
+            if (c.type === "text-start" && c.id) {
+              openTextPartId = String(c.id);
+            } else if (c.type === "text-delta") {
               const piece = typeof c.delta === "string" ? c.delta : typeof c.textDelta === "string" ? c.textDelta : "";
               collectedText += piece;
+            } else if (c.type === "text-end") {
+              openTextPartId = null;
+            }
+
+            // Hold terminal step/stream finish chunks briefly so we can seamlessly stream MAX_TOKENS continuations if cut off
+            if (c.type === "finish-step" || c.type === "finish") {
+              heldFinishChunks.push(chunk);
+              continue;
             }
 
             const isContentChunk =
@@ -659,13 +679,69 @@ export async function streamUiResponseWithRouter(
             }
           }
 
-          const visibleClean = collectedText
+          let visibleClean = collectedText
             .replace(/<think>[\s\S]*?<\/think>/gi, "")
             .replace(/<think>[\s\S]*$/gi, "")
             .trim();
 
           if (!emittedToClient || !visibleClean) {
             throw new Error("Upstream produced zero visible text after reasoning strip");
+          }
+
+          // Auto-Continuation Loop inside live stream when upstream hit MAX_TOKENS (`length`) or stopped mid-code
+          let finishReason: string | undefined;
+          try {
+            finishReason = await (res as any).finishReason;
+          } catch {}
+
+          let hopCount = 0;
+          while (
+            hopCount < 2 &&
+            Date.now() - streamStartedAt < 48_000 &&
+            (finishReason === "length" || detectTruncationState(visibleClean).truncated)
+          ) {
+            hopCount += 1;
+            const trunc = detectTruncationState(visibleClean);
+            try {
+              const contGen = await generateText({
+                model: candidate.model as any,
+                maxRetries: 0,
+                abortSignal: AbortSignal.timeout(Math.max(6_000, 52_000 - (Date.now() - streamStartedAt))),
+                system:
+                  "Continue seamlessly from the exact cutoff point without repeating earlier text or adding commentary. Close all unfinished Markdown tables, headings, lists, and code fences cleanly.",
+                messages: [
+                  {
+                    role: "user",
+                    content: `Continue directly from the exact tail below:\n${trunc.tailSnippet || visibleClean.slice(-420)}`,
+                  },
+                ],
+                temperature: 0.25,
+              });
+              const contChunk = String(contGen.text || "").trim();
+              if (!contChunk) break;
+
+              const merged = mergeContinuationChunk(visibleClean, contChunk);
+              const deltaToAppend = merged.startsWith(visibleClean)
+                ? merged.slice(visibleClean.length)
+                : `\n${contChunk}`;
+              if (!deltaToAppend.trim()) break;
+
+              const contId = openTextPartId || `cont-${Date.now()}-${hopCount}`;
+              if (!openTextPartId) writer.write({ type: "text-start", id: contId } as any);
+              writer.write({ type: "text-delta", id: contId, delta: deltaToAppend } as any);
+              if (!openTextPartId) writer.write({ type: "text-end", id: contId } as any);
+
+              collectedText = `${collectedText}${deltaToAppend}`;
+              visibleClean = merged;
+              finishReason = (contGen as any).finishReason;
+            } catch {
+              break;
+            }
+          }
+
+          // Flush held terminal markers once auto-continuation completes
+          for (const fin of heldFinishChunks) {
+            writer.write(fin);
           }
 
           succeeded = true;
@@ -688,6 +764,9 @@ export async function streamUiResponseWithRouter(
             .replace(/<think>[\s\S]*$/gi, "")
             .trim();
           if (emittedToClient && visibleClean.length > 24) {
+            for (const fin of heldFinishChunks) {
+              writer.write(fin);
+            }
             succeeded = true;
             if (onCompletedText) {
               await Promise.resolve(onCompletedText(collectedText, candidate)).catch(() => {});
@@ -697,30 +776,37 @@ export async function streamUiResponseWithRouter(
         }
       }
 
-      // Final Zero-Key Open Core rescue before surfacing an error (even if an earlier tool step opened writer)
+      // Final Zero-Key Open Core -> Local On-Device Brain rescue so user stream NEVER throws an abrupt dead-end error
       if (!succeeded && !isMultimodal) {
+        let rescueReply = "";
         try {
-          const openReply = await callPollinationsZeroKeyHttp({
+          rescueReply = await callPollinationsZeroKeyHttp({
             system: typeof restOptions.system === "string" ? restOptions.system : undefined,
             messages: restOptions.messages,
           });
-          const msgId = `txt-${Date.now()}`;
-          if (!streamStartedOnWriter) {
-            writer.write({ type: "start" } as any);
-          }
-          writer.write({ type: "start-step" } as any);
-          writer.write({ type: "text-start", id: msgId } as any);
-          writer.write({ type: "text-delta", id: msgId, delta: openReply } as any);
-          writer.write({ type: "text-end", id: msgId } as any);
-          writer.write({ type: "finish-step" } as any);
-          writer.write({ type: "finish" } as any);
-          succeeded = true;
-          const openCand = { providerName: "HEYUKA Open Core", modelId: "heyuka-open", keyIndex: 0 };
-          if (onCompletedText) await Promise.resolve(onCompletedText(openReply, openCand)).catch(() => {});
-          if (userOnFinish) await Promise.resolve(userOnFinish({ text: openReply })).catch(() => {});
-        } catch (openErr: any) {
-          lastErrMsg = String(openErr?.message || lastErrMsg);
+        } catch {
+          const lastUserTxt = Array.isArray(restOptions.messages)
+            ? String(restOptions.messages[restOptions.messages.length - 1]?.content || "")
+            : "";
+          rescueReply = runLocalOnDeviceHeyukaBrain({
+            prompt: lastUserTxt || "Assist cleanly with complete solution",
+            locale: "ar",
+          }).answer;
         }
+        const msgId = `txt-${Date.now()}`;
+        if (!streamStartedOnWriter) {
+          writer.write({ type: "start" } as any);
+        }
+        writer.write({ type: "start-step" } as any);
+        writer.write({ type: "text-start", id: msgId } as any);
+        writer.write({ type: "text-delta", id: msgId, delta: rescueReply } as any);
+        writer.write({ type: "text-end", id: msgId } as any);
+        writer.write({ type: "finish-step" } as any);
+        writer.write({ type: "finish" } as any);
+        succeeded = true;
+        const openCand = { providerName: "HEYUKA Open Core", modelId: "heyuka-open", keyIndex: 0 };
+        if (onCompletedText) await Promise.resolve(onCompletedText(rescueReply, openCand)).catch(() => {});
+        if (userOnFinish) await Promise.resolve(userOnFinish({ text: rescueReply })).catch(() => {});
       }
 
       if (!succeeded) {
