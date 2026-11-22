@@ -50,6 +50,10 @@ import {
   runLocalOnDeviceHeyukaBrain,
 } from "../../src/lib/heyuka/local-sovereign-brain";
 import {
+  V30_GITHUBSIGNALS_74_SOURCES,
+  getBoundGithubSignalsSources,
+} from "../../src/lib/zebra-x/core/v30-githubsignals-arsenal";
+import {
   normalizeDarijaAndTarifit,
   refinePromptWithPhase3,
 } from "../../src/lib/zebra-x/core/prompt-refiner";
@@ -1195,10 +1199,17 @@ async function main() {
     const extPaths = extEngRes.studioFiles.map((f) => f.path);
     assert.ok(extPaths.includes("cad-blueprint.dxf") && extPaths.includes("message-draft.eml") && extPaths.includes("schedule-invite.ics") && extPaths.includes("webusb-escpos-webrtc.js") && extPaths.includes("physics-stress-benchmark.js"));
 
+    // Verify all 74 deduplicated GithubSignals sources from the 75 WhatsApp ZIP screenshots
+    assert.equal(V30_GITHUBSIGNALS_74_SOURCES.length, 74);
+    const uniqueV30Urls = new Set(V30_GITHUBSIGNALS_74_SOURCES.map((s) => s.url));
+    assert.equal(uniqueV30Urls.size, 74, "Expected 74 unique GitHub repository URLs in V30_GITHUBSIGNALS_74_SOURCES");
+    const boundRobotics = getBoundGithubSignalsSources({ category: "robotics_drones_and_hardware_gadgets" });
+    assert.ok(boundRobotics.length >= 7 && boundRobotics.some((s) => s.name.includes("PteroSim")));
+
     const totalBytes = bundle.reduce((sum, f) => sum + f.content.length, 0) + localApiRes.answer.length + localEsRes.answer.length + extEngRes.answer.length;
     return {
       artifactBytes: totalBytes,
-      detail: `15/15 World Languages + 10 Cognitive Clusters + CAD .DXF / .EML / .ICS / WebUSB / WebRTC / Physics + Local API SDK (${totalBytes}B) verified`,
+      detail: `15/15 World Languages + 10 Cognitive Clusters + 74 v30.0 GithubSignals Sources + CAD .DXF/.EML/.ICS/WebUSB/WebRTC + Local API SDK (${totalBytes}B) verified`,
     };
   });
 

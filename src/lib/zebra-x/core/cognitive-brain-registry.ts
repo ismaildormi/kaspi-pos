@@ -2,6 +2,13 @@ import { ALL_SOVEREIGN_MASTER_CATALOG } from "@/lib/zebra-x/core/v20-v22-master-
 import { REASONING_EVAL_CATALOG_COUNTS } from "@/lib/zebra-x/core/reasoning-eval-catalog";
 import { PLANETARY_CATALOG_COUNTS } from "@/lib/heyuka/planetary/planetary-arsenal-catalog";
 import { PUBLIC_APIS_CATALOG_COUNT, type PublicApiCategory } from "@/lib/zebra-x/tools/public-apis-hub";
+import {
+  V30_GITHUBSIGNALS_74_SOURCES,
+  V30_GITHUBSIGNALS_CATEGORY_LABELS,
+  getBoundGithubSignalsSources,
+  type GithubSignalsCategory,
+  type GithubSignalsSourceEntry,
+} from "@/lib/zebra-x/core/v30-githubsignals-arsenal";
 
 /**
  * HEYUKA Sovereign Cognitive Brain Registry & Pre-Search Domain Classifier
@@ -253,20 +260,27 @@ export function getTotalIntegratedCapabilitiesCount(): {
   reasoningEvalCount: number;
   planetaryCount: number;
   livePublicApisCount: number;
+  githubSignalsCount: number;
   grandTotalSources: number;
 } {
   const sovereignCatalogCount = ALL_SOVEREIGN_MASTER_CATALOG.length;
   const reasoningEvalCount = REASONING_EVAL_CATALOG_COUNTS.total;
   const planetaryCount = PLANETARY_CATALOG_COUNTS.total;
   const livePublicApisCount = PUBLIC_APIS_CATALOG_COUNT;
+  const githubSignalsCount = V30_GITHUBSIGNALS_74_SOURCES.length;
   return {
     clustersCount: COGNITIVE_BRAIN_CLUSTERS.length,
     sovereignCatalogCount,
     reasoningEvalCount,
     planetaryCount,
     livePublicApisCount,
+    githubSignalsCount,
     grandTotalSources:
-      sovereignCatalogCount + reasoningEvalCount + planetaryCount + livePublicApisCount,
+      sovereignCatalogCount +
+      reasoningEvalCount +
+      planetaryCount +
+      livePublicApisCount +
+      githubSignalsCount,
   };
 }
 
@@ -308,6 +322,7 @@ export function classifyCognitiveIntentAndSources(
   locale: "ar" | "fr" | "en" = "ar"
 ): {
   matchedClusters: CognitiveClusterSpec[];
+  boundGithubSignals: GithubSignalsSourceEntry[];
   recommendedApis: PublicApiCategory[];
   stageBadges: ChatStageBadge[];
   cognitiveRoutingNote: string;
@@ -416,15 +431,24 @@ export function classifyCognitiveIntentAndSources(
   }
 
   const matchedClusters = COGNITIVE_BRAIN_CLUSTERS.filter((c) => matchedIds.has(c.id));
+  const boundGithubSignals: GithubSignalsSourceEntry[] = getBoundGithubSignalsSources({
+    clusterIds: matchedClusters.map((c) => c.id),
+    query: prompt,
+  });
   const totals = getTotalIntegratedCapabilitiesCount();
 
-  const cognitiveRoutingNote = `PRE-CLASSIFIED COGNITIVE BRAIN ROUTER (${totals.grandTotalSources}+ Total Integrated Open-Source Engines & ${totals.livePublicApisCount} Live Zero-Key APIs):
-Active Clusters for this request: ${matchedClusters
+  const cognitiveRoutingNote = `PRE-CLASSIFIED COGNITIVE BRAIN ROUTER (${totals.grandTotalSources}+ Total Integrated Open-Source Engines, ${totals.githubSignalsCount} GithubSignals Supreme Repos & ${totals.livePublicApisCount} Live Zero-Key APIs):
+Active Clusters: ${matchedClusters
     .map((c) => `[${c.badgeIcon} ${c.titleEn}: ${c.keyEngines.slice(0, 4).join(", ")} -> Outputs: ${c.outputFormats.join(", ")}]`)
-    .join(" | ")}`;
+    .join(" | ")}
+Directly Bound v30.0 Repositories (${boundGithubSignals.length} active): ${boundGithubSignals
+    .slice(0, 8)
+    .map((s) => `${s.name} (${s.url})`)
+    .join(", ")}`;
 
   return {
     matchedClusters,
+    boundGithubSignals,
     recommendedApis: Array.from(apis),
     stageBadges,
     cognitiveRoutingNote,
@@ -478,6 +502,19 @@ export function buildFullCapabilitiesAndSourcesMarkdown(
   };
 
   const pdfMarker = `[KASPI_PDF_REPORT:${encodeBase64Utf8(pdfPayload)}]`;
+  const githubSignalsCategoryRowsAr = (
+    Object.keys(V30_GITHUBSIGNALS_CATEGORY_LABELS) as GithubSignalsCategory[]
+  )
+    .map((cat, idx) => {
+      const meta = V30_GITHUBSIGNALS_CATEGORY_LABELS[cat];
+      const items = V30_GITHUBSIGNALS_74_SOURCES.filter((s) => s.category === cat);
+      const sampleLinks = items
+        .slice(0, 6)
+        .map((s) => `[${s.name}](${s.url})`)
+        .join(" • ");
+      return `| **${idx + 1}. ${meta.icon} ${meta.titleAr}** | \`${items.length}\` | ${sampleLinks} |`;
+    })
+    .join("\n");
 
   if (isAr) {
     const rowsMd = COGNITIVE_BRAIN_CLUSTERS.map(
@@ -487,11 +524,19 @@ export function buildFullCapabilitiesAndSourcesMarkdown(
 
     return `## 🧠 الخريطة الشاملة لقدرات ومصادر HEYUKA المدمجة (\`${totals.grandTotalSources}+\` مصدر ومحرك مفتوح • \`100% Free & Zero-Key\`)
 
-تم تنظيم وترتيب جميع المصادر والمكتبات وقواعد البيانات في عقل **HEYUKA (KASPI AI)** ضمن **10 مجموعات معرفية مصنفة مسبقاً (Pre-Classified Cognitive Clusters)** بحيث يحدد المحرك المجال المطلوب فوراً قبل البحث، ويخرج لك أي نوع من الملفات (**PDF, ZIP, Word, Excel, AutoCAD .DXF, Email .EML, Calendar .ICS, PNG, SVG, 3D GLB, WAV, ومشاريع برمجية كاملة**) مباشرة من المحادثة:
+تم تنظيم وترتيب جميع المصادر والمكتبات وقواعد البيانات في عقل **HEYUKA (KASPI AI)** ضمن **10 مجموعات معرفية مصنفة مسبقاً (Pre-Classified Cognitive Clusters)** مربوطة مباشرة بـ **${totals.githubSignalsCount} مستودعاً ومصدراً فائقاً جديداً (v30.0 GithubSignals Pack)** بحيث بمجرد تحديد المجال يشتغل المحرك ومصادره تلقائياً بلا أي تعقيد:
 
 | المجموعة المعرفية في عقل HEYUKA | عدد المحركات | أبرز المصادر والمكتبات المفتوحة المدمجة | الملفات والمخرجات التي يصنعها | الدور المباشر وكيف يستفيد منه المستخدم |
 | :--- | :---: | :--- | :--- | :--- |
 ${rowsMd}
+
+---
+
+### 🚀 الفئات الـ 7 للمصادر الـ \`${totals.githubSignalsCount}\` الجديدة المدمجة مباشرة (\`v30.0 Instant Auto-Bound Pack\`)
+
+| الفئة التخصصية المربوطة تلقائياً | عدد المصادر | أبرز المستودعات المفتوحة والروابط المباشرة |
+| :--- | :---: | :--- |
+${githubSignalsCategoryRowsAr}
 
 ---
 
