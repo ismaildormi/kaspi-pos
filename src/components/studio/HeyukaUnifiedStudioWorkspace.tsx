@@ -50,6 +50,7 @@ import Dexie from "dexie";
 import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 import { KaspiThemeToggle } from "@/components/theme/KaspiThemeToggle";
 import { HeyukaLoopMark } from "@/components/heyuka/HeyukaLoopMark";
+import { getFileBadgeMeta } from "@/components/heyuka/HeyukaSyntaxCodeView";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   generateStudioExportCode,
@@ -184,6 +185,44 @@ export function HeyukaUnifiedStudioWorkspace({
   const [cmdkQuery, setCmdkQuery] = useState("");
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [saveBadge, setSaveBadge] = useState("Saved locally ✓");
+  const [enhancingMagic, setEnhancingMagic] = useState(false);
+  const [mobileLeftOpen, setMobileLeftOpen] = useState(false);
+  const [mobileRightOpen, setMobileRightOpen] = useState(false);
+  const [focusFilePath, setFocusFilePath] = useState<string | null>(null);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [mentionPickerOpen, setMentionPickerOpen] = useState(false);
+  const [appearance, setAppearance] = useState<{
+    preset: string;
+    contrast: "default" | "strong";
+    backgroundHex: string;
+    foregroundHex: string;
+    accentHex: string;
+  }>({
+    preset: "Default Dark",
+    contrast: "default",
+    backgroundHex: "#101010",
+    foregroundHex: "#F7EAEA",
+    accentHex: "#007ACC",
+  });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("heyuka_studio_appearance_v1");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.backgroundHex && parsed?.foregroundHex && parsed?.accentHex) {
+          setAppearance(parsed);
+        }
+      }
+    } catch {}
+  }, []);
+
+  const updateAppearance = (next: typeof appearance) => {
+    setAppearance(next);
+    try {
+      localStorage.setItem("heyuka_studio_appearance_v1", JSON.stringify(next));
+    } catch {}
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dbRef = useRef<StudioLocalDexieDb | null>(null);
@@ -268,6 +307,51 @@ export function HeyukaUnifiedStudioWorkspace({
       model: nextBrand === "kaspi_pos" ? "kaspi-pos-analyst" : "heyuka-omni",
     }));
   };
+
+  // Sync ?brand=, ?mode=, and ?q= query parameters cleanly without Suspense constraints
+  useEffect(() => {
+    try {
+      const qs = new URLSearchParams(window.location.search);
+      const qBrand = qs.get("brand");
+      if (qBrand === "kaspi_pos" || qBrand === "heyuka") {
+        setBrand(qBrand);
+        setSystemInstruction(
+          qBrand === "kaspi_pos"
+            ? "You are KASPI POS Studio Intelligence. Focus on store analytics, TTC invoicing, inventory, 80mm ESC/POS receipts, and Moroccan Darija/French/Arabic commerce."
+            : "You are HEYUKA Studio Intelligence. Deliver production apps, 3D WebGL, cinema pipelines, structured JSON, and sovereign code across 18 cognitive clusters."
+        );
+        setSettings((s) => ({
+          ...s,
+          model: qBrand === "kaspi_pos" ? "kaspi-pos-analyst" : "heyuka-omni",
+        }));
+      }
+      const qMode = qs.get("mode");
+      const validModes: StudioMode[] = [
+        "create_chat",
+        "create_freeform",
+        "stream_realtime",
+        "build",
+        "compare",
+        "starter_apps",
+        "team_collab",
+        "offline_vault",
+        "api_keys",
+      ];
+      if (qMode && validModes.includes(qMode as StudioMode)) {
+        setMode(qMode as StudioMode);
+      } else if (qMode === "council") {
+        setSettings((s) => ({ ...s, elasticScale: "12x_titan" }));
+      } else if (qMode === "pc_bot") {
+        setComposerText((prev) =>
+          prev || "Spawn an isolated Virtual Desktop bot (KasmVNC) with live OS Shell & File Surgeon scripts"
+        );
+      }
+      const qText = qs.get("q");
+      if (qText && qText.trim()) {
+        setComposerText(qText.trim());
+      }
+    } catch {}
+  }, []);
 
   const detectedUrlsInComposer = useMemo(() => {
     const matches = composerText.match(/https?:\/\/[^\s]+/gi) || [];
@@ -366,11 +450,51 @@ export function HeyukaUnifiedStudioWorkspace({
         // 1) Fire Elastic 3 -> 6 -> 12 Model Council + Worker Bots in parallel
         const swarmPromise = triggerCouncilRun(settings.elasticScale, effectivePrompt);
 
-        // 2) Execute Prompt (Local Ollama if selected -> Chat Completions -> Unlimited Local-SDK fallback)
+        // 2) Live URL Context Research (if URL Context toggle active and URLs present)
+        let urlGroundingSnippet = "";
         let answerText = "";
+        let reasoningText = "";
         let extractedFiles: StudioFileNode[] = [];
         let citations: Array<{ title: string; url: string }> = [];
 
+        if (settings.urlContextEnabled && detectedUrlsInComposer.length > 0) {
+          try {
+            const urlRes = await fetch("/api/v1/web/research", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                query: `${effectivePrompt.slice(0, 120)} ${detectedUrlsInComposer[0]}`,
+                url: detectedUrlsInComposer[0],
+                lang: locale,
+              }),
+            });
+            if (urlRes.ok) {
+              const ud = await urlRes.json();
+              if (Array.isArray(ud?.results)) {
+                urlGroundingSnippet = ud.results
+                  .slice(0, 3)
+                  .map((r: any) => `[URL Context: ${r.title || r.url}] ${String(r.snippet || "").slice(0, 400)}`)
+                  .join("\n");
+                citations.push(
+                  ...ud.results.slice(0, 3).map((r: any) => ({
+                    title: String(r.title || r.url || "Source"),
+                    url: String(r.url || detectedUrlsInComposer[0]),
+                  }))
+                );
+              }
+            }
+          } catch {}
+        }
+
+        const fullPromptPayload = [
+          effectivePrompt,
+          attachedContextText,
+          urlGroundingSnippet ? `\n[URL CONTEXT SCRAPED]:\n${urlGroundingSnippet}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n");
+
+        // 3) Execute Prompt (Local Ollama -> Live /api/v1/heyuka/chat-web -> Unlimited /api/v1/heyuka/local-sdk fallback)
         if (settings.runtimeTarget === "local_ollama") {
           try {
             const ol = await fetch(`${settings.localOllamaUrl.replace(/\/$/, "")}/chat/completions`, {
@@ -381,7 +505,7 @@ export function HeyukaUnifiedStudioWorkspace({
                 temperature: settings.temperature,
                 messages: [
                   { role: "system", content: composedSystem },
-                  { role: "user", content: `${effectivePrompt}\n${attachedContextText}`.trim() },
+                  { role: "user", content: fullPromptPayload },
                 ],
               }),
             });
@@ -393,12 +517,75 @@ export function HeyukaUnifiedStudioWorkspace({
         }
 
         if (!answerText) {
-          const sdkMode = mode === "build" ? "coding" : brand === "kaspi_pos" ? "auto" : "auto";
+          try {
+            const imgAtt = (userMsg.attachments || []).find((a) =>
+              a.mimeType.startsWith("image/") && a.dataUrl
+            );
+            const webModel =
+              settings.elasticScale === "12x_titan"
+                ? "elastic-swarm-12x"
+                : settings.elasticScale === "6x_pro"
+                ? "elastic-swarm-6x"
+                : settings.elasticScale === "3x_fast"
+                ? "multi-agent-3"
+                : brand === "kaspi_pos"
+                ? "heyuka-core"
+                : "heyuka-omni";
+            const webMode =
+              mode === "build"
+                ? "coding"
+                : mode === "compare"
+                ? "council"
+                : "studio";
+
+            const chatRes = await fetch("/api/v1/heyuka/chat-web", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                model: webModel,
+                elasticScale: settings.elasticScale,
+                brand,
+                mode: webMode,
+                deepThink: settings.thinkingEnabled,
+                webSearch: settings.groundingSearchEnabled,
+                locale,
+                imageBase64: imgAtt?.dataUrl,
+                workspaceFiles: studioFiles.slice(0, 6).map((f) => ({ path: f.path, content: f.content })),
+                messages: [
+                  { role: "system", content: composedSystem },
+                  ...baseHistory.slice(-6).map((m) => ({
+                    role: m.role,
+                    content: String(m.content || " ").slice(0, 8000),
+                  })),
+                  { role: "user", content: fullPromptPayload },
+                ],
+              }),
+            });
+            if (chatRes.ok) {
+              const cd = await chatRes.json();
+              if (cd?.answer) answerText = String(cd.answer);
+              if (cd?.reasoning) reasoningText = String(cd.reasoning);
+              if (Array.isArray(cd?.studioFiles) && cd.studioFiles.length > 0) {
+                extractedFiles = cd.studioFiles.map((f: any) => ({
+                  path: String(f.path || "app.txt"),
+                  language: String(f.language || "text"),
+                  content: String(f.content || ""),
+                }));
+              }
+              if (Array.isArray(cd?.sources)) {
+                citations = [...citations, ...cd.sources];
+              }
+            }
+          } catch {}
+        }
+
+        if (!answerText) {
+          const sdkMode = mode === "build" ? "coding" : "studio";
           const res = await fetch("/api/v1/heyuka/local-sdk", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              prompt: `${effectivePrompt}${attachedContextText ? `\n${attachedContextText}` : ""}`,
+              prompt: fullPromptPayload,
               mode: sdkMode,
               locale,
             }),
@@ -413,7 +600,33 @@ export function HeyukaUnifiedStudioWorkspace({
             }));
           }
           if (Array.isArray(data?.sources)) {
-            citations = data.sources;
+            citations = [...citations, ...data.sources];
+          }
+        }
+
+        // 4) Auto Code Execution Sandbox when Code Execution toggle is ON
+        if (settings.codeExecutionEnabled) {
+          const runnableFile = extractedFiles.find((f) => /\.(py|js|ts|sh)$/i.test(f.path));
+          if (runnableFile?.content) {
+            try {
+              const lang = runnableFile.path.endsWith(".py")
+                ? "python"
+                : runnableFile.path.endsWith(".sh")
+                ? "bash"
+                : "javascript";
+              const execRes = await fetch("/api/v1/sandbox/execute", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ language: lang, code: runnableFile.content.slice(0, 6000) }),
+              });
+              if (execRes.ok) {
+                const ex = await execRes.json();
+                const out = String(ex?.stdout || ex?.output || "").trim();
+                if (out) {
+                  answerText += `\n\n### ▶ Sandbox Code Execution (\`${runnableFile.path}\`)\n\`\`\`text\n${out.slice(0, 1200)}\n\`\`\``;
+                }
+              }
+            } catch {}
           }
         }
 
@@ -462,7 +675,7 @@ export function HeyukaUnifiedStudioWorkspace({
           role: "assistant",
           content: answerText,
           thoughts: settings.thinkingEnabled
-            ? `Thinking Budget: ${settings.thinkingBudget} tok • Brand: ${brand.toUpperCase()} • Elastic Scale: ${swarm?.tier || settings.elasticScale} (${swarm?.modelCount || 3} models, ${swarm?.spawnedBots?.length || 3} Worker Bots) • MediaRes=${settings.mediaResolution} • GroundingSearch=${settings.groundingSearchEnabled}`
+            ? `${reasoningText ? `${reasoningText}\n• ` : ""}Thinking Budget: ${settings.thinkingBudget} tok • Brand: ${brand.toUpperCase()} • Elastic Scale: ${swarm?.tier || settings.elasticScale} (${swarm?.modelCount || 3} models, ${swarm?.spawnedBots?.length || 3} Worker Bots) • MediaRes=${settings.mediaResolution} • GroundingSearch=${settings.groundingSearchEnabled}`
             : undefined,
           thinkingSeconds: Number((elapsedMs / 1000).toFixed(2)),
           tokensIn: userMsg.tokensIn,
@@ -501,8 +714,10 @@ export function HeyukaUnifiedStudioWorkspace({
       messages,
       mode,
       settings,
+      studioFiles,
       systemInstruction,
       triggerCouncilRun,
+      detectedUrlsInComposer,
     ]
   );
 
@@ -553,14 +768,24 @@ export function HeyukaUnifiedStudioWorkspace({
   return (
     <div
       dir={isAr ? "rtl" : "ltr"}
-      className="h-screen w-full overflow-hidden flex flex-col bg-[#131314] text-zinc-100 select-none"
+      style={{
+        backgroundColor: appearance.backgroundHex,
+        color: appearance.foregroundHex,
+      }}
+      className="h-screen w-full overflow-hidden flex flex-col select-none"
     >
       {/* TOP HEADER BAR — Google AI Studio Aesthetic + Dual-Brand Switcher */}
       <header className="h-14 shrink-0 border-b border-white/10 px-3 sm:px-4 flex items-center justify-between gap-2 bg-[#18191E]/95 backdrop-blur-xl">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             type="button"
-            onClick={() => setLeftOpen((p) => !p)}
+            onClick={() => {
+              if (typeof window !== "undefined" && window.innerWidth < 768) {
+                setMobileLeftOpen((p) => !p);
+              } else {
+                setLeftOpen((p) => !p);
+              }
+            }}
             className="p-2 rounded-xl hover:bg-white/10 cursor-pointer"
             title="Toggle Left Navigation"
           >
@@ -671,16 +896,36 @@ export function HeyukaUnifiedStudioWorkspace({
             <HelpCircle className="w-4 h-4" />
           </button>
 
+          <button
+            type="button"
+            onClick={() => setAppearanceOpen(true)}
+            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-[11px] font-bold cursor-pointer"
+            title="Appearance & Code Colors (#101010 / #F7EAEA / #007ACC)"
+          >
+            <span
+              style={{ backgroundColor: appearance.accentHex }}
+              className="w-2.5 h-2.5 rounded-full border border-white/40 shrink-0"
+            />
+            <span>Theme</span>
+          </button>
+
           <LanguageSwitcher />
           <KaspiThemeToggle />
 
           <button
             type="button"
-            onClick={() => setRightOpen((p) => !p)}
-            className="p-2 rounded-xl hover:bg-white/10 cursor-pointer"
-            title="Toggle Run Settings Drawer"
+            onClick={() => {
+              if (typeof window !== "undefined" && window.innerWidth < 1024) {
+                setMobileRightOpen((p) => !p);
+              } else {
+                setRightOpen((p) => !p);
+              }
+            }}
+            className="p-2 rounded-xl hover:bg-white/10 cursor-pointer inline-flex items-center gap-1"
+            title="Toggle Run Settings Drawer (Temperature, Thinking, Swarm 3/6/12)"
           >
             <PanelRight className="w-4 h-4" />
+            <span className="hidden sm:inline lg:hidden text-[11px] font-bold">Run Settings</span>
           </button>
         </div>
       </header>
@@ -1068,28 +1313,122 @@ export function HeyukaUnifiedStudioWorkspace({
                     )}
 
                     {msg.codeFiles && msg.codeFiles.length > 0 && (
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-white/10">
-                        <span className="text-[11px] font-mono text-emerald-300">
-                          Generated {msg.codeFiles.length} file(s): {msg.codeFiles.map((f) => f.path).join(", ")}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setStudioFiles(msg.codeFiles!);
-                            setMode("build");
-                          }}
-                          className="px-3 py-1 rounded-lg bg-sky-500/20 border border-sky-500/40 text-sky-300 text-[11px] font-bold cursor-pointer"
-                        >
-                          Open in Build Canvas -&gt;
-                        </button>
+                      <div className="space-y-2 pt-2 border-t border-white/10">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-[11px] font-mono text-emerald-300">
+                            {msg.codeFiles.length} file(s) changed (+
+                            {msg.codeFiles.reduce((s, f) => s + f.content.split(/\r?\n/).length, 0)} lines)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setStudioFiles(msg.codeFiles!);
+                              setFocusFilePath(msg.codeFiles![0]?.path || null);
+                              setMode("build");
+                            }}
+                            style={{ borderColor: appearance.accentHex }}
+                            className="px-3 py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] border text-white text-[11px] font-bold cursor-pointer"
+                          >
+                            Review &amp; Preview →
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {msg.codeFiles.map((cf) => {
+                            const meta = getFileBadgeMeta(cf.path, cf.language);
+                            return (
+                              <button
+                                key={cf.path}
+                                type="button"
+                                onClick={() => {
+                                  setStudioFiles(msg.codeFiles!);
+                                  setFocusFilePath(cf.path);
+                                  setMode("build");
+                                }}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.05] hover:bg-white/[0.12] border border-white/10 text-[11px] font-mono cursor-pointer transition-colors"
+                              >
+                                <span
+                                  style={{ color: meta.color, backgroundColor: meta.bg }}
+                                  className="px-1 rounded text-[8px] font-black"
+                                >
+                                  {meta.extLabel}
+                                </span>
+                                <span className="text-zinc-200">{cf.path}</span>
+                                <span className="text-emerald-400 text-[10px]">
+                                  +{cf.content.split(/\r?\n/).length}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>
                 ))}
               </div>
 
-              {/* Unified Multimodal Composer */}
-              <div className="p-3 sm:p-4 border-t border-white/10 bg-[#18191E]/85">
+              {/* Antigravity Status Bar: Running Task + Files Changed Review + Composer */}
+              <div className="p-3 sm:p-4 border-t border-white/10 bg-[#18191E]/85 space-y-2">
+                {(isRunning || studioFiles.length > 0) && (
+                  <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-[11px]">
+                    <div className="flex items-center gap-3">
+                      {isRunning ? (
+                        <span className="inline-flex items-center gap-1.5 text-amber-300 font-semibold">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>1 task running ({settings.elasticScale.replace("_", " ")} Swarm)</span>
+                        </span>
+                      ) : (
+                        <span className="font-mono text-zinc-300">
+                          {studioFiles.length} files staged (+
+                          {studioFiles.reduce((acc, f) => acc + f.content.split(/\r?\n/).length, 0)} -0)
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setMentionPickerOpen((p) => !p)}
+                        className="px-2 py-0.5 rounded bg-white/[0.06] hover:bg-white/[0.12] font-mono text-[10px] cursor-pointer"
+                      >
+                        @ / Mentions
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMode("build")}
+                        className="px-2.5 py-0.5 rounded bg-white/[0.1] hover:bg-white/[0.2] font-bold text-white cursor-pointer"
+                      >
+                        Review Code
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {mentionPickerOpen && (
+                  <div className="max-w-4xl mx-auto flex flex-wrap gap-1.5 px-2 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-[11px]">
+                    {[
+                      "@elastic_12x ",
+                      "@kaspi_pos ",
+                      "@18_clusters ",
+                      "@pc_bot_farm ",
+                      "/magic ",
+                      "/sandbox ",
+                      "/browser ",
+                      "/offline ",
+                    ].map((tok) => (
+                      <button
+                        key={tok}
+                        type="button"
+                        onClick={() => {
+                          setComposerText((p) => `${p}${p ? " " : ""}${tok}`);
+                          setMentionPickerOpen(false);
+                        }}
+                        className="px-2 py-0.5 rounded-md bg-white/[0.07] hover:bg-white/[0.15] font-mono cursor-pointer text-sky-300"
+                      >
+                        {tok.trim()}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <div className="max-w-4xl mx-auto rounded-2xl bg-white/[0.04] border border-white/15 p-3 space-y-2.5">
                   {/* Attachment Chips + Video Clipping/FPS Controls */}
                   {attachments.length > 0 && (
@@ -1230,6 +1569,43 @@ export function HeyukaUnifiedStudioWorkspace({
                       <span className="text-[10px] font-mono text-zinc-400 px-2">
                         {estimateTokenCount(composerText)} tok
                       </span>
+
+                      <button
+                        type="button"
+                        disabled={enhancingMagic || !composerText.trim()}
+                        onClick={async () => {
+                          if (!composerText.trim()) return;
+                          setEnhancingMagic(true);
+                          try {
+                            const mRes = await fetch("/api/v1/magic", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                prompt: composerText,
+                                brand,
+                                scale: settings.elasticScale,
+                                locale,
+                                enhanceOnly: true,
+                              }),
+                            });
+                            const md = await mRes.json();
+                            if (md?.ok && md?.enhancedPrompt) {
+                              setComposerText(md.enhancedPrompt);
+                              setShareToast(
+                                `Magic Spec Ready (${md.strictDisambiguation?.categoryCode || "OMNI"} • ${md.swarmPlan?.nodes?.length || 3}x Swarm)`
+                              );
+                              setTimeout(() => setShareToast(null), 2600);
+                            }
+                          } catch {} finally {
+                            setEnhancingMagic(false);
+                          }
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-[11px] font-bold text-amber-300 flex items-center gap-1 cursor-pointer disabled:opacity-40"
+                        title="Magic Enhance & Strict Category Disambiguation (/api/v1/magic)"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">{enhancingMagic ? "Enhancing..." : "Magic"}</span>
+                      </button>
                     </div>
 
                     <button
@@ -1292,6 +1668,13 @@ export function HeyukaUnifiedStudioWorkspace({
               }}
               councilData={councilData}
               onTriggerCouncil={triggerCouncilRun}
+              focusFilePath={focusFilePath}
+              appearance={{
+                backgroundHex: appearance.backgroundHex,
+                foregroundHex: appearance.foregroundHex,
+                accentHex: appearance.accentHex,
+                contrastMode: appearance.contrast,
+              }}
             />
           </div>
         </main>
@@ -1408,6 +1791,148 @@ export function HeyukaUnifiedStudioWorkspace({
             <div className="flex justify-between"><span>Command Palette</span><span className="px-2 py-0.5 rounded bg-white/10">Ctrl + K</span></div>
             <div className="flex justify-between"><span>Paste Screenshot</span><span className="px-2 py-0.5 rounded bg-white/10">Ctrl + V</span></div>
             <div className="flex justify-between"><span>Shortcut Sheet</span><span className="px-2 py-0.5 rounded bg-white/10">?</span></div>
+          </div>
+        </div>
+      </KaspiGlassModalPortal>
+
+      {/* MOBILE / TABLET LEFT NAVIGATION DRAWER (<KaspiGlassModalPortal>) */}
+      <KaspiGlassModalPortal isOpen={mobileLeftOpen} onClose={() => setMobileLeftOpen(false)}>
+        <div className="kaspi-opaque-glass-modal max-w-xs w-full rounded-2xl p-4 border border-white/15 space-y-2 text-xs">
+          <div className="flex items-center justify-between font-bold pb-2 border-b border-white/10">
+            <span>{brand === "kaspi_pos" ? "KASPI POS Studio" : "HEYUKA Studio"}</span>
+            <button type="button" onClick={() => setMobileLeftOpen(false)} className="p-1 rounded hover:bg-white/10 cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = mode === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  setMode(item.id);
+                  setMobileLeftOpen(false);
+                }}
+                className={`w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 cursor-pointer ${
+                  active ? `${accentBgClass} border` : "text-zinc-300 hover:bg-white/[0.06]"
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="truncate">{isAr ? item.labelAr : item.labelEn}</span>
+              </button>
+            );
+          })}
+        </div>
+      </KaspiGlassModalPortal>
+
+      {/* MOBILE / TABLET RUN SETTINGS DRAWER (<KaspiGlassModalPortal>) */}
+      <KaspiGlassModalPortal isOpen={mobileRightOpen} onClose={() => setMobileRightOpen(false)}>
+        <div className="kaspi-opaque-glass-modal max-w-sm w-full rounded-2xl border border-white/15 overflow-hidden max-h-[85vh] flex flex-col">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 text-xs font-bold">
+            <span>Run Settings &amp; Elastic 3/6/12 Swarm</span>
+            <button type="button" onClick={() => setMobileRightOpen(false)} className="p-1 rounded hover:bg-white/10 cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="overflow-y-auto flex-1">
+            <StudioRightRunSettings
+              brand={brand}
+              locale={locale}
+              settings={settings}
+              onChange={setSettings}
+              systemInstruction={systemInstruction}
+              historyTokens={historyTokens}
+              filesTokens={filesTokens}
+              promptTokens={estimateTokenCount(composerText)}
+              contextCaches={contextCaches}
+              onAddCache={(c) => setContextCaches((p) => [c, ...p])}
+              onRemoveCache={(id) => setContextCaches((p) => p.filter((x) => x.id !== id))}
+            />
+          </div>
+        </div>
+      </KaspiGlassModalPortal>
+
+      {/* APPEARANCE & CODE THEME PICKER MODAL (Antigravity Style #101010 / #F7EAEA / #007ACC) */}
+      <KaspiGlassModalPortal isOpen={appearanceOpen} onClose={() => setAppearanceOpen(false)}>
+        <div className="kaspi-opaque-glass-modal max-w-lg w-full rounded-2xl p-5 border border-white/15 space-y-4 text-xs">
+          <div className="flex items-center justify-between font-bold text-sm pb-2 border-b border-white/10">
+            <span>Appearance &amp; Code Color Theme</span>
+            <button type="button" onClick={() => setAppearanceOpen(false)} className="p-1 rounded hover:bg-white/10 cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            <div className="font-bold text-zinc-300">Preset Themes</div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { name: "Default Dark", backgroundHex: "#101010", foregroundHex: "#F7EAEA", accentHex: "#007ACC" },
+                { name: "HEYUKA Crimson", backgroundHex: "#101010", foregroundHex: "#F7EAEA", accentHex: "#E11D48" },
+                { name: "KASPI Emerald", backgroundHex: "#101010", foregroundHex: "#EAF7F2", accentHex: "#10B981" },
+                { name: "Deep Slate", backgroundHex: "#131314", foregroundHex: "#F4F4F5", accentHex: "#38BDF8" },
+              ].map((pre) => (
+                <button
+                  key={pre.name}
+                  type="button"
+                  onClick={() =>
+                    updateAppearance({
+                      ...appearance,
+                      preset: pre.name,
+                      backgroundHex: pre.backgroundHex,
+                      foregroundHex: pre.foregroundHex,
+                      accentHex: pre.accentHex,
+                    })
+                  }
+                  className={`px-3 py-2 rounded-xl border text-start flex items-center justify-between cursor-pointer ${
+                    appearance.preset === pre.name ? "border-sky-400 bg-white/10 font-bold" : "border-white/10 bg-white/[0.04]"
+                  }`}
+                >
+                  <span>{pre.name}</span>
+                  <span style={{ backgroundColor: pre.accentHex }} className="w-3.5 h-3.5 rounded-full border border-white/40" />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-zinc-300">Contrast</span>
+            <div className="inline-flex rounded-xl bg-white/[0.06] p-0.5 border border-white/10">
+              {(["default", "strong"] as const).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => updateAppearance({ ...appearance, contrast: c })}
+                  className={`px-3 py-1 rounded-lg capitalize font-semibold cursor-pointer ${
+                    appearance.contrast === c ? "bg-white/15 text-white" : "text-zinc-400"
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2.5 pt-1 border-t border-white/10">
+            {[
+              { key: "backgroundHex" as const, label: "Background" },
+              { key: "foregroundHex" as const, label: "Foreground" },
+              { key: "accentHex" as const, label: "Accent" },
+            ].map((item) => (
+              <div key={item.key} className="flex items-center justify-between">
+                <span className="font-semibold text-zinc-200">{item.label}</span>
+                <label className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/15 cursor-pointer font-mono">
+                  <input
+                    type="color"
+                    value={appearance[item.key]}
+                    onChange={(e) => updateAppearance({ ...appearance, [item.key]: e.target.value.toUpperCase() })}
+                    className="w-5 h-5 rounded cursor-pointer bg-transparent border-0"
+                  />
+                  <span>{appearance[item.key]}</span>
+                </label>
+              </div>
+            ))}
           </div>
         </div>
       </KaspiGlassModalPortal>

@@ -54,6 +54,7 @@ export async function GET() {
           "/api/v1/studio/council",
           "/api/v1/studio/browser-factory",
           "/api/v1/studio/team",
+          "/api/v1/magic",
         ],
         openaiCompatible: true,
         debugEndpoint: "/api/v1/debug",
@@ -220,6 +221,18 @@ export async function GET() {
           operationId: "awardStudioTeamXpOrFetchOffline",
           summary: "Record collaborative XP/badge milestones or fetch v60.0 air-gapped bundle manifest.",
           responses: { "200": { description: "Updated XP progression JSON" } },
+        },
+      },
+      "/api/v1/magic": {
+        get: {
+          operationId: "describeMagicPromptAndSwarmEngine",
+          summary: "Inspect Magic Prompt Refinement, Strict Disambiguation, and Elastic 3/6/12 Swarm synthesis status.",
+          responses: { "200": { description: "Magic engine capabilities JSON" } },
+        },
+        post: {
+          operationId: "executeMagicPromptAndSwarm",
+          summary: "Enhance any prompt, resolve strict v52-v60 routing, run Elastic Swarm planning, and synthesize Studio files.",
+          responses: { "200": { description: "Magic enhancement + Studio artifacts JSON" } },
         },
       },
     },

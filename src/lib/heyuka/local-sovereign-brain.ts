@@ -48,6 +48,13 @@ import {
   buildSovereignVaultLockManifest,
   searchSovereignVault,
 } from "@/lib/heyuka/vault/sovereign-permanent-vault";
+import {
+  buildAirGappedOfflineManifest,
+  buildBrowserFactoryPlan,
+  planAndRunElasticCouncilSwarm,
+  type ElasticScaleMode,
+  type StudioBrand,
+} from "@/lib/heyuka/studio/studio-orchestrator-v55-v60";
 
 export interface UniversalLanguageProfile {
   code: string;
@@ -1021,6 +1028,21 @@ Your self-contained **HEYUKA Local Sovereign API & Mobile SDK (v29.0)** bundle i
   const isAiPcControl =
     params.mode === "ai_pc" ||
     strictCategory.categoryCode === "V54_AI_COMPUTER_OS";
+  const isElasticSwarm =
+    params.mode === "council" ||
+    params.mode === "swarm" ||
+    strictCategory.categoryCode === "V56_ELASTIC_SWARM" ||
+    /(swarm|council|12.?model|6.?model|3.?model|elastic|حشد|أسطول النماذج)/i.test(pLower);
+  const isBrowserFactory =
+    params.mode === "browser_factory" ||
+    strictCategory.categoryCode === "V57_BROWSER_FACTORY" ||
+    /(browser.?factory|cloud.?factory|oauth|gmail.?sign|vercel.?deploy|supabase|dokploy|أتمتة المتصفح)/i.test(pLower);
+  const isTeamOrOffline =
+    params.mode === "team" ||
+    params.mode === "offline" ||
+    strictCategory.categoryCode === "V59_MULTIPLAYER_GAMIFIED" ||
+    strictCategory.categoryCode === "V60_OFFLINE_AIRGAPPED" ||
+    /(air.?gapped|offline.?bundle|webllm|onnx|kanban|gamif|xp|أوفلاين|فريق|كانبان)/i.test(pLower);
   const isVideo =
     params.mode === "video" ||
     /(video|cinema|film|movie|webm|mp4|foley|skyreels|framepack|mmaudio|فيديو|فيلم|سينما|مونتاج)/i.test(pLower);
@@ -1092,6 +1114,46 @@ Your self-contained **HEYUKA Local Sovereign API & Mobile SDK (v29.0)** bundle i
       { path: "ai-pc-dispatch.json", language: "json", content: JSON.stringify(aiPc.result, null, 2) },
     ];
     extraSourcesUsed = aiPc.matchedVaultTools.map((t) => t.name);
+    productKind = "project";
+  } else if (isElasticSwarm) {
+    const requestedScale: ElasticScaleMode = /12|titan/i.test(pLower)
+      ? "12x_titan"
+      : /6|pro/i.test(pLower)
+      ? "6x_pro"
+      : /3|fast/i.test(pLower)
+      ? "3x_fast"
+      : "auto";
+    const inferredBrand: StudioBrand = /kaspi|pos|caisse|80mm|tva|كاسبي/i.test(pLower)
+      ? "kaspi_pos"
+      : "heyuka";
+    const swarm = planAndRunElasticCouncilSwarm({
+      prompt,
+      scale: requestedScale,
+      brand: inferredBrand,
+      locale: lang.shortLocale,
+    });
+    studioFiles = [
+      { path: "elastic-swarm-council.json", language: "json", content: JSON.stringify(swarm, null, 2) },
+      ...buildSelfContainedWebSiteBlueprint(prompt.slice(0, 44), prompt).slice(0, 1),
+    ];
+    extraSourcesUsed = swarm.matchedVaultSources.map((s) => s.name);
+    productKind = "project";
+  } else if (isBrowserFactory) {
+    const factoryPlan = buildBrowserFactoryPlan({
+      projectName: prompt.slice(0, 36) || "heyuka-studio-app",
+    });
+    studioFiles = [
+      { path: "browser-cloud-factory.json", language: "json", content: JSON.stringify(factoryPlan, null, 2) },
+      { path: "deploy-factory.sh", language: "bash", content: factoryPlan.cliProvisionScript },
+    ];
+    extraSourcesUsed = factoryPlan.tabsToOrchestrate.map((t) => t.label);
+    productKind = "project";
+  } else if (isTeamOrOffline) {
+    const offlineManifest = buildAirGappedOfflineManifest();
+    studioFiles = [
+      { path: "air-gapped-offline-manifest.json", language: "json", content: JSON.stringify(offlineManifest, null, 2) },
+    ];
+    extraSourcesUsed = offlineManifest.v60Engines.map((e) => e.name);
     productKind = "project";
   } else if (isExtendedEngineering) {
     studioFiles = buildExtendedEngineeringStudioFiles(prompt);

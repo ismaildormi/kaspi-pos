@@ -1213,6 +1213,54 @@ export async function POST(req: NextRequest) {
           return { ok: true, subAgentSummaries: workerResults };
         },
       }),
+
+      runKaspiStudioSwarmCouncil: tool({
+        description:
+          "Plans and executes an Elastic 3 -> 6 -> 12 Cooperating Model Swarm for KASPI POS Studio (reports, receipts, retail automation, code/apps, offline sync, and worker bots) while keeping POS_CORE_LOCK=true intact.",
+        inputSchema: z.object({
+          prompt: z.string().min(2),
+          scale: z.enum(["auto", "3x_fast", "6x_pro", "12x_titan"]).optional(),
+          brand: z.enum(["kaspi_pos", "heyuka"]).optional(),
+        }),
+        execute: async ({ prompt, scale, brand }) => {
+          const { planAndRunElasticCouncilSwarm } = await import(
+            "@/lib/heyuka/studio/studio-orchestrator-v55-v60"
+          );
+          const swarm = planAndRunElasticCouncilSwarm({
+            prompt,
+            scale: scale || "auto",
+            brand: brand || "kaspi_pos",
+            locale: expectedShortLocale,
+          });
+          return {
+            ok: true,
+            openInStudioUrl: `/${expectedShortLocale}/studio?brand=${brand || "kaspi_pos"}&mode=council&q=${encodeURIComponent(prompt.slice(0, 140))}`,
+            swarm,
+          };
+        },
+      }),
+
+      inspectSovereignVaultAndCapabilities: tool({
+        description:
+          "Searches the unified 2,426+ open-source HEYUKA/KASPI Sovereign Vault across all 18 cognitive clusters (v30-v60) including Virtual Desktop Bot Farm, OS Shell & File Surgeon, Elastic Swarm, Browser Factory, and Air-Gapped Offline kits.",
+        inputSchema: z.object({
+          query: z.string().min(1),
+          limit: z.number().int().min(1).max(20).optional(),
+        }),
+        execute: async ({ query, limit }) => {
+          const [{ resolveStrictCategoryDisambiguation, getTotalIntegratedCapabilitiesCount }, { searchSovereignVault }] =
+            await Promise.all([
+              import("@/lib/zebra-x/core/cognitive-brain-registry"),
+              import("@/lib/heyuka/vault/sovereign-permanent-vault"),
+            ]);
+          return {
+            ok: true,
+            strictDisambiguation: resolveStrictCategoryDisambiguation(query),
+            totals: getTotalIntegratedCapabilitiesCount(),
+            vaultMatches: searchSovereignVault({ query, limit: limit || 8 }),
+          };
+        },
+      }),
     };
 
     const superAdminTools = {
@@ -1262,6 +1310,12 @@ export async function POST(req: NextRequest) {
     const fullTools = isSuperAdmin ? superAdminTools : tenantTools;
     const detectedWorldLang = detectUniversalWorldLanguage(userPrompt, expectedShortLocale);
     const cognitiveRoute = classifyCognitiveIntentAndSources(userPrompt, detectedWorldLang.shortLocale);
+    const {
+      resolveStrictCategoryDisambiguation,
+      getTotalIntegratedCapabilitiesCount: getTotalsV60,
+    } = await import("@/lib/zebra-x/core/cognitive-brain-registry");
+    const strictDisambiguation = resolveStrictCategoryDisambiguation(userPrompt);
+    const v60Totals = getTotalsV60();
 
     // Instant deterministic Master Capabilities & 800+ Open-Source Table / Local API SDK + Downloadable PDF Report
     if (isCapabilitiesOrSourcesTableRequest(userPrompt) || isLocalApiOrSdkRequest(userPrompt)) {
@@ -1360,8 +1414,8 @@ ${phase3Refinement.systemDirectiveSnippet}`;
       : "";
 
     const progressiveSkillsSnippet = level1SkillsIndex
-      ? `\n${cognitiveRoute.cognitiveRoutingNote}\nPROGRESSIVE SKILL INDEX (Level-1 Metadata Only — call lookupSkillOrAuthor(load) strictly when needed):\n${level1SkillsIndex}\n${hierarchicalDomainHint}${patentPromptBlock}\n`
-      : `\n${cognitiveRoute.cognitiveRoutingNote}\n${hierarchicalDomainHint}${patentPromptBlock}\n`;
+      ? `\n${cognitiveRoute.cognitiveRoutingNote}\nSOVEREIGN BRAIN STATUS (v60.0): 18 Cognitive Clusters • ${v60Totals.grandTotalSources}+ Integrated Open-Source Tools • Strict Route: ${strictDisambiguation.categoryCode} (${strictDisambiguation.targetEndpoint}) • Full Google-Style Dual Studio URL: /${expectedShortLocale}/studio?brand=kaspi_pos\nPROGRESSIVE SKILL INDEX (Level-1 Metadata Only — call lookupSkillOrAuthor(load) strictly when needed):\n${level1SkillsIndex}\n${hierarchicalDomainHint}${patentPromptBlock}\n`
+      : `\n${cognitiveRoute.cognitiveRoutingNote}\nSOVEREIGN BRAIN STATUS (v60.0): 18 Cognitive Clusters • ${v60Totals.grandTotalSources}+ Integrated Open-Source Tools • Strict Route: ${strictDisambiguation.categoryCode} (${strictDisambiguation.targetEndpoint}) • Full Google-Style Dual Studio URL: /${expectedShortLocale}/studio?brand=kaspi_pos\n${hierarchicalDomainHint}${patentPromptBlock}\n`;
 
     const activityPromptSnippet = clientActivityLog
       ? `\nCURRENT DEVICE ACTIVITY BREADCRUMBS (Local Ring Buffer):\n${clientActivityLog}\n`
@@ -1372,7 +1426,7 @@ ${phase3Refinement.systemDirectiveSnippet}`;
     const superAdminSystemPrompt = `You are HEYUKA Sovereign Executive, owned by KASPI. You have full access to the platform database and store operations.
 Available Super Admin & Store Tools:
 - Platform: getPlatformStats, getPlatformRevenue, getAllTenantsList, getTenantDetails, getAIUsageStats
-- Store & Actions: getTodaySales, getLowStockProducts, getTopSellingProducts, predictStockDemand, getLastCustomer, getLastReceiptTicket, getUserActivityLog, generatePdfReport, preparePosActionConfirmation, generateProductImage, searchWebImages
+- Store & Actions: getTodaySales, getLowStockProducts, getTopSellingProducts, predictStockDemand, getLastCustomer, getLastReceiptTicket, getUserActivityLog, generatePdfReport, preparePosActionConfirmation, generateProductImage, searchWebImages, runKaspiStudioSwarmCouncil, inspectSovereignVaultAndCapabilities
 - Universal Web, Code Sandbox, Cyber, Math, Office & Vision Tools: unrestrictedWebSearch, executeCodeSandbox, queryPublicApi (34 live open APIs incl. CISA/OSV cyber intel & Nador marine), evaluateMathAndFinance, createRichArtifactOrExport, checkPhoneCalendarOrCron
 ${closedLoopMasterDirective}${progressiveSkillsSnippet}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
 
@@ -1381,7 +1435,7 @@ Available Store & Universal Arsenal Tools:
 - Metrics & Awareness (Read-Only): getTodaySales, getLowStockProducts, getTopSellingProducts, predictStockDemand, getLastCustomer, getLastReceiptTicket, getUserActivityLog
 - Real Exports & Explicit Action Cards: generatePdfReport, preparePosActionConfirmation
 - Universal Web, Code Sandbox, Cyber, Science, Office & Vision Tools: unrestrictedWebSearch, executeCodeSandbox, queryPublicApi (34 No-Key APIs incl. Cyber Defense & Smart City), evaluateMathAndFinance, createRichArtifactOrExport, checkPhoneCalendarOrCron
-- Skills, Self-Discovery & Cowork: lookupSkillOrAuthor, discoverOpenSourceTool, runCoworkSubAgents
+- Skills, Self-Discovery, Studio Swarm & Cowork: lookupSkillOrAuthor, discoverOpenSourceTool, runCoworkSubAgents, runKaspiStudioSwarmCouncil, inspectSovereignVaultAndCapabilities
 - Media & Images: generateProductImage, searchWebImages
 
 DOMAIN & HARDWARE EXPERTISE:

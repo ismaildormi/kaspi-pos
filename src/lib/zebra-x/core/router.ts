@@ -309,6 +309,8 @@ export function selectMaskedActiveTools<T extends Record<string, any>>(
     "executeCodeSandbox",
     "lookupSkillOrAuthor",
     "createRichArtifactOrExport",
+    "runKaspiStudioSwarmCouncil",
+    "inspectSovereignVaultAndCapabilities",
   ];
   const keepNames = new Set<string>([...alwaysReady, ...routePlan.selectedToolNames]);
   const masked: Partial<T> = {};

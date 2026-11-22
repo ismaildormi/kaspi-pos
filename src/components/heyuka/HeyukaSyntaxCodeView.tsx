@@ -219,33 +219,73 @@ function highlightLineTokens(line: string, index: number): React.ReactNode {
 
 export function HeyukaSyntaxCodeView({
   code,
+  language,
+  filePath,
   maxHeightClass = "max-h-[460px]",
+  backgroundHex = "#101010",
+  foregroundHex = "#F7EAEA",
+  accentHex = "#007ACC",
+  contrastMode = "default",
+  showHeaderBreadcrumb = false,
 }: {
   code: string;
   language?: string;
   filePath?: string;
   maxHeightClass?: string;
+  backgroundHex?: string;
+  foregroundHex?: string;
+  accentHex?: string;
+  contrastMode?: "default" | "strong";
+  showHeaderBreadcrumb?: boolean;
 }) {
   const lines = String(code || "").split(/\r?\n/);
+  const meta = filePath ? getFileBadgeMeta(filePath, language) : null;
 
   return (
     <div
       dir="ltr"
-      style={{ backgroundColor: "#111319" }}
+      style={{
+        backgroundColor: backgroundHex,
+        borderColor: contrastMode === "strong" ? accentHex : undefined,
+      }}
       className={`w-full overflow-auto font-mono text-[12.5px] leading-[1.65] select-text ${maxHeightClass}`}
     >
+      {showHeaderBreadcrumb && meta && (
+        <div
+          style={{ borderBottomColor: "rgba(255,255,255,0.08)" }}
+          className="sticky top-0 z-10 px-3 py-1.5 border-b flex items-center gap-1.5 text-[11px] bg-[#18191E]/95 backdrop-blur-md"
+        >
+          {meta.folderPath && (
+            <>
+              <span className="text-zinc-400">{meta.folderPath}</span>
+              <span className="text-zinc-600">&gt;</span>
+            </>
+          )}
+          <span
+            style={{ color: meta.color, backgroundColor: meta.bg }}
+            className="px-1.5 py-0.5 rounded text-[9px] font-black"
+          >
+            {meta.extLabel}
+          </span>
+          <span className="font-semibold text-zinc-100">{meta.fileName}</span>
+        </div>
+      )}
       <table className="w-full border-collapse">
         <tbody>
           {lines.map((line, idx) => (
-            <tr key={idx} className="hover:bg-white/[0.03]">
+            <tr key={idx} className="hover:bg-white/[0.04]">
               <td
-                style={{ color: "#52525B", width: "42px", userSelect: "none" }}
+                style={{
+                  color: contrastMode === "strong" ? accentHex : "#626878",
+                  width: "44px",
+                  userSelect: "none",
+                }}
                 className="px-2.5 py-0 text-right align-top text-[11px] border-r border-white/[0.06] select-none"
               >
                 {idx + 1}
               </td>
               <td
-                style={{ color: "#E4E4E7" }}
+                style={{ color: foregroundHex }}
                 className="px-3.5 py-0 whitespace-pre font-mono"
               >
                 {highlightLineTokens(line, idx)}

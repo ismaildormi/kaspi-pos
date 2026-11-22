@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getApiUrl } from "@/client/sync-engine";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
@@ -1884,6 +1885,22 @@ export function AIChatWidget() {
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0">
+                    <Link
+                      href={`/${activeLocale}/studio?brand=kaspi_pos`}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 hover:text-white text-[11px] font-bold transition-colors"
+                      title={
+                        activeLocale === "ar"
+                          ? "فتح استوديو KASPI POS المتطور (Google AI Studio • 3/6/12 نماذج)"
+                          : "Open Full KASPI POS Studio (Elastic 3/6/12 Swarm)"
+                      }
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>{activeLocale === "ar" ? "استوديو KASPI" : "KASPI Studio"}</span>
+                      <span className="hidden sm:inline px-1 py-0.5 rounded bg-emerald-500/20 text-[9px] font-mono">
+                        3/6/12x
+                      </span>
+                    </Link>
+
                     {isOwnerSuperAdmin && (
                       <button
                         type="button"
@@ -2077,6 +2094,58 @@ export function AIChatWidget() {
                             <span className="truncate">{prompt.text}</span>
                           </button>
                         ))}
+                      </div>
+
+                      <div className="w-full mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-start">
+                        <Link
+                          href={`/${activeLocale}/studio?brand=kaspi_pos`}
+                          className="p-2.5 rounded-xl border border-emerald-500/35 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs transition-colors flex flex-col gap-0.5"
+                        >
+                          <span className="font-bold text-emerald-300 flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            KASPI POS Studio
+                          </span>
+                          <span className="text-[10px] text-zinc-400 truncate">
+                            {activeLocale === "ar"
+                              ? "استوديو Google AI • حشد 3/6/12 + تقارير"
+                              : "Google-Style Studio • 3/6/12x Swarm"}
+                          </span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleQuickPrompt(
+                              activeLocale === "ar"
+                                ? "شغّل حشد 12 نموذج لتدقيق مبيعات اليوم والمخزون والضرائب + تجهيز تقرير PDF"
+                                : "Run 12-model KASPI swarm audit for today's sales, stock, TVA & PDF export"
+                            )
+                          }
+                          className="p-2.5 rounded-xl kaspi-glass-surface hover:bg-white/[0.08] text-xs transition-colors flex flex-col gap-0.5 text-start cursor-pointer"
+                        >
+                          <span className="font-bold text-zinc-100 flex items-center gap-1.5">
+                            <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                            12x Swarm Audit
+                          </span>
+                          <span className="text-[10px] text-zinc-400 truncate">
+                            {activeLocale === "ar"
+                              ? "تدقيق متكامل بالـ 2,492 أداة و 18 مجموعة"
+                              : "18 Cognitive Clusters • 2,492 Sources"}
+                          </span>
+                        </button>
+                        <Link
+                          href={`/${activeLocale}/studio?brand=heyuka`}
+                          className="p-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-xs transition-colors flex flex-col gap-0.5"
+                        >
+                          <span className="font-bold text-rose-300 flex items-center gap-1.5">
+                            <Bot className="w-3.5 h-3.5" />
+                            HEYUKA Omni Studio
+                          </span>
+                          <span className="text-[10px] text-zinc-400 truncate">
+                            {activeLocale === "ar"
+                              ? "كود، روبوتات البيسي، 3D، وفيديو"
+                              : "Full Apps, PC Bots, 3D & Offline Kits"}
+                          </span>
+                        </Link>
                       </div>
                     </div>
                   ) : (

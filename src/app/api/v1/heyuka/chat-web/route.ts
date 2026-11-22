@@ -1,4 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  getTotalIntegratedCapabilitiesCount,
+  resolveStrictCategoryDisambiguation,
+} from "@/lib/zebra-x/core/cognitive-brain-registry";
+import {
+  buildAirGappedOfflineManifest,
+  buildBrowserFactoryPlan,
+  planAndRunElasticCouncilSwarm,
+  type ElasticScaleMode,
+  type StudioBrand,
+} from "@/lib/heyuka/studio/studio-orchestrator-v55-v60";
+import {
+  buildSovereignOsAndFileSurgeonPlan,
+  buildUnstoppableAiComputerAction,
+  spawnVirtualDesktopBot,
+} from "@/lib/heyuka/os/sovereign-pc-commander";
 import { z } from "zod";
 import { getRequestContext } from "@/server/auth/context";
 import { generateTextWithRouter } from "@/lib/ai-router";
@@ -57,12 +73,31 @@ export type HeyukaRequestedMode =
   | "3d"
   | "security"
   | "qr"
-  | "mobile";
+  | "mobile"
+  | "studio"
+  | "council"
+  | "pc_bot"
+  | "os_exec"
+  | "ai_pc"
+  | "browser_factory"
+  | "team"
+  | "offline";
 
 const WebChatRequestSchema = z.object({
   model: z
-    .enum(["heyuka-omni", "heyuka-core", "heyuka-vision", "multi-agent-3"])
+    .enum([
+      "heyuka-omni",
+      "heyuka-core",
+      "heyuka-vision",
+      "multi-agent-3",
+      "elastic-swarm-6x",
+      "elastic-swarm-12x",
+    ])
     .default("heyuka-omni"),
+  elasticScale: z
+    .enum(["auto", "3x_fast", "6x_pro", "12x_titan"])
+    .default("auto"),
+  brand: z.enum(["heyuka", "kaspi_pos"]).default("heyuka"),
   executionPolicy: z.enum(["turbo", "auto", "review"]).default("auto"),
   mode: z
     .enum([
@@ -78,6 +113,14 @@ const WebChatRequestSchema = z.object({
       "security",
       "qr",
       "mobile",
+      "studio",
+      "council",
+      "pc_bot",
+      "os_exec",
+      "ai_pc",
+      "browser_factory",
+      "team",
+      "offline",
     ])
     .default("auto"),
   deepThink: z.boolean().default(false),
@@ -277,6 +320,8 @@ export async function POST(req: NextRequest) {
 
   const {
     model,
+    elasticScale,
+    brand,
     executionPolicy,
     mode,
     deepThink,
@@ -302,7 +347,20 @@ export async function POST(req: NextRequest) {
     Boolean(workspaceFiles && workspaceFiles.length > 0),
     Boolean(imageBase64)
   );
-  const isCollaborative = model === "multi-agent-3";
+  const resolvedElasticScale: ElasticScaleMode =
+    model === "elastic-swarm-12x"
+      ? "12x_titan"
+      : model === "elastic-swarm-6x"
+      ? "6x_pro"
+      : model === "multi-agent-3"
+      ? "3x_fast"
+      : elasticScale;
+  const isCollaborative =
+    model === "multi-agent-3" ||
+    model === "elastic-swarm-6x" ||
+    model === "elastic-swarm-12x" ||
+    resolvedElasticScale !== "auto" ||
+    effectiveMode === "council";
   const suppressThinkTokens = effectiveMode === "coding" || effectiveMode === "3d";
   const effectiveDeepThink =
     deepThink ||
@@ -312,17 +370,49 @@ export async function POST(req: NextRequest) {
 
   const routePlan = planXZebraToolRoute(lastUser, false);
   const skillIndexPrompt = await buildLevel1SkillPromptIndex(lastUser).catch(() => "");
-  const matchedCatalogCount = ALL_SOVEREIGN_MASTER_CATALOG.length;
+  const integratedTotals = getTotalIntegratedCapabilitiesCount();
+  const matchedCatalogCount = Math.max(ALL_SOVEREIGN_MASTER_CATALOG.length, integratedTotals.grandTotalSources);
   const cognitiveRoute = classifyCognitiveIntentAndSources(lastUser, locale);
+  const strictCategory = resolveStrictCategoryDisambiguation(lastUser);
   const isPatentQuery = isPatentOrInventionRequest(lastUser);
+  const elasticSwarmPlan =
+    isCollaborative ||
+    strictCategory.categoryCode === "V56_ELASTIC_SWARM" ||
+    effectiveMode === "studio"
+      ? planAndRunElasticCouncilSwarm({
+          prompt: lastUser,
+          scale: resolvedElasticScale,
+          brand,
+          locale,
+        })
+      : null;
 
   thinkingSteps.push({
-    phase: "Cognitive Brain Pre-Classification & Auto-Router",
-    agentModel: isCollaborative ? "heyuka-core (Architect)" : model,
-    summary: `Clusters: [${cognitiveRoute.stageBadges.map((b) => `${b.icon} ${b.label}`).join(" | ")}] • Mode: ${effectiveMode.toUpperCase()}${autoSwitched ? " (Auto AI)" : ""} • ${PUBLIC_APIS_CATALOG_COUNT} Live APIs + ${matchedCatalogCount}+ Tools`,
+    phase: "Cognitive Brain Pre-Classification & Auto-Router (18 Clusters)",
+    agentModel: elasticSwarmPlan
+      ? `${elasticSwarmPlan.tier} (${elasticSwarmPlan.nodes.length}x Swarm)`
+      : isCollaborative
+      ? "heyuka-core (Architect)"
+      : model,
+    summary: `Route: ${strictCategory.categoryCode} • Clusters: [${cognitiveRoute.stageBadges
+      .map((b) => `${b.icon} ${b.label}`)
+      .join(" | ")}] • Brand: ${brand.toUpperCase()} • ${PUBLIC_APIS_CATALOG_COUNT} Live APIs + ${matchedCatalogCount}+ Tools`,
     durationMs: Math.max(1, Date.now() - phase1Start),
     timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
   });
+
+  if (elasticSwarmPlan) {
+    thinkingSteps.push({
+      phase: `Elastic Model Council (${elasticSwarmPlan.nodes.length} Cooperating Agents + ${elasticSwarmPlan.spawnedBots.length} Worker Bots)`,
+      agentModel: elasticSwarmPlan.nodes.map((n) => n.id).slice(0, 4).join(", "),
+      summary: `Brand=${brand.toUpperCase()} | Tier=${elasticSwarmPlan.tier} | Vault=${elasticSwarmPlan.matchedVaultSources
+        .slice(0, 3)
+        .map((v) => v.name)
+        .join(", ")}`,
+      durationMs: 2,
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+    });
+  }
 
   if (isCapabilitiesOrSourcesTableRequest(lastUser) || isLocalApiOrSdkRequest(lastUser)) {
     const localBrainRes = runLocalOnDeviceHeyukaBrain({
@@ -406,9 +496,57 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // 3) Security SAST & QR Deterministic Modules
+  // 3) Security SAST, QR & v52-v60 Sovereign OS/Swarm/Factory Modules
   let toolSupplementBlock = "";
   let qrSvgMarkup: string | undefined;
+  const v52v60StudioFiles: Array<{ path: string; language: string; content: string }> = [];
+
+  if (strictCategory.categoryCode === "V52_PC_BOT_FARM" || effectiveMode === "pc_bot") {
+    const botBundle = spawnVirtualDesktopBot({ task: lastUser });
+    v52v60StudioFiles.push(
+      { path: "virtual-desktop-bot-compose.yml", language: "yaml", content: botBundle.dockerComposeYaml },
+      { path: "bot-session.json", language: "json", content: JSON.stringify(botBundle.bot, null, 2) }
+    );
+    toolSupplementBlock += `\n\n[v52.0 VIRTUAL DESKTOP BOT FARM DISPATCH]\nEndpoint: /api/v1/desktops/spawn | Bot ID: ${botBundle.bot.botId} | Resolution: ${botBundle.bot.resolution} | Tools: ${botBundle.matchedVaultTools.map((t) => t.name).join(", ")}`;
+  } else if (strictCategory.categoryCode === "V53_OS_SHELL_SURGEON" || effectiveMode === "os_exec") {
+    const osPlan = buildSovereignOsAndFileSurgeonPlan({ action: "shell", command: lastUser.slice(0, 180) });
+    if (osPlan.generatedScripts.powershell) {
+      v52v60StudioFiles.push({ path: "sovereign-os-surgeon.ps1", language: "powershell", content: osPlan.generatedScripts.powershell });
+    }
+    if (osPlan.generatedScripts.python) {
+      v52v60StudioFiles.push({ path: "file-surgeon-safe.py", language: "python", content: osPlan.generatedScripts.python });
+    }
+    toolSupplementBlock += `\n\n[v53.0 SOVEREIGN OS SHELL & FILE SURGEON]\nEndpoint: /api/v1/os/exec | POSCoreProtected=${osPlan.safetyChecks.posCoreProtected} | ReversibleBackup=${osPlan.safetyChecks.reversibleBackup || "send2trash"} | PanicStopReady=${osPlan.safetyChecks.panicStopReady}`;
+  } else if (strictCategory.categoryCode === "V54_AI_COMPUTER_OS" || effectiveMode === "ai_pc") {
+    const aiPc = buildUnstoppableAiComputerAction({ action: "scroll", prompt: lastUser });
+    if (aiPc.generatedScripts.python) {
+      v52v60StudioFiles.push({ path: "ai-computer-controller.py", language: "python", content: aiPc.generatedScripts.python });
+    }
+    toolSupplementBlock += `\n\n[v54.0 UNSTOPPABLE AI COMPUTER OS]\nEndpoint: /api/v1/ai-pc/control | Engines: ${aiPc.matchedVaultTools.map((t) => t.name).join(", ")}`;
+  } else if (strictCategory.categoryCode === "V57_BROWSER_FACTORY" || effectiveMode === "browser_factory") {
+    const bf = buildBrowserFactoryPlan({ projectName: lastUser.slice(0, 32) || "heyuka-cloud-app" });
+    v52v60StudioFiles.push({ path: "deploy-factory.sh", language: "bash", content: bf.cliProvisionScript });
+    toolSupplementBlock += `\n\n[v57.0-v58.0 BROWSER AUTOPILOT & CLOUD FACTORY]\nEndpoint: /api/v1/studio/browser-factory | Tabs: ${bf.tabsToOrchestrate.map((t) => t.label).join(", ")}`;
+  } else if (
+    strictCategory.categoryCode === "V60_OFFLINE_AIRGAPPED" ||
+    effectiveMode === "offline" ||
+    effectiveMode === "team"
+  ) {
+    const offline = buildAirGappedOfflineManifest();
+    v52v60StudioFiles.push({ path: "air-gapped-manifest.json", language: "json", content: JSON.stringify(offline, null, 2) });
+    toolSupplementBlock += `\n\n[v59.0-v60.0 MULTIPLAYER & AIR-GAPPED OFFLINE BUNDLE]\nEndpoint: /api/v1/studio/team | Tiers: ${offline.tiers.map((t) => t.title).join(", ")}`;
+  }
+
+  if (elasticSwarmPlan) {
+    v52v60StudioFiles.push({
+      path: "elastic-swarm-council.json",
+      language: "json",
+      content: JSON.stringify(elasticSwarmPlan, null, 2),
+    });
+    toolSupplementBlock += `\n\n[ELASTIC MODEL COUNCIL SWARM (${elasticSwarmPlan.nodes.length} AGENTS • ${brand.toUpperCase()})]\nCooperating Specialist Nodes:\n${elasticSwarmPlan.nodes
+      .map((n) => `- ${n.role} (${n.focus}): ${n.contributionSummary}`)
+      .join("\n")}\nSpawned Worker Bots: ${elasticSwarmPlan.spawnedBots.length}`;
+  }
 
   if (effectiveMode === "security" && lastUser.length > 40) {
     const audit = scanSourceCodeForVulnerabilities(lastUser);
@@ -676,6 +814,13 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
   }
 
   let studioFiles = extractStudioFilesSafe(answer);
+  if (v52v60StudioFiles.length > 0) {
+    for (const vf of v52v60StudioFiles) {
+      if (!studioFiles.some((f) => f.path === vf.path)) {
+        studioFiles = [vf, ...studioFiles];
+      }
+    }
+  }
   if (isPatentQuery && !studioFiles.some((f) => f.path.endsWith(".md"))) {
     studioFiles = [
       {

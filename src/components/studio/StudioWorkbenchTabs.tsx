@@ -41,6 +41,7 @@ import {
   WifiOff,
   Wrench,
 } from "lucide-react";
+import { HeyukaSyntaxCodeView, getFileBadgeMeta } from "@/components/heyuka/HeyukaSyntaxCodeView";
 import {
   Bar,
   BarChart,
@@ -81,6 +82,13 @@ interface StudioWorkbenchTabsProps {
     spawnedBots: WorkerBotExecution[];
   } | null;
   onTriggerCouncil: (scale: ElasticScaleMode, promptText: string) => Promise<void>;
+  focusFilePath?: string | null;
+  appearance?: {
+    backgroundHex: string;
+    foregroundHex: string;
+    accentHex: string;
+    contrastMode: "default" | "strong";
+  };
 }
 
 export function StudioWorkbenchTabs({
@@ -98,13 +106,22 @@ export function StudioWorkbenchTabs({
   onCaptureFrameToChat,
   councilData,
   onTriggerCouncil,
+  focusFilePath,
+  appearance,
 }: StudioWorkbenchTabsProps) {
   const isAr = locale === "ar";
   const accentBtn = brand === "kaspi_pos" ? "kaspi-emerald-checkout-btn" : "kaspi-primary-cta-btn";
 
   // Build Canvas State
   const [selectedPath, setSelectedPath] = useState<string>(files[0]?.path || "index.html");
+  const [codeViewMode, setCodeViewMode] = useState<"syntax" | "edit">("syntax");
   const [viewSplit, setViewSplit] = useState<"split" | "code" | "preview">("split");
+
+  useEffect(() => {
+    if (focusFilePath && files.some((f) => f.path === focusFilePath)) {
+      setSelectedPath(focusFilePath);
+    }
+  }, [focusFilePath, files]);
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [annotateMode, setAnnotateMode] = useState(false);
   const [diffMode, setDiffMode] = useState(false);
@@ -992,12 +1009,56 @@ export function StudioWorkbenchTabs({
               )}
             </div>
 
-            {/* Code Editor */}
+            {/* Code Editor & Antigravity Syntax Code View */}
             {(viewSplit === "split" || viewSplit === "code") && (
-              <div className="flex-1 flex flex-col min-w-0 border-e border-white/10">
+              <div className="flex-1 flex flex-col min-w-0 border-e border-white/10 overflow-hidden">
+                {/* Multi-Tab Bar like Antigravity IDE */}
+                <div className="px-2 py-1 border-b border-white/10 flex items-center gap-1 overflow-x-auto bg-white/[0.02] kaspi-no-scrollbar">
+                  {files.map((f) => {
+                    const meta = getFileBadgeMeta(f.path, f.language);
+                    const isAct = f.path === activeFile.path;
+                    return (
+                      <button
+                        key={f.path}
+                        type="button"
+                        onClick={() => setSelectedPath(f.path)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono shrink-0 cursor-pointer transition-colors ${
+                          isAct
+                            ? "bg-white/[0.12] text-white border border-white/20 font-bold"
+                            : "text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200"
+                        }`}
+                      >
+                        <span
+                          style={{ color: meta.color, backgroundColor: meta.bg }}
+                          className="px-1 py-0.2 rounded text-[8px] font-black"
+                        >
+                          {meta.extLabel}
+                        </span>
+                        <span className="truncate max-w-[140px]">{meta.fileName}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Toolbar: Syntax / Edit / Diff */}
                 <div className="px-3 py-1.5 border-b border-white/10 flex items-center justify-between text-[11px] font-mono bg-white/[0.02]">
-                  <span>{activeFile.path}</span>
-                  <span>{activeFile.content.length} chars</span>
+                  <span className="truncate text-zinc-300">{activeFile.path}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[10px] text-zinc-400 hidden sm:inline">
+                      {activeFile.content.split(/\r?\n/).length} lines • +{activeFile.content.length} chars
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCodeViewMode((m) => (m === "syntax" ? "edit" : "syntax"))}
+                      className={`px-2 py-0.5 rounded border text-[10px] font-bold cursor-pointer ${
+                        codeViewMode === "syntax"
+                          ? "bg-sky-500/20 border-sky-500/40 text-sky-300"
+                          : "bg-white/[0.06] border-white/15 text-zinc-300"
+                      }`}
+                    >
+                      {codeViewMode === "syntax" ? "Syntax Color ✓ (Edit)" : "Editing (Syntax)"}
+                    </button>
+                  </div>
                 </div>
                 {diffMode && checkpoints[0] ? (
                   <div className="flex-1 overflow-auto p-3 font-mono text-[11px] space-y-0.5">
@@ -1019,6 +1080,20 @@ export function StudioWorkbenchTabs({
                       </div>
                     ))}
                   </div>
+                ) : codeViewMode === "syntax" ? (
+                  <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                    <HeyukaSyntaxCodeView
+                      code={activeFile.content}
+                      language={activeFile.language}
+                      filePath={activeFile.path}
+                      maxHeightClass="flex-1 h-full"
+                      backgroundHex={appearance?.backgroundHex || "#101010"}
+                      foregroundHex={appearance?.foregroundHex || "#F7EAEA"}
+                      accentHex={appearance?.accentHex || "#007ACC"}
+                      contrastMode={appearance?.contrastMode || "default"}
+                      showHeaderBreadcrumb
+                    />
+                  </div>
                 ) : (
                   <textarea
                     value={activeFile.content}
@@ -1028,7 +1103,11 @@ export function StudioWorkbenchTabs({
                       )
                     }
                     spellCheck={false}
-                    className="flex-1 w-full p-3 bg-transparent font-mono text-xs resize-none focus:outline-none text-[var(--kaspi-text-primary)]"
+                    style={{
+                      backgroundColor: appearance?.backgroundHex || "#101010",
+                      color: appearance?.foregroundHex || "#F7EAEA",
+                    }}
+                    className="flex-1 w-full p-3 font-mono text-xs resize-none focus:outline-none"
                   />
                 )}
               </div>

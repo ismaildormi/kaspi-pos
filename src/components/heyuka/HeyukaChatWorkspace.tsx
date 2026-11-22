@@ -309,6 +309,7 @@ export function HeyukaChatWorkspace() {
   // Unified Composer Mode Box, 3-Model Swarm & Speed Policy State
   const [input, setInput] = useState("");
   const [selectedModel, setSelectedModel] = useState<HeyukaModelSelection>("heyuka-omni");
+  const [elasticScale, setElasticScale] = useState<"auto" | "3x_fast" | "6x_pro" | "12x_titan">("auto");
   const [executionPolicy, setExecutionPolicy] = useState<ExecutionPolicy>("auto");
   const [selectedMode, setSelectedMode] = useState<HeyukaComposerMode>("auto");
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
@@ -567,6 +568,8 @@ export function HeyukaChatWorkspace() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: imgSnapshot && selectedModel !== "multi-agent-3" ? "heyuka-vision" : selectedModel,
+          elasticScale,
+          brand: "heyuka",
           executionPolicy,
           mode: selectedMode,
           deepThink,
@@ -1397,6 +1400,24 @@ export function HeyukaChatWorkspace() {
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
+              <Link
+                href={`/${locale}/studio?brand=heyuka`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-rose-500/50 bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 hover:text-white transition-colors"
+                title="Open Full HEYUKA Google-Style AI Studio (System Prompt + Chat + Run Settings + 3/6/12 Swarm)"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+                <span>AI Studio</span>
+                <span className="hidden md:inline px-1.5 py-0.5 rounded bg-rose-500/25 text-[9px] font-mono">
+                  3/6/12x
+                </span>
+              </Link>
+              <Link
+                href={`/${locale}/studio?brand=kaspi_pos`}
+                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold border border-emerald-500/35 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 hover:text-white transition-colors"
+                title="Switch directly into KASPI POS Studio"
+              >
+                <span>KASPI Studio</span>
+              </Link>
               <button
                 type="button"
                 onClick={() => {
@@ -1409,10 +1430,10 @@ export function HeyukaChatWorkspace() {
                     ? "bg-rose-500/15 border-rose-500/60 text-rose-400"
                     : "bg-[#24262B] border-white/[0.08] text-zinc-300 hover:text-white"
                 }`}
-                title="Toggle Antigravity Coding & Media Studio"
+                title="Toggle Antigravity Coding & Media Drawer"
               >
                 <PanelRight className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Studio</span>
+                <span className="hidden lg:inline">Workbench</span>
               </button>
 
               <Link
@@ -1480,6 +1501,129 @@ export function HeyukaChatWorkspace() {
                 </div>
 
                 {renderComposer()}
+
+                <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-1">
+                  <Link
+                    href={`/${locale}/studio?brand=heyuka`}
+                    className="group rounded-2xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 px-3.5 py-2.5 text-start transition-colors"
+                  >
+                    <div className="flex items-center justify-between text-xs font-bold text-white">
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+                        HEYUKA AI Studio
+                      </span>
+                      <span className="text-[10px] font-mono text-rose-300">Open →</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 mt-1 line-clamp-1">
+                      System Instructions + Run Settings + 12x Swarm + Get Code
+                    </p>
+                  </Link>
+
+                  <Link
+                    href={`/${locale}/studio?brand=kaspi_pos`}
+                    className="group rounded-2xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 px-3.5 py-2.5 text-start transition-colors"
+                  >
+                    <div className="flex items-center justify-between text-xs font-bold text-white">
+                      <span className="flex items-center gap-1.5">
+                        <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+                        KASPI POS Studio
+                      </span>
+                      <span className="text-[10px] font-mono text-emerald-300">Open →</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 mt-1 line-clamp-1">
+                      Retail ERP, 80mm ESC/POS, TVA Audits & Store Bot Farm
+                    </p>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedModel("multi-agent-3");
+                      setElasticScale("12x_titan");
+                      setInput(
+                        locale === "ar"
+                          ? "شغّل أسطول 12 نموذج متعاون وبوتات مستقلة لبناء منصة تطبيق متكاملة مع ملفات Studio"
+                          : "Run a 12-model cooperating Elastic Swarm + worker bots to architect a complete full-stack app"
+                      );
+                    }}
+                    className="rounded-2xl border border-white/[0.08] bg-[#22242A]/80 hover:bg-[#2A2D35] px-3.5 py-2.5 text-start cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center justify-between text-xs font-bold text-zinc-100">
+                      <span className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-rose-400" />
+                        12x Elastic Swarm
+                      </span>
+                      <span className="text-[10px] font-mono text-zinc-400">v56.0</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 mt-1 line-clamp-1">
+                      Auto 3 → 6 → 12 Cooperating Models • 2,492 Vault Sources
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedMode("3d");
+                      setStudioOpen(true);
+                      setInput(
+                        locale === "ar"
+                          ? "اصنع مشهد 3D تفاعلي مع إضاءة واقعية وفيديو سينمائي على معالج الجهاز"
+                          : "Build an interactive 3D studio scene + cinema video frame on client GPU"
+                      );
+                    }}
+                    className="rounded-2xl border border-white/[0.08] bg-[#22242A]/80 hover:bg-[#2A2D35] px-3.5 py-2.5 text-start cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center justify-between text-xs font-bold text-zinc-100">
+                      <span className="flex items-center gap-1.5">
+                        <Box className="w-3.5 h-3.5 text-rose-400" />
+                        3D & Cinema Studio
+                      </span>
+                      <span className="text-[10px] font-mono text-zinc-400">v34-v37</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 mt-1 line-clamp-1">
+                      Three.js GLB, SVG/PNG Cutout & Client-CPU WebM Render
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInput(
+                        locale === "ar"
+                          ? "شغّل روبوت سطح مكتب افتراضي KasmVNC وتحكم بالماوس والكلافيي وأوامر PowerShell بأمان"
+                          : "Spawn an isolated KasmVNC Virtual Desktop bot with OS Shell & File Surgeon scripts"
+                      );
+                    }}
+                    className="rounded-2xl border border-white/[0.08] bg-[#22242A]/80 hover:bg-[#2A2D35] px-3.5 py-2.5 text-start cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center justify-between text-xs font-bold text-zinc-100">
+                      <span className="flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-rose-400" />
+                        PC Bots & OS Surgeon
+                      </span>
+                      <span className="text-[10px] font-mono text-zinc-400">v52-v54</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 mt-1 line-clamp-1">
+                      Virtual Desktop Bots, Reversible File Edits & Esc+Esc Panic Stop
+                    </p>
+                  </button>
+
+                  <Link
+                    href={`/${locale}/zebra-x/playground`}
+                    className="rounded-2xl border border-white/[0.08] bg-[#22242A]/80 hover:bg-[#2A2D35] px-3.5 py-2.5 text-start transition-colors"
+                  >
+                    <div className="flex items-center justify-between text-xs font-bold text-zinc-100">
+                      <span className="flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5 text-rose-400" />
+                        API Playground & SDK
+                      </span>
+                      <span className="text-[10px] font-mono text-zinc-400">21 Endpoints</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 mt-1 line-clamp-1">
+                      Unlimited Client-Compute REST API, Magic & Air-Gapped Kits
+                    </p>
+                  </Link>
+                </div>
               </div>
             ) : (
               <div className="max-w-[740px] mx-auto space-y-7 py-4">
@@ -2043,6 +2187,11 @@ export function HeyukaChatWorkspace() {
               <span>
                 {selectedModel === "multi-agent-3" ? "3-Agent Swarm" : selectedModel}
               </span>
+              {elasticScale !== "auto" && (
+                <span className="px-1.5 py-0.5 rounded bg-rose-500/25 text-[9px] font-mono text-rose-300">
+                  {elasticScale.replace("_", " ")}
+                </span>
+              )}
               <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-white/10 text-[9px] font-mono uppercase">
                 {executionPolicy}
               </span>
@@ -2205,6 +2354,37 @@ export function HeyukaChatWorkspace() {
                     {selectedModel === m.id && <Check className="w-3.5 h-3.5 text-rose-400 shrink-0" />}
                   </button>
                 ))}
+                <div className="pt-1.5 mt-1.5 border-t border-white/[0.08] space-y-1">
+                  <div className="px-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                    Elastic Swarm Tiers (3 → 6 → 12)
+                  </div>
+                  <div className="grid grid-cols-4 gap-1 text-[10px]">
+                    {(
+                      [
+                        { id: "auto", label: "Auto" },
+                        { id: "3x_fast", label: "3x Fast" },
+                        { id: "6x_pro", label: "6x Pro" },
+                        { id: "12x_titan", label: "12x Titan" },
+                      ] as const
+                    ).map((tier) => (
+                      <button
+                        key={tier.id}
+                        type="button"
+                        onClick={() => {
+                          setElasticScale(tier.id);
+                          if (tier.id !== "auto") setSelectedModel("multi-agent-3");
+                        }}
+                        className={`py-1 px-1.5 rounded-lg font-mono font-bold cursor-pointer transition-colors ${
+                          elasticScale === tier.id
+                            ? "bg-rose-600 text-white"
+                            : "bg-white/[0.04] text-zinc-400 hover:text-white"
+                        }`}
+                      >
+                        {tier.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>

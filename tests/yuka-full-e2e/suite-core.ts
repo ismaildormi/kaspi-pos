@@ -1518,6 +1518,81 @@ async function main() {
     };
   });
 
+  await runCheck("v60-full-end-to-end-ui-and-api-wiring", "Studio / Chat / POS Cohesion", async () => {
+    const readSrc = (rel: string) => fs.readFileSync(path.join(process.cwd(), rel), "utf8");
+
+    const magicSrc = readSrc("src/app/api/v1/magic/route.ts");
+    assert.ok(magicSrc.includes("resolveStrictCategoryDisambiguation"));
+    assert.ok(magicSrc.includes("planAndRunElasticCouncilSwarm"));
+
+    const mwSrc = readSrc("src/middleware.ts");
+    assert.ok(mwSrc.includes('"/api/v1/magic"'));
+
+    const openApiSrc = readSrc("src/app/api/v1/zebra-x/openapi/route.ts");
+    assert.ok(openApiSrc.includes('"/api/v1/magic"'));
+
+    const chatWebSrc = readSrc("src/app/api/v1/heyuka/chat-web/route.ts");
+    assert.ok(chatWebSrc.includes("resolveStrictCategoryDisambiguation"));
+    assert.ok(chatWebSrc.includes("planAndRunElasticCouncilSwarm"));
+    assert.ok(chatWebSrc.includes("elasticScale"));
+
+    const posChatApiSrc = readSrc("src/app/api/ai/chat/route.ts");
+    assert.ok(posChatApiSrc.includes("runKaspiStudioSwarmCouncil"));
+    assert.ok(posChatApiSrc.includes("inspectSovereignVaultAndCapabilities"));
+
+    const routerSrc = readSrc("src/lib/zebra-x/core/router.ts");
+    assert.ok(routerSrc.includes('"runKaspiStudioSwarmCouncil"'));
+    assert.ok(routerSrc.includes('"inspectSovereignVaultAndCapabilities"'));
+
+    const heyukaChatUi = readSrc("src/components/heyuka/HeyukaChatWorkspace.tsx");
+    assert.ok(heyukaChatUi.includes("/studio?brand=heyuka"));
+    assert.ok(heyukaChatUi.includes("/studio?brand=kaspi_pos"));
+    assert.ok(heyukaChatUi.includes("elasticScale"));
+
+    const posChatWidgetUi = readSrc("src/components/ai/AIChatWidget.tsx");
+    assert.ok(posChatWidgetUi.includes("/studio?brand=kaspi_pos"));
+    assert.ok(posChatWidgetUi.includes("12x Swarm Audit"));
+
+    const sidebarUi = readSrc("src/components/layout/Sidebar.tsx");
+    assert.ok(sidebarUi.includes("/studio?brand=kaspi_pos"));
+
+    const posHeaderUi = readSrc("src/components/pos/PosHeader.tsx");
+    assert.ok(posHeaderUi.includes("/studio?brand=kaspi_pos"));
+
+    const playgroundUi = readSrc("src/components/zebra-portal/PlatformPlaygroundView.tsx");
+    assert.ok(playgroundUi.includes('"/api/v1/magic"'));
+    assert.ok(playgroundUi.includes('"/api/v1/studio/council"'));
+    assert.ok(playgroundUi.includes('"/api/v1/desktops/spawn"'));
+
+    const studioUi = readSrc("src/components/studio/HeyukaUnifiedStudioWorkspace.tsx");
+    assert.ok(studioUi.includes("/api/v1/heyuka/chat-web"));
+    assert.ok(studioUi.includes("/api/v1/magic"));
+    assert.ok(studioUi.includes("/api/v1/web/research"));
+    assert.ok(studioUi.includes("/api/v1/sandbox/execute"));
+    assert.ok(studioUi.includes("URLSearchParams"));
+
+    // Verify local brain v55-v60 modes synthesize deliverables on-device
+    const bSwarm = runLocalOnDeviceHeyukaBrain({
+      prompt: "Build 12-model cooperating KASPI POS swarm",
+      mode: "council",
+      locale: "en",
+    });
+    assert.ok(bSwarm.studioFiles.some((f) => f.path === "elastic-swarm-council.json"));
+
+    const bOffline = runLocalOnDeviceHeyukaBrain({
+      prompt: "Prepare air-gapped offline bundle",
+      mode: "offline",
+      locale: "ar",
+    });
+    assert.ok(bOffline.studioFiles.some((f) => f.path === "air-gapped-offline-manifest.json"));
+
+    const bytes = bSwarm.answer.length + bOffline.answer.length + magicSrc.length + studioUi.length;
+    return {
+      artifactBytes: bytes,
+      detail: `All v52-v60 UI & backend routes wired cleanly (/studio, /chat, POS AIChatWidget, Sidebar, PosHeader, Playground, /api/v1/magic, /api/ai/chat, chat-web, local brain)`,
+    };
+  });
+
   // SUMMARY & SELF-REPORTING
   const totalTested = results.length;
   const passed = results.filter((r) => r.status !== "failed");

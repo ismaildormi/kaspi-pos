@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useLocale } from "next-intl";
 import { Check, Copy, Eye, EyeOff, Play, Sparkles, Terminal } from "lucide-react";
 import {
@@ -12,6 +13,14 @@ import {
 
 type EndpointId =
   | "/api/v1/chat/completions"
+  | "/api/v1/magic"
+  | "/api/v1/studio/council"
+  | "/api/v1/studio/browser-factory"
+  | "/api/v1/studio/team"
+  | "/api/v1/desktops/spawn"
+  | "/api/v1/os/exec"
+  | "/api/v1/ai-pc/control"
+  | "/api/v1/heyuka/local-sdk"
   | "/api/v1/debug"
   | "/api/v1/models"
   | "/api/v1/public-apis"
@@ -27,6 +36,14 @@ type EndpointId =
 
 const ENDPOINT_LIST: EndpointId[] = [
   "/api/v1/chat/completions",
+  "/api/v1/magic",
+  "/api/v1/studio/council",
+  "/api/v1/studio/browser-factory",
+  "/api/v1/studio/team",
+  "/api/v1/desktops/spawn",
+  "/api/v1/os/exec",
+  "/api/v1/ai-pc/control",
+  "/api/v1/heyuka/local-sdk",
   "/api/v1/debug",
   "/api/v1/models",
   "/api/v1/public-apis",
@@ -184,6 +201,39 @@ function defaultPayloadFor(
       );
     case "/api/v1/audio/separate":
       return JSON.stringify({ mediaUrl: "https://example.com/song.mp3", stems: "2stems" }, null, 2);
+    case "/api/v1/magic":
+      return JSON.stringify(
+        {
+          prompt: "Build KASPI POS live profit & stock AI dashboard",
+          brand: "kaspi_pos",
+          scale: "auto",
+          locale: "ar",
+        },
+        null,
+        2
+      );
+    case "/api/v1/studio/council":
+      return JSON.stringify(
+        { prompt: "Architect multi-agent POS & Cloud deployment pipeline", scale: "12x_titan", brand: "heyuka" },
+        null,
+        2
+      );
+    case "/api/v1/studio/browser-factory":
+      return JSON.stringify(
+        { projectName: "heyuka-sovereign-app", cloudTargets: ["github", "vercel", "supabase"] },
+        null,
+        2
+      );
+    case "/api/v1/studio/team":
+      return JSON.stringify({ action: "offline_manifest" }, null, 2);
+    case "/api/v1/desktops/spawn":
+      return JSON.stringify({ task: "Inspect supplier prices on isolated KasmVNC desktop" }, null, 2);
+    case "/api/v1/os/exec":
+      return JSON.stringify({ action: "shell", command: "Get-ComputerInfo | Select OSName" }, null, 2);
+    case "/api/v1/ai-pc/control":
+      return JSON.stringify({ action: "scroll", direction: "down", amount: 300 }, null, 2);
+    case "/api/v1/heyuka/local-sdk":
+      return JSON.stringify({ prompt: "Generate local zero-key Node SDK server test", mode: "studio", locale: "en" }, null, 2);
     default:
       return JSON.stringify(
         { specUrl: "https://petstore3.swagger.io/api/v3/openapi.json" },
@@ -311,17 +361,35 @@ export function PlatformPlaygroundView() {
 
   return (
     <div className="space-y-6">
-      <section className="kaspi-glass-card rounded-3xl p-6 sm:p-8 space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-rose-500">
-          <Terminal className="w-3.5 h-3.5" />
-          <span>{t.badge}</span>
+      <section className="kaspi-glass-card rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full kaspi-glass-surface text-xs font-semibold text-rose-500">
+            <Terminal className="w-3.5 h-3.5" />
+            <span>{t.badge.replace("13 ", "21 ")}</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-[var(--kaspi-text-primary)]">
+            {t.title}
+          </h1>
+          <p className="text-xs sm:text-sm text-[var(--kaspi-text-secondary)] max-w-3xl">
+            {t.subtitle}
+          </p>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-[var(--kaspi-text-primary)]">
-          {t.title}
-        </h1>
-        <p className="text-xs sm:text-sm text-[var(--kaspi-text-secondary)] max-w-3xl">
-          {t.subtitle}
-        </p>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <Link
+            href={`/${locale}/studio?brand=heyuka`}
+            className="kaspi-primary-cta-btn rounded-2xl px-4 py-2.5 text-xs font-bold inline-flex items-center gap-2 shadow-lg"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{locale === "ar" ? "فتح HEYUKA Studio" : "Open HEYUKA AI Studio"}</span>
+          </Link>
+          <Link
+            href={`/${locale}/studio?brand=kaspi_pos`}
+            className="rounded-2xl px-4 py-2.5 text-xs font-bold inline-flex items-center gap-2 border border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:text-white transition-colors"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{locale === "ar" ? "فتح KASPI POS Studio" : "KASPI POS Studio"}</span>
+          </Link>
+        </div>
       </section>
 
       {/* Credentials Bar */}
