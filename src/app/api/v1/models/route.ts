@@ -11,6 +11,8 @@ import {
   HEYUKA_CYBER_DEFENSE_FEEDS,
 } from "@/lib/heyuka/heyuka-universe";
 import { PUBLIC_APIS_CATALOG_COUNT } from "@/lib/zebra-x/tools/public-apis-hub";
+import { getTotalIntegratedCapabilitiesCount } from "@/lib/zebra-x/core/cognitive-brain-registry";
+import { buildSovereignVaultLockManifest } from "@/lib/heyuka/vault/sovereign-permanent-vault";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +24,8 @@ export async function GET(req: NextRequest) {
   const now = Math.floor(Date.now() / 1000);
   const requestId = createRequestId();
   const totalCosmicSources = HEYUKA_COSMIC_DOMAINS.reduce((acc, d) => acc + d.count, 0);
+  const totals = getTotalIntegratedCapabilitiesCount();
+  const vaultManifest = buildSovereignVaultLockManifest();
 
   const hasAuthAttempt = Boolean(
     req.headers.get("authorization") ||
@@ -56,11 +60,17 @@ export async function GET(req: NextRequest) {
       requestId,
       authCheck,
       capabilities: {
+        unlimitedRequests: true,
+        dailyRequestLimit: null,
+        clientComputePolicy: "caller_hardware_or_own_server",
+        vaultedClassifiedSources: vaultManifest.totalClassifiedEntries,
+        grandTotalSources: totals.grandTotalSources,
         totalCosmicSources,
         totalCyberDefenseFeeds: HEYUKA_CYBER_DEFENSE_FEEDS.length,
         cloudFleetGateways: HEYUKA_CLOUD_FLEET_GATEWAYS.length,
         noKeyPublicApiCategories: PUBLIC_APIS_CATALOG_COUNT,
         openaiCompatibleChatEndpoint: "/api/v1/chat/completions",
+        localSdkAndVaultEndpoint: "/api/v1/heyuka/local-sdk?vault=1",
         debugEndpoint: "/api/v1/debug",
       },
       data: [

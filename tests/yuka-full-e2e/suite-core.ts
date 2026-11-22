@@ -51,8 +51,32 @@ import {
 } from "../../src/lib/heyuka/local-sovereign-brain";
 import {
   V30_GITHUBSIGNALS_74_SOURCES,
+  getAllGithubSignalsSources,
   getBoundGithubSignalsSources,
 } from "../../src/lib/zebra-x/core/v30-githubsignals-arsenal";
+import { V31_ASKGPTS_GITHUBDEV_94_SOURCES } from "../../src/lib/zebra-x/core/v31-askgpts-githubdev-arsenal";
+import { V34_PHOTOREALISTIC_LONG_VIDEO_100 } from "../../src/lib/zebra-x/core/v34-long-video-arsenal";
+import { V35_ALL_VAULT_INFRA_200 } from "../../src/lib/zebra-x/core/v35-permanent-vault-arsenal";
+import { V36_V37_MEDIA_3D_200 } from "../../src/lib/zebra-x/core/v36-v37-media-3d-arsenal";
+import { V38_V39_DIRECTOR_AND_RESEARCH } from "../../src/lib/zebra-x/core/v38-v39-project-director-arsenal";
+import {
+  getSovereignVaultUnifiedEntries,
+  resolveVaultEntryWithMirrorFallback,
+  searchSovereignVault,
+  writeSovereignVaultLockManifest,
+} from "../../src/lib/heyuka/vault/sovereign-permanent-vault";
+import {
+  exportEvolutionChatMlDataset,
+  getSelfEvolutionContextForPrompt,
+  recordProductSelfEvolution,
+} from "../../src/lib/heyuka/learning/self-evolution-engine";
+import {
+  buildAtoZProjectDirectorBundle,
+  buildImageStudioPipelineBundle,
+  buildPhotorealistic3DFurEyesBundle,
+  buildPhotorealisticCinemaVideoBundle,
+} from "../../src/lib/heyuka/tools/photorealistic-video-builder";
+import { evaluateZeroCostPolicy } from "../../src/lib/heyuka/compute/zero-cost-policy";
 import {
   normalizeDarijaAndTarifit,
   refinePromptWithPhase3,
@@ -1199,17 +1223,99 @@ async function main() {
     const extPaths = extEngRes.studioFiles.map((f) => f.path);
     assert.ok(extPaths.includes("cad-blueprint.dxf") && extPaths.includes("message-draft.eml") && extPaths.includes("schedule-invite.ics") && extPaths.includes("webusb-escpos-webrtc.js") && extPaths.includes("physics-stress-benchmark.js"));
 
-    // Verify all 74 deduplicated GithubSignals sources from the 75 WhatsApp ZIP screenshots
+    // Verify all 168 deduplicated GithubSignals & AskGPTs sources (74 from ZIP #1 + 94 from ZIP #2)
     assert.equal(V30_GITHUBSIGNALS_74_SOURCES.length, 74);
-    const uniqueV30Urls = new Set(V30_GITHUBSIGNALS_74_SOURCES.map((s) => s.url));
-    assert.equal(uniqueV30Urls.size, 74, "Expected 74 unique GitHub repository URLs in V30_GITHUBSIGNALS_74_SOURCES");
+    assert.equal(V31_ASKGPTS_GITHUBDEV_94_SOURCES.length, 94);
+    const allV30V31 = getAllGithubSignalsSources();
+    assert.equal(allV30V31.length, 168);
+    const uniqueAllUrls = new Set(allV30V31.map((s) => s.url));
+    assert.equal(uniqueAllUrls.size, 168, "Expected 168 unique repository URLs across v30 + v31 packs");
     const boundRobotics = getBoundGithubSignalsSources({ category: "robotics_drones_and_hardware_gadgets" });
-    assert.ok(boundRobotics.length >= 7 && boundRobotics.some((s) => s.name.includes("PteroSim")));
+    assert.ok(boundRobotics.length >= 11 && boundRobotics.some((s) => s.name.includes("PteroSim")) && boundRobotics.some((s) => s.name.includes("Zero-WAM")));
 
     const totalBytes = bundle.reduce((sum, f) => sum + f.content.length, 0) + localApiRes.answer.length + localEsRes.answer.length + extEngRes.answer.length;
     return {
       artifactBytes: totalBytes,
-      detail: `15/15 World Languages + 10 Cognitive Clusters + 74 v30.0 GithubSignals Sources + CAD .DXF/.EML/.ICS/WebUSB/WebRTC + Local API SDK (${totalBytes}B) verified`,
+      detail: `15/15 World Languages + 10 Cognitive Clusters + 168 v30/v31 Sources + CAD .DXF/.EML/.ICS/WebUSB/WebRTC + Local API SDK (${totalBytes}B) verified`,
+    };
+  });
+
+  // 22. v34..v39 SOVEREIGN PERMANENT VAULT + UNLIMITED CLIENT-COMPUTE API + VIDEO/3D/IMAGE/PROJECT + SELF-EVOLUTION
+  await runCheck("sovereign_v34_v39_vault_unlimited_api_evolution", "Sovereign Vault, Unlimited Client-Compute API & Evolution", async () => {
+    assert.equal(V34_PHOTOREALISTIC_LONG_VIDEO_100.length, 100);
+    assert.equal(V35_ALL_VAULT_INFRA_200.length, 200);
+    assert.equal(V36_V37_MEDIA_3D_200.length, 200);
+    assert.equal(V38_V39_DIRECTOR_AND_RESEARCH.length, 111);
+
+    const unified = getSovereignVaultUnifiedEntries();
+    assert.ok(unified.length >= 1150, `Expected >= 1150 unified permanent vault sources, got ${unified.length}`);
+    assert.ok(unified.every((e) => Boolean(e.clusterId && e.vaultUri && e.integrityDigest)));
+
+    const offlineSky = resolveVaultEntryWithMirrorFallback("SkyReels-V2", { offlineMode: true });
+    assert.ok(offlineSky.resolved && offlineSky.offlineReady && offlineSky.archiveCommands.length >= 1);
+
+    const writtenLock = writeSovereignVaultLockManifest();
+    assert.equal(writtenLock.manifest.totalClassifiedEntries, unified.length);
+
+    // Confirm zero 120 req/day block: client-compute & unlimited routing always allowed at $0.00 owner cost
+    const unlimitedDecision = await evaluateZeroCostPolicy({
+      tenantId: "00000000-0000-0000-0000-000000000000",
+      callerComputeUrl: "http://127.0.0.1:11434/v1",
+    });
+    assert.ok(unlimitedDecision.allowed && unlimitedDecision.unlimited && unlimitedDecision.estimatedOwnerCostUSD === 0);
+
+    const videoBundle = buildPhotorealisticCinemaVideoBundle("Cinematic Moroccan Oasis at Sunset 60fps");
+    assert.ok(videoBundle.files.some((f) => f.path === "heyuka-cinema-video.html" && f.content.includes("cinemaCanvas")));
+    assert.ok(videoBundle.files.some((f) => f.path === "cinema-timeline.otio.json" && f.content.includes("Timeline.1")));
+
+    const fur3dBundle = buildPhotorealistic3DFurEyesBundle("Photorealistic wolf creature with glass eyes");
+    assert.ok(fur3dBundle.files.some((f) => f.path === "heyuka-3d-fur-eyes-studio.html" && f.content.includes("Shell-Texturing")));
+    assert.ok(fur3dBundle.files.some((f) => f.path === "HeyukaPhotorealMesh.tsx" && f.content.includes("ior={1.38}")));
+
+    const imgBundle = buildImageStudioPipelineBundle("Kaspi Luxury Perfume Poster");
+    assert.ok(imgBundle.files[0].content.includes("HEYUKA IMAGE STUDIO v36.0"));
+
+    const projectBundle = buildAtoZProjectDirectorBundle("Deploy 3D Storefront on Vercel");
+    assert.ok(projectBundle.files.some((f) => f.path === "vercel.json"));
+
+    const evo = recordProductSelfEvolution({
+      prompt: "Create cinema 3D video showcase",
+      clusterId: "games_3d_video_and_audio",
+      productKind: "video",
+      sourcesUsed: videoBundle.sourcesUsed,
+      outputFormats: ["HTML", "OTIO", "PY"],
+      artifactCount: videoBundle.files.length,
+      totalBytes: videoBundle.files.reduce((s, f) => s + f.content.length, 0),
+    });
+    assert.ok(evo.trace.traceId.length > 4 && evo.recipe.successCount >= 1);
+    const dataset = exportEvolutionChatMlDataset();
+    assert.ok(dataset.tracesCount >= 1 && dataset.jsonl.includes("\"messages\""));
+    const hints = getSelfEvolutionContextForPrompt({
+      prompt: "cinema video",
+      clusterId: "games_3d_video_and_audio",
+    });
+    assert.ok(hints.suggestedVaultSources.length >= 4);
+
+    // Confirm exported Local API SDK includes Unlimited policy + /v1/vault + /v1/learn + structured video routing
+    const localVideoRes = runLocalOnDeviceHeyukaBrain({
+      prompt: "صمم فيديو سينمائي احترافي SkyReels-V2",
+      locale: "ar",
+    });
+    assert.ok(localVideoRes.studioFiles.some((f) => f.path === "heyuka-cinema-video.html"));
+    const sdkBundle = buildPortableLocalApiBundleFiles();
+    const serverJs = sdkBundle.find((f) => f.path === "heyuka-local-api-server.mjs")?.content || "";
+    assert.ok(serverJs.includes("UNLIMITED_CLIENT_COMPUTE_POLICY") && serverJs.includes("/v1/vault") && serverJs.includes("/v1/learn"));
+
+    const searchV39 = searchSovereignVault({ pack: "v39.0", limit: 20 });
+    assert.equal(searchV39.length, 11);
+
+    const bytes =
+      videoBundle.files.reduce((s, f) => s + f.content.length, 0) +
+      fur3dBundle.files.reduce((s, f) => s + f.content.length, 0) +
+      dataset.jsonl.length;
+    return {
+      artifactBytes: bytes,
+      detail: `${unified.length} Unified Vault Sources + v34..v39 (611) + Zero-Limit Policy + Cinema Video/3D/Image/Project + ChatML Self-Evolution (${bytes}B) verified`,
     };
   });
 

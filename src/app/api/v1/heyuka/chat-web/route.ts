@@ -3,8 +3,10 @@ import { z } from "zod";
 import { getRequestContext } from "@/server/auth/context";
 import { generateTextWithRouter } from "@/lib/ai-router";
 import { runUnrestrictedWebResearch } from "@/lib/zebra-x/arsenal-vault";
-import { checkPlanetaryRateLimit } from "@/lib/heyuka/planetary/polyglot-cas-router";
 import { planXZebraToolRoute } from "@/lib/zebra-x/core/router";
+import { buildPhotorealisticCinemaVideoBundle } from "@/lib/heyuka/tools/photorealistic-video-builder";
+import { recordProductSelfEvolution } from "@/lib/heyuka/learning/self-evolution-engine";
+import { searchSovereignVault } from "@/lib/heyuka/vault/sovereign-permanent-vault";
 import { buildLevel1SkillPromptIndex } from "@/lib/zebra-x/core/skills-vault";
 import {
   PUBLIC_APIS_CATALOG_COUNT,
@@ -257,19 +259,7 @@ function buildLiveGroundingFallback(
 }
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
-
-  const rl = checkPlanetaryRateLimit(`heyuka_web_chat:${ip}`, 30, 60_000);
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { ok: false, error: "Rate limit exceeded cleanly. Please wait a moment and retry." },
-      { status: 429 }
-    );
-  }
-
+  // Unlimited zero-owner-cost client-compute execution (no artificial 30/min or 120/day blocker)
   const body = await req.json().catch(() => null);
   const parsed = WebChatRequestSchema.safeParse(body);
   if (!parsed.success) {
@@ -745,6 +735,8 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
       openStudio: true,
     };
   } else if (effectiveMode === "video") {
+    const cinemaBundle = buildPhotorealisticCinemaVideoBundle(lastUser);
+    studioFiles = [...studioFiles, ...cinemaBundle.files];
     const cleanLines = answer
       .split("\n")
       .map((l) => l.replace(/^[-*#\d.\s]+/, "").trim())
@@ -753,14 +745,14 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     clientMediaJob = {
       kind: "video",
       title: lastUser.slice(0, 48),
-      subtitle: "Client 30fps WebM Video Render",
+      subtitle: "HEYUKA v34.0 Cinema Motion + WebAudio Foley (Client GPU)",
       prompt: lastUser,
-      accentHex: "#E11D48",
-      durationSec: 3.4,
+      accentHex: "#10B981",
+      durationSec: 4.5,
       scenes:
         cleanLines.length > 0
           ? cleanLines
-          : [lastUser.slice(0, 45), "HEYUKA Studio Motion", "100% Client CPU • $0.00"],
+          : [lastUser.slice(0, 45), "OpenColorIO ACES Grade", "100% Client GPU • $0.00"],
       openStudio: true,
     };
   } else if (effectiveMode === "audio") {
@@ -799,9 +791,27 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
   }
 
   const thinkingSec = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+  const vaultedMatched = searchSovereignVault({
+    query: lastUser,
+    clusterId: cognitiveRoute.primaryCluster.id,
+    limit: 6,
+  });
+  recordProductSelfEvolution({
+    prompt: lastUser,
+    clusterId: cognitiveRoute.primaryCluster.id,
+    productKind: effectiveMode === "video" ? "video" : effectiveMode === "3d" ? "3d" : effectiveMode === "image" ? "image" : "project",
+    sourcesUsed: vaultedMatched.map((v) => v.name),
+    outputFormats: cognitiveRoute.primaryCluster.outputFormats,
+    artifactCount: studioFiles.length || 1,
+    totalBytes: answer.length,
+    executionMode: executionPolicy === "auto" ? "client_cpu" : "free_gateway",
+  });
 
   return NextResponse.json({
     ok: true,
+    unlimited: true,
+    dailyRequestLimit: null,
+    clientComputeFirst: true,
     model: resolvedModel,
     executionPolicy,
     effectiveMode,

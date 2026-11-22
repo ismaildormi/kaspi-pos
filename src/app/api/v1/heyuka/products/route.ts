@@ -39,7 +39,7 @@ const CreateProductSchema = z.object({
   customInstructions: z.string().max(2000).optional(),
   accentColor: z.enum(["emerald", "teal", "violet", "amber", "titanium"]).optional(),
   widgetTitle: z.string().max(64).optional(),
-  dailyRateLimit: z.number().int().min(10).max(5000).optional(),
+  dailyRateLimit: z.number().int().min(10).max(999_999_999).optional(),
 });
 
 export async function OPTIONS() {

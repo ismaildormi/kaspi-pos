@@ -40,8 +40,12 @@ export async function GET() {
       security: [{ bearerAuth: [] }],
       "x-zebra-platform": {
         owner: "KASPI",
+        unlimitedRequests: true,
+        dailyRequestLimit: null,
+        clientComputeHeader: "X-HEYUKA-Compute-URL",
         models: ["heyuka-omni", "heyuka-core", "heyuka-vision"],
         noKeyPublicApisCount: PUBLIC_APIS_CATALOG_COUNT,
+        sovereignVaultEndpoint: "/api/v1/heyuka/local-sdk?vault=1",
         openaiCompatible: true,
         debugEndpoint: "/api/v1/debug",
       },

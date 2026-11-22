@@ -95,10 +95,10 @@ export async function discoverDynamicCapabilities(params?: {
       responsibleEngine: "HEYUKA Multi-Gateway Router",
       status: "verified_live",
       verifiedByRuntime: true,
-      zeroCostTier: "free_public_tier",
+      zeroCostTier: "user_device",
       limitations: hasLlmKeys
-        ? "Bounded by daily free gateway rate limits unless tenant BYOK is configured."
-        : "Runs via zero-key open fallback when cloud keys are absent.",
+        ? "Unlimited calls via user-device WebGPU/WASM, caller server (X-HEYUKA-Compute-URL), or BYOK ($0 owner exposure)."
+        : "Unlimited calls via sovereign zero-key cascade and client-executable deliverables ($0 server cost).",
       productIds: ["coding-studio", "web-studio", "data-studio", "document-studio", "automation-studio"],
     },
     {

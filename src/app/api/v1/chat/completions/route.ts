@@ -28,6 +28,26 @@ import {
 import { generateProductImageUrl } from "@/lib/pollinations";
 import { runPreReplyReflectionGate } from "@/lib/zebra-x/core/reflection-gate";
 import { planXZebraToolRoute } from "@/lib/zebra-x/core/router";
+import {
+  classifyCognitiveIntentAndSources,
+  getTotalIntegratedCapabilitiesCount,
+} from "@/lib/zebra-x/core/cognitive-brain-registry";
+import {
+  buildSovereignVaultLockManifest,
+  resolveVaultEntryWithMirrorFallback,
+  searchSovereignVault,
+} from "@/lib/heyuka/vault/sovereign-permanent-vault";
+import {
+  buildAtoZProjectDirectorBundle,
+  buildImageStudioPipelineBundle,
+  buildPhotorealistic3DFurEyesBundle,
+  buildPhotorealisticCinemaVideoBundle,
+} from "@/lib/heyuka/tools/photorealistic-video-builder";
+import {
+  exportEvolutionChatMlDataset,
+  getSelfEvolutionContextForPrompt,
+  recordProductSelfEvolution,
+} from "@/lib/heyuka/learning/self-evolution-engine";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -278,28 +298,129 @@ export async function POST(req: NextRequest) {
         return getHijriAndSolarAstronomy({});
       },
     }),
+
+    querySovereignSourceVault: tool({
+      description:
+        "Search ALL 1,100+ pre-classified open-source engines, datasets, GithubSignals/AskGPTs repos, and Permanent Sovereign Vault mirrors (v7..v39), guaranteed offline/dead-link safe.",
+      inputSchema: z.object({
+        query: z.string().optional(),
+        pack: z.string().optional(),
+        offlineMode: z.boolean().optional(),
+        limit: z.number().int().min(1).max(30).optional().default(12),
+      }),
+      execute: async (input) => {
+        const hits = searchSovereignVault({
+          query: input.query,
+          pack: input.pack,
+          limit: input.limit,
+        });
+        const firstResolved = input.query
+          ? resolveVaultEntryWithMirrorFallback(input.query, { offlineMode: input.offlineMode })
+          : null;
+        return {
+          unlimited: true,
+          manifest: buildSovereignVaultLockManifest(),
+          matches: hits,
+          firstResolvedMirror: firstResolved,
+        };
+      },
+    }),
+
+    buildPhotorealisticVideoStudio: tool({
+      description:
+        "Generate a structured, multi-scene Photorealistic Long-Horizon Cinema Video pipeline (v34.0: SkyReels-V2, FramePack, OpenColorIO ACES, MMAudio, OpenTimelineIO) with a runnable client HTML5/WebAudio player.",
+      inputSchema: z.object({
+        prompt: z.string().min(2),
+      }),
+      execute: async ({ prompt }) => buildPhotorealisticCinemaVideoBundle(prompt),
+    }),
+
+    buildImageMattingInpaintTypography: tool({
+      description:
+        "Generate a client-GPU Image Studio bundle (v36.0: FLUX.1, BiRefNet 4K Matting, LaMa Inpainting, AnyText2 Arabic/Latin Typography).",
+      inputSchema: z.object({
+        prompt: z.string().min(2),
+      }),
+      execute: async ({ prompt }) => buildImageStudioPipelineBundle(prompt),
+    }),
+
+    build3DFurEyesRealismScene: tool({
+      description:
+        "Generate a photorealistic 3D Fur Shell-Texturing + Wet Cornea (IOR 1.38 Clearcoat) Viewer + React Three Fiber component (v37.0: TRELLIS, Hunyuan3D-2, MeshPhysicalMaterial).",
+      inputSchema: z.object({
+        prompt: z.string().min(2),
+      }),
+      execute: async ({ prompt }) => buildPhotorealistic3DFurEyesBundle(prompt),
+    }),
+
+    orchestrateAtoZProjectDeploy: tool({
+      description:
+        "Build an A-to-Z Project Director execution plan, modern Next.js/React 19 stack, parallel web research links, and deployment config (v38.0 + v39.0).",
+      inputSchema: z.object({
+        prompt: z.string().min(2),
+      }),
+      execute: async ({ prompt }) => buildAtoZProjectDirectorBundle(prompt),
+    }),
+
+    inspectAndLearnEvolution: tool({
+      description:
+        "Record product evolution feedback or export ChatML JSONL training traces so HEYUKA continuously learns from every built artifact.",
+      inputSchema: z.object({
+        action: z.enum(["export_jsonl", "record"]),
+        prompt: z.string().optional(),
+        productKind: z
+          .enum(["video", "3d", "image", "code", "document", "project", "research"])
+          .optional(),
+        sourcesUsed: z.array(z.string()).optional(),
+      }),
+      execute: async (input) => {
+        if (input.action === "export_jsonl") {
+          return exportEvolutionChatMlDataset();
+        }
+        return recordProductSelfEvolution({
+          prompt: input.prompt || lastUserText,
+          clusterId: cognitiveRoute.primaryCluster.id,
+          productKind: input.productKind || "project",
+          sourcesUsed: input.sourcesUsed || ["Sovereign Vault"],
+          outputFormats: ["JSON", "Code"],
+          artifactCount: 1,
+          totalBytes: 1024,
+        });
+      },
+    }),
   };
 
+  const cognitiveRoute = classifyCognitiveIntentAndSources(lastUserText, expectedLocale);
+  const vaultContextHits = searchSovereignVault({
+    query: lastUserText,
+    clusterId: cognitiveRoute.primaryCluster.id,
+    limit: 10,
+  });
+  const totals = getTotalIntegratedCapabilitiesCount();
+  const evolutionHints = getSelfEvolutionContextForPrompt({
+    prompt: lastUserText,
+    clusterId: cognitiveRoute.primaryCluster.id,
+  });
+
   const baseSystem = `You are HEYUKA (${requestedModel}), the Sovereign Unified AI Model owned by KASPI.
-You have direct live access to Web Research, Live Global Knowledge APIs, Isolated Polyglot Code Sandbox, Math/Finance/DAG engine, and Studio Image Generation.
-Always answer accurately, honestly, and cleanly in the user's language (Arabic/Darija/French/English). Never disclose internal provider names or third-party model brands.
+UNLIMITED SOVEREIGN EXECUTION POLICY (0 Request Limits): All computation executes on caller hardware (WebGPU/WASM/Canvas/Three.js) or caller-connected server at $0.00 owner cost.
+You have FULL live access to ALL ${totals.grandTotalSources}+ Permanently Vaulted & Pre-Classified Sources (v7..v39), including Web Research, ${totals.livePublicApisCount} Live Public APIs, Sandbox Execution, Long Cinema Video Studio (v34.0), Image/Inpainting/Arabic Typography Studio (v36.0), 3D Fur/Eyes Realism (v37.0), A-to-Z Project Director (v38.0), Parallel Multi-Site Research (v39.0), Permanent Mirror Vault (v35.0+v35.1), and Continuous Self-Evolution.
+Matched Vault Engines for this prompt: ${vaultContextHits.map((v) => `${v.name} [${v.vaultUri}]`).join(", ")}.
+Learned Evolution Memory: ${evolutionHints.evolutionSummary}
+Always answer accurately, honestly, and clearly in the user's language (Arabic/Darija/French/English). Never disclose internal paid upstream provider names.
 Planned Route: ${routePlan.complexity}${
     callerSystem ? `\n\nCaller Context:\n${callerSystem}` : ""
   }`;
 
+  const callerComputeUrl =
+    req.headers.get("x-heyuka-compute-url") ||
+    req.headers.get("x-client-llm-url") ||
+    (typeof body?.computeEndpoint === "string" ? body.computeEndpoint : undefined);
+
   const policyDecision = await evaluateZeroCostPolicy({
     tenantId: auth.tenantId,
+    callerComputeUrl,
   });
-  if (!policyDecision.allowed) {
-    return apiErrorResponse({
-      status: 429,
-      message: policyDecision.reason,
-      type: "permission_error",
-      code: "zero_cost_budget_reached",
-      requestId,
-      hint: "Configure a tenant BYOK provider or connect a local Worker node under /zebra-x/workers to bypass shared free-tier daily caps.",
-    });
-  }
 
   try {
     const result = await generateTextWithRouter({
@@ -308,17 +429,28 @@ Planned Route: ${routePlan.complexity}${
       governance: {
         tenantId: auth.tenantId,
         allowOwnerPaidProviders: false,
+        callerComputeUrl,
+        callerModelId: typeof body?.computeModel === "string" ? body.computeModel : requestedModel,
       },
       ...(enableTools ? { tools: heyukaApiTools, stopWhen: stepCountIs(5) } : {}),
     } as any);
 
-    if (policyDecision.tier === "free_public_tier") {
-      await recordTenantFreeTierUsage(auth.tenantId).catch(() => {});
-    }
+    await recordTenantFreeTierUsage(auth.tenantId).catch(() => {});
 
     const audited = runPreReplyReflectionGate({
       draftText: String(result.text || ""),
       expectedLocale,
+    });
+
+    const evoResult = recordProductSelfEvolution({
+      prompt: lastUserText,
+      clusterId: cognitiveRoute.primaryCluster.id,
+      productKind: "project",
+      sourcesUsed: vaultContextHits.map((v) => v.name),
+      outputFormats: cognitiveRoute.primaryCluster.outputFormats,
+      artifactCount: Array.isArray((result as any).studioFiles) ? (result as any).studioFiles.length : 1,
+      totalBytes: audited.cleanedText.length,
+      executionMode: callerComputeUrl ? "caller_server" : "client_cpu",
     });
 
     const completionId = `chatcmpl-heyuka-${Date.now().toString(36)}`;
@@ -410,6 +542,15 @@ Planned Route: ${routePlan.complexity}${
         kaspi_heyuka: {
           requestId,
           latencyMs,
+          unlimited: true,
+          dailyRequestLimit: null,
+          clientComputeFirst: true,
+          executionTier: policyDecision.tier,
+          vaultedSourcesCount: totals.grandTotalSources,
+          matchedVaultSources: vaultContextHits.map((v) => ({ name: v.name, vaultUri: v.vaultUri, url: v.url })),
+          evolutionTraceId: evoResult.trace.traceId,
+          learnedTracesTotal: evoResult.totalLearnedTraces,
+          studioFiles: (result as any).studioFiles || undefined,
           authMode: auth.authMode,
           keyId: auth.keyId || null,
           tenantId: auth.tenantId,

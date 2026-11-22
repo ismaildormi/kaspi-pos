@@ -76,29 +76,25 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const policy = await evaluateZeroCostPolicy({ tenantId: product.tenantId });
-  if (!policy.allowed) {
-    return apiErrorResponse({
-      status: 429,
-      message: policy.reason,
-      type: "permission_error",
-      requestId,
-    });
-  }
+  const callerComputeUrl =
+    req.headers.get("x-heyuka-compute-url") ||
+    req.headers.get("x-client-llm-url") ||
+    (typeof body?.computeEndpoint === "string" ? body.computeEndpoint : undefined);
+
+  await evaluateZeroCostPolicy({ tenantId: product.tenantId, callerComputeUrl });
 
   try {
     const res = await generateTextWithRouter({
-      system: `${product.customInstructions}\nStrict Product Scope: ${product.domainContext}\nAllowed Capabilities: ${product.allowedCapabilities.join(", ")}\nDenied Capabilities (Must refuse politely): ${product.deniedCapabilities.join(", ") || "none"}`,
+      system: `${product.customInstructions}\nStrict Product Scope: ${product.domainContext}\nAllowed Capabilities: ${product.allowedCapabilities.join(", ")}\nDenied Capabilities (Must refuse politely): ${product.deniedCapabilities.join(", ") || "none"}\nExecution: Unlimited Zero-Owner-Cost (Runs on user CPU/GPU or caller's own server).`,
       messages: [{ role: "user", content: message.slice(0, 2000) }],
       governance: {
         tenantId: product.tenantId,
         allowOwnerPaidProviders: false,
+        callerComputeUrl,
       },
     } as any);
 
-    if (policy.tier === "free_public_tier") {
-      await recordTenantFreeTierUsage(product.tenantId).catch(() => {});
-    }
+    await recordTenantFreeTierUsage(product.tenantId).catch(() => {});
 
     await prisma.idempotencyRecord.update({
       where: { id: row.id },
@@ -114,9 +110,14 @@ export async function POST(req: NextRequest) {
     return apiJsonResponse(
       {
         ok: true,
+        unlimited: true,
+        dailyRequestLimit: null,
+        clientComputeFirst: true,
+        ownerCostExposureUSD: 0,
         requestId,
         widgetId: product.id,
         reply: String(res.text || ""),
+        studioFiles: (res as any).studioFiles || undefined,
       },
       200,
       { "X-Request-Id": requestId }

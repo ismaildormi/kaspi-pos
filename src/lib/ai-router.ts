@@ -15,9 +15,30 @@ import {
   type LanguageModel,
 } from "ai";
 
+import { runLocalOnDeviceHeyukaBrain } from "@/lib/heyuka/local-sovereign-brain";
+
 export interface RouterGovernanceScope {
   tenantId?: string;
   allowOwnerPaidProviders?: boolean;
+  callerComputeUrl?: string;
+  callerComputeKey?: string;
+  callerModelId?: string;
+  strictCloudOnly?: boolean;
+}
+
+function isSafeCallerComputeUrl(rawUrl: string): boolean {
+  try {
+    const u = new URL(rawUrl.trim());
+    if (u.protocol !== "https:" && u.protocol !== "http:") return false;
+    const host = u.hostname.toLowerCase();
+    // Block cloud metadata & link-local SSRF targets cleanly
+    if (host === "169.254.169.254" || host.startsWith("169.254.") || host.endsWith(".internal")) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -64,6 +85,29 @@ export async function getRouterCandidates(
 ): Promise<RouterCandidate[]> {
   const candidates: RouterCandidate[] = [];
   const allowPaidOwner = scope?.allowOwnerPaidProviders === true;
+
+  // Priority -1: Caller's Own Server / Ollama / vLLM / Llamafile Endpoint ($0.00 Owner Cost, Unlimited)
+  if (scope?.callerComputeUrl && isSafeCallerComputeUrl(scope.callerComputeUrl)) {
+    try {
+      const callerModelId = scope.callerModelId?.trim() || "qwen2.5:7b";
+      const callerProvider = createOpenAI({
+        apiKey: scope.callerComputeKey?.trim() || "none",
+        baseURL: scope.callerComputeUrl.trim(),
+      });
+      candidates.push({
+        provider: "local",
+        providerName: "Caller Sovereign Server (0 Owner Cost)",
+        keyIndex: 0,
+        keyMasked: "caller-server",
+        apiKey: "none",
+        modelId: callerModelId,
+        model: callerProvider(callerModelId) as unknown as LanguageModel,
+        supportsVision: true,
+      });
+    } catch {
+      // Ignore malformed caller endpoint safely
+    }
+  }
 
   // Priority 0: Tenant's Own Encrypted BYOK Provider (Zero Owner Financial Exposure)
   if (scope?.tenantId && scope.tenantId !== "00000000-0000-0000-0000-000000000000") {
@@ -475,6 +519,32 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
         error: openErr?.message || String(openErr),
       });
     }
+  }
+
+  // Unlimited Sovereign Client/Local Cascade: Never leave callers stuck at HTTP 429/503 when shared keys are busy
+  if (governance?.strictCloudOnly !== true) {
+    const msgs = Array.isArray((options as any).messages) ? (options as any).messages : [];
+    const lastMsg = [...msgs].reverse().find((m: any) => m?.role === "user");
+    const lastText =
+      typeof lastMsg?.content === "string"
+        ? lastMsg.content
+        : Array.isArray(lastMsg?.content)
+        ? lastMsg.content.map((p: any) => p?.text || "").join(" ").trim()
+        : String((options as any).system || "HEYUKA request").slice(0, 400);
+    const detectedAr = /[\u0600-\u06FF]/.test(lastText);
+    const localBrain = runLocalOnDeviceHeyukaBrain({
+      prompt: lastText || "Hello HEYUKA",
+      mode: "auto",
+      locale: detectedAr ? "ar" : "en",
+    });
+    return {
+      text: localBrain.answer,
+      steps: [],
+      activeProvider: "HEYUKA Unlimited Client-Compute Engine",
+      activeKeyIndex: 0,
+      activeModel: "heyuka-sovereign-local",
+      studioFiles: localBrain.studioFiles,
+    } as any;
   }
 
   throw new Error(

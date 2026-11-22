@@ -11,54 +11,57 @@ import Dexie, { type Table } from "dexie";
  *   server runtime uses bounded in-memory LRU cache (`MAX_SERVER_CACHE = 120`).
  */
 
-export type PublicApiCategory =
-  | "openfoodfacts"
-  | "openbeautyfacts"
-  | "openproductfacts"
-  | "fx_rates"
-  | "crypto_market"
-  | "weather"
-  | "geocode"
-  | "b2b_overpass"
-  | "gleif_company"
-  | "country_info"
-  | "wikipedia"
-  | "wikidata_sparql"
-  | "duckduckgo"
-  | "world_bank"
-  | "openalex_science"
-  | "openfda_drug"
-  | "pubmed_papers"
-  | "soilgrids_agri"
-  | "nasa_power_agri"
-  | "paleobiology_fossils"
-  | "open_tree_of_life"
-  | "patents_inventor"
-  | "nobel_prize"
-  | "hacker_news"
-  | "remote_jobs"
-  | "iconify_logos"
-  | "openverse_media"
-  | "met_museum"
-  | "polyhaven_3d"
-  | "transit_stops"
-  | "smart_city_poi"
-  | "air_quality"
-  | "nador_marine_weather"
-  | "cyber_threat_intel"
-  | "osrm_routing"
-  | "usgs_earthquakes"
-  | "nasa_eonet_events"
-  | "nhtsa_recalls_vehicles"
-  | "disease_health_stats"
-  | "rxnav_drugs"
-  | "wger_workouts"
-  | "openlibrary_books"
-  | "gbif_biodiversity"
-  | "frankfurter_fx"
-  | "themealdb_recipes"
-  | "opensky_flights"
-  | "google_patents";
+export const PUBLIC_API_CATEGORIES = [
+  "openfoodfacts",
+  "openbeautyfacts",
+  "openproductfacts",
+  "fx_rates",
+  "crypto_market",
+  "weather",
+  "geocode",
+  "b2b_overpass",
+  "gleif_company",
+  "country_info",
+  "wikipedia",
+  "wikidata_sparql",
+  "duckduckgo",
+  "world_bank",
+  "openalex_science",
+  "openfda_drug",
+  "pubmed_papers",
+  "soilgrids_agri",
+  "nasa_power_agri",
+  "paleobiology_fossils",
+  "open_tree_of_life",
+  "patents_inventor",
+  "nobel_prize",
+  "hacker_news",
+  "remote_jobs",
+  "iconify_logos",
+  "openverse_media",
+  "met_museum",
+  "polyhaven_3d",
+  "transit_stops",
+  "smart_city_poi",
+  "air_quality",
+  "nador_marine_weather",
+  "cyber_threat_intel",
+  "osrm_routing",
+  "usgs_earthquakes",
+  "nasa_eonet_events",
+  "nhtsa_recalls_vehicles",
+  "disease_health_stats",
+  "rxnav_drugs",
+  "wger_workouts",
+  "openlibrary_books",
+  "gbif_biodiversity",
+  "frankfurter_fx",
+  "themealdb_recipes",
+  "opensky_flights",
+  "google_patents",
+] as const;
+
+export type PublicApiCategory = (typeof PUBLIC_API_CATEGORIES)[number];
 
 export interface PublicApiCacheRow {
   cacheKey: string;

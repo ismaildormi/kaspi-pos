@@ -28,6 +28,20 @@ import {
 } from "@/lib/zebra-x/core/cognitive-brain-registry";
 import { renderStyledBrandQrSvg } from "@/lib/zebra-x/tools/qr-architect-engine";
 import { scanSourceCodeForVulnerabilities } from "@/lib/zebra-x/tools/security-sast-auditor";
+import {
+  buildAtoZProjectDirectorBundle,
+  buildImageStudioPipelineBundle,
+  buildPhotorealistic3DFurEyesBundle,
+  buildPhotorealisticCinemaVideoBundle,
+} from "@/lib/heyuka/tools/photorealistic-video-builder";
+import {
+  getSelfEvolutionContextForPrompt,
+  recordProductSelfEvolution,
+} from "@/lib/heyuka/learning/self-evolution-engine";
+import {
+  buildSovereignVaultLockManifest,
+  searchSovereignVault,
+} from "@/lib/heyuka/vault/sovereign-permanent-vault";
 
 export interface UniversalLanguageProfile {
   code: string;
@@ -402,13 +416,29 @@ const COGNITIVE_CLUSTERS = [
   "1. Google Patents (150M+ Global IP & Inventions)",
   "2. PDF, Word (.docx), Excel (.xlsx), PowerPoint (.pptx) & Thermal Print",
   "3. Image, SVG Vector, Styled QR & Vision Cutout Studio",
-  "4. PKZIP Archiver, Virtual File System (VFS) & Multi-Format Packager",
-  "5. Autonomous Coder, Multi-File IDE & Surgical Diff Engine",
-  "6. 3D Games (Three.js/Yuka.js), 30fps WebM Video & WebAudio Synth",
-  "7. 47 Zero-Key Live Public APIs & Deep Web Research",
+const COGNITIVE_CLUSTERS = [
+  "1. Google Patents (150M+ Global Corpus) & Scholar Blueprints -> PDF/DOCX",
+  "2. Arabic/RTL PDF, DOCX, XLSX, PPTX Document Studio",
+  "3. Image Gen, BiRefNet 4K Matting, LaMa Inpainting & AnyText2 Typography (v36.0)",
+  "4. PKZIP Archiver, VFS & Sovereign Permanent Vault Mirrors (v35.0 + v35.1)",
+  "5. Autonomous Coder, Multi-File IDE, Next.js/React 19 & A-to-Z Deployer (v38.0)",
+  "6. Long Photorealistic Cinema Video (v34.0) & 3D Fur/Eyes Realism (v37.0) -> .HTML/.GLB/.WebM/.WAV",
+  "7. 47 Zero-Key Live Public APIs & Parallel Multi-Site Web Research (v39.0)",
   "8. Robotics (ROS2/ESP32), 3-Agent Swarm & Mobile Repair Lab",
-  "9. KASPI POS Store Intelligence, Finance & Hardware Hub"
+  "9. KASPI POS Store Intelligence, Finance & Hardware Hub",
+  "10. Hardware WebUSB/ESC-POS, Open CAD (.DXF), WebRTC/VoIP, .EML & Physics"
 ];
+
+const UNLIMITED_CLIENT_COMPUTE_POLICY = {
+  dailyRequestLimit: null,
+  unlimited: true,
+  ownerServerCostUSD: 0,
+  executionMode: "caller_hardware_or_own_server",
+  vaultedSourcesExposed: true,
+  continuousSelfLearning: true
+};
+
+const SELF_LEARNING_LOG = [];
 
 function detectLang(text = "") {
   if (/[\\u0600-\\u06FF]/.test(text)) return { code: "ar", dir: "rtl", name: "Arabic / Darija" };
@@ -478,11 +508,27 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     return res.end(JSON.stringify({
       ok: true,
-      engine: "HEYUKA Local Sovereign API Server v29.0",
+      engine: "HEYUKA Local Sovereign API Server v39.0 (Unlimited + Client-Compute + Vaulted)",
       cost: "$0.00",
+      unlimited: true,
+      rateLimit: "none",
+      clientComputePolicy: UNLIMITED_CLIENT_COMPUTE_POLICY,
       offlineReady: true,
       clusters: COGNITIVE_CLUSTERS.length,
-      endpoints: ["/health", "/v1/chat/completions", "/api/v1/heyuka/local-sdk"]
+      learnedProductsCount: SELF_LEARNING_LOG.length,
+      endpoints: ["/health", "/v1/chat/completions", "/api/v1/heyuka/local-sdk", "/v1/vault", "/v1/learn"]
+    }, null, 2));
+  }
+
+  if (req.method === "GET" && req.url?.startsWith("/v1/vault")) {
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    return res.end(JSON.stringify({
+      ok: true,
+      unlimited: true,
+      policy: UNLIMITED_CLIENT_COMPUTE_POLICY,
+      clusters: COGNITIVE_CLUSTERS,
+      packs: ["v20-v28", "v30 GithubSignals (74)", "v31 AskGPTs (94)", "v34 Cinema Video (100)", "v35 Permanent Vault (200)", "v36 Image Studio (100)", "v37 3D Fur & Eyes (100)", "v38 A-to-Z Project Director (100)", "v39 Parallel Web Research"],
+      learnedProducts: SELF_LEARNING_LOG.slice(0, 20)
     }, null, 2));
   }
 
@@ -492,9 +538,17 @@ const server = http.createServer((req, res) => {
     req.on("end", () => {
       try {
         const payload = JSON.parse(body || "{}");
+        if (req.url?.startsWith("/v1/learn")) {
+          SELF_LEARNING_LOG.unshift({ at: new Date().toISOString(), ...payload });
+          if (SELF_LEARNING_LOG.length > 500) SELF_LEARNING_LOG.length = 500;
+          res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+          return res.end(JSON.stringify({ ok: true, learnedTotal: SELF_LEARNING_LOG.length }));
+        }
         const messages = Array.isArray(payload.messages) ? payload.messages : [];
         const lastMsg = messages[messages.length - 1]?.content || payload.prompt || "Hello HEYUKA";
         const result = synthesizeLocalResponse(String(lastMsg), payload.mode || "auto");
+        SELF_LEARNING_LOG.unshift({ at: new Date().toISOString(), prompt: String(lastMsg).slice(0, 180), mode: payload.mode || "auto" });
+        if (SELF_LEARNING_LOG.length > 500) SELF_LEARNING_LOG.length = 500;
 
         if (req.url?.startsWith("/v1/chat/completions")) {
           res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
@@ -503,18 +557,26 @@ const server = http.createServer((req, res) => {
             object: "chat.completion",
             created: Math.floor(Date.now() / 1000),
             model: "heyuka-local-omni",
+            unlimited: true,
+            clientComputePolicy: UNLIMITED_CLIENT_COMPUTE_POLICY,
             choices: [
               {
                 index: 0,
                 message: { role: "assistant", content: result.answer },
                 finish_reason: "stop"
               }
-            ]
+            ],
+            kaspi_heyuka: {
+              unlimited: true,
+              clientComputeFirst: true,
+              studioFiles: result.studioFiles,
+              learnedProductsCount: SELF_LEARNING_LOG.length
+            }
           }));
         }
 
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-        return res.end(JSON.stringify(result));
+        return res.end(JSON.stringify({ ...result, unlimited: true, learnedProductsCount: SELF_LEARNING_LOG.length }));
       } catch (err) {
         res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
         return res.end(JSON.stringify({ ok: false, error: String(err?.message || err) }));
@@ -533,15 +595,28 @@ server.listen(PORT, "0.0.0.0", () => {
 `;
 
   const mobileSdkJs = `/**
- * HEYUKA v29.0 — Universal Mobile, Browser, PWA & Offline Local Client SDK
+ * HEYUKA v39.0 — Unlimited Mobile, Browser, PWA & Own-Server Local Client SDK
  * Works in Android WebView, iOS WKWebView, Capacitor, React Native, Electron, Tauri, and Web Browsers.
- * Automatically cascades: Local Device Server (127.0.0.1:4040) -> Cloud API -> On-Device CPU Fallback.
+ * Zero Request Caps (Unlimited) • Compute Always Runs on Caller's Hardware / Own Server ($0.00).
+ * Automatically cascades: Caller Server / Local Ollama (127.0.0.1:11434) -> Local HEYUKA Node (127.0.0.1:4040) -> Cloud Zero-Cost Edge -> On-Device CPU/GPU.
  */
 export class HeyukaLocalSDK {
   constructor(options = {}) {
+    this.callerServerUrl = options.callerServerUrl || "";
     this.localEndpoint = options.localEndpoint || "http://127.0.0.1:4040/api/v1/heyuka/local-sdk";
     this.cloudEndpoint = options.cloudEndpoint || "https://kaspi-pos.vercel.app/api/v1/heyuka/local-sdk";
     this.preferLocal = options.preferLocal !== false;
+    this.unlimited = true;
+  }
+
+  recordLearnedProduct(entry) {
+    try {
+      if (typeof localStorage === "undefined") return;
+      const key = "heyuka_sovereign_evolution_v1";
+      const prev = JSON.parse(localStorage.getItem(key) || "[]");
+      prev.unshift({ at: new Date().toISOString(), ...entry });
+      localStorage.setItem(key, JSON.stringify(prev.slice(0, 120)));
+    } catch {}
   }
 
   async chat(prompt, options = {}) {
@@ -549,6 +624,7 @@ export class HeyukaLocalSDK {
       prompt,
       mode: options.mode || "auto",
       locale: options.locale || "ar",
+      computeEndpoint: options.computeEndpoint || this.callerServerUrl || undefined,
       messages: [{ role: "user", content: prompt }]
     };
 
@@ -556,26 +632,34 @@ export class HeyukaLocalSDK {
       ? [this.localEndpoint, this.cloudEndpoint]
       : [this.cloudEndpoint, this.localEndpoint];
 
+    const headers = { "Content-Type": "application/json" };
+    if (this.callerServerUrl) headers["X-HEYUKA-Compute-URL"] = this.callerServerUrl;
+
     for (const url of targets) {
       try {
         const res = await fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify(payload),
           signal: AbortSignal.timeout(options.timeoutMs || 15000)
         });
         if (res.ok) {
-          return await res.json();
+          const data = await res.json();
+          this.recordLearnedProduct({ prompt: prompt.slice(0, 140), provider: data.provider || url });
+          return { ...data, unlimited: true, clientComputeFirst: true };
         }
       } catch {}
     }
 
-    // 100% On-Device Offline CPU Execution (Zero network required)
+    // 100% On-Device Offline CPU Execution (Zero network required, unlimited calls)
+    this.recordLearnedProduct({ prompt: prompt.slice(0, 140), provider: "on-device-cpu" });
     return {
       ok: true,
+      unlimited: true,
+      clientComputeFirst: true,
       provider: "heyuka-on-device-cpu",
       offline: true,
-      answer: "### ⚡ HEYUKA On-Device CPU Engine\\n\\nExecuted directly on your mobile/computer processor ($0.00):\\n\\n- **Input:** " + prompt
+      answer: "### ⚡ HEYUKA On-Device CPU Engine\\n\\nExecuted directly on your mobile/computer processor ($0.00 • Unlimited):\\n\\n- **Input:** " + prompt
     };
   }
 }
@@ -881,11 +965,19 @@ Your self-contained **HEYUKA Local Sovereign API & Mobile SDK (v29.0)** bundle i
     };
   }
 
-  // 5) 3D Game / Robotics / Coding / General Multi-Language Structured Synthesis
+  // 5) Structured Cinema Video (v34), 3D Fur/Eyes (v37), Image Studio (v36), A-to-Z Project Director (v38), Robotics, CAD & Coding Synthesis
   const pLower = prompt.toLowerCase();
+  const isVideo =
+    params.mode === "video" ||
+    /(video|cinema|film|movie|webm|mp4|foley|skyreels|framepack|mmaudio|فيديو|فيلم|سينما|مونتاج)/i.test(pLower);
   const is3DOrGame =
     params.mode === "3d" ||
-    /(game|3d|arena|shooter|racing|phaser|three|yuka|لعبة|ألعاب|مجسم)/i.test(pLower);
+    /(game|3d|arena|shooter|racing|phaser|three|yuka|glb|fur|cornea|eyeball|sculpt|trellis|hunyuan3d|لعبة|ألعاب|مجسم|فرو|عيون)/i.test(pLower);
+  const isImageStudio =
+    params.mode === "image" ||
+    /(inpaint|remove.?bg|background.?remov|birefnet|rmbg|flux|anytext|poster|إزالة الخلفية|حذف عنصر|تصميم صورة|صورة واقعية)/i.test(pLower);
+  const isProjectDirector =
+    /(deploy|vercel|cloudflare|a-to-z|fullstack|project plan|architect|من الألف إلى الياء|نشر المشروع|بناء مشروع)/i.test(pLower);
   const isRobotics = /(robot|ros2|esp32|arduino|micropython|روبوت|درون)/i.test(pLower);
   const isCodingOrSite =
     params.mode === "coding" ||
@@ -897,25 +989,80 @@ Your self-contained **HEYUKA Local Sovereign API & Mobile SDK (v29.0)** bundle i
     );
 
   let studioFiles: BuilderStudioFile[] = [];
+  let productKind: "video" | "3d" | "image" | "code" | "document" | "project" | "research" = "code";
+  let extraSourcesUsed: string[] = [];
+
   if (isExtendedEngineering) {
     studioFiles = buildExtendedEngineeringStudioFiles(prompt);
+    productKind = "code";
+  } else if (isVideo) {
+    const vid = buildPhotorealisticCinemaVideoBundle(prompt);
+    studioFiles = vid.files;
+    extraSourcesUsed = vid.sourcesUsed;
+    productKind = "video";
   } else if (is3DOrGame) {
-    studioFiles = buildPackaged3DGameBlueprint(prompt.slice(0, 44), prompt);
-  } else if (isRobotics) {
-    studioFiles = buildRoboticsActionBlueprint(prompt.slice(0, 44), prompt);
-  } else if (isCodingOrSite) {
-    studioFiles = buildSelfContainedWebSiteBlueprint(prompt.slice(0, 44), prompt);
-  } else if (params.mode === "image") {
+    const isGameKeyword = /(game|arena|shooter|racing|phaser|yuka|لعبة|ألعاب)/i.test(pLower);
+    if (isGameKeyword) {
+      studioFiles = buildPackaged3DGameBlueprint(prompt.slice(0, 44), prompt);
+    } else {
+      const m3d = buildPhotorealistic3DFurEyesBundle(prompt);
+      studioFiles = m3d.files;
+      extraSourcesUsed = m3d.sourcesUsed;
+    }
+    productKind = "3d";
+  } else if (isImageStudio) {
+    const imgBundle = buildImageStudioPipelineBundle(prompt);
     studioFiles = [
+      ...imgBundle.files,
       {
         path: "artwork.svg",
         language: "svg",
         content: buildCodeToMediaArtifactSvg(prompt.slice(0, 40), prompt),
       },
     ];
+    extraSourcesUsed = imgBundle.sourcesUsed;
+    productKind = "image";
+  } else if (isProjectDirector) {
+    const dirBundle = buildAtoZProjectDirectorBundle(prompt);
+    studioFiles = [...dirBundle.files, ...buildSelfContainedWebSiteBlueprint(prompt.slice(0, 44), prompt)];
+    extraSourcesUsed = dirBundle.sourcesUsed;
+    productKind = "project";
+  } else if (isRobotics) {
+    studioFiles = buildRoboticsActionBlueprint(prompt.slice(0, 44), prompt);
+    productKind = "code";
+  } else if (isCodingOrSite) {
+    studioFiles = buildSelfContainedWebSiteBlueprint(prompt.slice(0, 44), prompt);
+    productKind = "code";
   } else {
     studioFiles = buildPortableLocalApiBundleFiles().slice(0, 2);
   }
+
+  const vaultedMatches = searchSovereignVault({
+    query: prompt,
+    clusterId: cognitive.primaryCluster.id,
+    limit: 8,
+  });
+  const matchedSourceNames = Array.from(
+    new Set([...extraSourcesUsed, ...vaultedMatches.map((v) => v.name)])
+  ).slice(0, 12);
+
+  // Record product execution continuously in Self-Evolution Engine & fetch learned hints
+  const totalBytesGenerated = studioFiles.reduce((acc, f) => acc + f.content.length, 0);
+  const evolutionRecord = recordProductSelfEvolution({
+    prompt,
+    clusterId: cognitive.primaryCluster.id,
+    productKind,
+    sourcesUsed: matchedSourceNames.length > 0 ? matchedSourceNames : [cognitive.primaryCluster.titleEn],
+    outputFormats: studioFiles.map((f) => f.language.toUpperCase()),
+    artifactCount: studioFiles.length,
+    totalBytes: totalBytesGenerated,
+    executionMode: "client_cpu",
+  });
+  const evoCtx = getSelfEvolutionContextForPrompt({
+    prompt,
+    clusterId: cognitive.primaryCluster.id,
+  });
+  const vaultManifest = buildSovereignVaultLockManifest();
 
   const totals = getTotalIntegratedCapabilitiesCount();
   const clusterRows = cognitive.matchedClusters
@@ -931,8 +1078,8 @@ Your self-contained **HEYUKA Local Sovereign API & Mobile SDK (v29.0)** bundle i
 
 ${
   isAr
-    ? `تم تحليل طلبك (**${prompt.slice(0, 140)}**) عبر العقل المعرفي المحلي لـ **HEYUKA** (\`${totals.grandTotalSources}+\` محرك ومصدر مفتوح + \`${totals.livePublicApisCount}\` قناة بيانات حية) وتوليد النتيجة المنظمة والملفات القابلة للتشغيل والتحميل محلياً:`
-    : `Your request (**${prompt.slice(0, 140)}**) has been analyzed by **HEYUKA's** pre-classified Cognitive Brain (\`${totals.grandTotalSources}+\` open-source engines + \`${totals.livePublicApisCount}\` live APIs) with ready-to-run local files:`
+    ? `تم تحليل طلبك (**${prompt.slice(0, 140)}**) عبر العقل المعرفي السيادي لـ **HEYUKA** (\`${totals.grandTotalSources}+\` محرك ومصدر مفتوح، \`${vaultManifest.totalClassifiedEntries}\` مصنف ومؤرشف في الخزنة الدائمة • **بدون حدود على عتاد المستخدم**):`
+    : `Your request (**${prompt.slice(0, 140)}**) has been executed via **HEYUKA's** Sovereign Cognitive Brain (\`${totals.grandTotalSources}+\` open-source engines, \`${vaultManifest.totalClassifiedEntries}\` Permanent Vault entries • **Unlimited Client-Compute Execution**):`
 }
 
 ### 🛠️ ${lang.architectureTitle}
@@ -940,6 +1087,10 @@ ${
 | ${isAr ? "المجموعة المعرفية النشطة" : "Active Cognitive Cluster"} | ${isAr ? "المحركات" : "Engines"} | ${isAr ? "المصادر المفتوحة" : "Core Libraries"} | ${isAr ? "صيغ الملفات المدعومة" : "Output Formats"} |
 | :--- | :---: | :--- | :--- |
 ${clusterRows}
+
+### 🔗 ${isAr ? "المصادر المدمجة من الخزنة الدائمة + التطور الذاتي" : "Bound Permanent Vault Sources + Continuous Learning"}
+- **Vault Engines Used:** ${matchedSourceNames.join(" • ") || "Sovereign Core Router"}
+- **Evolution Trace:** \`${evolutionRecord.trace.traceId}\` (Total Learned: \`${evolutionRecord.totalLearnedTraces}\` • ${evoCtx.evolutionSummary})
 
 ### 📦 ${lang.deliverablesTitle}
 ${studioFiles.map((f) => `- **\`${f.path}\`** (\`${f.language.toUpperCase()}\` • \`${f.content.length} bytes\`)`).join("\n")}

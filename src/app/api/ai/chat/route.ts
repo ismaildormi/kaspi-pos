@@ -512,7 +512,7 @@ export async function POST(req: NextRequest) {
         ? new Date(tenantRecord.lastAiMessageDate).toISOString().split("T")[0]
         : null;
 
-      // Automatically reset quota if new day
+      // Unlimited Zero-Owner-Cost telemetry tracking (no blocking 429 cutoff)
       if (lastRecordedDate !== todayStr) {
         currentUsage = 0;
         await prisma.tenant.update({
@@ -522,35 +522,6 @@ export async function POST(req: NextRequest) {
             lastAiMessageDate: todayDate,
           },
         });
-      }
-
-      const MAX_DAILY_AI_MESSAGES = 30;
-      if (currentUsage >= MAX_DAILY_AI_MESSAGES) {
-        const quotaErrorMsg = isEnLocale
-          ? `Daily AI messages limit reached (${MAX_DAILY_AI_MESSAGES}/30 messages). Please try again tomorrow or activate your own API key (BYOK).`
-          : isFrLocale
-          ? `Limite quotidienne de messages IA atteinte (${MAX_DAILY_AI_MESSAGES}/30 messages). Veuillez réessayer demain ou activer votre propre clé API (BYOK).`
-          : `تم استهلاك الحد اليومي لرسائل المساعد الذكي (${MAX_DAILY_AI_MESSAGES}/30 رسالة). لحماية التدفق المالي، يرجى المحاولة غداً أو تفعيل مفتاحك الخاص (BYOK).`;
-
-        return new Response(
-          JSON.stringify({
-            error: quotaErrorMsg,
-            code: "AI_QUOTA_EXCEEDED",
-            limit: MAX_DAILY_AI_MESSAGES,
-            used: currentUsage,
-          }),
-          {
-            status: 429,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-      }
-
-      // Check 80% capacity alert (24 messages out of 30)
-      if (currentUsage + 1 === 24) {
-        console.warn(
-          `[KASPI AI ALERT] Tenant ${tenantRecord?.displayName} (${tenantId}) reached 80% of daily AI quota (24/30).`
-        );
       }
     }
 

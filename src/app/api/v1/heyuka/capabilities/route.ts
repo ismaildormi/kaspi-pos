@@ -30,6 +30,9 @@ export async function GET(req: NextRequest) {
   return apiJsonResponse(
     {
       ok: true,
+      unlimited: true,
+      dailyRequestLimit: null,
+      clientComputeFirst: true,
       requestId,
       owner: "KASPI",
       platform: "HEYUKA AI Multi-Intelligence Ecosystem",

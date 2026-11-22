@@ -818,26 +818,36 @@ export const V30_GITHUBSIGNALS_CATEGORY_LABELS: Record<
   },
 };
 
+import { V31_ASKGPTS_GITHUBDEV_94_SOURCES } from "./v31-askgpts-githubdev-arsenal";
+
+/**
+ * Combined 168 unique open-source repositories & AI platforms (74 from ZIP #1 + 94 from ZIP #2).
+ */
+export function getAllGithubSignalsSources(): GithubSignalsSourceEntry[] {
+  return [...V30_GITHUBSIGNALS_74_SOURCES, ...V31_ASKGPTS_GITHUBDEV_94_SOURCES];
+}
+
 /**
  * Instant, zero-friction matcher: given a CognitiveClusterId, category, or user prompt,
- * returns the directly bound GithubSignals repositories immediately without complex overhead.
+ * returns the directly bound GithubSignals & AskGPTs repositories immediately without complex overhead.
  */
 export function getBoundGithubSignalsSources(params: {
   clusterIds?: string[];
   category?: GithubSignalsCategory;
   query?: string;
 }): GithubSignalsSourceEntry[] {
+  const allSources = getAllGithubSignalsSources();
   if (params.category) {
-    return V30_GITHUBSIGNALS_74_SOURCES.filter((s) => s.category === params.category);
+    return allSources.filter((s) => s.category === params.category);
   }
   if (params.clusterIds && params.clusterIds.length > 0) {
     const set = new Set(params.clusterIds);
-    const matched = V30_GITHUBSIGNALS_74_SOURCES.filter((s) => set.has(s.clusterId));
+    const matched = allSources.filter((s) => set.has(s.clusterId));
     if (matched.length > 0) return matched;
   }
   if (params.query) {
     const q = params.query.toLowerCase();
-    const hits = V30_GITHUBSIGNALS_74_SOURCES.filter(
+    const hits = allSources.filter(
       (s) =>
         s.name.toLowerCase().includes(q) ||
         s.summaryEn.toLowerCase().includes(q) ||
@@ -845,5 +855,5 @@ export function getBoundGithubSignalsSources(params: {
     );
     if (hits.length > 0) return hits;
   }
-  return [...V30_GITHUBSIGNALS_74_SOURCES];
+  return allSources;
 }

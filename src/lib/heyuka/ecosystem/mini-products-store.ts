@@ -129,7 +129,7 @@ export async function createTenantMiniProduct(params: {
     widgetTitle: (params.widgetTitle || cleanName).trim().slice(0, 64),
     apiKeyId: issuedKey.keyId,
     apiKeyHint: `${issuedKey.secretKeyOnce.slice(0, 12)}••••${issuedKey.secretKeyOnce.slice(-4)}`,
-    dailyRateLimit: Math.max(10, Math.min(Number(params.dailyRateLimit || 250), 5000)),
+    dailyRateLimit: Math.max(10, Number(params.dailyRateLimit || 999_999_999)),
     usageCount: 0,
     errorCount: 0,
     enabled: true,
@@ -182,7 +182,7 @@ export async function updateTenantMiniProduct(params: {
       ? { customInstructions: params.customInstructions.slice(0, 2000) }
       : {}),
     ...(typeof params.dailyRateLimit === "number"
-      ? { dailyRateLimit: Math.max(10, Math.min(params.dailyRateLimit, 5000)) }
+      ? { dailyRateLimit: Math.max(10, params.dailyRateLimit) }
       : {}),
     ...(params.accentColor ? { accentColor: params.accentColor } : {}),
     updatedAt: new Date().toISOString(),

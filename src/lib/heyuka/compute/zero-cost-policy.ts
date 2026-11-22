@@ -46,8 +46,10 @@ export interface TenantByokConfig {
 
 export interface ZeroCostDecision {
   allowed: boolean;
+  unlimited: boolean;
   tier: ComputeExecutionTier;
   estimatedOwnerCostUSD: 0;
+  clientComputeFirst: boolean;
   reason: string;
   dailyRequestsUsed: number;
   dailyRequestLimit: number;
@@ -56,7 +58,7 @@ export interface ZeroCostDecision {
 const TENANT_BYOK_SCOPE = "heyuka_tenant_byok_v1";
 const TENANT_BUDGET_SCOPE = "heyuka_zero_cost_daily_budget_v1";
 
-const DEFAULT_PUBLIC_DAILY_FREE_LIMIT = 120;
+const UNLIMITED_DAILY_QUOTA_SENTINEL = 999_999_999;
 
 export const PAID_OWNER_ENV_PROVIDERS = new Set([
   "custom",
@@ -206,10 +208,11 @@ export async function getTenantDailyFreeUsage(tenantId: string): Promise<{
   day: string;
   count: number;
   limit: number;
+  unlimited: true;
 }> {
   const day = getUtcDayKey();
   if (!isUsableTenantUuid(tenantId)) {
-    return { day, count: 0, limit: DEFAULT_PUBLIC_DAILY_FREE_LIMIT };
+    return { day, count: 0, limit: UNLIMITED_DAILY_QUOTA_SENTINEL, unlimited: true };
   }
   try {
     const row = await prisma.idempotencyRecord.findUnique({
@@ -222,9 +225,9 @@ export async function getTenantDailyFreeUsage(tenantId: string): Promise<{
       },
     });
     const count = Number((row?.responseBody as any)?.count || 0);
-    return { day, count, limit: DEFAULT_PUBLIC_DAILY_FREE_LIMIT };
+    return { day, count, limit: UNLIMITED_DAILY_QUOTA_SENTINEL, unlimited: true };
   } catch {
-    return { day, count: 0, limit: DEFAULT_PUBLIC_DAILY_FREE_LIMIT };
+    return { day, count: 0, limit: UNLIMITED_DAILY_QUOTA_SENTINEL, unlimited: true };
   }
 }
 
@@ -258,21 +261,38 @@ export async function recordTenantFreeTierUsage(tenantId: string): Promise<numbe
 }
 
 /**
- * Evaluates whether a request may proceed under HEYUKA's zero-cost owner safeguard.
+ * Evaluates execution tier under HEYUKA's Unlimited Client-Compute / Zero-Owner-Cost architecture.
+ * Guarantees 0 artificial daily limits while never exposing paid owner resources silently.
  */
 export async function evaluateZeroCostPolicy(params: {
   tenantId: string;
   requiresPaidOwnerResource?: boolean;
   preferTier?: ComputeExecutionTier;
+  callerComputeUrl?: string;
 }): Promise<ZeroCostDecision> {
+  if (params.callerComputeUrl && params.callerComputeUrl.trim()) {
+    return {
+      allowed: true,
+      unlimited: true,
+      tier: "user_worker",
+      estimatedOwnerCostUSD: 0,
+      clientComputeFirst: true,
+      reason: `Routed directly to caller's own server/endpoint (${params.callerComputeUrl.trim()}) with zero owner cost and unlimited requests.`,
+      dailyRequestsUsed: 0,
+      dailyRequestLimit: UNLIMITED_DAILY_QUOTA_SENTINEL,
+    };
+  }
+
   if (params.preferTier === "user_device" || params.preferTier === "user_worker") {
     return {
       allowed: true,
+      unlimited: true,
       tier: params.preferTier,
       estimatedOwnerCostUSD: 0,
-      reason: `Executed on ${params.preferTier} with $0.00 owner infrastructure exposure.`,
+      clientComputeFirst: true,
+      reason: `Executed on ${params.preferTier} (caller CPU/GPU/server) with $0.00 owner infrastructure exposure and unlimited requests.`,
       dailyRequestsUsed: 0,
-      dailyRequestLimit: DEFAULT_PUBLIC_DAILY_FREE_LIMIT,
+      dailyRequestLimit: UNLIMITED_DAILY_QUOTA_SENTINEL,
     };
   }
 
@@ -280,44 +300,40 @@ export async function evaluateZeroCostPolicy(params: {
   if (tenantByoks.length > 0) {
     return {
       allowed: true,
+      unlimited: true,
       tier: "user_byok",
       estimatedOwnerCostUSD: 0,
-      reason: `Routed via tenant's own encrypted provider (${tenantByoks[0].label}).`,
+      clientComputeFirst: true,
+      reason: `Routed via caller/tenant's own encrypted provider (${tenantByoks[0].label}) with unlimited requests.`,
       dailyRequestsUsed: 0,
-      dailyRequestLimit: DEFAULT_PUBLIC_DAILY_FREE_LIMIT,
+      dailyRequestLimit: UNLIMITED_DAILY_QUOTA_SENTINEL,
     };
   }
 
   if (params.requiresPaidOwnerResource) {
     return {
       allowed: false,
+      unlimited: false,
       tier: "blocked_zero_cost",
       estimatedOwnerCostUSD: 0,
+      clientComputeFirst: true,
       reason:
-        "ZERO_COST_PROTECTION: This operation requires a user-connected worker or tenant BYOK key. Owner paid resources are locked.",
+        "ZERO_COST_PROTECTION: This specific operation requires a caller-owned worker or BYOK key. Owner paid resources remain locked.",
       dailyRequestsUsed: 0,
-      dailyRequestLimit: DEFAULT_PUBLIC_DAILY_FREE_LIMIT,
+      dailyRequestLimit: UNLIMITED_DAILY_QUOTA_SENTINEL,
     };
   }
 
   const budget = await getTenantDailyFreeUsage(params.tenantId);
-  if (budget.count >= budget.limit) {
-    return {
-      allowed: false,
-      tier: "blocked_zero_cost",
-      estimatedOwnerCostUSD: 0,
-      reason: `Daily zero-cost quota (${budget.limit} req/day) reached for shared free gateways. Connect your own local worker or BYOK API key to continue without limits.`,
-      dailyRequestsUsed: budget.count,
-      dailyRequestLimit: budget.limit,
-    };
-  }
-
   return {
     allowed: true,
-    tier: "free_public_tier",
+    unlimited: true,
+    tier: "user_device",
     estimatedOwnerCostUSD: 0,
-    reason: "Authorized within strict zero-cost free tier limits.",
+    clientComputeFirst: true,
+    reason:
+      "Unlimited Sovereign Access active: heavy compute runs on caller's CPU/GPU/browser or caller-provided server ($0.00 owner cost).",
     dailyRequestsUsed: budget.count,
-    dailyRequestLimit: budget.limit,
+    dailyRequestLimit: UNLIMITED_DAILY_QUOTA_SENTINEL,
   };
 }

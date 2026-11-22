@@ -8,6 +8,11 @@ import {
   COGNITIVE_BRAIN_CLUSTERS,
   getTotalIntegratedCapabilitiesCount,
 } from "@/lib/zebra-x/core/cognitive-brain-registry";
+import {
+  buildSovereignVaultLockManifest,
+  resolveVaultEntryWithMirrorFallback,
+  searchSovereignVault,
+} from "@/lib/heyuka/vault/sovereign-permanent-vault";
 
 export const dynamic = "force-dynamic";
 
@@ -23,8 +28,28 @@ export async function OPTIONS() {
 
 export async function GET(req: NextRequest) {
   const downloadKind = req.nextUrl.searchParams.get("download");
+  const vaultMode = req.nextUrl.searchParams.get("vault");
+  const vaultQuery = req.nextUrl.searchParams.get("q") || undefined;
   const bundleFiles = buildPortableLocalApiBundleFiles();
   const totals = getTotalIntegratedCapabilitiesCount();
+
+  if (vaultMode === "1") {
+    const manifest = buildSovereignVaultLockManifest();
+    const entries = searchSovereignVault({ query: vaultQuery, limit: 60 });
+    const resolved = vaultQuery ? resolveVaultEntryWithMirrorFallback(vaultQuery, { offlineMode: true }) : null;
+    return NextResponse.json(
+      {
+        ok: true,
+        unlimited: true,
+        clientComputeFirst: true,
+        manifest,
+        entriesCount: entries.length,
+        entries,
+        resolved,
+      },
+      { status: 200, headers: CORS_HEADERS }
+    );
+  }
 
   if (downloadKind === "server") {
     const serverFile = bundleFiles.find((f) => f.path === "heyuka-local-api-server.mjs")!;
@@ -103,6 +128,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         ok: true,
+        unlimited: true,
+        dailyRequestLimit: null,
+        clientComputeFirst: true,
+        ownerCostExposureUSD: 0,
         id: `heyuka-local-${Date.now()}`,
         object: "chat.completion",
         created: Math.floor(Date.now() / 1000),

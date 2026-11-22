@@ -3,12 +3,16 @@ import { REASONING_EVAL_CATALOG_COUNTS } from "@/lib/zebra-x/core/reasoning-eval
 import { PLANETARY_CATALOG_COUNTS } from "@/lib/heyuka/planetary/planetary-arsenal-catalog";
 import { PUBLIC_APIS_CATALOG_COUNT, type PublicApiCategory } from "@/lib/zebra-x/tools/public-apis-hub";
 import {
-  V30_GITHUBSIGNALS_74_SOURCES,
   V30_GITHUBSIGNALS_CATEGORY_LABELS,
+  getAllGithubSignalsSources,
   getBoundGithubSignalsSources,
   type GithubSignalsCategory,
   type GithubSignalsSourceEntry,
 } from "@/lib/zebra-x/core/v30-githubsignals-arsenal";
+import { V34_PHOTOREALISTIC_LONG_VIDEO_100 } from "@/lib/zebra-x/core/v34-long-video-arsenal";
+import { V35_ALL_VAULT_INFRA_200 } from "@/lib/zebra-x/core/v35-permanent-vault-arsenal";
+import { V36_V37_MEDIA_3D_200 } from "@/lib/zebra-x/core/v36-v37-media-3d-arsenal";
+import { V38_V39_DIRECTOR_AND_RESEARCH } from "@/lib/zebra-x/core/v38-v39-project-director-arsenal";
 
 /**
  * HEYUKA Sovereign Cognitive Brain Registry & Pre-Search Domain Classifier
@@ -261,13 +265,21 @@ export function getTotalIntegratedCapabilitiesCount(): {
   planetaryCount: number;
   livePublicApisCount: number;
   githubSignalsCount: number;
+  v34VideoCount: number;
+  v35VaultCount: number;
+  v36V37Media3DCount: number;
+  v38V39DirectorCount: number;
   grandTotalSources: number;
 } {
   const sovereignCatalogCount = ALL_SOVEREIGN_MASTER_CATALOG.length;
   const reasoningEvalCount = REASONING_EVAL_CATALOG_COUNTS.total;
   const planetaryCount = PLANETARY_CATALOG_COUNTS.total;
   const livePublicApisCount = PUBLIC_APIS_CATALOG_COUNT;
-  const githubSignalsCount = V30_GITHUBSIGNALS_74_SOURCES.length;
+  const githubSignalsCount = getAllGithubSignalsSources().length;
+  const v34VideoCount = V34_PHOTOREALISTIC_LONG_VIDEO_100.length;
+  const v35VaultCount = V35_ALL_VAULT_INFRA_200.length;
+  const v36V37Media3DCount = V36_V37_MEDIA_3D_200.length;
+  const v38V39DirectorCount = V38_V39_DIRECTOR_AND_RESEARCH.length;
   return {
     clustersCount: COGNITIVE_BRAIN_CLUSTERS.length,
     sovereignCatalogCount,
@@ -275,12 +287,20 @@ export function getTotalIntegratedCapabilitiesCount(): {
     planetaryCount,
     livePublicApisCount,
     githubSignalsCount,
+    v34VideoCount,
+    v35VaultCount,
+    v36V37Media3DCount,
+    v38V39DirectorCount,
     grandTotalSources:
       sovereignCatalogCount +
       reasoningEvalCount +
       planetaryCount +
       livePublicApisCount +
-      githubSignalsCount,
+      githubSignalsCount +
+      v34VideoCount +
+      v35VaultCount +
+      v36V37Media3DCount +
+      v38V39DirectorCount,
   };
 }
 
@@ -322,6 +342,7 @@ export function classifyCognitiveIntentAndSources(
   locale: "ar" | "fr" | "en" = "ar"
 ): {
   matchedClusters: CognitiveClusterSpec[];
+  primaryCluster: CognitiveClusterSpec;
   boundGithubSignals: GithubSignalsSourceEntry[];
   recommendedApis: PublicApiCategory[];
   stageBadges: ChatStageBadge[];
@@ -448,6 +469,7 @@ Directly Bound v30.0 Repositories (${boundGithubSignals.length} active): ${bound
 
   return {
     matchedClusters,
+    primaryCluster: matchedClusters[0] || COGNITIVE_BRAIN_CLUSTERS[0],
     boundGithubSignals,
     recommendedApis: Array.from(apis),
     stageBadges,
@@ -502,12 +524,13 @@ export function buildFullCapabilitiesAndSourcesMarkdown(
   };
 
   const pdfMarker = `[KASPI_PDF_REPORT:${encodeBase64Utf8(pdfPayload)}]`;
+  const allGithubSignals = getAllGithubSignalsSources();
   const githubSignalsCategoryRowsAr = (
     Object.keys(V30_GITHUBSIGNALS_CATEGORY_LABELS) as GithubSignalsCategory[]
   )
     .map((cat, idx) => {
       const meta = V30_GITHUBSIGNALS_CATEGORY_LABELS[cat];
-      const items = V30_GITHUBSIGNALS_74_SOURCES.filter((s) => s.category === cat);
+      const items = allGithubSignals.filter((s) => s.category === cat);
       const sampleLinks = items
         .slice(0, 6)
         .map((s) => `[${s.name}](${s.url})`)
@@ -524,7 +547,7 @@ export function buildFullCapabilitiesAndSourcesMarkdown(
 
     return `## 🧠 الخريطة الشاملة لقدرات ومصادر HEYUKA المدمجة (\`${totals.grandTotalSources}+\` مصدر ومحرك مفتوح • \`100% Free & Zero-Key\`)
 
-تم تنظيم وترتيب جميع المصادر والمكتبات وقواعد البيانات في عقل **HEYUKA (KASPI AI)** ضمن **10 مجموعات معرفية مصنفة مسبقاً (Pre-Classified Cognitive Clusters)** مربوطة مباشرة بـ **${totals.githubSignalsCount} مستودعاً ومصدراً فائقاً جديداً (v30.0 GithubSignals Pack)** بحيث بمجرد تحديد المجال يشتغل المحرك ومصادره تلقائياً بلا أي تعقيد:
+تم تنظيم وترتيب جميع المصادر والمكتبات وقواعد البيانات في عقل **HEYUKA (KASPI AI)** ضمن **10 مجموعات معرفية مصنفة مسبقاً (Pre-Classified Cognitive Clusters)** مربوطة مباشرة بـ **${totals.githubSignalsCount} مستودعاً ومصدراً فائقاً جديداً (v30 + v31 GithubSignals & AskGPTs Pack)** بحيث بمجرد تحديد المجال يشتغل المحرك ومصادره تلقائياً بلا أي تعقيد:
 
 | المجموعة المعرفية في عقل HEYUKA | عدد المحركات | أبرز المصادر والمكتبات المفتوحة المدمجة | الملفات والمخرجات التي يصنعها | الدور المباشر وكيف يستفيد منه المستخدم |
 | :--- | :---: | :--- | :--- | :--- |
@@ -532,7 +555,19 @@ ${rowsMd}
 
 ---
 
-### 🚀 الفئات الـ 7 للمصادر الـ \`${totals.githubSignalsCount}\` الجديدة المدمجة مباشرة (\`v30.0 Instant Auto-Bound Pack\`)
+### 🏛️ الحزم السيادية الجديدة المدمجة والأرشفة الدائمة (\`v34.0\` – \`v39.0 Sovereign Permanent Vault • Unlimited & Client-Compute\`)
+
+| الحزمة السيادية المصنفة | عدد المصادر | الدور في المحرك والـ API (بدون أي سقف يومي وعلى عتاد المستخدم) |
+| :--- | :---: | :--- |
+| **1. \`v34.0\` — محرك الفيديوهات الطويلة والواقعية السينمائية** | \`${totals.v34VideoCount}\` | توليد فيديوهات طويلة ومبنية (\`SkyReels-V2\`, \`FramePack\`, \`Self-Forcing\`, \`OpenColorIO\`, \`MMAudio\`, \`OpenTimelineIO\`) مع مشغل HTML5/WebGL2 + WebAudio |
+| **2. \`v35.0 + v35.1\` — الخزنة الدائمة، الأرشفة، وفحص التراخيص** | \`${totals.v35VaultCount}\` | حفظ كل المصادر محلياً (\`git bundle\`, \`ArchiveBox\`, \`Kiwix\`, \`IPFS Kubo\`, \`BLAKE3\`, \`Lychee Link Healing\`, \`LocalAI / vLLM / Llamafile\`) للأبد |
+| **3. \`v36.0\` — استوديو الصور الفوتوغرافية، التفريغ، والحذف الذكي** | \`100\` | إنتاج صور واقعية (\`FLUX.1\`, \`HiDream\`), إزالة الخلفية \`4K\` (\`BiRefNet\`, \`RMBG-2.0\`), حذف العناصر (\`LaMa\`, \`inpaint-web\`), والخط العربي (\`AnyText2\`) |
+| **4. \`v37.0\` — استوديو 3D الواقعي (الفرو، العيون الحية، والمجسمات)** | \`100\` | مجسمات \`TRELLIS\`, \`Hunyuan3D-2\`, فرو \`Shell-Texturing\`, عيون بقرنية حية \`IOR 1.38\`, رندر \`Cycles\`, وتصدير \`.GLB / R3F JSX\` |
+| **5. \`v38.0 + v39.0\` — مهندس المشاريع الشامل A-to-Z والبحث المتوازي** | \`${totals.v38V39DirectorCount}\` | التخطيط المعماري (\`MetaGPT\`, \`MCP\`), البرمجة الحديثة (\`Next.js/React 19/Tailwind v4\`), النشر السحابي التلقائي، والتصفح المتوازي (\`Browser-Use\`, \`Crawl4AI\`) |
+
+---
+
+### 🚀 الفئات الـ 7 للمصادر الـ \`${totals.githubSignalsCount}\` المستخرجة والمربوطة مباشرة (\`v30 + v31 Instant Auto-Bound Pack\`)
 
 | الفئة التخصصية المربوطة تلقائياً | عدد المصادر | أبرز المستودعات المفتوحة والروابط المباشرة |
 | :--- | :---: | :--- |
