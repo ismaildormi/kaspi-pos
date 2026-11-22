@@ -31,11 +31,13 @@ import { planXZebraToolRoute } from "@/lib/zebra-x/core/router";
 import {
   classifyCognitiveIntentAndSources,
   getTotalIntegratedCapabilitiesCount,
+  resolveStrictCategoryDisambiguation,
 } from "@/lib/zebra-x/core/cognitive-brain-registry";
 import {
   buildSovereignVaultLockManifest,
   resolveVaultEntryWithMirrorFallback,
   searchSovereignVault,
+  verifyVaultLinkIntegrityAndHeal,
 } from "@/lib/heyuka/vault/sovereign-permanent-vault";
 import {
   buildAtoZProjectDirectorBundle,
@@ -43,6 +45,12 @@ import {
   buildPhotorealistic3DFurEyesBundle,
   buildPhotorealisticCinemaVideoBundle,
 } from "@/lib/heyuka/tools/photorealistic-video-builder";
+import {
+  buildSovereignOsAndFileSurgeonPlan,
+  buildUnstoppableAiComputerAction,
+  manageVirtualDesktopBot,
+  spawnVirtualDesktopBot,
+} from "@/lib/heyuka/os/sovereign-pc-commander";
 import {
   exportEvolutionChatMlDataset,
   getSelfEvolutionContextForPrompt,
@@ -301,11 +309,12 @@ export async function POST(req: NextRequest) {
 
     querySovereignSourceVault: tool({
       description:
-        "Search ALL 1,100+ pre-classified open-source engines, datasets, GithubSignals/AskGPTs repos, and Permanent Sovereign Vault mirrors (v7..v39), guaranteed offline/dead-link safe.",
+        "Search ALL 1,981+ pre-classified open-source engines, datasets, GithubSignals/AskGPTs repos, v52-v54 PC/OS/Bot tools, and Permanent Sovereign Vault mirrors, guaranteed offline/dead-link safe.",
       inputSchema: z.object({
         query: z.string().optional(),
         pack: z.string().optional(),
         offlineMode: z.boolean().optional(),
+        verifyIntegrity: z.boolean().optional(),
         limit: z.number().int().min(1).max(30).optional().default(12),
       }),
       execute: async (input) => {
@@ -320,10 +329,84 @@ export async function POST(req: NextRequest) {
         return {
           unlimited: true,
           manifest: buildSovereignVaultLockManifest(),
+          integrityAudit: input.verifyIntegrity ? verifyVaultLinkIntegrityAndHeal() : undefined,
           matches: hits,
           firstResolvedMirror: firstResolved,
         };
       },
+    }),
+
+    spawnIsolatedDesktopBot: tool({
+      description:
+        "Spawn, pause for human takeover, resume, list, or destroy isolated Virtual Desktop Bot Farm sessions (v52.0 KasmVNC / Neko / Webtop) with virtual mouse/keyboard & live screen/audio.",
+      inputSchema: z.object({
+        action: z.enum(["spawn", "list", "takeover", "resume", "destroy"]).optional().default("spawn"),
+        task: z.string().optional(),
+        role: z.enum(["researcher", "coder", "designer", "trader", "qa_tester"]).optional().default("researcher"),
+        displayEngine: z
+          .enum(["kasmvnc", "neko_webrtc", "linuxserver_webtop", "waydroid_android", "gamescope"])
+          .optional()
+          .default("kasmvnc"),
+        botId: z.string().optional(),
+      }),
+      execute: async (input) => {
+        if (input.action !== "spawn") {
+          return manageVirtualDesktopBot({ action: input.action, botId: input.botId });
+        }
+        return spawnVirtualDesktopBot({
+          task: input.task || lastUserText,
+          role: input.role,
+          displayEngine: input.displayEngine,
+        });
+      },
+    }),
+
+    executeSovereignOsAndFileSurgeon: tool({
+      description:
+        "Build and dispatch v53.0 Sovereign PowerShell/Bash OS commands, reversible File Surgeon (.yuka-bak + Send2Trash) operations, Any-App UIA control, or 24/7 Sentinel health probes.",
+      inputSchema: z.object({
+        action: z.enum(["shell", "file_lifecycle", "sentinel_health", "app_operate"]).optional().default("shell"),
+        command: z.string().optional(),
+        targetPath: z.string().optional(),
+        appTitle: z.string().optional(),
+        editSnippet: z.string().optional(),
+      }),
+      execute: async (input) =>
+        buildSovereignOsAndFileSurgeonPlan({
+          action: input.action,
+          command: input.command,
+          targetPath: input.targetPath,
+          appTitle: input.appTitle,
+          editSnippet: input.editSnippet,
+        }),
+    }),
+
+    controlAiComputerVisionScrollPanic: tool({
+      description:
+        "Control v54.0 Smooth Mouse Scroll/Zoom, Self-Unblocking strategy rotation, Live OpenCV/MediaPipe Webcam Vision, or 0ms Esc+Esc Hardware Panic Stop.",
+      inputSchema: z.object({
+        action: z
+          .enum(["scroll", "zoom", "self_unblock", "webcam_vision", "panic_stop", "dispatch"])
+          .optional()
+          .default("dispatch"),
+        direction: z.enum(["up", "down", "left", "right"]).optional(),
+        amount: z.number().optional(),
+        zoomDelta: z.number().optional(),
+        blockedReason: z.string().optional(),
+        cameraMode: z
+          .enum(["document_ocr", "qr_barcode", "hardware_repair", "sketch_to_app", "dual_vision"])
+          .optional(),
+      }),
+      execute: async (input) =>
+        buildUnstoppableAiComputerAction({
+          action: input.action,
+          direction: input.direction,
+          amount: input.amount,
+          zoomDelta: input.zoomDelta,
+          blockedReason: input.blockedReason,
+          cameraMode: input.cameraMode,
+          prompt: lastUserText,
+        }),
     }),
 
     buildPhotorealisticVideoStudio: tool({
@@ -391,20 +474,26 @@ export async function POST(req: NextRequest) {
   };
 
   const cognitiveRoute = classifyCognitiveIntentAndSources(lastUserText, expectedLocale);
+  const strictDisambiguation = resolveStrictCategoryDisambiguation(lastUserText);
   const vaultContextHits = searchSovereignVault({
     query: lastUserText,
-    clusterId: cognitiveRoute.primaryCluster.id,
+    clusterId: strictDisambiguation.clusterId || cognitiveRoute.primaryCluster.id,
     limit: 10,
   });
   const totals = getTotalIntegratedCapabilitiesCount();
   const evolutionHints = getSelfEvolutionContextForPrompt({
     prompt: lastUserText,
-    clusterId: cognitiveRoute.primaryCluster.id,
+    clusterId: strictDisambiguation.clusterId || cognitiveRoute.primaryCluster.id,
   });
 
   const baseSystem = `You are HEYUKA (${requestedModel}), the Sovereign Unified AI Model owned by KASPI.
-UNLIMITED SOVEREIGN EXECUTION POLICY (0 Request Limits): All computation executes on caller hardware (WebGPU/WASM/Canvas/Three.js) or caller-connected server at $0.00 owner cost.
-You have FULL live access to ALL ${totals.grandTotalSources}+ Permanently Vaulted & Pre-Classified Sources (v7..v39), including Web Research, ${totals.livePublicApisCount} Live Public APIs, Sandbox Execution, Long Cinema Video Studio (v34.0), Image/Inpainting/Arabic Typography Studio (v36.0), 3D Fur/Eyes Realism (v37.0), A-to-Z Project Director (v38.0), Parallel Multi-Site Research (v39.0), Permanent Mirror Vault (v35.0+v35.1), and Continuous Self-Evolution.
+UNLIMITED SOVEREIGN EXECUTION POLICY (0 Request Limits): All computation executes on caller hardware (WebGPU/WASM/Canvas/Three.js), CUT- Desktop Companion, or caller-connected server at $0.00 owner cost.
+Strict Intent Category Disambiguation: ${strictDisambiguation.categoryCode} -> Cluster=${strictDisambiguation.clusterId} -> Primary Endpoint=${strictDisambiguation.targetEndpoint} (${strictDisambiguation.reason}).
+You have FULL live access to ALL ${totals.grandTotalSources}+ Permanently Vaulted & Pre-Classified Sources across ${totals.clustersCount} Cognitive Clusters (v7..v54), including:
+- Web Research & ${totals.livePublicApisCount} Live Public APIs, Sandbox Execution, Long Cinema Video Studio (v34.0), Image/Inpainting/Arabic Typography Studio (v36.0), 3D Fur/Eyes Realism (v37.0), A-to-Z Project Director (v38.0), Parallel Multi-Site Research (v39.0), Permanent Mirror Vault (v35.0+v35.1)
+- v52.0 Full PC Keyboard/Mouse ScanCodes, Multi-Desktop Virtual Bot Farm (/api/v1/desktops/spawn) & Live Screen/Audio (${totals.v52PcBotsCount} engines)
+- v53.0 Sovereign Root OS Shell, Reversible File Surgeon (.yuka-bak + Send2Trash) & 24/7 Sentinel (/api/v1/os/exec, ${totals.v53OsSurgeonCount} engines)
+- v54.0 Unstoppable AI Computer OS, Smooth Scroll/Zoom, Live Webcam Vision & Esc+Esc Panic Stop (/api/v1/ai-pc/control, ${totals.v54AiComputerCount} engines).
 Matched Vault Engines for this prompt: ${vaultContextHits.map((v) => `${v.name} [${v.vaultUri}]`).join(", ")}.
 Learned Evolution Memory: ${evolutionHints.evolutionSummary}
 Always answer accurately, honestly, and clearly in the user's language (Arabic/Darija/French/English). Never disclose internal paid upstream provider names.
@@ -546,7 +635,12 @@ Planned Route: ${routePlan.complexity}${
           dailyRequestLimit: null,
           clientComputeFirst: true,
           executionTier: policyDecision.tier,
+          cognitiveClustersCount: totals.clustersCount,
+          strictCategoryDisambiguation: strictDisambiguation,
           vaultedSourcesCount: totals.grandTotalSources,
+          v52PcBotsCount: totals.v52PcBotsCount,
+          v53OsSurgeonCount: totals.v53OsSurgeonCount,
+          v54AiComputerCount: totals.v54AiComputerCount,
           matchedVaultSources: vaultContextHits.map((v) => ({ name: v.name, vaultUri: v.vaultUri, url: v.url })),
           evolutionTraceId: evoResult.trace.traceId,
           learnedTracesTotal: evoResult.totalLearnedTraces,

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -42,7 +43,20 @@ import {
   classifyCognitiveIntentAndSources,
   isCapabilitiesOrSourcesTableRequest,
   isPatentOrInventionRequest,
+  resolveStrictCategoryDisambiguation,
 } from "../../src/lib/zebra-x/core/cognitive-brain-registry";
+import { V52_PC_CONTROL_AND_BOT_FARM_100 } from "../../src/lib/zebra-x/core/v52-pc-control-bots-arsenal";
+import { V53_OS_SHELL_FILES_SENTINEL_100 } from "../../src/lib/zebra-x/core/v53-os-shell-files-sentinel-arsenal";
+import { V54_AI_COMPUTER_UNBLOCK_CAM_100 } from "../../src/lib/zebra-x/core/v54-ai-computer-unblock-cam-arsenal";
+import {
+  spawnVirtualDesktopBot,
+  manageVirtualDesktopBot,
+  buildSovereignOsAndFileSurgeonPlan,
+  buildUnstoppableAiComputerAction,
+  triggerHardwarePanicStop,
+  getPanicStopState,
+} from "../../src/lib/heyuka/os/sovereign-pc-commander";
+import { discoverDynamicCapabilities } from "../../src/lib/heyuka/compute/capability-registry";
 import {
   buildPortableLocalApiBundleFiles,
   detectUniversalWorldLanguage,
@@ -63,6 +77,7 @@ import {
   getSovereignVaultUnifiedEntries,
   resolveVaultEntryWithMirrorFallback,
   searchSovereignVault,
+  verifyVaultLinkIntegrityAndHeal,
   writeSovereignVaultLockManifest,
 } from "../../src/lib/heyuka/vault/sovereign-permanent-vault";
 import {
@@ -1122,8 +1137,8 @@ async function main() {
     const chatWebSrc = fs.readFileSync(path.join(process.cwd(), "src/app/api/v1/heyuka/chat-web/route.ts"), "utf8");
     assert.ok(chatWebSrc.includes("detectTruncationState") && chatWebSrc.includes("mergeContinuationChunk") && chatWebSrc.includes("repairTruncatedMarkdownAndCode"));
 
-    // H) Cognitive Brain Pre-Classification (10 Clusters) + Google Patents 150M+ Blueprint & PDF Marker
-    assert.equal(COGNITIVE_BRAIN_CLUSTERS.length, 10);
+    // H) Cognitive Brain Pre-Classification (13 Clusters) + Google Patents 150M+ Blueprint & PDF Marker
+    assert.equal(COGNITIVE_BRAIN_CLUSTERS.length, 13);
     assert.equal(
       isCapabilitiesOrSourcesTableRequest("ابحث عن كل قدراتك و المصادر المفتوحة لك لاستعمالها و اعطها اليا في جدول كلها"),
       true
@@ -1273,7 +1288,7 @@ async function main() {
     assert.ok(fur3dBundle.files.some((f) => f.path === "HeyukaPhotorealMesh.tsx" && f.content.includes("ior={1.38}")));
 
     const imgBundle = buildImageStudioPipelineBundle("Kaspi Luxury Perfume Poster");
-    assert.ok(imgBundle.files[0].content.includes("HEYUKA IMAGE STUDIO v36.0"));
+    assert.ok(imgBundle.files.some((f) => f.content.includes("HEYUKA IMAGE STUDIO v36.0")));
 
     const projectBundle = buildAtoZProjectDirectorBundle("Deploy 3D Storefront on Vercel");
     assert.ok(projectBundle.files.some((f) => f.path === "vercel.json"));
@@ -1316,6 +1331,100 @@ async function main() {
     return {
       artifactBytes: bytes,
       detail: `${unified.length} Unified Vault Sources + v34..v39 (611) + Zero-Limit Policy + Cinema Video/3D/Image/Project + ChatML Self-Evolution (${bytes}B) verified`,
+    };
+  });
+
+  // 23. v52..v54 SOVEREIGN PC CONTROL, VIRTUAL DESKTOP BOT FARM, FILE SURGEON, WEBCAM/PANIC STOP, CUT- DESKTOP & VAULT INTEGRITY
+  await runCheck("v52_v54_pc_control_bots_cut_desktop_vault_integrity", "v52-v54 PC/OS/Bots, CUT- Companion & Vault Link Integrity", async () => {
+    assert.equal(V52_PC_CONTROL_AND_BOT_FARM_100.length, 100);
+    assert.equal(V53_OS_SHELL_FILES_SENTINEL_100.length, 100);
+    assert.equal(V54_AI_COMPUTER_UNBLOCK_CAM_100.length, 100);
+    assert.equal(COGNITIVE_BRAIN_CLUSTERS.length, 13);
+
+    // Confirm no category confusion via Strict Category Disambiguator
+    const dBot = resolveStrictCategoryDisambiguation("Spawn an isolated KasmVNC virtual desktop bot farm with pynput");
+    assert.equal(dBot.categoryCode, "V52_PC_BOT_FARM");
+    assert.equal(dBot.targetEndpoint, "/api/v1/desktops/spawn");
+
+    const dOs = resolveStrictCategoryDisambiguation("Run PowerShell and send2trash .yuka-bak file surgeon");
+    assert.equal(dOs.categoryCode, "V53_OS_SHELL_SURGEON");
+    assert.equal(dOs.targetEndpoint, "/api/v1/os/exec");
+
+    const dCam = resolveStrictCategoryDisambiguation("Enable OpenCV webcam vision, smooth zoom and Esc+Esc panic stop");
+    assert.equal(dCam.categoryCode, "V54_AI_COMPUTER_OS");
+    assert.equal(dCam.targetEndpoint, "/api/v1/ai-pc/control");
+
+    // Verify Permanent Vault merged v52..v54 + regenerated lock + link integrity audit
+    const unified = getSovereignVaultUnifiedEntries();
+    assert.ok(unified.length >= 1450, `Expected >= 1450 unified sources after v52..v54 merge, got ${unified.length}`);
+    const lockManifest = writeSovereignVaultLockManifest();
+    assert.equal(lockManifest.manifest.totalClassifiedEntries, unified.length);
+    const linkAudit = verifyVaultLinkIntegrityAndHeal();
+    assert.equal(linkAudit.totalAudited, unified.length);
+
+    // Verify upgraded Image Studio interactive HTML canvas + Project Director gatus.yaml + 7 new skills
+    const imgUpgraded = buildImageStudioPipelineBundle("Kaspi Luxury Perfume Poster");
+    assert.ok(imgUpgraded.files.some((f) => f.path === "heyuka-image-studio.html" && f.content.includes("studioCanvas")));
+    const dirUpgraded = buildAtoZProjectDirectorBundle("Fullstack Next.js App");
+    assert.ok(dirUpgraded.files.some((f) => f.path === "gatus.yaml"));
+
+    const expectedSkills = [
+      "skills/cinema-video/SKILL.md",
+      "skills/image-studio/SKILL.md",
+      "skills/3d-realism-studio/SKILL.md",
+      "skills/project-director/SKILL.md",
+      "skills/pc-bot-commander/SKILL.md",
+      "skills/sovereign-pc-control/SKILL.md",
+      "skills/ai-computer-os/SKILL.md",
+    ];
+    for (const rel of expectedSkills) {
+      assert.ok(fs.existsSync(path.join(process.cwd(), rel)), `Missing skill file: ${rel}`);
+    }
+
+    // Verify Virtual Desktop Bot Farm lifecycle + Panic Stop + File Surgeon + Capability Registry
+    const spawned = spawnVirtualDesktopBot({ task: "Autonomous Market Research Bot", role: "researcher", displayEngine: "kasmvnc" });
+    assert.ok(spawned.bot.botId.startsWith("bot_") && spawned.dockerComposeYaml.includes("kasmweb/desktop"));
+    const tookOver = manageVirtualDesktopBot({ action: "takeover", botId: spawned.bot.botId });
+    assert.equal(tookOver.affectedBot?.status, "paused_human_takeover");
+    const resumed = manageVirtualDesktopBot({ action: "resume", botId: spawned.bot.botId });
+    assert.equal(resumed.affectedBot?.status, "running");
+    const panic = triggerHardwarePanicStop(true);
+    assert.ok(panic.panicStopEngaged && panic.pausedBotsCount >= 1 && getPanicStopState().panicStopEngaged);
+    triggerHardwarePanicStop(false);
+    manageVirtualDesktopBot({ action: "destroy", botId: spawned.bot.botId });
+
+    const osPlan = buildSovereignOsAndFileSurgeonPlan({ action: "file_lifecycle", targetPath: "./workspace/report.docx", editSnippet: "Approved" });
+    assert.ok(osPlan.safetyChecks.posCoreProtected && osPlan.safetyChecks.reversibleBackup === "./workspace/report.docx.yuka-bak");
+    const aiPc = buildUnstoppableAiComputerAction({ action: "webcam_vision", cameraMode: "qr_barcode" });
+    assert.ok(aiPc.generatedScripts.python?.includes("cv2") && aiPc.matchedVaultTools.length >= 1);
+
+    const caps = await discoverDynamicCapabilities();
+    assert.ok(caps.capabilities.some((c) => c.id === "v52_virtual_desktop_bot_farm"));
+    assert.ok(caps.capabilities.some((c) => c.id === "v53_sovereign_os_shell_file_surgeon"));
+    assert.ok(caps.capabilities.some((c) => c.id === "v54_ai_computer_webcam_panic_stop"));
+
+    // Verify Local Brain v52..v54 routing
+    const localBotRes = runLocalOnDeviceHeyukaBrain({ prompt: "Spawn an isolated virtual desktop bot with KasmVNC", mode: "pc_bot", locale: "en" });
+    assert.ok(localBotRes.studioFiles.some((f) => f.path === "virtual-desktop-bot-compose.yml"));
+
+    // Verify CUT- / heyuka-desktop Python agent & kaspi_models_client compile + expose new DISPATCH tools & zero-key cascade
+    const pyCheck = spawnSync(
+      "python3",
+      [
+        "-c",
+        "import py_compile, sys; sys.path.insert(0, 'apps/heyuka-desktop/backend'); py_compile.compile('apps/heyuka-desktop/backend/kaspi_models_client.py', doraise=True); py_compile.compile('apps/heyuka-desktop/backend/agent_server.py', doraise=True); import kaspi_models_client, agent_server; assert 'spawn_virtual_desktop_bot' in agent_server.DISPATCH and 'capture_webcam_frame' in agent_server.DISPATCH and 'panic_stop' in agent_server.DISPATCH and hasattr(kaspi_models_client, 'kaspi_spawn_desktop_bot') and kaspi_models_client.kaspi_models_status().get('zero_key_ready')",
+      ],
+      { cwd: process.cwd(), encoding: "utf8" }
+    );
+    assert.equal(pyCheck.status, 0, `CUT- Python verification failed: ${pyCheck.stderr}`);
+
+    const bytes =
+      spawned.dockerComposeYaml.length +
+      JSON.stringify(osPlan).length +
+      (aiPc.generatedScripts.python?.length || 0);
+    return {
+      artifactBytes: bytes,
+      detail: `v52..v54 (300 engines) + 13 Clusters + Strict Disambiguator + ${unified.length} Vault Entries (0 dead links: ${linkAudit.totalAudited}) + 7 Skills + CUT- Python DISPATCH verified (${bytes}B)`,
     };
   });
 

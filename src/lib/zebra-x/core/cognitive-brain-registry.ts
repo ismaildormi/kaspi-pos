@@ -13,6 +13,9 @@ import { V34_PHOTOREALISTIC_LONG_VIDEO_100 } from "@/lib/zebra-x/core/v34-long-v
 import { V35_ALL_VAULT_INFRA_200 } from "@/lib/zebra-x/core/v35-permanent-vault-arsenal";
 import { V36_V37_MEDIA_3D_200 } from "@/lib/zebra-x/core/v36-v37-media-3d-arsenal";
 import { V38_V39_DIRECTOR_AND_RESEARCH } from "@/lib/zebra-x/core/v38-v39-project-director-arsenal";
+import { V52_PC_CONTROL_AND_BOT_FARM_100 } from "@/lib/zebra-x/core/v52-pc-control-bots-arsenal";
+import { V53_OS_SHELL_FILES_SENTINEL_100 } from "@/lib/zebra-x/core/v53-os-shell-files-sentinel-arsenal";
+import { V54_AI_COMPUTER_UNBLOCK_CAM_100 } from "@/lib/zebra-x/core/v54-ai-computer-unblock-cam-arsenal";
 
 /**
  * HEYUKA Sovereign Cognitive Brain Registry & Pre-Search Domain Classifier
@@ -33,7 +36,10 @@ export type CognitiveClusterId =
   | "live_search_and_47_public_apis"
   | "robotics_agents_and_mobile_lab"
   | "kaspi_pos_merchant_intelligence"
-  | "hardware_cad_voip_testing_and_physics";
+  | "hardware_cad_voip_testing_and_physics"
+  | "pc_keyboard_mouse_and_virtual_desktop_bots"
+  | "sovereign_os_shell_file_surgeon_and_sentinel"
+  | "ai_computer_os_webcam_and_self_unblocking";
 
 export interface CognitiveClusterSpec {
   id: CognitiveClusterId;
@@ -256,6 +262,63 @@ export const COGNITIVE_BRAIN_CLUSTERS: readonly CognitiveClusterSpec[] = [
     roleEn:
       "Open-source replacements for CAD (.dxf), email (.eml/.ics), WebUSB/WebSerial ESC/POS hardware bridges, WebRTC/SIP VoIP calls, Tauri/Capacitor native app builders, isolated unit/stress testing, and 3D magnetic/physics simulation.",
   },
+  {
+    id: "pc_keyboard_mouse_and_virtual_desktop_bots",
+    badgeIcon: "🖥️",
+    titleAr: "التحكم في البيسي (الكلافيي والماوس)، جيش روبوتات أسطح المكتب الافتراضية، والرؤية/السمع الحي (v52.0)",
+    titleEn: "Full PC Keyboard/Mouse ScanCodes, Multi-Desktop Virtual Bot Farm & Live Screen/Audio (v52.0)",
+    enginesCount: 100,
+    outputFormats: ["Virtual Desktop JSON", "Docker KasmVNC/Neko", "AHK/PyDirectInput Script", "Audio/Screen Stream"],
+    keyEngines: [
+      "pynput / PyDirectInput / Enigo (Rust) / AutoHotkey v2 / nut.js",
+      "KasmVNC / Neko (WebRTC) / LinuxServer Webtop / Waydroid / Gamescope",
+      "DXcam (240fps) / OmniParser-V2 / Set-of-Mark (SoM) / RapidOCR",
+      "PipeWire / WASAPI PyAudioWPatch / BlackHole System Audio Loopback",
+      "HumanCursor Bezier + Esc+Esc Hardware Panic Stop",
+    ],
+    roleAr:
+      "التحكم الكامل في الماوس والكلافيي حتى داخل البرامج والألعاب المعقدة، إطلاق عدة روبوتات في أسطح مكتب افتراضية معزولة بدون إزعاج شاشة المستخدم، وقراءة الشاشة وسماع صوت النظام لحظياً.",
+    roleEn:
+      "Hardware scan-code mouse/keyboard input, isolated KasmVNC/Neko/Webtop multi-desktop bot farms with 1-click human takeover, and live screen sight + WASAPI/PipeWire system audio listening.",
+  },
+  {
+    id: "sovereign_os_shell_file_surgeon_and_sentinel",
+    badgeIcon: "🛠️",
+    titleAr: "السيطرة على PowerShell/Bash ونواة النظام، جراح الملفات، والمراقبة 24/7 (v53.0)",
+    titleEn: "Sovereign PowerShell/Bash OS Kernel, Universal File Surgeon, Any-App Operator & 24/7 Sentinel (v53.0)",
+    enginesCount: 100,
+    outputFormats: ["PowerShell/Bash Script", ".yuka-bak Shadow Backup", "Modified .DOCX/.XLSX/.PDF", "osquery Audit"],
+    keyEngines: [
+      "PowerShell 7 (pwsh) / Nushell / xonsh / tmux / WMI / Systemd / winget",
+      "Tree-Sitter / OpenPyXL / python-docx / PyMuPDF / Send2Trash (Safe Undo)",
+      "Ripgrep-All (rga) / CZkawka / Everything CLI / ExifTool / duckdb",
+      "FlaUI / UI-TARS / Playwright CDP / xlwings / Agent-S Procedural Memory",
+      "Watchdog / inotify / osquery SQL / Netdata / Portmaster 24/7 Sentinel",
+    ],
+    roleAr:
+      "تنفيذ أوامر PowerShell وBash وإدارة الخدمات والعمليات، إنشاء وتعديل وحذف جميع أنواع الملفات بأمان (عبر Send2Trash ونسخ احتياطية .yuka-bak)، وتشغيل أي برنامج كالإنسان مع مراقبة النظام 24/7.",
+    roleEn:
+      "PowerShell/Bash root orchestration, surgical editing and safe Send2Trash lifecycle across code/Office/PDF/media files, human-like any-app UIA automation, and 24/7 Watchdog/osquery monitoring.",
+  },
+  {
+    id: "ai_computer_os_webcam_and_self_unblocking",
+    badgeIcon: "👁️",
+    titleAr: "الحاسوب الذكي الشامل (AI Computer OS)، الكاميرا الحية، التمرير، وحل العوائق ذاتياً (v54.0)",
+    titleEn: "Unstoppable AI Computer OS, Smooth Scroll/Zoom, Webcam Live Vision & Self-Unblocking Core (v54.0)",
+    enginesCount: 100,
+    outputFormats: ["AI-PC Action Plan", "Webcam Vision/QR/OCR", "Unstuck Fallback Strategy", "Portable Boot Spec"],
+    keyEngines: [
+      "Unstuck-Watchdog & Dual-Path GUI <-> CLI Fallback (Zero-Deadlock)",
+      "Smooth-Scroll/Pan/Zoom, Modal-Buster & Auto-Dependency-Healer (uv/winget)",
+      "OpenCV Multi-Cam, MediaPipe Hands, Qwen2.5-VL / MiniCPM-o & pyzbar QR/Barcode",
+      "Live-Co-Pilot-HUD, Semantic File System & Instant App-on-Demand Bolt.diy",
+      "Biometric Gate + Esc+Esc / Voice Panic Interrupt + Microsoft Presidio Privacy Blur",
+    ],
+    roleAr:
+      "ضمان عدم توقف الروبوت عند أي عقبة (نوافذ منبثقة، تمرير طويل، تعطل مكتبة أو منفذ)، الرؤية الحية عبر كاميرا الحاسوب لقراءة الأوراق والأجهزة والإشارات، وتحويل الحاسوب إلى نظام ذكاء اصطناعي موحد.",
+    roleEn:
+      "Zero-deadlock self-unblocking execution (GUI<->CLI fallback, scroll/zoom, modal/dependency healers), real-time OpenCV/MediaPipe/VL webcam inspection, and Elon-style unified AI Computer OS orchestration.",
+  },
 ];
 
 export function getTotalIntegratedCapabilitiesCount(): {
@@ -269,6 +332,9 @@ export function getTotalIntegratedCapabilitiesCount(): {
   v35VaultCount: number;
   v36V37Media3DCount: number;
   v38V39DirectorCount: number;
+  v52PcBotsCount: number;
+  v53OsSurgeonCount: number;
+  v54AiComputerCount: number;
   grandTotalSources: number;
 } {
   const sovereignCatalogCount = ALL_SOVEREIGN_MASTER_CATALOG.length;
@@ -280,6 +346,9 @@ export function getTotalIntegratedCapabilitiesCount(): {
   const v35VaultCount = V35_ALL_VAULT_INFRA_200.length;
   const v36V37Media3DCount = V36_V37_MEDIA_3D_200.length;
   const v38V39DirectorCount = V38_V39_DIRECTOR_AND_RESEARCH.length;
+  const v52PcBotsCount = V52_PC_CONTROL_AND_BOT_FARM_100.length;
+  const v53OsSurgeonCount = V53_OS_SHELL_FILES_SENTINEL_100.length;
+  const v54AiComputerCount = V54_AI_COMPUTER_UNBLOCK_CAM_100.length;
   return {
     clustersCount: COGNITIVE_BRAIN_CLUSTERS.length,
     sovereignCatalogCount,
@@ -291,6 +360,9 @@ export function getTotalIntegratedCapabilitiesCount(): {
     v35VaultCount,
     v36V37Media3DCount,
     v38V39DirectorCount,
+    v52PcBotsCount,
+    v53OsSurgeonCount,
+    v54AiComputerCount,
     grandTotalSources:
       sovereignCatalogCount +
       reasoningEvalCount +
@@ -300,7 +372,10 @@ export function getTotalIntegratedCapabilitiesCount(): {
       v34VideoCount +
       v35VaultCount +
       v36V37Media3DCount +
-      v38V39DirectorCount,
+      v38V39DirectorCount +
+      v52PcBotsCount +
+      v53OsSurgeonCount +
+      v54AiComputerCount,
   };
 }
 
@@ -446,6 +521,54 @@ export function classifyCognitiveIntentAndSources(
     });
   }
 
+  if (
+    /(keyboard|mouse|pynput|pydirectinput|autohotkey|nut\.js|enigo|kasmvnc|neko|webtop|virtual desktop|bot farm|spawn desktop|dxcam|omniparser|set-of-mark|\bsom\b|wasapi|pipewire|system audio|كلافيي|ماوس|سطح مكتب افتراضي|جيش روبوتات|سمع النظام|شاشة الروبوت)/i.test(
+      p
+    )
+  ) {
+    matchedIds.add("pc_keyboard_mouse_and_virtual_desktop_bots");
+    stageBadges.push({
+      icon: "🖥️",
+      label:
+        locale === "ar"
+          ? "التحكم بالكلافيي والماوس + أسطح المكتب الافتراضية (v52.0)"
+          : "PC Keyboard/Mouse & Multi-Desktop Bot Farm (v52.0)",
+      domain: "/api/v1/desktops/spawn",
+    });
+  }
+
+  if (
+    /(powershell|pwsh|bash|nushell|wmi|systemd|winget|tree-sitter|openpyxl|python-docx|pymupdf|send2trash|ripgrep-all|\brga\b|watchdog|osquery|netdata|xlwings|flaui|file surgeon|جراح الملفات|سلة المهملات|أوامر النظام|باورشيل|مراقبة 24)/i.test(
+      p
+    )
+  ) {
+    matchedIds.add("sovereign_os_shell_file_surgeon_and_sentinel");
+    stageBadges.push({
+      icon: "🛠️",
+      label:
+        locale === "ar"
+          ? "نواة OS، جراح الملفات، ومراقب النظام 24/7 (v53.0)"
+          : "Sovereign OS Shell, File Surgeon & 24/7 Sentinel (v53.0)",
+      domain: "/api/v1/os/exec",
+    });
+  }
+
+  if (
+    /(webcam|camera|opencv|mediapipe|pyzbar|scroll|zoom|unblock|unstuck|modal-buster|dialog-buster|panic stop|esc\+esc|ai computer|all-in-one os|كاميرا|تمرير|تكبير|عدم التوقف|تجاوز العقبات|حاسوب ذكي)/i.test(
+      p
+    )
+  ) {
+    matchedIds.add("ai_computer_os_webcam_and_self_unblocking");
+    stageBadges.push({
+      icon: "👁️",
+      label:
+        locale === "ar"
+          ? "الحاسوب الذكي، الكاميرا الحية، وحل العوائق (v54.0)"
+          : "Unstoppable AI Computer, Webcam & Self-Unblocking (v54.0)",
+      domain: "/api/v1/ai-pc/control",
+    });
+  }
+
   if (matchedIds.size === 0) {
     matchedIds.add("live_search_and_47_public_apis");
     matchedIds.add("pdf_office_and_documents");
@@ -474,6 +597,75 @@ Directly Bound v30.0 Repositories (${boundGithubSignals.length} active): ${bound
     recommendedApis: Array.from(apis),
     stageBadges,
     cognitiveRoutingNote,
+  };
+}
+
+/**
+ * Deterministic Single-Category Disambiguator:
+ * Prevents category confusion by resolving ANY user prompt to an unambiguous Primary Cluster,
+ * Sub-Category Domain Tag, and exact Target Endpoint before tool dispatch.
+ */
+export function resolveStrictCategoryDisambiguation(prompt: string): {
+  clusterId: CognitiveClusterId;
+  categoryCode: string;
+  targetEndpoint: string;
+  reason: string;
+} {
+  const p = prompt.toLowerCase();
+  if (/(spawn|virtual desktop|kasmvnc|neko|webtop|bot farm|keyboard|mouse|hotkey|pynput|pydirectinput|wasapi|pipewire|سطح مكتب افتراضي|كلافيي|ماوس|جيش روبوتات)/i.test(p)) {
+    return {
+      clusterId: "pc_keyboard_mouse_and_virtual_desktop_bots",
+      categoryCode: "V52_PC_BOT_FARM",
+      targetEndpoint: "/api/v1/desktops/spawn",
+      reason: "Matched hardware input (keyboard/mouse), multi-desktop virtual bot farm, or system audio/screen stream.",
+    };
+  }
+  if (/(powershell|pwsh|bash|chmod|send2trash|yuka-bak|openpyxl|pymupdf|tree-sitter|osquery|watchdog|sentinel|باورشيل|ملف وورد|ملف اكسيل|حذف آمن)/i.test(p)) {
+    return {
+      clusterId: "sovereign_os_shell_file_surgeon_and_sentinel",
+      categoryCode: "V53_OS_SHELL_SURGEON",
+      targetEndpoint: "/api/v1/os/exec",
+      reason: "Matched OS shell execution, surgical file modification/recovery, or 24/7 Watchdog/osquery sentinel.",
+    };
+  }
+  if (/(webcam|camera|mediapipe|pyzbar|unblock|unstuck|scroll|zoom|panic stop|esc\+esc|ai computer|كاميرا|تمرير|تجاوز العقبات)/i.test(p)) {
+    return {
+      clusterId: "ai_computer_os_webcam_and_self_unblocking",
+      categoryCode: "V54_AI_COMPUTER_OS",
+      targetEndpoint: "/api/v1/ai-pc/control",
+      reason: "Matched live webcam vision, smooth scroll/zoom, self-unblocking fallback, or Esc+Esc panic interrupt.",
+    };
+  }
+  if (/(skyreels|framepack|mmaudio|cinema|long video|webm|mp4|video|فيديو|فيلم|مونتاج)/i.test(p)) {
+    return {
+      clusterId: "games_3d_video_and_audio",
+      categoryCode: "V34_CINEMA_LONG_VIDEO",
+      targetEndpoint: "/api/v1/chat/completions",
+      reason: "Matched long photorealistic cinema video & Foley audio synthesis.",
+    };
+  }
+  if (/(fur|cornea|eyeball|trellis|hunyuan3d|mesh|glb|three|3d|فرو|عيون|مجسم)/i.test(p)) {
+    return {
+      clusterId: "games_3d_video_and_audio",
+      categoryCode: "V37_3D_FUR_EYES_REALISM",
+      targetEndpoint: "/api/v1/3d/generate",
+      reason: "Matched 3D hyper-realism (fur shell shaders, eye refraction cornea, GLB/R3F export).",
+    };
+  }
+  if (/(remove.?bg|birefnet|rmbg|inpaint|lama|anytext|poster|إزالة الخلفية|حذف عنصر|صورة واقعية)/i.test(p)) {
+    return {
+      clusterId: "image_svg_and_vision_studio",
+      categoryCode: "V36_IMAGE_MATTING_INPAINT",
+      targetEndpoint: "/api/v1/vision/remove-bg",
+      reason: "Matched 4K image matting, object eraser inpainting, or Arabic typography.",
+    };
+  }
+  const route = classifyCognitiveIntentAndSources(prompt, "en");
+  return {
+    clusterId: route.primaryCluster.id,
+    categoryCode: route.primaryCluster.id.toUpperCase(),
+    targetEndpoint: "/api/v1/chat/completions",
+    reason: `Resolved directly via cognitive classifier (${route.primaryCluster.titleEn}).`,
   };
 }
 
@@ -547,7 +739,7 @@ export function buildFullCapabilitiesAndSourcesMarkdown(
 
     return `## 🧠 الخريطة الشاملة لقدرات ومصادر HEYUKA المدمجة (\`${totals.grandTotalSources}+\` مصدر ومحرك مفتوح • \`100% Free & Zero-Key\`)
 
-تم تنظيم وترتيب جميع المصادر والمكتبات وقواعد البيانات في عقل **HEYUKA (KASPI AI)** ضمن **10 مجموعات معرفية مصنفة مسبقاً (Pre-Classified Cognitive Clusters)** مربوطة مباشرة بـ **${totals.githubSignalsCount} مستودعاً ومصدراً فائقاً جديداً (v30 + v31 GithubSignals & AskGPTs Pack)** بحيث بمجرد تحديد المجال يشتغل المحرك ومصادره تلقائياً بلا أي تعقيد:
+تم تنظيم وترتيب جميع المصادر والمكتبات وقواعد البيانات في عقل **HEYUKA (KASPI AI)** ضمن **${totals.clustersCount} مجموعة معرفية مصنفة مسبقاً (Pre-Classified Cognitive Clusters)** مربوطة مباشرة بـ **${totals.githubSignalsCount} مستودعاً ومصدراً فائقاً جديداً (v30 + v31 GithubSignals & AskGPTs Pack)** بالإضافة إلى حزم **\`v34.0–v54.0\`** بحيث بمجرد تحديد المجال يشتغل المحرك ومصادره تلقائياً بلا أي خلط بين الفئات:
 
 | المجموعة المعرفية في عقل HEYUKA | عدد المحركات | أبرز المصادر والمكتبات المفتوحة المدمجة | الملفات والمخرجات التي يصنعها | الدور المباشر وكيف يستفيد منه المستخدم |
 | :--- | :---: | :--- | :--- | :--- |
@@ -555,7 +747,7 @@ ${rowsMd}
 
 ---
 
-### 🏛️ الحزم السيادية الجديدة المدمجة والأرشفة الدائمة (\`v34.0\` – \`v39.0 Sovereign Permanent Vault • Unlimited & Client-Compute\`)
+### 🏛️ الحزم السيادية الجديدة المدمجة والأرشفة الدائمة (\`v34.0\` – \`v54.0 Sovereign Permanent Vault • Unlimited & Client-Compute\`)
 
 | الحزمة السيادية المصنفة | عدد المصادر | الدور في المحرك والـ API (بدون أي سقف يومي وعلى عتاد المستخدم) |
 | :--- | :---: | :--- |
@@ -564,6 +756,9 @@ ${rowsMd}
 | **3. \`v36.0\` — استوديو الصور الفوتوغرافية، التفريغ، والحذف الذكي** | \`100\` | إنتاج صور واقعية (\`FLUX.1\`, \`HiDream\`), إزالة الخلفية \`4K\` (\`BiRefNet\`, \`RMBG-2.0\`), حذف العناصر (\`LaMa\`, \`inpaint-web\`), والخط العربي (\`AnyText2\`) |
 | **4. \`v37.0\` — استوديو 3D الواقعي (الفرو، العيون الحية، والمجسمات)** | \`100\` | مجسمات \`TRELLIS\`, \`Hunyuan3D-2\`, فرو \`Shell-Texturing\`, عيون بقرنية حية \`IOR 1.38\`, رندر \`Cycles\`, وتصدير \`.GLB / R3F JSX\` |
 | **5. \`v38.0 + v39.0\` — مهندس المشاريع الشامل A-to-Z والبحث المتوازي** | \`${totals.v38V39DirectorCount}\` | التخطيط المعماري (\`MetaGPT\`, \`MCP\`), البرمجة الحديثة (\`Next.js/React 19/Tailwind v4\`), النشر السحابي التلقائي، والتصفح المتوازي (\`Browser-Use\`, \`Crawl4AI\`) |
+| **6. \`v52.0\` — التحكم بالبيسي، الكلافيي/الماوس، وأسطح المكتب الافتراضية** | \`${totals.v52PcBotsCount}\` | \`pynput / PyDirectInput / Enigo / AutoHotkey\`, مزرعة روبوتات \`KasmVNC / Neko / Webtop\` (\`/api/v1/desktops/spawn\`), ورؤية الشاشة وسمع الصوت (\`DXcam / OmniParser / WASAPI\`) |
+| **7. \`v53.0\` — نواة OS (PowerShell/Bash)، جراح الملفات، والمراقبة 24/7** | \`${totals.v53OsSurgeonCount}\` | أوامر \`PowerShell 7 / Bash / Nushell\`, تعديل وحذف آمن للملفات عبر \`Tree-Sitter / OpenPyXL / Send2Trash\`, ومراقب \`Watchdog / osquery\` (\`/api/v1/os/exec\`) |
+| **8. \`v54.0\` — الحاسوب الذكي الشامل، الكاميرا الحية، وحل العوائق ذاتياً** | \`${totals.v54AiComputerCount}\` | التمرير والتكبير، حل العوائق ذاتياً \`Unstuck-Watchdog\`, الكاميرا الحية \`OpenCV / MediaPipe / Qwen2.5-VL\`, وزر الطوارئ \`Esc+Esc\` (\`/api/v1/ai-pc/control\`) |
 
 ---
 
@@ -604,7 +799,7 @@ ${pdfMarker}`;
 
   return `## 🧠 HEYUKA Complete Cognitive Brain & Open-Source Arsenal (\`${totals.grandTotalSources}+\` Integrated Engines • \`100% Free & Zero-Key\`)
 
-All integrated libraries, compilers, datasets, and **${totals.livePublicApisCount} live no-key APIs** are pre-classified into **10 Cognitive Domain Clusters** so HEYUKA routes directly to the right engine and exports any file format (**PDF, ZIP, DOCX, XLSX, AutoCAD .DXF, Email .EML, Calendar .ICS, PNG, SVG, 3D GLB, WAV, and multi-file code**):
+All integrated libraries, compilers, datasets, and **${totals.livePublicApisCount} live no-key APIs** are pre-classified into **${totals.clustersCount} Cognitive Domain Clusters** so HEYUKA routes directly to the right engine without category confusion and exports any file format (**PDF, ZIP, DOCX, XLSX, AutoCAD .DXF, Email .EML, Calendar .ICS, PNG, SVG, 3D GLB, WAV, Virtual Desktop JSON, PowerShell/Bash scripts, and multi-file code**):
 
 | Cognitive Cluster | Engines | Core Open-Source Libraries & Live Feeds | Supported Output Files | Direct Capability |
 | :--- | :---: | :--- | :--- | :--- |

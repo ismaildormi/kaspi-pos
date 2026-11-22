@@ -517,9 +517,58 @@ export function buildImageStudioPipelineBundle(prompt: string): {
   <text x="540" y="920" text-anchor="middle" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="20">BiRefNet Cutout • LaMa Inpaint WebGPU • AnyText2 Arabic Typography</text>
 </svg>`;
 
+  const studioHtml = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>HEYUKA v36.0 Interactive Image, Cutout, Inpaint & Arabic Typography Studio</title>
+  <style>
+    body{margin:0;background:#060a0f;color:#e2e8f0;font-family:Cairo,Tajawal,system-ui,sans-serif;padding:18px;display:flex;flex-direction:column;align-items:center;gap:12px;}
+    .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#0d1520;border:1px solid rgba(16,185,129,.3);border-radius:12px;padding:10px 14px;}
+    button,input{border-radius:8px;border:1px solid rgba(255,255,255,.15);padding:7px 12px;background:#111c2d;color:#fff;font-size:13px;}
+    button{cursor:pointer;background:#10b981;color:#03140e;font-weight:700;border:0;}
+    canvas{max-width:100%;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#091019;}
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <strong>HEYUKA Image Studio v36.0 ($0.00 Client GPU)</strong>
+    <input id="txtInput" type="text" value="${safePrompt.slice(0, 42)}" placeholder="نص عربي أو إنجليزي..." />
+    <button id="cutoutBtn">محاكاة عزل الخلفية (Alpha)</button>
+    <button id="inpaintBtn">مسح عنصر (Inpaint Brush)</button>
+    <button id="exportPngBtn">تصدير PNG عالي الدقة</button>
+  </div>
+  <canvas id="studioCanvas" width="1080" height="1080"></canvas>
+  <script>
+    const c=document.getElementById("studioCanvas"),x=c.getContext("2d"),tIn=document.getElementById("txtInput");
+    let bgRemoved=false,inpaintCircles=[];
+    function draw(){
+      x.clearRect(0,0,1080,1080);
+      if(!bgRemoved){
+        const g=x.createLinearGradient(0,0,1080,1080);
+        g.addColorStop(0,"#06121b");g.addColorStop(1,"#0b2824");
+        x.fillStyle=g;x.fillRect(0,0,1080,1080);
+      }
+      x.fillStyle="#10b981";x.beginPath();x.arc(540,480,220,0,Math.PI*2);x.fill();
+      for(const pt of inpaintCircles){x.fillStyle=bgRemoved?"rgba(0,0,0,0)":"#0b2824";x.beginPath();x.arc(pt.x,pt.y,36,0,Math.PI*2);x.fill();}
+      x.fillStyle="#ffffff";x.font="800 52px Cairo,system-ui";x.textAlign="center";
+      x.fillText(tIn.value||"HEYUKA",540,830);
+    }
+    draw();
+    tIn.oninput=draw;
+    document.getElementById("cutoutBtn").onclick=()=>{bgRemoved=!bgRemoved;draw();};
+    document.getElementById("inpaintBtn").onclick=()=>{inpaintCircles.push({x:480+Math.random()*120,y:440+Math.random()*80});draw();};
+    document.getElementById("exportPngBtn").onclick=()=>{const a=document.createElement("a");a.href=c.toDataURL("image/png");a.download="heyuka-studio-4k.png";a.click();};
+  </script>
+</body>
+</html>`;
+
   return {
     sourcesUsed,
-    files: [{ path: "heyuka-studio-poster.svg", language: "svg", content: svgPoster }],
+    files: [
+      { path: "heyuka-image-studio.html", language: "html", content: studioHtml },
+      { path: "heyuka-studio-poster.svg", language: "svg", content: svgPoster },
+    ],
   };
 }
 
@@ -558,11 +607,21 @@ export function buildAtoZProjectDirectorBundle(prompt: string): {
     2
   );
 
+  const gatusYaml = `endpoints:
+  - name: heyuka-api-health
+    url: "https://kaspi-pos.vercel.app/api/v1/models"
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].capabilities.unlimitedRequests == true"
+`;
+
   return {
     sourcesUsed,
     files: [
       { path: "PROJECT_ATOZ_PLAN.md", language: "markdown", content: planMd },
       { path: "vercel.json", language: "json", content: deployConfig },
+      { path: "gatus.yaml", language: "yaml", content: gatusYaml },
     ],
   };
 }

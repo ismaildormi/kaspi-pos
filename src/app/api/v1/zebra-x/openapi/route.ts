@@ -45,7 +45,13 @@ export async function GET() {
         clientComputeHeader: "X-HEYUKA-Compute-URL",
         models: ["heyuka-omni", "heyuka-core", "heyuka-vision"],
         noKeyPublicApisCount: PUBLIC_APIS_CATALOG_COUNT,
+        cognitiveClustersCount: 13,
         sovereignVaultEndpoint: "/api/v1/heyuka/local-sdk?vault=1",
+        osAndBotEndpoints: [
+          "/api/v1/desktops/spawn",
+          "/api/v1/os/exec",
+          "/api/v1/ai-pc/control",
+        ],
         openaiCompatible: true,
         debugEndpoint: "/api/v1/debug",
       },
@@ -141,6 +147,45 @@ export async function GET() {
           operationId: "autoDiscoverOpenApi",
           summary: "Connect external OpenAPI/Swagger specifications into your tenant's authenticated HEYUKA workspace.",
           responses: { "200": { description: "Registered connector metadata & available operations" } },
+        },
+      },
+      "/api/v1/desktops/spawn": {
+        get: {
+          operationId: "listVirtualDesktopBots",
+          summary: "List isolated Virtual Desktop Bot Farm sessions (v52.0 KasmVNC / Neko / Webtop).",
+          responses: { "200": { description: "Active isolated desktop bots JSON" } },
+        },
+        post: {
+          operationId: "spawnOrControlVirtualDesktopBot",
+          summary:
+            "Spawn, pause for human takeover, resume, or destroy isolated Virtual Desktop bots with dedicated virtual mouse/keyboard and live screen/audio streams (v52.0).",
+          responses: { "200": { description: "Virtual desktop bot session & Docker/KasmVNC stack" } },
+        },
+      },
+      "/api/v1/os/exec": {
+        get: {
+          operationId: "getSovereignOsCapabilities",
+          summary: "Inspect v53.0 Sovereign OS Shell, File Surgeon (.yuka-bak + Send2Trash), and 24/7 Sentinel status.",
+          responses: { "200": { description: "OS execution capabilities & POS_CORE_LOCK safety status" } },
+        },
+        post: {
+          operationId: "executeSovereignOsAndFileSurgeon",
+          summary:
+            "Generate and dispatch PowerShell/Bash shell commands, reversible DOCX/XLSX/PDF File Surgeon plans, Any-App UIA actions, or 24/7 Watchdog/osquery sentinel probes (v53.0).",
+          responses: { "200": { description: "OS control plan and scripts with safety guarantees" } },
+        },
+      },
+      "/api/v1/ai-pc/control": {
+        get: {
+          operationId: "getAiComputerPanicAndVisionState",
+          summary: "Inspect v54.0 AI Computer OS state, Esc+Esc Panic Stop state, and Webcam Vision / Smooth Scroll engines.",
+          responses: { "200": { description: "AI Computer OS runtime state" } },
+        },
+        post: {
+          operationId: "controlAiComputerVisionScrollPanic",
+          summary:
+            "Execute v54.0 smooth mouse Scroll/Zoom, self-unblocking fallback chain, live OpenCV/MediaPipe Webcam sight, or 0ms Esc+Esc Hardware Panic Stop.",
+          responses: { "200": { description: "AI Computer action dispatch JSON" } },
         },
       },
     },

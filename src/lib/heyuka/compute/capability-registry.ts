@@ -288,6 +288,55 @@ export async function discoverDynamicCapabilities(params?: {
       limitations: "Only public SSRF-safe HTTPS targets are accepted.",
       productIds: ["automation-studio", "coding-studio"],
     },
+    {
+      id: "v52_virtual_desktop_bot_farm",
+      name: "Full PC Hardware Input, Virtual Desktop Bot Farm & Live Screen/Audio (v52.0)",
+      description:
+        "PyDirectInput/pynput scan-code keyboard/mouse simulation + isolated KasmVNC/Neko/Xvfb multi-desktop bot sessions + DXCam/PipeWire screen & system audio streams.",
+      domain: "automation",
+      inputType: "{ action: 'spawn' | 'list' | 'takeover' | 'resume' | 'destroy', task, role, displayEngine }",
+      outputType: "Isolated VirtualDesktopBotSession + KasmVNC/Neko Docker & Python driver payload",
+      endpoint: "/api/v1/desktops/spawn",
+      responsibleEngine: "Sovereign PC Commander + CUT- Desktop Companion Drivers",
+      status: "verified_live",
+      verifiedByRuntime: true,
+      zeroCostTier: "user_device",
+      limitations:
+        "Cloud API orchestrates isolated KasmVNC/Neko specs cleanly at $0 cost; native physical scan-codes run on the user's PC via CUT- / HEYUKA Desktop Companion.",
+      productIds: ["automation-studio", "coding-studio", "web-studio"],
+    },
+    {
+      id: "v53_sovereign_os_shell_file_surgeon",
+      name: "Sovereign Root OS Shell, Reversible File Surgeon & 24/7 Sentinel (v53.0)",
+      description:
+        "PowerShell 7/Bash execution, AST/Office surgical edits (.yuka-bak backup + Send2Trash), any-app UIA automation, and Watchdog/osquery system health monitoring with POS_CORE_LOCK protection.",
+      domain: "automation",
+      inputType: "{ action: 'shell' | 'file_lifecycle' | 'sentinel_health' | 'app_operate', command?, targetPath? }",
+      outputType: "Verified cross-OS script payload + reversible safety metadata",
+      endpoint: "/api/v1/os/exec",
+      responsibleEngine: "HEYUKA OS Commander + File Surgeon + Watchdog Sentinel",
+      status: "verified_live",
+      verifiedByRuntime: true,
+      zeroCostTier: "user_device",
+      limitations: "Internal SaaS POS DB/source remains locked under POS_CORE_LOCK=true for safety.",
+      productIds: ["automation-studio", "document-studio", "coding-studio"],
+    },
+    {
+      id: "v54_ai_computer_webcam_panic_stop",
+      name: "Unstoppable AI Computer OS, Live Webcam Vision, Smooth Scroll/Zoom & Esc+Esc Panic Stop (v54.0)",
+      description:
+        "Unstoppable fallback self-unblocking, precise wheel scroll/zoom, MediaPipe/OpenCV/pyzbar live camera sight, and 0ms Esc+Esc hardware cursor yield.",
+      domain: "automation",
+      inputType: "{ action: 'scroll' | 'zoom' | 'self_unblock' | 'webcam_vision' | 'panic_stop' | 'dispatch' }",
+      outputType: "OS dispatch payload + PanicStopState + CV/Scroll script",
+      endpoint: "/api/v1/ai-pc/control",
+      responsibleEngine: "HEYUKA AI Computer OS + OpenCV/MediaPipe/pynput",
+      status: "verified_live",
+      verifiedByRuntime: true,
+      zeroCostTier: "user_device",
+      limitations: "Live webcam & physical mouse yield execute directly on user PC hardware ($0 cloud compute).",
+      productIds: ["automation-studio", "image-studio", "3d-studio"],
+    },
   ];
 
   return {

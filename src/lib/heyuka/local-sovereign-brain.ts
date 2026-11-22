@@ -25,6 +25,7 @@ import {
   getTotalIntegratedCapabilitiesCount,
   isCapabilitiesOrSourcesTableRequest,
   isPatentOrInventionRequest,
+  resolveStrictCategoryDisambiguation,
 } from "@/lib/zebra-x/core/cognitive-brain-registry";
 import { renderStyledBrandQrSvg } from "@/lib/zebra-x/tools/qr-architect-engine";
 import { scanSourceCodeForVulnerabilities } from "@/lib/zebra-x/tools/security-sast-auditor";
@@ -34,6 +35,11 @@ import {
   buildPhotorealistic3DFurEyesBundle,
   buildPhotorealisticCinemaVideoBundle,
 } from "@/lib/heyuka/tools/photorealistic-video-builder";
+import {
+  buildSovereignOsAndFileSurgeonPlan,
+  buildUnstoppableAiComputerAction,
+  spawnVirtualDesktopBot,
+} from "@/lib/heyuka/os/sovereign-pc-commander";
 import {
   getSelfEvolutionContextForPrompt,
   recordProductSelfEvolution,
@@ -413,10 +419,6 @@ import http from "node:http";
 const PORT = Number(process.env.HEYUKA_LOCAL_PORT || 4040);
 
 const COGNITIVE_CLUSTERS = [
-  "1. Google Patents (150M+ Global IP & Inventions)",
-  "2. PDF, Word (.docx), Excel (.xlsx), PowerPoint (.pptx) & Thermal Print",
-  "3. Image, SVG Vector, Styled QR & Vision Cutout Studio",
-const COGNITIVE_CLUSTERS = [
   "1. Google Patents (150M+ Global Corpus) & Scholar Blueprints -> PDF/DOCX",
   "2. Arabic/RTL PDF, DOCX, XLSX, PPTX Document Studio",
   "3. Image Gen, BiRefNet 4K Matting, LaMa Inpainting & AnyText2 Typography (v36.0)",
@@ -426,7 +428,10 @@ const COGNITIVE_CLUSTERS = [
   "7. 47 Zero-Key Live Public APIs & Parallel Multi-Site Web Research (v39.0)",
   "8. Robotics (ROS2/ESP32), 3-Agent Swarm & Mobile Repair Lab",
   "9. KASPI POS Store Intelligence, Finance & Hardware Hub",
-  "10. Hardware WebUSB/ESC-POS, Open CAD (.DXF), WebRTC/VoIP, .EML & Physics"
+  "10. Hardware WebUSB/ESC-POS, Open CAD (.DXF), WebRTC/VoIP, .EML & Physics",
+  "11. Full PC Keyboard/Mouse ScanCodes, Multi-Desktop Bot Farm & Live Screen/Audio (v52.0)",
+  "12. Sovereign Root OS Shell (PowerShell/Bash), Reversible File Surgeon & 24/7 Sentinel (v53.0)",
+  "13. Unstoppable AI Computer OS, Smooth Scroll/Zoom, Webcam Vision & Esc+Esc Panic Stop (v54.0)"
 ];
 
 const UNLIMITED_CLIENT_COMPUTE_POLICY = {
@@ -508,7 +513,7 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     return res.end(JSON.stringify({
       ok: true,
-      engine: "HEYUKA Local Sovereign API Server v39.0 (Unlimited + Client-Compute + Vaulted)",
+      engine: "HEYUKA Local Sovereign API Server v54.0 (13 Cognitive Clusters • Unlimited + Client-Compute + Vaulted)",
       cost: "$0.00",
       unlimited: true,
       rateLimit: "none",
@@ -516,7 +521,7 @@ const server = http.createServer((req, res) => {
       offlineReady: true,
       clusters: COGNITIVE_CLUSTERS.length,
       learnedProductsCount: SELF_LEARNING_LOG.length,
-      endpoints: ["/health", "/v1/chat/completions", "/api/v1/heyuka/local-sdk", "/v1/vault", "/v1/learn"]
+      endpoints: ["/health", "/v1/chat/completions", "/api/v1/heyuka/local-sdk", "/v1/vault", "/v1/disambiguate", "/v1/learn"]
     }, null, 2));
   }
 
@@ -527,9 +532,33 @@ const server = http.createServer((req, res) => {
       unlimited: true,
       policy: UNLIMITED_CLIENT_COMPUTE_POLICY,
       clusters: COGNITIVE_CLUSTERS,
-      packs: ["v20-v28", "v30 GithubSignals (74)", "v31 AskGPTs (94)", "v34 Cinema Video (100)", "v35 Permanent Vault (200)", "v36 Image Studio (100)", "v37 3D Fur & Eyes (100)", "v38 A-to-Z Project Director (100)", "v39 Parallel Web Research"],
+      packs: ["v20-v28", "v30 GithubSignals (74)", "v31 AskGPTs (94)", "v34 Cinema Video (100)", "v35 Permanent Vault (200)", "v36 Image Studio (100)", "v37 3D Fur & Eyes (100)", "v38 A-to-Z Project Director (100)", "v39 Parallel Web Research", "v52 PC Control & Bot Farm (100)", "v53 Sovereign OS Shell & File Surgeon (100)", "v54 AI Computer OS & Webcam (100)"],
       learnedProducts: SELF_LEARNING_LOG.slice(0, 20)
     }, null, 2));
+  }
+
+  if (req.method === "POST" && req.url?.startsWith("/v1/disambiguate")) {
+    let dBody = "";
+    req.on("data", (chunk) => { dBody += chunk; });
+    req.on("end", () => {
+      try {
+        const parsed = JSON.parse(dBody || "{}");
+        const q = String(parsed.prompt || "").toLowerCase();
+        const cluster = /(virtual desktop|bot farm|pynput|keyboard|mouse|kasmvnc)/i.test(q)
+          ? { categoryCode: "V52_PC_BOT_FARM", targetEndpoint: "/api/v1/desktops/spawn" }
+          : /(powershell|bash|send2trash|yuka-bak|sentinel|file surgeon)/i.test(q)
+          ? { categoryCode: "V53_OS_SHELL_SURGEON", targetEndpoint: "/api/v1/os/exec" }
+          : /(webcam|scroll|zoom|unblock|panic stop|ai computer)/i.test(q)
+          ? { categoryCode: "V54_AI_COMPUTER_OS", targetEndpoint: "/api/v1/ai-pc/control" }
+          : { categoryCode: "GENERAL_SOVEREIGN", targetEndpoint: "/api/v1/chat/completions" };
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        return res.end(JSON.stringify({ ok: true, ...cluster, unlimited: true }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ ok: false, error: String(e) }));
+      }
+    });
+    return;
   }
 
   if (req.method === "POST") {
@@ -674,9 +703,9 @@ if (typeof window !== "undefined") {
       openapi: "3.1.0",
       info: {
         title: "HEYUKA Sovereign Local & Mobile API",
-        version: "29.0.0",
+        version: "54.0.0",
         description:
-          "Zero-key, zero-cost ($0.00) portable API that runs on local servers, mobile phones, and browsers.",
+          "Zero-key, zero-cost ($0.00) portable API across 13 Cognitive Clusters & v52-v54 PC/OS/Bot tools running on local servers, desktops, mobile phones, and browsers.",
       },
       servers: [
         { url: "http://127.0.0.1:4040", description: "Local Device / POS / Mobile Termux Server" },
@@ -688,12 +717,27 @@ if (typeof window !== "undefined") {
             summary: "Download portable local API bundle or inspect local engine health",
           },
           post: {
-            summary: "Execute prompt across 9 Cognitive Clusters with multi-file & PDF output",
+            summary: "Execute prompt across 13 Cognitive Clusters with multi-file & PDF output",
           },
         },
         "/v1/chat/completions": {
           post: {
             summary: "OpenAI-compatible local chat completions endpoint",
+          },
+        },
+        "/api/v1/desktops/spawn": {
+          post: {
+            summary: "Spawn or control isolated Virtual Desktop Bot Farm sessions (v52.0)",
+          },
+        },
+        "/api/v1/os/exec": {
+          post: {
+            summary: "Execute Sovereign PowerShell/Bash shell & reversible File Surgeon plans (v53.0)",
+          },
+        },
+        "/api/v1/ai-pc/control": {
+          post: {
+            summary: "Control smooth Scroll/Zoom, Self-Unblocking, Live Webcam & Esc+Esc Panic Stop (v54.0)",
           },
         },
       },
@@ -702,7 +746,7 @@ if (typeof window !== "undefined") {
     2
   );
 
-  const readmeMd = `# ⚡ HEYUKA Local Sovereign API & Mobile SDK (v29.0)
+  const readmeMd = `# ⚡ HEYUKA Local Sovereign API & Mobile SDK (v54.0)
 
 يشتغل هذا المحرك **محلياً 100% (\`$0.00\`)** على أي سيرفر محلي، حاسوب، أو هاتف ذكي (**Android / iOS / WebView / Termux / PWA**) بدون الحاجة لأي مفتاح API خارجي.
 
@@ -965,8 +1009,18 @@ Your self-contained **HEYUKA Local Sovereign API & Mobile SDK (v29.0)** bundle i
     };
   }
 
-  // 5) Structured Cinema Video (v34), 3D Fur/Eyes (v37), Image Studio (v36), A-to-Z Project Director (v38), Robotics, CAD & Coding Synthesis
+  // 5) Strict v52-v54 PC/OS/AI-Computer Disambiguation + Cinema Video (v34), 3D Fur/Eyes (v37), Image Studio (v36), A-to-Z Project Director (v38), Robotics, CAD & Coding Synthesis
   const pLower = prompt.toLowerCase();
+  const strictCategory = resolveStrictCategoryDisambiguation(prompt);
+  const isPcBotFarm =
+    params.mode === "pc_bot" ||
+    strictCategory.categoryCode === "V52_PC_BOT_FARM";
+  const isOsSurgeon =
+    params.mode === "os_exec" ||
+    strictCategory.categoryCode === "V53_OS_SHELL_SURGEON";
+  const isAiPcControl =
+    params.mode === "ai_pc" ||
+    strictCategory.categoryCode === "V54_AI_COMPUTER_OS";
   const isVideo =
     params.mode === "video" ||
     /(video|cinema|film|movie|webm|mp4|foley|skyreels|framepack|mmaudio|فيديو|فيلم|سينما|مونتاج)/i.test(pLower);
@@ -992,7 +1046,54 @@ Your self-contained **HEYUKA Local Sovereign API & Mobile SDK (v29.0)** bundle i
   let productKind: "video" | "3d" | "image" | "code" | "document" | "project" | "research" = "code";
   let extraSourcesUsed: string[] = [];
 
-  if (isExtendedEngineering) {
+  if (isPcBotFarm) {
+    const botBundle = spawnVirtualDesktopBot({ task: prompt });
+    studioFiles = [
+      { path: "virtual-desktop-bot-compose.yml", language: "yaml", content: botBundle.dockerComposeYaml },
+      { path: "bot-session.json", language: "json", content: JSON.stringify(botBundle.bot, null, 2) },
+    ];
+    extraSourcesUsed = botBundle.matchedVaultTools.map((t) => t.name);
+    productKind = "project";
+  } else if (isOsSurgeon) {
+    const osPlan = buildSovereignOsAndFileSurgeonPlan({ action: "shell", command: prompt.slice(0, 180) });
+    studioFiles = [
+      ...(osPlan.generatedScripts.powershell
+        ? [{ path: "sovereign-os-surgeon.ps1", language: "powershell", content: osPlan.generatedScripts.powershell }]
+        : []),
+      ...(osPlan.generatedScripts.bash
+        ? [{ path: "sovereign-os-surgeon.sh", language: "bash", content: osPlan.generatedScripts.bash }]
+        : []),
+      ...(osPlan.generatedScripts.python
+        ? [{ path: "file-surgeon-safe.py", language: "python", content: osPlan.generatedScripts.python }]
+        : []),
+    ];
+    extraSourcesUsed = osPlan.matchedVaultTools.map((t) => t.name);
+    productKind = "code";
+  } else if (isAiPcControl) {
+    const camMode = /(qr|barcode)/i.test(pLower)
+      ? "qr_barcode"
+      : /(ocr|document|ورق)/i.test(pLower)
+      ? "document_ocr"
+      : "dual_vision";
+    const actionKind = /panic|esc\+esc/i.test(pLower)
+      ? "panic_stop"
+      : /webcam|camera|كاميرا/i.test(pLower)
+      ? "webcam_vision"
+      : /zoom|تكبير/i.test(pLower)
+      ? "zoom"
+      : /scroll|تمرير/i.test(pLower)
+      ? "scroll"
+      : "self_unblock";
+    const aiPc = buildUnstoppableAiComputerAction({ action: actionKind, cameraMode: camMode, prompt });
+    studioFiles = [
+      ...(aiPc.generatedScripts.python
+        ? [{ path: "ai-computer-controller.py", language: "python", content: aiPc.generatedScripts.python }]
+        : []),
+      { path: "ai-pc-dispatch.json", language: "json", content: JSON.stringify(aiPc.result, null, 2) },
+    ];
+    extraSourcesUsed = aiPc.matchedVaultTools.map((t) => t.name);
+    productKind = "project";
+  } else if (isExtendedEngineering) {
     studioFiles = buildExtendedEngineeringStudioFiles(prompt);
     productKind = "code";
   } else if (isVideo) {
@@ -1088,7 +1189,8 @@ ${
 | :--- | :---: | :--- | :--- |
 ${clusterRows}
 
-### 🔗 ${isAr ? "المصادر المدمجة من الخزنة الدائمة + التطور الذاتي" : "Bound Permanent Vault Sources + Continuous Learning"}
+### 🔗 ${isAr ? "المصادر المدمجة من الخزنة الدائمة + التوجيه الدقيق" : "Bound Permanent Vault Sources + Strict Disambiguation"}
+- **Strict Disambiguation:** \`${strictCategory.categoryCode}\` → \`${strictCategory.targetEndpoint}\` (${strictCategory.reason})
 - **Vault Engines Used:** ${matchedSourceNames.join(" • ") || "Sovereign Core Router"}
 - **Evolution Trace:** \`${evolutionRecord.trace.traceId}\` (Total Learned: \`${evolutionRecord.totalLearnedTraces}\` • ${evoCtx.evolutionSummary})
 

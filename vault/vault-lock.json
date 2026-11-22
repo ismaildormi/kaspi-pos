@@ -1,7 +1,7 @@
 {
   "schemaVersion": "v35.1-lock",
-  "generatedAt": "2026-11-22T02:12:35.988Z",
-  "totalClassifiedEntries": 1681,
+  "generatedAt": "2026-11-22T03:10:44.689Z",
+  "totalClassifiedEntries": 1981,
   "byPack": {
     "v34.0": 100,
     "v35.0": 100,
@@ -10,6 +10,9 @@
     "v37.0": 100,
     "v38.0": 100,
     "v39.0": 11,
+    "v52.0": 100,
+    "v53.0": 100,
+    "v54.0": 100,
     "v30.0": 74,
     "v31.0": 94,
     "v20.2": 25,
@@ -48,9 +51,12 @@
     "hardware_cad_voip_testing_and_physics": 178,
     "image_svg_and_vision_studio": 158,
     "robotics_agents_and_mobile_lab": 196,
+    "pc_keyboard_mouse_and_virtual_desktop_bots": 100,
+    "sovereign_os_shell_file_surgeon_and_sentinel": 100,
+    "ai_computer_os_webcam_and_self_unblocking": 100,
     "kaspi_pos_merchant_intelligence": 21,
     "pdf_office_and_documents": 36,
     "patents_and_inventions_150m": 2
   },
-  "manifestHash": "2a88e666b2efaa8b3cc045f817ff84e10050f8e8972d339ccc1be34f3c1693db"
+  "manifestHash": "8e7603a63a0c178345fd6adfbd0741528603b62373c248c3a6fd06a06dc68ab8"
 }
