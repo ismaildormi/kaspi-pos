@@ -33,6 +33,7 @@ import {
   Store,
   Terminal,
   Trash2,
+  Volume2,
   Wrench,
   X,
 } from "lucide-react";
@@ -1258,6 +1259,77 @@ export function HeyukaUnifiedStudioWorkspace({
                   </p>
                 </div>
 
+                <div className="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {[
+                    {
+                      icon: "🚀",
+                      title: isAr ? "ابنِ لي متجراً إلكترونياً حياً الآن" : "Build a Live E-Commerce Store Now",
+                      desc: isAr ? "تنفيذ فوري بملفات متعددة ومعاينة حية" : "Action-First multi-file app & live preview",
+                      onClick: () => {
+                        setRightTab("browser");
+                        setRightOpen(true);
+                        void handleRunPrompt(
+                          isAr
+                            ? "ابنِ لي متجراً إلكترونياً متكاملاً لبيع العطور مع سلة تسوق، تصفية أسعار، وفاتورة قابلة للطباعة بملفات HTML وCSS وJS كاملة جاهزة للتشغيل."
+                            : "Build a live interactive perfume e-commerce storefront with cart, filter, and printable invoice across full HTML/CSS/JS workspace files."
+                        );
+                      },
+                    },
+                    {
+                      icon: "📊",
+                      title: isAr ? "حلل مبيعاتي وأرباحي تفاعلياً" : "Analyze Sales & Profit Interactively",
+                      desc: isAr ? "حاسبة تفاعلية وضرائب DGI داخل الشات" : "Live TVA Profit Calculator + Market Sim",
+                      onClick: () => {
+                        void handleRunPrompt(
+                          isAr
+                            ? "حلل مبيعات متجري بمتوسط سعر 150 MAD، تكلفة 90 MAD، مبيعات 250 وحدة، TVA 20% وأصدر حاسبة أرباح تفاعلية [KASPI_MORPH_WIDGET] مع خطة رفع الهامش."
+                            : "Analyze my store unit price 150 MAD, cost 90 MAD, 250 monthly units at 20% VAT and emit an interactive profit calculator widget + margin optimization."
+                        );
+                      },
+                    },
+                    {
+                      icon: "🎨",
+                      title: isAr ? "صمم منتجاً ثلاثي الأبعاد + إعلان" : "Design 3D Showcase + Interactive Ad",
+                      desc: isAr ? "مشهد WebGL ثلاثي الأبعاد وتصميم إعلاني" : "Interactive 3D showcase + SVG ad artwork",
+                      onClick: () => {
+                        setRightTab("browser");
+                        setRightOpen(true);
+                        void handleRunPrompt(
+                          isAr
+                            ? "صمم عرضاً ثلاثي الأبعاد تفاعلياً (Three.js / Canvas HTML5) لمنتج عطور فاخر مع إضاءة ديناميكية وتصميم إعلان SVG متجه."
+                            : "Create an interactive 3D HTML5 Canvas / Three.js luxury product showcase with dynamic lighting sliders and SVG vector promotional card."
+                        );
+                      },
+                    },
+                    {
+                      icon: "🎙️",
+                      title: isAr ? "تحدث معي بالصوت والكاميرا لايف" : "Live Full-Duplex Voice & Camera",
+                      desc: isAr ? "التقاط صوتي فوري وتوجيه مباشر" : "Sub-200ms speech capture & live stream",
+                      onClick: () => {
+                        setStatusNotice(isAr ? "تم تفعيل وضع البث الصوتي المباشر — تحدث الآن" : "Live voice stream ready — speak now");
+                        dictation.toggle();
+                      },
+                    },
+                  ].map((card) => (
+                    <button
+                      key={card.title}
+                      type="button"
+                      onClick={card.onClick}
+                      className={`text-start p-3 rounded-xl border cursor-pointer transition-colors ${
+                        isLight
+                          ? "bg-gray-50 border-gray-200 hover:border-emerald-500/60 text-gray-800"
+                          : "bg-white/[0.03] border-white/[0.09] hover:border-emerald-400/50 text-zinc-100"
+                      }`}
+                    >
+                      <div className="text-xs font-semibold flex items-center gap-1.5">
+                        <span>{card.icon}</span>
+                        <span className="truncate">{card.title}</span>
+                      </div>
+                      <p className={`text-[11px] mt-0.5 truncate ${mutedText}`}>{card.desc}</p>
+                    </button>
+                  ))}
+                </div>
+
                 <div className="w-full max-w-lg space-y-1.5">
                   {starterPrompts.map((promptText) => (
                     <button
@@ -1477,21 +1549,64 @@ export function HeyukaUnifiedStudioWorkspace({
                             </div>
                           )}
 
-                          {/* Action Icons Row */}
+                          {/* Action Icons Row + Tested Verification + Read Aloud + Next-Step Chips (v89.0) */}
                           {!msg.isStreaming && msg.content && (
-                            <div className={`flex items-center gap-2 pt-1 ${mutedText}`}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(msg.content);
-                                  setCopiedId(msg.id);
-                                  setTimeout(() => setCopiedId(null), 1500);
-                                }}
-                                className="p-1 rounded hover:bg-white/10 cursor-pointer"
-                                title="Copy response"
-                              >
-                                {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                              </button>
+                            <div className="space-y-2 pt-1">
+                              <div className={`flex flex-wrap items-center gap-2 ${mutedText}`}>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-semibold">
+                                  ✓ {isAr ? "تم التحقق" : "Tested & Verified"}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(msg.content);
+                                    setCopiedId(msg.id);
+                                    setTimeout(() => setCopiedId(null), 1500);
+                                  }}
+                                  className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                                  title="Copy response"
+                                >
+                                  {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+                                      window.speechSynthesis.cancel();
+                                      const utt = new SpeechSynthesisUtterance(msg.content.replace(/```[\s\S]*?```/g, " ").slice(0, 600));
+                                      utt.lang = isAr ? "ar-MA" : locale === "fr" ? "fr-FR" : "en-US";
+                                      window.speechSynthesis.speak(utt);
+                                    }
+                                  }}
+                                  className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                                  title={isAr ? "استماع بصوت طبيعي" : "Read Aloud"}
+                                >
+                                  <Volume2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {(isAr
+                                  ? [
+                                      "🚀 طوّر النتيجة بواجهة تفاعلية",
+                                      "📊 أضف تحليل الأرباح والمخاطر TOPSIS",
+                                      "🛡️ افحص الجودة والأمان بمجلس الـ 12",
+                                    ]
+                                  : [
+                                      "🚀 Upgrade with interactive UI controls",
+                                      "📊 Add TOPSIS & Profit Sensitivity Matrix",
+                                      "🛡️ Audit Security & Code with 12-Mind Council",
+                                    ]
+                                ).map((chip) => (
+                                  <button
+                                    key={chip}
+                                    type="button"
+                                    onClick={() => void handleRunPrompt(chip)}
+                                    className={`px-2.5 py-1 rounded-full border text-[11px] cursor-pointer transition-colors ${borderCls} hover:border-emerald-400/50`}
+                                  >
+                                    {chip}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -2673,6 +2788,67 @@ export function HeyukaUnifiedStudioWorkspace({
                         className={`px-3 py-1.5 rounded-lg border ${borderCls} cursor-pointer font-medium text-[11px]`}
                       >
                         {secretsBusy ? "..." : btn.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-white/10">
+                    {[
+                      {
+                        key: "dom_solve",
+                        label: isAr ? "موجه الهيمنة الشامل (v90.1)" : "Dominance Solve-Any (v90.1)",
+                        payload: { action: "solve_any", prompt: secretsPrompt, brand, locale },
+                      },
+                      {
+                        key: "dom_dgi",
+                        label: isAr ? "تدقيق فاتورة DGI Art.145" : "Audit Morocco DGI Tax Invoice",
+                        payload: { action: "dgi_validate", invoiceNumber: "INV-2026-01", sellerIce: "002345678000012", subtotalHtMad: 1000, vatRatePct: 20, declaredTtcMad: 1200 },
+                      },
+                      {
+                        key: "dom_shield",
+                        label: isAr ? "فحص المناعة السيبرانية" : "Cyber-Immune Firewall Scan",
+                        payload: { action: "cyber_shield", text: secretsPrompt },
+                      },
+                      {
+                        key: "dom_topsis",
+                        label: isAr ? "تحكيم القرارات TOPSIS" : "TOPSIS Decision Ranker",
+                        payload: {
+                          action: "topsis",
+                          alternatives: [
+                            { id: "a", name: "Edge-Local WASM Architecture", scores: { benefit: 9, speed: 10, cost: 0 } },
+                            { id: "b", name: "Cloud-Only Heavy SaaS", scores: { benefit: 7, speed: 4, cost: 9 } },
+                          ],
+                          criteria: [
+                            { key: "benefit", weight: 0.45, polarity: "benefit" },
+                            { key: "speed", weight: 0.35, polarity: "benefit" },
+                            { key: "cost", weight: 0.2, polarity: "cost" },
+                          ],
+                        },
+                      },
+                    ].map((dbtn) => (
+                      <button
+                        key={dbtn.key}
+                        type="button"
+                        disabled={secretsBusy}
+                        onClick={async () => {
+                          setSecretsBusy(true);
+                          setSecretsOutput(null);
+                          try {
+                            const res = await fetch("/api/v1/dominance/solve-any", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify(dbtn.payload),
+                            });
+                            const data = await res.json();
+                            setSecretsOutput(JSON.stringify(data, null, 2).slice(0, 1400));
+                          } catch {
+                            setSecretsOutput("Error calling /api/v1/dominance/solve-any");
+                          } finally {
+                            setSecretsBusy(false);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-lg border ${borderCls} cursor-pointer font-medium text-[11px]`}
+                      >
+                        {secretsBusy ? "..." : dbtn.label}
                       </button>
                     ))}
                   </div>

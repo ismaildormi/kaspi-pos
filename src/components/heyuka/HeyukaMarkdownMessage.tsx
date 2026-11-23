@@ -19,6 +19,8 @@ import {
   OfficeExportPayloadSchema,
   PdfReportPayloadSchema,
 } from "@/lib/zebra-x/core/bridge-schema";
+import { MorphWidgetPayloadSchema } from "@/lib/zebra-x/omega/secret12_generative_ui";
+import { KaspiMorphWidgetCard } from "@/components/heyuka/KaspiMorphWidgetCard";
 
 function decodeBase64JsonSafe<T>(b64: string): T | null {
   try {
@@ -609,6 +611,18 @@ export function HeyukaMarkdownMessage({
                   </button>
                 </div>
               );
+              i += 1;
+              continue;
+            }
+          }
+
+          // [KASPI_MORPH_WIDGET:...] v88.0/v89.0 Generative Morphing UI (Calculator / Decision Matrix / Chart)
+          const morphMatch = trimmed.match(/\[KASPI_MORPH_WIDGET:([A-Za-z0-9+/=_-]+)\]/);
+          if (morphMatch) {
+            const rawMorph = decodeBase64JsonSafe<unknown>(morphMatch[1]);
+            const parsedMorph = MorphWidgetPayloadSchema.safeParse(rawMorph);
+            if (parsedMorph.success) {
+              nodes.push(<KaspiMorphWidgetCard key={`morph-${pIdx}-${i}`} payload={parsedMorph.data} />);
               i += 1;
               continue;
             }

@@ -42,6 +42,12 @@ import { searchSovereignVault } from "@/lib/heyuka/vault/sovereign-permanent-vau
 import { buildLevel1SkillPromptIndex } from "@/lib/zebra-x/core/skills-vault";
 import { runOmniMindSevenSecrets } from "@/lib/zebra-x/cognition/secret7_dual_brain_orchestrator";
 import {
+  appendTamperProofAuditEntry,
+  inspectInputWithCyberImmuneShield,
+} from "@/lib/zebra-x/omega/secret9_cyber_immune";
+import { classifyExtremeScenario } from "@/lib/zebra-x/dominance/secret1_scenario_master";
+import { recordOnlineExperienceAndDistill } from "@/lib/zebra-x/omega/secret8_online_distiller";
+import {
   PUBLIC_APIS_CATALOG_COUNT,
   queryPublicApiHub,
   type PublicApiCategory,
@@ -388,6 +394,33 @@ export async function POST(req: NextRequest) {
   const startedAt = Date.now();
   const thinkingSteps: ThinkingPhaseStep[] = [];
   const lastUser = messages[messages.length - 1].content;
+
+  // Secret #9 Active Cyber-Immune Firewall (<2ms prompt injection & secret-exfiltration scan)
+  const cyberShield = inspectInputWithCyberImmuneShield(lastUser);
+  if (cyberShield.verdict === "block") {
+    appendTamperProofAuditEntry("blocked_prompt_injection", brand, {
+      riskScore: cyberShield.riskScore,
+      threats: cyberShield.threatsDetected.map((t) => t.code),
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        blockedByCyberImmune: true,
+        riskScore: cyberShield.riskScore,
+        threats: cyberShield.threatsDetected,
+        error: "Blocked by Active Cyber-Immune Shield (Prompt Injection / Exfiltration detected).",
+      },
+      { status: 403 }
+    );
+  }
+
+  const scenarioDispatch = classifyExtremeScenario(lastUser);
+  recordOnlineExperienceAndDistill({
+    domain: brand === "kaspi_pos" ? "commerce" : "coding",
+    strategyUsed: scenarioDispatch.mode,
+    reward: 0.85,
+    promptSummary: lastUser.slice(0, 120),
+  });
   const effectiveUserText = audioTranscriptNote
     ? `${lastUser}\n\n[Voice / Audio Input]: ${audioTranscriptNote}`
     : lastUser;

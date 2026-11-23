@@ -56,6 +56,9 @@ import {
 import {
   V87_SUPER_INTELLIGENCE_SOURCES,
 } from "@/lib/zebra-x/cognition/v87-secrets-catalog";
+import {
+  V88_V90_OMEGA_DOMINANCE_SOURCES,
+} from "@/lib/zebra-x/omega/v88_v90_catalog";
 import type { CognitiveClusterId } from "@/lib/zebra-x/core/cognitive-brain-registry";
 import type { SovereignMirrorStrategy } from "@/lib/zebra-x/core/sovereign-pack-types";
 
@@ -173,6 +176,7 @@ export function getSovereignVaultUnifiedEntries(): UnifiedVaultEntry[] {
     ...V57_V58_BROWSER_FACTORY_GRANULAR_200,
     ...V59_V60_MULTIPLAYER_OFFLINE_115,
     ...V87_SUPER_INTELLIGENCE_SOURCES,
+    ...V88_V90_OMEGA_DOMINANCE_SOURCES,
   ];
   for (const item of v34PlusPacks) {
     pushEntry({

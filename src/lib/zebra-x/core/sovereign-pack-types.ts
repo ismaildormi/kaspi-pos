@@ -23,7 +23,10 @@ export type SovereignPackVersion =
   | "v87.4"
   | "v87.5"
   | "v87.6"
-  | "v87.7";
+  | "v87.7"
+  | "v88.0"
+  | "v89.0"
+  | "v90.1";
 
 export type SovereignMirrorStrategy =
   | "git_bundle_mirror"

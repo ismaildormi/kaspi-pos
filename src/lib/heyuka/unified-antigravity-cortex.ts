@@ -43,6 +43,13 @@ import {
   listForgedTools,
 } from "@/lib/zebra-x/evolution/secret5_tool_forge";
 import { recallAssociativeContext } from "@/lib/zebra-x/cognition/secret7_dual_brain_orchestrator";
+import {
+  fetchHyperLocalLiveSnapshot,
+  resolveDarijaCommercialTerms,
+  validateMoroccoDgiInvoice,
+} from "@/lib/zebra-x/omega/secret10_hyper_local_grounding";
+import { buildMorphWidgetMarker } from "@/lib/zebra-x/omega/secret12_generative_ui";
+import { rankOptionsWithTopsis } from "@/lib/zebra-x/dominance/secret1_scenario_master";
 
 export type CortexDomainMode =
   | "software_architecture"
@@ -286,10 +293,10 @@ export function buildActiveVaultWorkingMemory(params: {
     enginesCatalogSnippet,
     fileTreeSummary ? `[WORKSPACE FILES (${params.workspaceFiles?.length})]\n${fileTreeSummary}` : "",
     "[PROTOCOL]",
-    "1. INSPECT FIRST: Read workspace/web/corpus before guessing. Use `writeWorkspaceFile`/`editWorkspaceFile` to save files directly or emit full ```lang path=file.ext blocks.",
-    "2. REASONING: Keep brief <think>...</think> deliberation cleanly closed.",
-    "3. ZERO RUNTIME ERRORS: Match all DOM IDs between HTML/CSS/JS and guard selectors (`el?.addEventListener`). Verify JS/Python via `runAndVerifyCode`.",
-    "4. COMPLETE OUTPUT: Finish every requested file and section completely without placeholders.",
+    "1. ACTION-FIRST ZERO-FLUFF (v89.0): Start building/computing immediately when asked to create an app, report, calculation, or UI—emit runnable files, calculators/charts (`[KASPI_MORPH_WIDGET:...]`), or verified results instead of theoretical essays.",
+    "2. INSPECT FIRST & HUMAN WARMTH: Read workspace/web/corpus before guessing. Match user Darija/Arabic/FR/EN naturally without robotic AI clichés.",
+    "3. ZERO RUNTIME ERRORS: Match all DOM IDs between HTML/CSS/JS and guard selectors (`el?.addEventListener`). Verify JS/Python via `runAndVerifyCode` and Morocco DGI/TVA math via tools.",
+    "4. COMPLETE OUTPUT: Finish every requested file and section completely without placeholders or `TODO` stubs.",
     getDomainPlaybookGuidance(domainMode, Boolean(params.isStudio)),
   ]
     .filter((line) => line !== undefined && line !== "")
@@ -931,6 +938,119 @@ export function createStudioAgentToolkit(params: {
           status: exec.ok ? "done" : "error",
         });
         return exec;
+      },
+    }),
+
+    validateMoroccoDgiAndFx: tool({
+      description:
+        "Secret #10 Hyper-Local Morocco & Global Grounding: Validates DGI CGI Article 145 invoices (15-digit ICE, 0/7/10/14/20% TVA, 0.25% cash timbre, NF525 seal), resolves Darija commerce terms (كريدي/بون/كمبيالة), OR fetches live city weather/FX/barcode data.",
+      inputSchema: z.object({
+        mode: z.enum(["dgi_invoice", "darija_terms", "hyper_local_live"]),
+        invoiceNumber: z.string().optional(),
+        sellerIce: z.string().optional(),
+        subtotalHtMad: z.number().optional(),
+        vatRatePct: z.number().optional(),
+        declaredTtcMad: z.number().optional(),
+        paymentMethod: z.enum(["cash", "card", "transfer", "cheque"]).optional(),
+        text: z.string().optional(),
+        cityQuery: z.string().optional(),
+        barcode: z.string().optional(),
+      }),
+      execute: async (input) => {
+        if (input.mode === "dgi_invoice") {
+          const audit = validateMoroccoDgiInvoice({
+            invoiceNumber: input.invoiceNumber || "INV-2026-001",
+            sellerIce: input.sellerIce || "",
+            subtotalHtMad: input.subtotalHtMad ?? 0,
+            vatRatePct: input.vatRatePct ?? 20,
+            declaredTtcMad: input.declaredTtcMad,
+            paymentMethod: input.paymentMethod,
+          });
+          emitStep({
+            kind: "verify",
+            title: audit.compliantDgiArticle145 ? "DGI Art.145 & NF525 Verified" : "DGI Invoice Issue Found",
+            status: audit.compliantDgiArticle145 ? "done" : "error",
+          });
+          return audit;
+        }
+        if (input.mode === "darija_terms") {
+          return { ok: true, matches: resolveDarijaCommercialTerms(input.text || "") };
+        }
+        const live = await fetchHyperLocalLiveSnapshot({ cityQuery: input.cityQuery, barcode: input.barcode });
+        emitStep({ kind: "search", title: `Hyper-Local Geo/FX/Weather (${input.cityQuery || "Morocco"})`, status: "done" });
+        return live;
+      },
+    }),
+
+    solveTopsisOrEmitInteractiveWidget: tool({
+      description:
+        "Secret #12 Generative Morphing UI + Dominance v90.1 TOPSIS Decision Ranker: Ranks competing strategies mathematically OR emits `[KASPI_MORPH_WIDGET:...]` to render interactive calculators, TOPSIS sliders, or live charts inside chat.",
+      inputSchema: z.object({
+        mode: z.enum(["profit_calculator_widget", "market_chart_widget", "topsis_decision_widget"]),
+        title: z.string(),
+        unitPrice: z.number().optional(),
+        unitCost: z.number().optional(),
+        monthlyUnits: z.number().optional(),
+        vatPct: z.number().optional(),
+        bars: z.array(z.object({ label: z.string(), value: z.number() })).optional(),
+        options: z
+          .array(
+            z.object({
+              name: z.string(),
+              benefit: z.number(),
+              speed: z.number(),
+              lowRisk: z.number(),
+            })
+          )
+          .optional(),
+      }),
+      execute: async (input) => {
+        if (input.mode === "profit_calculator_widget") {
+          const marker = buildMorphWidgetMarker({
+            kind: "profit_calculator",
+            title: input.title,
+            currency: "MAD",
+            unitPrice: input.unitPrice ?? 150,
+            unitCost: input.unitCost ?? 90,
+            monthlyUnits: input.monthlyUnits ?? 200,
+            vatPct: input.vatPct ?? 20,
+            discountPct: 0,
+          });
+          emitStep({ kind: "create", title: "Emitted Interactive Profit Calculator UI", status: "done" });
+          return { ok: true, inlineMarkerToIncludeInReply: marker };
+        }
+        if (input.mode === "market_chart_widget") {
+          const marker = buildMorphWidgetMarker({
+            kind: "market_chart",
+            title: input.title,
+            unitLabel: "MAD",
+            bars: input.bars && input.bars.length > 0 ? input.bars : [{ label: "Baseline", value: 12000 }],
+          });
+          emitStep({ kind: "create", title: "Emitted Live Market Chart UI", status: "done" });
+          return { ok: true, inlineMarkerToIncludeInReply: marker };
+        }
+        const opts = input.options && input.options.length >= 2
+          ? input.options
+          : [
+              { name: "Option A (Modular Cloud-Free)", benefit: 9, speed: 9, lowRisk: 9 },
+              { name: "Option B (Legacy Heavyweight)", benefit: 6, speed: 4, lowRisk: 5 },
+            ];
+        const topsis = rankOptionsWithTopsis(
+          opts.map((o, i) => ({ id: `opt_${i}`, name: o.name, scores: { benefit: o.benefit, speed: o.speed, lowRisk: o.lowRisk } })),
+          [
+            { key: "benefit", weight: 0.5, polarity: "benefit" },
+            { key: "speed", weight: 0.3, polarity: "benefit" },
+            { key: "lowRisk", weight: 0.2, polarity: "benefit" },
+          ]
+        );
+        const marker = buildMorphWidgetMarker({
+          kind: "decision_matrix",
+          title: input.title,
+          weights: { benefit: 0.5, speed: 0.3, lowRisk: 0.2 },
+          options: opts,
+        });
+        emitStep({ kind: "verify", title: `TOPSIS Decision Matrix (#1: ${topsis[0]?.name})`, status: "done" });
+        return { ok: true, topsisRanking: topsis, inlineMarkerToIncludeInReply: marker };
       },
     }),
   };
