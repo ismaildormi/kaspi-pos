@@ -31,7 +31,7 @@ jobs:
           restore-keys: |
             heyuka-frontier-
 
-      - name: Run autonomous public-web batch discoverer (robots.txt + SSRF + rate-limit polite)
+      - name: Run autonomous public-web batch discoverer (Double-Read + robots.txt + SSRF safe)
         run: |
           mkdir -p ~/.heyuka-frontier
           python3 training/crawler/autonomous_web_discoverer.py \
@@ -47,13 +47,32 @@ jobs:
             --out-cpt /tmp/heyuka_public_cpt.jsonl \
             --out-sft /tmp/heyuka_public_sft.jsonl
 
-      - name: Archive curated public dataset shard & frontier checkpoint
+      - name: Compress into verified Nano-Crystal & purge temporary raw JSONL
+        run: |
+          python3 training/memory/immortal_nano_vault.py \
+            --in /tmp/heyuka_public_cpt.jsonl /tmp/heyuka_public_sft.jsonl \
+            --out /tmp/heyuka_memory.crystal \
+            --purge-raw
+
+      - name: Offload Nano-Crystal to configured Open Cloud Vaults (HF / Zenodo / IA)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_DATASET_REPO: ${{ secrets.HF_DATASET_REPO }}
+          ZENODO_TOKEN: ${{ secrets.ZENODO_TOKEN }}
+          IA_ACCESS_KEY: ${{ secrets.IA_ACCESS_KEY }}
+          IA_SECRET_KEY: ${{ secrets.IA_SECRET_KEY }}
+        run: |
+          python3 training/storage/external_vault_offloader.py \
+            --file /tmp/heyuka_memory.crystal \
+            --manifest ~/.heyuka-frontier/union_manifest.json
+
+      - name: Archive compressed Nano-Crystal & frontier checkpoint
         uses: actions/upload-artifact@v4
         with:
-          name: heyuka-public-study-corpus
+          name: heyuka-public-nano-crystal
           path: |
-            /tmp/heyuka_public_cpt.jsonl
-            /tmp/heyuka_public_sft.jsonl
+            /tmp/heyuka_memory.crystal
+            ~/.heyuka-frontier/union_manifest.json
             ~/.heyuka-frontier/eternal_frontier_state.json
           retention-days: 14
 

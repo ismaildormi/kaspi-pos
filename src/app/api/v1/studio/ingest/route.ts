@@ -4,6 +4,7 @@ import {
   buildFoundationContinualPretrainingKit,
   crawlAndIngestPublicPages,
   ensureFullVaultDigested,
+  exportCompressedMemoryCrystal,
   searchStudiedKnowledgeCorpus,
 } from "@/lib/heyuka/training/knowledge-corpus-engine";
 import { exportEvolutionChatMlDataset } from "@/lib/heyuka/learning/self-evolution-engine";
@@ -50,6 +51,11 @@ export async function GET(req: NextRequest) {
         includeSampleCorpus,
       });
       return NextResponse.json({ ok: true, action, ...kit });
+    }
+
+    if (action === "export_crystal") {
+      const crystal = exportCompressedMemoryCrystal();
+      return NextResponse.json({ ok: true, action, ...crystal });
     }
 
     const searchResult = searchStudiedKnowledgeCorpus({

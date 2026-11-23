@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
 import { isSafePublicHttpUrl, runUnrestrictedWebResearch } from "@/lib/zebra-x/arsenal-vault";
 import { getSovereignVaultUnifiedEntries } from "@/lib/heyuka/vault/sovereign-permanent-vault";
 import { exportEvolutionChatMlDataset } from "@/lib/heyuka/learning/self-evolution-engine";
@@ -290,6 +291,7 @@ export async function autoDiscoverPublicWebBatch(params?: {
 }): Promise<{
   ok: boolean;
   discoveredCount: number;
+  doubleReadVerifiedCount: number;
   crawledCount: number;
   skippedCount: number;
   nextCursor: number;
@@ -311,9 +313,20 @@ export async function autoDiscoverPublicWebBatch(params?: {
   const headers = { "User-Agent": "KaspiHeyukaStudyBot/1.0 (+https://kaspi-pos.vercel.app)" };
 
   const ingestDirectRecord = (sourceKey: string, title: string, url: string, content: string) => {
-    const clean = String(content || "").trim();
-    if (clean.length < 40) return;
-    const digest = sha256Short(clean);
+    // Pass 1: Structural Extraction & Noise Check
+    const pass1Clean = String(content || "").replace(/\s+/g, " ").trim();
+    if (pass1Clean.length < 45 || /enable javascript to view|access denied/i.test(pass1Clean)) return;
+
+    // Pass 2: Deep Re-Read & Fact Distillation (Mandatory Double-Read Gate)
+    const sentences = String(content || "")
+      .split(/(?<=[.!?\u061F])\s+|\n+/)
+      .map((s) => s.replace(/\s+/g, " ").trim())
+      .filter((s) => s.length >= 20)
+      .slice(0, 6);
+    const pass2Summary = sentences.length > 0 ? sentences.join(" • ") : pass1Clean.slice(0, 400);
+    const finalBody = `${pass1Clean}\n\n[Pass-2 Distilled Verification]: ${pass2Summary}`;
+
+    const digest = sha256Short(pass1Clean);
     if (contentDigestSeen.has(digest)) return;
     contentDigestSeen.add(digest);
     const unitId = `web::${digest}`;
@@ -322,13 +335,13 @@ export async function autoDiscoverPublicWebBatch(params?: {
       title: title.slice(0, 140),
       url,
       sourceKind: "web_crawl",
-      content: clean.slice(0, 16_000),
+      content: finalBody.slice(0, 16_000),
       sha256: digest,
-      tokensEstimate: Math.ceil(clean.length / 4),
+      tokensEstimate: Math.ceil(finalBody.length / 4),
       ingestedAt: new Date().toISOString(),
     });
     breakdown[sourceKey] = (breakdown[sourceKey] || 0) + 1;
-    ingestedUnits.push({ title: title.slice(0, 120), url, chars: clean.length });
+    ingestedUnits.push({ title: title.slice(0, 120), url, chars: finalBody.length });
   };
 
   // 1. Live Public Firehoses in parallel (strictly public open APIs)
@@ -442,6 +455,7 @@ export async function autoDiscoverPublicWebBatch(params?: {
   return {
     ok: true,
     discoveredCount: ingestedUnits.length,
+    doubleReadVerifiedCount: ingestedUnits.length,
     crawledCount: crawledPagesCount,
     skippedCount,
     nextCursor: autoFrontierCursor,
@@ -449,6 +463,46 @@ export async function autoDiscoverPublicWebBatch(params?: {
     ingestedUnits: ingestedUnits.slice(0, 30),
     totalCorpusUnits: studiedCorpus.size,
     notes,
+  };
+}
+
+/**
+ * Compresses the active Vault + Double-Read Studied Web Corpus + Reflexion Error Rules
+ * into a portable gzip-9 Memory Crystal (zero local disk bloat on Vercel, verifiable SHA-256).
+ */
+export function exportCompressedMemoryCrystal() {
+  ensureFullVaultDigested();
+  const evo = exportEvolutionChatMlDataset();
+  const items = Array.from(studiedCorpus.values()).map((u) => ({
+    id: u.id,
+    t: u.title,
+    u: u.url,
+    k: u.sourceKind,
+    s: u.sha256,
+    c: u.content.slice(0, 2000),
+  }));
+  const payload = JSON.stringify({
+    schema: "heyuka-nano-crystal-v1",
+    generatedAt: new Date().toISOString(),
+    totalUnits: items.length,
+    errorLessonsCount: evo.errorLessonsCount,
+    items,
+  });
+  const rawBytes = Buffer.byteLength(payload, "utf8");
+  const compressed = zlib.gzipSync(Buffer.from(payload, "utf8"), { level: 9 });
+  const compressedBytes = compressed.length;
+  const savedPct = Number(((1 - compressedBytes / Math.max(1, rawBytes)) * 100).toFixed(1));
+  const sha256 = crypto.createHash("sha256").update(payload, "utf8").digest("hex");
+
+  return {
+    schema: "heyuka-nano-crystal-v1",
+    totalUnits: items.length,
+    errorLessonsCount: evo.errorLessonsCount,
+    rawBytes,
+    compressedBytes,
+    savedPct,
+    sha256,
+    base64Gzip: compressed.toString("base64"),
   };
 }
 

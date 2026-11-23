@@ -2306,7 +2306,7 @@ export function HeyukaUnifiedStudioWorkspace({
                     {isAr ? "مختبر الزحف العام والتدريب ($0 GPU)" : "Zero-Dollar Web Study & Foundation CPT Lab"}
                   </h3>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">
-                    robots.txt + SSRF Safe
+                    Double-Read + 6h Cloud Cron • robots.txt Safe
                   </span>
                 </div>
 
@@ -2467,6 +2467,47 @@ export function HeyukaUnifiedStudioWorkspace({
                       className={`px-3 py-1.5 rounded-lg border ${borderCls} cursor-pointer font-medium`}
                     >
                       {isAr ? "تحميل سكريبت التدريب (.py • 0$ GPU)" : "Download $0 CPT Trainer (.py)"}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={labBusy}
+                      onClick={async () => {
+                        setLabBusy(true);
+                        setLabNotice(null);
+                        try {
+                          const res = await fetch("/api/v1/studio/ingest?action=export_crystal");
+                          const cr = await res.json();
+                          if (cr?.ok && cr?.base64Gzip) {
+                            const bin = atob(String(cr.base64Gzip));
+                            const bytes = new Uint8Array(bin.length);
+                            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                            const blob = new Blob([bytes], { type: "application/gzip" });
+                            const dlUrl = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = dlUrl;
+                            a.download = "heyuka-memory.crystal.json.gz";
+                            a.click();
+                            URL.revokeObjectURL(dlUrl);
+                            const rawKb = Math.round(Number(cr.rawBytes || 0) / 1024);
+                            const compKb = Math.round(Number(cr.compressedBytes || 0) / 1024);
+                            setLabNotice(
+                              isAr
+                                ? `تم تصدير بلورة الذاكرة (${rawKb}KB ← ${compKb}KB • ضغط ${cr.savedPct}% • ${cr.totalUnits} وحدة).`
+                                : `Exported Nano-Crystal (${rawKb}KB -> ${compKb}KB • ${cr.savedPct}% saved • ${cr.totalUnits} units).`
+                            );
+                          } else {
+                            setLabNotice("Could not export Nano-Crystal.");
+                          }
+                        } catch {
+                          setLabNotice("Network error exporting Nano-Crystal.");
+                        } finally {
+                          setLabBusy(false);
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-lg border ${borderCls} cursor-pointer font-medium`}
+                    >
+                      {isAr ? "تصدير بلورة الذاكرة (.crystal.gz)" : "Export Nano-Crystal (.gz)"}
                     </button>
                   </div>
                   {labNotice && <p className="text-[11px] text-emerald-400">{labNotice}</p>}

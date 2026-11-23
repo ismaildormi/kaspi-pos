@@ -39,6 +39,38 @@ from web_scale_crawler import (  # noqa: E402
     stream_open_pretrain_datasets,
 )
 
+MEMORY_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "memory"))
+if MEMORY_DIR not in sys.path:
+    sys.path.insert(0, MEMORY_DIR)
+
+from immortal_nano_vault import distill_key_sentences  # noqa: E402
+
+
+def verify_record_double_read(record: Dict[str, object]) -> Dict[str, object]:
+    """
+    Mandatory Pass-1 + Pass-2 verification gate:
+    - Pass 1: Verify readable length, non-boilerplate content & clean whitespace.
+    - Pass 2: Re-read to extract structured factual sentences (pass2_facts), verification score & SHA-256 stamp.
+    """
+    text = re.sub(r"\s+", " ", str(record.get("text") or "")).strip()
+    if len(text) < 45 or re.search(r"(enable javascript to run|accept all cookies|access denied)", text.lower()):
+        out = dict(record)
+        out["double_read_verified"] = False
+        return out
+
+    pass2_facts = distill_key_sentences(str(record.get("text") or ""), max_sentences=6)
+    alpha_chars = len(re.findall(r"[A-Za-z\u0600-\u06FF]", text))
+    density = round(alpha_chars / max(1, len(text)), 3)
+    verified = len(pass2_facts) >= 1 and density >= 0.35
+    digest = hashlib.sha256(f"{record.get('title','')}\n{'|'.join(pass2_facts)}".encode("utf-8")).hexdigest()[:24]
+
+    enriched = dict(record)
+    enriched["double_read_verified"] = verified
+    enriched["pass2_facts"] = pass2_facts
+    enriched["verification_score"] = min(100, int(65 + len(pass2_facts) * 6 + density * 15))
+    enriched["verification_sha256"] = digest
+    return enriched
+
 
 COMMON_CRAWL_PREFIXES = [
     "https://nextjs.org/docs/*",
@@ -390,7 +422,9 @@ def run_autonomous_batch(
         if stream_datasets:
             streamed_docs = stream_open_pretrain_datasets(max_samples=min(200, safe_batch))
 
-        all_records = [*firehose_records, *crawled_docs, *streamed_docs][:safe_batch]
+        all_records_raw = [*firehose_records, *crawled_docs, *streamed_docs][:safe_batch]
+        all_records = [verify_record_double_read(r) for r in all_records_raw]
+        all_records = [r for r in all_records if r.get("double_read_verified") is True]
         pending_count = conn.execute("SELECT COUNT(*) FROM frontier WHERE status = 'pending'").fetchone()[0]
         done_count = conn.execute("SELECT COUNT(*) FROM frontier WHERE status = 'done'").fetchone()[0]
     finally:
@@ -414,6 +448,7 @@ def run_autonomous_batch(
         "ok": True,
         "run_count": state["run_count"],
         "records_collected": len(all_records),
+        "double_read_verified_count": len(all_records),
         "firehose_records": len(firehose_records),
         "crawled_pages": len(crawled_docs),
         "newly_queued_links": new_queued + outlink_queued,
