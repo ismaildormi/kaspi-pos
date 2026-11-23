@@ -1498,7 +1498,7 @@ ${closedLoopMasterDirective}\n${cortexMemory.activeMemoryPromptBlock}${progressi
           messages: sanitizedMessages,
           tools: activeTools,
           stopWhen: stepCountIs(12),
-          onCompletedText: async (text: string, cand) => {
+          onCompletedText: async (text: string, cand?: { providerName?: string; modelId?: string; keyIndex?: number }) => {
             if (!text) return;
             const audited = auditAndRecordCompletedOutput({
               prompt: userPrompt,
