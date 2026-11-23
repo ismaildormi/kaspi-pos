@@ -52,6 +52,34 @@ interface BrowserSearchHit {
   snippet?: string;
 }
 
+interface BrowserTabState {
+  id: string;
+  title: string;
+  url: string;
+  kind: "google_home" | "search" | "page" | "reader";
+  proxiedHtml: string;
+  extractedText: string;
+  searchHits: BrowserSearchHit[];
+  history: string[];
+  historyIdx: number;
+  error: string | null;
+}
+
+function createInitialBrowserTab(idx = 1): BrowserTabState {
+  return {
+    id: `btab_${Date.now()}_${idx}`,
+    title: "Google",
+    url: "https://www.google.com/",
+    kind: "google_home",
+    proxiedHtml: "",
+    extractedText: "",
+    searchHits: [],
+    history: ["https://www.google.com/"],
+    historyIdx: 0,
+    error: null,
+  };
+}
+
 interface StudioWorkbenchTabsProps {
   mode?: StudioMode;
   brand: StudioBrand;
@@ -78,6 +106,7 @@ interface StudioWorkbenchTabsProps {
   onChangeTab?: (tab: AntigravityPaneTab) => void;
   onClosePane?: () => void;
   terminalLogsFromAgent?: string[];
+  externalBrowserRequest?: { url: string; ts: number } | null;
   themeMode?: "light" | "dark";
   appearance?: {
     backgroundHex: string;
@@ -101,6 +130,7 @@ export function StudioWorkbenchTabs({
   onChangeTab,
   onClosePane,
   terminalLogsFromAgent = [],
+  externalBrowserRequest,
   themeMode = "dark",
   appearance,
 }: StudioWorkbenchTabsProps) {
@@ -138,18 +168,25 @@ export function StudioWorkbenchTabs({
   const termInputRef = useRef<HTMLInputElement>(null);
   const termEndRef = useRef<HTMLDivElement>(null);
 
-  // Embedded Google Search + Link Browser + Live App Preview state
+  // Embedded Chrome-Like Multi-Tab Browser (Google Search + Interactive Page Proxy + Live App Preview)
   const [browserSubMode, setBrowserSubMode] = useState<"web" | "preview">("web");
-  const [addressInput, setAddressInput] = useState("https://www.google.com");
-  const [navHistory, setNavHistory] = useState<string[]>([]);
-  const [navIdx, setNavIdx] = useState(-1);
+  const [browserTabs, setBrowserTabs] = useState<BrowserTabState[]>(() => [createInitialBrowserTab(1)]);
+  const [activeBrowserTabId, setActiveBrowserTabId] = useState<string>(() => "");
+  const activeBTab = useMemo(
+    () => browserTabs.find((t) => t.id === activeBrowserTabId) || browserTabs[0],
+    [browserTabs, activeBrowserTabId]
+  );
+  const [addressInput, setAddressInput] = useState("https://www.google.com/");
+  const [googleBoxQuery, setGoogleBoxQuery] = useState("");
+  const [browserPageMode, setBrowserPageMode] = useState<"live" | "reader">("live");
   const [browserLoading, setBrowserLoading] = useState(false);
-  const [browserPageTitle, setBrowserPageTitle] = useState("Antigravity Browser & Search");
-  const [browserPageMarkdown, setBrowserPageMarkdown] = useState("");
-  const [browserSearchHits, setBrowserSearchHits] = useState<BrowserSearchHit[]>([]);
-  const [browserError, setBrowserError] = useState<string | null>(null);
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [previewConsoleLogs, setPreviewConsoleLogs] = useState<string[]>([]);
+
+  const updateActiveBTab = (patch: Partial<BrowserTabState>) => {
+    const targetId = activeBTab?.id;
+    setBrowserTabs((prev) => prev.map((t) => (t.id === targetId ? { ...t, ...patch } : t)));
+  };
 
   const uploadRef = useRef<HTMLInputElement>(null);
 
@@ -182,11 +219,22 @@ export function StudioWorkbenchTabs({
     const onMsg = (ev: MessageEvent) => {
       if (ev?.data?.source === "heyuka-preview-console") {
         setPreviewConsoleLogs((prev) => [`[${ev.data.level}] ${ev.data.message}`, ...prev].slice(0, 20));
+      } else if (ev?.data?.source === "heyuka-studio-browser" && ev.data?.type === "navigate" && ev.data?.url) {
+        void navigateBrowser(String(ev.data.url), true);
       }
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
-  }, []);
+  });
+
+  useEffect(() => {
+    if (externalBrowserRequest?.url) {
+      setTab("browser");
+      setBrowserSubMode("web");
+      void navigateBrowser(externalBrowserRequest.url, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalBrowserRequest?.ts]);
 
   const activeFile = useMemo(
     () => files.find((f) => f.path === selectedPath) || files[0] || { path: "index.html", language: "html", content: "" },
@@ -386,62 +434,95 @@ export function StudioWorkbenchTabs({
     if (!clean) return;
     setBrowserSubMode("web");
     setAddressInput(clean);
-    setBrowserLoading(true);
-    setBrowserError(null);
 
-    if (pushHistory) {
-      const sliced = navHistory.slice(0, navIdx + 1);
-      const nextHist = [...sliced, clean];
-      setNavHistory(nextHist);
-      setNavIdx(nextHist.length - 1);
+    // Handle returning to Google Home directly
+    if (/^https?:\/\/(www\.)?google\.[a-z.]+\/?$/i.test(clean) || clean.toLowerCase() === "google") {
+      const nextHist = pushHistory
+        ? [...activeBTab.history.slice(0, activeBTab.historyIdx + 1), "https://www.google.com/"]
+        : activeBTab.history;
+      updateActiveBTab({
+        title: "Google",
+        url: "https://www.google.com/",
+        kind: "google_home",
+        proxiedHtml: "",
+        extractedText: "",
+        searchHits: [],
+        error: null,
+        history: nextHist,
+        historyIdx: pushHistory ? nextHist.length - 1 : activeBTab.historyIdx,
+      });
+      setAddressInput("https://www.google.com/");
+      return;
     }
+
+    setBrowserLoading(true);
+    updateActiveBTab({ error: null });
 
     const isUrl = /^https?:\/\//i.test(clean) || (/^[a-z0-9.-]+\.[a-z]{2,}(\/|$)/i.test(clean) && !/\s/.test(clean));
     const resolvedUrl = isUrl ? (clean.startsWith("http") ? clean : `https://${clean}`) : undefined;
 
+    if (pushHistory) {
+      const nextHist = [...activeBTab.history.slice(0, activeBTab.historyIdx + 1), resolvedUrl || clean];
+      updateActiveBTab({ history: nextHist, historyIdx: nextHist.length - 1 });
+    }
+
     try {
       const payload = resolvedUrl ? { url: resolvedUrl, query: clean, lang: locale } : { query: clean, lang: locale };
-      let res = await fetch("/api/v1/web/research", {
+      const res = await fetch("/api/v1/studio/browse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        res = await fetch("/api/v1/heyuka/chat-web", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "web_research", ...payload, locale }),
-        });
-      }
-
       const data = await res.json();
-      const bodyText =
-        typeof data?.extractedText === "string"
-          ? data.extractedText
-          : typeof data?.markdown === "string"
-          ? data.markdown
-          : "";
-      const hits: BrowserSearchHit[] = Array.isArray(data?.results) ? data.results : [];
-
-      if (!data?.ok && hits.length === 0 && !bodyText) {
-        setBrowserError(data?.error || "Could not load page or search results.");
+      if (!res.ok || !data?.ok) {
+        updateActiveBTab({
+          error: data?.error || "Could not load page or search results. Try opening externally.",
+        });
         return;
       }
 
-      if (!resolvedUrl && hits.length === 0 && !bodyText) {
-        setBrowserPageTitle(`Search: ${clean}`);
-        setBrowserPageMarkdown("");
-        setBrowserSearchHits([]);
-        setBrowserError(`No direct instant results found for "${clean}". Try entering a broader keyword or a direct URL (https://...).`);
+      if (data.kind === "google_home") {
+        updateActiveBTab({
+          title: "Google",
+          url: "https://www.google.com/",
+          kind: "google_home",
+          proxiedHtml: "",
+          extractedText: "",
+          searchHits: [],
+          error: null,
+        });
+        setAddressInput("https://www.google.com/");
         return;
       }
 
-      setBrowserPageTitle(data?.title || (resolvedUrl ? resolvedUrl : `Search: ${clean}`));
-      setBrowserPageMarkdown(bodyText);
-      setBrowserSearchHits(hits);
+      if (data.kind === "search") {
+        setGoogleBoxQuery(clean);
+        updateActiveBTab({
+          title: data.title || `${clean} - Google Search`,
+          url: data.url || clean,
+          kind: "search",
+          proxiedHtml: "",
+          extractedText: "",
+          searchHits: Array.isArray(data.results) ? data.results : [],
+          error: null,
+        });
+        return;
+      }
+
+      const finalUrl = String(data.url || resolvedUrl || clean);
+      setAddressInput(finalUrl);
+      updateActiveBTab({
+        title: String(data.title || finalUrl),
+        url: finalUrl,
+        kind: data.proxiedHtml ? "page" : "reader",
+        proxiedHtml: String(data.proxiedHtml || ""),
+        extractedText: String(data.extractedText || ""),
+        searchHits: [],
+        error: null,
+      });
     } catch (err: any) {
-      setBrowserError(err?.message || "Network error while browsing.");
+      updateActiveBTab({ error: err?.message || "Network error while browsing." });
     } finally {
       setBrowserLoading(false);
     }
@@ -575,7 +656,7 @@ export function StudioWorkbenchTabs({
                     </button>
                     <span className="font-mono text-[11px] text-emerald-500 shrink-0">+{lineCount}</span>
                   </div>
-                  <pre className="p-2.5 text-[11px] font-mono overflow-x-auto max-h-40 leading-relaxed opacity-85">
+                  <pre dir="ltr" className="p-2.5 text-[11px] font-mono text-left overflow-x-auto max-h-40 leading-relaxed opacity-85">
                     {diffParts
                       .map((p) => p.value)
                       .join("")
@@ -762,21 +843,27 @@ export function StudioWorkbenchTabs({
           <div className="flex-1 min-h-0 overflow-auto p-3">
             {isEditingCode ? (
               <textarea
+                dir="ltr"
                 value={activeFile.content}
                 onChange={(e) =>
                   onChangeFiles(files.map((f) => (f.path === activeFile.path ? { ...f, content: e.target.value } : f)))
                 }
                 spellCheck={false}
-                className={`w-full h-full min-h-[260px] p-3 rounded-lg font-mono text-xs focus:outline-none border resize-none ${
+                className={`w-full h-full min-h-[260px] p-3 rounded-lg font-mono text-xs text-left focus:outline-none border resize-none ${
                   isLight ? "bg-gray-50 border-gray-200 text-gray-900" : "bg-[#141416] border-white/[0.08] text-zinc-100"
                 }`}
               />
             ) : activeFile.path.toLowerCase().endsWith(".md") && mdRenderMode === "rendered" ? (
               <div className={`rounded-xl p-4 border text-sm ${isLight ? "bg-white border-gray-200" : "bg-[#141416] border-white/[0.08]"}`}>
-                <HeyukaMarkdownMessage markdown={activeFile.content} />
+                <HeyukaMarkdownMessage
+                  markdown={activeFile.content}
+                  onOpenUrlInBrowser={(url) => void navigateBrowser(url, true)}
+                />
               </div>
             ) : (
-              <HeyukaSyntaxCodeView code={activeFile.content} filePath={activeFile.path} language={activeFile.language} />
+              <div dir="ltr" className="text-left">
+                <HeyukaSyntaxCodeView code={activeFile.content} filePath={activeFile.path} language={activeFile.language} />
+              </div>
             )}
           </div>
         </div>
@@ -784,7 +871,7 @@ export function StudioWorkbenchTabs({
 
       {/* TAB 3: INTERACTIVE TERMINAL (100% WORKING) */}
       {currentTab === "terminal" && (
-        <div className="flex-1 min-h-0 flex flex-col bg-[#0D0E11] text-zinc-100">
+        <div dir="ltr" className="flex-1 min-h-0 flex flex-col bg-[#0D0E11] text-zinc-100 text-left">
           {/* Terminal Sub-bar */}
           <div className="px-3 py-1.5 border-b border-white/[0.08] bg-[#141416] flex flex-wrap items-center justify-between gap-2 text-[11px]">
             <div className="flex items-center gap-1.5">
@@ -890,45 +977,107 @@ export function StudioWorkbenchTabs({
         </div>
       )}
 
-      {/* TAB 4: EMBEDDED GOOGLE SEARCH + LINK BROWSER + APP PREVIEW */}
+      {/* TAB 4: CHROME-LIKE MULTI-TAB GOOGLE SEARCH + LIVE PROXY LINK BROWSER + APP PREVIEW */}
       {currentTab === "browser" && (
-        <div className="flex-1 min-h-0 flex flex-col">
-          {/* Antigravity Mini Browser Toolbar */}
+        <div dir="ltr" className="flex-1 min-h-0 flex flex-col">
+          {/* Chrome-Style Tab Strip */}
+          <div className={`px-2 pt-1.5 border-b flex items-center gap-1 overflow-x-auto kaspi-no-scrollbar ${chromeCls}`}>
+            {browserTabs.map((bt) => {
+              const isAct = bt.id === activeBTab.id && browserSubMode === "web";
+              return (
+                <div
+                  key={bt.id}
+                  onClick={() => {
+                    setActiveBrowserTabId(bt.id);
+                    setAddressInput(bt.url);
+                    setBrowserSubMode("web");
+                  }}
+                  className={`group flex items-center gap-1.5 px-2.5 py-1.5 rounded-t-lg text-[11px] max-w-[170px] cursor-pointer border-b-2 transition-colors shrink-0 ${
+                    isAct
+                      ? isLight
+                        ? "bg-white text-gray-900 border-[#007ACC] font-medium"
+                        : "bg-[#1e1f24] text-white border-[#007ACC] font-medium"
+                      : isLight
+                      ? "text-gray-600 border-transparent hover:bg-gray-200/60"
+                      : "text-zinc-400 border-transparent hover:bg-white/[0.05]"
+                  }`}
+                >
+                  <Globe className="w-3 h-3 shrink-0 text-[#4285F4]" />
+                  <span className="truncate">{bt.title || "Google"}</span>
+                  {browserTabs.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const next = browserTabs.filter((x) => x.id !== bt.id);
+                        setBrowserTabs(next);
+                        if (activeBTab.id === bt.id && next[0]) {
+                          setActiveBrowserTabId(next[0].id);
+                          setAddressInput(next[0].url);
+                        }
+                      }}
+                      className="opacity-50 hover:opacity-100 p-0.5 rounded cursor-pointer"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => {
+                const nt = createInitialBrowserTab(browserTabs.length + 1);
+                setBrowserTabs((prev) => [...prev, nt]);
+                setActiveBrowserTabId(nt.id);
+                setAddressInput(nt.url);
+                setBrowserSubMode("web");
+              }}
+              className={`p-1.5 rounded-md cursor-pointer ${subtleBtn}`}
+              title="New Browser Tab"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Chrome Omnibox Navigation Bar */}
           <div className={`px-2.5 py-2 border-b space-y-2 ${chromeCls}`}>
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                disabled={navIdx <= 0}
+                disabled={activeBTab.historyIdx <= 0}
                 onClick={() => {
-                  if (navIdx > 0) {
-                    const prevUrl = navHistory[navIdx - 1];
-                    setNavIdx(navIdx - 1);
+                  if (activeBTab.historyIdx > 0) {
+                    const nextIdx = activeBTab.historyIdx - 1;
+                    const prevUrl = activeBTab.history[nextIdx];
+                    updateActiveBTab({ historyIdx: nextIdx });
                     void navigateBrowser(prevUrl, false);
                   }
                 }}
-                className={`p-1.5 rounded-md cursor-pointer disabled:opacity-40 ${subtleBtn}`}
+                className={`p-1.5 rounded-md cursor-pointer disabled:opacity-35 ${subtleBtn}`}
                 title="Back"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
               </button>
               <button
                 type="button"
-                disabled={navIdx >= navHistory.length - 1}
+                disabled={activeBTab.historyIdx >= activeBTab.history.length - 1}
                 onClick={() => {
-                  if (navIdx < navHistory.length - 1) {
-                    const nextUrl = navHistory[navIdx + 1];
-                    setNavIdx(navIdx + 1);
+                  if (activeBTab.historyIdx < activeBTab.history.length - 1) {
+                    const nextIdx = activeBTab.historyIdx + 1;
+                    const nextUrl = activeBTab.history[nextIdx];
+                    updateActiveBTab({ historyIdx: nextIdx });
                     void navigateBrowser(nextUrl, false);
                   }
                 }}
-                className={`p-1.5 rounded-md cursor-pointer disabled:opacity-40 ${subtleBtn}`}
+                className={`p-1.5 rounded-md cursor-pointer disabled:opacity-35 ${subtleBtn}`}
                 title="Forward"
               >
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
               <button
                 type="button"
-                onClick={() => void navigateBrowser(addressInput, false)}
+                onClick={() => void navigateBrowser(activeBTab.url || addressInput, false)}
                 className={`p-1.5 rounded-md cursor-pointer ${subtleBtn}`}
                 title="Reload"
               >
@@ -946,7 +1095,8 @@ export function StudioWorkbenchTabs({
                   type="text"
                   value={addressInput}
                   onChange={(e) => setAddressInput(e.target.value)}
-                  placeholder="Search Google / Web or paste URL (https://...)..."
+                  onFocus={(e) => e.currentTarget.select()}
+                  placeholder="Search Google or enter URL (https://...)..."
                   className={`w-full px-3 py-1 rounded-full border text-xs focus:outline-none ${
                     isLight
                       ? "bg-white border-gray-300 text-gray-900 focus:border-[#007ACC]"
@@ -968,14 +1118,30 @@ export function StudioWorkbenchTabs({
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => setBrowserSubMode("web")}
-                  className={`px-2.5 py-1 rounded-md font-medium cursor-pointer ${
-                    browserSubMode === "web" ? "text-white" : subtleBtn
+                  onClick={() => void navigateBrowser("https://www.google.com/", true)}
+                  className={`px-2 py-1 rounded-md font-medium cursor-pointer ${
+                    browserSubMode === "web" && activeBTab.kind === "google_home" ? "text-white" : subtleBtn
                   }`}
-                  style={browserSubMode === "web" ? { backgroundColor: accentHex } : undefined}
+                  style={
+                    browserSubMode === "web" && activeBTab.kind === "google_home"
+                      ? { backgroundColor: accentHex }
+                      : undefined
+                  }
                 >
-                  Google &amp; Web Browser
+                  Google
                 </button>
+                {activeBTab.kind === "page" && activeBTab.proxiedHtml && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBrowserSubMode("web");
+                      setBrowserPageMode((m) => (m === "live" ? "reader" : "live"));
+                    }}
+                    className={`px-2 py-1 rounded-md font-medium cursor-pointer ${subtleBtn}`}
+                  >
+                    {browserPageMode === "live" ? "Reader View" : "Live Webpage"}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setBrowserSubMode("preview")}
@@ -984,7 +1150,7 @@ export function StudioWorkbenchTabs({
                   }`}
                   style={browserSubMode === "preview" ? { backgroundColor: accentHex } : undefined}
                 >
-                  App Preview ({files.length} files)
+                  App Preview ({files.length})
                 </button>
               </div>
 
@@ -993,21 +1159,23 @@ export function StudioWorkbenchTabs({
                   <button
                     type="button"
                     onClick={() => {
-                      const content = browserPageMarkdown || browserSearchHits.map((h) => `- [${h.title}](${h.url}): ${h.snippet || ""}`).join("\n");
-                      if (content) onInjectContextText(browserPageTitle, content);
+                      const content =
+                        activeBTab.extractedText ||
+                        activeBTab.searchHits.map((h) => `- [${h.title}](${h.url}): ${h.snippet || ""}`).join("\n");
+                      if (content) onInjectContextText(activeBTab.title, content);
                     }}
-                    disabled={!browserPageMarkdown && browserSearchHits.length === 0}
+                    disabled={!activeBTab.extractedText && activeBTab.searchHits.length === 0}
                     className={`px-2 py-0.5 rounded-md cursor-pointer disabled:opacity-40 ${subtleBtn}`}
                   >
                     Attach to AI
                   </button>
-                  {/^https?:\/\//i.test(addressInput) && (
+                  {/^https?:\/\//i.test(activeBTab.url) && (
                     <a
-                      href={addressInput}
+                      href={activeBTab.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`p-1 rounded-md inline-flex items-center ${subtleBtn}`}
-                      title="Open in new tab"
+                      title="Open in OS browser"
                     >
                       <ExternalLink className="w-3 h-3" />
                     </a>
@@ -1039,9 +1207,9 @@ export function StudioWorkbenchTabs({
           </div>
 
           {/* Browser Viewport Content */}
-          <div className="flex-1 min-h-0 overflow-auto p-3">
+          <div className="flex-1 min-h-0 overflow-auto">
             {browserSubMode === "preview" ? (
-              <div className="h-full flex flex-col gap-2">
+              <div className="h-full flex flex-col gap-2 p-3">
                 <div className="flex-1 min-h-[280px] flex justify-center">
                   <iframe
                     title="Antigravity App Preview"
@@ -1062,89 +1230,176 @@ export function StudioWorkbenchTabs({
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="space-y-4">
-                {!browserPageMarkdown && browserSearchHits.length === 0 && !browserLoading && !browserError && (
-                  <div className="max-w-md mx-auto py-10 text-center space-y-4">
-                    <div className="text-2xl font-bold tracking-tight">
-                      <span className="text-[#4285F4]">G</span>
-                      <span className="text-[#EA4335]">o</span>
-                      <span className="text-[#FBBC05]">o</span>
-                      <span className="text-[#4285F4]">g</span>
-                      <span className="text-[#34A853]">l</span>
-                      <span className="text-[#EA4335]">e</span>
-                      <span className="text-xs font-normal opacity-60 ml-2">&amp; Web Browser</span>
-                    </div>
-                    <p className="text-xs opacity-70">
-                      {isAr
-                        ? "ابحث مباشرة أو أدخل أي رابط موقع لعرضه واستخدامه مع المساعد."
-                        : "Search the open web or paste any URL to open & extract directly."}
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-2 text-xs">
-                      {[
-                        "kaspi pos morocco",
-                        "https://nextjs.org/docs",
-                        "https://news.ycombinator.com",
-                        "morocco tva invoice rules",
-                      ].map((sample) => (
-                        <button
-                          key={sample}
-                          type="button"
-                          onClick={() => void navigateBrowser(sample, true)}
-                          className={`px-3 py-1.5 rounded-full cursor-pointer ${subtleBtn}`}
-                        >
-                          {sample}
-                        </button>
-                      ))}
-                    </div>
+            ) : activeBTab.kind === "google_home" ? (
+              /* Chrome Google Search Start Page matching IMG_5822.MOV & Antigravity screenshot */
+              <div className="h-full flex flex-col items-center justify-center p-6 text-center space-y-5">
+                <div className="text-4xl font-semibold tracking-tight select-none">
+                  <span className="text-[#4285F4]">G</span>
+                  <span className="text-[#EA4335]">o</span>
+                  <span className="text-[#FBBC05]">o</span>
+                  <span className="text-[#4285F4]">g</span>
+                  <span className="text-[#34A853]">l</span>
+                  <span className="text-[#EA4335]">e</span>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (googleBoxQuery.trim()) void navigateBrowser(googleBoxQuery.trim(), true);
+                  }}
+                  className="w-full max-w-md space-y-3"
+                >
+                  <div
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full border shadow-xs ${
+                      isLight
+                        ? "bg-white border-gray-300 focus-within:border-[#007ACC]"
+                        : "bg-[#202124] border-white/[0.14] focus-within:border-[#007ACC]"
+                    }`}
+                  >
+                    <Search className="w-4 h-4 opacity-50 shrink-0" />
+                    <input
+                      type="text"
+                      value={googleBoxQuery}
+                      onChange={(e) => setGoogleBoxQuery(e.target.value)}
+                      placeholder={isAr ? "ابحث في Google أو الصق أي رابط..." : "Search Google or type a URL..."}
+                      className="w-full bg-transparent text-sm focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      type="submit"
+                      disabled={browserLoading}
+                      className={`px-4 py-1.5 rounded-md text-xs font-medium cursor-pointer ${subtleBtn}`}
+                    >
+                      Search Google
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void navigateBrowser("https://en.wikipedia.org/wiki/Special:Random", true)}
+                      className={`px-4 py-1.5 rounded-md text-xs font-medium cursor-pointer ${subtleBtn}`}
+                    >
+                      Explore Web
+                    </button>
+                  </div>
+                </form>
+
+                {activeBTab.error && (
+                  <div className="max-w-md p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-xs text-rose-400">
+                    {activeBTab.error}
                   </div>
                 )}
 
-                {browserError && (
-                  <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-xs text-rose-400">
-                    {browserError}
-                  </div>
-                )}
+                <div className="flex flex-wrap justify-center gap-1.5 max-w-md pt-2 text-[11px]">
+                  {[
+                    "kaspi pos morocco",
+                    "https://nextjs.org/docs",
+                    "https://playwright.dev/python/docs/intro",
+                    "morocco TVA dgi 2026",
+                  ].map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      onClick={() => void navigateBrowser(q, true)}
+                      className={`px-3 py-1 rounded-full cursor-pointer ${subtleBtn}`}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : activeBTab.kind === "search" ? (
+              <div className="p-4 space-y-3">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (googleBoxQuery.trim()) void navigateBrowser(googleBoxQuery.trim(), true);
+                  }}
+                  className="flex items-center gap-2 max-w-lg"
+                >
+                  <input
+                    type="text"
+                    value={googleBoxQuery}
+                    onChange={(e) => setGoogleBoxQuery(e.target.value)}
+                    className={`flex-1 px-3 py-1.5 rounded-full border text-xs focus:outline-none ${
+                      isLight ? "bg-white border-gray-300" : "bg-[#202124] border-white/[0.12]"
+                    }`}
+                  />
+                  <button
+                    type="submit"
+                    className="px-3 py-1.5 rounded-full text-xs text-white cursor-pointer"
+                    style={{ backgroundColor: accentHex }}
+                  >
+                    Search
+                  </button>
+                </form>
 
-                {browserSearchHits.length > 0 && (
+                {activeBTab.searchHits.length === 0 ? (
+                  <div className="p-4 rounded-xl border border-white/10 text-xs opacity-75">
+                    No direct web hits matched. Try entering a full URL (`https://...`) above.
+                  </div>
+                ) : (
                   <div className="space-y-3">
-                    <div className="text-xs font-semibold opacity-75">
-                      Results for &ldquo;{addressInput}&rdquo;
-                    </div>
-                    {browserSearchHits.map((hit, idx) => (
+                    {activeBTab.searchHits.map((hit, idx) => (
                       <div
                         key={`${hit.url}-${idx}`}
-                        className={`p-3 rounded-lg border space-y-1 ${isLight ? "bg-white border-gray-200 hover:border-[#007ACC]" : "bg-[#161618] border-white/[0.08] hover:border-[#007ACC]/50"}`}
+                        className={`p-3 rounded-xl border space-y-1 ${
+                          isLight
+                            ? "bg-white border-gray-200 hover:border-[#007ACC]"
+                            : "bg-[#161618] border-white/[0.08] hover:border-[#007ACC]/50"
+                        }`}
                       >
+                        <div className="text-[11px] font-mono opacity-60 truncate">{hit.url}</div>
                         <button
                           type="button"
                           onClick={() => void navigateBrowser(hit.url, true)}
-                          className="text-start text-sm font-medium hover:underline cursor-pointer"
-                          style={{ color: accentHex }}
+                          className="text-start text-sm font-semibold hover:underline cursor-pointer"
+                          style={{ color: isLight ? "#1a0dab" : "#8ab4f8" }}
                         >
                           {hit.title}
                         </button>
-                        <div className="text-[11px] font-mono opacity-60 truncate">{hit.url}</div>
                         {hit.snippet && <p className="text-xs opacity-80 leading-relaxed">{hit.snippet}</p>}
                       </div>
                     ))}
                   </div>
                 )}
+              </div>
+            ) : (
+              <div className="h-full flex flex-col">
+                {activeBTab.error && (
+                  <div className="m-3 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-xs text-rose-400">
+                    {activeBTab.error}
+                  </div>
+                )}
 
-                {browserPageMarkdown && (
-                  <div className={`p-4 rounded-xl border space-y-3 ${isLight ? "bg-white border-gray-200" : "bg-[#141416] border-white/[0.08]"}`}>
+                {activeBTab.kind === "page" && activeBTab.proxiedHtml && browserPageMode === "live" ? (
+                  <iframe
+                    title={activeBTab.title}
+                    srcDoc={activeBTab.proxiedHtml}
+                    sandbox="allow-scripts allow-forms allow-modals"
+                    className="flex-1 w-full h-full min-h-[380px] bg-white border-0"
+                  />
+                ) : (
+                  <div className="p-3 space-y-3">
                     <div className="flex items-center justify-between gap-2 pb-2 border-b border-inherit">
-                      <span className="text-xs font-semibold truncate">{browserPageTitle}</span>
+                      <span className="text-xs font-semibold truncate">{activeBTab.title}</span>
                       <button
                         type="button"
-                        onClick={() => onRunPromptFromChild(`Summarize & analyze this fetched page (${addressInput}):\n\n${browserPageMarkdown.slice(0, 2500)}`)}
+                        onClick={() =>
+                          onRunPromptFromChild(
+                            `Analyze and extract useful insights from ${activeBTab.url}:\n\n${activeBTab.extractedText.slice(0, 3500)}`
+                          )
+                        }
                         className="px-2.5 py-1 rounded-md text-[11px] font-medium text-white cursor-pointer shrink-0"
                         style={{ backgroundColor: accentHex }}
                       >
                         Analyze with AI
                       </button>
                     </div>
-                    <HeyukaMarkdownMessage markdown={browserPageMarkdown.slice(0, 8000)} />
+                    <HeyukaMarkdownMessage
+                      markdown={(activeBTab.extractedText || "Loading content...").slice(0, 12000)}
+                      onOpenUrlInBrowser={(url) => void navigateBrowser(url, true)}
+                    />
                   </div>
                 )}
               </div>

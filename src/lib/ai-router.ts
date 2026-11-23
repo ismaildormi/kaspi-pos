@@ -358,6 +358,49 @@ export async function getRouterCandidates(
   return candidates;
 }
 
+function extractLastUserTextFromMessages(messages: any): string {
+  if (!Array.isArray(messages)) return "";
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m?.role !== "user") continue;
+    if (typeof m.content === "string") return m.content;
+    if (Array.isArray(m.content)) {
+      return m.content.filter((p: any) => p?.type === "text").map((p: any) => p.text || "").join("\n");
+    }
+    if (Array.isArray(m.parts)) {
+      return m.parts.filter((p: any) => p?.type === "text").map((p: any) => p.text || "").join("\n");
+    }
+  }
+  return "";
+}
+
+function buildProviderGenerationConfig(
+  candidate: RouterCandidate,
+  requestedMaxTokens?: number
+): Record<string, any> {
+  const maxOutputTokens =
+    typeof requestedMaxTokens === "number" && requestedMaxTokens > 0
+      ? requestedMaxTokens
+      : candidate.provider === "google"
+      ? 65_536
+      : 16_384;
+
+  const extra: Record<string, any> = { maxOutputTokens };
+  if (candidate.provider === "google") {
+    extra.providerOptions = {
+      google: {
+        safetySettings: [
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        ],
+      },
+    };
+  }
+  return extra;
+}
+
 /**
  * Direct Zero-Key Pollinations HTTP fallback (POST https://text.pollinations.ai/openai)
  * invoked only when all configured cloud/local SDK gateways fail or rate-limit.
@@ -368,9 +411,9 @@ async function callPollinationsZeroKeyHttp(params: {
 }): Promise<string> {
   const flatMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [];
   if (params.system) {
-    flatMessages.push({ role: "system", content: params.system.slice(0, 6000) });
+    flatMessages.push({ role: "system", content: params.system.slice(0, 16000) });
   }
-  for (const m of (params.messages || []).slice(-10)) {
+  for (const m of (params.messages || []).slice(-20)) {
     const role = m?.role === "assistant" ? "assistant" : "user";
     let txt = "";
     if (typeof m?.content === "string") txt = m.content;
@@ -385,7 +428,7 @@ async function callPollinationsZeroKeyHttp(params: {
         .map((p: any) => p.text || "")
         .join("\n");
     }
-    if (txt.trim()) flatMessages.push({ role, content: txt.trim().slice(0, 4000) });
+    if (txt.trim()) flatMessages.push({ role, content: txt.trim().slice(0, 12000) });
   }
 
   const res = await fetch("https://text.pollinations.ai/openai", {
@@ -395,7 +438,7 @@ async function callPollinationsZeroKeyHttp(params: {
       model: "openai",
       messages: flatMessages,
     }),
-    signal: AbortSignal.timeout(28_000),
+    signal: AbortSignal.timeout(14_000),
   });
   if (!res.ok) throw new Error(`Zero-Key HTTP ${res.status}`);
   const data = (await res.json()) as any;
@@ -460,12 +503,14 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
 
   for (const candidate of candidates) {
     try {
+      const providerCfg = buildProviderGenerationConfig(candidate, (restGenOptions as any)?.maxOutputTokens);
       const result = await generateText({
         model: candidate.model as any,
         maxRetries: 0,
         abortSignal: AbortSignal.timeout(
-          isMultimodal ? 32_000 : candidate.provider === "groq" ? 24_000 : 28_000
+          isMultimodal ? 28_000 : candidate.provider === "groq" ? 18_000 : 22_000
         ),
+        ...providerCfg,
         ...(restGenOptions as any),
       });
 
@@ -611,10 +656,11 @@ export async function streamUiResponseWithRouter(
       let succeeded = false;
       let streamStartedOnWriter = false;
       let lastErrMsg = "All HEYUKA cloud gateways unavailable";
+      const originalUserPrompt = extractLastUserTextFromMessages(restOptions.messages).slice(0, 1200);
 
       for (let attemptIdx = 0; attemptIdx < attempts.length; attemptIdx++) {
-        // Leave clean safety margin before 60s serverless cutoff so fallback ALWAYS finishes in time
-        if (attemptIdx > 0 && Date.now() - streamStartedAt > 44_000) break;
+        // Reserve ~13s before client 45s / Vercel 60s limit so Zero-Key / local rescue ALWAYS delivers in time
+        if (attemptIdx > 0 && Date.now() - streamStartedAt > 32_000) break;
 
         const { candidate, stripTools } = attempts[attemptIdx];
         let emittedToClient = false;
@@ -622,12 +668,15 @@ export async function streamUiResponseWithRouter(
         let collectedText = "";
         let openTextPartId: string | null = null;
         let heldFinishChunks: any[] = [];
+        let streamFinishReason: string | undefined;
+        const capturedToolMarkers: string[] = [];
 
         try {
-          const callConfig = { ...restOptions };
+          const providerCfg = buildProviderGenerationConfig(candidate, restOptions.maxOutputTokens);
+          const callConfig = { ...providerCfg, ...restOptions };
           if (stripTools) delete callConfig.tools;
-          const remainingMs = Math.max(8_000, 48_000 - (Date.now() - streamStartedAt));
-          const attemptTimeoutMs = Math.min(remainingMs, attemptIdx === 0 ? 22_000 : 15_000);
+          const remainingMs = Math.max(8_000, 34_000 - (Date.now() - streamStartedAt));
+          const attemptTimeoutMs = Math.min(remainingMs, attemptIdx === 0 ? 16_000 : 11_000);
 
           const res = streamText({
             model: candidate.model as any,
@@ -652,10 +701,18 @@ export async function streamUiResponseWithRouter(
               collectedText += piece;
             } else if (c.type === "text-end") {
               openTextPartId = null;
+            } else if (c.type === "tool-output-available" && c.output?.inlineMarker) {
+              const marker = String(c.output.inlineMarker).trim();
+              if (marker && !capturedToolMarkers.includes(marker)) {
+                capturedToolMarkers.push(marker);
+              }
             }
 
-            // Hold terminal step/stream finish chunks briefly so we can seamlessly stream MAX_TOKENS continuations if cut off
+            // Capture explicit finishReason from stream chunks AND hold terminal finish chunks for seamless auto-continuation
             if (c.type === "finish-step" || c.type === "finish") {
+              if (typeof c.finishReason === "string" && c.finishReason) {
+                streamFinishReason = c.finishReason;
+              }
               heldFinishChunks.push(chunk);
               continue;
             }
@@ -679,52 +736,79 @@ export async function streamUiResponseWithRouter(
             }
           }
 
+          // Emit any captured artifact markers (e.g. [KASPI_PDF_REPORT:...]) if model executed tool without printing marker
+          const missingMarkers = capturedToolMarkers.filter((mk) => !collectedText.includes(mk));
+          if (missingMarkers.length > 0) {
+            const markerBlock = `\n\n${missingMarkers.join("\n\n")}\n`;
+            const mkId = openTextPartId || `mk-${Date.now()}`;
+            if (!streamStartedOnWriter) {
+              for (const h of bufferedHeaderChunks) writer.write(h);
+              bufferedHeaderChunks.length = 0;
+              if (bufferedHeaderChunks.length === 0) writer.write({ type: "start-step" } as any);
+              streamStartedOnWriter = true;
+            }
+            if (!openTextPartId) writer.write({ type: "text-start", id: mkId } as any);
+            writer.write({ type: "text-delta", id: mkId, delta: markerBlock } as any);
+            if (!openTextPartId) writer.write({ type: "text-end", id: mkId } as any);
+            collectedText += markerBlock;
+            emittedToClient = true;
+          }
+
           let visibleClean = collectedText
             .replace(/<think>[\s\S]*?<\/think>/gi, "")
             .replace(/<think>[\s\S]*$/gi, "")
-            .trim();
+            .trimEnd();
 
-          if (!emittedToClient || !visibleClean) {
+          if (!emittedToClient || !visibleClean.trim()) {
             throw new Error("Upstream produced zero visible text after reasoning strip");
           }
 
-          // Auto-Continuation Loop inside live stream when upstream hit MAX_TOKENS (`length`) or stopped mid-code
-          let finishReason: string | undefined;
-          try {
-            finishReason = await (res as any).finishReason;
-          } catch {}
+          let finishReason: string | undefined = streamFinishReason;
+          if (!finishReason) {
+            try {
+              finishReason = await (res as any).finishReason;
+            } catch {}
+          }
+
+          // Seamless Auto-Continuation Loop (MAX_TOKENS `length`, mid-code cuts, or mid-word Arabic/prose stops)
+          const hasInterruptedTail = (txt: string) =>
+            /(?:[,،:؛\-]|(?:\s+(?:ب|ل|و|ف|من|في|على|عن|إلى|مع|أو|the|and|to|with|for)))\s*$/iu.test(txt.trimEnd());
 
           let hopCount = 0;
           while (
-            hopCount < 2 &&
+            hopCount < 4 &&
             Date.now() - streamStartedAt < 48_000 &&
-            (finishReason === "length" || detectTruncationState(visibleClean).truncated)
+            (finishReason === "length" ||
+              detectTruncationState(visibleClean).truncated ||
+              (finishReason !== "stop" && hasInterruptedTail(visibleClean)))
           ) {
             hopCount += 1;
             const trunc = detectTruncationState(visibleClean);
+            const tailWindow = visibleClean.slice(-600);
             try {
               const contGen = await generateText({
                 model: candidate.model as any,
                 maxRetries: 0,
+                ...buildProviderGenerationConfig(candidate, restOptions.maxOutputTokens),
                 abortSignal: AbortSignal.timeout(Math.max(6_000, 52_000 - (Date.now() - streamStartedAt))),
                 system:
-                  "Continue seamlessly from the exact cutoff point without repeating earlier text or adding commentary. Close all unfinished Markdown tables, headings, lists, and code fences cleanly.",
+                  "Continue seamlessly from the exact cutoff character without repeating any prior text, without adding opening ``` fences if already inside a block, and finish all remaining sections completely.",
                 messages: [
                   {
                     role: "user",
-                    content: `Continue directly from the exact tail below:\n${trunc.tailSnippet || visibleClean.slice(-420)}`,
+                    content: `Original request:\n${originalUserPrompt}\n\nPrevious response stopped right here:\n${trunc.tailSnippet || tailWindow}\n\nContinue immediately from the exact next character cleanly:`,
                   },
                 ],
-                temperature: 0.25,
+                temperature: 0.2,
               });
-              const contChunk = String(contGen.text || "").trim();
-              if (!contChunk) break;
+              const contChunk = String(contGen.text || "");
+              if (!contChunk.trim()) break;
 
               const merged = mergeContinuationChunk(visibleClean, contChunk);
               const deltaToAppend = merged.startsWith(visibleClean)
                 ? merged.slice(visibleClean.length)
-                : `\n${contChunk}`;
-              if (!deltaToAppend.trim()) break;
+                : contChunk;
+              if (!deltaToAppend) break;
 
               const contId = openTextPartId || `cont-${Date.now()}-${hopCount}`;
               if (!openTextPartId) writer.write({ type: "text-start", id: contId } as any);
@@ -733,15 +817,19 @@ export async function streamUiResponseWithRouter(
 
               collectedText = `${collectedText}${deltaToAppend}`;
               visibleClean = merged;
-              finishReason = (contGen as any).finishReason;
+              finishReason = (contGen as any).finishReason || "stop";
             } catch {
               break;
             }
           }
 
-          // Flush held terminal markers once auto-continuation completes
+          // Flush terminal finish markers cleanly (promote length -> stop when auto-continuation succeeded)
           for (const fin of heldFinishChunks) {
-            writer.write(fin);
+            if (hopCount > 0 && fin && typeof fin === "object" && (fin as any).finishReason === "length") {
+              writer.write({ ...(fin as any), finishReason: "stop" });
+            } else {
+              writer.write(fin);
+            }
           }
 
           succeeded = true;

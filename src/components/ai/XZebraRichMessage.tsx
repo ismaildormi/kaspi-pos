@@ -64,6 +64,11 @@ import {
   HeyukaSyntaxCodeView,
   getFileBadgeMeta,
 } from "@/components/heyuka/HeyukaSyntaxCodeView";
+import {
+  LiveHtmlPreviewCard,
+  MarkdownTableExportBar,
+  isRenderableHtmlArtifact,
+} from "@/components/ai/LiveArtifactRenderer";
 import type { LiveArtifactItem } from "./LiveArtifactDrawer";
 
 interface XZebraRichMessageProps {
@@ -176,11 +181,12 @@ function CodeBlock({ lang, code }: { lang: string; code: string }) {
 }
 
 function InlineFormattedLine({ text }: { text: string }) {
-  // Parse **bold**, `code`, and [label](url) cleanly
-  const tokens = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g);
+  // Parse **bold**, `code`, [label](url), and bare https:// URLs cleanly
+  const tokens = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\)|https?:\/\/[^\s)<>]+)/g);
   return (
     <>
       {tokens.map((tok, i) => {
+        if (!tok) return null;
         if (tok.startsWith("**") && tok.endsWith("**")) {
           return (
             <strong key={i} className="font-bold text-white">
@@ -192,6 +198,7 @@ function InlineFormattedLine({ text }: { text: string }) {
           return (
             <code
               key={i}
+              dir="ltr"
               className="px-1 py-0.5 rounded bg-white/10 font-mono text-[11px] text-emerald-300"
             >
               {tok.slice(1, -1)}
@@ -208,9 +215,22 @@ function InlineFormattedLine({ text }: { text: string }) {
               href={href}
               target={isExternal ? "_blank" : undefined}
               rel={isExternal ? "noopener noreferrer" : undefined}
-              className="text-emerald-400 underline underline-offset-2 hover:text-emerald-300"
+              className="text-sky-400 underline underline-offset-2 hover:text-sky-300"
             >
               {label}
+            </a>
+          );
+        }
+        if (/^https?:\/\/[^\s)<>]+$/i.test(tok)) {
+          return (
+            <a
+              key={i}
+              href={tok}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sky-400 underline underline-offset-2 hover:text-sky-300 break-all"
+            >
+              {tok}
             </a>
           );
         }
@@ -227,7 +247,12 @@ function MarkdownProseBlock({ markdown }: { markdown: string }) {
       {blocks.map((block, bIdx) => {
         const codeMatch = block.match(/^```([\w-]*)\n([\s\S]*?)```$/);
         if (codeMatch) {
-          return <CodeBlock key={bIdx} lang={codeMatch[1]} code={codeMatch[2].trimEnd()} />;
+          const lang = codeMatch[1];
+          const code = codeMatch[2].trimEnd();
+          if (isRenderableHtmlArtifact(lang, code)) {
+            return <LiveHtmlPreviewCard key={bIdx} lang={lang} code={code} />;
+          }
+          return <CodeBlock key={bIdx} lang={lang} code={code} />;
         }
 
         const lines = block.split("\n");
@@ -285,6 +310,7 @@ function MarkdownProseBlock({ markdown }: { markdown: string }) {
                     ))}
                   </tbody>
                 </table>
+                <MarkdownTableExportBar headers={headers} rows={rows} />
               </div>
             );
             continue;

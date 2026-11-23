@@ -20,12 +20,15 @@ import {
   Mic,
   MicOff,
   PanelLeft,
+  PanelRight,
   Paperclip,
   Pin,
   Plus,
+  Search,
   Settings,
   SlidersHorizontal,
   Sparkles,
+  Square,
   Store,
   Terminal,
   Trash2,
@@ -198,6 +201,10 @@ export function HeyukaUnifiedStudioWorkspace({
   } | null>(null);
   const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
+  const [externalBrowserRequest, setExternalBrowserRequest] = useState<{ url: string; ts: number } | null>(null);
+  const [quickSearchOpen, setQuickSearchOpen] = useState(false);
+  const [quickSearchQuery, setQuickSearchQuery] = useState("");
+  const abortCtrlRef = useRef<AbortController | null>(null);
 
   // Antigravity Modals (Automations, Customizations, Settings) — all inside KaspiGlassModalPortal
   const [automationsOpen, setAutomationsOpen] = useState(false);
@@ -245,6 +252,18 @@ export function HeyukaUnifiedStudioWorkspace({
     el.style.height = "auto";
     el.style.height = `${Math.min(Math.max(el.scrollHeight, 44), 280)}px`;
   }, [composerText]);
+
+  // Ctrl+P / Cmd+P Quick Search Modal matching IMG_5822.MOV
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
+        e.preventDefault();
+        setQuickSearchOpen((p) => !p);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   // Running elapsed seconds timer
   useEffect(() => {
@@ -448,6 +467,9 @@ export function HeyukaUnifiedStudioWorkspace({
     setModelMenuOpen(false);
     setMentionOpen(false);
     setIsRunning(true);
+    const controller = new AbortController();
+    abortCtrlRef.current = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 50_000);
 
     const t0 = performance.now();
     try {
@@ -463,16 +485,26 @@ export function HeyukaUnifiedStudioWorkspace({
       const urlsInPrompt = rawPrompt.match(/https?:\/\/[^\s]+/gi) || [];
       let citations: Array<{ title: string; url: string }> = [];
 
-      // Optional live web research enrichment when URLs exist or web search enabled
+      // Live web research enrichment via Studio Browse + /api/v1/web/research fallback when URLs exist
       if (urlsInPrompt.length > 0) {
         try {
-          const wr = await fetch("/api/v1/web/research", {
+          let wr = await fetch("/api/v1/studio/browse", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            signal: controller.signal,
             body: JSON.stringify({ url: urlsInPrompt[0], query: rawPrompt.slice(0, 160), lang: locale }),
           });
+          if (!wr.ok) {
+            wr = await fetch("/api/v1/web/research", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              signal: controller.signal,
+              body: JSON.stringify({ url: urlsInPrompt[0], query: rawPrompt.slice(0, 160), lang: locale }),
+            });
+          }
           if (wr.ok) {
             const wd = await wr.json();
+            if (wd?.url) citations.push({ title: String(wd.title || wd.url), url: String(wd.url) });
             if (Array.isArray(wd?.results)) citations = [...citations, ...wd.results];
           }
         } catch {}
@@ -482,6 +514,7 @@ export function HeyukaUnifiedStudioWorkspace({
       const swarmPromise = fetch("/api/v1/studio/council", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({ prompt: rawPrompt, scale: settings.elasticScale, brand, locale }),
       })
         .then((r) => (r.ok ? r.json() : null))
@@ -505,6 +538,7 @@ export function HeyukaUnifiedStudioWorkspace({
         const chatRes = await fetch("/api/v1/heyuka/chat-web", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({
             model: settings.model,
             elasticScale: settings.elasticScale,
@@ -516,11 +550,11 @@ export function HeyukaUnifiedStudioWorkspace({
             locale,
             systemInstruction,
             imageBase64: imgAtt?.dataUrl,
-            workspaceFiles: studioFiles.slice(0, 6).map((f) => ({ path: f.path, content: f.content })),
+            workspaceFiles: studioFiles.slice(0, 8).map((f) => ({ path: f.path, content: f.content })),
             messages: [
-              ...baseHistory.slice(-8).map((m) => ({
+              ...baseHistory.slice(-16).map((m) => ({
                 role: m.role,
-                content: String(m.content || " ").slice(0, 8000),
+                content: String(m.content || " ").slice(0, 12000),
               })),
               { role: "user", content: fullPromptPayload },
             ],
@@ -544,7 +578,7 @@ export function HeyukaUnifiedStudioWorkspace({
         }
       } catch {}
 
-      if (!answerText) {
+      if (!answerText && !controller.signal.aborted) {
         const res = await fetch("/api/v1/heyuka/local-sdk", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -561,9 +595,13 @@ export function HeyukaUnifiedStudioWorkspace({
         }
       }
 
+      if (controller.signal.aborted && !answerText) {
+        answerText = isAr ? "تم إيقاف التنفيذ حسب طلبك." : "Generation stopped cleanly.";
+      }
+
       // If runnable script was created, log crisp verification trace in Terminal
       const runnableFile = extractedFiles.find((f) => /\.(js|ts|py|sh)$/i.test(f.path));
-      if (runnableFile?.content) {
+      if (runnableFile?.content && !controller.signal.aborted) {
         try {
           const lang = runnableFile.path.endsWith(".py") ? "python" : runnableFile.path.endsWith(".sh") ? "bash" : "javascript";
           const execRes = await fetch("/api/v1/sandbox/execute", {
@@ -626,6 +664,8 @@ export function HeyukaUnifiedStudioWorkspace({
         },
       ]);
     } finally {
+      clearTimeout(timeoutId);
+      abortCtrlRef.current = null;
       setIsRunning(false);
     }
   };
@@ -679,7 +719,7 @@ export function HeyukaUnifiedStudioWorkspace({
 
   return (
     <div
-      dir={isAr ? "rtl" : "ltr"}
+      dir="ltr"
       style={{ backgroundColor: pageBg, color: pageText }}
       className="h-screen w-full flex flex-col overflow-hidden text-sm antialiased"
     >
@@ -737,44 +777,38 @@ export function HeyukaUnifiedStudioWorkspace({
           </div>
         </div>
 
-        {/* Top-Right Antigravity Pane Controls: Files | Terminal | Browser | Settings */}
-        <div className="flex items-center gap-1 shrink-0">
-          {(
-            [
-              { id: "files" as const, label: isAr ? "الملفات" : "Files", icon: FileCode2 },
-              { id: "terminal" as const, label: "Terminal", icon: Terminal },
-              { id: "browser" as const, label: isAr ? "المتصفح" : "Browser", icon: Globe },
-            ] as const
-          ).map((btn) => {
-            const Icon = btn.icon;
-            const active = rightOpen && rightTab === btn.id;
-            return (
-              <button
-                key={btn.id}
-                type="button"
-                onClick={() => {
-                  if (rightOpen && rightTab === btn.id) {
-                    setRightOpen(false);
-                  } else {
-                    setRightTab(btn.id);
-                    setRightOpen(true);
-                  }
-                }}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors ${
-                  active
-                    ? isLight
-                      ? "bg-gray-200 text-gray-900"
-                      : "bg-white/[0.12] text-white"
-                    : isLight
-                    ? "text-gray-600 hover:bg-gray-200/70"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" style={active ? { color: appearance.accentHex } : undefined} />
-                <span className="hidden md:inline">{btn.label}</span>
-              </button>
-            );
-          })}
+        {/* Top-Right Antigravity Pane Controls: Quick Search (Ctrl+P) | Toggle Split Workbench | Settings */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setQuickSearchOpen(true)}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs cursor-pointer transition-colors border ${borderCls} ${
+              isLight ? "hover:bg-gray-200/70 text-gray-600" : "hover:bg-white/[0.08] text-zinc-400"
+            }`}
+            title="Search files, conversations, or web (Ctrl+P)"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">{isAr ? "بحث..." : "Search"}</span>
+            <kbd className="hidden lg:inline text-[10px] opacity-60 font-mono">Ctrl+P</kbd>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setRightOpen((p) => !p)}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors ${
+              rightOpen
+                ? isLight
+                  ? "bg-gray-200 text-gray-900"
+                  : "bg-white/[0.12] text-white"
+                : isLight
+                ? "text-gray-600 hover:bg-gray-200/70"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]"
+            }`}
+            title="Toggle Workbench (Changes, Files, Terminal, Browser)"
+          >
+            <PanelRight className="w-3.5 h-3.5" style={rightOpen ? { color: appearance.accentHex } : undefined} />
+            <span className="hidden sm:inline capitalize">{rightTab}</span>
+          </button>
 
           <button
             type="button"
@@ -792,8 +826,9 @@ export function HeyukaUnifiedStudioWorkspace({
         {/* LEFT SIDEBAR — Exact Antigravity Nav (+ New Conversation, Automations, Customizations, Pinned/Projects, Settings) */}
         {leftOpen && (
           <aside
+            dir="auto"
             style={{ backgroundColor: sideBg }}
-            className={`w-[228px] shrink-0 hidden md:flex flex-col justify-between border-e ${borderCls} p-2.5 select-none`}
+            className={`w-[228px] shrink-0 fixed inset-y-11 left-0 z-30 md:static md:inset-auto flex flex-col justify-between border-e ${borderCls} p-2.5 select-none shadow-2xl md:shadow-none`}
           >
             <div className="space-y-3 min-h-0 flex-1 flex flex-col">
               <div className="space-y-0.5">
@@ -989,6 +1024,7 @@ export function HeyukaUnifiedStudioWorkspace({
                     <div key={msg.id} className={`space-y-2 ${isUser ? "flex flex-col items-end" : ""}`}>
                       {isUser ? (
                         <div
+                          dir="auto"
                           className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm whitespace-pre-wrap border ${
                             isLight
                               ? "bg-[#F3F4F6] border-gray-200 text-gray-900"
@@ -1056,9 +1092,14 @@ export function HeyukaUnifiedStudioWorkspace({
                           )}
 
                           {/* Rich Markdown Output via shared HeyukaMarkdownMessage */}
-                          <div className="text-xs sm:text-[13px] leading-relaxed">
+                          <div dir="auto" className="text-xs sm:text-[13px] leading-relaxed">
                             <HeyukaMarkdownMessage
                               markdown={msg.content}
+                              onOpenUrlInBrowser={(url) => {
+                                setExternalBrowserRequest({ url, ts: Date.now() });
+                                setRightTab("browser");
+                                setRightOpen(true);
+                              }}
                               onOpenCodeInStudio={(lang, code, filePath) => {
                                 const targetPath = filePath || `snippet.${lang || "txt"}`;
                                 setStudioFiles((prev) => {
@@ -1085,6 +1126,7 @@ export function HeyukaUnifiedStudioWorkspace({
                                     key={`${cit.url}-${cIdx}`}
                                     type="button"
                                     onClick={() => {
+                                      setExternalBrowserRequest({ url: cit.url, ts: Date.now() });
                                       setRightTab("browser");
                                       setRightOpen(true);
                                     }}
@@ -1471,22 +1513,33 @@ export function HeyukaUnifiedStudioWorkspace({
                       <Sparkles className={`w-4 h-4 ${enhancingMagic ? "animate-spin" : ""}`} />
                     </button>
 
-                    <button
-                      type="button"
-                      disabled={isRunning || !composerText.trim()}
-                      onClick={() => void handleRunPrompt()}
-                      style={
-                        composerText.trim() && !isRunning
-                          ? { backgroundColor: appearance.accentHex, color: "#FFFFFF" }
-                          : undefined
-                      }
-                      className={`w-7 h-7 rounded-full flex items-center justify-center cursor-pointer disabled:opacity-35 transition-colors ${
-                        isLight ? "bg-gray-200 text-gray-700" : "bg-white/[0.1] text-zinc-300"
-                      }`}
-                      title="Send (Enter)"
-                    >
-                      {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowUp className="w-3.5 h-3.5" />}
-                    </button>
+                    {isRunning ? (
+                      <button
+                        type="button"
+                        onClick={() => abortCtrlRef.current?.abort()}
+                        className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer bg-rose-600 hover:bg-rose-500 text-white transition-colors"
+                        title="Stop generation"
+                      >
+                        <Square className="w-3 h-3 fill-current" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={!composerText.trim()}
+                        onClick={() => void handleRunPrompt()}
+                        style={
+                          composerText.trim()
+                            ? { backgroundColor: appearance.accentHex, color: "#FFFFFF" }
+                            : undefined
+                        }
+                        className={`w-7 h-7 rounded-full flex items-center justify-center cursor-pointer disabled:opacity-35 transition-colors ${
+                          isLight ? "bg-gray-200 text-gray-700" : "bg-white/[0.1] text-zinc-300"
+                        }`}
+                        title="Send (Enter)"
+                      >
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1501,13 +1554,13 @@ export function HeyukaUnifiedStudioWorkspace({
               onMouseDown={() => {
                 dragResizeRef.current = true;
               }}
-              className={`hidden lg:block w-1 shrink-0 cursor-col-resize transition-colors ${
+              className={`hidden md:block w-1 shrink-0 cursor-col-resize transition-colors ${
                 isLight ? "bg-gray-200 hover:bg-[#007ACC]" : "bg-white/[0.05] hover:bg-[#007ACC]"
               }`}
             />
             <div
               style={{ width: rightWidthPx }}
-              className={`shrink-0 hidden lg:flex flex-col border-s ${borderCls} min-h-0`}
+              className={`shrink-0 fixed inset-y-11 right-0 max-w-full z-30 md:static md:inset-auto flex flex-col border-s ${borderCls} min-h-0 shadow-2xl md:shadow-none`}
             >
               <StudioWorkbenchTabs
                 brand={brand}
@@ -1537,6 +1590,7 @@ export function HeyukaUnifiedStudioWorkspace({
                 onChangeTab={setRightTab}
                 onClosePane={() => setRightOpen(false)}
                 terminalLogsFromAgent={terminalLogs}
+                externalBrowserRequest={externalBrowserRequest}
                 themeMode={appearance.themeMode}
                 appearance={{
                   backgroundHex: pageBg,
@@ -1895,6 +1949,65 @@ export function HeyukaUnifiedStudioWorkspace({
                   ))}
                 </div>
               </div>
+            )}
+          </div>
+        </div>
+      </KaspiGlassModalPortal>
+      {/* QUICK OPEN / SEARCH MODAL (Ctrl+P matching IMG_5822.MOV) */}
+      <KaspiGlassModalPortal isOpen={quickSearchOpen} onClose={() => setQuickSearchOpen(false)}>
+        <div
+          style={{ backgroundColor: cardBg, color: pageText }}
+          className={`max-w-lg w-full rounded-2xl border ${borderCls} p-4 space-y-3`}
+        >
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${borderCls}`}>
+            <Search className="w-4 h-4 opacity-60 shrink-0" />
+            <input
+              type="text"
+              autoFocus
+              value={quickSearchQuery}
+              onChange={(e) => setQuickSearchQuery(e.target.value)}
+              placeholder={isAr ? "ابحث في الملفات، المحادثات، أو افتح رابط Google..." : "Search files, threads, or open URL in Browser..."}
+              className="w-full bg-transparent text-xs focus:outline-none"
+            />
+            <button type="button" onClick={() => setQuickSearchOpen(false)} className="p-1 rounded hover:bg-white/10 cursor-pointer">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="max-h-64 overflow-y-auto space-y-1 text-xs">
+            {studioFiles
+              .filter((f) => !quickSearchQuery.trim() || f.path.toLowerCase().includes(quickSearchQuery.toLowerCase()))
+              .map((f) => (
+                <button
+                  key={f.path}
+                  type="button"
+                  onClick={() => {
+                    setFocusFilePath(f.path);
+                    setRightTab("files");
+                    setRightOpen(true);
+                    setQuickSearchOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 rounded-lg flex items-center justify-between cursor-pointer ${
+                    isLight ? "hover:bg-gray-100" : "hover:bg-white/[0.06]"
+                  }`}
+                >
+                  <span className="font-mono truncate">{f.path}</span>
+                  <span className="text-[10px] opacity-60">File</span>
+                </button>
+              ))}
+            {quickSearchQuery.trim() && (
+              <button
+                type="button"
+                onClick={() => {
+                  setExternalBrowserRequest({ url: quickSearchQuery.trim(), ts: Date.now() });
+                  setRightTab("browser");
+                  setRightOpen(true);
+                  setQuickSearchOpen(false);
+                }}
+                className="w-full px-3 py-2 rounded-lg flex items-center justify-between cursor-pointer text-sky-400 hover:bg-white/[0.06]"
+              >
+                <span className="truncate">Open in Studio Google Browser: &ldquo;{quickSearchQuery.trim()}&rdquo;</span>
+                <Globe className="w-3.5 h-3.5 shrink-0" />
+              </button>
             )}
           </div>
         </div>

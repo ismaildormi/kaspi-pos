@@ -693,23 +693,23 @@ Suppress <think> commentary. Split complex scenes/games cleanly across \`\`\`htm
   const customRulesBlock = [callerSystemInstruction, extraSystemFromMessages]
     .filter((x) => typeof x === "string" && x.trim().length > 0)
     .join("\n")
-    .slice(0, 4000);
+    .slice(0, 8000);
 
   const organizedAgentPlaybook = `[UNIFIED ANTIGRAVITY AGENT ARCHITECTURE — ALL MODELS SHARE EQUAL FULL CAPABILITY]
-1. Files & App Builder: Always emit complete, runnable multi-file output with \`path=\` headers (e.g. \`\`\`html path=index.html\`, \`\`\`css path=styles.css\`, \`\`\`js path=app.js\`, \`\`\`ts path=server.ts\`) whenever building apps, components, configs, or fixing code.
-2. Research & Live Links: Use [LIVE WEB RESEARCH SOURCES] & [FETCHED URL CONTENT] directly in your synthesis with clean source links.
-3. Terminal & Verification: Include concise executable shell/verification commands when appropriate so the user can test directly in the IDE Terminal tab.
-4. Autonomous Completion: Never stall with "rephrase / clarify / try again". Complete the full task autonomously on the first pass in the user's exact language (${detectedLang}), using clear headings, concise bullet points, helpful emojis, and Markdown tables.`;
+1. Full-Stack & Multi-Language Builder: Generate complete, runnable projects across ALL stacks (HTML/CSS/Tailwind/TypeScript/JavaScript/React/Next.js/Python/SQL/Rust/Go/Bash) using explicit \`path=\` headers (e.g. \`\`\`html path=index.html\`, \`\`\`css path=styles.css\`, \`\`\`js path=autoContinue.js\`).
+2. Live Invoices, Reports & Artifacts: For any invoice (فاتورة), tax table, or report, emit a clean semantic \`\`\`html\`\`\` document (with dir="rtl" for Arabic) + clean Markdown tables so interactive <iframe> preview, 1-click PDF download, and Excel (.xlsx) export activate automatically.
+3. Clickable Web Links & Verified Research: Use [LIVE WEB RESEARCH SOURCES] & [FETCHED URL CONTENT] directly with clickable Markdown links ([Title](https://...)) for libraries, docs, and external web sources.
+4. Cross-Sector Fluency & Autonomous Completion: Serve all domains (programming, retail/accounting, engineering, medicine, creative, marketing, daily chat) fluently in ${detectedLang}. Complete every response to the final character without stopping early, looping, or telling the user to rephrase.`;
 
   const collabSection = isCollaborative
     ? `\n\nMULTI-AGENT SWARM ACTIVE (${model}):
 Synthesize deeply across Architect + Builder + Reviewer passes and deliver ONE cohesive, production-ready result.`
     : "";
 
-  const personaSection = `DIRECT ENGINEERING & ANTI-FALSE-REFUSAL RULES:
-1. Deliver direct, practical engineering solutions, runnable apps, KASPI POS analytics, and cited research immediately.
-2. Never falsely refuse legitimate engineering, retail POS, code, debugging, mechanical, medical research, or automation queries.
-3. Uphold core safety limits cleanly only for actual dangerous/illegal harm.`;
+  const personaSection = `DIRECT ENGINEERING & UNRESTRICTED CONVERSATION RULES:
+1. Deliver direct, complete solutions across all industries, tech stacks, business analytics, and general conversation immediately.
+2. Verify financial/tax arithmetic step-by-step and preserve clear Markdown/code formatting.
+3. Maintain baseline system integrity cleanly while never falsely refusing legitimate user tasks.`;
 
   const systemInstruction = `You are ${brand === "kaspi_pos" ? "KASPI POS AI Architect" : "HEYUKA AI Engineer"} running inside the unified Antigravity Studio IDE (${model}). You have full equal access to ${matchedCatalogCount}+ vaulted engines, ${PUBLIC_APIS_CATALOG_COUNT} live no-key APIs, workspace file editing, live web search, and code sandbox execution.
 Matched Capabilities: ${routePlan.selectedToolNames.join(", ")}${
@@ -725,7 +725,7 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
       : ""
   }${posContextBlock}${webContextBlock}${apiContextBlock}${toolSupplementBlock}${workspaceSnippet}`;
 
-  const formattedMessages = messages.slice(-14).map((m, idx) => {
+  const formattedMessages = messages.slice(-24).map((m, idx) => {
     const isLast = idx === messages.length - 1;
     if (isLast && m.role === "user" && imageBase64) {
       const cleanImg = imageBase64.startsWith("data:")
@@ -762,29 +762,29 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     rawText = String(gen.text || "").trim();
 
     let currentFinishReason = (gen as any).finishReason;
-    // v24.0 Infinite Auto-Continuation Loop: silently resumes MAX_TOKENS (`length`) & mid-code cuts (up to 2 hops)
+    // v24.0 Infinite Auto-Continuation Loop: silently resumes MAX_TOKENS (`length`) & mid-code cuts (up to 4 hops)
     let continuationHops = 0;
-    while (continuationHops < 2 && Date.now() - startedAt < 46_000 && !imageBase64) {
+    while (continuationHops < 4 && Date.now() - startedAt < 48_000 && !imageBase64) {
       const truncCheck = detectTruncationState(rawText);
       if (!truncCheck.truncated && currentFinishReason !== "length") break;
       continuationHops += 1;
       const hopStart = Date.now();
       try {
         const cont = await generateTextWithRouter({
-          system: `Continue generating ONLY the remaining code/tags cleanly from the exact cutoff point. Zero explanations, zero repetition, zero <think> tags.`,
+          system: `Continue generating ONLY the remaining code/tags/sections cleanly from the exact cutoff character without repeating prior lines, adding opening \`\`\` fences if already inside a block, or emitting <think> tags.`,
           messages: [
             {
               role: "user",
-              content: `Original task: ${effectiveUserText.slice(0, 260)}\n\nContinue seamlessly from the exact end below:\n${truncCheck.tailSnippet || rawText.slice(-420)}`,
+              content: `Original task:\n${effectiveUserText.slice(0, 1200)}\n\nContinue seamlessly from the exact cutoff below:\n${truncCheck.tailSnippet || rawText.slice(-600)}`,
             },
           ],
-          temperature: 0.25,
+          temperature: 0.2,
           governance: { tenantId, allowOwnerPaidProviders: false },
         });
-        const nextChunk = String(cont.text || "").trim();
-        if (!nextChunk) break;
+        const nextChunk = String(cont.text || "");
+        if (!nextChunk.trim()) break;
         rawText = mergeContinuationChunk(rawText, nextChunk);
-        currentFinishReason = (cont as any).finishReason;
+        currentFinishReason = (cont as any).finishReason || "stop";
         thinkingSteps.push({
           phase: `Auto-Continuation Hop #${continuationHops} (v24.0)`,
           agentModel: resolvedModel,

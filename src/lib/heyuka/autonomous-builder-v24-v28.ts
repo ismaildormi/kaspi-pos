@@ -127,24 +127,29 @@ export function detectTruncationState(rawText: string): TruncationAnalysis {
     openFenceLang,
     unclosedTags,
     unbalancedBraces: Math.max(0, braceBalance),
-    tailSnippet: trimmed.slice(-360),
+    tailSnippet: trimmed.slice(-600),
   };
 }
 
 /**
- * Stitches a continuation chunk onto baseText while stripping accidental echo overlaps.
+ * Stitches a continuation chunk onto baseText while stripping accidental echo overlaps,
+ * spurious continuation fences, and preserving exact leading whitespace/indentation.
  */
 export function mergeContinuationChunk(baseText: string, continuationChunk: string): string {
   const base = String(baseText || "");
   let next = String(continuationChunk || "");
   if (!next.trim()) return base;
 
-  // Strip common conversational preambles added on resume
-  next = next.replace(/^\s*(?:Here is the continuation:|Continuing from where we stopped:|```[a-z0-9_-]*\n)/i, "");
+  // Strip common conversational preambles or accidental markdown fence added on resume
+  const baseInsideOpenFence = ((base.match(/```/g) || []).length % 2) === 1;
+  next = next.replace(/^\s*(?:Here is the continuation:|Continuing from where we stopped:)\s*\r?\n?/i, "");
+  if (baseInsideOpenFence) {
+    next = next.replace(/^[ \t]*```[a-zA-Z0-9_-]*[ \t]*\r?\n/, "");
+  }
 
-  const maxOverlap = Math.min(180, base.length, next.length);
+  const maxOverlap = Math.min(200, base.length, next.length);
   let overlapLen = 0;
-  for (let len = maxOverlap; len >= 4; len--) {
+  for (let len = maxOverlap; len >= 3; len--) {
     if (base.endsWith(next.slice(0, len))) {
       overlapLen = len;
       break;
@@ -257,8 +262,16 @@ export function inferFilePathFromContext(params: {
       .replace(/^\.?\//, "")
       .replace(/[*:;,)]+$/, "");
 
-  const isValidPathToken = (cand: string): boolean => {
+  const RUNTIME_BRAND_NAMES = new Set([
+    "node.js", "next.js", "react.js", "vue.js", "nuxt.js", "svelte.js",
+    "express.js", "nest.js", "three.js", "chart.js", "pdf.js", "bun.js",
+    "deno.js", "electron.js", "sheet.js", "tone.js",
+  ]);
+  const isValidPathToken = (cand: string, allowRuntimeName = false): boolean => {
     if (!cand || cand.length > 140 || /\s/.test(cand) || cand.startsWith("http")) return false;
+    if (!allowRuntimeName && !cand.includes("/") && RUNTIME_BRAND_NAMES.has(cand.toLowerCase())) {
+      return false;
+    }
     if (/^(?:[a-zA-Z0-9_.-]+\/)*(?:Dockerfile|Makefile|Procfile|Jenkinsfile|docker-compose\.ya?ml|requirements\.txt|package\.json|tsconfig\.json|next\.config\.[a-z]+|tailwind\.config\.[a-z]+|\.env(?:\.[a-z]+)?)$/i.test(cand)) {
       return true;
     }
@@ -269,7 +282,7 @@ export function inferFilePathFromContext(params: {
 
   if (params.explicitPath) {
     const cleaned = cleanCandidate(params.explicitPath);
-    if (isValidPathToken(cleaned)) return cleaned;
+    if (isValidPathToken(cleaned, true)) return cleaned;
   }
 
   // 1) Check the last 4 non-empty lines right before the code fence (e.g. ### `backend/app/core/config.py`)

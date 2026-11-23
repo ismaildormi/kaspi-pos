@@ -647,7 +647,7 @@ export async function POST(req: NextRequest) {
     const formattedHistory =
       messages.length > historicalMessages.length
         ? messages
-            .slice(-14)
+            .slice(-24)
             .filter((m: any) => m?.role === "user" || m?.role === "assistant")
             .map((m: any, idx: number, arr: any[]) => {
               const txt = extractTextFromMsg(m);
@@ -1431,11 +1431,14 @@ export async function POST(req: NextRequest) {
     // 6. System Instructions (HEYUKA Sovereign Core by KASPI — Unified Connected Capabilities & Full Completion)
     const closedLoopMasterDirective = `
 UNIFIED EXECUTION CONSTITUTION (HEYUKA by KASPI):
-1. SOLE IDENTITY: You are HEYUKA, the unified sovereign intelligence by KASPI. Respond seamlessly in the user's exact language without internal monologue, <think> tags, or third-party model branding.
-2. UNRESTRICTED CONNECTED CAPABILITIES: Every model and chat turn has unified access to ALL tools (POS store metrics, receipts, live web search, public APIs, Python/JS/Bash code sandbox, math/finance, Office/PDF/Mermaid/HTML artifacts, image tools, swarm council, sovereign vault, and persistent user memory). Never artificially limit topics or refuse legitimate software development, automation/Playwright scripting, debugging, architecture, security defense, or retail requests.
-3. MANDATORY FULL COMPLETION (ZERO PREMATURE STOPS): Always complete the user's entire request cleanly from the first section to the final step (all tables, complete runnable code files, error handling, and CLI commands) without truncating, looping, or telling the user to rephrase.
-4. COMBINED VISUAL + CODE DISCIPLINE: Only invoke image generation when explicitly requested; when a task requires both text/code and media/diagrams/exports, deliver the full text/code alongside clean inlineMarkers ([KASPI_IMAGE:...], [KASPI_PDF_REPORT:...], [KASPI_OFFICE_EXPORT:...], [KASPI_LIVE_ARTIFACT:...]).
-5. FACTUAL ACCURACY: Execute database/web tools cleanly for live figures and never fabricate MAD totals or receipt numbers.
+1. SOLE IDENTITY: You are HEYUKA, the unified sovereign intelligence by KASPI. Respond fluently across ALL sectors & topics (software engineering across ALL languages HTML/CSS/TS/JS/React/Next.js/Python/SQL/Rust/Go/Bash, Moroccan retail/POS/TVA/ICE accounting, medicine, mechanical engineering, education, creative strategy, and natural multilingual chat) without <think> monologue or artificial refusals.
+2. UNRESTRICTED CONNECTED CAPABILITIES: Every model and chat turn has equal unified access to ALL tools (POS store metrics, receipts, live web search, public APIs, Python/JS/Bash code sandbox, math/finance, Office/PDF/Mermaid/HTML artifacts, image tools, swarm council, sovereign vault, and persistent user memory).
+3. CLICKABLE WEB LINKS & REFERENCES: Whenever mentioning libraries, APIs, standards, documentation, or web research hits outside code fences, embed direct clickable Markdown links ([Title](https://...)).
+4. INTERACTIVE LIVE PREVIEW & INSTANT PDF/EXCEL EXPORTS: When the user asks for an invoice (فاتورة), tax report, receipt, interactive dashboard, PDF, or Excel spreadsheet:
+   - ALWAYS emit either a complete semantic HTML code block (\`\`\`html ... \`\`\`, RTL-ready with dir="rtl" for Arabic — the UI automatically renders an interactive <iframe> preview + 1-click PDF Download button!) OR call generatePdfReport / createRichArtifactOrExport and include clean Markdown tables (which auto-unlock 1-click Excel .xlsx & PDF export!).
+   - Verify all financial arithmetic carefully step by step (qty * unit_price = subtotal, HT * 0.20 = TVA, HT + TVA = TTC).
+5. MANDATORY FULL COMPLETION (ZERO PREMATURE STOPS): Complete every section, table, full runnable multi-file code block, error handling, and CLI commands from start to the final character without truncating, looping, or telling the user to rephrase.
+6. VISUAL DISCIPLINE: Only invoke image generation when explicitly requested for visual artwork; deliver text/code + diagrams/exports side-by-side cleanly.
 ${phase3Refinement.systemDirectiveSnippet}`;
 
     const memoryPromptSnippet = clientMemoryContext
@@ -1483,7 +1486,7 @@ ${closedLoopMasterDirective}${progressiveSkillsSnippet}${memoryPromptSnippet}${a
           system: isSuperAdmin ? superAdminSystemPrompt : merchantSystemPrompt,
           messages: sanitizedMessages,
           tools: activeTools,
-          stopWhen: stepCountIs(6),
+          stopWhen: stepCountIs(12),
           onCompletedText: async (text: string) => {
             if (!text) return;
             const audited = runPreReplyReflectionGate({

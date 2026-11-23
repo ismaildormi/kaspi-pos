@@ -5,6 +5,11 @@ import { Check, Copy, Download, FileText, PanelRight } from "lucide-react";
 import { inferFilePathFromContext, repairTruncatedMarkdownAndCode } from "@/lib/heyuka/autonomous-builder-v24-v28";
 import { HeyukaSyntaxCodeView, getFileBadgeMeta } from "@/components/heyuka/HeyukaSyntaxCodeView";
 import {
+  LiveHtmlPreviewCard,
+  MarkdownTableExportBar,
+  isRenderableHtmlArtifact,
+} from "@/components/ai/LiveArtifactRenderer";
+import {
   generateAndDownloadArabicPdf,
   generateAndDownloadExcelXlsx,
   generateAndDownloadPowerPointPptx,
@@ -29,6 +34,7 @@ function decodeBase64JsonSafe<T>(b64: string): T | null {
 interface HeyukaMarkdownMessageProps {
   markdown: string;
   onOpenCodeInStudio?: (lang: string, code: string, filePath?: string) => void;
+  onOpenUrlInBrowser?: (url: string) => void;
 }
 
 const LANG_EXT_MAP: Record<string, string> = {
@@ -55,9 +61,12 @@ const LANG_EXT_MAP: Record<string, string> = {
   txt: "txt",
 };
 
-function renderInlineTokens(text: string): React.ReactNode {
+function renderInlineTokens(
+  text: string,
+  onOpenUrlInBrowser?: (url: string) => void
+): React.ReactNode {
   const tokens = text.split(
-    /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\(https?:\/\/[^)]+\)|\*[^*]+\*)/g
+    /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\(https?:\/\/[^)]+\)|https?:\/\/[^\s)<>]+|\*[^*]+\*)/g
   );
 
   return (
@@ -83,7 +92,7 @@ function renderInlineTokens(text: string): React.ReactNode {
             <code
               key={i}
               dir="ltr"
-              className="inline-block px-1.5 py-0.5 mx-0.5 rounded bg-white/10 font-mono text-[12px] text-rose-300"
+              className="inline-block px-1.5 py-0.5 mx-0.5 rounded bg-white/10 font-mono text-[12px] text-sky-300"
             >
               {tok.slice(1, -1)}
             </code>
@@ -91,15 +100,45 @@ function renderInlineTokens(text: string): React.ReactNode {
         }
         const linkMatch = tok.match(/^\[([^\]]+)\]\((https?:\/\/[^)]+)\)$/);
         if (linkMatch) {
+          const href = linkMatch[2];
           return (
             <a
               key={i}
-              href={linkMatch[2]}
+              href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-rose-400 underline underline-offset-2 hover:text-rose-300"
+              onClick={
+                onOpenUrlInBrowser
+                  ? (e) => {
+                      e.preventDefault();
+                      onOpenUrlInBrowser(href);
+                    }
+                  : undefined
+              }
+              className="text-sky-400 underline underline-offset-2 hover:text-sky-300"
             >
               {linkMatch[1]}
+            </a>
+          );
+        }
+        if (/^https?:\/\/[^\s)<>]+$/i.test(tok)) {
+          return (
+            <a
+              key={i}
+              href={tok}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={
+                onOpenUrlInBrowser
+                  ? (e) => {
+                      e.preventDefault();
+                      onOpenUrlInBrowser(tok);
+                    }
+                  : undefined
+              }
+              className="text-sky-400 underline underline-offset-2 hover:text-sky-300 break-all"
+            >
+              {tok}
             </a>
           );
         }
@@ -207,6 +246,7 @@ function DeepSeekStyleCodeCard({
 export function HeyukaMarkdownMessage({
   markdown,
   onOpenCodeInStudio,
+  onOpenUrlInBrowser,
 }: HeyukaMarkdownMessageProps) {
   const repairedMarkdown = repairTruncatedMarkdownAndCode(markdown).repaired;
   const parts = repairedMarkdown.split(
@@ -234,6 +274,17 @@ export function HeyukaMarkdownMessage({
             content: codeBody,
             counter: codeCounter++,
           });
+          if (isRenderableHtmlArtifact(langRaw, codeBody)) {
+            return (
+              <LiveHtmlPreviewCard
+                key={pIdx}
+                lang={langRaw}
+                filePath={inferredPath}
+                code={codeBody}
+                onOpenCodeInStudio={onOpenCodeInStudio}
+              />
+            );
+          }
           return (
             <DeepSeekStyleCodeCard
               key={pIdx}
@@ -285,7 +336,7 @@ export function HeyukaMarkdownMessage({
                     <tr className="bg-white/[0.05] border-b border-white/10">
                       {headers.map((h, hi) => (
                         <th key={hi} dir="auto" className="px-3 py-2 text-start font-bold text-white">
-                          {renderInlineTokens(h)}
+                          {renderInlineTokens(h, onOpenUrlInBrowser)}
                         </th>
                       ))}
                     </tr>
@@ -295,13 +346,14 @@ export function HeyukaMarkdownMessage({
                       <tr key={ri} className="border-b border-white/[0.05] last:border-0">
                         {headers.map((_, ci) => (
                           <td key={ci} dir="auto" className="px-3 py-2 text-zinc-200">
-                            {renderInlineTokens(r[ci] || "")}
+                            {renderInlineTokens(r[ci] || "", onOpenUrlInBrowser)}
                           </td>
                         ))}
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                <MarkdownTableExportBar headers={headers} rows={rows} />
               </div>
             );
             continue;
@@ -331,7 +383,7 @@ export function HeyukaMarkdownMessage({
                 : "text-[14.5px] font-bold text-white pt-1";
             nodes.push(
               <h3 key={`hd-${pIdx}-${i}`} dir="auto" className={sizeCls}>
-                {renderInlineTokens(headingText)}
+                {renderInlineTokens(headingText, onOpenUrlInBrowser)}
               </h3>
             );
             i += 1;
@@ -344,9 +396,9 @@ export function HeyukaMarkdownMessage({
               <blockquote
                 key={`bq-${pIdx}-${i}`}
                 dir="auto"
-                className="border-s-2 border-rose-500/60 ps-3 text-zinc-300 italic text-[13.5px]"
+                className="border-s-2 border-[#007ACC]/70 ps-3 text-zinc-300 italic text-[13.5px]"
               >
-                {renderInlineTokens(trimmed.slice(2))}
+                {renderInlineTokens(trimmed.slice(2), onOpenUrlInBrowser)}
               </blockquote>
             );
             i += 1;
@@ -364,7 +416,7 @@ export function HeyukaMarkdownMessage({
               <ul key={`ul-${pIdx}-${i}`} dir="auto" className="space-y-1.5 ps-5 list-disc text-zinc-200">
                 {items.map((it, li) => (
                   <li key={li} dir="auto">
-                    {renderInlineTokens(it)}
+                    {renderInlineTokens(it, onOpenUrlInBrowser)}
                   </li>
                 ))}
               </ul>
@@ -383,7 +435,7 @@ export function HeyukaMarkdownMessage({
               <ol key={`ol-${pIdx}-${i}`} dir="auto" className="space-y-1.5 ps-5 list-decimal text-zinc-200">
                 {items.map((it, li) => (
                   <li key={li} dir="auto">
-                    {renderInlineTokens(it)}
+                    {renderInlineTokens(it, onOpenUrlInBrowser)}
                   </li>
                 ))}
               </ol>
@@ -471,7 +523,7 @@ export function HeyukaMarkdownMessage({
           // Standard Paragraph with dir="auto"
           nodes.push(
             <p key={`p-${pIdx}-${i}`} dir="auto" className="text-zinc-100 leading-relaxed">
-              {renderInlineTokens(line)}
+              {renderInlineTokens(line, onOpenUrlInBrowser)}
             </p>
           );
           i += 1;

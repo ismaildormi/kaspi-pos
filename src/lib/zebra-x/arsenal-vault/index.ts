@@ -129,17 +129,81 @@ export const DISTRIBUTED_NODE_MESH_SPEC = {
 } as const;
 
 const PRIVATE_HOST_RE =
-  /^(localhost|127\.|10\.|192\.168\.|169\.254\.|0\.0\.0\.0|\[::1\]|172\.(1[6-9]|2\d|3[0-1])\.)/i;
+  /^(localhost|127\.|10\.|192\.168\.|169\.254\.|0\.0\.0\.0|\[?::1\]?|\[?fe80:|\[?fc00:|\[?fd00:|172\.(1[6-9]|2\d|3[0-1])\.)/i;
 
 export function isSafePublicHttpUrl(rawUrl: string): boolean {
   try {
     const parsed = new URL(rawUrl);
     if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
-    if (PRIVATE_HOST_RE.test(parsed.hostname)) return false;
-    if (parsed.hostname.endsWith(".local") || parsed.hostname.endsWith(".internal")) return false;
+    const host = parsed.hostname.toLowerCase();
+    if (!host || PRIVATE_HOST_RE.test(host)) return false;
+    if (/^\d+$/.test(host) || /^0x[0-9a-f]+$/i.test(host)) return false;
+    if (host.endsWith(".local") || host.endsWith(".internal") || host.endsWith(".localhost")) {
+      return false;
+    }
     return true;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Normalizes DuckDuckGo `/l/?uddg=...` redirect URLs into direct clickable URLs.
+ */
+function resolveDdgHref(rawHref: string): string {
+  try {
+    const full = rawHref.startsWith("//") ? `https:${rawHref}` : rawHref;
+    const u = new URL(full, "https://duckduckgo.com");
+    const uddg = u.searchParams.get("uddg");
+    if (uddg && /^https?:\/\//i.test(uddg)) return uddg;
+    if (/^https?:\/\//i.test(full)) return full;
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Fetches live HTML search hits from DuckDuckGo HTML endpoint (no API key) for real Google-like SERP results.
+ */
+async function fetchDuckDuckGoWebSerp(
+  query: string
+): Promise<Array<{ title: string; url: string; snippet: string }>> {
+  try {
+    const res = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; KaspiHeyukaStudio/3.0; +https://kaspi-pos.vercel.app)",
+        Accept: "text/html",
+      },
+      signal: AbortSignal.timeout(5500),
+    });
+    if (!res.ok) return [];
+    const html = await res.text();
+    const results: Array<{ title: string; url: string; snippet: string }> = [];
+    const anchorRe = /<a[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+    const snippetRe = /<a[^>]*class="[^"]*result__snippet[^"]*"[^>]*>([\s\S]*?)<\/a>|<div[^>]*class="[^"]*result__snippet[^"]*"[^>]*>([\s\S]*?)<\/div>/gi;
+    const snippets: string[] = [];
+    let sm: RegExpExecArray | null;
+    while ((sm = snippetRe.exec(html)) !== null && snippets.length < 10) {
+      snippets.push(stripHtmlClean(sm[1] || sm[2] || ""));
+    }
+    let am: RegExpExecArray | null;
+    let idx = 0;
+    while ((am = anchorRe.exec(html)) !== null && results.length < 8) {
+      const cleanUrl = resolveDdgHref(am[1]);
+      const title = stripHtmlClean(am[2]);
+      if (cleanUrl && title && isSafePublicHttpUrl(cleanUrl)) {
+        results.push({
+          title: title.slice(0, 160),
+          url: cleanUrl,
+          snippet: (snippets[idx] || "").slice(0, 280),
+        });
+      }
+      idx += 1;
+    }
+    return results;
+  } catch {
+    return [];
   }
 }
 
@@ -271,9 +335,10 @@ export async function runUnrestrictedWebResearch(params: {
     }
   }
 
-  // Reliable public fallback: DuckDuckGo Instant + Wikipedia summary
+  // Reliable public search cascade: DuckDuckGo Live SERP + Instant + Wikipedia
   try {
-    const [ddgRes, wikiRes] = await Promise.allSettled([
+    const [ddgSerpRes, ddgRes, wikiRes] = await Promise.allSettled([
+      fetchDuckDuckGoWebSerp(query),
       fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`, {
         signal: AbortSignal.timeout(4500),
       }).then((r) => r.json()),
@@ -286,8 +351,18 @@ export async function runUnrestrictedWebResearch(params: {
     ]);
 
     const items: Array<{ title: string; url: string; snippet: string }> = [];
+    const seenUrls = new Set<string>();
+    const pushUnique = (item: { title: string; url: string; snippet: string }) => {
+      if (!item.url || seenUrls.has(item.url)) return;
+      seenUrls.add(item.url);
+      items.push(item);
+    };
+
+    if (ddgSerpRes.status === "fulfilled" && Array.isArray(ddgSerpRes.value)) {
+      for (const hit of ddgSerpRes.value) pushUnique(hit);
+    }
     if (ddgRes.status === "fulfilled" && ddgRes.value?.AbstractText) {
-      items.push({
+      pushUnique({
         title: String(ddgRes.value.Heading || query),
         url: String(ddgRes.value.AbstractURL || "https://duckduckgo.com"),
         snippet: String(ddgRes.value.AbstractText).slice(0, 320),
@@ -295,7 +370,7 @@ export async function runUnrestrictedWebResearch(params: {
     }
     if (wikiRes.status === "fulfilled" && Array.isArray(wikiRes.value?.query?.search)) {
       for (const hit of wikiRes.value.query.search) {
-        items.push({
+        pushUnique({
           title: String(hit.title),
           url: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(String(hit.title).replace(/\s+/g, "_"))}`,
           snippet: stripHtmlClean(String(hit.snippet || "")),
@@ -306,7 +381,7 @@ export async function runUnrestrictedWebResearch(params: {
     return {
       ok: true,
       mode: "meta_search",
-      source: "duckduckgo+wikipedia",
+      source: items.length > 0 ? "web+duckduckgo+wikipedia" : "duckduckgo+wikipedia",
       results: items,
     };
   } catch (err: any) {
