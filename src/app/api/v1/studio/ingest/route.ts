@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  autoDiscoverPublicWebBatch,
   buildFoundationContinualPretrainingKit,
   crawlAndIngestPublicPages,
   ensureFullVaultDigested,
@@ -111,6 +112,14 @@ export async function POST(req: NextRequest) {
         errorLessonsCount: evoStats.errorLessonsCount,
         hits: query ? searchResult.hits : [],
       });
+    }
+
+    if (action === "auto_discover") {
+      const batchSize =
+        typeof body.batchSize === "number" && body.batchSize > 0 ? body.batchSize : undefined;
+      const lang = typeof body.lang === "string" ? body.lang : undefined;
+      const autoRes = await autoDiscoverPublicWebBatch({ batchSize, lang });
+      return NextResponse.json({ action, ...autoRes });
     }
 
     if (action === "crawl") {

@@ -2343,6 +2343,60 @@ export function HeyukaUnifiedStudioWorkspace({
                       type="button"
                       disabled={labBusy}
                       onClick={async () => {
+                        setLabBusy(true);
+                        setLabNotice(null);
+                        try {
+                          const res = await fetch("/api/v1/studio/ingest", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ action: "auto_discover", batchSize: 16, lang: locale }),
+                          });
+                          const d = await res.json();
+                          if (d?.ok) {
+                            setLabStats((prev) => ({
+                              totalDigested: Number(d.totalCorpusUnits || prev?.totalDigested || 0),
+                              webCrawledUnits: Number(prev?.webCrawledUnits || 0) + Number(d.discoveredCount || 0),
+                              errorLessonsCount: prev?.errorLessonsCount || 0,
+                            }));
+                            if (Array.isArray(d.ingestedUnits)) {
+                              setLabHits(
+                                d.ingestedUnits.slice(0, 8).map((u: any) => ({
+                                  title: String(u.title || ""),
+                                  url: String(u.url || ""),
+                                  sourceKind: "auto_discover",
+                                }))
+                              );
+                            }
+                            setLabNotice(
+                              isAr
+                                ? `اكتشاف تلقائي ناجح: تم جمع ${d.discoveredCount || 0} مصدر وموضوع جديد (cursor #${d.nextCursor ?? 1}).`
+                                : `Auto-discovered ${d.discoveredCount || 0} new public records & pages (cursor #${d.nextCursor ?? 1}).`
+                            );
+                          } else {
+                            setLabNotice(d?.error || "Auto-discovery batch failed.");
+                          }
+                        } catch {
+                          setLabNotice("Network error during auto-discover batch.");
+                        } finally {
+                          setLabBusy(false);
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-white font-semibold cursor-pointer"
+                      style={{ backgroundColor: appearance.accentHex }}
+                    >
+                      {labBusy
+                        ? isAr
+                          ? "جاري الاكتشاف والجمع..."
+                          : "Discovering..."
+                        : isAr
+                        ? "اكتشاف وجمع تلقائي للويب العام (Batch)"
+                        : "Auto-Discover Public Web Batch"}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={labBusy}
+                      onClick={async () => {
                         const urls = labCrawlUrls
                           .split(/\r?\n/)
                           .map((u) => u.trim())
@@ -2377,10 +2431,9 @@ export function HeyukaUnifiedStudioWorkspace({
                           setLabBusy(false);
                         }
                       }}
-                      className="px-3 py-1.5 rounded-lg text-white font-semibold cursor-pointer"
-                      style={{ backgroundColor: appearance.accentHex }}
+                      className={`px-3 py-1.5 rounded-lg border ${borderCls} cursor-pointer font-medium`}
                     >
-                      {labBusy ? (isAr ? "جاري الزحف..." : "Crawling...") : isAr ? "زحف ودراسة الروابط" : "Crawl & Study Public Web"}
+                      {labBusy ? (isAr ? "جاري الزحف..." : "Crawling...") : isAr ? "زحف روابط محددة" : "Crawl Listed URLs"}
                     </button>
 
                     <button

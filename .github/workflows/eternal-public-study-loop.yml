@@ -1,6 +1,6 @@
-# HEYUKA Eternal 24/7 Cloud Public-Web Study & Curation Loop ($0.00 Free Tier)
-# Runs every 6 hours on GitHub Actions even when the user's PC & phone are powered off.
-# Strictly crawls public open knowledge feeds (OpenAlex / Wikimedia / public docs) with SSRF & PII guards.
+# HEYUKA Cloud Resumable Public-Web Study & Curation Loop ($0.00 Free Tier)
+# Runs every 6 hours on GitHub Actions using actions/cache to persist the SQLite URL frontier
+# and checkpoint cursor across scheduled runs, strictly respecting robots.txt, SSRF guards & PII scrubbing.
 name: HEYUKA Eternal Public Study Loop (24/7)
 
 on:
@@ -23,24 +23,41 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Run public open-knowledge crawler (robots.txt + SSRF safe)
+      - name: Restore persistent URL frontier & checkpoint cursor
+        uses: actions/cache@v4
+        with:
+          path: ~/.heyuka-frontier
+          key: heyuka-frontier-${{ github.run_id }}
+          restore-keys: |
+            heyuka-frontier-
+
+      - name: Run autonomous public-web batch discoverer (robots.txt + SSRF + rate-limit polite)
         run: |
-          python3 training/crawler/web_scale_crawler.py --public-feeds --out /tmp/heyuka_public_raw.jsonl
+          mkdir -p ~/.heyuka-frontier
+          python3 training/crawler/autonomous_web_discoverer.py \
+            --batch-size 120 \
+            --db-file ~/.heyuka-frontier/frontier_queue.sqlite \
+            --state-file ~/.heyuka-frontier/eternal_frontier_state.json \
+            --out /tmp/heyuka_public_raw.jsonl
 
       - name: Deduplicate & scrub PII from public corpus
         run: |
-          python3 training/ingestion/massive_curator.py --in /tmp/heyuka_public_raw.jsonl --out-cpt /tmp/heyuka_public_cpt.jsonl --out-sft /tmp/heyuka_public_sft.jsonl
+          python3 training/ingestion/massive_curator.py \
+            --in /tmp/heyuka_public_raw.jsonl \
+            --out-cpt /tmp/heyuka_public_cpt.jsonl \
+            --out-sft /tmp/heyuka_public_sft.jsonl
 
-      - name: Archive curated public dataset shard
+      - name: Archive curated public dataset shard & frontier checkpoint
         uses: actions/upload-artifact@v4
         with:
           name: heyuka-public-study-corpus
           path: |
             /tmp/heyuka_public_cpt.jsonl
             /tmp/heyuka_public_sft.jsonl
+            ~/.heyuka-frontier/eternal_frontier_state.json
           retention-days: 14
 
-      - name: Digest Sovereign Vault on Live Production (if configured)
+      - name: Trigger vault digest check on live deployment (if configured)
         env:
           KASPI_PRODUCTION_URL: ${{ secrets.KASPI_PRODUCTION_URL }}
         run: |

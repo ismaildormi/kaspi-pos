@@ -23,11 +23,22 @@ PII_PATTERNS: List[Tuple[re.Pattern[str], str]] = [
 ]
 
 
+URL_SPAN_RE = re.compile(r"https?://[^\s<>\"')]+")
+
+
 def scrub_pii(text: str) -> str:
-    cleaned = text
-    for pat, repl in PII_PATTERNS:
-        cleaned = pat.sub(repl, cleaned)
-    return cleaned
+    # Preserve public HTTP/DOI URLs intact while scrubbing standalone emails, tokens & phone numbers in prose
+    parts = URL_SPAN_RE.split(text)
+    urls = URL_SPAN_RE.findall(text)
+    out: List[str] = []
+    for idx, seg in enumerate(parts):
+        cleaned = seg
+        for pat, repl in PII_PATTERNS:
+            cleaned = pat.sub(repl, cleaned)
+        out.append(cleaned)
+        if idx < len(urls):
+            out.append(urls[idx])
+    return "".join(out)
 
 
 def detect_slice_language(text: str) -> str:
