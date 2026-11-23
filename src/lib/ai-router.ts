@@ -718,14 +718,16 @@ export async function streamUiResponseWithRouter(
             }
 
             const isContentChunk =
-              (c.type === "text-delta" && Boolean(c.delta || c.textDelta)) ||
-              c.type === "tool-output-available";
+              c.type === "text-delta" && Boolean(String(c.delta ?? c.textDelta ?? "").trim());
 
             if (!emittedToClient) {
               if (isContentChunk) {
                 emittedToClient = true;
+                for (const h of bufferedHeaderChunks) {
+                  if (streamStartedOnWriter && (h as any)?.type === "start") continue;
+                  writer.write(h);
+                }
                 streamStartedOnWriter = true;
-                for (const h of bufferedHeaderChunks) writer.write(h);
                 bufferedHeaderChunks.length = 0;
                 writer.write(chunk);
               } else {
@@ -739,13 +741,24 @@ export async function streamUiResponseWithRouter(
           // Emit any captured artifact markers (e.g. [KASPI_PDF_REPORT:...]) if model executed tool without printing marker
           const missingMarkers = capturedToolMarkers.filter((mk) => !collectedText.includes(mk));
           if (missingMarkers.length > 0) {
-            const markerBlock = `\n\n${missingMarkers.join("\n\n")}\n`;
+            const hasProse = Boolean(
+              collectedText.replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/<think>[\s\S]*$/gi, "").trim()
+            );
+            const isArabicPrompt = /[\u0600-\u06FF]/.test(originalUserPrompt);
+            const lead = hasProse
+              ? "\n\n"
+              : isArabicPrompt
+              ? "تم تجهيز المستند بنجاح وهو جاهز للتحميل الفوري أدناه:\n\n"
+              : "Document generated cleanly and ready for instant download below:\n\n";
+            const markerBlock = `${lead}${missingMarkers.join("\n\n")}\n`;
             const mkId = openTextPartId || `mk-${Date.now()}`;
-            if (!streamStartedOnWriter) {
-              for (const h of bufferedHeaderChunks) writer.write(h);
+            if (!emittedToClient) {
+              if (!streamStartedOnWriter) {
+                writer.write({ type: "start" } as any);
+                streamStartedOnWriter = true;
+              }
+              writer.write({ type: "start-step" } as any);
               bufferedHeaderChunks.length = 0;
-              if (bufferedHeaderChunks.length === 0) writer.write({ type: "start-step" } as any);
-              streamStartedOnWriter = true;
             }
             if (!openTextPartId) writer.write({ type: "text-start", id: mkId } as any);
             writer.write({ type: "text-delta", id: mkId, delta: markerBlock } as any);
@@ -851,9 +864,34 @@ export async function streamUiResponseWithRouter(
             .replace(/<think>[\s\S]*?<\/think>/gi, "")
             .replace(/<think>[\s\S]*$/gi, "")
             .trim();
-          if (emittedToClient && visibleClean.length > 24) {
-            for (const fin of heldFinishChunks) {
-              writer.write(fin);
+          const missingOnErr = capturedToolMarkers.filter((mk) => !collectedText.includes(mk));
+          if ((emittedToClient && visibleClean.length > 24) || missingOnErr.length > 0) {
+            if (missingOnErr.length > 0) {
+              const isArabicPrompt = /[\u0600-\u06FF]/.test(originalUserPrompt);
+              const prefix = visibleClean
+                ? "\n\n"
+                : isArabicPrompt
+                ? "تم تجهيز المستند بنجاح وهو جاهز للتحميل الفوري أدناه:\n\n"
+                : "Document generated cleanly and ready for instant download below:\n\n";
+              const block = `${prefix}${missingOnErr.join("\n\n")}\n`;
+              const mkId = openTextPartId || `mk-${Date.now()}`;
+              if (!streamStartedOnWriter) {
+                writer.write({ type: "start" } as any);
+                streamStartedOnWriter = true;
+              }
+              writer.write({ type: "start-step" } as any);
+              writer.write({ type: "text-start", id: mkId } as any);
+              writer.write({ type: "text-delta", id: mkId, delta: block } as any);
+              writer.write({ type: "text-end", id: mkId } as any);
+              collectedText += block;
+            }
+            if (heldFinishChunks.length > 0) {
+              for (const fin of heldFinishChunks) {
+                writer.write(fin);
+              }
+            } else {
+              writer.write({ type: "finish-step" } as any);
+              writer.write({ type: "finish" } as any);
             }
             succeeded = true;
             if (onCompletedText) {
