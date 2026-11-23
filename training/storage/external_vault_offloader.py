@@ -15,10 +15,22 @@ import argparse
 import hashlib
 import json
 import os
+import sys
 import time
 import urllib.error
 import urllib.request
 from typing import Dict, List
+
+STORAGE_DIR = os.path.dirname(os.path.abspath(__file__))
+if STORAGE_DIR not in sys.path:
+    sys.path.insert(0, STORAGE_DIR)
+
+from hf_token_pool import (  # noqa: E402
+    HfTokenPool,
+    ensure_dataset_repo_http,
+    resolve_hf_dataset_repo,
+    upload_file_to_hf_dataset_http,
+)
 
 
 def sha256_file(fp: str) -> str:
@@ -29,21 +41,10 @@ def sha256_file(fp: str) -> str:
     return h.hexdigest()
 
 
-def upload_to_huggingface(file_path: str, hf_token: str, repo_id: str) -> Dict[str, object]:
-    try:
-        from huggingface_hub import HfApi  # type: ignore
-
-        api = HfApi(token=hf_token)
-        fname = os.path.basename(file_path)
-        url = api.upload_file(
-            path_or_fileobj=file_path,
-            path_in_repo=f"crystals/{fname}",
-            repo_id=repo_id,
-            repo_type="dataset",
-        )
-        return {"provider": "huggingface_hub", "status": "uploaded", "url": str(url)}
-    except Exception as exc:
-        return {"provider": "huggingface_hub", "status": "error", "detail": str(exc)[:200]}
+def upload_to_huggingface(file_path: str, pool: HfTokenPool, repo_id: str, path_in_repo: str | None = None) -> Dict[str, object]:
+    ensure_dataset_repo_http(repo_id, pool)
+    target = path_in_repo or f"crystals/{os.path.basename(file_path)}"
+    return upload_file_to_hf_dataset_http(file_path, target, repo_id, pool)
 
 
 def upload_to_zenodo(file_path: str, zenodo_token: str) -> Dict[str, object]:
@@ -110,10 +111,11 @@ def offload_artifact(file_path: str, manifest_path: str, purge_local: bool = Fal
     size_bytes = os.path.getsize(file_path)
     uploads: List[Dict[str, object]] = []
 
-    hf_token = os.environ.get("HF_TOKEN", "").strip()
-    hf_repo = os.environ.get("HF_DATASET_REPO", "heyuka-public/heyuka-corpus").strip()
-    if hf_token:
-        uploads.append(upload_to_huggingface(file_path, hf_token, hf_repo))
+    dotenv_local = os.path.abspath(os.path.join(STORAGE_DIR, "..", "..", ".env.local"))
+    hf_pool = HfTokenPool.from_env(dotenv_fallback=dotenv_local)
+    hf_repo = resolve_hf_dataset_repo()
+    if hf_pool.count() > 0:
+        uploads.append(upload_to_huggingface(file_path, hf_pool, hf_repo))
     else:
         uploads.append({"provider": "huggingface_hub", "status": "skipped_no_token", "env_needed": "HF_TOKEN"})
 
@@ -164,6 +166,9 @@ def offload_artifact(file_path: str, manifest_path: str, purge_local: bool = Fal
     with open(manifest_path, "w", encoding="utf-8") as mf:
         json.dump(manifest, mf, ensure_ascii=False, indent=2)
 
+    if hf_pool.count() > 0 and any_remote_ok:
+        upload_to_huggingface(manifest_path, hf_pool, hf_repo, path_in_repo=f"manifests/{os.path.basename(manifest_path)}")
+
     return {
         "ok": True,
         "filename": os.path.basename(file_path),
@@ -171,6 +176,8 @@ def offload_artifact(file_path: str, manifest_path: str, purge_local: bool = Fal
         "sha256": digest,
         "any_remote_uploaded": any_remote_ok,
         "local_purged": purged,
+        "hf_pool_tokens": hf_pool.count(),
+        "hf_dataset_repo": hf_repo,
         "uploads": uploads,
         "manifest_path": manifest_path,
     }

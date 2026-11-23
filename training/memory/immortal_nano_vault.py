@@ -14,7 +14,20 @@ import json
 import lzma
 import os
 import re
+import sys
 from typing import Dict, List, Tuple
+
+MEMORY_DIR = os.path.dirname(os.path.abspath(__file__))
+STORAGE_DIR = os.path.abspath(os.path.join(MEMORY_DIR, "..", "storage"))
+if STORAGE_DIR not in sys.path:
+    sys.path.insert(0, STORAGE_DIR)
+
+from hf_token_pool import (  # noqa: E402
+    HfTokenPool,
+    ensure_dataset_repo_http,
+    resolve_hf_dataset_repo,
+    upload_file_to_hf_dataset_http,
+)
 
 
 MAGIC_HEADER = b"HEYUKA_CRYSTAL_V1\n"
@@ -164,6 +177,7 @@ def main() -> int:
     parser.add_argument("--in", dest="inputs", nargs="+", required=False, default=[], help="Curated JSONL files to pack")
     parser.add_argument("--out", default="/tmp/heyuka_memory.crystal", help="Output Nano-Crystal file path")
     parser.add_argument("--purge-raw", action="store_true", help="Remove raw input JSONL after verified compression")
+    parser.add_argument("--sync-hf", action="store_true", help="Upload packed Nano-Crystal directly via HF Multi-Token Pool")
     parser.add_argument("--verify", help="Verify an existing Nano-Crystal file cleanly")
     args = parser.parse_args()
 
@@ -173,6 +187,18 @@ def main() -> int:
         return 0 if res.get("ok") else 1
 
     res = pack_nano_crystal(args.inputs, args.out, purge_raw=args.purge_raw)
+    if args.sync_hf and res.get("ok"):
+        pool = HfTokenPool.from_env(dotenv_fallback=os.path.abspath(os.path.join(MEMORY_DIR, "..", "..", ".env.local")))
+        repo_id = resolve_hf_dataset_repo()
+        res["hf_pool_tokens_active"] = pool.count()
+        if pool.count() > 0:
+            ensure_dataset_repo_http(repo_id, pool)
+            res["hf_sync"] = upload_file_to_hf_dataset_http(
+                args.out,
+                f"crystals/{os.path.basename(args.out)}",
+                repo_id,
+                pool,
+            )
     print(json.dumps(res, ensure_ascii=False))
     return 0
 

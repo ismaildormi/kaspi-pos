@@ -43,6 +43,7 @@ import {
   listForgedTools,
 } from "@/lib/zebra-x/evolution/secret5_tool_forge";
 import { recallAssociativeContext } from "@/lib/zebra-x/cognition/secret7_dual_brain_orchestrator";
+import { getHfTokenPoolSummary } from "@/lib/heyuka/compute/hf-token-pool";
 import {
   fetchHyperLocalLiveSnapshot,
   resolveDarijaCommercialTerms,
@@ -284,8 +285,9 @@ export function buildActiveVaultWorkingMemory(params: {
           .join(" | ")}`
       : "";
 
+  const hfPool = getHfTokenPoolSummary();
   const activeMemoryPromptBlock = [
-    `[ANTIGRAVITY CORTEX v2.5 | ${domainMode.toUpperCase()} | ${cognitiveRoute.primaryCluster.titleEn} | ${v60Totals.grandTotalSources}+ Vault + ${studiedSearch.totalCorpusUnits} Units (${studiedSearch.webCrawledUnits} Web)]`,
+    `[ANTIGRAVITY CORTEX v2.5 | ${domainMode.toUpperCase()} | ${cognitiveRoute.primaryCluster.titleEn} | ${v60Totals.grandTotalSources}+ Vault + ${studiedSearch.totalCorpusUnits} Units (${studiedSearch.webCrawledUnits} Web)${hfPool.configuredCount > 0 ? ` | HF-Pool=${hfPool.configuredCount} -> ${hfPool.datasetRepo}` : ""}]`,
     personaDirective,
     errorPreventionBlock,
     episodicBlock,

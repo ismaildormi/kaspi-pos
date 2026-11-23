@@ -17,6 +17,7 @@ import {
 
 import { runLocalOnDeviceHeyukaBrain } from "@/lib/heyuka/local-sovereign-brain";
 import { detectTruncationState, mergeContinuationChunk } from "@/lib/heyuka/autonomous-builder-v24-v28";
+import { getHfTokenPoolTokens } from "@/lib/heyuka/compute/hf-token-pool";
 
 const modelCooldownUntil = new Map<string, number>();
 
@@ -373,25 +374,33 @@ export async function getRouterCandidates(
     });
   }
 
-  // Priority 8: Hugging Face Inference
-  const hfKeys = parseKeyPool(
-    process.env.HUGGINGFACE_API_KEYS || process.env.HUGGINGFACE_API_KEY
-  ).filter((k) => !k.includes("mock"));
-  hfKeys.forEach((key, idx) => {
-    const hfProvider = createOpenAI({
-      apiKey: key,
-      baseURL: "https://api-inference.huggingface.co/v1",
-    });
-    candidates.push({
-      provider: "huggingface",
-      providerName: "HEYUKA Open Mesh",
-      keyIndex: idx,
-      keyMasked: `...${key.slice(-6)}`,
-      apiKey: key,
-      modelId: "Qwen/Qwen2.5-72B-Instruct",
-      model: hfProvider("Qwen/Qwen2.5-72B-Instruct") as unknown as LanguageModel,
-      supportsVision: false,
-    });
+  // Priority 8: Hugging Face Multi-Token Inference Pool (rotates HF_TOKEN..HF_TOKEN_4 across 3 model roles)
+  const hfPoolEntries = getHfTokenPoolTokens();
+  const hfModels = [
+    "Qwen/Qwen2.5-72B-Instruct",
+    "Qwen/Qwen2.5-Coder-32B-Instruct",
+    "meta-llama/Llama-3.3-70B-Instruct",
+  ];
+  hfModels.forEach((hfModelId, modelIdx) => {
+    if (hfPoolEntries.length === 0) return;
+    // Rotate starting token per model so the 3 models automatically spread load across keys
+    for (let offset = 0; offset < hfPoolEntries.length; offset++) {
+      const keyEntry = hfPoolEntries[(modelIdx + offset) % hfPoolEntries.length];
+      const hfProvider = createOpenAI({
+        apiKey: keyEntry.token,
+        baseURL: "https://router.huggingface.co/v1",
+      });
+      candidates.push({
+        provider: "huggingface",
+        providerName: `HEYUKA Open Mesh (${keyEntry.envName})`,
+        keyIndex: keyEntry.index,
+        keyMasked: keyEntry.masked,
+        apiKey: keyEntry.token,
+        modelId: hfModelId,
+        model: hfProvider(hfModelId) as unknown as LanguageModel,
+        supportsVision: false,
+      });
+    }
   });
 
   // Priority 9: Self-Hosted Local Engine

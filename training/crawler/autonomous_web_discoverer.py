@@ -40,8 +40,12 @@ from web_scale_crawler import (  # noqa: E402
 )
 
 MEMORY_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "memory"))
-if MEMORY_DIR not in sys.path:
-    sys.path.insert(0, MEMORY_DIR)
+STORAGE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "storage"))
+for extra_dir in (MEMORY_DIR, STORAGE_DIR):
+    if extra_dir not in sys.path:
+        sys.path.insert(0, extra_dir)
+
+from hf_token_pool import HfTokenPool, resolve_hf_dataset_repo  # noqa: E402
 
 from immortal_nano_vault import distill_key_sentences  # noqa: E402
 
@@ -419,8 +423,48 @@ def run_autonomous_batch(
         crawled_docs, outlink_queued = drain_frontier_batch(conn, max_pages=remaining_for_crawl)
 
         streamed_docs: List[Dict[str, object]] = []
+        hf_pool = HfTokenPool.from_env(
+            dotenv_fallback=os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", ".env.local"))
+        )
+        if hf_pool.count() > 0:
+            # Polite read-lane Hugging Face Datasets Server fetch with rotated token (FineWeb-Edu open sample)
+            read_candidates = hf_pool.ordered_candidates("read")
+            if read_candidates:
+                tok_entry = read_candidates[0]
+                offset = (int(state.get("run_count", 1)) * 3) % 900
+                ds_url = (
+                    "https://datasets-server.huggingface.co/rows"
+                    f"?dataset=HuggingFaceFW%2Ffineweb-edu&config=sample-10BT&split=train&offset={offset}&length=3"
+                )
+                try:
+                    ds_req = urllib.request.Request(
+                        ds_url,
+                        headers={
+                            "User-Agent": DEFAULT_UA,
+                            "Authorization": f"Bearer {tok_entry['token']}",
+                        },
+                    )
+                    with urllib.request.urlopen(ds_req, timeout=8) as ds_resp:
+                        ds_json = json.loads(ds_resp.read().decode("utf-8"))
+                    hf_pool.mark_used(tok_entry)
+                    for r_idx, row_wrap in enumerate(ds_json.get("rows", [])):
+                        row = row_wrap.get("row", {}) if isinstance(row_wrap, dict) else {}
+                        txt = str(row.get("text") or "").strip()
+                        if len(txt) >= 120:
+                            streamed_docs.append(
+                                {
+                                    "url": str(row.get("url") or f"https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu#row={offset + r_idx}"),
+                                    "title": f"FineWeb-Edu Open Sample #{offset + r_idx}",
+                                    "text": txt[:6000],
+                                    "source_kind": "hf_fineweb_edu",
+                                }
+                            )
+                except urllib.error.HTTPError as he:
+                    hf_pool.mark_error(tok_entry, he.code)
+                except Exception:
+                    pass
         if stream_datasets:
-            streamed_docs = stream_open_pretrain_datasets(max_samples=min(200, safe_batch))
+            streamed_docs.extend(stream_open_pretrain_datasets(max_samples=min(200, safe_batch)))
 
         all_records_raw = [*firehose_records, *crawled_docs, *streamed_docs][:safe_batch]
         all_records = [verify_record_double_read(r) for r in all_records_raw]
@@ -455,6 +499,8 @@ def run_autonomous_batch(
         "frontier_pending": pending_count,
         "frontier_done": done_count,
         "sources_breakdown": breakdown,
+        "hf_pool_tokens_active": hf_pool.count(),
+        "hf_dataset_repo": resolve_hf_dataset_repo(),
         "out": out_path,
         "state_file": state_file,
     }

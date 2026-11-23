@@ -9,17 +9,18 @@ import fs from "node:fs";
 import path from "node:path";
 
 const ROOT = process.cwd();
-const SCAN_DIRS = ["src", "electron", "scripts"];
-const EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".sql"]);
+const SCAN_DIRS = ["src", "training", "electron", "scripts"];
+const EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".sql", ".py"]);
 
 const SECRET_PATTERNS = [
   { name: "Google/Gemini API Key", regex: /AIza[0-9A-Za-z_-]{35}/g },
+  { name: "Hugging Face Access Token", regex: /\bhf_[0-9A-Za-z]{20,}/g },
   { name: "Stripe Live Secret Key", regex: /sk_live_[0-9A-Za-z]{20,}/g },
   { name: "GitHub Personal Access Token", regex: /ghp_[0-9A-Za-z]{30,}/g },
   { name: "Hardcoded Postgres Connection URI", regex: /postgres(?:ql)?:\/\/[a-zA-Z0-9_.-]+:[^$\s'"@]{6,}@/g },
   {
     name: "Forbidden NEXT_PUBLIC_ Secret Exposure",
-    regex: /NEXT_PUBLIC_(?:GEMINI_API_KEY|GROQ_API_KEY|WHATSAPP_API_TOKEN|DATABASE_URL|FORENSIC_AUDIT_SECRET|STRIPE_SECRET_KEY)/g,
+    regex: /NEXT_PUBLIC_(?:GEMINI_API_KEY|GROQ_API_KEY|HF_TOKEN|HUGGINGFACE_API_KEY|WHATSAPP_API_TOKEN|DATABASE_URL|FORENSIC_AUDIT_SECRET|STRIPE_SECRET_KEY)/g,
   },
 ];
 

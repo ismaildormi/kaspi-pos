@@ -8,6 +8,7 @@ import {
   searchStudiedKnowledgeCorpus,
 } from "@/lib/heyuka/training/knowledge-corpus-engine";
 import { exportEvolutionChatMlDataset } from "@/lib/heyuka/learning/self-evolution-engine";
+import { getHfTokenPoolSummary } from "@/lib/heyuka/compute/hf-token-pool";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,6 +72,7 @@ export async function GET(req: NextRequest) {
       totalCorpusUnits: searchResult.totalCorpusUnits,
       webCrawledUnits: searchResult.webCrawledUnits,
       errorLessonsCount: evoStats.errorLessonsCount,
+      hfPool: getHfTokenPoolSummary(),
       hits: query ? searchResult.hits : [],
     });
   } catch (error) {
