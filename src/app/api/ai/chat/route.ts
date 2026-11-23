@@ -15,6 +15,10 @@ import {
   isLocalApiOrSdkRequest,
   runLocalOnDeviceHeyukaBrain,
 } from "@/lib/heyuka/local-sovereign-brain";
+import {
+  auditAndRecordCompletedOutput,
+  buildActiveVaultWorkingMemory,
+} from "@/lib/heyuka/unified-antigravity-cortex";
 import { prisma } from "@/server/db/prisma";
 import { getRequestContext } from "@/server/auth/context";
 import { auth } from "@/auth";
@@ -1455,25 +1459,32 @@ ${phase3Refinement.systemDirectiveSnippet}`;
 
     const languageDirective = `\n${buildStructuredDiscourseDirective(detectedWorldLang)}\nMANDATORY RESPONSE LANGUAGE: Respond fluently in the user's exact detected language (${detectedWorldLang.name} / ${detectedWorldLang.nativeName}), defaulting to ${targetLanguageName} when neutral. Never reply in raw English meta-text to an Arabic/Darija prompt.`;
 
+    const cortexMemory = buildActiveVaultWorkingMemory({
+      prompt: userPrompt,
+      locale: expectedShortLocale,
+      brand: "kaspi_pos",
+      isStudio: false,
+    });
+
     const superAdminSystemPrompt = `You are HEYUKA Sovereign Executive, owned by KASPI. You have full access to the platform database and store operations.
 Available Super Admin & Store Tools:
 - Platform: getPlatformStats, getPlatformRevenue, getAllTenantsList, getTenantDetails, getAIUsageStats
 - Store & Actions: getTodaySales, getLowStockProducts, getTopSellingProducts, predictStockDemand, getLastCustomer, getLastReceiptTicket, getUserActivityLog, generatePdfReport, preparePosActionConfirmation, generateProductImage, searchWebImages, runKaspiStudioSwarmCouncil, inspectSovereignVaultAndCapabilities
-- Universal Web, Code Sandbox, Cyber, Math, Office & Vision Tools: unrestrictedWebSearch, executeCodeSandbox, queryPublicApi (34 live open APIs incl. CISA/OSV cyber intel & Nador marine), evaluateMathAndFinance, createRichArtifactOrExport, checkPhoneCalendarOrCron
-${closedLoopMasterDirective}${progressiveSkillsSnippet}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
+- Universal Web, Code Sandbox, Cyber, Math, Office & Vision Tools: unrestrictedWebSearch, executeCodeSandbox, queryPublicApi (47 live open APIs incl. CISA/OSV cyber intel & Nador marine), evaluateMathAndFinance, createRichArtifactOrExport, checkPhoneCalendarOrCron
+${closedLoopMasterDirective}\n${cortexMemory.activeMemoryPromptBlock}${progressiveSkillsSnippet}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
 
     const merchantSystemPrompt = `You are HEYUKA by KASPI, the versatile, unrestricted intelligence companion & business advisor inside KASPI POS.
 Available Store & Universal Arsenal Tools:
 - Metrics & Awareness (Read-Only): getTodaySales, getLowStockProducts, getTopSellingProducts, predictStockDemand, getLastCustomer, getLastReceiptTicket, getUserActivityLog
 - Real Exports & Explicit Action Cards: generatePdfReport, preparePosActionConfirmation
-- Universal Web, Code Sandbox, Cyber, Science, Office & Vision Tools: unrestrictedWebSearch, executeCodeSandbox, queryPublicApi (34 No-Key APIs incl. Cyber Defense & Smart City), evaluateMathAndFinance, createRichArtifactOrExport, checkPhoneCalendarOrCron
+- Universal Web, Code Sandbox, Cyber, Science, Office & Vision Tools: unrestrictedWebSearch, executeCodeSandbox, queryPublicApi (47 No-Key APIs incl. Cyber Defense & Smart City), evaluateMathAndFinance, createRichArtifactOrExport, checkPhoneCalendarOrCron
 - Skills, Self-Discovery, Studio Swarm & Cowork: lookupSkillOrAuthor, discoverOpenSourceTool, runCoworkSubAgents, runKaspiStudioSwarmCouncil, inspectSovereignVaultAndCapabilities
 - Media & Images: generateProductImage, searchWebImages
 
 DOMAIN & HARDWARE EXPERTISE:
 - Thermal Printers (80mm/58mm ESC/POS USB/Bluetooth/Network), EAN-13 HID scanners, Electronic Scales (PLU/KG), CSV/Excel import, Moroccan TVA/DGI/ICE retail workflows.
 - Prices and revenues MUST be stated clearly in MAD (درهم).
-${closedLoopMasterDirective}${progressiveSkillsSnippet}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
+${closedLoopMasterDirective}\n${cortexMemory.activeMemoryPromptBlock}${progressiveSkillsSnippet}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
 
     // 7. Multi-Gateway Key Rotation & True Stream-Level Failover Execution
     try {
@@ -1487,18 +1498,20 @@ ${closedLoopMasterDirective}${progressiveSkillsSnippet}${memoryPromptSnippet}${a
           messages: sanitizedMessages,
           tools: activeTools,
           stopWhen: stepCountIs(12),
-          onCompletedText: async (text: string) => {
+          onCompletedText: async (text: string, cand) => {
             if (!text) return;
-            const audited = runPreReplyReflectionGate({
+            const audited = auditAndRecordCompletedOutput({
+              prompt: userPrompt,
               draftText: String(text),
               expectedLocale: expectedShortLocale,
+              domainMode: cortexMemory.domainMode,
+              primaryClusterId: cortexMemory.primaryClusterId,
+              sourcesUsed: cortexMemory.recommendedSourcesForTrace,
+              artifactCount: 1,
+              modelUsed: cand?.modelId || "heyuka-unified",
             });
-            const selfCheck = scoreSelfCheckConsistency({
-              draftText: audited.cleanedText,
-              expectedLocale: expectedShortLocale,
-            });
-            if (!selfCheck.consistent) {
-              console.warn("[HEYUKA SelfCheckGPT]", selfCheck);
+            if (audited.warnings.length > 0) {
+              console.warn("[HEYUKA Cortex SelfCheck]", audited.warnings, "score=", audited.qualityScore);
             }
             if (dbSessionPersisted) {
               await prisma.aIChatMessage

@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { stepCountIs } from "ai";
+import {
+  buildActiveVaultWorkingMemory,
+  createStudioAgentToolkit,
+} from "@/lib/heyuka/unified-antigravity-cortex";
 import {
   getTotalIntegratedCapabilitiesCount,
   resolveStrictCategoryDisambiguation,
@@ -711,11 +716,29 @@ Synthesize deeply across Architect + Builder + Reviewer passes and deliver ONE c
 2. Verify financial/tax arithmetic step-by-step and preserve clear Markdown/code formatting.
 3. Maintain baseline system integrity cleanly while never falsely refusing legitimate user tasks.`;
 
-  const systemInstruction = `You are ${brand === "kaspi_pos" ? "KASPI POS AI Architect" : "HEYUKA AI Engineer"} running inside the unified Antigravity Studio IDE (${model}). You have full equal access to ${matchedCatalogCount}+ vaulted engines, ${PUBLIC_APIS_CATALOG_COUNT} live no-key APIs, workspace file editing, live web search, and code sandbox execution.
+  const cortexMemory = buildActiveVaultWorkingMemory({
+    prompt: lastUser,
+    locale: worldLang.shortLocale,
+    brand,
+    workspaceFiles,
+    isStudio: true,
+  });
+
+  const executedAgentLogs: string[] = [];
+  const studioAgentToolkit = !imageBase64
+    ? createStudioAgentToolkit({
+        workspaceFiles,
+        locale: worldLang.shortLocale,
+        executedLogs: executedAgentLogs,
+      })
+    : undefined;
+
+  const systemInstruction = `You are ${brand === "kaspi_pos" ? "KASPI POS AI Architect" : "HEYUKA AI Engineer"} running inside the unified Antigravity Studio IDE (${model}). You have full equal access to ${matchedCatalogCount}+ vaulted engines, ${PUBLIC_APIS_CATALOG_COUNT} live no-key APIs, workspace file inspection & incremental editing, live web search, and code sandbox execution.
 Matched Capabilities: ${routePlan.selectedToolNames.join(", ")}${
     skillIndexPrompt ? `\n${skillIndexPrompt.slice(0, 650)}` : ""
   }
 Execution Policy: ${executionPolicy.toUpperCase()} | Language: ${detectedLang}
+${cortexMemory.activeMemoryPromptBlock}
 ${organizedAgentPlaybook}
 ${discourseDirective}
 ${personaSection}${collabSection}${modeDirective}${customRulesBlock ? `\n\n[USER CUSTOMIZATIONS]\n${customRulesBlock}` : ""}${
@@ -753,6 +776,8 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     const gen = await generateTextWithRouter({
       system: systemInstruction,
       messages: formattedMessages as any,
+      tools: studioAgentToolkit,
+      stopWhen: studioAgentToolkit ? stepCountIs(8) : undefined,
       temperature: executionPolicy === "turbo" ? 0.45 : effectiveDeepThink ? 0.35 : 0.65,
       governance: {
         tenantId,
@@ -760,6 +785,15 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
       },
     });
     rawText = String(gen.text || "").trim();
+    if (executedAgentLogs.length > 0) {
+      thinkingSteps.push({
+        phase: "Autonomous Agent Tool Verification (Sandbox / Web / Vault)",
+        agentModel: (gen as any).activeModel || resolvedModel,
+        summary: executedAgentLogs.slice(0, 5).join(" | "),
+        durationMs: Math.max(1, Date.now() - phase3Start),
+        timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+      });
+    }
 
     let currentFinishReason = (gen as any).finishReason;
     // v24.0 Infinite Auto-Continuation Loop: silently resumes MAX_TOKENS (`length`) & mid-code cuts (up to 4 hops)
@@ -1066,6 +1100,7 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     thoughtCompletedAt: new Date().toLocaleTimeString("en-GB", { hour12: false }),
     sources: sources.length > 0 ? sources : undefined,
     studioFiles: studioFiles.length > 0 ? studioFiles : undefined,
+    verifiedTerminalLogs: executedAgentLogs.length > 0 ? executedAgentLogs : undefined,
     clientMediaJob,
     openStudio: shouldOpenStudio,
     zeroCostGuarantee: "$0.00 Server Compute — Client Device & Free Edge",

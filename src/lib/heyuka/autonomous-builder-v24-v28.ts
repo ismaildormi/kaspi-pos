@@ -482,6 +482,25 @@ export function extractStudioFilesSafe(markdown: string): BuilderStudioFile[] {
 }
 
 /**
+ * Incrementally merges newly generated or updated files into an existing Studio workspace
+ * by normalized path so projects evolve across turns instead of discarding untouched files.
+ */
+export function mergeWorkspaceFilesByPath(
+  existingFiles: BuilderStudioFile[],
+  incomingFiles: BuilderStudioFile[]
+): BuilderStudioFile[] {
+  if (!incomingFiles || incomingFiles.length === 0) return existingFiles;
+  const map = new Map<string, BuilderStudioFile>();
+  for (const prev of existingFiles) {
+    map.set(prev.path.replace(/^\.?\//, "").toLowerCase(), prev);
+  }
+  for (const next of incomingFiles) {
+    map.set(next.path.replace(/^\.?\//, "").toLowerCase(), next);
+  }
+  return Array.from(map.values());
+}
+
+/**
  * Applies Aider-style SEARCH / REPLACE surgical diff hunks without regenerating entire files.
  */
 export function applySearchReplaceDiffPatch(source: string, patchText: string): DiffPatchResult {

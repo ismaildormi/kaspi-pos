@@ -500,26 +500,40 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
     : filteredByCost;
 
   const errors: { provider: string; keyIndex: number; error: string }[] = [];
+  const genStartedAt = Date.now();
+  const hasTools = Boolean((restGenOptions as any)?.tools);
+  const genAttempts: Array<{ candidate: RouterCandidate; stripTools: boolean }> = [
+    ...candidates.map((candidate) => ({ candidate, stripTools: false })),
+    ...(hasTools ? candidates.slice(0, 3).map((candidate) => ({ candidate, stripTools: true })) : []),
+  ];
 
-  for (const candidate of candidates) {
+  for (let idx = 0; idx < genAttempts.length; idx++) {
+    if (idx > 0 && Date.now() - genStartedAt > 32_000) break;
+    const { candidate, stripTools } = genAttempts[idx];
     try {
       const providerCfg = buildProviderGenerationConfig(candidate, (restGenOptions as any)?.maxOutputTokens);
+      const callOpts = { ...(restGenOptions as any) };
+      if (stripTools) {
+        delete callOpts.tools;
+        delete callOpts.stopWhen;
+      }
+      const remainingMs = Math.max(8_000, 34_000 - (Date.now() - genStartedAt));
+      const perAttemptMs = Math.min(remainingMs, isMultimodal ? 26_000 : candidate.provider === "groq" ? 16_000 : 18_000);
       const result = await generateText({
         model: candidate.model as any,
         maxRetries: 0,
-        abortSignal: AbortSignal.timeout(
-          isMultimodal ? 28_000 : candidate.provider === "groq" ? 18_000 : 22_000
-        ),
+        abortSignal: AbortSignal.timeout(perAttemptMs),
         ...providerCfg,
-        ...(restGenOptions as any),
+        ...callOpts,
       });
 
+      const stepTexts = (result.steps || []).map((s: any) => String(s?.text || "").trim()).filter(Boolean);
       const outputText =
-        result.steps?.[result.steps.length - 1]?.text ||
-        (result as any).text ||
+        String((result as any).text || "").trim() ||
+        stepTexts[stepTexts.length - 1] ||
         "";
 
-      if (!outputText || !outputText.trim()) {
+      if (!outputText) {
         throw new Error("Model returned empty output");
       }
 
@@ -532,9 +546,9 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
       };
     } catch (err: any) {
       console.warn(
-        `[HEYUKA Router] Failover from ${candidate.provider}:${candidate.modelId} (Key #${
-          candidate.keyIndex + 1
-        }): ${String(err?.message || err).slice(0, 140)}`
+        `[HEYUKA Router] Failover from ${candidate.provider}:${candidate.modelId}${
+          stripTools ? " (text-only)" : ""
+        } (Key #${candidate.keyIndex + 1}): ${String(err?.message || err).slice(0, 140)}`
       );
       errors.push({
         provider: candidate.providerName,

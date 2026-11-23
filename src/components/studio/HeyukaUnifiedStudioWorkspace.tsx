@@ -39,6 +39,7 @@ import Dexie from "dexie";
 import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 import { HeyukaLoopMark } from "@/components/heyuka/HeyukaLoopMark";
 import { HeyukaMarkdownMessage } from "@/components/heyuka/HeyukaMarkdownMessage";
+import { mergeWorkspaceFilesByPath } from "@/lib/heyuka/autonomous-builder-v24-v28";
 import { useHybridDictation } from "@/lib/heyuka/use-hybrid-dictation";
 import {
   STUDIO_STARTER_TEMPLATES,
@@ -550,7 +551,7 @@ export function HeyukaUnifiedStudioWorkspace({
             locale,
             systemInstruction,
             imageBase64: imgAtt?.dataUrl,
-            workspaceFiles: studioFiles.slice(0, 8).map((f) => ({ path: f.path, content: f.content })),
+            workspaceFiles: studioFiles.slice(0, 16).map((f) => ({ path: f.path, content: f.content })),
             messages: [
               ...baseHistory.slice(-16).map((m) => ({
                 role: m.role,
@@ -574,6 +575,9 @@ export function HeyukaUnifiedStudioWorkspace({
           }
           if (Array.isArray(cd?.sources)) {
             citations = [...citations, ...cd.sources];
+          }
+          if (Array.isArray(cd?.verifiedTerminalLogs) && cd.verifiedTerminalLogs.length > 0) {
+            setTerminalLogs((p) => [...p, ...cd.verifiedTerminalLogs.slice(0, 6)]);
           }
         }
       } catch {}
@@ -623,11 +627,11 @@ export function HeyukaUnifiedStudioWorkspace({
 
       let updatedWorkspaceFiles = studioFiles;
       if (extractedFiles.length > 0) {
-        updatedWorkspaceFiles = extractedFiles;
-        setStudioFiles(extractedFiles);
+        updatedWorkspaceFiles = mergeWorkspaceFilesByPath(studioFiles, extractedFiles);
+        setStudioFiles(updatedWorkspaceFiles);
         setFocusFilePath(extractedFiles[0]?.path || null);
         setCheckpoints((prev) => [
-          { id: `cp_${Date.now()}`, label: rawPrompt.slice(0, 32), at: new Date().toISOString(), files: extractedFiles },
+          { id: `cp_${Date.now()}`, label: rawPrompt.slice(0, 32), at: new Date().toISOString(), files: updatedWorkspaceFiles },
           ...prev.slice(0, 9),
         ]);
         setRightTab("files");
