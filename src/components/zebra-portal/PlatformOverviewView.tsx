@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import { HelpCircle, MoreVertical } from "lucide-react";
+import { LiveOmnisciencePanel } from "@/components/studio/LiveOmnisciencePanel";
 import type { PortalLocale } from "./platform-data";
 
 interface TelemetryPayload {
@@ -334,6 +335,8 @@ export function PlatformOverviewView() {
           </div>
         )}
       </div>
+
+      <LiveOmnisciencePanel locale={locale} isLight={false} showSeedControls={false} />
     </div>
   );
 }

@@ -57,6 +57,7 @@ import {
 } from "@/lib/heyuka/studio/studio-orchestrator-v55-v60";
 import { StudioRightRunSettings } from "./StudioRightRunSettings";
 import { StudioWorkbenchTabs, type AntigravityPaneTab } from "./StudioWorkbenchTabs";
+import { LiveOmnisciencePanel } from "./LiveOmnisciencePanel";
 import {
   DEFAULT_RUN_SETTINGS,
   estimateTokenCount,
@@ -224,7 +225,7 @@ export function HeyukaUnifiedStudioWorkspace({
   const [customTab, setCustomTab] = useState<"rules" | "engine">("rules");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<
-    "general" | "appearance" | "shortcuts" | "models" | "projects" | "pretraining_lab" | "seven_secrets_lab"
+    "general" | "appearance" | "shortcuts" | "models" | "projects" | "api_omniscience" | "pretraining_lab" | "seven_secrets_lab"
   >("appearance");
   const [secretsStatus, setSecretsStatus] = useState<{
     elo: number;
@@ -2193,8 +2194,9 @@ export function HeyukaUnifiedStudioWorkspace({
                   { id: "shortcuts" as const, label: "Shortcuts" },
                   { id: "models" as const, label: "Models" },
                   { id: "projects" as const, label: "Projects" },
+                  { id: "api_omniscience" as const, label: isAr ? "API والرادار الحي" : "API & Live Radar" },
                   { id: "pretraining_lab" as const, label: isAr ? "مختبر الويب والتدريب" : "Pretraining & Web Lab" },
-                  { id: "seven_secrets_lab" as const, label: isAr ? "مختبر الأسرار الـ 7 (AI)" : "7 Secrets Cognition Lab" },
+                  { id: "seven_secrets_lab" as const, label: isAr ? "مختبر الهيمنة والأسرار (AI)" : "Dominance & Superpowers Lab" },
                 ] as const
               ).map((item) => (
                 <button
@@ -2441,6 +2443,15 @@ export function HeyukaUnifiedStudioWorkspace({
                   ))}
                 </div>
               </div>
+            )}
+
+            {settingsSection === "api_omniscience" && (
+              <LiveOmnisciencePanel
+                locale={locale}
+                isLight={isLight}
+                accentHex={appearance.accentHex}
+                showSeedControls={true}
+              />
             )}
 
             {settingsSection === "pretraining_lab" && (
@@ -2849,6 +2860,69 @@ export function HeyukaUnifiedStudioWorkspace({
                         className={`px-3 py-1.5 rounded-lg border ${borderCls} cursor-pointer font-medium text-[11px]`}
                       >
                         {secretsBusy ? "..." : dbtn.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-white/10">
+                    {[
+                      {
+                        key: "arch_sys",
+                        endpoint: "/api/v1/dominance/architect-system",
+                        label: isAr ? "معمارية نظام متكامل (v90.2)" : "Architect System (v90.2)",
+                        payload: { action: "architect_system", projectName: "kaspi-branch-erp", entities: ["branches", "stock_transfers"], locale },
+                      },
+                      {
+                        key: "eoq_inv",
+                        endpoint: "/api/v1/dominance/architect-system",
+                        label: isAr ? "تحسين مخزون EOQ & التفاوض (v90.3)" : "EOQ & BATNA Solver (v90.3)",
+                        payload: {
+                          action: "eoq_inventory",
+                          items: [{ sku: "TEA-01", name: "Atay Sultan", annualDemandUnits: 3600, orderingCostMad: 120, holdingCostPerUnitYearMad: 4, leadTimeDays: 5 }],
+                        },
+                      },
+                      {
+                        key: "solar_pv",
+                        endpoint: "/api/v1/dominance/architect-system",
+                        label: isAr ? "هندسة طاقة شمسية & علم (v90.4)" : "Solar PV & CAD (v90.4)",
+                        payload: { action: "solar_pv_design", dailyLoadKwh: 18, peakSunHoursPerDay: 5.5 },
+                      },
+                      {
+                        key: "omni_route_hw",
+                        endpoint: "/api/v1/dominance/architect-system",
+                        label: isAr ? "موجه النماذج والعتاد (v90.6-v90.7)" : "Omni-Router & Hardware (v90.6-v90.7)",
+                        payload: { action: "route_model", prompt: secretsPrompt },
+                      },
+                      {
+                        key: "mcp_daemon",
+                        endpoint: "/api/v1/tools/execute",
+                        label: isAr ? "تشغيل الحارس والـ MCP Bus (v94-v95)" : "Run MCP Bus & Watchdog (v94-v95)",
+                        payload: { toolId: "autonomous_daemon_digest", input: { merchantName: "KASPI POS", includeRemoteRadar: false } },
+                      },
+                    ].map((xbtn) => (
+                      <button
+                        key={xbtn.key}
+                        type="button"
+                        disabled={secretsBusy}
+                        onClick={async () => {
+                          setSecretsBusy(true);
+                          setSecretsOutput(null);
+                          try {
+                            const res = await fetch(xbtn.endpoint, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify(xbtn.payload),
+                            });
+                            const data = await res.json();
+                            setSecretsOutput(JSON.stringify(data, null, 2).slice(0, 1600));
+                          } catch {
+                            setSecretsOutput(`Error calling ${xbtn.endpoint}`);
+                          } finally {
+                            setSecretsBusy(false);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-lg border ${borderCls} cursor-pointer font-medium text-[11px]`}
+                      >
+                        {secretsBusy ? "..." : xbtn.label}
                       </button>
                     ))}
                   </div>

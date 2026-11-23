@@ -185,6 +185,9 @@ export function StudioWorkbenchTabs({
   const [browserLoading, setBrowserLoading] = useState(false);
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [previewConsoleLogs, setPreviewConsoleLogs] = useState<string[]>([]);
+  const [pointEditInput, setPointEditInput] = useState("");
+  const [deployMenuOpen, setDeployMenuOpen] = useState(false);
+  const [deployScaffold, setDeployScaffold] = useState<{ provider: string; title: string; freeTierLimit: string; snippet: string } | null>(null);
 
   const updateActiveBTab = (patch: Partial<BrowserTabState>) => {
     const targetId = activeBTab?.id;
@@ -1341,7 +1344,90 @@ export function StudioWorkbenchTabs({
           <div className="flex-1 min-h-0 overflow-auto">
             {browserSubMode === "preview" ? (
               <div className="h-full flex flex-col gap-2 p-3">
-                <div className="flex-1 min-h-[280px] flex justify-center">
+                {/* Point-and-Edit & 1-Click Zero-Cost Deploy Bar (v92.0-v93.0) */}
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!pointEditInput.trim()) return;
+                      onRunPromptFromChild(
+                        `[Point-and-Edit Surgical Diff on current preview workspace]: ${pointEditInput.trim()}`
+                      );
+                      setPointEditInput("");
+                    }}
+                    className="flex-1 min-w-[190px] flex items-center gap-1.5"
+                  >
+                    <input
+                      type="text"
+                      value={pointEditInput}
+                      onChange={(e) => setPointEditInput(e.target.value)}
+                      placeholder={
+                        isAr
+                          ? "تعديل جراحي مباشر (مثلاً: أضف زر دفع وبدّل الألوان)..."
+                          : "Point-and-Edit instruction (surgical diff on workspace)..."
+                      }
+                      className={`flex-1 px-2.5 py-1 rounded-md border border-inherit bg-transparent text-[11px] focus:outline-none`}
+                    />
+                    <button
+                      type="submit"
+                      className="px-2.5 py-1 rounded-md text-white font-medium cursor-pointer shrink-0"
+                      style={{ backgroundColor: accentHex }}
+                    >
+                      {isAr ? "تعديل" : "Apply"}
+                    </button>
+                  </form>
+                  <button
+                    type="button"
+                    onClick={() => setDeployMenuOpen((o) => !o)}
+                    className={`px-2.5 py-1 rounded-md font-medium cursor-pointer shrink-0 ${subtleBtn}`}
+                  >
+                    {isAr ? "نشر مجاني $0 / PWA" : "Deploy ($0) / PWA"}
+                  </button>
+                </div>
+
+                {deployMenuOpen && (
+                  <div className="p-2.5 rounded-lg border border-inherit space-y-2 text-[11px]">
+                    <div className="flex flex-wrap gap-1.5">
+                      {(["vercel", "cloudflare_pages", "hf_spaces", "pwa", "supabase", "turso", "ntfy"] as const).map(
+                        (prov) => (
+                          <button
+                            key={prov}
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const res = await fetch("/api/v1/tools/execute", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    toolId: "generate_zero_cost_connector",
+                                    input: { provider: prov, projectName: brand },
+                                  }),
+                                });
+                                const d = await res.json();
+                                if (d?.ok) setDeployScaffold(d);
+                              } catch {}
+                            }}
+                            className={`px-2 py-1 rounded border border-inherit font-mono cursor-pointer ${subtleBtn}`}
+                          >
+                            {prov}
+                          </button>
+                        )
+                      )}
+                    </div>
+                    {deployScaffold && (
+                      <div className="space-y-1">
+                        <div className="font-semibold text-emerald-400">
+                          {deployScaffold.title} — {deployScaffold.freeTierLimit}
+                        </div>
+                        <pre className="p-2 rounded bg-black/30 font-mono text-[10px] overflow-x-auto" dir="ltr">
+                          {deployScaffold.snippet}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex-1 min-h-[260px] flex justify-center">
                   <iframe
                     title="Antigravity App Preview"
                     srcDoc={previewHtmlDoc}

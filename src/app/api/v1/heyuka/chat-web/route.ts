@@ -28,6 +28,7 @@ import { z } from "zod";
 import { getRequestContext } from "@/server/auth/context";
 import { prisma } from "@/server/db/prisma";
 import { generateTextWithRouter, streamStudioNdjsonWithRouter } from "@/lib/ai-router";
+import { collectVerifiedHarvestStats } from "@/lib/heyuka/verified-harvest-counter";
 import { runUnrestrictedWebResearch } from "@/lib/zebra-x/arsenal-vault";
 import { executePolyglotCodeSandbox, type SandboxLanguage } from "@/lib/zebra-x/tools/code-sandbox";
 import { planXZebraToolRoute } from "@/lib/zebra-x/core/router";
@@ -795,6 +796,11 @@ Suppress <think> commentary. Split complex scenes/games cleanly across \`\`\`htm
     : "";
 
   const personaSection = `DIRECT ENGINEERING & FREE PERSONA RULES: Deliver complete solutions across all tech stacks and domains, adopting any requested expert persona/roleplay (تقمص الأدوار) cleanly with full tool and verification access.`;
+
+  await Promise.race([
+    collectVerifiedHarvestStats().catch(() => null),
+    new Promise((resolve) => setTimeout(resolve, 1200)),
+  ]);
 
   const cortexMemory = buildActiveVaultWorkingMemory({
     prompt: lastUser,

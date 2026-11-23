@@ -7,6 +7,7 @@ import {
   type StudioBrand,
 } from "@/lib/heyuka/studio/studio-orchestrator-v55-v60";
 import { recordProductSelfEvolution } from "@/lib/heyuka/learning/self-evolution-engine";
+import { collectVerifiedHarvestStats } from "@/lib/heyuka/verified-harvest-counter";
 
 export const dynamic = "force-dynamic";
 
@@ -52,5 +53,19 @@ export async function POST(req: NextRequest) {
     executionMode: "client_cpu",
   });
 
-  return NextResponse.json(swarm, { status: 200, headers: HEYUKA_API_CORS_HEADERS });
+  const [liveTelemetry] = await Promise.all([
+    Promise.race([
+      collectVerifiedHarvestStats().catch(() => null),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
+    ]),
+  ]);
+
+  return NextResponse.json(
+    {
+      ...swarm,
+      liveOmniscienceTelemetry: liveTelemetry?.verifiedMetrics || null,
+      huggingFaceVault: liveTelemetry?.huggingFaceVault || null,
+    },
+    { status: 200, headers: HEYUKA_API_CORS_HEADERS }
+  );
 }

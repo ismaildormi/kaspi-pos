@@ -53,6 +53,8 @@ const PUBLIC_API_PATHS = [
   "/api/v1/studio",
   "/api/v1/cognition",
   "/api/v1/dominance",
+  "/api/v1/omniscience",
+  "/api/v1/tools",
   "/api/v1/magic",
   "/api/v1/qr/dynamic",
   "/api/v1/models",

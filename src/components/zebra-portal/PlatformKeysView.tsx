@@ -6,6 +6,7 @@ import { useLocale } from "next-intl";
 import { Check, Copy, KeyRound, Trash2, X } from "lucide-react";
 import { HEYUKAGmailAccessCard } from "@/components/heyuka/HEYUKAGmailAccessCard";
 import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
+import { LiveOmnisciencePanel } from "@/components/studio/LiveOmnisciencePanel";
 import { saveActiveConsoleKey, type PortalLocale } from "./platform-data";
 
 interface ApiKeyRow {
@@ -333,6 +334,8 @@ export function PlatformKeysView() {
           )}
         </div>
       </KaspiGlassModalPortal>
+
+      <LiveOmnisciencePanel locale={locale} isLight={false} showSeedControls={true} />
     </div>
   );
 }

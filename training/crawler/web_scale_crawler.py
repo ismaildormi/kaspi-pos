@@ -29,7 +29,7 @@ DEFAULT_UA = "HEYUKA-PublicResearchBot/1.0 (+https://kaspi-pos.vercel.app)"
 
 
 class ReadableHtmlExtractor(HTMLParser):
-    """Lightweight stdlib HTML-to-Markdown-like extractor removing script/style noise."""
+    """Lightweight stdlib HTML-to-Markdown-like extractor removing script/style noise while keeping headings, tables & code blocks."""
 
     SKIP_TAGS = {"script", "style", "noscript", "svg", "iframe"}
 
@@ -37,9 +37,16 @@ class ReadableHtmlExtractor(HTMLParser):
         super().__init__(convert_charrefs=True)
         self._skip_depth = 0
         self._in_title = False
+        self._in_pre = False
+        self._in_row = False
+        self._row_cells: List[str] = []
+        self._cell_buf: List[str] = []
+        self._in_cell = False
         self.title_parts: List[str] = []
         self.text_parts: List[str] = []
         self.links: List[str] = []
+        self.tables_extracted = 0
+        self.code_blocks_extracted = 0
 
     def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
         t = tag.lower()
@@ -48,13 +55,30 @@ class ReadableHtmlExtractor(HTMLParser):
             return
         if t == "title":
             self._in_title = True
-        if self._skip_depth == 0:
-            if t in {"h1", "h2", "h3", "p", "li", "tr", "pre"}:
-                self.text_parts.append("\n")
-            if t == "a":
-                for k, v in attrs:
-                    if k.lower() == "href" and v:
-                        self.links.append(v.strip())
+        if self._skip_depth > 0:
+            return
+        if t == "pre":
+            self._in_pre = True
+            self.code_blocks_extracted += 1
+            self.text_parts.append("\n```\n")
+        elif t == "table":
+            self.tables_extracted += 1
+            self.text_parts.append("\n")
+        elif t == "tr":
+            self._in_row = True
+            self._row_cells = []
+        elif t in {"th", "td"}:
+            self._in_cell = True
+            self._cell_buf = []
+        elif t in {"h1", "h2", "h3"}:
+            level = "#" * int(t[1])
+            self.text_parts.append(f"\n{level} ")
+        elif t in {"p", "li"}:
+            self.text_parts.append("\n")
+        if t == "a":
+            for k, v in attrs:
+                if k.lower() == "href" and v:
+                    self.links.append(v.strip())
 
     def handle_endtag(self, tag: str) -> None:
         t = tag.lower()
@@ -63,15 +87,35 @@ class ReadableHtmlExtractor(HTMLParser):
             return
         if t == "title":
             self._in_title = False
+        if self._skip_depth > 0:
+            return
+        if t == "pre" and self._in_pre:
+            self._in_pre = False
+            self.text_parts.append("\n```\n")
+        elif t in {"th", "td"} and self._in_cell:
+            self._in_cell = False
+            cell_txt = re.sub(r"\s+", " ", "".join(self._cell_buf)).strip()
+            if cell_txt:
+                self._row_cells.append(cell_txt)
+        elif t == "tr" and self._in_row:
+            self._in_row = False
+            if self._row_cells:
+                self.text_parts.append("| " + " | ".join(self._row_cells) + " |\n")
 
     def handle_data(self, data: str) -> None:
         if self._skip_depth > 0:
+            return
+        if self._in_pre:
+            if data:
+                self.text_parts.append(data)
             return
         cleaned = re.sub(r"\s+", " ", data).strip()
         if not cleaned:
             return
         if self._in_title:
             self.title_parts.append(cleaned)
+        elif self._in_cell:
+            self._cell_buf.append(cleaned + " ")
         else:
             self.text_parts.append(cleaned + " ")
 
@@ -153,6 +197,8 @@ def fetch_public_page(url: str, timeout: int = 12, max_bytes: int = 400_000) -> 
     title = url
     text = raw
     links: List[str] = []
+    tables_extracted = 0
+    code_blocks_extracted = 0
 
     if "html" in ctype or "<html" in raw[:500].lower():
         try:
@@ -166,6 +212,8 @@ def fetch_public_page(url: str, timeout: int = 12, max_bytes: int = 400_000) -> 
 
         parser = ReadableHtmlExtractor()
         parser.feed(raw)
+        tables_extracted = parser.tables_extracted
+        code_blocks_extracted = parser.code_blocks_extracted
         if parser.title_parts:
             title = " ".join(parser.title_parts)[:240]
         if text == raw:
@@ -186,6 +234,8 @@ def fetch_public_page(url: str, timeout: int = 12, max_bytes: int = 400_000) -> 
         "title": title,
         "url": url,
         "source_kind": "web_crawl",
+        "tables_extracted": tables_extracted,
+        "code_blocks_extracted": code_blocks_extracted,
         "text": text,
         "links": links[:25],
     }

@@ -101,6 +101,43 @@ import {
   resetCircuitBreakersForTesting,
   solveAnyScenarioUnified,
 } from "../../src/lib/zebra-x/dominance/secret1_scenario_master";
+import { V90_DOMINANCE_CATALOG_SOURCES } from "../../src/lib/zebra-x/dominance/v90-dominance-catalog";
+import {
+  analyzeRepoAstAndDependencies,
+  architectFullStackSystem,
+} from "../../src/lib/zebra-x/dominance/secret2_software_supremacy";
+import {
+  computeFinancialForecastAndVar,
+  computeInventoryEoqAndSafetyStock,
+  computeNegotiationBatnaZopa,
+  runMarketBasketApriori,
+} from "../../src/lib/zebra-x/dominance/secret3_business_dominance";
+import {
+  checkMedicalDrugInteractionSafety,
+  computeToleranceStackup,
+  designSolarPvSystem,
+} from "../../src/lib/zebra-x/dominance/secret4_science_engineering";
+import { buildCinemaStoryboardAnd3dScene } from "../../src/lib/zebra-x/dominance/secret5_cinema_3d_aesthetic";
+import {
+  generateMergeKitRecipeYaml,
+  routeTaskToOptimalModel,
+} from "../../src/lib/zebra-x/dominance/secret6_omni_router";
+import { planHardwareSovereignProfile } from "../../src/lib/zebra-x/dominance/secret7_immortal_sovereignty";
+import { collectVerifiedHarvestStats } from "../../src/lib/heyuka/verified-harvest-counter";
+import {
+  buildZeroCostConnectorScaffold,
+  executeUniversalMcpTool,
+  UNIVERSAL_MCP_TOOLS,
+} from "../../src/lib/zebra-x/tools/universal_mcp_bus";
+import { runAutonomousBackgroundAudit } from "../../src/lib/zebra-x/superpowers/autonomous_daemon_worker";
+import { parseLayoutAwareDocAndGraph } from "../../src/lib/zebra-x/superpowers/deep_doc_graph_rag";
+import {
+  buildDomainBrainPack,
+  exportPortableSovereignSeedCrystal,
+  importAndVerifySovereignSeedCrystal,
+} from "../../src/lib/zebra-x/superpowers/domain_brain_factory";
+import { runParallelMapReduceSwarm } from "../../src/lib/zebra-x/superpowers/parallel_map_reduce_swarm";
+import { indexInteractiveElementsSetOfMark } from "../../src/lib/zebra-x/superpowers/vision_gui_som_operator";
 import {
   buildAirGappedOfflineManifest,
   buildBrowserFactoryPlan,
@@ -1944,6 +1981,122 @@ async function main() {
     };
   });
 
+  // 27. v90.2 - v95.0 DOMINANCE SECRETS #2-#7, REMOTE OMNISCIENCE RADAR, SEED CRYSTAL, MCP BUS & 5 SUPERPOWERS
+  await runCheck("v90_2_to_v95_omni_dominance_radar_mcp_superpowers", "v90.2-v95.0 Dominance #2-#7, Cloud Radar, MCP & 5 Superpowers", async () => {
+    assert.ok(V90_DOMINANCE_CATALOG_SOURCES.length >= 100);
+    assert.ok(V90_DOMINANCE_CATALOG_SOURCES.every((s) => s.url.startsWith("https://") && !s.url.includes("/search?q=")));
+
+    const unified = getSovereignVaultUnifiedEntries();
+    assert.ok(unified.length >= 2750, `Expected >= 2750 vault entries after v90.2-v90.7 merge, got ${unified.length}`);
+    const lockManifest = writeSovereignVaultLockManifest();
+    assert.equal(lockManifest.manifest.totalClassifiedEntries, unified.length);
+    const linkAudit = verifyVaultLinkIntegrityAndHeal();
+    assert.equal(linkAudit.totalAudited, unified.length);
+    assert.ok(linkAudit.canonicalVerifiedCount >= 2440, `Expected >= 2440 canonical URLs, got ${linkAudit.canonicalVerifiedCount}`);
+
+    // v90.2: AST Impact + Full-Stack Architect Zero-Stub Gate
+    const arch = architectFullStackSystem({ projectName: "kaspi-branch-cloud", entities: ["stores", "orders"], locale: "ar" });
+    assert.equal(arch.ok, true);
+    assert.equal(arch.impactAudit.zeroStubGate.passed, true);
+    assert.equal(arch.impactAudit.securityAudit.clean, true);
+    const brokenDom = analyzeRepoAstAndDependencies([
+      { path: "index.html", language: "html", content: '<button id="btnSave">Save</button>' },
+      { path: "app.js", language: "javascript", content: 'document.getElementById("btnMissing")?.click();' },
+    ]);
+    assert.deepEqual(brokenDom.domCrossCheck.missingIdsInHtml, ["btnMissing"]);
+
+    // v90.3: EOQ + Market Basket + VaR/Kelly + Nash BATNA ZOPA
+    const eoq = computeInventoryEoqAndSafetyStock([
+      { sku: "TEA-01", name: "Moroccan Tea", annualDemandUnits: 3650, orderingCostMad: 100, holdingCostPerUnitYearMad: 5, leadTimeDays: 4 },
+    ]);
+    assert.ok(eoq[0].optimalOrderQtyEoq >= 300 && eoq[0].reorderPointUnits > 0);
+    const rules = runMarketBasketApriori([
+      ["tea", "sugar", "mint"],
+      ["tea", "sugar"],
+      ["tea", "mint"],
+      ["coffee", "milk"],
+    ], 0.4, 0.5);
+    assert.ok(rules.length >= 1 && rules[0].lift > 1);
+    const quant = computeFinancialForecastAndVar({ dailyRevenuesMad: [4000, 4200, 3900, 4400, 4600] });
+    assert.ok(quant.ewmaNextDayMad > 4000 && quant.kellyOptimalFraction > 0);
+    const batna = computeNegotiationBatnaZopa({
+      sellerReservationPrice: 1000,
+      buyerMaxWillingness: 1400,
+      sellerAsk: 1500,
+      buyerInitialBid: 950,
+      contractText: "Includes unlimited liability and auto-renew annually.",
+    });
+    assert.equal(batna.hasZopa, true);
+    assert.equal(batna.nashBargainingTarget, 1200);
+    assert.ok(batna.contractRedFlags.length >= 2);
+
+    // v90.4: Solar PV, CAD Tolerance, Medical Safety
+    const solar = designSolarPvSystem({ dailyLoadKwh: 15, peakSunHoursPerDay: 5.5, panelWattPeak: 550 });
+    assert.ok(solar.panelsCount >= 6 && solar.estimatedAnnualSavingsMad > 0);
+    const tol = computeToleranceStackup([
+      { nominalMm: 50, tolPlusMinusMm: 0.1, direction: 1 },
+      { nominalMm: 20, tolPlusMinusMm: 0.05, direction: 1 },
+    ]);
+    assert.equal(tol.nominalNetMm, 70);
+    assert.ok(tol.rssStatisticalPlusMinusMm < tol.worstCasePlusMinusMm);
+    const med = checkMedicalDrugInteractionSafety(["Warfarin", "Aspirin"], "ar");
+    assert.ok(med.interactionAlertsCount >= 1 && med.safetyDisclaimer.length > 10);
+
+    // v90.5 - v90.7: Cinema 3D, Omni-Router + MergeKit YAML, Hardware Sovereign
+    const cinema = buildCinemaStoryboardAnd3dScene({ title: "KASPI POS Demo", conceptPrompt: "Luxury glass checkout UI", durationSec: 10 });
+    assert.equal(cinema.remotionProps.shots.length, 3);
+    const routed = routeTaskToOptimalModel("Write TypeScript Next.js Drizzle API route");
+    assert.equal(routed.specialty, "coding");
+    const mergeYaml = generateMergeKitRecipeYaml({ method: "slerp" });
+    assert.ok(mergeYaml.yaml.includes("merge_method: slerp"));
+    const hw = planHardwareSovereignProfile({ ramGb: 4, vramGb: 0, hasWebGpu: true, offline: true, peerDevicesCount: 2 });
+    assert.equal(hw.offlineMode, true);
+    assert.ok(hw.p2pMeshMode.includes("Exo"));
+
+    // Remote Cloud Omniscience Radar
+    const radar = await collectVerifiedHarvestStats({ forceRefresh: false });
+    assert.equal(radar.ok, true);
+    assert.equal(radar.verifiedMetrics.vaultedSourcesCount, unified.length);
+    assert.ok(radar.selfAwarenessSummary.ar.includes(String(unified.length)));
+
+    // v94.0 MCP Tool Bus + Zero-Trust Action Guard
+    assert.ok(UNIVERSAL_MCP_TOOLS.length >= 16);
+    const blockedDeploy = await executeUniversalMcpTool({ toolId: "public_deploy_confirm", input: { provider: "vercel" }, confirmAction: false });
+    assert.equal((blockedDeploy as { requiresUserConfirmation?: boolean }).requiresUserConfirmation, true);
+    const connector = buildZeroCostConnectorScaffold("cloudflare_pages", "kaspi-pos");
+    assert.ok(connector.snippet.includes("wrangler"));
+
+    // v91.0 & v95.0: 5 Superpowers + Sovereign Seed Crystal Round-Trip (0 Secrets)
+    const som = indexInteractiveElementsSetOfMark('<form><input id="sku" placeholder="Barcode"><button id="pay">Pay</button></form>');
+    assert.equal(som.totalMarkedElements, 2);
+    const docGraph = parseLayoutAwareDocAndGraph("# Report\n| Product | MAD |\n| Tea | 25 |\n\nKaspi and Morocco tax.");
+    assert.equal(docGraph.tablesCount, 1);
+    const daemon = await runAutonomousBackgroundAudit({ merchantName: "Nador Market", dailyRevenuesMad: [5000, 4900, 4800, 2000, 1800, 1700], includeRemoteRadar: false });
+    assert.equal(daemon.revenueDrift.driftDetected, true);
+    const swarm = await runParallelMapReduceSwarm({
+      items: ["a", "b", "c", "d"],
+      maxConcurrency: 3,
+      workerFn: async (x) => x.toUpperCase(),
+    });
+    assert.equal(swarm.succeededCount, 4);
+
+    const seed = exportPortableSovereignSeedCrystal();
+    assert.equal(seed.ok, true);
+    assert.equal(seed.totalClassifiedEntries, unified.length);
+    assert.ok(!JSON.stringify(seed).includes("hf_"));
+    const restored = importAndVerifySovereignSeedCrystal(seed.base64Gzip);
+    assert.equal(restored.ok, true);
+    assert.equal(restored.totalClassifiedEntries, unified.length);
+    const domBrain = buildDomainBrainPack("commerce_kaspi");
+    assert.equal(domBrain.ok, true);
+
+    const bytes = arch.files.reduce((s, f) => s + f.content.length, 0) + seed.compressedBytes + domBrain.compressedBytes;
+    return {
+      artifactBytes: bytes,
+      detail: `v90.2-v95.0 Complete (Vault=${unified.length}, AST ok, EOQ=${eoq[0].optimalOrderQtyEoq}, Solar=${solar.panelsCount}p, SoM=${som.totalMarkedElements}, Swarm=${swarm.succeededCount}/4, Seed=${seed.compressedBytes}B 0-leaks)`,
+    };
+  });
+
   // SUMMARY & SELF-REPORTING
   const totalTested = results.length;
   const passed = results.filter((r) => r.status !== "failed");
@@ -1978,7 +2131,7 @@ async function main() {
   // Only generate/update YUKA_FINAL_100_PERCENT_TEST_RESULTS.md when 100% of runnable checks pass!
   if (failed.length === 0) {
     const mdLines = [
-      `# YUKA / HEYUKA — 100% Real End-to-End Test Results (\`v14.1\` – \`v90.1\`)`,
+      `# YUKA / HEYUKA — 100% Real End-to-End Test Results (\`v14.1\` – \`v95.0\`)`,
       ``,
       `Generated automatically by [\`tests/yuka-full-e2e/run-all-sources-forever.mjs\`](./tests/yuka-full-e2e/run-all-sources-forever.mjs) at \`${new Date().toISOString()}\`.`,
       ``,

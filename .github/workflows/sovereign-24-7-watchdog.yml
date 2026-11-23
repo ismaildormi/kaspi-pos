@@ -1,0 +1,46 @@
+name: Sovereign 24/7 Cloud Watchdog (v91.0)
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  watchdog-health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify live production Omniscience & Self-Status APIs (<2s)
+        run: |
+          set -e
+          for EP in \
+            "https://kaspi-pos.vercel.app/api/v1/omniscience/live-stats" \
+            "https://kaspi-pos.vercel.app/api/v1/cognition/self-status" \
+            "https://kaspi-pos.vercel.app/api/v1/dominance/solve-any" \
+            "https://kaspi-pos.vercel.app/api/v1/studio/ingest"; do
+            CODE=$(curl -sS -o /tmp/wd_out.json -w "%{http_code}" "$EP")
+            echo "$EP -> HTTP $CODE"
+            [ "$CODE" -eq 200 ]
+          done
+
+      - name: Probe Hugging Face Dataset Vault & 4-Token Rotation Metadata
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN_2: ${{ secrets.HF_TOKEN_2 }}
+          HF_TOKEN_3: ${{ secrets.HF_TOKEN_3 }}
+          HF_TOKEN_4: ${{ secrets.HF_TOKEN_4 }}
+          HF_DATASET_REPO: ${{ secrets.HF_DATASET_REPO || 'zuvyrismail/heyuka-omni-vault' }}
+        run: |
+          python3 training/telemetry/remote_omniscience_radar.py > /tmp/remote_radar.json
+          cat /tmp/remote_radar.json

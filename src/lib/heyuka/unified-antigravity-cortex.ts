@@ -45,6 +45,11 @@ import {
 import { recallAssociativeContext } from "@/lib/zebra-x/cognition/secret7_dual_brain_orchestrator";
 import { getHfTokenPoolSummary } from "@/lib/heyuka/compute/hf-token-pool";
 import {
+  collectVerifiedHarvestStats,
+  getCachedVerifiedHarvestSnapshot,
+} from "@/lib/heyuka/verified-harvest-counter";
+import { executeUniversalMcpTool } from "@/lib/zebra-x/tools/universal_mcp_bus";
+import {
   fetchHyperLocalLiveSnapshot,
   resolveDarijaCommercialTerms,
   validateMoroccoDgiInvoice,
@@ -286,9 +291,14 @@ export function buildActiveVaultWorkingMemory(params: {
       : "";
 
   const hfPool = getHfTokenPoolSummary();
+  const cachedRadar = getCachedVerifiedHarvestSnapshot();
+  const radarBlock = cachedRadar
+    ? `[REMOTE CLOUD OMNISCIENCE RADAR (${cachedRadar.huggingFaceVault.datasetRepo})]: ${cachedRadar.selfAwarenessSummary[params.locale === "fr" ? "fr" : params.locale === "en" ? "en" : "ar"]}`
+    : "";
   const activeMemoryPromptBlock = [
     `[ANTIGRAVITY CORTEX v2.5 | ${domainMode.toUpperCase()} | ${cognitiveRoute.primaryCluster.titleEn} | ${v60Totals.grandTotalSources}+ Vault + ${studiedSearch.totalCorpusUnits} Units (${studiedSearch.webCrawledUnits} Web)${hfPool.configuredCount > 0 ? ` | HF-Pool=${hfPool.configuredCount} -> ${hfPool.datasetRepo}` : ""}]`,
     personaDirective,
+    radarBlock,
     errorPreventionBlock,
     episodicBlock,
     "[MATCHED CORPUS & VAULT (Full 2493+ searchable via queryVaultOrApi/studyAndCrawlSource)]",
@@ -1053,6 +1063,52 @@ export function createStudioAgentToolkit(params: {
         });
         emitStep({ kind: "verify", title: `TOPSIS Decision Matrix (#1: ${topsis[0]?.name})`, status: "done" });
         return { ok: true, topsisRanking: topsis, inlineMarkerToIncludeInReply: marker };
+      },
+    }),
+
+    getOmniscienceLiveStats: tool({
+      description:
+        "Reads live 0-MB metadata telemetry across Hugging Face (zuvyrismail/heyuka-omni-vault), Common Crawl 110B+ frontier, GitHub Actions, Self-Play Elo, and Double-Read harvested pages. ALWAYS call this when asked how much the model studied, crawled, saw, or learned.",
+      inputSchema: z.object({
+        forceRefresh: z.boolean().optional(),
+      }),
+      execute: async (input) => {
+        const stats = await collectVerifiedHarvestStats({ forceRefresh: Boolean(input.forceRefresh) });
+        emitStep({
+          kind: "search",
+          title: `Live Radar (${stats.verifiedMetrics.doubleReadVerifiedUnits} verified, ${stats.huggingFaceVault.crystalCount} HF crystals)`,
+          status: "done",
+        });
+        return stats;
+      },
+    }),
+
+    executeMcpBusTool: tool({
+      description:
+        "Universal MCP & Zero-Cost Infrastructure Command Bus (v94.0-v95.0): Runs AST impact audit, Set-of-Mark DOM indexer, Graph-RAG doc table parser, 24/7 Watchdog digest, EOQ inventory optimizer, 10x parallel web swarm, Domain Brain/Seed crystal pack, or $0 Vercel/Cloudflare/HF Spaces/Supabase/Turso/ntfy/PWA connector scaffolds.",
+      inputSchema: z.object({
+        toolId: z.string().describe("Tool identifier e.g. filesystem_ast_audit, som_vision_dom_index, doc_graph_rag_extract, autonomous_daemon_digest, eoq_inventory_optimize, generate_zero_cost_connector, export_domain_brain, export_sovereign_seed"),
+        inputJson: z.string().optional().describe("Optional JSON string of tool arguments."),
+        confirmAction: z.boolean().optional(),
+      }),
+      execute: async (params) => {
+        let parsedInput: Record<string, unknown> = {};
+        if (params.inputJson) {
+          try {
+            parsedInput = JSON.parse(params.inputJson) as Record<string, unknown>;
+          } catch {}
+        }
+        const res = await executeUniversalMcpTool({
+          toolId: params.toolId,
+          input: parsedInput,
+          confirmAction: params.confirmAction,
+        });
+        emitStep({
+          kind: "run",
+          title: `MCP Bus: ${params.toolId}`,
+          status: "done",
+        });
+        return "data" in res ? res.data : res;
       },
     }),
   };

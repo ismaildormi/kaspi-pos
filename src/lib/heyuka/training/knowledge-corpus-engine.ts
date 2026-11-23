@@ -16,6 +16,9 @@ export interface StudiedKnowledgeUnit {
   content: string;
   sha256: string;
   tokensEstimate: number;
+  doubleReadVerified?: boolean;
+  tablesExtracted?: number;
+  codeBlocksExtracted?: number;
   ingestedAt: string;
 }
 
@@ -25,6 +28,92 @@ let vaultIndexed = false;
 
 function sha256Short(text: string): string {
   return crypto.createHash("sha256").update(text, "utf8").digest("hex").slice(0, 24);
+}
+
+/**
+ * Extracts deep structural content from raw HTML (headings, tables, pre/code & math spans)
+ * to augment readable text during Pass-1 + Pass-2 double-read harvesting.
+ */
+function extractDeepStructuredBlocks(html: string): {
+  markdownAddendum: string;
+  tablesCount: number;
+  codeBlocksCount: number;
+} {
+  const cleaned = html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ");
+  const blocks: string[] = [];
+  let tablesCount = 0;
+  let codeBlocksCount = 0;
+
+  const preRe = /<pre[^>]*>([\s\S]*?)<\/pre>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = preRe.exec(cleaned)) !== null && codeBlocksCount < 8) {
+    const codeText = m[1].replace(/<[^>]+>/g, "").trim();
+    if (codeText.length >= 12) {
+      codeBlocksCount++;
+      blocks.push(`\n\`\`\`\n${codeText.slice(0, 1200)}\n\`\`\``);
+    }
+  }
+
+  const tableRe = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+  while ((m = tableRe.exec(cleaned)) !== null && tablesCount < 5) {
+    const rows: string[] = [];
+    const trRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    let rm: RegExpExecArray | null;
+    while ((rm = trRe.exec(m[1])) !== null && rows.length < 15) {
+      const cells: string[] = [];
+      const tdRe = /<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi;
+      let cm: RegExpExecArray | null;
+      while ((cm = tdRe.exec(rm[1])) !== null && cells.length < 8) {
+        const val = cm[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        if (val) cells.push(val);
+      }
+      if (cells.length > 0) rows.push(`| ${cells.join(" | ")} |`);
+    }
+    if (rows.length > 0) {
+      tablesCount++;
+      blocks.push(rows.join("\n"));
+    }
+  }
+
+  return {
+    markdownAddendum: blocks.join("\n\n").slice(0, 4500),
+    tablesCount,
+    codeBlocksCount,
+  };
+}
+
+/**
+ * Returns live observed counts for studied units, tokens, double-read pages & deep structures.
+ */
+export function getStudiedCorpusTelemetry() {
+  ensureFullVaultDigested();
+  let webCrawledUnits = 0;
+  let doubleReadVerifiedUnits = 0;
+  let totalTokensEstimate = 0;
+  let totalExtractedBytes = 0;
+  let tablesExtracted = 0;
+  let codeBlocksExtracted = 0;
+
+  for (const unit of studiedCorpus.values()) {
+    if (unit.sourceKind !== "sovereign_vault") webCrawledUnits++;
+    if (unit.doubleReadVerified || unit.sourceKind === "sovereign_vault") doubleReadVerifiedUnits++;
+    totalTokensEstimate += unit.tokensEstimate || 0;
+    totalExtractedBytes += Buffer.byteLength(unit.content || "", "utf8");
+    tablesExtracted += unit.tablesExtracted || 0;
+    codeBlocksExtracted += unit.codeBlocksExtracted || 0;
+  }
+
+  return {
+    totalCorpusUnits: studiedCorpus.size,
+    webCrawledUnits,
+    doubleReadVerifiedUnits,
+    totalTokensEstimate,
+    totalExtractedBytes,
+    tablesExtracted,
+    codeBlocksExtracted,
+  };
 }
 
 /**
@@ -201,6 +290,8 @@ export async function crawlAndIngestPublicPages(params: {
 
       let pageTitle = url;
       let cleanBody = "";
+      let deepTables = 0;
+      let deepCodeBlocks = 0;
       if (extractRes.status === "fulfilled" && extractRes.value.ok && extractRes.value.extractedText) {
         cleanBody = extractRes.value.extractedText;
       }
@@ -209,6 +300,13 @@ export async function crawlAndIngestPublicPages(params: {
         const html = (await rawHtmlRes.value.text()).slice(0, 600_000);
         const tm = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
         if (tm?.[1]) pageTitle = tm[1].replace(/\s+/g, " ").trim().slice(0, 140);
+
+        const deep = extractDeepStructuredBlocks(html);
+        deepTables = deep.tablesCount;
+        deepCodeBlocks = deep.codeBlocksCount;
+        if (deep.markdownAddendum) {
+          cleanBody = `${cleanBody}\n\n${deep.markdownAddendum}`.trim();
+        }
 
         // Discover same-domain outbound documentation links for recursive study
         const hrefRe = /<a[^>]+href=["']([^"'#]+)["']/gi;
@@ -250,6 +348,9 @@ export async function crawlAndIngestPublicPages(params: {
         content: trimmedBody.slice(0, 16_000),
         sha256: digest,
         tokensEstimate: Math.ceil(trimmedBody.length / 4),
+        doubleReadVerified: trimmedBody.length >= 120,
+        tablesExtracted: deepTables,
+        codeBlocksExtracted: deepCodeBlocks,
         ingestedAt: new Date().toISOString(),
       };
       studiedCorpus.set(unitId, unit);
@@ -338,6 +439,7 @@ export async function autoDiscoverPublicWebBatch(params?: {
       content: finalBody.slice(0, 16_000),
       sha256: digest,
       tokensEstimate: Math.ceil(finalBody.length / 4),
+      doubleReadVerified: true,
       ingestedAt: new Date().toISOString(),
     });
     breakdown[sourceKey] = (breakdown[sourceKey] || 0) + 1;
