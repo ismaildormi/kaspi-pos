@@ -470,7 +470,10 @@ export function HeyukaUnifiedStudioWorkspace({
     setIsRunning(true);
     const controller = new AbortController();
     abortCtrlRef.current = controller;
-    const timeoutId = setTimeout(() => controller.abort(), 50_000);
+    const isLocalHost =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+    const timeoutId = setTimeout(() => controller.abort(), isLocalHost ? 180_000 : 58_000);
 
     const t0 = performance.now();
     try {
@@ -577,7 +580,11 @@ export function HeyukaUnifiedStudioWorkspace({
             citations = [...citations, ...cd.sources];
           }
           if (Array.isArray(cd?.verifiedTerminalLogs) && cd.verifiedTerminalLogs.length > 0) {
-            setTerminalLogs((p) => [...p, ...cd.verifiedTerminalLogs.slice(0, 6)]);
+            setTerminalLogs((p) => [...p, ...cd.verifiedTerminalLogs.slice(0, 8)]);
+          }
+          if (typeof cd?.studiedCorpusUnits === "number" && cd.studiedCorpusUnits > 0) {
+            const corpusNote = `• Studied Corpus: ${cd.studiedCorpusUnits} digested units (${cd.webCrawledUnits || 0} web-crawled, ${cd.errorLessonsLearned || 0} Reflexion error lessons active)`;
+            reasoningText = reasoningText ? `${reasoningText}\n${corpusNote}` : corpusNote;
           }
         }
       } catch {}

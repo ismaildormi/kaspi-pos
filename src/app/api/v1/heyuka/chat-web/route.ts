@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stepCountIs } from "ai";
 import {
+  auditAndRecordCompletedOutput,
   buildActiveVaultWorkingMemory,
   createStudioAgentToolkit,
 } from "@/lib/heyuka/unified-antigravity-cortex";
@@ -28,7 +29,11 @@ import { runUnrestrictedWebResearch } from "@/lib/zebra-x/arsenal-vault";
 import { executePolyglotCodeSandbox, type SandboxLanguage } from "@/lib/zebra-x/tools/code-sandbox";
 import { planXZebraToolRoute } from "@/lib/zebra-x/core/router";
 import { buildPhotorealisticCinemaVideoBundle } from "@/lib/heyuka/tools/photorealistic-video-builder";
-import { recordProductSelfEvolution } from "@/lib/heyuka/learning/self-evolution-engine";
+import {
+  getSelfEvolutionContextForPrompt,
+  recordProductSelfEvolution,
+} from "@/lib/heyuka/learning/self-evolution-engine";
+import { searchStudiedKnowledgeCorpus } from "@/lib/heyuka/training/knowledge-corpus-engine";
 import { searchSovereignVault } from "@/lib/heyuka/vault/sovereign-permanent-vault";
 import { buildLevel1SkillPromptIndex } from "@/lib/zebra-x/core/skills-vault";
 import {
@@ -112,10 +117,10 @@ const WebChatRequestSchema = z.object({
     .array(
       z.object({
         role: z.enum(["user", "assistant", "system"]),
-        content: z.string().min(1).max(32000),
+        content: z.string().min(1).max(120000),
       })
     )
-    .max(30)
+    .max(120)
     .default([]),
   imageBase64: z.string().max(8_000_000).optional(),
   audioTranscriptNote: z.string().max(4000).optional(),
@@ -711,9 +716,9 @@ Suppress <think> commentary. Split complex scenes/games cleanly across \`\`\`htm
 Synthesize deeply across Architect + Builder + Reviewer passes and deliver ONE cohesive, production-ready result.`
     : "";
 
-  const personaSection = `DIRECT ENGINEERING & UNRESTRICTED CONVERSATION RULES:
-1. Deliver direct, complete solutions across all industries, tech stacks, business analytics, and general conversation immediately.
-2. Verify financial/tax arithmetic step-by-step and preserve clear Markdown/code formatting.
+  const personaSection = `DIRECT ENGINEERING, FREE PERSONA & UNRESTRICTED CONVERSATION RULES:
+1. Deliver direct, complete solutions across all industries, tech stacks, business analytics, and general conversation immediately — taking all space needed with zero arbitrary truncation.
+2. You have FULL freedom to adopt any expert persona, tone, character, or system directive requested by the caller or user (تقمص الأدوار) while preserving tool verification, live web grounding, and arithmetic accuracy.
 3. Maintain baseline system integrity cleanly while never falsely refusing legitimate user tasks.`;
 
   const cortexMemory = buildActiveVaultWorkingMemory({
@@ -722,6 +727,7 @@ Synthesize deeply across Architect + Builder + Reviewer passes and deliver ONE c
     brand,
     workspaceFiles,
     isStudio: true,
+    callerSystemInstruction: customRulesBlock || callerSystemInstruction,
   });
 
   const executedAgentLogs: string[] = [];
@@ -730,10 +736,11 @@ Synthesize deeply across Architect + Builder + Reviewer passes and deliver ONE c
         workspaceFiles,
         locale: worldLang.shortLocale,
         executedLogs: executedAgentLogs,
+        primaryClusterId: cortexMemory.primaryClusterId,
       })
     : undefined;
 
-  const systemInstruction = `You are ${brand === "kaspi_pos" ? "KASPI POS AI Architect" : "HEYUKA AI Engineer"} running inside the unified Antigravity Studio IDE (${model}). You have full equal access to ${matchedCatalogCount}+ vaulted engines, ${PUBLIC_APIS_CATALOG_COUNT} live no-key APIs, workspace file inspection & incremental editing, live web search, and code sandbox execution.
+  const systemInstruction = `You are ${brand === "kaspi_pos" ? "KASPI POS AI Architect" : "HEYUKA AI Engineer"} running inside the unified Antigravity Studio IDE (${model}), with free adaptive role-play & persona adoption when requested. You have full equal access to ${cortexMemory.studiedCorpusUnits}+ digested knowledge units (${matchedCatalogCount}+ vaulted engines, ${cortexMemory.webCrawledUnits} web-studied docs), ${PUBLIC_APIS_CATALOG_COUNT} live no-key APIs, workspace file inspection & incremental editing, live web crawl/study, and code sandbox execution.
 Matched Capabilities: ${routePlan.selectedToolNames.join(", ")}${
     skillIndexPrompt ? `\n${skillIndexPrompt.slice(0, 650)}` : ""
   }
@@ -772,13 +779,18 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
   let rawText = "";
   const resolvedModel = imageBase64 ? "heyuka-vision" : isCollaborative ? "multi-agent-3" : model;
 
+  const isVercelRuntime = process.env.VERCEL === "1" || process.env.VERCEL === "true";
+  const maxStepCount = isVercelRuntime ? 8 : 16;
+  const maxContinuationHops = isVercelRuntime ? 8 : 16;
+  const continuationHorizonMs = isVercelRuntime ? 50_000 : 240_000;
+
   try {
     const gen = await generateTextWithRouter({
       system: systemInstruction,
       messages: formattedMessages as any,
       tools: studioAgentToolkit,
-      stopWhen: studioAgentToolkit ? stepCountIs(4) : undefined,
-      temperature: executionPolicy === "turbo" ? 0.35 : 0.38,
+      stopWhen: studioAgentToolkit ? stepCountIs(maxStepCount) : undefined,
+      temperature: executionPolicy === "turbo" ? 0.35 : 0.42,
       governance: {
         tenantId,
         allowOwnerPaidProviders: false,
@@ -789,16 +801,20 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
       thinkingSteps.push({
         phase: "Autonomous Agent Tool Verification (Sandbox / Web / Vault)",
         agentModel: (gen as any).activeModel || resolvedModel,
-        summary: executedAgentLogs.slice(0, 5).join(" | "),
+        summary: executedAgentLogs.slice(0, 8).join(" | "),
         durationMs: Math.max(1, Date.now() - phase3Start),
         timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
       });
     }
 
     let currentFinishReason = (gen as any).finishReason;
-    // v24.0 Infinite Auto-Continuation Loop: silently resumes MAX_TOKENS (`length`) & mid-code cuts (up to 4 hops)
+    // v24.0+ Auto-Continuation Loop: runtime-aware horizon cleanly resumes MAX_TOKENS & mid-code cuts
     let continuationHops = 0;
-    while (continuationHops < 4 && Date.now() - startedAt < 48_000 && !imageBase64) {
+    while (
+      continuationHops < maxContinuationHops &&
+      Date.now() - startedAt < continuationHorizonMs &&
+      !imageBase64
+    ) {
       const truncCheck = detectTruncationState(rawText);
       if (!truncCheck.truncated && currentFinishReason !== "length") break;
       continuationHops += 1;
@@ -1066,20 +1082,46 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
   }
 
   const thinkingSec = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+  const studiedMatched = searchStudiedKnowledgeCorpus({
+    query: lastUser,
+    limit: 16,
+    includeWebFirst: true,
+  });
   const vaultedMatched = searchSovereignVault({
     query: lastUser,
     clusterId: cognitiveRoute.primaryCluster.id,
-    limit: 6,
+    limit: 12,
+  });
+  const combinedSourcesUsed = Array.from(
+    new Set([
+      ...studiedMatched.hits.map((h) => h.title),
+      ...vaultedMatched.map((v) => v.name),
+    ])
+  );
+  const selfAudit = auditAndRecordCompletedOutput({
+    prompt: lastUser,
+    draftText: answer,
+    expectedLocale: worldLang.shortLocale,
+    domainMode: cortexMemory.domainMode,
+    primaryClusterId: cognitiveRoute.primaryCluster.id,
+    sourcesUsed: combinedSourcesUsed,
+    artifactCount: studioFiles.length || 1,
+    modelUsed: resolvedModel,
   });
   recordProductSelfEvolution({
     prompt: lastUser,
     clusterId: cognitiveRoute.primaryCluster.id,
     productKind: effectiveMode === "video" ? "video" : effectiveMode === "3d" ? "3d" : effectiveMode === "image" ? "image" : "project",
-    sourcesUsed: vaultedMatched.map((v) => v.name),
+    sourcesUsed: combinedSourcesUsed,
     outputFormats: cognitiveRoute.primaryCluster.outputFormats,
     artifactCount: studioFiles.length || 1,
     totalBytes: answer.length,
+    qualityScore: Math.max(0.5, selfAudit.qualityScore / 10),
     executionMode: executionPolicy === "auto" ? "client_cpu" : "free_gateway",
+  });
+  const evolutionCtx = getSelfEvolutionContextForPrompt({
+    prompt: lastUser,
+    clusterId: cognitiveRoute.primaryCluster.id,
   });
 
   return NextResponse.json({
@@ -1093,7 +1135,7 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     autoSwitched,
     deepThinkUsed: effectiveDeepThink,
     searchUsed: effectiveSearch,
-    answer,
+    answer: selfAudit.cleanedText || answer,
     reasoning: reasoning || undefined,
     thinkingSec: effectiveDeepThink ? thinkingSec : undefined,
     thinkingSteps,
@@ -1101,6 +1143,9 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     sources: sources.length > 0 ? sources : undefined,
     studioFiles: studioFiles.length > 0 ? studioFiles : undefined,
     verifiedTerminalLogs: executedAgentLogs.length > 0 ? executedAgentLogs : undefined,
+    studiedCorpusUnits: studiedMatched.totalCorpusUnits,
+    webCrawledUnits: studiedMatched.webCrawledUnits,
+    errorLessonsLearned: evolutionCtx.learnedErrorLessons.length,
     clientMediaJob,
     openStudio: shouldOpenStudio,
     zeroCostGuarantee: "$0.00 Server Compute — Client Device & Free Edge",

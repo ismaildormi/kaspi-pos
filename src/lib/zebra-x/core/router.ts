@@ -63,15 +63,17 @@ const TOOL_CATALOG_INDEX: Record<XZebraIntentCategory, string[]> = {
   phone_calendar_tour: ["checkPhoneCalendarOrCron", "createRichArtifactOrExport"],
   universal_web_research: ["unrestrictedWebSearch", "executeCodeSandbox", "queryPublicApi", "createRichArtifactOrExport"],
   nador_oriental_local: ["queryPublicApi", "unrestrictedWebSearch", "createRichArtifactOrExport"],
-  node_mesh_scale: ["unrestrictedWebSearch", "executeCodeSandbox", "evaluateMathAndFinance", "createRichArtifactOrExport"],
-  skills_and_cowork: ["lookupSkillOrAuthor", "runCoworkSubAgents", "executeCodeSandbox", "createRichArtifactOrExport"],
-  tool_discovery: ["discoverOpenSourceTool", "lookupSkillOrAuthor", "unrestrictedWebSearch", "executeCodeSandbox"],
+  node_mesh_scale: ["unrestrictedWebSearch", "executeCodeSandbox", "evaluateMathAndFinance", "createRichArtifactOrExport", "runKaspiStudioSwarmCouncil", "inspectSovereignVaultAndCapabilities"],
+  skills_and_cowork: ["lookupSkillOrAuthor", "runCoworkSubAgents", "executeCodeSandbox", "createRichArtifactOrExport", "runKaspiStudioSwarmCouncil"],
+  tool_discovery: ["discoverOpenSourceTool", "lookupSkillOrAuthor", "unrestrictedWebSearch", "executeCodeSandbox", "inspectSovereignVaultAndCapabilities"],
   reasoning_and_eval: [
     "evaluateMathAndFinance",
     "executeCodeSandbox",
     "lookupSkillOrAuthor",
     "discoverOpenSourceTool",
     "unrestrictedWebSearch",
+    "runKaspiStudioSwarmCouncil",
+    "inspectSovereignVaultAndCapabilities",
   ],
   bot_factory_and_seo: [
     "executeCodeSandbox",
@@ -186,7 +188,7 @@ export function planXZebraToolRoute(prompt: string, isOwner: boolean): RoutePlan
 
   return {
     intents,
-    selectedToolNames: Array.from(uniqueTools).slice(0, 12),
+    selectedToolNames: Array.from(uniqueTools),
     complexity: isOwner
       ? "owner"
       : intents.length > 1 || intents.includes("pdf_and_reports") || intents.includes("public_apis")
@@ -298,37 +300,32 @@ export async function buildMasterStrategicExecutionPlan(params: {
  * Keeps only context-matched tools + core fallbacks active on standard turns so large registries
  * never cause tool-selection confusion, while keeping at least 6 essential tools available.
  */
+const OWNER_ONLY_TOOLS = new Set([
+  "getPlatformStats",
+  "getPlatformRevenue",
+  "getAllTenantsList",
+  "getTenantDetails",
+  "getAIUsageStats",
+]);
+
+/**
+ * Filters tools strictly by authorization boundary (super-admin tools remain locked for
+ * non-owners) while keeping every non-owner tool unrestricted on every turn without arbitrary regex caps.
+ */
 export function selectMaskedActiveTools<T extends Record<string, any>>(
   allTools: T,
   routePlan: RoutePlanDecision,
-  prompt: string
+  _prompt: string
 ): Partial<T> {
-  if (/(\ball tools\b|\bevery\b|كاع القدرات|كل قدراتك|المصادر المفتوحة)/i.test(prompt)) {
+  if (routePlan.complexity === "owner") {
     return allTools;
   }
 
-  const alwaysReady = [
-    "getTodaySales",
-    "getLowStockProducts",
-    "getTopSellingProducts",
-    "predictStockDemand",
-    "unrestrictedWebSearch",
-    "queryPublicApi",
-    "evaluateMathAndFinance",
-    "executeCodeSandbox",
-    "generatePdfReport",
-    "lookupSkillOrAuthor",
-    "discoverOpenSourceTool",
-    "createRichArtifactOrExport",
-    "runKaspiStudioSwarmCouncil",
-    "inspectSovereignVaultAndCapabilities",
-  ];
-  const keepNames = new Set<string>([...alwaysReady, ...routePlan.selectedToolNames]);
-  const masked: Partial<T> = {};
+  const exposed: Partial<T> = {};
   for (const [k, v] of Object.entries(allTools)) {
-    if (keepNames.has(k)) {
-      (masked as any)[k] = v;
+    if (!OWNER_ONLY_TOOLS.has(k)) {
+      (exposed as any)[k] = v;
     }
   }
-  return Object.keys(masked).length > 0 ? masked : allTools;
+  return Object.keys(exposed).length > 0 ? exposed : allTools;
 }

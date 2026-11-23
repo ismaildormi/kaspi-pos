@@ -501,6 +501,9 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
 
   const errors: { provider: string; keyIndex: number; error: string }[] = [];
   const genStartedAt = Date.now();
+  const isVercelRuntime = process.env.VERCEL === "1" || process.env.VERCEL === "true";
+  const failoverHorizonMs = isVercelRuntime ? 24_000 : 120_000;
+  const maxTotalHorizonMs = isVercelRuntime ? 50_000 : 240_000;
   const hasTools = Boolean((restGenOptions as any)?.tools);
   const genAttempts: Array<{ candidate: RouterCandidate; stripTools: boolean }> = [
     ...candidates.map((candidate) => ({ candidate, stripTools: false })),
@@ -508,7 +511,7 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
   ];
 
   for (let idx = 0; idx < genAttempts.length; idx++) {
-    if (idx > 0 && Date.now() - genStartedAt > 24_000) break;
+    if (idx > 0 && Date.now() - genStartedAt > failoverHorizonMs) break;
     const { candidate, stripTools } = genAttempts[idx];
     try {
       const providerCfg = buildProviderGenerationConfig(candidate, (restGenOptions as any)?.maxOutputTokens);
@@ -517,8 +520,19 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
         delete callOpts.tools;
         delete callOpts.stopWhen;
       }
-      const remainingMs = Math.max(6_000, 27_000 - (Date.now() - genStartedAt));
-      const perAttemptMs = Math.min(remainingMs, isMultimodal ? 20_000 : idx === 0 ? 15_000 : 10_000);
+      const remainingMs = Math.max(8_000, maxTotalHorizonMs - (Date.now() - genStartedAt));
+      const attemptCapMs = isVercelRuntime
+        ? isMultimodal
+          ? 24_000
+          : idx === 0
+            ? 20_000
+            : 12_000
+        : isMultimodal
+          ? 60_000
+          : idx === 0
+            ? 90_000
+            : 45_000;
+      const perAttemptMs = Math.min(remainingMs, attemptCapMs);
       const result = await generateText({
         model: candidate.model as any,
         maxRetries: 0,
@@ -667,14 +681,18 @@ export async function streamUiResponseWithRouter(
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
       const streamStartedAt = Date.now();
+      const isVercelRuntime = process.env.VERCEL === "1" || process.env.VERCEL === "true";
+      const failoverHorizonMs = isVercelRuntime ? 24_000 : 120_000;
+      const attemptHorizonMs = isVercelRuntime ? 50_000 : 180_000;
+      const totalStreamBudgetMs = isVercelRuntime ? 52_000 : 240_000;
+      const maxContinuationHops = isVercelRuntime ? 8 : 16;
       let succeeded = false;
       let streamStartedOnWriter = false;
       let lastErrMsg = "All HEYUKA cloud gateways unavailable";
       const originalUserPrompt = extractLastUserTextFromMessages(restOptions.messages).slice(0, 1200);
 
       for (let attemptIdx = 0; attemptIdx < attempts.length; attemptIdx++) {
-        // Hard 24s cloud retry fence so Zero-Key / Local rescue ALWAYS finishes strictly under client 45s limit
-        if (attemptIdx > 0 && Date.now() - streamStartedAt > 24_000) break;
+        if (attemptIdx > 0 && Date.now() - streamStartedAt > failoverHorizonMs) break;
 
         const { candidate, stripTools } = attempts[attemptIdx];
         let emittedToClient = false;
@@ -689,8 +707,16 @@ export async function streamUiResponseWithRouter(
           const providerCfg = buildProviderGenerationConfig(candidate, restOptions.maxOutputTokens);
           const callConfig = { ...providerCfg, ...restOptions };
           if (stripTools) delete callConfig.tools;
-          const remainingMs = Math.max(6_000, 27_000 - (Date.now() - streamStartedAt));
-          const attemptTimeoutMs = Math.min(remainingMs, attemptIdx === 0 ? 14_000 : 9_500);
+          const remainingMs = Math.max(8_000, attemptHorizonMs - (Date.now() - streamStartedAt));
+          const perAttemptCap =
+            attemptIdx === 0
+              ? isVercelRuntime
+                ? 22_000
+                : 90_000
+              : isVercelRuntime
+                ? 12_000
+                : 45_000;
+          const attemptTimeoutMs = Math.min(remainingMs, perAttemptCap);
 
           const res = streamText({
             model: candidate.model as any,
@@ -803,8 +829,8 @@ export async function streamUiResponseWithRouter(
 
           let hopCount = 0;
           while (
-            hopCount < 4 &&
-            Date.now() - streamStartedAt < 48_000 &&
+            hopCount < maxContinuationHops &&
+            Date.now() - streamStartedAt < totalStreamBudgetMs &&
             (finishReason === "length" ||
               detectTruncationState(visibleClean).truncated ||
               (finishReason !== "stop" && hasInterruptedTail(visibleClean)))
@@ -817,7 +843,7 @@ export async function streamUiResponseWithRouter(
                 model: candidate.model as any,
                 maxRetries: 0,
                 ...buildProviderGenerationConfig(candidate, restOptions.maxOutputTokens),
-                abortSignal: AbortSignal.timeout(Math.max(6_000, 52_000 - (Date.now() - streamStartedAt))),
+                abortSignal: AbortSignal.timeout(Math.max(8_000, totalStreamBudgetMs - (Date.now() - streamStartedAt))),
                 system:
                   "Continue seamlessly from the exact cutoff character without repeating any prior text, without adding opening ``` fences if already inside a block, and finish all remaining sections completely.",
                 messages: [

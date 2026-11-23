@@ -544,7 +544,7 @@ export function AIChatWidget() {
     };
   }, [isDragging]);
 
-  // Memoize transport with 45s AbortController timeout & strict finally cleanup
+  // Memoize transport with runtime-aware AbortController timeout (58s Vercel edge / 180s local) & cleanup
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
@@ -554,7 +554,10 @@ export function AIChatWidget() {
         fetch: async (inputUrl, init) => {
           const controller = new AbortController();
           activeAbortRef.current = controller;
-          const timeoutId = setTimeout(() => controller.abort(), 45_000);
+          const isLocalHost =
+            typeof window !== "undefined" &&
+            (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+          const timeoutId = setTimeout(() => controller.abort(), isLocalHost ? 180_000 : 58_000);
           const upstreamSignal = init?.signal;
           const onUpstreamAbort = () => controller.abort();
           upstreamSignal?.addEventListener("abort", onUpstreamAbort, { once: true });

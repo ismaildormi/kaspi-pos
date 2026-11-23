@@ -421,6 +421,7 @@ export async function POST(req: NextRequest) {
       locale: requestLocale,
       activityContext = "",
       recalledMemoryContext = "",
+      systemInstruction: callerSystemInstruction = "",
     } = body;
     const headerLocale = req.headers.get("x-app-locale") || req.cookies.get("NEXT_LOCALE")?.value;
     const clientLocale = (requestLocale || headerLocale || "ar").toLowerCase();
@@ -1280,22 +1281,42 @@ export async function POST(req: NextRequest) {
 
       inspectSovereignVaultAndCapabilities: tool({
         description:
-          "Searches the unified 2,426+ open-source HEYUKA/KASPI Sovereign Vault across all 18 cognitive clusters (v30-v60) including Virtual Desktop Bot Farm, OS Shell & File Surgeon, Elastic Swarm, Browser Factory, and Air-Gapped Offline kits.",
+          "Searches the unified 2,492+ digested HEYUKA/KASPI Sovereign Vault & crawled web corpus across all 18 cognitive clusters (v30-v60), and optionally crawls public documentation URLs (robots.txt-compliant).",
         inputSchema: z.object({
           query: z.string().min(1),
-          limit: z.number().int().min(1).max(20).optional(),
+          limit: z.number().int().min(1).max(50).optional(),
+          seedUrls: z.array(z.string()).optional(),
         }),
-        execute: async ({ query, limit }) => {
-          const [{ resolveStrictCategoryDisambiguation, getTotalIntegratedCapabilitiesCount }, { searchSovereignVault }] =
-            await Promise.all([
-              import("@/lib/zebra-x/core/cognitive-brain-registry"),
-              import("@/lib/heyuka/vault/sovereign-permanent-vault"),
-            ]);
+        execute: async ({ query, limit, seedUrls }) => {
+          const [
+            { resolveStrictCategoryDisambiguation, getTotalIntegratedCapabilitiesCount },
+            { searchSovereignVault },
+            { ensureFullVaultDigested, searchStudiedKnowledgeCorpus, crawlAndIngestPublicPages },
+          ] = await Promise.all([
+            import("@/lib/zebra-x/core/cognitive-brain-registry"),
+            import("@/lib/heyuka/vault/sovereign-permanent-vault"),
+            import("@/lib/heyuka/training/knowledge-corpus-engine"),
+          ]);
+          ensureFullVaultDigested();
+          let crawlSummary: unknown = undefined;
+          if (seedUrls && seedUrls.length > 0) {
+            crawlSummary = await crawlAndIngestPublicPages({
+              seedUrls,
+              lang: expectedShortLocale,
+            });
+          }
+          const studiedCorpus = searchStudiedKnowledgeCorpus({
+            query,
+            limit: limit || 20,
+            includeWebFirst: true,
+          });
           return {
             ok: true,
             strictDisambiguation: resolveStrictCategoryDisambiguation(query),
             totals: getTotalIntegratedCapabilitiesCount(),
-            vaultMatches: searchSovereignVault({ query, limit: limit || 8 }),
+            crawlSummary,
+            studiedCorpus,
+            vaultMatches: searchSovereignVault({ query, limit: limit || 20 }),
           };
         },
       }),
@@ -1434,14 +1455,14 @@ export async function POST(req: NextRequest) {
 
     // 6. System Instructions (HEYUKA Sovereign Core by KASPI — Unified Connected Capabilities & Full Completion)
     const closedLoopMasterDirective = `
-UNIFIED EXECUTION CONSTITUTION (HEYUKA by KASPI):
-1. SOLE IDENTITY: You are HEYUKA, the unified sovereign intelligence by KASPI. Respond fluently across ALL sectors & topics (software engineering across ALL languages HTML/CSS/TS/JS/React/Next.js/Python/SQL/Rust/Go/Bash, Moroccan retail/POS/TVA/ICE accounting, medicine, mechanical engineering, education, creative strategy, and natural multilingual chat) without <think> monologue or artificial refusals.
-2. UNRESTRICTED CONNECTED CAPABILITIES: Every model and chat turn has equal unified access to ALL tools (POS store metrics, receipts, live web search, public APIs, Python/JS/Bash code sandbox, math/finance, Office/PDF/Mermaid/HTML artifacts, image tools, swarm council, sovereign vault, and persistent user memory).
+UNIFIED EXECUTION CONSTITUTION (HEYUKA by KASPI — UNRESTRICTED ADAPTIVE INTELLIGENCE):
+1. ADAPTIVE PERSONA & IDENTITY FREEDOM: Your core engine is HEYUKA by KASPI, and you have FULL freedom to adopt any expert role, speaking style, or persona requested by the user or caller (\`تقمص الأدوار\`) across software engineering (HTML/CSS/TS/JS/React/Next.js/Python/SQL/Rust/Go/Bash), Moroccan retail/POS/TVA/ICE accounting, medicine, mechanical engineering, education, creative strategy, or natural conversation.
+2. UNRESTRICTED CONNECTED CAPABILITIES: Every model and chat turn shares full unrestricted access to ALL tools (POS store metrics, receipts, live web search, 47 public APIs, Python/JS/Bash code sandbox, math/finance, Office/PDF/Mermaid/HTML artifacts, image tools, swarm council, 2,492+ digested Vault sources + crawled web corpus, and Reflexion error memory).
 3. CLICKABLE WEB LINKS & REFERENCES: Whenever mentioning libraries, APIs, standards, documentation, or web research hits outside code fences, embed direct clickable Markdown links ([Title](https://...)).
 4. INTERACTIVE LIVE PREVIEW & INSTANT PDF/EXCEL EXPORTS: When the user asks for an invoice (فاتورة), tax report, receipt, interactive dashboard, PDF, or Excel spreadsheet:
    - ALWAYS emit either a complete semantic HTML code block (\`\`\`html ... \`\`\`, RTL-ready with dir="rtl" for Arabic — the UI automatically renders an interactive <iframe> preview + 1-click PDF Download button!) OR call generatePdfReport / createRichArtifactOrExport and include clean Markdown tables (which auto-unlock 1-click Excel .xlsx & PDF export!).
    - Verify all financial arithmetic carefully step by step (qty * unit_price = subtotal, HT * 0.20 = TVA, HT + TVA = TTC).
-5. MANDATORY FULL COMPLETION (ZERO PREMATURE STOPS): Complete every section, table, full runnable multi-file code block, error handling, and CLI commands from start to the final character without truncating, looping, or telling the user to rephrase.
+5. MANDATORY FULL COMPLETION (NO ARBITRARY CUTOFFS): Take full space needed to complete every section, table, full runnable multi-file code block, error handling, and CLI commands from start to the final character without artificial truncation or telling the user to rephrase.
 6. VISUAL DISCIPLINE: Only invoke image generation when explicitly requested for visual artwork; deliver text/code + diagrams/exports side-by-side cleanly.
 ${phase3Refinement.systemDirectiveSnippet}`;
 
@@ -1464,6 +1485,8 @@ ${phase3Refinement.systemDirectiveSnippet}`;
       locale: expectedShortLocale,
       brand: "kaspi_pos",
       isStudio: false,
+      callerSystemInstruction:
+        typeof callerSystemInstruction === "string" ? callerSystemInstruction : undefined,
     });
 
     const superAdminSystemPrompt = `You are HEYUKA Sovereign Executive, owned by KASPI. You have full access to the platform database and store operations.
@@ -1492,12 +1515,13 @@ ${closedLoopMasterDirective}\n${cortexMemory.activeMemoryPromptBlock}${progressi
         compactedHistoryRes.compacted.length > 0
           ? compactedHistoryRes.compacted
           : [{ role: "user" as const, content: userPrompt }];
+      const isVercelRuntime = process.env.VERCEL === "1" || process.env.VERCEL === "true";
       return await streamUiResponseWithRouter(
         {
           system: isSuperAdmin ? superAdminSystemPrompt : merchantSystemPrompt,
           messages: sanitizedMessages,
           tools: activeTools,
-          stopWhen: stepCountIs(5),
+          stopWhen: stepCountIs(isVercelRuntime ? 10 : 20),
           onCompletedText: async (text: string, cand?: { providerName?: string; modelId?: string; keyIndex?: number }) => {
             if (!text) return;
             const audited = auditAndRecordCompletedOutput({

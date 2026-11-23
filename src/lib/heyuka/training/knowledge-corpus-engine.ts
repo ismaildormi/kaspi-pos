@@ -1,0 +1,398 @@
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { isSafePublicHttpUrl, runUnrestrictedWebResearch } from "@/lib/zebra-x/arsenal-vault";
+import { getSovereignVaultUnifiedEntries } from "@/lib/heyuka/vault/sovereign-permanent-vault";
+import { exportEvolutionChatMlDataset } from "@/lib/heyuka/learning/self-evolution-engine";
+import type { CognitiveClusterId } from "@/lib/zebra-x/core/cognitive-brain-registry";
+
+export interface StudiedKnowledgeUnit {
+  id: string;
+  title: string;
+  url: string;
+  sourceKind: "sovereign_vault" | "web_crawl" | "user_dataset" | "error_lesson";
+  clusterId?: CognitiveClusterId;
+  content: string;
+  sha256: string;
+  tokensEstimate: number;
+  ingestedAt: string;
+}
+
+const studiedCorpus = new Map<string, StudiedKnowledgeUnit>();
+const contentDigestSeen = new Set<string>();
+let vaultIndexed = false;
+
+function sha256Short(text: string): string {
+  return crypto.createHash("sha256").update(text, "utf8").digest("hex").slice(0, 24);
+}
+
+/**
+ * Indexes ALL 2,492+ classified entries from HEYUKA's Sovereign Permanent Vault
+ * into the active studied knowledge corpus so zero sources sit idle on disk.
+ */
+export function ensureFullVaultDigested(): { totalDigested: number } {
+  if (vaultIndexed && studiedCorpus.size >= 2000) {
+    return { totalDigested: studiedCorpus.size };
+  }
+
+  const allEntries = getSovereignVaultUnifiedEntries();
+  const now = new Date().toISOString();
+  for (const entry of allEntries) {
+    const unitId = `vault::${entry.id}`;
+    const body = `${entry.name} (${entry.pack}, cluster: ${entry.clusterId}): ${entry.role}. Official source: ${entry.url}. Mirror URI: ${entry.vaultUri}.`;
+    const digest = sha256Short(body);
+    contentDigestSeen.add(digest);
+    studiedCorpus.set(unitId, {
+      id: unitId,
+      title: entry.name,
+      url: entry.url,
+      sourceKind: "sovereign_vault",
+      clusterId: entry.clusterId,
+      content: body,
+      sha256: digest,
+      tokensEstimate: Math.ceil(body.length / 4),
+      ingestedAt: now,
+    });
+  }
+
+  vaultIndexed = true;
+  return { totalDigested: studiedCorpus.size };
+}
+
+/**
+ * Queries across ALL digested Vault entries AND crawled/ingested websites/datasets cleanly.
+ */
+export function searchStudiedKnowledgeCorpus(params: {
+  query: string;
+  limit?: number;
+  includeWebFirst?: boolean;
+}): {
+  hits: StudiedKnowledgeUnit[];
+  totalCorpusUnits: number;
+  webCrawledUnits: number;
+} {
+  ensureFullVaultDigested();
+  const qTokens = String(params.query || "")
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t.length >= 2);
+
+  let webCrawledUnits = 0;
+  const scored: Array<{ unit: StudiedKnowledgeUnit; score: number }> = [];
+
+  for (const unit of studiedCorpus.values()) {
+    if (unit.sourceKind !== "sovereign_vault") webCrawledUnits++;
+    if (qTokens.length === 0) {
+      scored.push({ unit, score: unit.sourceKind === "web_crawl" ? 2 : 1 });
+      continue;
+    }
+    const hay = `${unit.title} ${unit.url} ${unit.content} ${unit.clusterId || ""}`.toLowerCase();
+    let score = 0;
+    for (const tok of qTokens) {
+      if (hay.includes(tok)) {
+        score += unit.title.toLowerCase().includes(tok) ? 3 : 1;
+      }
+    }
+    if (params.includeWebFirst && unit.sourceKind === "web_crawl" && score > 0) {
+      score += 4;
+    }
+    if (score > 0) scored.push({ unit, score });
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  const lim = typeof params.limit === "number" && params.limit > 0 ? params.limit : 24;
+  return {
+    hits: scored.slice(0, lim).map((x) => x.unit),
+    totalCorpusUnits: studiedCorpus.size,
+    webCrawledUnits,
+  };
+}
+
+/**
+ * Checks target origin's robots.txt before crawling external documentation or websites.
+ */
+async function checkRobotsTxtAllowed(targetUrl: string): Promise<boolean> {
+  try {
+    const parsed = new URL(targetUrl);
+    const robotsUrl = `${parsed.origin}/robots.txt`;
+    const res = await fetch(robotsUrl, {
+      headers: { "User-Agent": "KaspiHeyukaStudyBot/1.0 (+https://kaspi-pos.vercel.app)" },
+      signal: AbortSignal.timeout(3500),
+    });
+    if (!res.ok) return true; // No robots.txt -> allowed
+    const txt = await res.text();
+    let inWildcardOrSelf = false;
+    const disallows: string[] = [];
+    for (const rawLine of txt.split(/\r?\n/)) {
+      const line = rawLine.replace(/#.*$/, "").trim();
+      if (!line) continue;
+      if (/^User-agent:\s*(\*|KaspiHeyukaStudyBot)/i.test(line)) {
+        inWildcardOrSelf = true;
+      } else if (/^User-agent:/i.test(line)) {
+        inWildcardOrSelf = false;
+      } else if (inWildcardOrSelf && /^Disallow:\s*(.*)$/i.test(line)) {
+        const rule = line.replace(/^Disallow:\s*/i, "").trim();
+        if (rule) disallows.push(rule);
+      }
+    }
+    return !disallows.some((prefix) => prefix === "/" || parsed.pathname.startsWith(prefix));
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Compliant breadth-first web & documentation crawler that studies public pages,
+ * deduplicates content via SHA-256, and indexes chunks into HEYUKA's live Knowledge Corpus.
+ */
+export async function crawlAndIngestPublicPages(params: {
+  seedUrls: string[];
+  maxPages?: number;
+  lang?: string;
+}): Promise<{
+  ok: boolean;
+  crawledCount: number;
+  skippedCount: number;
+  ingestedUnits: Array<{ title: string; url: string; chars: number }>;
+  totalCorpusUnits: number;
+  notes: string[];
+}> {
+  ensureFullVaultDigested();
+  const isVercel = process.env.VERCEL === "1";
+  const capPages = Math.min(Math.max(1, params.maxPages ?? (isVercel ? 10 : 40)), isVercel ? 20 : 120);
+  const visited = new Set<string>();
+  const queue: string[] = [];
+  const allowedHosts = new Set<string>();
+  const notes: string[] = [];
+  const ingestedUnits: Array<{ title: string; url: string; chars: number }> = [];
+  let skippedCount = 0;
+
+  for (const raw of params.seedUrls) {
+    const clean = String(raw || "").trim();
+    if (clean && isSafePublicHttpUrl(clean)) {
+      queue.push(clean);
+      try {
+        allowedHosts.add(new URL(clean).hostname);
+      } catch {}
+    }
+  }
+
+  while (queue.length > 0 && ingestedUnits.length < capPages) {
+    const url = queue.shift()!;
+    if (visited.has(url) || !isSafePublicHttpUrl(url)) continue;
+    visited.add(url);
+
+    const robotsOk = await checkRobotsTxtAllowed(url);
+    if (!robotsOk) {
+      skippedCount++;
+      notes.push(`Respected robots.txt Disallow on ${url}`);
+      continue;
+    }
+
+    try {
+      const [extractRes, rawHtmlRes] = await Promise.allSettled([
+        runUnrestrictedWebResearch({ url, lang: params.lang || "en" }),
+        fetch(url, {
+          headers: { "User-Agent": "KaspiHeyukaStudyBot/1.0 (+https://kaspi-pos.vercel.app)" },
+          signal: AbortSignal.timeout(6500),
+        }),
+      ]);
+
+      let pageTitle = url;
+      let cleanBody = "";
+      if (extractRes.status === "fulfilled" && extractRes.value.ok && extractRes.value.extractedText) {
+        cleanBody = extractRes.value.extractedText;
+      }
+
+      if (rawHtmlRes.status === "fulfilled" && rawHtmlRes.value.ok) {
+        const html = (await rawHtmlRes.value.text()).slice(0, 600_000);
+        const tm = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+        if (tm?.[1]) pageTitle = tm[1].replace(/\s+/g, " ").trim().slice(0, 140);
+
+        // Discover same-domain outbound documentation links for recursive study
+        const hrefRe = /<a[^>]+href=["']([^"'#]+)["']/gi;
+        let hm: RegExpExecArray | null;
+        while ((hm = hrefRe.exec(html)) !== null && queue.length < capPages * 3) {
+          try {
+            const abs = new URL(hm[1], url).toString().split("#")[0];
+            if (
+              isSafePublicHttpUrl(abs) &&
+              allowedHosts.has(new URL(abs).hostname) &&
+              !visited.has(abs) &&
+              !/\.(png|jpg|jpeg|gif|svg|css|js|ico|woff2?|pdf|zip)$/i.test(abs)
+            ) {
+              queue.push(abs);
+            }
+          } catch {}
+        }
+      }
+
+      const trimmedBody = cleanBody.trim();
+      if (trimmedBody.length < 80) {
+        skippedCount++;
+        continue;
+      }
+
+      const digest = sha256Short(trimmedBody);
+      if (contentDigestSeen.has(digest)) {
+        skippedCount++;
+        continue;
+      }
+      contentDigestSeen.add(digest);
+
+      const unitId = `web::${digest}`;
+      const unit: StudiedKnowledgeUnit = {
+        id: unitId,
+        title: pageTitle,
+        url,
+        sourceKind: "web_crawl",
+        content: trimmedBody.slice(0, 16_000),
+        sha256: digest,
+        tokensEstimate: Math.ceil(trimmedBody.length / 4),
+        ingestedAt: new Date().toISOString(),
+      };
+      studiedCorpus.set(unitId, unit);
+      ingestedUnits.push({ title: pageTitle, url, chars: unit.content.length });
+    } catch {
+      skippedCount++;
+    }
+  }
+
+  // Persist studied web corpus cleanly on ephemeral/local FS when writable
+  try {
+    const dir = "/tmp/heyuka-vault";
+    fs.mkdirSync(dir, { recursive: true });
+    const webUnits = Array.from(studiedCorpus.values()).filter((u) => u.sourceKind === "web_crawl");
+    const jsonl = webUnits.map((u) => JSON.stringify({ title: u.title, url: u.url, text: u.content })).join("\n");
+    fs.writeFileSync(path.join(dir, "studied-web-corpus.jsonl"), jsonl, "utf8");
+  } catch {}
+
+  return {
+    ok: true,
+    crawledCount: ingestedUnits.length,
+    skippedCount,
+    ingestedUnits,
+    totalCorpusUnits: studiedCorpus.size,
+    notes,
+  };
+}
+
+/**
+ * Generates an executable Continual Pretraining + FineWeb-2 Streaming + Error-Correction Distillation
+ * Python kit & JSONL shards for external GPU execution (Colab / Kaggle / RunPod / Local CUDA).
+ */
+export function buildFoundationContinualPretrainingKit(params?: {
+  baseModel?: string;
+  includeSampleCorpus?: boolean;
+}) {
+  ensureFullVaultDigested();
+  const baseModel = params?.baseModel?.trim() || "Qwen/Qwen2.5-7B-Instruct";
+  const evo = exportEvolutionChatMlDataset();
+
+  const allStudied = Array.from(studiedCorpus.values());
+  const corpusJsonl = allStudied
+    .slice(0, params?.includeSampleCorpus ? 3000 : 500)
+    .map((u) => JSON.stringify({ id: u.id, source: u.url, title: u.title, text: u.content }))
+    .join("\n");
+
+  const pythonTrainerScript = `#!/usr/bin/env python3
+"""
+HEYUKA Foundation Continual Pretraining (CPT) + Web-Scale FineWeb-2 Streaming + Error-Reflexion SFT
+Runs on Free Kaggle 2xT4, Google Colab A100/T4, RunPod, or local NVIDIA CUDA GPUs ($0 infrastructure lock-in).
+Connects trained model straight back into HEYUKA via Ollama -> LOCAL_AI_BASE_URL.
+"""
+import json
+from itertools import islice
+from datasets import load_dataset, Dataset, concatenate_datasets
+from unsloth import FastLanguageModel
+from trl import SFTTrainer
+from transformers import TrainingArguments
+
+BASE_MODEL = ${JSON.stringify(baseModel)}
+MAX_SEQ_LENGTH = 8192
+
+def stream_web_scale_shards(fineweb_samples=25000, wiki_samples=10000):
+    # Streams HuggingFaceFW/fineweb-2 + wikimedia/wikipedia cleanly without requiring multi-TB storage
+    fw_ar = load_dataset("HuggingFaceFW/fineweb-2", "arb_Arab", split="train", streaming=True)
+    fw_fr = load_dataset("HuggingFaceFW/fineweb-2", "fra_Latn", split="train", streaming=True)
+    fw_en = load_dataset("HuggingFaceFW/fineweb-edu", split="train", streaming=True)
+    rows = []
+    for rec in islice(fw_ar, fineweb_samples // 3):
+        rows.append({"text": rec["text"]})
+    for rec in islice(fw_fr, fineweb_samples // 3):
+        rows.append({"text": rec["text"]})
+    for rec in islice(fw_en, fineweb_samples // 3):
+        rows.append({"text": rec["text"]})
+    return Dataset.from_list(rows)
+
+def load_local_jsonl(path, key="text"):
+    rows = []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    obj = json.loads(line)
+                    rows.append({"text": obj.get(key) or json.dumps(obj, ensure_ascii=False)})
+    except FileNotFoundError:
+        pass
+    return Dataset.from_list(rows)
+
+def main():
+    model, tokenizer = FastLanguageModel.from_pretrained(
+        model_name=BASE_MODEL,
+        max_seq_length=MAX_SEQ_LENGTH,
+        load_in_4bit=True,
+    )
+    model = FastLanguageModel.get_peft_model(
+        model,
+        r=32,
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj", "embed_tokens", "lm_head"],
+        lora_alpha=32,
+        lora_dropout=0,
+        use_gradient_checkpointing="unsloth",
+    )
+
+    web_ds = stream_web_scale_shards()
+    vault_ds = load_local_jsonl("heyuka_studied_corpus.jsonl", key="text")
+    error_sft = load_local_jsonl("heyuka_evolution_chatml.jsonl", key="messages")
+    combined = concatenate_datasets([d for d in [web_ds, vault_ds, error_sft] if len(d) > 0]).shuffle(seed=42)
+
+    trainer = SFTTrainer(
+        model=model,
+        tokenizer=tokenizer,
+        train_dataset=combined,
+        dataset_text_field="text",
+        max_seq_length=MAX_SEQ_LENGTH,
+        args=TrainingArguments(
+            per_device_train_batch_size=2,
+            gradient_accumulation_steps=8,
+            warmup_steps=20,
+            num_train_epochs=1,
+            learning_rate=5e-5,
+            bf16=True,
+            output_dir="heyuka-cpt-checkpoints",
+            save_steps=250,
+        ),
+    )
+    trainer.train()
+    model.save_pretrained_gguf("heyuka-foundation-gguf", tokenizer, quantization_method="q4_k_m")
+    print("Done! Load into Ollama via: ollama create heyuka-foundation -f Modelfile")
+
+if __name__ == "__main__":
+    main()
+`;
+
+  const modelfile = `FROM ./heyuka-foundation-gguf/unsloth.Q4_K_M.gguf\nPARAMETER num_ctx 32768\nPARAMETER temperature 0.35\nSYSTEM "You are HEYUKA Foundation AI trained on Multilingual Web-Scale FineWeb-2 + 2,492+ Sovereign Vault Knowledge Units."`;
+
+  return {
+    baseModel,
+    studiedUnitsCount: studiedCorpus.size,
+    chatMlTracesCount: evo.tracesCount,
+    errorLessonsCount: evo.errorLessonsCount,
+    corpusJsonl,
+    chatMlJsonl: evo.jsonl,
+    errorLessonsJsonl: evo.errorLessons.map((e) => JSON.stringify(e)).join("\n"),
+    pythonTrainerScript,
+    modelfile,
+  };
+}

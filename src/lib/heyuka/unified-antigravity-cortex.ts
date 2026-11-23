@@ -7,8 +7,14 @@ import {
 } from "@/lib/zebra-x/core/cognitive-brain-registry";
 import {
   getSelfEvolutionContextForPrompt,
+  recordErrorLessonFromFailure,
   recordProductSelfEvolution,
 } from "@/lib/heyuka/learning/self-evolution-engine";
+import {
+  crawlAndIngestPublicPages,
+  ensureFullVaultDigested,
+  searchStudiedKnowledgeCorpus,
+} from "@/lib/heyuka/training/knowledge-corpus-engine";
 import { searchSovereignVault } from "@/lib/heyuka/vault/sovereign-permanent-vault";
 import { runUnrestrictedWebResearch } from "@/lib/zebra-x/arsenal-vault";
 import { queryPublicApiHub, type PublicApiCategory } from "@/lib/zebra-x/tools/public-apis-hub";
@@ -40,9 +46,38 @@ export interface CortexWorkingMemory {
   primaryClusterId: CognitiveClusterId;
   secondaryClusterIds: CognitiveClusterId[];
   vaultTotalSources: number;
+  studiedCorpusUnits: number;
+  webCrawledUnits: number;
   matchedVaultCount: number;
+  personaDirective: string;
   activeMemoryPromptBlock: string;
   recommendedSourcesForTrace: string[];
+}
+
+/**
+ * Resolves free dynamic persona / role-play adoption (`تقمص الأدوار`) across Chat, Studio,
+ * and external API callers while keeping full Sovereign Vault & tool execution active.
+ */
+export function resolveAdaptivePersonaDirective(
+  prompt: string,
+  callerSystemInstruction?: string
+): string {
+  const cleanCaller = typeof callerSystemInstruction === "string" ? callerSystemInstruction.trim() : "";
+  const hasExplicitRoleCue =
+    /(?:أنت\s+الآن|تصرف\s+ك|تقمص\s+دور|تحدث\s+بصفتك|بصفتك|كأنك|على\s+أنك|شخصية|أسلوب|you\s+are\s+now|act\s+as|roleplay|adopt\s+the\s+persona|behave\s+like|speak\s+as|agis\s+comme|tu\s+es\s+maintenant|joue\s+le\s+rôle)/i.test(
+      prompt || ""
+    );
+
+  if (cleanCaller && hasExplicitRoleCue) {
+    return `[DYNAMIC PERSONA & CALLER ROLEPLAY ACTIVE]: Fully adopt the requested persona, dialect, and expert framing from both the user prompt and caller instruction ("${cleanCaller.slice(0, 600)}"), without dropping tool accuracy, web citations, or complete multi-step execution.`;
+  }
+  if (cleanCaller) {
+    return `[CUSTOM PERSONA / SYSTEM DIRECTIVE ACTIVE]: Follow this requested persona & operating framing seamlessly ("${cleanCaller.slice(0, 800)}"), while retaining full access to all vaulted sources, sandbox verification, and web tools.`;
+  }
+  if (hasExplicitRoleCue) {
+    return `[FREE ROLEPLAY & ADAPTIVE PERSONA ENABLED]: Adapt freely into the exact expert, mentor, fictional character, architect, merchant advisor, or speaking style requested by the user — never refuse harmless role-play or lock into a rigid robotic voice.`;
+  }
+  return `[ADAPTIVE PERSONA]: Dynamically adapt tone, depth, and voice to fit the task — from sharp senior systems architect to friendly Darija/Arabic merchant partner — without artificial caps or robotic disclaimers.`;
 }
 
 export function classifyUniversalDomainMode(
@@ -143,32 +178,67 @@ export function buildActiveVaultWorkingMemory(params: {
   brand?: "kaspi_pos" | "heyuka";
   workspaceFiles?: WorkspaceFileSummaryInput[];
   isStudio?: boolean;
+  callerSystemInstruction?: string;
 }): CortexWorkingMemory {
   const domainMode = classifyUniversalDomainMode(params.prompt, params.workspaceFiles);
   const cognitiveRoute = classifyCognitiveIntentAndSources(params.prompt, params.locale);
   const v60Totals = getTotalIntegratedCapabilitiesCount();
 
-  // Retrieve top exact engines from ALL 2,492 Sovereign Vault entries for this specific prompt
-  const queryHits = searchSovereignVault({ query: params.prompt, limit: 8 });
-  const clusterHits =
-    queryHits.length < 6
-      ? searchSovereignVault({ clusterId: cognitiveRoute.primaryCluster.id, limit: 6 })
+  // Digest all Sovereign Vault sources + search full studied corpus (web crawls + all indexed engines)
+  ensureFullVaultDigested();
+  const studiedSearch = searchStudiedKnowledgeCorpus({
+    query: params.prompt,
+    limit: 18,
+    includeWebFirst: true,
+  });
+
+  // Supplement with exact cluster matches if studied query hits are light
+  const vaultFallbackHits =
+    studiedSearch.hits.length < 10
+      ? searchSovereignVault({ clusterId: cognitiveRoute.primaryCluster.id, limit: 12 })
       : [];
-  const mergedHitsMap = new Map<string, (typeof queryHits)[number]>();
-  for (const item of [...queryHits, ...clusterHits]) {
-    if (!mergedHitsMap.has(item.id)) mergedHitsMap.set(item.id, item);
+
+  const seenNames = new Set<string>();
+  const unifiedLines: string[] = [];
+  const recommendedNames: string[] = [];
+
+  for (const hit of studiedSearch.hits) {
+    const key = hit.title.toLowerCase();
+    if (seenNames.has(key)) continue;
+    seenNames.add(key);
+    recommendedNames.push(hit.title);
+    const kindTag = hit.sourceKind === "web_crawl" ? "WEB-STUDIED" : hit.clusterId || hit.sourceKind;
+    const excerpt = hit.content.replace(/\s+/g, " ").trim().slice(0, 180);
+    unifiedLines.push(`- ${hit.title} [${kindTag}]: ${excerpt}${hit.url ? ` — Source: ${hit.url}` : ""}`);
   }
-  const activeVaultEngines = Array.from(mergedHitsMap.values()).slice(0, 10);
+  for (const v of vaultFallbackHits) {
+    const key = v.name.toLowerCase();
+    if (seenNames.has(key)) continue;
+    seenNames.add(key);
+    recommendedNames.push(v.name);
+    unifiedLines.push(`- ${v.name} [${v.clusterId}]: ${v.role}${v.url ? ` — Docs/Repo: ${v.url}` : ""}`);
+  }
 
   const evolution = getSelfEvolutionContextForPrompt({
     prompt: params.prompt,
     clusterId: cognitiveRoute.primaryCluster.id,
   });
 
+  const errorPreventionBlock =
+    evolution.learnedErrorLessons.length > 0
+      ? `[REFLEXION ERROR PREVENTION LESSONS (${evolution.learnedErrorLessons.length})]\n${evolution.learnedErrorLessons
+          .map((l) => `- [${l.errorType} x${l.occurrences}] ${l.preventionRule}`)
+          .join("\n")}`
+      : "";
+
+  const personaDirective = resolveAdaptivePersonaDirective(
+    params.prompt,
+    params.callerSystemInstruction
+  );
+
   const fileTreeSummary =
     params.workspaceFiles && params.workspaceFiles.length > 0
       ? params.workspaceFiles
-          .slice(0, 16)
           .map(
             (f) =>
               `- ${f.path} (${f.language || "text"}, ${f.content.split(/\r?\n/).length} lines, ${f.content.length}B)`
@@ -176,29 +246,26 @@ export function buildActiveVaultWorkingMemory(params: {
           .join("\n")
       : "";
 
-  const enginesCatalogSnippet = activeVaultEngines
-    .map(
-      (e) =>
-        `- ${e.name} [${e.clusterId}]: ${e.role}${e.url ? ` — Docs/Repo: ${e.url}` : ""}`
-    )
-    .join("\n");
+  const enginesCatalogSnippet = unifiedLines.join("\n");
 
   const secondaryIds = cognitiveRoute.matchedClusters
     .slice(1, 4)
     .map((c) => c.id);
 
   const activeMemoryPromptBlock = [
-    `[ANTIGRAVITY CORTEX v2 | Mode: ${domainMode.toUpperCase()} | Cluster: ${cognitiveRoute.primaryCluster.titleEn} | ${v60Totals.grandTotalSources}+ Sources]`,
+    `[ANTIGRAVITY CORTEX v2.5 | Mode: ${domainMode.toUpperCase()} | Cluster: ${cognitiveRoute.primaryCluster.titleEn} | ${v60Totals.grandTotalSources}+ Vault + ${studiedSearch.totalCorpusUnits} Digested Units (${studiedSearch.webCrawledUnits} Web-Studied)]`,
+    personaDirective,
     `• Evolving Memory: ${evolution.evolutionSummary}`,
-    "[MATCHED VAULT ENGINES & LINKS]",
+    errorPreventionBlock,
+    "[STUDIED CORPUS & MATCHED VAULT ENGINES]",
     enginesCatalogSnippet,
     fileTreeSummary ? `[WORKSPACE FILES (${params.workspaceFiles?.length})]\n${fileTreeSummary}` : "",
     "[COGNITIVE PROTOCOL]",
-    "1. INSPECT FIRST: Read workspace files or live store/web sources before guessing.",
+    "1. INSPECT & STUDY FIRST: Read workspace files, studied corpus, or live web URLs via studyAndCrawlSource / webSearchAndFetch before guessing.",
     "2. HIDDEN REASONING: Deliberate in <think>...</think> (zero meta-text leaks).",
-    "3. SINGLE-SHOT TOOL VERIFICATION: When verifying JS/math via runAndVerifyCode or computeExactFinance, write self-contained code without external relative require() imports and verify in 1 call.",
+    "3. SINGLE-SHOT TOOL VERIFICATION & REFLEXION: When verifying JS/math via runAndVerifyCode or computeExactFinance, write self-contained code and fix any stderr immediately.",
     "4. INCREMENTAL FILES: Emit clean runnable files (```lang path=relative/file.ext) without placeholders; untouched workspace files remain preserved.",
-    "5. LINKS & COMPLETION: Embed clickable Markdown links ([Name](https://...)) outside code blocks and complete every section down to the last character.",
+    "5. LINKS & UNTHROTTLED COMPLETION: Embed clickable Markdown links ([Name](https://...)) outside code blocks and take full space to complete every section without artificial truncation.",
     getDomainPlaybookGuidance(domainMode, Boolean(params.isStudio)),
   ]
     .filter((line) => line !== undefined && line !== "")
@@ -210,9 +277,12 @@ export function buildActiveVaultWorkingMemory(params: {
     primaryClusterId: cognitiveRoute.primaryCluster.id,
     secondaryClusterIds: secondaryIds,
     vaultTotalSources: v60Totals.grandTotalSources,
-    matchedVaultCount: activeVaultEngines.length,
+    studiedCorpusUnits: studiedSearch.totalCorpusUnits,
+    webCrawledUnits: studiedSearch.webCrawledUnits,
+    matchedVaultCount: unifiedLines.length,
+    personaDirective,
     activeMemoryPromptBlock,
-    recommendedSourcesForTrace: activeVaultEngines.map((e) => e.name),
+    recommendedSourcesForTrace: recommendedNames,
   };
 }
 
@@ -224,9 +294,11 @@ export function createStudioAgentToolkit(params: {
   workspaceFiles?: WorkspaceFileSummaryInput[];
   locale: "ar" | "fr" | "en";
   executedLogs: string[];
+  primaryClusterId?: CognitiveClusterId;
 }) {
   const wsFiles = params.workspaceFiles || [];
   const shortLocale = params.locale;
+  const clusterId = params.primaryClusterId || "code_ide_and_surgical_editing";
 
   return {
     inspectWorkspaceFile: tool({
@@ -275,14 +347,21 @@ export function createStudioAgentToolkit(params: {
 
     runAndVerifyCode: tool({
       description:
-        "Executes self-contained JavaScript (1ms local VM), TypeScript, Python, or Bash scripts and returns stdout, stderr, and exitCode. Put functions inline when testing JS rather than calling require('./localFile').",
+        "Executes self-contained JavaScript (1ms local VM), TypeScript, Python, or Bash scripts and returns stdout, stderr, and exitCode. Any non-zero exit or stderr is automatically distilled into HEYUKA's Reflexion error memory.",
       inputSchema: z.object({
         language: z.enum(["javascript", "typescript", "python", "bash"]),
-        code: z.string().min(1).max(14000),
+        code: z.string().min(1).max(24000),
         stdin: z.string().optional(),
       }),
       execute: async ({ language, code, stdin }) => {
         const out = await executePolyglotCodeSandbox({ language, code, stdin, preferFastVm: true });
+        if (out.exitCode !== 0 || (out.stderr && out.stderr.trim().length > 0)) {
+          recordErrorLessonFromFailure({
+            clusterId,
+            errorType: "sandbox_stderr",
+            errorDetail: `[${language}] exit=${out.exitCode}: ${(out.stderr || out.stdout || "Execution failed").slice(0, 220)}`,
+          });
+        }
         params.executedLogs.push(
           `[Sandbox:${language}] exit=${out.exitCode} ${out.stdout ? `stdout=${out.stdout.slice(0, 140)}` : `stderr=${(out.stderr || "").slice(0, 140)}`}`
         );
@@ -330,7 +409,7 @@ export function createStudioAgentToolkit(params: {
 
     queryVaultOrApi: tool({
       description:
-        "Searches HEYUKA's 2,492+ integrated open-source engines OR queries 47 live no-key public APIs (FX currency, countries, weather, medicine OpenFDA/PubMed, OSV cyber CVE, OpenAlex, NASA, GitHub/Google Patents).",
+        "Searches HEYUKA's 2,492+ integrated open-source engines & studied web corpus OR queries 47 live no-key public APIs (FX currency, countries, weather, medicine OpenFDA/PubMed, OSV cyber CVE, OpenAlex, NASA, GitHub/Google Patents).",
       inputSchema: z.object({
         mode: z.enum(["vault_search", "public_api"]),
         query: z.string().min(1),
@@ -342,12 +421,54 @@ export function createStudioAgentToolkit(params: {
             category: apiCategory as PublicApiCategory,
             query,
             lang: shortLocale,
-            limit: 6,
+            limit: 10,
           });
         }
+        ensureFullVaultDigested();
+        const corpusHits = searchStudiedKnowledgeCorpus({
+          query,
+          limit: 20,
+          includeWebFirst: true,
+        });
         return {
           ok: true,
-          matches: searchSovereignVault({ query, limit: 12 }),
+          totalCorpusUnits: corpusHits.totalCorpusUnits,
+          webCrawledUnits: corpusHits.webCrawledUnits,
+          studiedMatches: corpusHits.hits,
+          matches: searchSovereignVault({ query, limit: 20 }),
+        };
+      },
+    }),
+
+    studyAndCrawlSource: tool({
+      description:
+        "Recursively crawls public HTTP/HTTPS websites/docs (robots.txt-compliant & SSRF-protected) into persistent studied memory AND searches across all 2,492+ digested Vault sources + crawled web documents.",
+      inputSchema: z.object({
+        mode: z.enum(["crawl_and_study", "search_studied_corpus"]),
+        seedUrls: z.array(z.string()).optional().describe("Public HTTP/HTTPS seed URLs to crawl & digest"),
+        query: z.string().optional().describe("Topic query to search digested Vault + crawled pages"),
+        maxPages: z.number().int().min(1).max(30).optional(),
+      }),
+      execute: async ({ mode, seedUrls, query, maxPages }) => {
+        ensureFullVaultDigested();
+        let crawlResult: Awaited<ReturnType<typeof crawlAndIngestPublicPages>> | null = null;
+        if (mode === "crawl_and_study" && seedUrls && seedUrls.length > 0) {
+          crawlResult = await crawlAndIngestPublicPages({
+            seedUrls,
+            maxPages,
+            lang: shortLocale,
+          });
+          params.executedLogs.push(
+            `[Web Crawl & Study] ${seedUrls[0]} -> crawled=${crawlResult.crawledCount}, skipped=${crawlResult.skippedCount}, corpus=${crawlResult.totalCorpusUnits}`
+          );
+        }
+        const searchRes = query
+          ? searchStudiedKnowledgeCorpus({ query, limit: 16, includeWebFirst: true })
+          : null;
+        return {
+          ok: crawlResult ? crawlResult.ok : true,
+          crawlResult,
+          corpusSearch: searchRes,
         };
       },
     }),
@@ -410,13 +531,29 @@ export function auditAndRecordCompletedOutput(params: {
     draftText: params.draftText,
     expectedLocale: params.expectedLocale,
   });
-  const repaired = repairTruncatedMarkdownAndCode(gated.cleanedText).repaired;
+  const repairInfo = repairTruncatedMarkdownAndCode(gated.cleanedText);
+  const repaired = repairInfo.repaired;
   const check = scoreSelfCheckConsistency({
     draftText: repaired,
     expectedLocale: params.expectedLocale,
   });
 
   try {
+    if (repairInfo.wasRepaired) {
+      recordErrorLessonFromFailure({
+        clusterId: params.primaryClusterId,
+        errorType: "truncation",
+        errorDetail: `Response truncated mid-fence/tag on "${params.prompt.slice(0, 90)}"; auto-repaired output.`,
+      });
+    }
+    if (check.warnings.length > 0) {
+      recordErrorLessonFromFailure({
+        clusterId: params.primaryClusterId,
+        errorType: "selfcheck_warning",
+        errorDetail: check.warnings.join(" | "),
+      });
+    }
+
     const productKind =
       params.domainMode === "software_architecture"
         ? params.artifactCount >= 2
@@ -432,7 +569,7 @@ export function auditAndRecordCompletedOutput(params: {
       prompt: params.prompt,
       clusterId: params.primaryClusterId,
       productKind,
-      sourcesUsed: params.sourcesUsed.slice(0, 12),
+      sourcesUsed: Array.from(new Set(params.sourcesUsed.filter(Boolean))),
       outputFormats: [
         /```html/i.test(repaired) ? "HTML/PDF" : "Markdown",
         ...(params.artifactCount > 0 ? ["Files"] : []),
@@ -440,7 +577,7 @@ export function auditAndRecordCompletedOutput(params: {
       artifactCount: Math.max(1, params.artifactCount),
       totalBytes: repaired.length,
       qualityScore: Math.max(0.5, check.selfCheckScore / 10),
-      modelUsed: params.modelUsed || "heyuka-cortex-v2",
+      modelUsed: params.modelUsed || "heyuka-cortex-v2.5",
     });
   } catch {
     // Non-fatal learning telemetry
