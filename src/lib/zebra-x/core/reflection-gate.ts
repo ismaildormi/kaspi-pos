@@ -113,3 +113,75 @@ export function runPreReplyReflectionGate(params: {
     hadSecretRedacted,
   };
 }
+
+export interface MultiFileQualityReport {
+  score: number; // 0..100
+  issues: string[];
+  missingDomIds: string[];
+}
+
+/**
+ * Verifies generated multi-file Studio outputs cleanly (0 external cost):
+ * checks for unresolved TODO stubs, JS syntax parse validity, and HTML<->JS DOM ID alignment.
+ */
+export function auditMultiFileWebQuality(
+  files: Array<{ path: string; language?: string; content: string }>
+): MultiFileQualityReport {
+  if (!Array.isArray(files) || files.length === 0) {
+    return { score: 100, issues: [], missingDomIds: [] };
+  }
+
+  const issues: string[] = [];
+  const missingDomIds: string[] = [];
+  let score = 100;
+
+  const htmlIds = new Set<string>();
+  const htmlCombined = files
+    .filter((f) => f.path.endsWith(".html") || f.language === "html")
+    .map((f) => f.content)
+    .join("\n");
+  for (const m of htmlCombined.matchAll(/\bid\s*=\s*["']([a-zA-Z0-9_-]+)["']/g)) {
+    htmlIds.add(m[1]);
+  }
+
+  for (const f of files) {
+    const body = String(f.content || "");
+    if (/\/\/\s*TODO:|\[Insert\s+[^\]]+\]|placeholder implementation/i.test(body)) {
+      issues.push(`${f.path}: contains unresolved TODO or placeholder marker`);
+      score -= 12;
+    }
+
+    if (
+      (f.path.endsWith(".js") || f.language === "js" || f.language === "javascript") &&
+      !/\b(?:import|export)\b/.test(body)
+    ) {
+      try {
+        // Parse syntax safely without executing code
+        new Function(body);
+      } catch (syntaxErr: any) {
+        issues.push(`${f.path}: JS SyntaxError (${syntaxErr?.message || "parse error"})`);
+        score -= 22;
+      }
+
+      if (htmlIds.size > 0) {
+        for (const idMatch of body.matchAll(/getElementById\(\s*["']([a-zA-Z0-9_-]+)["']\s*\)/g)) {
+          const domId = idMatch[1];
+          if (!htmlIds.has(domId) && !body.includes(`id="${domId}"`) && !body.includes(`id='${domId}'`)) {
+            if (!missingDomIds.includes(domId)) missingDomIds.push(domId);
+          }
+        }
+      }
+    }
+  }
+
+  if (missingDomIds.length > 0) {
+    issues.push(`HTML/JS ID mismatch: missing #${missingDomIds.slice(0, 5).join(", #")} in HTML`);
+    score -= Math.min(20, missingDomIds.length * 5);
+  }
+
+  return {
+    score: Math.max(20, score),
+    issues,
+    missingDomIds: missingDomIds.slice(0, 12),
+  };
+}

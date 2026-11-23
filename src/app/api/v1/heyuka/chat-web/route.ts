@@ -34,6 +34,7 @@ import { planXZebraToolRoute } from "@/lib/zebra-x/core/router";
 import { buildPhotorealisticCinemaVideoBundle } from "@/lib/heyuka/tools/photorealistic-video-builder";
 import {
   getSelfEvolutionContextForPrompt,
+  recordErrorLessonFromFailure,
   recordProductSelfEvolution,
 } from "@/lib/heyuka/learning/self-evolution-engine";
 import { searchStudiedKnowledgeCorpus } from "@/lib/heyuka/training/knowledge-corpus-engine";
@@ -47,7 +48,7 @@ import {
 import { scanSourceCodeForVulnerabilities } from "@/lib/zebra-x/tools/security-sast-auditor";
 import { renderStyledBrandQrSvg } from "@/lib/zebra-x/tools/qr-architect-engine";
 import { ALL_SOVEREIGN_MASTER_CATALOG } from "@/lib/zebra-x/core/v20-v22-master-catalog";
-import { runPreReplyReflectionGate } from "@/lib/zebra-x/core/reflection-gate";
+import { auditMultiFileWebQuality, runPreReplyReflectionGate } from "@/lib/zebra-x/core/reflection-gate";
 import {
   buildFullCapabilitiesAndSourcesMarkdown,
   buildPatentBlueprintAndPdfMarker,
@@ -1066,6 +1067,19 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
       qualityScore: Math.max(0.5, selfAudit.qualityScore / 10),
       executionMode: executionPolicy === "auto" ? "client_cpu" : "free_gateway",
     });
+    const webQualityAudit = auditMultiFileWebQuality(studioFiles);
+    if (webQualityAudit.issues.length > 0) {
+      recordErrorLessonFromFailure({
+        clusterId: cognitiveRoute.primaryCluster.id,
+        errorType: "selfcheck_warning",
+        errorDetail: webQualityAudit.issues.slice(0, 3).join(" | "),
+        preventionRule:
+          webQualityAudit.missingDomIds.length > 0
+            ? `Always declare exact element IDs (${webQualityAudit.missingDomIds.slice(0, 4).join(", ")}) inside index.html before querying in JS.`
+            : "Emit complete, syntax-valid JS without TODO markers or truncated expressions.",
+      });
+    }
+
     const evolutionCtx = getSelfEvolutionContextForPrompt({
       prompt: lastUser,
       clusterId: cognitiveRoute.primaryCluster.id,
@@ -1095,6 +1109,7 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
       studiedCorpusUnits: studiedMatched.totalCorpusUnits,
       webCrawledUnits: studiedMatched.webCrawledUnits,
       errorLessonsLearned: evolutionCtx.learnedErrorLessons.length,
+      qualityScore: Math.round((selfAudit.qualityScore * 10 + webQualityAudit.score) / 2),
       incompleteTruncated: detectTruncationState(answerRaw).truncated,
       clientMediaJob,
       openStudio: shouldOpenStudio,

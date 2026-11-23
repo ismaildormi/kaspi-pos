@@ -1,0 +1,50 @@
+# HEYUKA Eternal 24/7 Cloud Public-Web Study & Curation Loop ($0.00 Free Tier)
+# Runs every 6 hours on GitHub Actions even when the user's PC & phone are powered off.
+# Strictly crawls public open knowledge feeds (OpenAlex / Wikimedia / public docs) with SSRF & PII guards.
+name: HEYUKA Eternal Public Study Loop (24/7)
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-web-study:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run public open-knowledge crawler (robots.txt + SSRF safe)
+        run: |
+          python3 training/crawler/web_scale_crawler.py --public-feeds --out /tmp/heyuka_public_raw.jsonl
+
+      - name: Deduplicate & scrub PII from public corpus
+        run: |
+          python3 training/ingestion/massive_curator.py --in /tmp/heyuka_public_raw.jsonl --out-cpt /tmp/heyuka_public_cpt.jsonl --out-sft /tmp/heyuka_public_sft.jsonl
+
+      - name: Archive curated public dataset shard
+        uses: actions/upload-artifact@v4
+        with:
+          name: heyuka-public-study-corpus
+          path: |
+            /tmp/heyuka_public_cpt.jsonl
+            /tmp/heyuka_public_sft.jsonl
+          retention-days: 14
+
+      - name: Digest Sovereign Vault on Live Production (if configured)
+        env:
+          KASPI_PRODUCTION_URL: ${{ secrets.KASPI_PRODUCTION_URL }}
+        run: |
+          BASE_URL="${KASPI_PRODUCTION_URL:-https://kaspi-pos.vercel.app}"
+          curl -sS -X POST "$BASE_URL/api/v1/studio/ingest" \
+            -H "Content-Type: application/json" \
+            -d '{"action":"digest_vault"}' | head -c 500

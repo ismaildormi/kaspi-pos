@@ -223,8 +223,18 @@ export function HeyukaUnifiedStudioWorkspace({
   const [customTab, setCustomTab] = useState<"rules" | "engine">("rules");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<
-    "general" | "appearance" | "shortcuts" | "models" | "projects"
+    "general" | "appearance" | "shortcuts" | "models" | "projects" | "pretraining_lab"
   >("appearance");
+  const [labStats, setLabStats] = useState<{
+    totalDigested: number;
+    webCrawledUnits: number;
+    errorLessonsCount: number;
+  } | null>(null);
+  const [labCrawlUrls, setLabCrawlUrls] = useState("https://nextjs.org/docs\nhttps://arxiv.org");
+  const [labSearchQuery, setLabSearchQuery] = useState("");
+  const [labHits, setLabHits] = useState<Array<{ title: string; url: string; sourceKind: string }>>([]);
+  const [labBusy, setLabBusy] = useState(false);
+  const [labNotice, setLabNotice] = useState<string | null>(null);
   const [enhancingMagic, setEnhancingMagic] = useState(false);
 
   const [appearance, setAppearance] = useState<{
@@ -2057,12 +2067,29 @@ export function HeyukaUnifiedStudioWorkspace({
                   { id: "shortcuts" as const, label: "Shortcuts" },
                   { id: "models" as const, label: "Models" },
                   { id: "projects" as const, label: "Projects" },
+                  { id: "pretraining_lab" as const, label: isAr ? "مختبر الويب والتدريب" : "Pretraining & Web Lab" },
                 ] as const
               ).map((item) => (
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setSettingsSection(item.id)}
+                  onClick={() => {
+                    setSettingsSection(item.id);
+                    if (item.id === "pretraining_lab" && !labStats) {
+                      fetch("/api/v1/studio/ingest")
+                        .then((r) => r.json())
+                        .then((d) => {
+                          if (d?.ok) {
+                            setLabStats({
+                              totalDigested: Number(d.totalDigested || 0),
+                              webCrawledUnits: Number(d.webCrawledUnits || 0),
+                              errorLessonsCount: Number(d.errorLessonsCount || 0),
+                            });
+                          }
+                        })
+                        .catch(() => {});
+                    }
+                  }}
                   className={`w-full text-start px-2.5 py-1.5 rounded-lg font-medium cursor-pointer transition-colors ${
                     settingsSection === item.id
                       ? "text-white"
@@ -2268,6 +2295,160 @@ export function HeyukaUnifiedStudioWorkspace({
                       <div className={`text-[11px] ${mutedText}`}>{isAr ? tpl.descAr : tpl.descEn}</div>
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {settingsSection === "pretraining_lab" && (
+              <div className="space-y-3.5" dir={isAr ? "rtl" : "ltr"}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold">
+                    {isAr ? "مختبر الزحف العام والتدريب ($0 GPU)" : "Zero-Dollar Web Study & Foundation CPT Lab"}
+                  </h3>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">
+                    robots.txt + SSRF Safe
+                  </span>
+                </div>
+
+                {labStats && (
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className={`p-2 rounded-xl border ${borderCls}`}>
+                      <div className="font-bold text-sm">{labStats.totalDigested}</div>
+                      <div className={`text-[10px] ${mutedText}`}>{isAr ? "مصادر مفهرسة" : "Digested Units"}</div>
+                    </div>
+                    <div className={`p-2 rounded-xl border ${borderCls}`}>
+                      <div className="font-bold text-sm text-sky-400">{labStats.webCrawledUnits}</div>
+                      <div className={`text-[10px] ${mutedText}`}>{isAr ? "صفحات ويب مقروءة" : "Web Crawled"}</div>
+                    </div>
+                    <div className={`p-2 rounded-xl border ${borderCls}`}>
+                      <div className="font-bold text-sm text-emerald-400">{labStats.errorLessonsCount}</div>
+                      <div className={`text-[10px] ${mutedText}`}>{isAr ? "دروس الأخطاء" : "Reflexion Rules"}</div>
+                    </div>
+                  </div>
+                )}
+
+                <div className={`p-3 rounded-xl border ${borderCls} space-y-2`}>
+                  <label className="block font-medium">
+                    {isAr ? "زحف ودراسة روابط ويب عامة (سطر لكل رابط):" : "Crawl & Ingest Public URLs (one per line):"}
+                  </label>
+                  <textarea
+                    rows={2}
+                    dir="ltr"
+                    value={labCrawlUrls}
+                    onChange={(e) => setLabCrawlUrls(e.target.value)}
+                    className={`w-full p-2 rounded-lg border ${borderCls} bg-transparent font-mono text-[11px]`}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={labBusy}
+                      onClick={async () => {
+                        const urls = labCrawlUrls
+                          .split(/\r?\n/)
+                          .map((u) => u.trim())
+                          .filter(Boolean);
+                        if (urls.length === 0) return;
+                        setLabBusy(true);
+                        setLabNotice(null);
+                        try {
+                          const res = await fetch("/api/v1/studio/ingest", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ action: "crawl", urls, maxPages: 12 }),
+                          });
+                          const d = await res.json();
+                          if (d?.ok) {
+                            setLabStats((prev) => ({
+                              totalDigested: Number(d.totalCorpusUnits || prev?.totalDigested || 0),
+                              webCrawledUnits: Number(prev?.webCrawledUnits || 0) + Number(d.crawledCount || 0),
+                              errorLessonsCount: prev?.errorLessonsCount || 0,
+                            }));
+                            setLabNotice(
+                              isAr
+                                ? `تمت قراءة وفهرسة ${d.crawledCount || 0} صفحة عامة بنجاح.`
+                                : `Crawled & digested ${d.crawledCount || 0} public page(s).`
+                            );
+                          } else {
+                            setLabNotice(d?.error || "Crawl blocked by robots.txt/SSRF guard.");
+                          }
+                        } catch {
+                          setLabNotice("Network error during crawl.");
+                        } finally {
+                          setLabBusy(false);
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-white font-semibold cursor-pointer"
+                      style={{ backgroundColor: appearance.accentHex }}
+                    >
+                      {labBusy ? (isAr ? "جاري الزحف..." : "Crawling...") : isAr ? "زحف ودراسة الروابط" : "Crawl & Study Public Web"}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={labBusy}
+                      onClick={async () => {
+                        setLabBusy(true);
+                        try {
+                          const res = await fetch("/api/v1/studio/ingest?action=export_pretrain_kit");
+                          const kit = await res.json();
+                          const blob = new Blob([String(kit?.pythonTrainerScript || "")], {
+                            type: "text/x-python;charset=utf-8",
+                          });
+                          const dlUrl = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = dlUrl;
+                          a.download = "heyuka_foundation_cpt_trainer.py";
+                          a.click();
+                          URL.revokeObjectURL(dlUrl);
+                          setLabNotice(
+                            isAr
+                              ? "تم تحميل سكريبت التدريب (Unsloth + FineWeb-2) لتشغيله مجاناً على Kaggle / Colab."
+                              : "Downloaded Unsloth + FineWeb-2 CPT Python trainer for Free Kaggle/Colab GPUs."
+                          );
+                        } catch {
+                          setLabNotice("Could not export trainer script.");
+                        } finally {
+                          setLabBusy(false);
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-lg border ${borderCls} cursor-pointer font-medium`}
+                    >
+                      {isAr ? "تحميل سكريبت التدريب (.py • 0$ GPU)" : "Download $0 CPT Trainer (.py)"}
+                    </button>
+                  </div>
+                  {labNotice && <p className="text-[11px] text-emerald-400">{labNotice}</p>}
+                </div>
+
+                <div className={`p-3 rounded-xl border ${borderCls} space-y-2`}>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={labSearchQuery}
+                      onChange={(e) => setLabSearchQuery(e.target.value)}
+                      placeholder={isAr ? "ابحث في المعارف المفهرسة والويب..." : "Search digested vault & web corpus..."}
+                      className={`flex-1 px-2.5 py-1.5 rounded-lg border ${borderCls} bg-transparent text-xs`}
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const res = await fetch(`/api/v1/studio/ingest?q=${encodeURIComponent(labSearchQuery.trim())}&limit=8`);
+                        const d = await res.json();
+                        setLabHits(Array.isArray(d?.hits) ? d.hits : []);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg border ${borderCls} cursor-pointer`}
+                    >
+                      {isAr ? "بحث" : "Search"}
+                    </button>
+                  </div>
+                  {labHits.length > 0 && (
+                    <div className="max-h-32 overflow-y-auto space-y-1 text-[11px]">
+                      {labHits.map((h, hi) => (
+                        <div key={hi} className="truncate opacity-85">
+                          <span className="font-mono text-sky-400">[{h.sourceKind}]</span> {h.title}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
