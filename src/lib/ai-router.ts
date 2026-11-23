@@ -438,7 +438,7 @@ async function callPollinationsZeroKeyHttp(params: {
       model: "openai",
       messages: flatMessages,
     }),
-    signal: AbortSignal.timeout(14_000),
+    signal: AbortSignal.timeout(9_000),
   });
   if (!res.ok) throw new Error(`Zero-Key HTTP ${res.status}`);
   const data = (await res.json()) as any;
@@ -508,7 +508,7 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
   ];
 
   for (let idx = 0; idx < genAttempts.length; idx++) {
-    if (idx > 0 && Date.now() - genStartedAt > 32_000) break;
+    if (idx > 0 && Date.now() - genStartedAt > 24_000) break;
     const { candidate, stripTools } = genAttempts[idx];
     try {
       const providerCfg = buildProviderGenerationConfig(candidate, (restGenOptions as any)?.maxOutputTokens);
@@ -517,8 +517,8 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
         delete callOpts.tools;
         delete callOpts.stopWhen;
       }
-      const remainingMs = Math.max(8_000, 34_000 - (Date.now() - genStartedAt));
-      const perAttemptMs = Math.min(remainingMs, isMultimodal ? 26_000 : candidate.provider === "groq" ? 16_000 : 18_000);
+      const remainingMs = Math.max(6_000, 27_000 - (Date.now() - genStartedAt));
+      const perAttemptMs = Math.min(remainingMs, isMultimodal ? 20_000 : idx === 0 ? 15_000 : 10_000);
       const result = await generateText({
         model: candidate.model as any,
         maxRetries: 0,
@@ -673,8 +673,8 @@ export async function streamUiResponseWithRouter(
       const originalUserPrompt = extractLastUserTextFromMessages(restOptions.messages).slice(0, 1200);
 
       for (let attemptIdx = 0; attemptIdx < attempts.length; attemptIdx++) {
-        // Reserve ~13s before client 45s / Vercel 60s limit so Zero-Key / local rescue ALWAYS delivers in time
-        if (attemptIdx > 0 && Date.now() - streamStartedAt > 32_000) break;
+        // Hard 24s cloud retry fence so Zero-Key / Local rescue ALWAYS finishes strictly under client 45s limit
+        if (attemptIdx > 0 && Date.now() - streamStartedAt > 24_000) break;
 
         const { candidate, stripTools } = attempts[attemptIdx];
         let emittedToClient = false;
@@ -689,8 +689,8 @@ export async function streamUiResponseWithRouter(
           const providerCfg = buildProviderGenerationConfig(candidate, restOptions.maxOutputTokens);
           const callConfig = { ...providerCfg, ...restOptions };
           if (stripTools) delete callConfig.tools;
-          const remainingMs = Math.max(8_000, 34_000 - (Date.now() - streamStartedAt));
-          const attemptTimeoutMs = Math.min(remainingMs, attemptIdx === 0 ? 16_000 : 11_000);
+          const remainingMs = Math.max(6_000, 27_000 - (Date.now() - streamStartedAt));
+          const attemptTimeoutMs = Math.min(remainingMs, attemptIdx === 0 ? 14_000 : 9_500);
 
           const res = streamText({
             model: candidate.model as any,

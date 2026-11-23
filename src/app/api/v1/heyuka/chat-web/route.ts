@@ -777,8 +777,8 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
       system: systemInstruction,
       messages: formattedMessages as any,
       tools: studioAgentToolkit,
-      stopWhen: studioAgentToolkit ? stepCountIs(8) : undefined,
-      temperature: executionPolicy === "turbo" ? 0.45 : effectiveDeepThink ? 0.35 : 0.65,
+      stopWhen: studioAgentToolkit ? stepCountIs(4) : undefined,
+      temperature: executionPolicy === "turbo" ? 0.35 : 0.38,
       governance: {
         tenantId,
         allowOwnerPaidProviders: false,

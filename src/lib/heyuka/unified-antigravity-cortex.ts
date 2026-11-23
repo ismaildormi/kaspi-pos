@@ -188,26 +188,20 @@ export function buildActiveVaultWorkingMemory(params: {
     .map((c) => c.id);
 
   const activeMemoryPromptBlock = [
-    "[ANTIGRAVITY COGNITIVE CORTEX v2 — UNIFIED AUTONOMOUS BRAIN]",
-    `• Identity & Surface Parity: HEYUKA (${params.brand === "kaspi_pos" ? "KASPI POS Architect" : "Universal Sovereign AI"}) operating at equal capability parity across POS Chat, Standalone Chat, Studio IDE, and API.`,
-    `• Active Task Mode: ${domainMode.toUpperCase()} | Primary Cluster: ${cognitiveRoute.primaryCluster.titleEn} (${v60Totals.grandTotalSources}+ Total Integrated Sources)`,
-    `• Distilled Evolution Memory: ${evolution.evolutionSummary}`,
-    "",
-    "[MATCHED OPEN-SOURCE ENGINES & CLICKABLE SOURCES FOR THIS REQUEST]",
+    `[ANTIGRAVITY CORTEX v2 | Mode: ${domainMode.toUpperCase()} | Cluster: ${cognitiveRoute.primaryCluster.titleEn} | ${v60Totals.grandTotalSources}+ Sources]`,
+    `• Evolving Memory: ${evolution.evolutionSummary}`,
+    "[MATCHED VAULT ENGINES & LINKS]",
     enginesCatalogSnippet,
-    fileTreeSummary ? `\n[CURRENT WORKSPACE FILE TREE (${params.workspaceFiles?.length} files)]\n${fileTreeSummary}` : "",
-    "",
-    "[SIX-STEP COGNITIVE REASONING & EXECUTION METHOD]",
-    "1. UNDERSTAND & INSPECT FIRST: Read workspace files, live store metrics, and web/API sources BEFORE making assumptions or inventing facts/paths.",
-    '2. HIDDEN STRUCTURED DELIBERATION: Think through architecture, dependencies, edge cases, and calculations cleanly inside <think>...</think> (never leak internal monologue or English meta-instructions like "We need to call..." into user-facing prose).',
-    "3. ITERATIVE TOOL USE & VERIFICATION: Run tools (webSearchAndFetch / unrestrictedWebSearch, computeExactFinance / evaluateMathAndFinance, runAndVerifyCode / executeCodeSandbox, queryVaultOrApi / queryPublicApi) iteratively to verify numbers and test generated code. If code errors, diagnose & repair it before concluding.",
-    "4. INCREMENTAL MULTI-FILE BUILDING: When evolving a project, keep unrelated working files intact; emit complete, clean files (```lang path=relative/file.ext) with zero TODO stubs or truncation.",
-    "5. MULTI-DOMAIN FLUENCY & LINKS: Adapt tone naturally to the user's sector and dialect (Darija/Arabic/Tarifit/French/English) across tech, commerce, finance, science, medicine, law analysis, creative writing, and everyday topics — always embedding real clickable Markdown links ([Name](https://...)) when citing tools/docs/sites outside code blocks.",
-    "6. COMPLETE UNSTOPPED DELIVERY: Finish every section, comparison table, HTML preview/invoice, script, and CLI step cleanly down to the last character.",
-    "",
+    fileTreeSummary ? `[WORKSPACE FILES (${params.workspaceFiles?.length})]\n${fileTreeSummary}` : "",
+    "[COGNITIVE PROTOCOL]",
+    "1. INSPECT FIRST: Read workspace files or live store/web sources before guessing.",
+    "2. HIDDEN REASONING: Deliberate in <think>...</think> (zero meta-text leaks).",
+    "3. SINGLE-SHOT TOOL VERIFICATION: When verifying JS/math via runAndVerifyCode or computeExactFinance, write self-contained code without external relative require() imports and verify in 1 call.",
+    "4. INCREMENTAL FILES: Emit clean runnable files (```lang path=relative/file.ext) without placeholders; untouched workspace files remain preserved.",
+    "5. LINKS & COMPLETION: Embed clickable Markdown links ([Name](https://...)) outside code blocks and complete every section down to the last character.",
     getDomainPlaybookGuidance(domainMode, Boolean(params.isStudio)),
   ]
-    .filter((line) => line !== undefined)
+    .filter((line) => line !== undefined && line !== "")
     .join("\n")
     .trim();
 
@@ -281,14 +275,14 @@ export function createStudioAgentToolkit(params: {
 
     runAndVerifyCode: tool({
       description:
-        "Executes JavaScript, TypeScript, Python, or Bash code inside the real HEYUKA sandbox and returns stdout, stderr, and exitCode so you can test and fix code BEFORE delivering.",
+        "Executes self-contained JavaScript (1ms local VM), TypeScript, Python, or Bash scripts and returns stdout, stderr, and exitCode. Put functions inline when testing JS rather than calling require('./localFile').",
       inputSchema: z.object({
         language: z.enum(["javascript", "typescript", "python", "bash"]),
         code: z.string().min(1).max(14000),
         stdin: z.string().optional(),
       }),
       execute: async ({ language, code, stdin }) => {
-        const out = await executePolyglotCodeSandbox({ language, code, stdin });
+        const out = await executePolyglotCodeSandbox({ language, code, stdin, preferFastVm: true });
         params.executedLogs.push(
           `[Sandbox:${language}] exit=${out.exitCode} ${out.stdout ? `stdout=${out.stdout.slice(0, 140)}` : `stderr=${(out.stderr || "").slice(0, 140)}`}`
         );

@@ -1497,7 +1497,7 @@ ${closedLoopMasterDirective}\n${cortexMemory.activeMemoryPromptBlock}${progressi
           system: isSuperAdmin ? superAdminSystemPrompt : merchantSystemPrompt,
           messages: sanitizedMessages,
           tools: activeTools,
-          stopWhen: stepCountIs(12),
+          stopWhen: stepCountIs(5),
           onCompletedText: async (text: string, cand?: { providerName?: string; modelId?: string; keyIndex?: number }) => {
             if (!text) return;
             const audited = auditAndRecordCompletedOutput({

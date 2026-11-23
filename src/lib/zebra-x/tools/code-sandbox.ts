@@ -81,6 +81,7 @@ export async function executePolyglotCodeSandbox(params: {
   language: SandboxLanguage;
   code: string;
   stdin?: string;
+  preferFastVm?: boolean;
 }): Promise<SandboxExecutionResult> {
   const lang = params.language;
   const spec = JUDGE0_LANGUAGES[lang];
@@ -94,6 +95,15 @@ export async function executePolyglotCodeSandbox(params: {
       exitCode: 1,
       error: "Unsupported language",
     };
+  }
+
+  // Fast 1ms in-process V8 execution for pure JS verification steps inside AI agent loops
+  if (
+    params.preferFastVm &&
+    lang === "javascript" &&
+    !/\b(?:require|import|process|fs|child_process|fetch)\b/.test(params.code)
+  ) {
+    return runIsolatedJsVm(params.code);
   }
 
   // 1. Optional Custom Self-Hosted Piston Engine

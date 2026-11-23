@@ -64,7 +64,12 @@ export function stripHiddenReasoningAndArtifacts(rawText: string): {
     return segment.replace(EXTERNAL_MODEL_BRANDING_RE, "HEYUKA");
   });
 
-  text = cleanedParts.join("").replace(/\n{3,}/g, "\n\n").trim();
+  text = cleanedParts.join("").replace(/\n{3,}/g, "\n\n");
+  // Strip sporadic 1-3 char Cyrillic token noise occasionally emitted in Arabic/Latin streams
+  if (/[\u0600-\u06FF]|[a-zA-Z]{6,}/.test(text)) {
+    text = text.replace(/(^|\s)[\u0400-\u04FF]{1,3}(?=\s|$|[.،,!?؛:])/gu, "$1");
+  }
+  text = text.replace(/ {2,}/g, " ").trim();
   const hadLeakedReasoning = text.length < initialLen - 8;
 
   return { text, hadLeakedReasoning };
