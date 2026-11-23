@@ -67,24 +67,35 @@ export function detectTruncationState(rawText: string): TruncationAnalysis {
     openFenceLang = headerLine.trim().split(/\s+/)[0] || "text";
   }
 
-  // 2) Unclosed critical HTML tags
-  const lower = trimmed.toLowerCase();
-  const checks: Array<[string, string]> = [
-    ["<html", "</html>"],
-    ["<head", "</head>"],
-    ["<style", "</style>"],
-    ["<body", "</body>"],
-    ["<script", "</script>"],
-  ];
-  for (const [openTag, closeTag] of checks) {
-    const lastOpenIdx = lower.lastIndexOf(openTag);
-    const lastCloseIdx = lower.lastIndexOf(closeTag);
-    if (lastOpenIdx !== -1 && lastCloseIdx < lastOpenIdx) {
-      unclosedTags.push(closeTag);
+  // 2) Unclosed critical HTML tags — ONLY check genuine HTML scopes, NEVER inside js/ts/css/python code fences or JS template literals!
+  const cleanScopeForHtml =
+    fenceMatches.length % 2 === 1
+      ? openFenceLang && /^(html?|xml|svg)$/i.test(openFenceLang)
+        ? trimmed.slice(trimmed.lastIndexOf("```"))
+        : ""
+      : trimmed.includes("```")
+      ? ""
+      : trimmed;
+
+  if (cleanScopeForHtml) {
+    const lowerHtml = cleanScopeForHtml.toLowerCase();
+    const checks: Array<[string, string]> = [
+      ["<html", "</html>"],
+      ["<head", "</head>"],
+      ["<style", "</style>"],
+      ["<body", "</body>"],
+      ["<script", "</script>"],
+    ];
+    for (const [openTag, closeTag] of checks) {
+      const lastOpenIdx = lowerHtml.lastIndexOf(openTag);
+      const lastCloseIdx = lowerHtml.lastIndexOf(closeTag);
+      if (lastOpenIdx !== -1 && lastCloseIdx < lastOpenIdx) {
+        unclosedTags.push(closeTag);
+      }
     }
-  }
-  if (unclosedTags.length > 0) {
-    reasons.push(`unclosed_html_tags:${unclosedTags.join(",")}`);
+    if (unclosedTags.length > 0) {
+      reasons.push(`unclosed_html_tags:${unclosedTags.join(",")}`);
+    }
   }
 
   // 3) Unbalanced curly braces inside code blocks or last fence
@@ -225,15 +236,44 @@ export function repairTruncatedMarkdownAndCode(rawText: string): {
       const jsonPart = out.slice(headerEnd + 1);
       out = `${out.slice(0, headerEnd + 1)}${repairTruncatedJsonString(jsonPart)}`;
     }
-  } else if (check.unbalancedBraces > 0) {
-    out += "\n" + "}".repeat(Math.min(12, check.unbalancedBraces));
+  } else {
+    // If cut mid-line with an unclosed string literal, unclosed parens, or trailing dot-access inside JS/TS/CSS, drop the broken half-line cleanly
+    if (check.openFenceLang && /^(js|javascript|ts|typescript|jsx|tsx|css|scss)$/i.test(check.openFenceLang)) {
+      const fenceStart = out.lastIndexOf("```");
+      for (let drop = 0; drop < 3; drop++) {
+        const lastNl = out.lastIndexOf("\n");
+        if (lastNl <= fenceStart) break;
+        const tailLine = out.slice(lastNl + 1);
+        const singleQ = (tailLine.match(/(?:^|[^\\])'/g) || []).length;
+        const doubleQ = (tailLine.match(/(?:^|[^\\])"/g) || []).length;
+        const openParens = (tailLine.match(/\(/g) || []).length;
+        const closeParens = (tailLine.match(/\)/g) || []).length;
+        const isDangling =
+          singleQ % 2 === 1 ||
+          doubleQ % 2 === 1 ||
+          openParens > closeParens ||
+          /\.\s*[a-zA-Z0-9_$]*$/.test(tailLine.trim()) ||
+          /^(?:const|let|var|return|await|function)\b[^;{=]*$/.test(tailLine.trim());
+        if (!isDangling) break;
+        out = out.slice(0, lastNl).trimEnd();
+      }
+    }
+    const postCheck = detectTruncationState(out);
+    if (postCheck.unbalancedBraces > 0) {
+      out += "\n" + "}".repeat(Math.min(12, postCheck.unbalancedBraces));
+    }
   }
 
-  // Close HTML nesting tags in reverse structural order
-  const tagOrder = ["</style>", "</head>", "</script>", "</body>", "</html>"];
-  for (const closeTag of tagOrder) {
-    if (check.unclosedTags.includes(closeTag)) {
-      out += `\n${closeTag}`;
+  // Close HTML nesting tags ONLY when actually inside an HTML/SVG scope (never inside JS/CSS/TS blocks!)
+  if (
+    check.unclosedTags.length > 0 &&
+    (!check.openFenceLang || /^(html?|xml|svg)$/i.test(check.openFenceLang))
+  ) {
+    const tagOrder = ["</style>", "</head>", "</script>", "</body>", "</html>"];
+    for (const closeTag of tagOrder) {
+      if (check.unclosedTags.includes(closeTag)) {
+        out += `\n${closeTag}`;
+      }
     }
   }
 

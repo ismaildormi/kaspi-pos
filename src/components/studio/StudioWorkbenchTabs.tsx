@@ -85,6 +85,7 @@ interface StudioWorkbenchTabsProps {
   brand: StudioBrand;
   locale: "ar" | "fr" | "en";
   files: StudioFileNode[];
+  baselineFiles?: StudioFileNode[];
   onChangeFiles: (next: StudioFileNode[]) => void;
   checkpoints: Array<{ id: string; label: string; at: string; files: StudioFileNode[] }>;
   onSaveCheckpoint: (label: string) => void;
@@ -120,6 +121,7 @@ export function StudioWorkbenchTabs({
   brand,
   locale,
   files,
+  baselineFiles,
   onChangeFiles,
   checkpoints,
   onRestoreCheckpoint,
@@ -153,6 +155,7 @@ export function StudioWorkbenchTabs({
   const [copiedPath, setCopiedPath] = useState<string | null>(null);
   const [newFilePrompt, setNewFilePrompt] = useState(false);
   const [newFileName, setNewFileName] = useState("");
+  const [expandedDiffs, setExpandedDiffs] = useState<Record<string, boolean>>({});
 
   // Interactive Terminal state
   const [termLang, setTermLang] = useState<"shell" | "javascript" | "python" | "bash">("shell");
@@ -248,9 +251,13 @@ export function StudioWorkbenchTabs({
   }, [files, fileFilter]);
 
   const previewHtmlDoc = useMemo(() => {
-    const raw = assembleMultiFilePreviewDocument(files) || "<html><body></body></html>";
-    const bridge = `<script>(function(){var oe=console.error;function s(l,a){try{parent.postMessage({source:"heyuka-preview-console",level:l,message:[].slice.call(a).join(" ")},"*")}catch{}}console.error=function(){s("error",arguments);oe.apply(console,arguments)};window.onerror=function(m){s("error",[m])};})();</script>`;
-    return raw.includes("</head>") ? raw.replace("</head>", `${bridge}</head>`) : `${bridge}${raw}`;
+    const raw = assembleMultiFilePreviewDocument(files) || "<html><head></head><body></body></html>";
+    // Isolated in-memory Storage shim + early console bridge so sandboxed apps using localStorage never throw SecurityError
+    const bridge = `<script>(function(){try{var s=window.localStorage;s.setItem("__hk_t","1");s.removeItem("__hk_t");}catch{var mk=function(){var d=Object.create(null);return{getItem:function(k){return Object.prototype.hasOwnProperty.call(d,String(k))?d[String(k)]:null},setItem:function(k,v){d[String(k)]=String(v)},removeItem:function(k){delete d[String(k)]},clear:function(){d=Object.create(null)},key:function(i){return Object.keys(d)[i]||null},get length(){return Object.keys(d).length}}};try{Object.defineProperty(window,"localStorage",{value:mk(),configurable:true});Object.defineProperty(window,"sessionStorage",{value:mk(),configurable:true});}catch{}}var oe=console.error;function post(l,a){try{parent.postMessage({source:"heyuka-preview-console",level:l,message:[].slice.call(a).map(function(x){return typeof x==="string"?x:(x&&x.message)||String(x)}).join(" ")},"*")}catch{}}console.error=function(){post("error",arguments);oe.apply(console,arguments)};window.onerror=function(m){post("error",[m])};window.addEventListener("unhandledrejection",function(e){post("error",[e&&e.reason?String(e.reason):"Unhandled promise rejection"])});})();</script>`;
+    if (/<head[^>]*>/i.test(raw)) {
+      return raw.replace(/<head[^>]*>/i, (tag) => `${tag}\n${bridge}`);
+    }
+    return `<!DOCTYPE html><html><head>${bridge}</head><body>${raw}</body></html>`;
   }, [files]);
 
   const handleDownloadZip = () => {
@@ -627,11 +634,34 @@ export function StudioWorkbenchTabs({
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {files.map((file) => {
               const badge = getFileBadgeMeta(file.path, file.language);
-              const lineCount = file.content.split(/\r?\n/).length;
-              const diffParts = Diff.diffLines("", file.content);
+              const prevFile = baselineFiles?.find(
+                (bf) => bf.path.toLowerCase() === file.path.toLowerCase()
+              );
+              const diffParts = Diff.diffLines(prevFile?.content ?? "", file.content);
+              const addedLines = diffParts
+                .filter((p) => p.added)
+                .reduce((acc, p) => acc + p.value.replace(/\n$/, "").split(/\r?\n/).length, 0);
+              const removedLines = diffParts
+                .filter((p) => p.removed)
+                .reduce((acc, p) => acc + p.value.replace(/\n$/, "").split(/\r?\n/).length, 0);
+              const isModified = !prevFile || prevFile.content !== file.content;
+              const isExpanded = Boolean(expandedDiffs[file.path]);
+              const diffLinesList: Array<{ sign: "+" | "-" | " "; text: string }> = [];
+              for (const part of diffParts) {
+                const rawLines = part.value.replace(/\n$/, "").split(/\r?\n/);
+                for (const ln of rawLines) {
+                  if (part.added) diffLinesList.push({ sign: "+", text: ln });
+                  else if (part.removed) diffLinesList.push({ sign: "-", text: ln });
+                  else if (prevFile && prevFile.content !== file.content) {
+                    diffLinesList.push({ sign: " ", text: ln });
+                  }
+                }
+              }
+              const displayDiffLines = isExpanded ? diffLinesList : diffLinesList.slice(0, 14);
+
               return (
                 <div
                   key={file.path}
@@ -653,18 +683,65 @@ export function StudioWorkbenchTabs({
                         {badge.extLabel}
                       </span>
                       <span className="truncate">{file.path}</span>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded ${isModified ? "bg-sky-500/15 text-sky-400" : "opacity-50"}`}>
+                        {!prevFile ? "NEW" : isModified ? "MODIFIED" : "UNCHANGED"}
+                      </span>
                     </button>
-                    <span className="font-mono text-[11px] text-emerald-500 shrink-0">+{lineCount}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="font-mono text-[11px] text-emerald-500">+{addedLines}</span>
+                      {removedLines > 0 && (
+                        <span className="font-mono text-[11px] text-rose-500">-{removedLines}</span>
+                      )}
+                      {prevFile && isModified && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onChangeFiles(
+                              files.map((f) =>
+                                f.path.toLowerCase() === file.path.toLowerCase()
+                                  ? { ...f, content: prevFile.content }
+                                  : f
+                              )
+                            )
+                          }
+                          className={`px-1.5 py-0.5 rounded text-[10px] cursor-pointer ${subtleBtn}`}
+                          title="Revert file to baseline"
+                        >
+                          Revert
+                        </button>
+                      )}
+                      {diffLinesList.length > 14 && (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedDiffs((p) => ({ ...p, [file.path]: !p[file.path] }))}
+                          className={`px-1.5 py-0.5 rounded text-[10px] cursor-pointer ${subtleBtn}`}
+                        >
+                          {isExpanded ? "Collapse" : `All (${diffLinesList.length}L)`}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <pre dir="ltr" className="p-2.5 text-[11px] font-mono text-left overflow-x-auto max-h-40 leading-relaxed opacity-85">
-                    {diffParts
-                      .map((p) => p.value)
-                      .join("")
-                      .split(/\r?\n/)
-                      .slice(0, 12)
-                      .map((line, i) => `${String(i + 1).padStart(3, " ")} | ${line}`)
-                      .join("\n")}
-                  </pre>
+                  <div dir="ltr" className="p-2 text-[11px] font-mono text-left overflow-x-auto max-h-60 leading-relaxed">
+                    {displayDiffLines.length === 0 ? (
+                      <div className="px-2 py-1 opacity-60">No line changes relative to baseline.</div>
+                    ) : (
+                      displayDiffLines.map((dl, i) => (
+                        <div
+                          key={i}
+                          className={
+                            dl.sign === "+"
+                              ? "bg-emerald-500/12 text-emerald-300 px-1.5 rounded-xs"
+                              : dl.sign === "-"
+                              ? "bg-rose-500/15 text-rose-300 px-1.5 rounded-xs"
+                              : "opacity-75 px-1.5"
+                          }
+                        >
+                          <span className="inline-block w-4 select-none opacity-65">{dl.sign}</span>
+                          <span>{dl.text || " "}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -798,6 +875,60 @@ export function StudioWorkbenchTabs({
           <div className={`px-3 py-1.5 border-b flex items-center justify-between gap-2 text-[11px] ${isLight ? "border-gray-200 bg-gray-50" : "border-white/[0.06] bg-[#141416]"}`}>
             <span className="font-mono opacity-75 truncate">{activeFile.path}</span>
             <div className="flex items-center gap-1.5 shrink-0">
+              {files.some((f) => /\.(html|svg|js)$/i.test(f.path)) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab("browser");
+                    setBrowserSubMode("preview");
+                  }}
+                  className="px-2 py-0.5 rounded inline-flex items-center gap-1 cursor-pointer text-white font-medium"
+                  style={{ backgroundColor: accentHex }}
+                  title="Open live interactive app preview"
+                >
+                  <Play className="w-3 h-3" />
+                  <span>Preview</span>
+                </button>
+              )}
+              {/\.(js|mjs|py|sh)$/i.test(activeFile.path) && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const lang = activeFile.path.endsWith(".py")
+                      ? "python"
+                      : activeFile.path.endsWith(".sh")
+                        ? "bash"
+                        : "javascript";
+                    setTab("terminal");
+                    setTermBusy(true);
+                    setTermOutput((p) => [...p, { cmd: `run ${activeFile.path}`, out: `Executing ${activeFile.path}...` }]);
+                    try {
+                      const exRes = await fetch("/api/v1/sandbox/execute", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ language: lang, code: activeFile.content.slice(0, 14000) }),
+                      });
+                      const ex = await exRes.json();
+                      setTermOutput((p) => [
+                        ...p,
+                        {
+                          out: String(ex?.stdout || ex?.stderr || `exit=${ex?.exitCode ?? 0}`),
+                          isErr: Boolean(ex?.exitCode),
+                        },
+                      ]);
+                    } catch (err: any) {
+                      setTermOutput((p) => [...p, { out: err?.message || "Sandbox execution failed", isErr: true }]);
+                    } finally {
+                      setTermBusy(false);
+                    }
+                  }}
+                  className={`px-2 py-0.5 rounded inline-flex items-center gap-1 cursor-pointer ${subtleBtn}`}
+                  title="Run file in Sandbox Terminal"
+                >
+                  <Terminal className="w-3 h-3" />
+                  <span>Run</span>
+                </button>
+              )}
               {activeFile.path.toLowerCase().endsWith(".md") && (
                 <button
                   type="button"
@@ -813,7 +944,7 @@ export function StudioWorkbenchTabs({
                 className={`px-2 py-0.5 rounded inline-flex items-center gap-1 cursor-pointer ${subtleBtn}`}
               >
                 <Edit3 className="w-3 h-3" />
-                <span>{isEditingCode ? "View" : "Edit"}</span>
+                <span>{isEditingCode ? "Done" : "Edit"}</span>
               </button>
               <button
                 type="button"

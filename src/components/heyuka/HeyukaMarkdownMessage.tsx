@@ -33,6 +33,8 @@ function decodeBase64JsonSafe<T>(b64: string): T | null {
 
 interface HeyukaMarkdownMessageProps {
   markdown: string;
+  theme?: "dark" | "light";
+  collapseLongCodeOverLines?: number;
   onOpenCodeInStudio?: (lang: string, code: string, filePath?: string) => void;
   onOpenUrlInBrowser?: (url: string) => void;
 }
@@ -61,9 +63,20 @@ const LANG_EXT_MAP: Record<string, string> = {
   txt: "txt",
 };
 
+function resolveProseDir(sample: string, fallback: "rtl" | "ltr" = "ltr"): "rtl" | "ltr" {
+  const clean = String(sample || "").trim();
+  if (!clean) return fallback;
+  const arCount = (clean.match(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/g) || []).length;
+  const latinCount = (clean.match(/[A-Za-z]/g) || []).length;
+  if (arCount >= 3 || (arCount > 0 && fallback === "rtl")) return "rtl";
+  if (latinCount >= 6 && arCount === 0) return "ltr";
+  return fallback;
+}
+
 function renderInlineTokens(
   text: string,
-  onOpenUrlInBrowser?: (url: string) => void
+  onOpenUrlInBrowser?: (url: string) => void,
+  isLight = false
 ): React.ReactNode {
   const tokens = text.split(
     /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\(https?:\/\/[^)]+\)|https?:\/\/[^\s)<>]+|\*[^*]+\*)/g
@@ -74,28 +87,40 @@ function renderInlineTokens(
       {tokens.map((tok, i) => {
         if (!tok) return null;
         if (tok.startsWith("**") && tok.endsWith("**") && tok.length > 4) {
-          return (
-            <strong key={i} className="font-bold text-white">
-              {tok.slice(2, -2)}
+          const inner = tok.slice(2, -2);
+          const strongEl = (
+            <strong key={i} className={isLight ? "font-bold text-gray-950" : "font-bold text-white"}>
+              {inner}
             </strong>
+          );
+          return !/[\u0600-\u06FF]/.test(inner) ? (
+            <bdi key={i} dir="ltr">
+              {strongEl}
+            </bdi>
+          ) : (
+            strongEl
           );
         }
         if (tok.startsWith("*") && tok.endsWith("*") && tok.length > 2) {
           return (
-            <em key={i} className="italic text-zinc-200">
+            <em key={i} className={isLight ? "italic text-gray-700" : "italic text-zinc-200"}>
               {tok.slice(1, -1)}
             </em>
           );
         }
         if (tok.startsWith("`") && tok.endsWith("`") && tok.length > 2) {
           return (
-            <code
-              key={i}
-              dir="ltr"
-              className="inline-block px-1.5 py-0.5 mx-0.5 rounded bg-white/10 font-mono text-[12px] text-sky-300"
-            >
-              {tok.slice(1, -1)}
-            </code>
+            <bdi key={i} dir="ltr">
+              <code
+                className={`px-1.5 py-0.5 mx-0.5 rounded font-mono text-[12px] ${
+                  isLight
+                    ? "bg-gray-100 border border-gray-200 text-[#0369A1]"
+                    : "bg-white/[0.09] text-sky-300"
+                }`}
+              >
+                {tok.slice(1, -1)}
+              </code>
+            </bdi>
           );
         }
         const linkMatch = tok.match(/^\[([^\]]+)\]\((https?:\/\/[^)]+)\)$/);
@@ -115,7 +140,11 @@ function renderInlineTokens(
                     }
                   : undefined
               }
-              className="text-sky-400 underline underline-offset-2 hover:text-sky-300"
+              className={
+                isLight
+                  ? "text-[#007ACC] underline underline-offset-2 hover:text-sky-700 font-medium"
+                  : "text-sky-400 underline underline-offset-2 hover:text-sky-300 font-medium"
+              }
             >
               {linkMatch[1]}
             </a>
@@ -136,7 +165,11 @@ function renderInlineTokens(
                     }
                   : undefined
               }
-              className="text-sky-400 underline underline-offset-2 hover:text-sky-300 break-all"
+              className={
+                isLight
+                  ? "text-[#007ACC] underline underline-offset-2 hover:text-sky-700 break-all"
+                  : "text-sky-400 underline underline-offset-2 hover:text-sky-300 break-all"
+              }
             >
               {tok}
             </a>
@@ -152,13 +185,20 @@ function DeepSeekStyleCodeCard({
   lang,
   filePath,
   code,
+  collapseOverLines,
   onOpenCodeInStudio,
 }: {
   lang: string;
   filePath?: string;
   code: string;
+  collapseOverLines?: number;
   onOpenCodeInStudio?: (lang: string, code: string, filePath?: string) => void;
 }) {
+  const lineCount = code.split(/\r?\n/).length;
+  const shouldAutoCollapse =
+    typeof collapseOverLines === "number" && collapseOverLines > 0 && lineCount > collapseOverLines;
+  const [manualExpanded, setManualExpanded] = useState<boolean | null>(null);
+  const expanded = manualExpanded !== null ? manualExpanded : !shouldAutoCollapse;
   const [copied, setCopied] = useState(false);
   const badge = getFileBadgeMeta(filePath, lang);
   const label = filePath || lang || "text";
@@ -194,7 +234,7 @@ function DeepSeekStyleCodeCard({
       {/* Antigravity / VS Code File Header Bar */}
       <div
         style={{ backgroundColor: "#1B1D26" }}
-        className="px-3.5 py-2 border-b border-white/[0.08] flex items-center justify-between gap-2 text-xs"
+        className="px-3.5 py-2 border-b border-white/[0.08] flex flex-wrap items-center justify-between gap-2 text-xs"
       >
         <div className="flex items-center gap-2 min-w-0">
           <span
@@ -206,17 +246,25 @@ function DeepSeekStyleCodeCard({
           <span className="font-mono text-[11.5px] font-semibold text-zinc-200 truncate">
             {label}
           </span>
+          <span className="text-[10px] font-mono text-emerald-400 shrink-0">+{lineCount}L</span>
         </div>
         <div className="flex items-center gap-3 shrink-0 text-zinc-300">
+          <button
+            type="button"
+            onClick={() => setManualExpanded((prev) => !(prev !== null ? prev : !shouldAutoCollapse))}
+            className="text-[11px] font-medium text-zinc-400 hover:text-white cursor-pointer"
+          >
+            {expanded ? "Collapse" : `Show (${lineCount}L)`}
+          </button>
           {onOpenCodeInStudio && (
             <button
               type="button"
               onClick={() => onOpenCodeInStudio(lang, code, filePath)}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-400 hover:text-rose-300 cursor-pointer"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-400 hover:text-sky-300 cursor-pointer"
               title="Open this file in Antigravity Studio Code Editor"
             >
               <PanelRight className="w-3.5 h-3.5" />
-              <span>Open in Studio</span>
+              <span>Open in Editor</span>
             </button>
           )}
           <button
@@ -224,7 +272,7 @@ function DeepSeekStyleCodeCard({
             onClick={() => void handleCopy()}
             className="inline-flex items-center gap-1 text-[11px] font-medium hover:text-white cursor-pointer"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-rose-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
             <span>{copied ? "Copied" : "Copy"}</span>
           </button>
           <button
@@ -238,17 +286,22 @@ function DeepSeekStyleCodeCard({
         </div>
       </div>
 
-      <HeyukaSyntaxCodeView code={code} language={lang} filePath={filePath} />
+      {expanded && <HeyukaSyntaxCodeView code={code} language={lang} filePath={filePath} />}
     </div>
   );
 }
 
 export function HeyukaMarkdownMessage({
   markdown,
+  theme = "dark",
+  collapseLongCodeOverLines,
   onOpenCodeInStudio,
   onOpenUrlInBrowser,
 }: HeyukaMarkdownMessageProps) {
+  const isLight = theme === "light";
   const repairedMarkdown = repairTruncatedMarkdownAndCode(markdown).repaired;
+  const proseSample = repairedMarkdown.replace(/```[\s\S]*?```/g, " ");
+  const docDir: "rtl" | "ltr" = resolveProseDir(proseSample, "ltr");
   const parts = repairedMarkdown.split(
     /(```[a-zA-Z0-9_.-]*(?:[\t ]+(?:(?:path|file)=["']?[^\s"'\n]+["']?|[^\s"'\n]+\.[a-zA-Z0-9]+))?[\t ]*\n[\s\S]*?```)/g
   );
@@ -256,7 +309,7 @@ export function HeyukaMarkdownMessage({
   let codeCounter = 1;
 
   return (
-    <div className="space-y-2.5 text-[14px] text-zinc-100 leading-relaxed">
+    <div dir={docDir} className={`space-y-3 text-[13.5px] sm:text-[14px] leading-[1.7] ${isLight ? "text-gray-800" : "text-zinc-100"}`}>
       {parts.map((part, pIdx) => {
         if (!part) return null;
         const fenceMatch = part.match(
@@ -274,7 +327,7 @@ export function HeyukaMarkdownMessage({
             content: codeBody,
             counter: codeCounter++,
           });
-          if (isRenderableHtmlArtifact(langRaw, codeBody)) {
+          if (typeof collapseLongCodeOverLines !== "number" && isRenderableHtmlArtifact(langRaw, codeBody)) {
             return (
               <LiveHtmlPreviewCard
                 key={pIdx}
@@ -291,6 +344,7 @@ export function HeyukaMarkdownMessage({
               lang={langRaw}
               filePath={inferredPath}
               code={codeBody}
+              collapseOverLines={collapseLongCodeOverLines}
               onOpenCodeInStudio={onOpenCodeInStudio}
             />
           );
@@ -329,24 +383,24 @@ export function HeyukaMarkdownMessage({
               <div
                 key={`tbl-${pIdx}-${i}`}
                 dir="auto"
-                className="overflow-x-auto rounded-xl border border-white/10 bg-[#1A1B21] my-2"
+                className={`overflow-x-auto rounded-xl border my-2 ${isLight ? "border-gray-200 bg-gray-50" : "border-white/10 bg-[#1A1B21]"}`}
               >
                 <table className="w-full text-xs border-collapse">
                   <thead>
-                    <tr className="bg-white/[0.05] border-b border-white/10">
+                    <tr className={`border-b ${isLight ? "bg-gray-100 border-gray-200" : "bg-white/[0.05] border-white/10"}`}>
                       {headers.map((h, hi) => (
-                        <th key={hi} dir="auto" className="px-3 py-2 text-start font-bold text-white">
-                          {renderInlineTokens(h, onOpenUrlInBrowser)}
+                        <th key={hi} dir="auto" className={`px-3 py-2 text-start font-bold ${isLight ? "text-gray-900" : "text-white"}`}>
+                          {renderInlineTokens(h, onOpenUrlInBrowser, isLight)}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {rows.map((r, ri) => (
-                      <tr key={ri} className="border-b border-white/[0.05] last:border-0">
+                      <tr key={ri} className={`border-b last:border-0 ${isLight ? "border-gray-200/80" : "border-white/[0.05]"}`}>
                         {headers.map((_, ci) => (
-                          <td key={ci} dir="auto" className="px-3 py-2 text-zinc-200">
-                            {renderInlineTokens(r[ci] || "", onOpenUrlInBrowser)}
+                          <td key={ci} dir="auto" className={`px-3 py-2 ${isLight ? "text-gray-800" : "text-zinc-200"}`}>
+                            {renderInlineTokens(r[ci] || "", onOpenUrlInBrowser, isLight)}
                           </td>
                         ))}
                       </tr>
@@ -365,25 +419,25 @@ export function HeyukaMarkdownMessage({
           }
 
           if (/^---+$/.test(trimmed)) {
-            nodes.push(<hr key={`hr-${pIdx}-${i}`} className="border-white/10 my-2" />);
+            nodes.push(<hr key={`hr-${pIdx}-${i}`} className={isLight ? "border-gray-200 my-2.5" : "border-white/10 my-2.5"} />);
             i += 1;
             continue;
           }
 
-          // Headings cleanly rendered with dir="auto" (fixes ### in LTR /en/chat!)
+          // Headings cleanly rendered with dir="auto"
           const headingMatch = trimmed.match(/^(#{1,4})\s+(.*)$/);
           if (headingMatch) {
             const level = headingMatch[1].length;
             const headingText = headingMatch[2];
             const sizeCls =
               level === 1
-                ? "text-lg font-extrabold text-white pt-2"
+                ? `text-[17px] font-extrabold pt-2.5 ${isLight ? "text-gray-950" : "text-white"}`
                 : level === 2
-                ? "text-base font-bold text-white pt-1.5"
-                : "text-[14.5px] font-bold text-white pt-1";
+                ? `text-[15.5px] font-bold pt-2 border-t ${isLight ? "text-gray-900 border-gray-200/70" : "text-white border-white/[0.06]"}`
+                : `text-[14px] font-bold pt-1 ${isLight ? "text-gray-900" : "text-zinc-100"}`;
             nodes.push(
-              <h3 key={`hd-${pIdx}-${i}`} dir="auto" className={sizeCls}>
-                {renderInlineTokens(headingText, onOpenUrlInBrowser)}
+              <h3 key={`hd-${pIdx}-${i}`} dir={resolveProseDir(headingText, docDir)} className={sizeCls}>
+                {renderInlineTokens(headingText, onOpenUrlInBrowser, isLight)}
               </h3>
             );
             i += 1;
@@ -392,31 +446,53 @@ export function HeyukaMarkdownMessage({
 
           // Blockquote
           if (trimmed.startsWith("> ")) {
+            const bqText = trimmed.slice(2);
             nodes.push(
               <blockquote
                 key={`bq-${pIdx}-${i}`}
-                dir="auto"
-                className="border-s-2 border-[#007ACC]/70 ps-3 text-zinc-300 italic text-[13.5px]"
+                dir={resolveProseDir(bqText, docDir)}
+                className={`border-s-2 border-[#007ACC]/70 ps-3 italic text-[13.5px] ${isLight ? "text-gray-600" : "text-zinc-300"}`}
               >
-                {renderInlineTokens(trimmed.slice(2), onOpenUrlInBrowser)}
+                {renderInlineTokens(bqText, onOpenUrlInBrowser, isLight)}
               </blockquote>
             );
             i += 1;
             continue;
           }
 
-          // Unordered List
+          // Unordered List (supports indented nested bullets cleanly)
           if (/^\s*[-*•]\s+/.test(line)) {
-            const items: string[] = [];
-            while (i < lines.length && /^\s*[-*•]\s+/.test(lines[i])) {
-              items.push(lines[i].replace(/^\s*[-*•]\s+/, ""));
+            const items: Array<{ text: string; children: string[] }> = [];
+            while (i < lines.length && (/^\s*[-*•]\s+/.test(lines[i]) || /^\s{2,}\S/.test(lines[i]))) {
+              const cur = lines[i];
+              const indent = cur.match(/^(\s*)/)?.[1].length || 0;
+              const isBullet = /^\s*[-*•]\s+/.test(cur);
+              if (isBullet && indent < 2) {
+                items.push({ text: cur.replace(/^\s*[-*•]\s+/, ""), children: [] });
+              } else if (isBullet && items.length > 0) {
+                items[items.length - 1].children.push(cur.replace(/^\s*[-*•]\s+/, ""));
+              } else if (items.length > 0 && cur.trim()) {
+                items[items.length - 1].text += ` ${cur.trim()}`;
+              } else {
+                break;
+              }
               i += 1;
             }
+            const listDir = resolveProseDir(items.map((it) => `${it.text} ${it.children.join(" ")}`).join(" "), docDir);
             nodes.push(
-              <ul key={`ul-${pIdx}-${i}`} dir="auto" className="space-y-1.5 ps-5 list-disc text-zinc-200">
+              <ul key={`ul-${pIdx}-${i}`} dir={listDir} className={`space-y-2 ps-5 list-disc ${isLight ? "text-gray-800" : "text-zinc-200"}`}>
                 {items.map((it, li) => (
-                  <li key={li} dir="auto">
-                    {renderInlineTokens(it, onOpenUrlInBrowser)}
+                  <li key={li} dir={resolveProseDir(it.text, listDir)} className="leading-[1.7]">
+                    <span>{renderInlineTokens(it.text, onOpenUrlInBrowser, isLight)}</span>
+                    {it.children.length > 0 && (
+                      <ul dir={listDir} className="mt-1.5 space-y-1 ps-5 list-[circle] opacity-90">
+                        {it.children.map((ch, ci) => (
+                          <li key={ci} dir={resolveProseDir(ch, listDir)}>
+                            {renderInlineTokens(ch, onOpenUrlInBrowser, isLight)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -424,18 +500,36 @@ export function HeyukaMarkdownMessage({
             continue;
           }
 
-          // Ordered List
+          // Ordered List (groups nested sub-bullets cleanly under their numbered step!)
           if (/^\s*\d+\.\s+/.test(line)) {
-            const items: string[] = [];
-            while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
-              items.push(lines[i].replace(/^\s*\d+\.\s+/, ""));
-              i += 1;
+            const items: Array<{ text: string; subBullets: string[] }> = [];
+            while (i < lines.length) {
+              const cur = lines[i];
+              if (/^\s*\d+\.\s+/.test(cur)) {
+                items.push({ text: cur.replace(/^\s*\d+\.\s+/, ""), subBullets: [] });
+                i += 1;
+              } else if (/^\s*[-*•]\s+/.test(cur) && items.length > 0) {
+                items[items.length - 1].subBullets.push(cur.replace(/^\s*[-*•]\s+/, ""));
+                i += 1;
+              } else {
+                break;
+              }
             }
+            const listDir = resolveProseDir(items.map((it) => `${it.text} ${it.subBullets.join(" ")}`).join(" "), docDir);
             nodes.push(
-              <ol key={`ol-${pIdx}-${i}`} dir="auto" className="space-y-1.5 ps-5 list-decimal text-zinc-200">
+              <ol key={`ol-${pIdx}-${i}`} dir={listDir} className={`space-y-2 ps-5 list-decimal ${isLight ? "text-gray-800" : "text-zinc-200"}`}>
                 {items.map((it, li) => (
-                  <li key={li} dir="auto">
-                    {renderInlineTokens(it, onOpenUrlInBrowser)}
+                  <li key={li} dir={resolveProseDir(it.text, listDir)} className="leading-[1.7]">
+                    <span>{renderInlineTokens(it.text, onOpenUrlInBrowser, isLight)}</span>
+                    {it.subBullets.length > 0 && (
+                      <ul dir={listDir} className="mt-1.5 space-y-1 ps-5 list-disc opacity-90">
+                        {it.subBullets.map((sb, sbi) => (
+                          <li key={sbi} dir={resolveProseDir(sb, listDir)}>
+                            {renderInlineTokens(sb, onOpenUrlInBrowser, isLight)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 ))}
               </ol>
@@ -520,10 +614,10 @@ export function HeyukaMarkdownMessage({
             }
           }
 
-          // Standard Paragraph with dir="auto"
+          // Standard Paragraph inheriting document/line prose direction
           nodes.push(
-            <p key={`p-${pIdx}-${i}`} dir="auto" className="text-zinc-100 leading-relaxed">
-              {renderInlineTokens(line, onOpenUrlInBrowser)}
+            <p key={`p-${pIdx}-${i}`} dir={resolveProseDir(line, docDir)} className={`leading-[1.7] ${isLight ? "text-gray-800" : "text-zinc-100"}`}>
+              {renderInlineTokens(line, onOpenUrlInBrowser, isLight)}
             </p>
           );
           i += 1;

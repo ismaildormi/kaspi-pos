@@ -4,6 +4,9 @@ import {
   auditAndRecordCompletedOutput,
   buildActiveVaultWorkingMemory,
   createStudioAgentToolkit,
+  mergeStudioWorkspaceFiles,
+  type AgentActionStep,
+  type StudioMutatedFile,
 } from "@/lib/heyuka/unified-antigravity-cortex";
 import {
   getTotalIntegratedCapabilitiesCount,
@@ -24,7 +27,7 @@ import {
 import { z } from "zod";
 import { getRequestContext } from "@/server/auth/context";
 import { prisma } from "@/server/db/prisma";
-import { generateTextWithRouter } from "@/lib/ai-router";
+import { generateTextWithRouter, streamStudioNdjsonWithRouter } from "@/lib/ai-router";
 import { runUnrestrictedWebResearch } from "@/lib/zebra-x/arsenal-vault";
 import { executePolyglotCodeSandbox, type SandboxLanguage } from "@/lib/zebra-x/tools/code-sandbox";
 import { planXZebraToolRoute } from "@/lib/zebra-x/core/router";
@@ -113,6 +116,7 @@ const WebChatRequestSchema = z.object({
   deepThink: z.boolean().default(false),
   webSearch: z.boolean().default(false),
   locale: z.enum(["ar", "fr", "en"]).default("en"),
+  stream: z.boolean().default(false),
   messages: z
     .array(
       z.object({
@@ -129,10 +133,10 @@ const WebChatRequestSchema = z.object({
       z.object({
         path: z.string().max(180),
         language: z.string().max(32).optional(),
-        content: z.string().max(18000),
+        content: z.string().max(120000),
       })
     )
-    .max(12)
+    .max(60)
     .optional(),
 });
 
@@ -334,6 +338,7 @@ export async function POST(req: NextRequest) {
     deepThink,
     webSearch,
     locale,
+    stream: wantsStream,
     messages: rawMessages,
     imageBase64,
     audioTranscriptNote,
@@ -437,15 +442,16 @@ export async function POST(req: NextRequest) {
       : null;
 
   thinkingSteps.push({
-    phase: "Cognitive Brain Pre-Classification & Auto-Router (18 Clusters)",
+    phase:
+      locale === "ar"
+        ? "تحليل المساحة وتحديد القدرات (18 مجالاً)"
+        : "Cognitive Pre-Classification & Tool Routing (18 Clusters)",
     agentModel: elasticSwarmPlan
       ? `${elasticSwarmPlan.tier} (${elasticSwarmPlan.nodes.length}x Swarm)`
       : isCollaborative
       ? "heyuka-core (Architect)"
       : model,
-    summary: `Route: ${strictCategory.categoryCode} • Clusters: [${cognitiveRoute.stageBadges
-      .map((b) => `${b.icon} ${b.label}`)
-      .join(" | ")}] • Brand: ${brand.toUpperCase()} • ${PUBLIC_APIS_CATALOG_COUNT} Live APIs + ${matchedCatalogCount}+ Tools`,
+    summary: `Route: ${strictCategory.categoryCode} • ${PUBLIC_APIS_CATALOG_COUNT} Live APIs + ${matchedCatalogCount}+ Sources`,
     durationMs: Math.max(1, Date.now() - phase1Start),
     timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
   });
@@ -495,15 +501,23 @@ export async function POST(req: NextRequest) {
   let apiContextBlock = "";
   let posContextBlock = "";
 
-  const shouldProbeLiveApis =
-    effectiveSearch || Boolean(autoDetectedUrl) || isPatentQuery || (effectiveMode === "chat" && lastUser.length < 400);
-  const apiCats = shouldProbeLiveApis ? matchPublicApiCategories(lastUser) : [];
+  const explicitSearchCue =
+    effectiveMode === "search" ||
+    Boolean(autoDetectedUrl) ||
+    isPatentQuery ||
+    /(?:\bsearch\b|\blatest\b|\bnews\b|ابحث في الويب|بحث في الإنترنت|آخر الأخبار|مقال)/i.test(lastUser);
+  const isPureBuildTask =
+    (effectiveMode === "coding" || effectiveMode === "3d") && !explicitSearchCue;
+  const shouldPreSearchWeb =
+    Boolean(autoDetectedUrl) || effectiveMode === "search" || (effectiveSearch && !isPureBuildTask);
+
+  const apiCats = !isPureBuildTask || explicitSearchCue ? matchPublicApiCategories(lastUser) : [];
   const shouldFetchPosSnapshot =
     Boolean(tenantId) &&
     (brand === "kaspi_pos" || /(kaspi|pos|vente|stock|produit|caisse|facture|مبيعات|متجر|مخزون|سلعة|فاتورة)/i.test(lastUser));
 
   const [searchRes, urlRes, apiResults, posSnapshotRes] = await Promise.all([
-    effectiveSearch || Boolean(autoDetectedUrl)
+    shouldPreSearchWeb
       ? runUnrestrictedWebResearch({ query: lastUser.slice(0, 320), lang: locale }).catch(() => null)
       : Promise.resolve(null),
     autoDetectedUrl
@@ -631,11 +645,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (elasticSwarmPlan) {
-    v52v60StudioFiles.push({
-      path: "elastic-swarm-council.json",
-      language: "json",
-      content: JSON.stringify(elasticSwarmPlan, null, 2),
-    });
+    if (isCollaborative) {
+      v52v60StudioFiles.push({
+        path: "elastic-swarm-council.json",
+        language: "json",
+        content: JSON.stringify(elasticSwarmPlan, null, 2),
+      });
+    }
     toolSupplementBlock += `\n\n[ELASTIC MODEL COUNCIL SWARM (${elasticSwarmPlan.nodes.length} AGENTS • ${brand.toUpperCase()})]\nCooperating Specialist Nodes:\n${elasticSwarmPlan.nodes
       .map((n) => `- ${n.role} (${n.focus}): ${n.contributionSummary}`)
       .join("\n")}\nSpawned Worker Bots: ${elasticSwarmPlan.spawnedBots.length}`;
@@ -694,32 +710,29 @@ Suppress <think> commentary. Split complex scenes/games cleanly across \`\`\`htm
 
   const workspaceSnippet =
     workspaceFiles && workspaceFiles.length > 0
-      ? `\n\n[ACTIVE WORKSPACE FILES]\n${workspaceFiles
+      ? `\n\n[ACTIVE WORKSPACE FILES (${workspaceFiles.length}) — Use inspectWorkspaceFile / editWorkspaceFile / writeWorkspaceFile tools]\n${workspaceFiles
+          .map((f) => `- ${f.path} (${f.language || "text"}, ${f.content.split(/\r?\n/).length} lines)`)
+          .join("\n")}\n\n${workspaceFiles
           .slice(0, 6)
-          .map((f) => `--- ${f.path} ---\n${f.content.slice(0, 1500)}`)
+          .map((f) => `--- ${f.path} ---\n${f.content.slice(0, 1600)}`)
           .join("\n")}`
       : "";
 
   const customRulesBlock = [callerSystemInstruction, extraSystemFromMessages]
     .filter((x) => typeof x === "string" && x.trim().length > 0)
     .join("\n")
-    .slice(0, 8000);
+    .slice(0, 6000);
 
-  const organizedAgentPlaybook = `[UNIFIED ANTIGRAVITY AGENT ARCHITECTURE — ALL MODELS SHARE EQUAL FULL CAPABILITY]
-1. Full-Stack & Multi-Language Builder: Generate complete, runnable projects across ALL stacks (HTML/CSS/Tailwind/TypeScript/JavaScript/React/Next.js/Python/SQL/Rust/Go/Bash) using explicit \`path=\` headers (e.g. \`\`\`html path=index.html\`, \`\`\`css path=styles.css\`, \`\`\`js path=autoContinue.js\`).
-2. Live Invoices, Reports & Artifacts: For any invoice (فاتورة), tax table, or report, emit a clean semantic \`\`\`html\`\`\` document (with dir="rtl" for Arabic) + clean Markdown tables so interactive <iframe> preview, 1-click PDF download, and Excel (.xlsx) export activate automatically.
-3. Clickable Web Links & Verified Research: Use [LIVE WEB RESEARCH SOURCES] & [FETCHED URL CONTENT] directly with clickable Markdown links ([Title](https://...)) for libraries, docs, and external web sources.
-4. Cross-Sector Fluency & Autonomous Completion: Serve all domains (programming, retail/accounting, engineering, medicine, creative, marketing, daily chat) fluently in ${detectedLang}. Complete every response to the final character without stopping early, looping, or telling the user to rephrase.`;
+  const organizedAgentPlaybook = `[UNIFIED ANTIGRAVITY AGENT ARCHITECTURE]
+1. Antigravity File Workflow: Use \`listWorkspaceFiles\`, \`inspectWorkspaceFile\`, \`searchWorkspaceFiles\`, \`writeWorkspaceFile\`, \`editWorkspaceFile\`, and \`runAndVerifyCode\` directly to build/edit files OR emit complete cleanly formatted multi-line \`\`\`lang path=file.ext blocks (never minify HTML/CSS onto a single line, zero \`...\` omissions). Verify every DOM ID/selector referenced in JS matches HTML verbatim inside \`DOMContentLoaded\` with null-safe checks so Preview runs cleanly with 0 console errors.
+2. Live Invoices & Artifacts: For invoices (فاتورة)/reports, emit semantic RTL \`\`\`html\`\`\` + Markdown tables for automatic <iframe> preview, PDF, and Excel (.xlsx) export.
+3. Links & Completion: Embed clickable Markdown links ([Title](https://...)) and complete every section in clean ${detectedLang} typography without premature cutoffs.`;
 
   const collabSection = isCollaborative
-    ? `\n\nMULTI-AGENT SWARM ACTIVE (${model}):
-Synthesize deeply across Architect + Builder + Reviewer passes and deliver ONE cohesive, production-ready result.`
+    ? `\n\nMULTI-AGENT SWARM ACTIVE (${model}): Synthesize deeply across Architect + Builder + Reviewer passes into ONE production-ready result.`
     : "";
 
-  const personaSection = `DIRECT ENGINEERING, FREE PERSONA & UNRESTRICTED CONVERSATION RULES:
-1. Deliver direct, complete solutions across all industries, tech stacks, business analytics, and general conversation immediately — taking all space needed with zero arbitrary truncation.
-2. You have FULL freedom to adopt any expert persona, tone, character, or system directive requested by the caller or user (تقمص الأدوار) while preserving tool verification, live web grounding, and arithmetic accuracy.
-3. Maintain baseline system integrity cleanly while never falsely refusing legitimate user tasks.`;
+  const personaSection = `DIRECT ENGINEERING & FREE PERSONA RULES: Deliver complete solutions across all tech stacks and domains, adopting any requested expert persona/roleplay (تقمص الأدوار) cleanly with full tool and verification access.`;
 
   const cortexMemory = buildActiveVaultWorkingMemory({
     prompt: lastUser,
@@ -731,18 +744,37 @@ Synthesize deeply across Architect + Builder + Reviewer passes and deliver ONE c
   });
 
   const executedAgentLogs: string[] = [];
-  const studioAgentToolkit = !imageBase64
-    ? createStudioAgentToolkit({
-        workspaceFiles,
-        locale: worldLang.shortLocale,
-        executedLogs: executedAgentLogs,
-        primaryClusterId: cortexMemory.primaryClusterId,
-      })
-    : undefined;
+  const actionSteps: AgentActionStep[] = [];
+  const mutatedByTool = new Map<string, { path: string; language: string; content: string }>();
+
+  const buildTurnToolkit = (
+    onLiveStep?: (step: AgentActionStep) => void,
+    onLiveFile?: (file: StudioMutatedFile) => void
+  ) =>
+    !imageBase64
+      ? createStudioAgentToolkit({
+          workspaceFiles,
+          locale: worldLang.shortLocale,
+          executedLogs: executedAgentLogs,
+          primaryClusterId: cortexMemory.primaryClusterId,
+          onActionStep: (step) => {
+            actionSteps.push(step);
+            onLiveStep?.(step);
+          },
+          onFileMutated: (file) => {
+            mutatedByTool.set(file.path.toLowerCase(), {
+              path: file.path,
+              language: file.language,
+              content: file.content,
+            });
+            onLiveFile?.(file);
+          },
+        })
+      : undefined;
 
   const systemInstruction = `You are ${brand === "kaspi_pos" ? "KASPI POS AI Architect" : "HEYUKA AI Engineer"} running inside the unified Antigravity Studio IDE (${model}), with free adaptive role-play & persona adoption when requested. You have full equal access to ${cortexMemory.studiedCorpusUnits}+ digested knowledge units (${matchedCatalogCount}+ vaulted engines, ${cortexMemory.webCrawledUnits} web-studied docs), ${PUBLIC_APIS_CATALOG_COUNT} live no-key APIs, workspace file inspection & incremental editing, live web crawl/study, and code sandbox execution.
 Matched Capabilities: ${routePlan.selectedToolNames.join(", ")}${
-    skillIndexPrompt ? `\n${skillIndexPrompt.slice(0, 650)}` : ""
+    skillIndexPrompt ? `\n${skillIndexPrompt.slice(0, 320)}` : ""
   }
 Execution Policy: ${executionPolicy.toUpperCase()} | Language: ${detectedLang}
 ${cortexMemory.activeMemoryPromptBlock}
@@ -776,14 +808,381 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
   });
 
   const phase3Start = Date.now();
-  let rawText = "";
   const resolvedModel = imageBase64 ? "heyuka-vision" : isCollaborative ? "multi-agent-3" : model;
 
   const isVercelRuntime = process.env.VERCEL === "1" || process.env.VERCEL === "true";
-  const maxStepCount = isVercelRuntime ? 8 : 16;
+  const maxStepCount = isVercelRuntime ? 10 : 18;
   const maxContinuationHops = isVercelRuntime ? 8 : 16;
   const continuationHorizonMs = isVercelRuntime ? 50_000 : 240_000;
 
+  const finalizeAndAuditTurn = (rawInput: string, streamedReasoning?: string) => {
+    const rawText = String(rawInput || "").trim();
+    thinkingSteps.push({
+      phase: isCollaborative ? "Multi-Agent Synthesis & Review Pass" : "Neural Synthesis & Formatting",
+      agentModel: resolvedModel,
+      summary: `Synthesized response (${rawText.length} chars, ${mutatedByTool.size} direct file writes) under ${executionPolicy} policy`,
+      durationMs: Math.max(1, Date.now() - phase3Start),
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+    });
+
+    let reasoning = streamedReasoning?.trim() || "";
+    let answerRaw = rawText;
+    const thinkMatch = rawText.match(/<think>([\s\S]*?)<\/think>/i);
+    const unclosedThinkMatch = !thinkMatch ? rawText.match(/<think>([\s\S]*)$/i) : null;
+    if (thinkMatch) {
+      reasoning = reasoning ? `${reasoning}\n\n${thinkMatch[1].trim()}` : thinkMatch[1].trim();
+      answerRaw = rawText.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+    } else if (unclosedThinkMatch) {
+      reasoning = reasoning ? `${reasoning}\n\n${unclosedThinkMatch[1].trim()}` : unclosedThinkMatch[1].trim();
+      answerRaw = rawText.replace(/<think>[\s\S]*$/gi, "").trim();
+    } else if (!reasoning && effectiveDeepThink) {
+      reasoning = thinkingSteps
+        .map((s) => `• [${s.timestamp}] ${s.phase} (${s.agentModel}, ${s.durationMs}ms): ${s.summary}`)
+        .join("\n");
+    }
+
+    const { repaired: repairedDraft, wasRepaired } = repairTruncatedMarkdownAndCode(answerRaw);
+    if (wasRepaired) {
+      thinkingSteps.push({
+        phase: "Structural Bracket & Tag Auto-Repair (v24.0)",
+        agentModel: "heyuka-repair",
+        summary: "Closed interrupted fences, brackets, or HTML tags cleanly.",
+        durationMs: 1,
+        timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+      });
+    }
+
+    const reflected = runPreReplyReflectionGate({
+      draftText: repairedDraft,
+      expectedLocale: locale,
+    });
+    const isClarifyFallback =
+      /^(Please clarify your request slightly|مرحباً، أعد صياغة طلبك قليلاً|Bonjour, veuillez préciser votre demande)/i.test(
+        reflected.cleanedText
+      );
+    let answer =
+      (!repairedDraft || isClarifyFallback) && (validApis.length > 0 || sources.length > 0)
+        ? buildLiveGroundingFallback(validApis, sources, locale, effectiveMode)
+        : !repairedDraft || isClarifyFallback
+        ? runLocalOnDeviceHeyukaBrain({
+            prompt: lastUser,
+            mode: effectiveMode,
+            locale: worldLang.shortLocale,
+          }).answer
+        : reflected.cleanedText || repairedDraft || rawText;
+
+    if (isPatentQuery) {
+      const patentApi = validApis.find((a) => a.category === "google_patents");
+      const patentHits = Array.isArray((patentApi?.data as Record<string, unknown> | undefined)?.patents)
+        ? ((patentApi?.data as Record<string, unknown>).patents as Array<{
+            patentNumber?: string;
+            title?: string;
+            inventors?: string[];
+            year?: number;
+            citationCount?: number;
+            googlePatentsUrl?: string;
+            pdfOrLandingUrl?: string;
+          }>)
+        : [];
+      const patentBlock = buildPatentBlueprintAndPdfMarker({
+        query: lastUser.slice(0, 120),
+        patents: patentHits,
+        locale: worldLang.shortLocale,
+      });
+      if (!answer.includes("[KASPI_PDF_REPORT:")) {
+        answer = `${answer}\n\n${patentBlock.markdownSupplement}`;
+      }
+    }
+
+    for (const badge of cognitiveRoute.stageBadges) {
+      const badgeTitle = `${badge.icon} ${badge.label}`;
+      if (!sources.some((s) => s.title === badgeTitle)) {
+        sources.unshift({
+          title: badgeTitle,
+          url: isPatentQuery ? `https://patents.google.com/?q=${encodeURIComponent(lastUser.slice(0, 80))}&scholar` : "",
+        });
+      }
+    }
+
+    let studioFiles = extractStudioFilesSafe(answer);
+    if (mutatedByTool.size > 0) {
+      studioFiles = mergeStudioWorkspaceFiles(studioFiles, Array.from(mutatedByTool.values()));
+    }
+    if (v52v60StudioFiles.length > 0) {
+      studioFiles = mergeStudioWorkspaceFiles(v52v60StudioFiles, studioFiles);
+    }
+    if (isPatentQuery && !studioFiles.some((f) => f.path.endsWith(".md"))) {
+      studioFiles = [
+        {
+          path: "patent-specification-blueprint.md",
+          language: "markdown",
+          content: answer,
+        },
+        ...studioFiles,
+      ];
+    }
+    const hasRunnableAsset = studioFiles.some(
+      (f) => f.path.endsWith(".html") || f.path.endsWith(".js") || f.path.endsWith(".py")
+    );
+    if ((effectiveMode === "coding" || effectiveMode === "3d") && !hasRunnableAsset) {
+      studioFiles = mergeStudioWorkspaceFiles(
+        buildDomainBlueprintFiles(lastUser, lastUser.slice(0, 44)),
+        studioFiles
+      );
+    }
+    if (effectiveMode === "image" && !isImageEditRequest && !studioFiles.some((f) => f.path.endsWith(".svg"))) {
+      studioFiles = [
+        { path: "artwork.svg", language: "svg", content: buildCodeToMediaArtifactSvg(lastUser.slice(0, 40), lastUser) },
+        ...studioFiles,
+      ];
+    }
+    if (effectiveMode === "qr" && qrSvgMarkup) {
+      studioFiles = [{ path: "heyuka-qr.svg", language: "svg", content: qrSvgMarkup }, ...studioFiles];
+    }
+
+    let clientMediaJob: Record<string, unknown> | undefined;
+    const shouldOpenStudio =
+      effectiveMode === "coding" ||
+      effectiveMode === "image" ||
+      effectiveMode === "video" ||
+      effectiveMode === "audio" ||
+      effectiveMode === "3d" ||
+      effectiveMode === "qr" ||
+      isImageEditRequest ||
+      studioFiles.length > 0;
+
+    if (isImageEditRequest && imageBase64) {
+      clientMediaJob = {
+        kind: "image_edit",
+        title: "Vision Image Studio (Inpaint / Background Editor)",
+        subtitle: "Client GPU Interactive Eraser & Export ($0.00)",
+        prompt: lastUser,
+        sourceImageUrl: imageBase64,
+        openStudio: true,
+      };
+    } else if (effectiveMode === "image") {
+      clientMediaJob = {
+        kind: "image",
+        title: lastUser.slice(0, 48),
+        subtitle: "HEYUKA Client GPU & Diffusion Studio",
+        prompt: lastUser,
+        accentHex: "#E11D48",
+        pollinationsUrl: `https://image.pollinations.ai/prompt/${encodeURIComponent(
+          lastUser.slice(0, 260)
+        )}?width=1024&height=640&nologo=true`,
+        openStudio: true,
+      };
+    } else if (effectiveMode === "video") {
+      const cinemaBundle = buildPhotorealisticCinemaVideoBundle(lastUser);
+      studioFiles = [...studioFiles, ...cinemaBundle.files];
+      const cleanLines = answer
+        .split("\n")
+        .map((l) => l.replace(/^[-*#\d.\s]+/, "").trim())
+        .filter((l) => l.length > 8 && l.length < 72)
+        .slice(0, 3);
+      clientMediaJob = {
+        kind: "video",
+        title: lastUser.slice(0, 48),
+        subtitle: "HEYUKA v34.0 Cinema Motion + WebAudio Foley (Client GPU)",
+        prompt: lastUser,
+        accentHex: "#10B981",
+        durationSec: 4.5,
+        scenes:
+          cleanLines.length > 0
+            ? cleanLines
+            : [lastUser.slice(0, 45), "OpenColorIO ACES Grade", "100% Client GPU • $0.00"],
+        openStudio: true,
+      };
+    } else if (effectiveMode === "audio") {
+      clientMediaJob = {
+        kind: "audio",
+        title: lastUser.slice(0, 48),
+        prompt: lastUser,
+        bpm: 112,
+        durationSec: 4.2,
+        openStudio: true,
+      };
+    } else if (effectiveMode === "3d") {
+      clientMediaJob = {
+        kind: "3d",
+        title: lastUser.slice(0, 48),
+        prompt: lastUser,
+        glbPreset: /torus|ring/i.test(lastUser)
+          ? "torus"
+          : /sphere|ball|globe/i.test(lastUser)
+          ? "sphere"
+          : /stand|vase|cup/i.test(lastUser)
+          ? "product_stand"
+          : /crystal|gem|prism/i.test(lastUser)
+          ? "emerald_prism"
+          : "cube",
+        openStudio: true,
+      };
+    } else if (effectiveMode === "qr" && qrSvgMarkup) {
+      clientMediaJob = {
+        kind: "qr",
+        title: "HEYUKA Branded QR SVG",
+        prompt: lastUser,
+        svgMarkup: qrSvgMarkup,
+        openStudio: true,
+      };
+    }
+
+    const thinkingSec = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+    const studiedMatched = searchStudiedKnowledgeCorpus({
+      query: lastUser,
+      limit: 16,
+      includeWebFirst: true,
+    });
+    const vaultedMatched = searchSovereignVault({
+      query: lastUser,
+      clusterId: cognitiveRoute.primaryCluster.id,
+      limit: 12,
+    });
+    const combinedSourcesUsed = Array.from(
+      new Set([
+        ...studiedMatched.hits.map((h) => h.title),
+        ...vaultedMatched.map((v) => v.name),
+      ])
+    );
+    const selfAudit = auditAndRecordCompletedOutput({
+      prompt: lastUser,
+      draftText: answer,
+      expectedLocale: worldLang.shortLocale,
+      domainMode: cortexMemory.domainMode,
+      primaryClusterId: cognitiveRoute.primaryCluster.id,
+      sourcesUsed: combinedSourcesUsed,
+      artifactCount: studioFiles.length || 1,
+      modelUsed: resolvedModel,
+    });
+    recordProductSelfEvolution({
+      prompt: lastUser,
+      clusterId: cognitiveRoute.primaryCluster.id,
+      productKind: effectiveMode === "video" ? "video" : effectiveMode === "3d" ? "3d" : effectiveMode === "image" ? "image" : "project",
+      sourcesUsed: combinedSourcesUsed,
+      outputFormats: cognitiveRoute.primaryCluster.outputFormats,
+      artifactCount: studioFiles.length || 1,
+      totalBytes: answer.length,
+      qualityScore: Math.max(0.5, selfAudit.qualityScore / 10),
+      executionMode: executionPolicy === "auto" ? "client_cpu" : "free_gateway",
+    });
+    const evolutionCtx = getSelfEvolutionContextForPrompt({
+      prompt: lastUser,
+      clusterId: cognitiveRoute.primaryCluster.id,
+    });
+
+    const finalAnswer = selfAudit.cleanedText || answer;
+    return {
+      ok: true,
+      unlimited: true,
+      dailyRequestLimit: null,
+      clientComputeFirst: true,
+      model: resolvedModel,
+      executionPolicy,
+      effectiveMode,
+      autoSwitched,
+      deepThinkUsed: effectiveDeepThink,
+      searchUsed: effectiveSearch,
+      answer: finalAnswer,
+      reasoning: reasoning || undefined,
+      thinkingSec: effectiveDeepThink ? thinkingSec : undefined,
+      thinkingSteps,
+      actionSteps: actionSteps.length > 0 ? actionSteps : undefined,
+      thoughtCompletedAt: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+      sources: sources.length > 0 ? sources : undefined,
+      studioFiles: studioFiles.length > 0 ? studioFiles : undefined,
+      verifiedTerminalLogs: executedAgentLogs.length > 0 ? executedAgentLogs : undefined,
+      studiedCorpusUnits: studiedMatched.totalCorpusUnits,
+      webCrawledUnits: studiedMatched.webCrawledUnits,
+      errorLessonsLearned: evolutionCtx.learnedErrorLessons.length,
+      incompleteTruncated: detectTruncationState(answerRaw).truncated,
+      clientMediaJob,
+      openStudio: shouldOpenStudio,
+      zeroCostGuarantee: "$0.00 Server Compute — Client Device & Free Edge",
+      latencyMs: Date.now() - startedAt,
+    };
+  };
+
+  if (wantsStream) {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const emit = (obj: Record<string, unknown>) => {
+          try {
+            controller.enqueue(encoder.encode(`${JSON.stringify(obj)}\n`));
+          } catch {}
+        };
+
+        emit({ type: "phase", title: thinkingSteps[0]?.phase || "Initializing Antigravity Agent...", step: thinkingSteps[0] });
+        if (sources.length > 0) {
+          emit({ type: "sources", sources });
+        }
+
+        const streamToolkit = buildTurnToolkit(
+          (step) => emit({ type: "action_step", step }),
+          (file) => emit({ type: "file_update", file })
+        );
+
+        try {
+          const streamRes = await streamStudioNdjsonWithRouter({
+            system: systemInstruction,
+            messages: formattedMessages as any,
+            tools: streamToolkit,
+            stopWhen: streamToolkit ? stepCountIs(maxStepCount) : undefined,
+            temperature: executionPolicy === "turbo" ? 0.35 : 0.42,
+            governance: {
+              tenantId,
+              allowOwnerPaidProviders: false,
+            },
+            onPhase: (title) => emit({ type: "phase", title }),
+            onReasoningDelta: (delta) => emit({ type: "think_delta", delta }),
+            onTextDelta: (delta) => emit({ type: "text_delta", delta }),
+            onToolStart: (toolName) => {
+              const isArabicUi = locale === "ar" || worldLang.shortLocale === "ar";
+              const labelMap: Record<string, string> = {
+                listWorkspaceFiles: isArabicUi ? "جاري فحص ملفات مساحة العمل..." : "Scanning workspace files...",
+                inspectWorkspaceFile: isArabicUi ? "جاري قراءة الملف..." : "Reading workspace file...",
+                searchWorkspaceFiles: isArabicUi ? "جاري البحث داخل المشروع..." : "Searching project files...",
+                writeWorkspaceFile: isArabicUi ? "جاري كتابة الملف..." : "Writing workspace file...",
+                editWorkspaceFile: isArabicUi ? "جاري تعديل الكود بدقة..." : "Editing file surgically...",
+                runAndVerifyCode: isArabicUi ? "جاري تشغيل الاختبار في Sandbox..." : "Running verification in Sandbox...",
+                webSearchAndFetch: isArabicUi ? "جاري البحث في الويب..." : "Searching live web...",
+                studyAndCrawlSource: isArabicUi ? "جاري الزحف ودراسة المصدر..." : "Crawling & studying source...",
+              };
+              emit({ type: "phase", title: labelMap[toolName] || `Running ${toolName}...` });
+            },
+          });
+
+          const payload = finalizeAndAuditTurn(streamRes.text, streamRes.reasoning);
+          emit({ type: "done", payload });
+        } catch (err: any) {
+          const fallbackAnswer =
+            validApis.length > 0 || sources.length > 0
+              ? buildLiveGroundingFallback(validApis, sources, locale, effectiveMode)
+              : runLocalOnDeviceHeyukaBrain({
+                  prompt: lastUser,
+                  mode: effectiveMode,
+                  locale: worldLang.shortLocale,
+                }).answer;
+          emit({ type: "text_delta", delta: fallbackAnswer });
+          const payload = finalizeAndAuditTurn(fallbackAnswer, err?.message ? `Recovered cleanly from ${err.message}` : undefined);
+          emit({ type: "done", payload });
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+      },
+    });
+  }
+
+  let rawText = "";
+  const studioAgentToolkit = buildTurnToolkit();
   try {
     const gen = await generateTextWithRouter({
       system: systemInstruction,
@@ -808,7 +1207,6 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     }
 
     let currentFinishReason = (gen as any).finishReason;
-    // v24.0+ Auto-Continuation Loop: runtime-aware horizon cleanly resumes MAX_TOKENS & mid-code cuts
     let continuationHops = 0;
     while (
       continuationHops < maxContinuationHops &&
@@ -858,297 +1256,5 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     }
   }
 
-  thinkingSteps.push({
-    phase: isCollaborative ? "Multi-Agent Synthesis & Review Pass" : "Neural Synthesis & Formatting",
-    agentModel: resolvedModel,
-    summary: `Synthesized response (${rawText.length} chars) under ${executionPolicy} policy`,
-    durationMs: Math.max(1, Date.now() - phase3Start),
-    timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
-  });
-
-  let reasoning = "";
-  let answerRaw = rawText;
-  const thinkMatch = rawText.match(/<think>([\s\S]*?)<\/think>/i);
-  const unclosedThinkMatch = !thinkMatch ? rawText.match(/<think>([\s\S]*)$/i) : null;
-  if (thinkMatch) {
-    reasoning = thinkMatch[1].trim();
-    answerRaw = rawText.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
-  } else if (unclosedThinkMatch) {
-    reasoning = unclosedThinkMatch[1].trim();
-    answerRaw = rawText.replace(/<think>[\s\S]*$/gi, "").trim();
-  } else if (effectiveDeepThink) {
-    reasoning = thinkingSteps
-      .map((s) => `• [${s.timestamp}] ${s.phase} (${s.agentModel}, ${s.durationMs}ms): ${s.summary}`)
-      .join("\n");
-  }
-
-  // Retry once concisely without <think> if upstream reasoning exhausted tokens leaving empty answer
-  if (!answerRaw && reasoning && validApis.length === 0 && sources.length === 0) {
-    try {
-      const rescue = await generateTextWithRouter({
-        system: `Respond directly in clean Markdown (${detectedLang}). Zero <think> tags.`,
-        messages: [{ role: "user", content: effectiveUserText }],
-        temperature: 0.4,
-        governance: { tenantId, allowOwnerPaidProviders: false },
-      });
-      const rescueText = String(rescue.text || "").replace(/<\/?think>/gi, "").trim();
-      if (rescueText) answerRaw = rescueText;
-    } catch {}
-  }
-
-  const { repaired: repairedDraft, wasRepaired } = repairTruncatedMarkdownAndCode(answerRaw);
-  if (wasRepaired) {
-    thinkingSteps.push({
-      phase: "Structural Bracket & Tag Auto-Repair (v24.0)",
-      agentModel: "heyuka-repair",
-      summary: "Closed interrupted fences, brackets, or HTML tags cleanly.",
-      durationMs: 1,
-      timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
-    });
-  }
-
-  const reflected = runPreReplyReflectionGate({
-    draftText: repairedDraft,
-    expectedLocale: locale,
-  });
-  const isClarifyFallback =
-    /^(Please clarify your request slightly|مرحباً، أعد صياغة طلبك قليلاً|Bonjour, veuillez préciser votre demande)/i.test(
-      reflected.cleanedText
-    );
-  let answer =
-    (!repairedDraft || isClarifyFallback) && (validApis.length > 0 || sources.length > 0)
-      ? buildLiveGroundingFallback(validApis, sources, locale, effectiveMode)
-      : !repairedDraft || isClarifyFallback
-      ? runLocalOnDeviceHeyukaBrain({
-          prompt: lastUser,
-          mode: effectiveMode,
-          locale: worldLang.shortLocale,
-        }).answer
-      : reflected.cleanedText || repairedDraft || rawText;
-
-  if (isPatentQuery) {
-    const patentApi = validApis.find((a) => a.category === "google_patents");
-    const patentHits = Array.isArray((patentApi?.data as Record<string, unknown> | undefined)?.patents)
-      ? ((patentApi?.data as Record<string, unknown>).patents as Array<{
-          patentNumber?: string;
-          title?: string;
-          inventors?: string[];
-          year?: number;
-          citationCount?: number;
-          googlePatentsUrl?: string;
-          pdfOrLandingUrl?: string;
-        }>)
-      : [];
-    const patentBlock = buildPatentBlueprintAndPdfMarker({
-      query: lastUser.slice(0, 120),
-      patents: patentHits,
-      locale: worldLang.shortLocale,
-    });
-    if (!answer.includes("[KASPI_PDF_REPORT:")) {
-      answer = `${answer}\n\n${patentBlock.markdownSupplement}`;
-    }
-  }
-
-  for (const badge of cognitiveRoute.stageBadges) {
-    const badgeTitle = `${badge.icon} ${badge.label}`;
-    if (!sources.some((s) => s.title === badgeTitle)) {
-      sources.unshift({
-        title: badgeTitle,
-        url: isPatentQuery ? `https://patents.google.com/?q=${encodeURIComponent(lastUser.slice(0, 80))}&scholar` : "",
-      });
-    }
-  }
-
-  let studioFiles = extractStudioFilesSafe(answer);
-  if (v52v60StudioFiles.length > 0) {
-    for (const vf of v52v60StudioFiles) {
-      if (!studioFiles.some((f) => f.path === vf.path)) {
-        studioFiles = [vf, ...studioFiles];
-      }
-    }
-  }
-  if (isPatentQuery && !studioFiles.some((f) => f.path.endsWith(".md"))) {
-    studioFiles = [
-      {
-        path: "patent-specification-blueprint.md",
-        language: "markdown",
-        content: answer,
-      },
-      ...studioFiles,
-    ];
-  }
-  const hasRunnableAsset = studioFiles.some(
-    (f) => f.path.endsWith(".html") || f.path.endsWith(".js") || f.path.endsWith(".py")
-  );
-  if ((effectiveMode === "coding" || effectiveMode === "3d") && !hasRunnableAsset) {
-    studioFiles = buildDomainBlueprintFiles(lastUser, lastUser.slice(0, 44));
-  }
-  if (effectiveMode === "image" && !isImageEditRequest && !studioFiles.some((f) => f.path.endsWith(".svg"))) {
-    studioFiles = [
-      { path: "artwork.svg", language: "svg", content: buildCodeToMediaArtifactSvg(lastUser.slice(0, 40), lastUser) },
-      ...studioFiles,
-    ];
-  }
-  if (effectiveMode === "qr" && qrSvgMarkup) {
-    studioFiles = [{ path: "heyuka-qr.svg", language: "svg", content: qrSvgMarkup }, ...studioFiles];
-  }
-
-  let clientMediaJob: Record<string, unknown> | undefined;
-  const shouldOpenStudio =
-    effectiveMode === "coding" ||
-    effectiveMode === "image" ||
-    effectiveMode === "video" ||
-    effectiveMode === "audio" ||
-    effectiveMode === "3d" ||
-    effectiveMode === "qr" ||
-    isImageEditRequest ||
-    studioFiles.length > 0;
-
-  if (isImageEditRequest && imageBase64) {
-    clientMediaJob = {
-      kind: "image_edit",
-      title: "Vision Image Studio (Inpaint / Background Editor)",
-      subtitle: "Client GPU Interactive Eraser & Export ($0.00)",
-      prompt: lastUser,
-      sourceImageUrl: imageBase64,
-      openStudio: true,
-    };
-  } else if (effectiveMode === "image") {
-    clientMediaJob = {
-      kind: "image",
-      title: lastUser.slice(0, 48),
-      subtitle: "HEYUKA Client GPU & Diffusion Studio",
-      prompt: lastUser,
-      accentHex: "#E11D48",
-      pollinationsUrl: `https://image.pollinations.ai/prompt/${encodeURIComponent(
-        lastUser.slice(0, 260)
-      )}?width=1024&height=640&nologo=true`,
-      openStudio: true,
-    };
-  } else if (effectiveMode === "video") {
-    const cinemaBundle = buildPhotorealisticCinemaVideoBundle(lastUser);
-    studioFiles = [...studioFiles, ...cinemaBundle.files];
-    const cleanLines = answer
-      .split("\n")
-      .map((l) => l.replace(/^[-*#\d.\s]+/, "").trim())
-      .filter((l) => l.length > 8 && l.length < 72)
-      .slice(0, 3);
-    clientMediaJob = {
-      kind: "video",
-      title: lastUser.slice(0, 48),
-      subtitle: "HEYUKA v34.0 Cinema Motion + WebAudio Foley (Client GPU)",
-      prompt: lastUser,
-      accentHex: "#10B981",
-      durationSec: 4.5,
-      scenes:
-        cleanLines.length > 0
-          ? cleanLines
-          : [lastUser.slice(0, 45), "OpenColorIO ACES Grade", "100% Client GPU • $0.00"],
-      openStudio: true,
-    };
-  } else if (effectiveMode === "audio") {
-    clientMediaJob = {
-      kind: "audio",
-      title: lastUser.slice(0, 48),
-      prompt: lastUser,
-      bpm: 112,
-      durationSec: 4.2,
-      openStudio: true,
-    };
-  } else if (effectiveMode === "3d") {
-    clientMediaJob = {
-      kind: "3d",
-      title: lastUser.slice(0, 48),
-      prompt: lastUser,
-      glbPreset: /torus|ring/i.test(lastUser)
-        ? "torus"
-        : /sphere|ball|globe/i.test(lastUser)
-        ? "sphere"
-        : /stand|vase|cup/i.test(lastUser)
-        ? "product_stand"
-        : /crystal|gem|prism/i.test(lastUser)
-        ? "emerald_prism"
-        : "cube",
-      openStudio: true,
-    };
-  } else if (effectiveMode === "qr" && qrSvgMarkup) {
-    clientMediaJob = {
-      kind: "qr",
-      title: "HEYUKA Branded QR SVG",
-      prompt: lastUser,
-      svgMarkup: qrSvgMarkup,
-      openStudio: true,
-    };
-  }
-
-  const thinkingSec = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
-  const studiedMatched = searchStudiedKnowledgeCorpus({
-    query: lastUser,
-    limit: 16,
-    includeWebFirst: true,
-  });
-  const vaultedMatched = searchSovereignVault({
-    query: lastUser,
-    clusterId: cognitiveRoute.primaryCluster.id,
-    limit: 12,
-  });
-  const combinedSourcesUsed = Array.from(
-    new Set([
-      ...studiedMatched.hits.map((h) => h.title),
-      ...vaultedMatched.map((v) => v.name),
-    ])
-  );
-  const selfAudit = auditAndRecordCompletedOutput({
-    prompt: lastUser,
-    draftText: answer,
-    expectedLocale: worldLang.shortLocale,
-    domainMode: cortexMemory.domainMode,
-    primaryClusterId: cognitiveRoute.primaryCluster.id,
-    sourcesUsed: combinedSourcesUsed,
-    artifactCount: studioFiles.length || 1,
-    modelUsed: resolvedModel,
-  });
-  recordProductSelfEvolution({
-    prompt: lastUser,
-    clusterId: cognitiveRoute.primaryCluster.id,
-    productKind: effectiveMode === "video" ? "video" : effectiveMode === "3d" ? "3d" : effectiveMode === "image" ? "image" : "project",
-    sourcesUsed: combinedSourcesUsed,
-    outputFormats: cognitiveRoute.primaryCluster.outputFormats,
-    artifactCount: studioFiles.length || 1,
-    totalBytes: answer.length,
-    qualityScore: Math.max(0.5, selfAudit.qualityScore / 10),
-    executionMode: executionPolicy === "auto" ? "client_cpu" : "free_gateway",
-  });
-  const evolutionCtx = getSelfEvolutionContextForPrompt({
-    prompt: lastUser,
-    clusterId: cognitiveRoute.primaryCluster.id,
-  });
-
-  return NextResponse.json({
-    ok: true,
-    unlimited: true,
-    dailyRequestLimit: null,
-    clientComputeFirst: true,
-    model: resolvedModel,
-    executionPolicy,
-    effectiveMode,
-    autoSwitched,
-    deepThinkUsed: effectiveDeepThink,
-    searchUsed: effectiveSearch,
-    answer: selfAudit.cleanedText || answer,
-    reasoning: reasoning || undefined,
-    thinkingSec: effectiveDeepThink ? thinkingSec : undefined,
-    thinkingSteps,
-    thoughtCompletedAt: new Date().toLocaleTimeString("en-GB", { hour12: false }),
-    sources: sources.length > 0 ? sources : undefined,
-    studioFiles: studioFiles.length > 0 ? studioFiles : undefined,
-    verifiedTerminalLogs: executedAgentLogs.length > 0 ? executedAgentLogs : undefined,
-    studiedCorpusUnits: studiedMatched.totalCorpusUnits,
-    webCrawledUnits: studiedMatched.webCrawledUnits,
-    errorLessonsLearned: evolutionCtx.learnedErrorLessons.length,
-    clientMediaJob,
-    openStudio: shouldOpenStudio,
-    zeroCostGuarantee: "$0.00 Server Compute — Client Device & Free Edge",
-    latencyMs: Date.now() - startedAt,
-  });
+  return NextResponse.json(finalizeAndAuditTurn(rawText));
 }

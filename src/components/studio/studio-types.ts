@@ -107,12 +107,26 @@ export interface StudioFileNode {
   content: string;
 }
 
+export interface StudioActionStep {
+  id: string;
+  kind: "think" | "read" | "edit" | "create" | "search" | "run" | "crawl" | "verify";
+  title: string;
+  target?: string;
+  delta?: string;
+  status: "running" | "done" | "error";
+  detail?: string;
+  durationMs?: number;
+}
+
 export interface StudioMessage {
   id: string;
   role: "user" | "assistant" | "tool";
   content: string;
   thoughts?: string;
   thinkingSeconds?: number;
+  actionSteps?: StudioActionStep[];
+  isStreaming?: boolean;
+  incompleteTruncated?: boolean;
   tokensIn?: number;
   tokensOut?: number;
   latencyMs?: number;

@@ -188,14 +188,14 @@ export function buildActiveVaultWorkingMemory(params: {
   ensureFullVaultDigested();
   const studiedSearch = searchStudiedKnowledgeCorpus({
     query: params.prompt,
-    limit: 18,
+    limit: 8,
     includeWebFirst: true,
   });
 
   // Supplement with exact cluster matches if studied query hits are light
   const vaultFallbackHits =
-    studiedSearch.hits.length < 10
-      ? searchSovereignVault({ clusterId: cognitiveRoute.primaryCluster.id, limit: 12 })
+    studiedSearch.hits.length < 5
+      ? searchSovereignVault({ clusterId: cognitiveRoute.primaryCluster.id, limit: 5 })
       : [];
 
   const seenNames = new Set<string>();
@@ -208,15 +208,15 @@ export function buildActiveVaultWorkingMemory(params: {
     seenNames.add(key);
     recommendedNames.push(hit.title);
     const kindTag = hit.sourceKind === "web_crawl" ? "WEB-STUDIED" : hit.clusterId || hit.sourceKind;
-    const excerpt = hit.content.replace(/\s+/g, " ").trim().slice(0, 180);
-    unifiedLines.push(`- ${hit.title} [${kindTag}]: ${excerpt}${hit.url ? ` — Source: ${hit.url}` : ""}`);
+    const excerpt = hit.content.replace(/\s+/g, " ").trim().slice(0, 95);
+    unifiedLines.push(`- ${hit.title} [${kindTag}]: ${excerpt}${hit.url ? ` (${hit.url})` : ""}`);
   }
   for (const v of vaultFallbackHits) {
     const key = v.name.toLowerCase();
     if (seenNames.has(key)) continue;
     seenNames.add(key);
     recommendedNames.push(v.name);
-    unifiedLines.push(`- ${v.name} [${v.clusterId}]: ${v.role}${v.url ? ` — Docs/Repo: ${v.url}` : ""}`);
+    unifiedLines.push(`- ${v.name} [${v.clusterId}]: ${v.role.slice(0, 95)}${v.url ? ` (${v.url})` : ""}`);
   }
 
   const evolution = getSelfEvolutionContextForPrompt({
@@ -226,8 +226,9 @@ export function buildActiveVaultWorkingMemory(params: {
 
   const errorPreventionBlock =
     evolution.learnedErrorLessons.length > 0
-      ? `[REFLEXION ERROR PREVENTION LESSONS (${evolution.learnedErrorLessons.length})]\n${evolution.learnedErrorLessons
-          .map((l) => `- [${l.errorType} x${l.occurrences}] ${l.preventionRule}`)
+      ? `[REFLEXION LESSONS (${evolution.learnedErrorLessons.length})]\n${evolution.learnedErrorLessons
+          .slice(0, 4)
+          .map((l) => `- [${l.errorType} x${l.occurrences}] ${l.preventionRule.slice(0, 110)}`)
           .join("\n")}`
       : "";
 
@@ -253,19 +254,17 @@ export function buildActiveVaultWorkingMemory(params: {
     .map((c) => c.id);
 
   const activeMemoryPromptBlock = [
-    `[ANTIGRAVITY CORTEX v2.5 | Mode: ${domainMode.toUpperCase()} | Cluster: ${cognitiveRoute.primaryCluster.titleEn} | ${v60Totals.grandTotalSources}+ Vault + ${studiedSearch.totalCorpusUnits} Digested Units (${studiedSearch.webCrawledUnits} Web-Studied)]`,
+    `[ANTIGRAVITY CORTEX v2.5 | ${domainMode.toUpperCase()} | ${cognitiveRoute.primaryCluster.titleEn} | ${v60Totals.grandTotalSources}+ Vault + ${studiedSearch.totalCorpusUnits} Units (${studiedSearch.webCrawledUnits} Web)]`,
     personaDirective,
-    `• Evolving Memory: ${evolution.evolutionSummary}`,
     errorPreventionBlock,
-    "[STUDIED CORPUS & MATCHED VAULT ENGINES]",
+    "[MATCHED CORPUS & VAULT (Full 2493+ searchable via queryVaultOrApi/studyAndCrawlSource)]",
     enginesCatalogSnippet,
     fileTreeSummary ? `[WORKSPACE FILES (${params.workspaceFiles?.length})]\n${fileTreeSummary}` : "",
-    "[COGNITIVE PROTOCOL]",
-    "1. INSPECT & STUDY FIRST: Read workspace files, studied corpus, or live web URLs via studyAndCrawlSource / webSearchAndFetch before guessing.",
-    "2. HIDDEN REASONING: Deliberate in <think>...</think> (zero meta-text leaks).",
-    "3. SINGLE-SHOT TOOL VERIFICATION & REFLEXION: When verifying JS/math via runAndVerifyCode or computeExactFinance, write self-contained code and fix any stderr immediately.",
-    "4. INCREMENTAL FILES: Emit clean runnable files (```lang path=relative/file.ext) without placeholders; untouched workspace files remain preserved.",
-    "5. LINKS & UNTHROTTLED COMPLETION: Embed clickable Markdown links ([Name](https://...)) outside code blocks and take full space to complete every section without artificial truncation.",
+    "[PROTOCOL]",
+    "1. INSPECT FIRST: Read workspace/web/corpus before guessing. Use `writeWorkspaceFile`/`editWorkspaceFile` to save files directly or emit full ```lang path=file.ext blocks.",
+    "2. REASONING: Keep brief <think>...</think> deliberation cleanly closed.",
+    "3. ZERO RUNTIME ERRORS: Match all DOM IDs between HTML/CSS/JS and guard selectors (`el?.addEventListener`). Verify JS/Python via `runAndVerifyCode`.",
+    "4. COMPLETE OUTPUT: Finish every requested file and section completely without placeholders.",
     getDomainPlaybookGuidance(domainMode, Boolean(params.isStudio)),
   ]
     .filter((line) => line !== undefined && line !== "")
@@ -286,44 +285,282 @@ export function buildActiveVaultWorkingMemory(params: {
   };
 }
 
+export interface AgentActionStep {
+  id: string;
+  kind: "think" | "read" | "edit" | "create" | "search" | "run" | "crawl" | "verify";
+  title: string;
+  target?: string;
+  delta?: string;
+  status: "running" | "done" | "error";
+  detail?: string;
+  durationMs?: number;
+}
+
+export interface StudioMutatedFile {
+  path: string;
+  language: string;
+  content: string;
+  linesAdded: number;
+  linesRemoved: number;
+  operation: "create" | "edit";
+}
+
+function inferLangFromFilePath(filePath: string, explicitLang?: string): string {
+  if (explicitLang && explicitLang.trim()) return explicitLang.trim().toLowerCase();
+  const ext = filePath.split(".").pop()?.toLowerCase() || "text";
+  if (ext === "py") return "python";
+  if (ext === "js" || ext === "mjs" || ext === "cjs") return "javascript";
+  if (ext === "ts") return "ts";
+  if (ext === "tsx") return "tsx";
+  if (ext === "jsx") return "jsx";
+  if (ext === "sh") return "bash";
+  if (ext === "md") return "markdown";
+  return ext;
+}
+
+function computeLineDeltaCounts(prevText: string, nextText: string): { added: number; removed: number } {
+  if (!prevText) return { added: nextText ? nextText.split(/\r?\n/).length : 0, removed: 0 };
+  const prevLines = prevText.split(/\r?\n/);
+  const nextLines = nextText.split(/\r?\n/);
+  const prevSet = new Set(prevLines);
+  const nextSet = new Set(nextLines);
+  let added = 0;
+  let removed = 0;
+  for (const l of nextLines) {
+    if (!prevSet.has(l)) added += 1;
+  }
+  for (const l of prevLines) {
+    if (!nextSet.has(l)) removed += 1;
+  }
+  return { added: Math.max(added, prevLines.length < nextLines.length ? nextLines.length - prevLines.length : 0), removed };
+}
+
 /**
  * Real Executable AI SDK Toolset for Studio IDE & Chat-Web (`/api/v1/heyuka/chat-web`):
- * Enables genuine Antigravity-grade ReAct cycles (inspect workspace -> search web -> compute math -> test code in sandbox -> synthesize).
+ * Enables genuine Antigravity-grade ReAct cycles: list/inspect/search workspace files -> surgically edit/write files -> crawl/search web -> verify in sandbox -> synthesize.
  */
 export function createStudioAgentToolkit(params: {
   workspaceFiles?: WorkspaceFileSummaryInput[];
   locale: "ar" | "fr" | "en";
   executedLogs: string[];
   primaryClusterId?: CognitiveClusterId;
+  onActionStep?: (step: AgentActionStep) => void;
+  onFileMutated?: (file: StudioMutatedFile) => void;
 }) {
-  const wsFiles = params.workspaceFiles || [];
   const shortLocale = params.locale;
   const clusterId = params.primaryClusterId || "code_ide_and_surgical_editing";
 
+  const workingFiles = new Map<string, { path: string; language: string; content: string }>();
+  for (const f of params.workspaceFiles || []) {
+    const cleanPath = String(f.path || "").replace(/^\.?\//, "");
+    if (!cleanPath) continue;
+    workingFiles.set(cleanPath.toLowerCase(), {
+      path: cleanPath,
+      language: inferLangFromFilePath(cleanPath, f.language),
+      content: String(f.content || ""),
+    });
+  }
+
+  const resolveFileKey = (rawPath: string) => {
+    const clean = rawPath.replace(/^\.?\//, "").toLowerCase();
+    if (workingFiles.has(clean)) return clean;
+    for (const [k, v] of workingFiles.entries()) {
+      if (v.path.toLowerCase() === clean || v.path.toLowerCase().endsWith(`/${clean}`)) return k;
+    }
+    return null;
+  };
+
+  const emitStep = (step: Omit<AgentActionStep, "id">) => {
+    params.onActionStep?.({
+      id: `st_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      ...step,
+    });
+  };
+
   return {
+    listWorkspaceFiles: tool({
+      description:
+        "Lists all files currently in the Antigravity Studio workspace with their language, line counts, and byte sizes.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const list = Array.from(workingFiles.values()).map((f) => ({
+          path: f.path,
+          language: f.language,
+          lines: f.content ? f.content.split(/\r?\n/).length : 0,
+          bytes: f.content.length,
+        }));
+        emitStep({
+          kind: "read",
+          title: `Listed workspace (${list.length} files)`,
+          status: "done",
+        });
+        return { count: list.length, files: list };
+      },
+    }),
+
     inspectWorkspaceFile: tool({
       description:
-        "Reads the full source code of an existing file in the current Antigravity Studio workspace before editing or extending it.",
+        "Reads an existing file (full text or specific line range) in the current Antigravity Studio workspace before editing or extending it.",
       inputSchema: z.object({
-        path: z.string().min(1).describe("Exact file path from [CURRENT WORKSPACE FILE TREE]"),
+        path: z.string().min(1).describe("File path in workspace"),
+        startLine: z.number().int().min(1).optional(),
+        endLine: z.number().int().min(1).optional(),
       }),
-      execute: async ({ path }) => {
-        const clean = path.replace(/^\.?\//, "").toLowerCase();
-        const found = wsFiles.find(
-          (f) => f.path.toLowerCase() === clean || f.path.toLowerCase().endsWith(clean)
-        );
+      execute: async ({ path, startLine, endLine }) => {
+        const key = resolveFileKey(path);
+        const found = key ? workingFiles.get(key) : undefined;
         if (!found) {
+          emitStep({
+            kind: "read",
+            title: `File not found: ${path}`,
+            target: path,
+            status: "error",
+          });
           return {
             found: false,
-            availableFiles: wsFiles.map((f) => f.path),
+            availableFiles: Array.from(workingFiles.values()).map((f) => f.path),
           };
         }
+        const allLines = found.content.split(/\r?\n/);
+        const sIdx = startLine ? Math.max(0, startLine - 1) : 0;
+        const eIdx = endLine ? Math.min(allLines.length, endLine) : allLines.length;
+        const sliceText = allLines.slice(sIdx, eIdx).join("\n").slice(0, 28000);
+        const rangeLabel = startLine || endLine ? `L${sIdx + 1}-L${eIdx}` : `${allLines.length} lines`;
+        emitStep({
+          kind: "read",
+          title: `Analyzed ${found.path}`,
+          target: found.path,
+          detail: rangeLabel,
+          status: "done",
+        });
+        params.executedLogs.push(`[Read] ${found.path} (${rangeLabel})`);
         return {
           found: true,
           path: found.path,
-          language: found.language || "text",
-          content: found.content.slice(0, 14000),
+          language: found.language,
+          totalLines: allLines.length,
+          startLine: sIdx + 1,
+          endLine: eIdx,
+          content: sliceText,
         };
+      },
+    }),
+
+    searchWorkspaceFiles: tool({
+      description:
+        "Searches text or symbols across all files in the current workspace (grep) and returns matching file paths and line numbers.",
+      inputSchema: z.object({
+        query: z.string().min(1),
+      }),
+      execute: async ({ query }) => {
+        const needle = query.toLowerCase();
+        const matches: Array<{ path: string; line: number; text: string }> = [];
+        for (const f of workingFiles.values()) {
+          const lines = f.content.split(/\r?\n/);
+          for (let i = 0; i < lines.length; i++) {
+            if (lines[i].toLowerCase().includes(needle)) {
+              matches.push({ path: f.path, line: i + 1, text: lines[i].trim().slice(0, 140) });
+              if (matches.length >= 40) break;
+            }
+          }
+          if (matches.length >= 40) break;
+        }
+        emitStep({
+          kind: "search",
+          title: `Searched workspace for "${query.slice(0, 32)}"`,
+          detail: `${matches.length} matches`,
+          status: "done",
+        });
+        return { query, matchCount: matches.length, matches };
+      },
+    }),
+
+    writeWorkspaceFile: tool({
+      description:
+        "Creates a new file or updates an entire file directly inside the Antigravity Studio workspace IDE immediately (users see it live in Files & Changes).",
+      inputSchema: z.object({
+        path: z.string().min(1).describe("Relative file path e.g. index.html, styles.css, store.js"),
+        language: z.string().optional().describe("File language e.g. html, css, js, tsx, python"),
+        content: z.string().min(1).describe("Complete runnable file contents with zero placeholders"),
+      }),
+      execute: async ({ path, language, content }) => {
+        const cleanPath = path.replace(/^\.?\//, "");
+        const key = cleanPath.toLowerCase();
+        const prev = workingFiles.get(key);
+        const resolvedLang = inferLangFromFilePath(cleanPath, language);
+        const { added, removed } = computeLineDeltaCounts(prev?.content || "", content);
+        workingFiles.set(key, { path: cleanPath, language: resolvedLang, content });
+        const operation: "create" | "edit" = prev ? "edit" : "create";
+        const deltaStr = `+${added}${removed > 0 ? ` -${removed}` : ""}`;
+        params.onFileMutated?.({
+          path: cleanPath,
+          language: resolvedLang,
+          content,
+          linesAdded: added,
+          linesRemoved: removed,
+          operation,
+        });
+        emitStep({
+          kind: operation,
+          title: `${operation === "create" ? "Created" : "Updated"} ${cleanPath}`,
+          target: cleanPath,
+          delta: deltaStr,
+          status: "done",
+        });
+        params.executedLogs.push(`[${operation === "create" ? "Create" : "Write"}] ${cleanPath} (${deltaStr})`);
+        return {
+          ok: true,
+          operation,
+          path: cleanPath,
+          lines: content.split(/\r?\n/).length,
+          delta: deltaStr,
+        };
+      },
+    }),
+
+    editWorkspaceFile: tool({
+      description:
+        "Surgically replaces an exact block of existing code inside a workspace file without rewriting the whole file. Always inspectWorkspaceFile first so target matches verbatim.",
+      inputSchema: z.object({
+        path: z.string().min(1),
+        target: z.string().min(1).describe("Exact existing text block inside the file"),
+        replacement: z.string().describe("New text to replace target with"),
+      }),
+      execute: async ({ path, target, replacement }) => {
+        const key = resolveFileKey(path);
+        const existing = key ? workingFiles.get(key) : undefined;
+        if (!existing) {
+          emitStep({ kind: "edit", title: `Edit failed (${path} not found)`, target: path, status: "error" });
+          return { ok: false, error: `File "${path}" not found in workspace.` };
+        }
+        if (!existing.content.includes(target)) {
+          emitStep({ kind: "edit", title: `Target block mismatch in ${existing.path}`, target: existing.path, status: "error" });
+          return {
+            ok: false,
+            error: `Target snippet was not found verbatim in ${existing.path}. Inspect the file and retry with exact lines.`,
+          };
+        }
+        const nextContent = existing.content.split(target).join(replacement);
+        const { added, removed } = computeLineDeltaCounts(existing.content, nextContent);
+        const deltaStr = `+${added} -${removed}`;
+        workingFiles.set(key!, { ...existing, content: nextContent });
+        params.onFileMutated?.({
+          path: existing.path,
+          language: existing.language,
+          content: nextContent,
+          linesAdded: added,
+          linesRemoved: removed,
+          operation: "edit",
+        });
+        emitStep({
+          kind: "edit",
+          title: `Edited ${existing.path}`,
+          target: existing.path,
+          delta: deltaStr,
+          status: "done",
+        });
+        params.executedLogs.push(`[Edit] ${existing.path} (${deltaStr})`);
+        return { ok: true, path: existing.path, delta: deltaStr, totalLines: nextContent.split(/\r?\n/).length };
       },
     }),
 
@@ -335,7 +572,15 @@ export function createStudioAgentToolkit(params: {
         url: z.string().optional().describe("Direct public HTTP/HTTPS URL to fetch & read"),
       }),
       execute: async ({ query, url }) => {
+        const t0 = Date.now();
         const res = await runUnrestrictedWebResearch({ query, url, lang: shortLocale });
+        emitStep({
+          kind: "search",
+          title: url ? `Fetched ${url.slice(0, 44)}` : `Searched web: "${(query || "").slice(0, 36)}"`,
+          detail: url ? `${(res.extractedText || "").length} chars` : `${res.results?.length || 0} hits`,
+          status: res.ok ? "done" : "error",
+          durationMs: Date.now() - t0,
+        });
         params.executedLogs.push(
           url
             ? `[Web Fetch] ${url} -> ${res.ok ? `${(res.extractedText || "").length} chars` : res.error}`
@@ -347,14 +592,28 @@ export function createStudioAgentToolkit(params: {
 
     runAndVerifyCode: tool({
       description:
-        "Executes self-contained JavaScript (1ms local VM), TypeScript, Python, or Bash scripts and returns stdout, stderr, and exitCode. Any non-zero exit or stderr is automatically distilled into HEYUKA's Reflexion error memory.",
+        "Executes JavaScript (1ms local VM), TypeScript, Python, or Bash — either inline `code` OR a workspace file (`workspaceFilePath`) — and returns stdout, stderr, and exitCode.",
       inputSchema: z.object({
         language: z.enum(["javascript", "typescript", "python", "bash"]),
-        code: z.string().min(1).max(24000),
+        code: z.string().optional().describe("Inline code to execute"),
+        workspaceFilePath: z.string().optional().describe("Optional workspace file path to execute/check"),
         stdin: z.string().optional(),
       }),
-      execute: async ({ language, code, stdin }) => {
-        const out = await executePolyglotCodeSandbox({ language, code, stdin, preferFastVm: true });
+      execute: async ({ language, code, workspaceFilePath, stdin }) => {
+        const t0 = Date.now();
+        let codeToRun = code || "";
+        if (!codeToRun && workspaceFilePath) {
+          const key = resolveFileKey(workspaceFilePath);
+          const f = key ? workingFiles.get(key) : undefined;
+          if (!f) {
+            return { exitCode: 1, stdout: "", stderr: `Workspace file ${workspaceFilePath} not found.` };
+          }
+          codeToRun = f.content;
+        }
+        if (!codeToRun.trim()) {
+          return { exitCode: 1, stdout: "", stderr: "Provide inline code or workspaceFilePath." };
+        }
+        const out = await executePolyglotCodeSandbox({ language, code: codeToRun, stdin, preferFastVm: true });
         if (out.exitCode !== 0 || (out.stderr && out.stderr.trim().length > 0)) {
           recordErrorLessonFromFailure({
             clusterId,
@@ -362,6 +621,13 @@ export function createStudioAgentToolkit(params: {
             errorDetail: `[${language}] exit=${out.exitCode}: ${(out.stderr || out.stdout || "Execution failed").slice(0, 220)}`,
           });
         }
+        emitStep({
+          kind: "run",
+          title: `Ran ${workspaceFilePath || language} in Sandbox`,
+          detail: `exit=${out.exitCode}`,
+          status: out.exitCode === 0 ? "done" : "error",
+          durationMs: Date.now() - t0,
+        });
         params.executedLogs.push(
           `[Sandbox:${language}] exit=${out.exitCode} ${out.stdout ? `stdout=${out.stdout.slice(0, 140)}` : `stderr=${(out.stderr || "").slice(0, 140)}`}`
         );
@@ -391,6 +657,16 @@ export function createStudioAgentToolkit(params: {
           .optional(),
       }),
       execute: async (input) => {
+        emitStep({
+          kind: "verify",
+          title:
+            input.mode === "retail_finance"
+              ? "Computed TVA/TTC retail arithmetic"
+              : input.mode === "dag_plan"
+                ? "Planned parallel DAG execution waves"
+                : `Evaluated math: ${(input.expression || "").slice(0, 32)}`,
+          status: "done",
+        });
         if (input.mode === "retail_finance") {
           return computeExactRetailFinance({
             unitPrice: input.unitPrice ?? 0,
@@ -417,18 +693,31 @@ export function createStudioAgentToolkit(params: {
       }),
       execute: async ({ mode, query, apiCategory }) => {
         if (mode === "public_api" && apiCategory) {
-          return await queryPublicApiHub({
+          const apiOut = await queryPublicApiHub({
             category: apiCategory as PublicApiCategory,
             query,
             lang: shortLocale,
             limit: 10,
           });
+          emitStep({
+            kind: "search",
+            title: `Queried live API: ${apiCategory}`,
+            detail: apiOut.ok ? "200 OK" : "fallback",
+            status: apiOut.ok ? "done" : "error",
+          });
+          return apiOut;
         }
         ensureFullVaultDigested();
         const corpusHits = searchStudiedKnowledgeCorpus({
           query,
           limit: 20,
           includeWebFirst: true,
+        });
+        emitStep({
+          kind: "search",
+          title: `Searched Vault & Corpus (${corpusHits.totalCorpusUnits} units)`,
+          detail: `${corpusHits.hits.length} matches`,
+          status: "done",
         });
         return {
           ok: true,
@@ -458,6 +747,13 @@ export function createStudioAgentToolkit(params: {
             maxPages,
             lang: shortLocale,
           });
+          emitStep({
+            kind: "crawl",
+            title: `Crawled & studied ${crawlResult.crawledCount} web page(s)`,
+            target: seedUrls[0],
+            detail: `${crawlResult.totalCorpusUnits} corpus units`,
+            status: crawlResult.ok ? "done" : "error",
+          });
           params.executedLogs.push(
             `[Web Crawl & Study] ${seedUrls[0]} -> crawled=${crawlResult.crawledCount}, skipped=${crawlResult.skippedCount}, corpus=${crawlResult.totalCorpusUnits}`
           );
@@ -465,6 +761,13 @@ export function createStudioAgentToolkit(params: {
         const searchRes = query
           ? searchStudiedKnowledgeCorpus({ query, limit: 16, includeWebFirst: true })
           : null;
+        if (!crawlResult && searchRes) {
+          emitStep({
+            kind: "search",
+            title: `Searched studied corpus (${searchRes.hits.length} hits)`,
+            status: "done",
+          });
+        }
         return {
           ok: crawlResult ? crawlResult.ok : true,
           crawlResult,

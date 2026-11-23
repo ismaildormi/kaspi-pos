@@ -24,6 +24,7 @@ import {
   Paperclip,
   Pin,
   Plus,
+  RefreshCw,
   Search,
   Settings,
   SlidersHorizontal,
@@ -39,7 +40,12 @@ import Dexie from "dexie";
 import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 import { HeyukaLoopMark } from "@/components/heyuka/HeyukaLoopMark";
 import { HeyukaMarkdownMessage } from "@/components/heyuka/HeyukaMarkdownMessage";
-import { mergeWorkspaceFilesByPath } from "@/lib/heyuka/autonomous-builder-v24-v28";
+import {
+  extractStudioFilesSafe,
+  mergeContinuationChunk,
+  mergeWorkspaceFilesByPath,
+  repairTruncatedMarkdownAndCode,
+} from "@/lib/heyuka/autonomous-builder-v24-v28";
 import { useHybridDictation } from "@/lib/heyuka/use-hybrid-dictation";
 import {
   STUDIO_STARTER_TEMPLATES,
@@ -56,6 +62,7 @@ import {
   type AttachedMediaItem,
   type ContextCacheItem,
   type RightRunSettings,
+  type StudioActionStep,
   type StudioFileNode,
   type StudioMessage,
   type StudioModelId,
@@ -168,9 +175,11 @@ export function HeyukaUnifiedStudioWorkspace({
   const [activeThreadId, setActiveThreadId] = useState<string>(`conv_${initialBrand}_default`);
   const [messages, setMessages] = useState<StudioMessage[]>([]);
   const [studioFiles, setStudioFiles] = useState<StudioFileNode[]>(STARTER_FILES);
+  const [baselineFiles, setBaselineFiles] = useState<StudioFileNode[]>(STARTER_FILES);
   const [checkpoints, setCheckpoints] = useState<Array<{ id: string; label: string; at: string; files: StudioFileNode[] }>>([]);
   const [focusFilePath, setFocusFilePath] = useState<string | null>(null);
   const [changedDrawerOpen, setChangedDrawerOpen] = useState(false);
+  const [livePhaseLabel, setLivePhaseLabel] = useState<string>("");
 
   // Agent & Customizations State
   const [settings, setSettings] = useState<RightRunSettings>(DEFAULT_RUN_SETTINGS);
@@ -206,6 +215,7 @@ export function HeyukaUnifiedStudioWorkspace({
   const [quickSearchOpen, setQuickSearchOpen] = useState(false);
   const [quickSearchQuery, setQuickSearchQuery] = useState("");
   const abortCtrlRef = useRef<AbortController | null>(null);
+  const userStoppedRef = useRef(false);
 
   // Antigravity Modals (Automations, Customizations, Settings) — all inside KaspiGlassModalPortal
   const [automationsOpen, setAutomationsOpen] = useState(false);
@@ -332,7 +342,10 @@ export function HeyukaUnifiedStudioWorkspace({
           if (!row?.payload) return;
           const parsed = JSON.parse(row.payload);
           if (Array.isArray(parsed.messages)) setMessages(parsed.messages);
-          if (Array.isArray(parsed.files) && parsed.files.length > 0) setStudioFiles(parsed.files);
+          if (Array.isArray(parsed.files) && parsed.files.length > 0) {
+            setStudioFiles(parsed.files);
+            setBaselineFiles(parsed.files);
+          }
           if (typeof parsed.systemInstruction === "string") setSystemInstruction(parsed.systemInstruction);
         })
         .catch(() => {});
@@ -412,6 +425,7 @@ export function HeyukaUnifiedStudioWorkspace({
     setActiveThreadId(newId);
     setMessages([]);
     setStudioFiles(STARTER_FILES);
+    setBaselineFiles(STARTER_FILES);
     setChangedDrawerOpen(false);
     setComposerText("");
     textareaRef.current?.focus();
@@ -442,10 +456,14 @@ export function HeyukaUnifiedStudioWorkspace({
     [studioFiles]
   );
 
-  // Core Antigravity Autonomous Agent Loop
+  // Core Antigravity Autonomous Streaming Agent Loop
   const handleRunPrompt = async (overrideText?: string, branchHistory?: StudioMessage[]) => {
     const rawPrompt = (overrideText ?? composerText).trim();
     if (!rawPrompt || isRunning) return;
+
+    const baselineBeforeTurn = studioFiles.map((f) => ({ ...f }));
+    setBaselineFiles(baselineBeforeTurn);
+    let workingWorkspaceFiles = [...baselineBeforeTurn];
 
     const userMsg: StudioMessage = {
       id: `u_${Date.now()}`,
@@ -458,7 +476,19 @@ export function HeyukaUnifiedStudioWorkspace({
 
     const baseHistory = branchHistory ?? messages;
     const nextHistory = [...baseHistory, userMsg];
-    setMessages(nextHistory);
+    const liveAssistantId = `a_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const livePlaceholder: StudioMessage = {
+      id: liveAssistantId,
+      role: "assistant",
+      content: "",
+      thoughts: "",
+      actionSteps: [],
+      isStreaming: true,
+      viewMode: "markdown",
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages([...nextHistory, livePlaceholder]);
     if (!overrideText) {
       setComposerText("");
       setAttachments([]);
@@ -468,14 +498,36 @@ export function HeyukaUnifiedStudioWorkspace({
     setModelMenuOpen(false);
     setMentionOpen(false);
     setIsRunning(true);
+    setLivePhaseLabel(isAr ? "جاري الاتصال بمحرك Antigravity..." : "Connecting to Antigravity Cortex...");
+    userStoppedRef.current = false;
+
     const controller = new AbortController();
     abortCtrlRef.current = controller;
     const isLocalHost =
       typeof window !== "undefined" &&
       (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-    const timeoutId = setTimeout(() => controller.abort(), isLocalHost ? 180_000 : 58_000);
+    const stallBudgetMs = isLocalHost ? 180_000 : 62_000;
+    let stallTimer: ReturnType<typeof setTimeout> | null = null;
+    const resetStallTimer = () => {
+      if (stallTimer) clearTimeout(stallTimer);
+      stallTimer = setTimeout(() => controller.abort(), stallBudgetMs);
+    };
+    resetStallTimer();
 
     const t0 = performance.now();
+    let answerText = "";
+    let reasoningText = "";
+    let actionStepsList: StudioActionStep[] = [];
+    let extractedFiles: StudioFileNode[] = [];
+    let citations: Array<{ title: string; url: string }> = [];
+    let incompleteTruncated = false;
+
+    const pushLivePatch = (patch: Partial<StudioMessage>) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === liveAssistantId ? { ...m, ...patch } : m))
+      );
+    };
+
     try {
       const attSummary = (userMsg.attachments || [])
         .map((a) => `[Attached File: ${a.name} (${a.mimeType}, ${Math.round(a.sizeBytes / 1024)}KB)]`)
@@ -486,35 +538,7 @@ export function HeyukaUnifiedStudioWorkspace({
           : "";
       const fullPromptPayload = `${rawPrompt}${attSummary ? `\n\n${attSummary}` : ""}${cacheSummary}`;
 
-      const urlsInPrompt = rawPrompt.match(/https?:\/\/[^\s]+/gi) || [];
-      let citations: Array<{ title: string; url: string }> = [];
-
-      // Live web research enrichment via Studio Browse + /api/v1/web/research fallback when URLs exist
-      if (urlsInPrompt.length > 0) {
-        try {
-          let wr = await fetch("/api/v1/studio/browse", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            signal: controller.signal,
-            body: JSON.stringify({ url: urlsInPrompt[0], query: rawPrompt.slice(0, 160), lang: locale }),
-          });
-          if (!wr.ok) {
-            wr = await fetch("/api/v1/web/research", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              signal: controller.signal,
-              body: JSON.stringify({ url: urlsInPrompt[0], query: rawPrompt.slice(0, 160), lang: locale }),
-            });
-          }
-          if (wr.ok) {
-            const wd = await wr.json();
-            if (wd?.url) citations.push({ title: String(wd.title || wd.url), url: String(wd.url) });
-            if (Array.isArray(wd?.results)) citations = [...citations, ...wd.results];
-          }
-        } catch {}
-      }
-
-      // Trigger Swarm metadata planning silently in background
+      // Non-blocking swarm council telemetry
       const swarmPromise = fetch("/api/v1/studio/council", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -533,13 +557,10 @@ export function HeyukaUnifiedStudioWorkspace({
 
       const imgAtt = (userMsg.attachments || []).find((a) => a.mimeType.startsWith("image/") && a.dataUrl);
 
-      let answerText = "";
-      let reasoningText = "";
-      let extractedFiles: StudioFileNode[] = [];
-
-      // Call unified /api/v1/heyuka/chat-web with clean role validation (systemInstruction separate!)
-      try {
-        const chatRes = await fetch("/api/v1/heyuka/chat-web", {
+      const runStreamingTurn = async (promptForTurn: string, isContinuationPass = false) => {
+        const baseAnswerBeforeTurn = isContinuationPass ? answerText : "";
+        let turnDeltaText = "";
+        const res = await fetch("/api/v1/heyuka/chat-web", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
@@ -549,70 +570,265 @@ export function HeyukaUnifiedStudioWorkspace({
             brand,
             executionPolicy: executionPolicy === "turbo" ? "turbo" : "auto",
             mode: "auto",
-            deepThink: true,
-            webSearch: true,
+            stream: true,
+            deepThink: settings.thinkingEnabled,
+            webSearch: settings.groundingSearchEnabled,
             locale,
             systemInstruction,
-            imageBase64: imgAtt?.dataUrl,
-            workspaceFiles: studioFiles.slice(0, 16).map((f) => ({ path: f.path, content: f.content })),
+            imageBase64: isContinuationPass ? undefined : imgAtt?.dataUrl,
+            workspaceFiles: workingWorkspaceFiles.slice(0, 60).map((f) => ({
+              path: f.path,
+              language: f.language,
+              content: f.content,
+            })),
             messages: [
               ...baseHistory.slice(-16).map((m) => ({
                 role: m.role,
                 content: String(m.content || " ").slice(0, 12000),
               })),
-              { role: "user", content: fullPromptPayload },
+              { role: "user", content: promptForTurn },
             ],
           }),
         });
 
-        if (chatRes.ok) {
-          const cd = await chatRes.json();
-          if (cd?.answer) answerText = String(cd.answer);
-          if (cd?.reasoning) reasoningText = String(cd.reasoning);
-          if (Array.isArray(cd?.studioFiles) && cd.studioFiles.length > 0) {
-            extractedFiles = cd.studioFiles.map((f: any) => ({
-              path: String(f.path || "app.txt"),
-              language: String(f.language || "text"),
-              content: String(f.content || ""),
-            }));
-          }
-          if (Array.isArray(cd?.sources)) {
-            citations = [...citations, ...cd.sources];
-          }
-          if (Array.isArray(cd?.verifiedTerminalLogs) && cd.verifiedTerminalLogs.length > 0) {
-            setTerminalLogs((p) => [...p, ...cd.verifiedTerminalLogs.slice(0, 8)]);
-          }
-          if (typeof cd?.studiedCorpusUnits === "number" && cd.studiedCorpusUnits > 0) {
-            const corpusNote = `• Studied Corpus: ${cd.studiedCorpusUnits} digested units (${cd.webCrawledUnits || 0} web-crawled, ${cd.errorLessonsLearned || 0} Reflexion error lessons active)`;
-            reasoningText = reasoningText ? `${reasoningText}\n${corpusNote}` : corpusNote;
-          }
-        }
-      } catch {}
+        if (!res.ok) return false;
+        const ctype = (res.headers.get("content-type") || "").toLowerCase();
 
-      if (!answerText && !controller.signal.aborted) {
-        const res = await fetch("/api/v1/heyuka/local-sdk", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: fullPromptPayload, mode: "studio", locale }),
-        });
-        const data = await res.json();
-        answerText = String(data?.answer || data?.reply || "Workspace task completed.");
-        if (Array.isArray(data?.studioFiles) && data.studioFiles.length > 0) {
-          extractedFiles = data.studioFiles.map((f: any) => ({
-            path: String(f.path || "app.txt"),
-            language: String(f.language || "text"),
-            content: String(f.content || ""),
-          }));
+        if (!ctype.includes("ndjson") || !res.body) {
+          const cd = await res.json();
+          if (cd?.answer) {
+            answerText = isContinuationPass
+              ? mergeContinuationChunk(baseAnswerBeforeTurn, String(cd.answer))
+              : String(cd.answer);
+          }
+          if (cd?.reasoning && !reasoningText) reasoningText = String(cd.reasoning);
+          if (Array.isArray(cd?.actionSteps)) actionStepsList = cd.actionSteps;
+          if (Array.isArray(cd?.studioFiles)) {
+            extractedFiles = mergeWorkspaceFilesByPath(extractedFiles, cd.studioFiles);
+          }
+          if (Array.isArray(cd?.sources)) citations = [...citations, ...cd.sources];
+          if (typeof cd?.incompleteTruncated === "boolean") incompleteTruncated = cd.incompleteTruncated;
+          return true;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let lineBuf = "";
+        let receivedDone = false;
+        let lastFenceSyncLen = 0;
+
+        const processNdjsonLine = (rawLine: string) => {
+          const line = rawLine.trim();
+          if (!line) return;
+          let ev: any;
+          try {
+            ev = JSON.parse(line);
+          } catch {
+            return;
+          }
+
+          if (ev.type === "phase" && ev.title) {
+            setLivePhaseLabel(String(ev.title));
+          } else if (ev.type === "sources" && Array.isArray(ev.sources)) {
+            citations = [...citations, ...ev.sources];
+            pushLivePatch({ citations });
+          } else if (ev.type === "think_delta" && typeof ev.delta === "string") {
+            reasoningText += ev.delta;
+            pushLivePatch({ thoughts: reasoningText });
+          } else if (ev.type === "action_step" && ev.step) {
+            const incomingStep = ev.step as StudioActionStep;
+            const existingRunningIdx =
+              incomingStep.status !== "running"
+                ? actionStepsList.findIndex(
+                    (s) => s.status === "running" && (s.kind === incomingStep.kind || s.title.includes("Invoking"))
+                  )
+                : -1;
+            if (existingRunningIdx !== -1) {
+              actionStepsList = actionStepsList.map((s, idx) => (idx === existingRunningIdx ? incomingStep : s));
+            } else {
+              actionStepsList = [...actionStepsList, incomingStep];
+            }
+            pushLivePatch({ actionSteps: actionStepsList });
+          } else if (ev.type === "file_update" && ev.file) {
+            const nf: StudioFileNode = {
+              path: String(ev.file.path || "app.txt"),
+              language: String(ev.file.language || "text"),
+              content: String(ev.file.content || ""),
+            };
+            extractedFiles = mergeWorkspaceFilesByPath(extractedFiles, [nf]);
+            workingWorkspaceFiles = mergeWorkspaceFilesByPath(workingWorkspaceFiles, [nf]);
+            setStudioFiles(workingWorkspaceFiles);
+            setFocusFilePath(nf.path);
+            setRightOpen(true);
+            pushLivePatch({ codeFiles: extractedFiles });
+          } else if (ev.type === "text_delta" && typeof ev.delta === "string") {
+            turnDeltaText += ev.delta;
+            answerText = isContinuationPass
+              ? mergeContinuationChunk(baseAnswerBeforeTurn, turnDeltaText)
+              : turnDeltaText;
+            if (answerText.length - lastFenceSyncLen > 120 && answerText.includes("```")) {
+              lastFenceSyncLen = answerText.length;
+              const partialFiles = extractStudioFilesSafe(answerText);
+              if (partialFiles.length > 0) {
+                extractedFiles = mergeWorkspaceFilesByPath(extractedFiles, partialFiles);
+                workingWorkspaceFiles = mergeWorkspaceFilesByPath(workingWorkspaceFiles, partialFiles);
+                setStudioFiles(workingWorkspaceFiles);
+                setFocusFilePath(partialFiles[partialFiles.length - 1]?.path || null);
+                setRightOpen(true);
+              }
+            }
+            pushLivePatch({
+              content: answerText,
+              thinkingSeconds: Number(((performance.now() - t0) / 1000).toFixed(1)),
+            });
+          } else if (ev.type === "done" && ev.payload) {
+            receivedDone = true;
+            const cd = ev.payload;
+            if (cd?.answer) {
+              answerText = isContinuationPass
+                ? mergeContinuationChunk(baseAnswerBeforeTurn, String(cd.answer))
+                : String(cd.answer);
+            }
+            if (cd?.reasoning) reasoningText = String(cd.reasoning);
+            if (Array.isArray(cd?.actionSteps) && cd.actionSteps.length > 0) {
+              actionStepsList = cd.actionSteps;
+            }
+            if (Array.isArray(cd?.studioFiles) && cd.studioFiles.length > 0) {
+              const normalized = cd.studioFiles.map((f: any) => ({
+                path: String(f.path || "app.txt"),
+                language: String(f.language || "text"),
+                content: String(f.content || ""),
+              }));
+              extractedFiles = mergeWorkspaceFilesByPath(extractedFiles, normalized);
+            }
+            if (Array.isArray(cd?.sources)) citations = cd.sources;
+            if (Array.isArray(cd?.verifiedTerminalLogs) && cd.verifiedTerminalLogs.length > 0) {
+              setTerminalLogs((p) => [...p, ...cd.verifiedTerminalLogs.slice(0, 8)]);
+            }
+            if (typeof cd?.studiedCorpusUnits === "number" && cd.studiedCorpusUnits > 0) {
+              const corpusNote = `• Studied Corpus: ${cd.studiedCorpusUnits} digested units (${cd.webCrawledUnits || 0} web-crawled, ${cd.errorLessonsLearned || 0} Reflexion error lessons active)`;
+              reasoningText = reasoningText && !reasoningText.includes("Studied Corpus:")
+                ? `${reasoningText}\n${corpusNote}`
+                : reasoningText || corpusNote;
+            }
+            incompleteTruncated = Boolean(cd?.incompleteTruncated);
+            if (isContinuationPass) {
+              const stitchedFiles = extractStudioFilesSafe(answerText);
+              if (stitchedFiles.length > 0) {
+                extractedFiles = mergeWorkspaceFilesByPath(extractedFiles, stitchedFiles);
+                workingWorkspaceFiles = mergeWorkspaceFilesByPath(workingWorkspaceFiles, stitchedFiles);
+                setStudioFiles(workingWorkspaceFiles);
+              }
+            }
+          }
+        };
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          resetStallTimer();
+          lineBuf += decoder.decode(value, { stream: true });
+          const lines = lineBuf.split("\n");
+          lineBuf = lines.pop() || "";
+          for (const rawLine of lines) processNdjsonLine(rawLine);
+        }
+        lineBuf += decoder.decode();
+        if (lineBuf.trim()) processNdjsonLine(lineBuf);
+        return receivedDone;
+      };
+
+      let turnCompletedCleanly = false;
+      try {
+        turnCompletedCleanly = await runStreamingTurn(fullPromptPayload, false);
+      } catch {
+        // Keep whatever partial stream arrived so nothing is ever lost
+      }
+
+      // Automatic seamless client continuation pass if interrupted mid-generation OR server flagged remaining files/text
+      for (
+        let clientHop = 0;
+        clientHop < 2 &&
+        (!turnCompletedCleanly || incompleteTruncated) &&
+        !userStoppedRef.current &&
+        answerText.trim().length > 80;
+        clientHop += 1
+      ) {
+        const truncCheck = repairTruncatedMarkdownAndCode(answerText);
+        if (!truncCheck.wasRepaired && !incompleteTruncated) break;
+        try {
+          setLivePhaseLabel(
+            isAr ? `استكمال الباقي تلقائياً (${clientHop + 1}/2)...` : `Auto-continuing remaining files (${clientHop + 1}/2)...`
+          );
+          const contTurnDone = await runStreamingTurn(
+            `Original request:\n${rawPrompt.slice(0, 700)}\n\nContinue seamlessly ONLY from the exact character where your previous output paused (do NOT repeat prior code, do NOT emit extra explanations until all remaining files finish):\n${answerText.slice(-600)}`,
+            true
+          );
+          turnCompletedCleanly = contTurnDone;
+          if (!contTurnDone) {
+            incompleteTruncated = true;
+            break;
+          }
+          // Stop resuming early once repaired check shows fences/code are structurally complete
+          const postRepair = repairTruncatedMarkdownAndCode(answerText);
+          if (!postRepair.wasRepaired) {
+            incompleteTruncated = false;
+            break;
+          }
+        } catch {
+          incompleteTruncated = true;
+          break;
         }
       }
 
-      if (controller.signal.aborted && !answerText) {
-        answerText = isAr ? "تم إيقاف التنفيذ حسب طلبك." : "Generation stopped cleanly.";
+      if (!answerText.trim() && !userStoppedRef.current) {
+        try {
+          const urlsInPrompt = rawPrompt.match(/https?:\/\/[^\s]+/gi) || [];
+          if (urlsInPrompt.length > 0) {
+            const wr = await fetch("/api/v1/web/research", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ url: urlsInPrompt[0], query: rawPrompt.slice(0, 160), lang: locale }),
+            }).catch(() => null);
+            if (wr?.ok) {
+              const wd = await wr.json();
+              if (wd?.url) citations = [...citations, { title: String(wd.title || wd.url), url: String(wd.url) }];
+              if (Array.isArray(wd?.results)) citations = [...citations, ...wd.results];
+            }
+          }
+          const res = await fetch("/api/v1/heyuka/local-sdk", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: fullPromptPayload, mode: "studio", locale }),
+          });
+          const data = await res.json();
+          answerText = String(data?.answer || data?.reply || "Workspace task completed.");
+          if (Array.isArray(data?.studioFiles) && data.studioFiles.length > 0) {
+            extractedFiles = mergeWorkspaceFilesByPath(
+              extractedFiles,
+              data.studioFiles.map((f: any) => ({
+                path: String(f.path || "app.txt"),
+                language: String(f.language || "text"),
+                content: String(f.content || ""),
+              }))
+            );
+          }
+        } catch {}
       }
 
-      // If runnable script was created, log crisp verification trace in Terminal
+      if (userStoppedRef.current && !answerText.trim()) {
+        answerText = isAr ? "تم إيقاف التنفيذ بناءً على طلبك." : "Generation stopped by user.";
+      }
+
+      if (answerText) {
+        const parsedFromText = extractStudioFilesSafe(answerText);
+        if (parsedFromText.length > 0) {
+          extractedFiles = mergeWorkspaceFilesByPath(parsedFromText, extractedFiles);
+        }
+      }
+
+      // Auto-verify runnable JS/Python script cleanly in Sandbox
       const runnableFile = extractedFiles.find((f) => /\.(js|ts|py|sh)$/i.test(f.path));
-      if (runnableFile?.content && !controller.signal.aborted) {
+      if (runnableFile?.content && !userStoppedRef.current) {
         try {
           const lang = runnableFile.path.endsWith(".py") ? "python" : runnableFile.path.endsWith(".sh") ? "bash" : "javascript";
           const execRes = await fetch("/api/v1/sandbox/execute", {
@@ -623,7 +839,9 @@ export function HeyukaUnifiedStudioWorkspace({
           if (execRes.ok) {
             const ex = await execRes.json();
             const out = String(ex?.stdout || ex?.output || "").trim();
-            if (out) setTerminalLogs((p) => [...p, `Verified ${runnableFile.path}: ${out.slice(0, 220)}`]);
+            if (out) {
+              setTerminalLogs((p) => [...p, `Verified ${runnableFile.path}: ${out.slice(0, 220)}`]);
+            }
           }
         } catch {}
       }
@@ -632,25 +850,39 @@ export function HeyukaUnifiedStudioWorkspace({
       const elapsedMs = Math.max(80, Math.round(performance.now() - t0));
       const outTok = estimateTokenCount(answerText);
 
-      let updatedWorkspaceFiles = studioFiles;
+      let updatedWorkspaceFiles = workingWorkspaceFiles;
       if (extractedFiles.length > 0) {
-        updatedWorkspaceFiles = mergeWorkspaceFilesByPath(studioFiles, extractedFiles);
+        updatedWorkspaceFiles = mergeWorkspaceFilesByPath(workingWorkspaceFiles, extractedFiles);
+        const hasNewJsEntry = extractedFiles.some(
+          (f) => /\.(js|ts|jsx|tsx)$/i.test(f.path) && f.path.toLowerCase() !== "app.js"
+        );
+        if (hasNewJsEntry) {
+          updatedWorkspaceFiles = updatedWorkspaceFiles.filter(
+            (f) =>
+              !(
+                f.path.toLowerCase() === "app.js" &&
+                f.content.trim() === 'console.log("Workspace initialized cleanly.");'
+              )
+          );
+        }
         setStudioFiles(updatedWorkspaceFiles);
         setFocusFilePath(extractedFiles[0]?.path || null);
         setCheckpoints((prev) => [
           { id: `cp_${Date.now()}`, label: rawPrompt.slice(0, 32), at: new Date().toISOString(), files: updatedWorkspaceFiles },
           ...prev.slice(0, 9),
         ]);
-        setRightTab("files");
         setRightOpen(true);
       }
 
-      const assistantMsg: StudioMessage = {
-        id: `a_${Date.now()}`,
+      const finalAssistantMsg: StudioMessage = {
+        id: liveAssistantId,
         role: "assistant",
         content: answerText,
         thoughts: reasoningText || `Analyzed prompt -> Selected capabilities -> Generated structured answer`,
         thinkingSeconds: Number((elapsedMs / 1000).toFixed(1)),
+        actionSteps: actionStepsList.length > 0 ? actionStepsList : undefined,
+        isStreaming: false,
+        incompleteTruncated,
         tokensIn: userMsg.tokensIn,
         tokensOut: outTok,
         latencyMs: elapsedMs,
@@ -661,21 +893,17 @@ export function HeyukaUnifiedStudioWorkspace({
         createdAt: new Date().toISOString(),
       };
 
-      const finalMsgs = [...nextHistory, assistantMsg];
+      const finalMsgs = [...nextHistory, finalAssistantMsg];
       setMessages(finalMsgs);
       persistCurrentThread(finalMsgs, updatedWorkspaceFiles);
     } catch (err: any) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `err_${Date.now()}`,
-          role: "assistant",
-          content: `Completed local recovery note: ${err?.message || "Ready for next instruction."}`,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+      pushLivePatch({
+        isStreaming: false,
+        content: answerText || `Local recovery note: ${err?.message || "Ready for next instruction."}`,
+      });
     } finally {
-      clearTimeout(timeoutId);
+      if (stallTimer) clearTimeout(stallTimer);
+      setLivePhaseLabel("");
       abortCtrlRef.current = null;
       setIsRunning(false);
     }
@@ -1047,7 +1275,7 @@ export function HeyukaUnifiedStudioWorkspace({
                       ) : (
                         <div className="space-y-2.5">
                           {/* Antigravity Thought Step Accordion */}
-                          {msg.thoughts && (
+                          {(msg.thoughts || msg.isStreaming) && (
                             <div>
                               <button
                                 type="button"
@@ -1060,12 +1288,14 @@ export function HeyukaUnifiedStudioWorkspace({
                                   }`}
                                 />
                                 <span>
-                                  {isAr
+                                  {msg.isStreaming
+                                    ? livePhaseLabel || (isAr ? `جاري التفكير (${runningSec}ث)...` : `Thinking (${runningSec}s)...`)
+                                    : isAr
                                     ? `التفكير لمدة ${msg.thinkingSeconds || 1}ث`
                                     : `Thought for ${msg.thinkingSeconds || 1}s`}
                                 </span>
                               </button>
-                              {expandedThoughts[msg.id] && (
+                              {expandedThoughts[msg.id] && msg.thoughts && (
                                 <div
                                   className={`mt-1.5 pl-4 border-l-2 ${borderCls} text-[11px] font-mono whitespace-pre-wrap ${mutedText}`}
                                 >
@@ -1075,37 +1305,91 @@ export function HeyukaUnifiedStudioWorkspace({
                             </div>
                           )}
 
-                          {/* Action Badges (Files Edited / Citations) */}
-                          {msg.codeFiles && msg.codeFiles.length > 0 && (
+                          {/* Antigravity Live Action Steps (Read / Created / Edited / Run / Search) */}
+                          {msg.actionSteps && msg.actionSteps.length > 0 && (
                             <div className="flex flex-wrap items-center gap-1.5">
-                              {msg.codeFiles.map((cf) => (
+                              {msg.actionSteps.map((st) => (
                                 <button
-                                  key={cf.path}
+                                  key={st.id}
                                   type="button"
                                   onClick={() => {
-                                    setStudioFiles(msg.codeFiles!);
-                                    setFocusFilePath(cf.path);
-                                    setRightTab("files");
-                                    setRightOpen(true);
+                                    if (st.target) {
+                                      setFocusFilePath(st.target);
+                                      setRightTab("files");
+                                      setRightOpen(true);
+                                    }
                                   }}
-                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-mono cursor-pointer transition-colors ${
-                                    isLight
-                                      ? "bg-gray-50 border-gray-200 hover:border-[#007ACC] text-gray-800"
-                                      : "bg-white/[0.04] border-white/[0.09] hover:border-[#007ACC] text-zinc-200"
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-mono ${
+                                    st.target ? "cursor-pointer" : "cursor-default"
+                                  } ${
+                                    st.status === "error"
+                                      ? "border-rose-500/35 bg-rose-500/10 text-rose-400"
+                                      : isLight
+                                      ? "bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300"
+                                      : "bg-white/[0.03] border-white/[0.08] text-zinc-300 hover:border-white/[0.16]"
                                   }`}
                                 >
-                                  <FileCode2 className="w-3 h-3" style={{ color: appearance.accentHex }} />
-                                  <span>{cf.path}</span>
-                                  <span className="text-emerald-500">+{cf.content.split(/\r?\n/).length}</span>
+                                  {st.status === "running" ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" style={{ color: appearance.accentHex }} />
+                                  ) : (
+                                    <span
+                                      className="w-1.5 h-1.5 rounded-full"
+                                      style={{ backgroundColor: st.status === "error" ? "#F43F5E" : appearance.accentHex }}
+                                    />
+                                  )}
+                                  <span>{st.title}</span>
+                                  {st.delta && <span className="text-emerald-500">{st.delta}</span>}
                                 </button>
                               ))}
                             </div>
                           )}
 
+                          {/* Action Badges (only for files not already shown as live action pills) */}
+                          {msg.codeFiles &&
+                            msg.codeFiles.some(
+                              (cf) =>
+                                !(msg.actionSteps || []).some(
+                                  (st) => st.target && st.target.toLowerCase() === cf.path.toLowerCase()
+                                )
+                            ) && (
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {msg.codeFiles
+                                  .filter(
+                                    (cf) =>
+                                      !(msg.actionSteps || []).some(
+                                        (st) => st.target && st.target.toLowerCase() === cf.path.toLowerCase()
+                                      )
+                                  )
+                                  .map((cf) => (
+                                    <button
+                                      key={cf.path}
+                                      type="button"
+                                      onClick={() => {
+                                        setStudioFiles((prev) => mergeWorkspaceFilesByPath(prev, msg.codeFiles!));
+                                        setFocusFilePath(cf.path);
+                                        setRightTab("files");
+                                        setRightOpen(true);
+                                      }}
+                                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-mono cursor-pointer transition-colors ${
+                                        isLight
+                                          ? "bg-gray-50 border-gray-200 hover:border-[#007ACC] text-gray-800"
+                                          : "bg-white/[0.04] border-white/[0.09] hover:border-[#007ACC] text-zinc-200"
+                                      }`}
+                                    >
+                                      <FileCode2 className="w-3 h-3" style={{ color: appearance.accentHex }} />
+                                      <span>{cf.path}</span>
+                                      <span className="text-emerald-500">+{cf.content.split(/\r?\n/).length}</span>
+                                    </button>
+                                  ))}
+                              </div>
+                            )}
+
                           {/* Rich Markdown Output via shared HeyukaMarkdownMessage */}
                           <div dir="auto" className="text-xs sm:text-[13px] leading-relaxed">
-                            <HeyukaMarkdownMessage
-                              markdown={msg.content}
+                              <HeyukaMarkdownMessage
+                              markdown={msg.content || (msg.isStreaming ? (isAr ? "جاري التحضير..." : "Preparing response...") : "")}
+                              theme={appearance.themeMode}
+                              collapseLongCodeOverLines={18}
                               onOpenUrlInBrowser={(url) => {
                                 setExternalBrowserRequest({ url, ts: Date.now() });
                                 setRightTab("browser");
@@ -1125,6 +1409,26 @@ export function HeyukaUnifiedStudioWorkspace({
                               }}
                             />
                           </div>
+
+                          {msg.incompleteTruncated && !isRunning && (
+                            <div className="pt-1">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void handleRunPrompt(
+                                    isAr
+                                      ? "أكمل من النقطة الأخيرة بالضبط دون تكرار، وأتمم جميع الملفات والأقسام المتبقية بالكامل."
+                                      : "Continue seamlessly from your last character without repeating prior text and complete every remaining file."
+                                  )
+                                }
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold text-white cursor-pointer"
+                                style={{ backgroundColor: appearance.accentHex }}
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                                <span>{isAr ? "استكمال الباقي تلقائياً" : "Continue Generating"}</span>
+                              </button>
+                            </div>
+                          )}
 
                           {/* Grounding Source Links */}
                           {msg.citations && msg.citations.length > 0 && (
@@ -1153,31 +1457,33 @@ export function HeyukaUnifiedStudioWorkspace({
                           )}
 
                           {/* Action Icons Row */}
-                          <div className={`flex items-center gap-2 pt-1 ${mutedText}`}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                navigator.clipboard.writeText(msg.content);
-                                setCopiedId(msg.id);
-                                setTimeout(() => setCopiedId(null), 1500);
-                              }}
-                              className="p-1 rounded hover:bg-white/10 cursor-pointer"
-                              title="Copy response"
-                            >
-                              {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                            </button>
-                          </div>
+                          {!msg.isStreaming && msg.content && (
+                            <div className={`flex items-center gap-2 pt-1 ${mutedText}`}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(msg.content);
+                                  setCopiedId(msg.id);
+                                  setTimeout(() => setCopiedId(null), 1500);
+                                }}
+                                className="p-1 rounded hover:bg-white/10 cursor-pointer"
+                                title="Copy response"
+                              >
+                                {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
                   );
                 })}
 
-                {isRunning && (
+                {isRunning && !messages.some((m) => m.isStreaming) && (
                   <div className={`flex items-center gap-2 text-xs ${mutedText} py-2`}>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: appearance.accentHex }} />
                     <span>
-                      {isAr ? `جاري التنفيذ... (${runningSec}ث)` : `Working... (${runningSec}s)`}
+                      {livePhaseLabel || (isAr ? `جاري التنفيذ... (${runningSec}ث)` : `Working... (${runningSec}s)`)}
                     </span>
                   </div>
                 )}
@@ -1527,7 +1833,10 @@ export function HeyukaUnifiedStudioWorkspace({
                     {isRunning ? (
                       <button
                         type="button"
-                        onClick={() => abortCtrlRef.current?.abort()}
+                        onClick={() => {
+                          userStoppedRef.current = true;
+                          abortCtrlRef.current?.abort();
+                        }}
                         className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer bg-rose-600 hover:bg-rose-500 text-white transition-colors"
                         title="Stop generation"
                       >
@@ -1577,6 +1886,7 @@ export function HeyukaUnifiedStudioWorkspace({
                 brand={brand}
                 locale={locale}
                 files={studioFiles}
+                baselineFiles={baselineFiles}
                 onChangeFiles={setStudioFiles}
                 checkpoints={checkpoints}
                 onSaveCheckpoint={(label) =>

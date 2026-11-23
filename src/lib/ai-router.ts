@@ -18,6 +18,65 @@ import {
 import { runLocalOnDeviceHeyukaBrain } from "@/lib/heyuka/local-sovereign-brain";
 import { detectTruncationState, mergeContinuationChunk } from "@/lib/heyuka/autonomous-builder-v24-v28";
 
+const modelCooldownUntil = new Map<string, number>();
+
+function extractRouterErrorText(err: any): string {
+  return [
+    err?.statusCode,
+    err?.message,
+    err?.responseBody,
+    err?.data?.error?.message,
+    err?.cause?.message,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+/**
+ * Cools down exhausted / rate-limited model gateways temporarily so failover jumps
+ * straight to healthy OpenRouter / Gemini / alternative models in 0ms instead of repeating 429s.
+ */
+function markCandidateCoolingDown(candidate: RouterCandidate, errText: string): void {
+  const msg = String(errText || "");
+  const now = Date.now();
+  const isModelQuotaExhausted =
+    /tokens per day|TPD|daily limit|quota exceeded|insufficient_quota|decommissioned|does not exist|model_not_found/i.test(
+      msg
+    );
+  const isRateOrTokenCap =
+    /\b429\b|\b413\b|rate.?limit|too many requests|request too large|tokens per minute|OTPM|ITPM|\bTPM\b|service unavailable|overloaded|\b503\b/i.test(
+      msg
+    );
+
+  if (isModelQuotaExhausted) {
+    modelCooldownUntil.set(`${candidate.provider}:${candidate.modelId}`, now + 15 * 60_000);
+  } else if (isRateOrTokenCap) {
+    // Groq enforces TPM limits per organization across keys; cool down model tier cleanly on org-wide caps
+    if (/organization\s+`org_/i.test(msg)) {
+      modelCooldownUntil.set(`${candidate.provider}:${candidate.modelId}`, now + 45_000);
+    } else {
+      modelCooldownUntil.set(`${candidate.provider}:${candidate.modelId}:${candidate.keyIndex}`, now + 65_000);
+    }
+  }
+}
+
+function isCandidateCoolingDown(candidate: RouterCandidate): boolean {
+  const now = Date.now();
+  const modelExp = modelCooldownUntil.get(`${candidate.provider}:${candidate.modelId}`) || 0;
+  const keyExp = modelCooldownUntil.get(`${candidate.provider}:${candidate.modelId}:${candidate.keyIndex}`) || 0;
+  return modelExp > now || keyExp > now;
+}
+
+function filterAndOrderActiveCandidates(candidates: RouterCandidate[]): RouterCandidate[] {
+  const healthy: RouterCandidate[] = [];
+  const cooling: RouterCandidate[] = [];
+  for (const c of candidates) {
+    if (isCandidateCoolingDown(c)) cooling.push(c);
+    else healthy.push(c);
+  }
+  return [...healthy, ...cooling];
+}
+
 export interface RouterGovernanceScope {
   tenantId?: string;
   allowOwnerPaidProviders?: boolean;
@@ -183,12 +242,12 @@ export async function getRouterCandidates(
     }
   }
 
-  // Priority 2: Groq Ultra-Fast Live 2026 Models (balanced key rotation across model tiers)
+  // Priority 2: Groq Ultra-Fast Live 2026 Models (place higher-quota 120b + 20b ahead of narrow OTPM 1000 models)
   const groqKeys = parseKeyPool(
     process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY
   ).filter((k) => !k.includes("mock"));
 
-  for (const modelId of ["openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"]) {
+  for (const modelId of ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]) {
     groqKeys.forEach((key, idx) => {
       const groqProvider = createGroq({ apiKey: key });
       candidates.push({
@@ -209,10 +268,10 @@ export async function getRouterCandidates(
   if (openRouterPoolKey && !openRouterPoolKey.includes("mock")) {
     const orProvider = createOpenRouter({ apiKey: openRouterPoolKey });
     for (const orModel of [
-      "openrouter/free",
-      "nvidia/nemotron-3.5-super-vl:free",
       "google/gemma-4-31b-it:free",
       "google/gemma-4-26b-a4b-it:free",
+      "openrouter/free",
+      "nvidia/nemotron-3.5-super-vl:free",
       "inclusionai/ling-3.2-flash:free",
     ]) {
       candidates.push({
@@ -355,7 +414,7 @@ export async function getRouterCandidates(
     });
   }
 
-  return candidates;
+  return filterAndOrderActiveCandidates(candidates);
 }
 
 function extractLastUserTextFromMessages(messages: any): string {
@@ -378,12 +437,23 @@ function buildProviderGenerationConfig(
   candidate: RouterCandidate,
   requestedMaxTokens?: number
 ): Record<string, any> {
-  const maxOutputTokens =
+  // Keep Groq requests strictly within per-minute TPM/OTPM limits so initial generation never fails 413/429
+  const defaultCap =
+    candidate.provider === "google"
+      ? 65_536
+      : candidate.provider === "groq"
+      ? candidate.modelId.includes("120b")
+        ? 5_500
+        : candidate.modelId.includes("20b")
+        ? 2_600
+        : 850
+      : 16_384;
+  const rawReq =
     typeof requestedMaxTokens === "number" && requestedMaxTokens > 0
       ? requestedMaxTokens
-      : candidate.provider === "google"
-      ? 65_536
-      : 16_384;
+      : defaultCap;
+  const maxOutputTokens =
+    candidate.provider === "groq" ? Math.min(rawReq, defaultCap) : rawReq;
 
   const extra: Record<string, any> = { maxOutputTokens };
   if (candidate.provider === "google") {
@@ -513,6 +583,7 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
   for (let idx = 0; idx < genAttempts.length; idx++) {
     if (idx > 0 && Date.now() - genStartedAt > failoverHorizonMs) break;
     const { candidate, stripTools } = genAttempts[idx];
+    if (idx > 0 && isCandidateCoolingDown(candidate)) continue;
     try {
       const providerCfg = buildProviderGenerationConfig(candidate, (restGenOptions as any)?.maxOutputTokens);
       const callOpts = { ...(restGenOptions as any) };
@@ -559,15 +630,17 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
         activeModel: candidate.modelId,
       };
     } catch (err: any) {
+      const errMsg = extractRouterErrorText(err);
+      markCandidateCoolingDown(candidate, errMsg);
       console.warn(
         `[HEYUKA Router] Failover from ${candidate.provider}:${candidate.modelId}${
           stripTools ? " (text-only)" : ""
-        } (Key #${candidate.keyIndex + 1}): ${String(err?.message || err).slice(0, 140)}`
+        } (Key #${candidate.keyIndex + 1}): ${errMsg.slice(0, 160)}`
       );
       errors.push({
         provider: candidate.providerName,
         keyIndex: candidate.keyIndex,
-        error: err?.message || String(err),
+        error: errMsg || String(err),
       });
     }
   }
@@ -695,6 +768,7 @@ export async function streamUiResponseWithRouter(
         if (attemptIdx > 0 && Date.now() - streamStartedAt > failoverHorizonMs) break;
 
         const { candidate, stripTools } = attempts[attemptIdx];
+        if (attemptIdx > 0 && isCandidateCoolingDown(candidate)) continue;
         let emittedToClient = false;
         const bufferedHeaderChunks: any[] = [];
         let collectedText = "";
@@ -894,11 +968,12 @@ export async function streamUiResponseWithRouter(
           }
           break;
         } catch (err: any) {
-          lastErrMsg = String(err?.message || err);
+          lastErrMsg = extractRouterErrorText(err);
+          markCandidateCoolingDown(candidate, lastErrMsg);
           console.warn(
             `[HEYUKA Stream Failover] ${candidate.provider}:${candidate.modelId}${
               stripTools ? " (text-only)" : ""
-            } failed -> ${lastErrMsg.slice(0, 140)}`
+            } failed -> ${lastErrMsg.slice(0, 160)}`
           );
           const visibleClean = collectedText
             .replace(/<think>[\s\S]*?<\/think>/gi, "")
@@ -990,4 +1065,334 @@ export async function streamUiResponseWithRouter(
     stream,
     headers,
   });
+}
+
+function createStreamingThinkSplitter(
+  onReasoning: (chunk: string) => void,
+  onVisible: (chunk: string) => void
+) {
+  let inThink = false;
+  let carry = "";
+
+  const drain = (flushAll = false) => {
+    while (carry.length > 0) {
+      if (!inThink) {
+        const openIdx = carry.indexOf("<think>");
+        if (openIdx !== -1) {
+          if (openIdx > 0) onVisible(carry.slice(0, openIdx));
+          carry = carry.slice(openIdx + 7);
+          inThink = true;
+          continue;
+        }
+        if (!flushAll && carry.includes("<") && carry.length - carry.lastIndexOf("<") < 7) {
+          const splitAt = carry.lastIndexOf("<");
+          if (splitAt > 0) onVisible(carry.slice(0, splitAt));
+          carry = carry.slice(splitAt);
+          break;
+        }
+        onVisible(carry);
+        carry = "";
+      } else {
+        const closeIdx = carry.indexOf("</think>");
+        if (closeIdx !== -1) {
+          if (closeIdx > 0) onReasoning(carry.slice(0, closeIdx));
+          carry = carry.slice(closeIdx + 8);
+          inThink = false;
+          continue;
+        }
+        if (!flushAll && carry.includes("<") && carry.length - carry.lastIndexOf("<") < 8) {
+          const splitAt = carry.lastIndexOf("<");
+          if (splitAt > 0) onReasoning(carry.slice(0, splitAt));
+          carry = carry.slice(splitAt);
+          break;
+        }
+        onReasoning(carry);
+        carry = "";
+      }
+    }
+  };
+
+  return {
+    push(delta: string) {
+      if (!delta) return;
+      carry += delta;
+      drain(false);
+    },
+    flush() {
+      drain(true);
+    },
+  };
+}
+
+/**
+ * Streams real-time tokens, reasoning traces, tool lifecycle events, and seamless MAX_TOKENS continuations
+ * cleanly to Antigravity Studio (`/api/v1/heyuka/chat-web?stream=true`).
+ */
+export async function streamStudioNdjsonWithRouter(
+  options: StreamTextOptions & {
+    onPhase?: (phase: string) => void;
+    onTextDelta?: (delta: string) => void;
+    onReasoningDelta?: (delta: string) => void;
+    onToolStart?: (toolName: string) => void;
+  }
+): Promise<{
+  text: string;
+  reasoning: string;
+  finishReason: string;
+  activeProvider: string;
+  activeModel: string;
+  activeKeyIndex: number;
+  continuationHops: number;
+}> {
+  const { governance, onPhase, onTextDelta, onReasoningDelta, onToolStart, ...restOptions } = options as any;
+  const allCandidates = await getRouterCandidates(governance);
+  const filteredByCost =
+    governance?.allowOwnerPaidProviders === true
+      ? allCandidates
+      : allCandidates.filter(
+          (c) => !PAID_OWNER_ENV_PROVIDERS.has(c.provider) || c.providerName.startsWith("Tenant BYOK")
+        );
+  const isMultimodal = hasMultimodalContent(options);
+  const pool = isMultimodal ? filteredByCost.filter((c) => c.supportsVision) : filteredByCost;
+  const hasTools = Boolean(restOptions.tools);
+  const sysLen = typeof restOptions.system === "string" ? restOptions.system.length : 0;
+  // Skip ultra-narrow ITPM=7000 / OTPM=1000 Groq qwen3.8-27b when Studio passes heavy tool schemas
+  const sizedPool =
+    hasTools || sysLen > 6000
+      ? pool.filter((c) => !(c.provider === "groq" && c.modelId.includes("qwen3.8")))
+      : pool;
+  const baseCandidates = filterAndOrderActiveCandidates(sizedPool.length > 0 ? sizedPool : pool);
+  const attempts: Array<{ candidate: RouterCandidate; stripTools: boolean }> = [
+    ...baseCandidates.map((candidate) => ({ candidate, stripTools: false })),
+    ...(hasTools ? baseCandidates.slice(0, 3).map((candidate) => ({ candidate, stripTools: true })) : []),
+  ];
+
+  const startedAt = Date.now();
+  const isVercelRuntime = process.env.VERCEL === "1" || process.env.VERCEL === "true";
+  const failoverHorizonMs = isVercelRuntime ? 24_000 : 120_000;
+  const totalBudgetMs = isVercelRuntime ? 53_000 : 240_000;
+  const maxContinuationHops = isVercelRuntime ? 8 : 16;
+  const originalUserPrompt = extractLastUserTextFromMessages(restOptions.messages).slice(0, 1400);
+
+  for (let idx = 0; idx < attempts.length; idx++) {
+    if (idx > 0 && Date.now() - startedAt > failoverHorizonMs) break;
+    const { candidate, stripTools } = attempts[idx];
+    if (idx > 0 && isCandidateCoolingDown(candidate)) continue;
+    let visibleText = "";
+    let reasoningText = "";
+    let streamFinishReason = "";
+    let emittedAnyVisible = false;
+    let capturedStreamErr = "";
+
+    const remainingMs = Math.max(8_000, totalBudgetMs - (Date.now() - startedAt));
+    const perAttemptMs = Math.min(remainingMs, isVercelRuntime ? (idx === 0 ? 28_000 : 16_000) : 90_000);
+    const attemptAbort = new AbortController();
+    const overallTimer = setTimeout(() => attemptAbort.abort(), perAttemptMs);
+    let hasFirstActivity = false;
+    const firstActivityTimer = setTimeout(() => {
+      if (!hasFirstActivity) {
+        capturedStreamErr = capturedStreamErr || "Gateway first-token timeout (18s)";
+        attemptAbort.abort();
+      }
+    }, isVercelRuntime ? 14_000 : 18_000);
+
+    try {
+      const providerCfg = buildProviderGenerationConfig(candidate, restOptions.maxOutputTokens);
+      const callOpts = { ...providerCfg, ...restOptions };
+      if (stripTools) {
+        delete callOpts.tools;
+        delete callOpts.stopWhen;
+      }
+
+      const splitter = createStreamingThinkSplitter(
+        (rDelta) => {
+          reasoningText += rDelta;
+          onReasoningDelta?.(rDelta);
+        },
+        (vDelta) => {
+          if (!vDelta) return;
+          visibleText += vDelta;
+          if (visibleText.trim().length > 0) emittedAnyVisible = true;
+          onTextDelta?.(vDelta);
+        }
+      );
+
+      const res = streamText({
+        model: candidate.model as any,
+        maxRetries: 0,
+        abortSignal: attemptAbort.signal,
+        onError: ({ error }) => {
+          const raw = extractRouterErrorText(error);
+          if (raw) capturedStreamErr = raw;
+        },
+        ...callOpts,
+      });
+      Promise.resolve((res as any).text).catch(() => {});
+      Promise.resolve((res as any).finishReason).catch(() => {});
+      Promise.resolve((res as any).usage).catch(() => {});
+      Promise.resolve((res as any).response).catch(() => {});
+
+      for await (const rawChunk of res.toUIMessageStream({
+        onError: (err) => {
+          const raw = extractRouterErrorText(err);
+          if (raw) capturedStreamErr = raw;
+          return raw || "Upstream stream error";
+        },
+      })) {
+        const c = rawChunk as any;
+        if (c.type === "error") {
+          throw new Error(String(capturedStreamErr || c.errorText || c.error?.message || "Upstream stream error"));
+        }
+        if (c.type === "reasoning-delta" && typeof c.delta === "string") {
+          hasFirstActivity = true;
+          reasoningText += c.delta;
+          onReasoningDelta?.(c.delta);
+        } else if (c.type === "text-delta") {
+          hasFirstActivity = true;
+          const piece = typeof c.delta === "string" ? c.delta : typeof c.textDelta === "string" ? c.textDelta : "";
+          if (piece) splitter.push(piece);
+        } else if (c.type === "tool-input-start" && c.toolName) {
+          hasFirstActivity = true;
+          onToolStart?.(String(c.toolName));
+        } else if ((c.type === "finish-step" || c.type === "finish") && typeof c.finishReason === "string" && c.finishReason) {
+          streamFinishReason = c.finishReason;
+        }
+      }
+      clearTimeout(firstActivityTimer);
+      clearTimeout(overallTimer);
+      splitter.flush();
+
+      if (!emittedAnyVisible || !visibleText.trim()) {
+        throw new Error("Empty visible stream output");
+      }
+
+      let finishReason = streamFinishReason || "stop";
+      if (!streamFinishReason) {
+        try {
+          finishReason = String((await (res as any).finishReason) || "stop");
+        } catch {}
+      }
+
+      let continuationHops = 0;
+      while (
+        continuationHops < maxContinuationHops &&
+        Date.now() - startedAt < totalBudgetMs &&
+        (finishReason === "length" || detectTruncationState(visibleText).truncated)
+      ) {
+        continuationHops += 1;
+        onPhase?.(`Auto-continuing complete generation (Hop #${continuationHops})...`);
+        const trunc = detectTruncationState(visibleText);
+        const fenceNotice = trunc.openFenceLang
+          ? `You are CURRENTLY INSIDE an open \`\`\`${trunc.openFenceLang} code fence. Output ONLY the remaining raw code lines seamlessly from the exact cutoff character WITHOUT opening a new \`\`\`${trunc.openFenceLang} fence first, then close with \`\`\` and complete any remaining files or brief summary.`
+          : "Continue seamlessly from the exact cutoff character without repeating any prior text, without emitting <think> tags, and complete all remaining files and sections cleanly.";
+        const baseSnap = visibleText;
+        let hopChunk = "";
+        let hopSucceeded = false;
+
+        const hopCandidates = filterAndOrderActiveCandidates([
+          candidate,
+          ...baseCandidates.filter((c) => c.modelId !== candidate.modelId).slice(0, 2),
+        ]);
+
+        for (const hopCand of hopCandidates) {
+          try {
+            const contRes = streamText({
+              model: hopCand.model as any,
+              maxRetries: 0,
+              ...buildProviderGenerationConfig(hopCand, restOptions.maxOutputTokens),
+              abortSignal: AbortSignal.timeout(Math.max(8_000, totalBudgetMs - (Date.now() - startedAt))),
+              system: fenceNotice,
+              messages: [
+                {
+                  role: "user",
+                  content: `Original request:\n${originalUserPrompt}\n\nExact ending tail:\n${trunc.tailSnippet || baseSnap.slice(-600)}\n\nContinue immediately from the next character:`,
+                },
+              ],
+              temperature: 0.2,
+            });
+            Promise.resolve((contRes as any).text).catch(() => {});
+            Promise.resolve((contRes as any).finishReason).catch(() => {});
+            Promise.resolve((contRes as any).usage).catch(() => {});
+            Promise.resolve((contRes as any).response).catch(() => {});
+            for await (const rawC of contRes.toUIMessageStream()) {
+              const c = rawC as any;
+              if (c.type === "error") throw new Error("Continuation upstream error");
+              if (c.type === "text-delta") {
+                const piece = typeof c.delta === "string" ? c.delta : typeof c.textDelta === "string" ? c.textDelta : "";
+                if (piece) {
+                  hopChunk += piece;
+                  const nextMerged = mergeContinuationChunk(baseSnap, hopChunk);
+                  const added = nextMerged.slice(visibleText.length);
+                  visibleText = nextMerged;
+                  if (added) onTextDelta?.(added);
+                }
+              } else if ((c.type === "finish-step" || c.type === "finish") && typeof c.finishReason === "string") {
+                finishReason = c.finishReason || "stop";
+              }
+            }
+            if (hopChunk.trim()) {
+              hopSucceeded = true;
+              break;
+            }
+          } catch {
+            // Try next healthy hop candidate seamlessly
+          }
+        }
+        if (!hopSucceeded || !hopChunk.trim()) break;
+      }
+
+      return {
+        text: visibleText.trim(),
+        reasoning: reasoningText.trim(),
+        finishReason,
+        activeProvider: candidate.providerName,
+        activeModel: candidate.modelId,
+        activeKeyIndex: candidate.keyIndex,
+        continuationHops,
+      };
+    } catch (err: any) {
+      clearTimeout(firstActivityTimer);
+      clearTimeout(overallTimer);
+      const errMsg = [capturedStreamErr, extractRouterErrorText(err)].filter(Boolean).join(" ");
+      markCandidateCoolingDown(candidate, errMsg);
+      if (emittedAnyVisible && visibleText.trim().length > 80) {
+        return {
+          text: visibleText.trim(),
+          reasoning: reasoningText.trim(),
+          finishReason: "partial_stream",
+          activeProvider: candidate.providerName,
+          activeModel: candidate.modelId,
+          activeKeyIndex: candidate.keyIndex,
+          continuationHops: 0,
+        };
+      }
+      console.warn(`[HEYUKA Studio Stream Failover] ${candidate.provider}:${candidate.modelId}: ${errMsg.slice(0, 160)}`);
+    }
+  }
+
+  let fallbackText = "";
+  if (!isMultimodal) {
+    try {
+      fallbackText = await callPollinationsZeroKeyHttp({
+        system: typeof restOptions.system === "string" ? restOptions.system : undefined,
+        messages: restOptions.messages,
+      });
+    } catch {}
+  }
+  if (!fallbackText) {
+    fallbackText = runLocalOnDeviceHeyukaBrain({
+      prompt: originalUserPrompt || "Assist cleanly with complete solution",
+      locale: /[\u0600-\u06FF]/.test(originalUserPrompt) ? "ar" : "en",
+    }).answer;
+  }
+  onTextDelta?.(fallbackText);
+  return {
+    text: fallbackText,
+    reasoning: "",
+    finishReason: "stop",
+    activeProvider: "HEYUKA Open Core",
+    activeModel: "heyuka-open",
+    activeKeyIndex: 0,
+    continuationHops: 0,
+  };
 }
