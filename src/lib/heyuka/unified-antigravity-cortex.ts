@@ -27,6 +27,22 @@ import {
 import { runPreReplyReflectionGate } from "@/lib/zebra-x/core/reflection-gate";
 import { scoreSelfCheckConsistency } from "@/lib/zebra-x/core/prompt-refiner";
 import { repairTruncatedMarkdownAndCode } from "@/lib/heyuka/autonomous-builder-v24-v28";
+import { runMctsDeepReasoner } from "@/lib/zebra-x/cognition/secret2_mcts_reasoner";
+import {
+  simulate3dPhysicsStability,
+  simulateKaspiMarketWorld,
+} from "@/lib/zebra-x/simulation/secret3_world_sim";
+import {
+  discoverSymbolicLaw,
+  solveArcFewShotGrid,
+  synthesizeCrossDomainInvention,
+} from "@/lib/zebra-x/cognition/secret4_fluid_invention";
+import {
+  executeForgedTool,
+  forgeAndVerifyMicroTool,
+  listForgedTools,
+} from "@/lib/zebra-x/evolution/secret5_tool_forge";
+import { recallAssociativeContext } from "@/lib/zebra-x/cognition/secret7_dual_brain_orchestrator";
 
 export type CortexDomainMode =
   | "software_architecture"
@@ -253,10 +269,19 @@ export function buildActiveVaultWorkingMemory(params: {
     .slice(1, 4)
     .map((c) => c.id);
 
+  const episodicHits = recallAssociativeContext(params.prompt, 3);
+  const episodicBlock =
+    episodicHits.length > 0
+      ? `[EPISODIC MEMORY GRAPH]: ${episodicHits
+          .map((e) => `${e.concept}->[${e.relatedConcepts.slice(0, 3).join(",")}]${e.wisdomNotes[0] ? ` (${e.wisdomNotes[0]})` : ""}`)
+          .join(" | ")}`
+      : "";
+
   const activeMemoryPromptBlock = [
     `[ANTIGRAVITY CORTEX v2.5 | ${domainMode.toUpperCase()} | ${cognitiveRoute.primaryCluster.titleEn} | ${v60Totals.grandTotalSources}+ Vault + ${studiedSearch.totalCorpusUnits} Units (${studiedSearch.webCrawledUnits} Web)]`,
     personaDirective,
     errorPreventionBlock,
+    episodicBlock,
     "[MATCHED CORPUS & VAULT (Full 2493+ searchable via queryVaultOrApi/studyAndCrawlSource)]",
     enginesCatalogSnippet,
     fileTreeSummary ? `[WORKSPACE FILES (${params.workspaceFiles?.length})]\n${fileTreeSummary}` : "",
@@ -773,6 +798,139 @@ export function createStudioAgentToolkit(params: {
           crawlResult,
           corpusSearch: searchRes,
         };
+      },
+    }),
+
+    reasonWithMctsTree: tool({
+      description:
+        "Secret #2 MCTS Deep Reasoner: Explores parallel solution branches with PUCT, verifies math symbolically, prunes weak paths, and runs Chain-of-Verification.",
+      inputSchema: z.object({
+        prompt: z.string().min(3),
+        thinkingBudget: z.number().int().min(512).max(32768).optional(),
+      }),
+      execute: async ({ prompt, thinkingBudget }) => {
+        const res = await runMctsDeepReasoner({ prompt, thinkingBudget, locale: shortLocale });
+        emitStep({
+          kind: "verify",
+          title: `MCTS Search (${res.exploredNodesCount} nodes • ${Math.round(res.confidence * 100)}%)`,
+          status: "done",
+          durationMs: Math.round(res.durationMs),
+        });
+        return res;
+      },
+    }),
+
+    simulateWorldOrMarket: tool({
+      description:
+        "Secret #3 World Simulator: Simulates either 3D rigid-body stability/collisions OR multi-day KASPI POS retail queue, stockout & margin elasticity.",
+      inputSchema: z.object({
+        domain: z.enum(["kaspi_market", "physics_3d"]),
+        days: z.number().int().min(7).max(90).optional(),
+        dailyCustomers: z.number().int().min(10).max(2000).optional(),
+        avgBasketMad: z.number().min(5).optional(),
+        cashierLanes: z.number().int().min(1).max(12).optional(),
+        bodies: z
+          .array(
+            z.object({
+              id: z.string(),
+              widthM: z.number(),
+              heightM: z.number(),
+              depthM: z.number(),
+              massKg: z.number(),
+            })
+          )
+          .optional(),
+      }),
+      execute: async (input) => {
+        if (input.domain === "physics_3d") {
+          const out = simulate3dPhysicsStability(input.bodies || []);
+          emitStep({ kind: "run", title: `3D Physics Sim (${out.bodiesAudited} bodies)`, status: "done" });
+          return out;
+        }
+        const marketOut = simulateKaspiMarketWorld(input);
+        emitStep({
+          kind: "run",
+          title: `KASPI Market Sim (${marketOut.daysSimulated}d: ${marketOut.projectedRevenueMad} MAD)`,
+          status: "done",
+        });
+        return marketOut;
+      },
+    }),
+
+    inventWithArcAndTriz: tool({
+      description:
+        "Secret #4 Fluid Intelligence: Solves few-shot ARC-AGI grids, discovers mathematical formulas from (x,y) points (PySR-style R^2), or synthesizes TRIZ cross-domain blueprints.",
+      inputSchema: z.object({
+        mode: z.enum(["arc_grid", "symbolic_law", "triz_invent"]),
+        challenge: z.string().optional(),
+        trainPairs: z
+          .array(
+            z.object({
+              input: z.array(z.array(z.number())),
+              output: z.array(z.array(z.number())),
+            })
+          )
+          .optional(),
+        testInput: z.array(z.array(z.number())).optional(),
+        points: z.array(z.object({ x: z.number(), y: z.number() })).optional(),
+      }),
+      execute: async (input) => {
+        if (input.mode === "arc_grid") {
+          const res = solveArcFewShotGrid({
+            trainPairs: input.trainPairs || [],
+            testInput: input.testInput || [[]],
+          });
+          emitStep({ kind: "think", title: `ARC Solver: ${res.discoveredProgram}`, status: "done" });
+          return res;
+        }
+        if (input.mode === "symbolic_law") {
+          const res = discoverSymbolicLaw(input.points || []);
+          emitStep({ kind: "think", title: `Symbolic Law (${res.equation})`, status: "done" });
+          return res;
+        }
+        const inv = synthesizeCrossDomainInvention({ challenge: input.challenge || "Modular innovation" });
+        emitStep({ kind: "think", title: `TRIZ Synthesis (${inv.crossDomainBridge.sourceScience})`, status: "done" });
+        return inv;
+      },
+    }),
+
+    forgeAndRunSkill: tool({
+      description:
+        "Secret #5 Voyager Tool Forge: Synthesizes, security-scans, fuzz-tests, and executes reusable custom JS micro-tools (`function runTool(input)`).",
+      inputSchema: z.object({
+        action: z.enum(["list", "forge", "run"]),
+        toolId: z.string().optional(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        implementationJs: z.string().optional(),
+        testCases: z
+          .array(z.object({ input: z.record(z.string(), z.unknown()), expected: z.unknown() }))
+          .optional(),
+        runInput: z.record(z.string(), z.unknown()).optional(),
+      }),
+      execute: async (input) => {
+        if (input.action === "list") return { ok: true, tools: listForgedTools() };
+        if (input.action === "forge") {
+          const res = await forgeAndVerifyMicroTool({
+            name: input.name || "forged_skill",
+            description: input.description || "Custom forged skill",
+            implementationJs: input.implementationJs || "function runTool(i){ return i; }",
+            testCases: input.testCases || [],
+          });
+          emitStep({
+            kind: res.ok ? "create" : "verify",
+            title: res.ok ? `Forged Skill '${res.tool?.name}' verified` : "Tool forge blocked",
+            status: res.ok ? "done" : "error",
+          });
+          return res;
+        }
+        const exec = executeForgedTool({ toolId: input.toolId || "", input: input.runInput || {} });
+        emitStep({
+          kind: "run",
+          title: `Executed Skill '${exec.toolId}'`,
+          status: exec.ok ? "done" : "error",
+        });
+        return exec;
       },
     }),
   };

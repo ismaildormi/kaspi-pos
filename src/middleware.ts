@@ -51,6 +51,7 @@ const PUBLIC_API_PATHS = [
   "/api/v1/os/exec",
   "/api/v1/ai-pc/control",
   "/api/v1/studio",
+  "/api/v1/cognition",
   "/api/v1/magic",
   "/api/v1/qr/dynamic",
   "/api/v1/models",

@@ -46,3 +46,5 @@ external_sources/*
 # Temporary generated E2E artifacts & build info
 tests/yuka-full-e2e/out/
 tsconfig.tsbuildinfo
+__pycache__/
+*.pyc

@@ -16,7 +16,14 @@ export type SovereignPackVersion =
   | "v57.0"
   | "v58.0"
   | "v59.0"
-  | "v60.0";
+  | "v60.0"
+  | "v87.1"
+  | "v87.2"
+  | "v87.3"
+  | "v87.4"
+  | "v87.5"
+  | "v87.6"
+  | "v87.7";
 
 export type SovereignMirrorStrategy =
   | "git_bundle_mirror"

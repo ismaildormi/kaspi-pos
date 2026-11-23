@@ -223,8 +223,19 @@ export function HeyukaUnifiedStudioWorkspace({
   const [customTab, setCustomTab] = useState<"rules" | "engine">("rules");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<
-    "general" | "appearance" | "shortcuts" | "models" | "projects" | "pretraining_lab"
+    "general" | "appearance" | "shortcuts" | "models" | "projects" | "pretraining_lab" | "seven_secrets_lab"
   >("appearance");
+  const [secretsStatus, setSecretsStatus] = useState<{
+    elo: number;
+    curriculumLevel: number;
+    forgedCount: number;
+    cacheSize: number;
+    episodicCount: number;
+    v87Sources: number;
+  } | null>(null);
+  const [secretsPrompt, setSecretsPrompt] = useState("Optimize KASPI POS store margin with 20% TVA & fast checkout");
+  const [secretsOutput, setSecretsOutput] = useState<string | null>(null);
+  const [secretsBusy, setSecretsBusy] = useState(false);
   const [labStats, setLabStats] = useState<{
     totalDigested: number;
     webCrawledUnits: number;
@@ -2068,6 +2079,7 @@ export function HeyukaUnifiedStudioWorkspace({
                   { id: "models" as const, label: "Models" },
                   { id: "projects" as const, label: "Projects" },
                   { id: "pretraining_lab" as const, label: isAr ? "مختبر الويب والتدريب" : "Pretraining & Web Lab" },
+                  { id: "seven_secrets_lab" as const, label: isAr ? "مختبر الأسرار الـ 7 (AI)" : "7 Secrets Cognition Lab" },
                 ] as const
               ).map((item) => (
                 <button
@@ -2084,6 +2096,23 @@ export function HeyukaUnifiedStudioWorkspace({
                               totalDigested: Number(d.totalDigested || 0),
                               webCrawledUnits: Number(d.webCrawledUnits || 0),
                               errorLessonsCount: Number(d.errorLessonsCount || 0),
+                            });
+                          }
+                        })
+                        .catch(() => {});
+                    }
+                    if (item.id === "seven_secrets_lab") {
+                      fetch("/api/v1/cognition/omni-mind")
+                        .then((r) => r.json())
+                        .then((d) => {
+                          if (d?.ok) {
+                            setSecretsStatus({
+                              elo: Number(d.selfPlayTelemetry?.elo || 1200),
+                              curriculumLevel: Number(d.selfPlayTelemetry?.curriculumLevel || 1),
+                              forgedCount: Array.isArray(d.forgedTools) ? d.forgedTools.length : 0,
+                              cacheSize: Number(d.system1CacheSize || 0),
+                              episodicCount: Number(d.episodicConceptsCount || 0),
+                              v87Sources: Number(d.catalog?.totalVerifiedV87Sources || 0),
                             });
                           }
                         })
@@ -2542,6 +2571,115 @@ export function HeyukaUnifiedStudioWorkspace({
                         </div>
                       ))}
                     </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {settingsSection === "seven_secrets_lab" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold">
+                    {isAr ? "مختبر الأسرار الـ 7 للتفوق الذهني (v87.1 – v87.7)" : "7 Super-Intelligence Secrets Lab"}
+                  </p>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">
+                    System-1 &lt;15ms + MCTS + Sim + Forge
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className={`p-2.5 rounded-xl border ${borderCls}`}>
+                    <div className={`text-[11px] ${mutedText}`}>{isAr ? "تقييم اللعب الذاتي" : "Self-Play Elo"}</div>
+                    <div className="text-base font-bold text-emerald-400">
+                      {secretsStatus ? `${secretsStatus.elo} (L${secretsStatus.curriculumLevel})` : "—"}
+                    </div>
+                  </div>
+                  <div className={`p-2.5 rounded-xl border ${borderCls}`}>
+                    <div className={`text-[11px] ${mutedText}`}>{isAr ? "محركات v87 الموثقة" : "Verified v87 Engines"}</div>
+                    <div className="text-base font-bold text-emerald-400">{secretsStatus?.v87Sources ?? "—"}</div>
+                  </div>
+                  <div className={`p-2.5 rounded-xl border ${borderCls}`}>
+                    <div className={`text-[11px] ${mutedText}`}>{isAr ? "مهارات Voyager المصنعة" : "Forged Tools"}</div>
+                    <div className="text-base font-bold text-amber-400">{secretsStatus?.forgedCount ?? "—"}</div>
+                  </div>
+                  <div className={`p-2.5 rounded-xl border ${borderCls}`}>
+                    <div className={`text-[11px] ${mutedText}`}>{isAr ? "عقد الذاكرة الترابطية" : "Episodic Concepts"}</div>
+                    <div className="text-base font-bold text-emerald-400">{secretsStatus?.episodicCount ?? "—"}</div>
+                  </div>
+                </div>
+
+                <div className={`p-3 rounded-xl border ${borderCls} space-y-2`}>
+                  <input
+                    type="text"
+                    value={secretsPrompt}
+                    onChange={(e) => setSecretsPrompt(e.target.value)}
+                    placeholder={isAr ? "أدخل تحدياً لاختبار النظام..." : "Enter test challenge for Omni-Mind..."}
+                    className={`w-full px-2.5 py-1.5 rounded-lg border ${borderCls} bg-transparent text-xs`}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      {
+                        action: "omni_mind",
+                        label: isAr ? "تشغيل Omni-Mind (MCTS + 12 عقل)" : "Run Omni-Mind (MCTS + Council)",
+                        payload: { action: "omni_mind", prompt: secretsPrompt, forceSystem2: true, locale },
+                      },
+                      {
+                        action: "self_play",
+                        label: isAr ? "جولة لعب ذاتي (Elo)" : "Run Self-Play Gym",
+                        payload: { action: "self_play", rounds: 4 },
+                      },
+                      {
+                        action: "simulate_market",
+                        label: isAr ? "محاكاة السوق KASPI 30d" : "Run 30d Market Sim",
+                        payload: { action: "simulate_market", days: 30, dailyCustomers: 120 },
+                      },
+                      {
+                        action: "run_tool",
+                        label: isAr ? "تشغيل أداة TVA المصنّعة" : "Execute Forged TVA Skill",
+                        payload: { action: "run_tool", toolId: "morocco_tva_margin_split", input: { ttc: 1200, vatPct: 20, costHt: 700 } },
+                      },
+                    ].map((btn) => (
+                      <button
+                        key={btn.action}
+                        type="button"
+                        disabled={secretsBusy}
+                        onClick={async () => {
+                          setSecretsBusy(true);
+                          setSecretsOutput(null);
+                          try {
+                            const res = await fetch("/api/v1/cognition/omni-mind", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify(btn.payload),
+                            });
+                            const data = await res.json();
+                            setSecretsOutput(JSON.stringify(data, null, 2).slice(0, 1400));
+                            if (typeof data?.eloRating === "number" || typeof data?.selfPlayElo === "number") {
+                              setSecretsStatus((prev) => ({
+                                elo: data.eloRating ?? data.selfPlayElo ?? prev?.elo ?? 1200,
+                                curriculumLevel: data.curriculumLevel ?? prev?.curriculumLevel ?? 1,
+                                forgedCount: prev?.forgedCount ?? 2,
+                                cacheSize: prev?.cacheSize ?? 1,
+                                episodicCount: prev?.episodicCount ?? 4,
+                                v87Sources: prev?.v87Sources ?? 108,
+                              }));
+                            }
+                          } catch {
+                            setSecretsOutput("Error calling /api/v1/cognition/omni-mind");
+                          } finally {
+                            setSecretsBusy(false);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-lg border ${borderCls} cursor-pointer font-medium text-[11px]`}
+                      >
+                        {secretsBusy ? "..." : btn.label}
+                      </button>
+                    ))}
+                  </div>
+                  {secretsOutput && (
+                    <pre className="max-h-44 overflow-auto p-2.5 rounded-lg bg-black/40 text-[11px] font-mono whitespace-pre-wrap" dir="ltr">
+                      {secretsOutput}
+                    </pre>
                   )}
                 </div>
               </div>

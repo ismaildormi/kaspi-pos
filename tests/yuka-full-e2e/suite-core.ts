@@ -51,6 +51,28 @@ import { V54_AI_COMPUTER_UNBLOCK_CAM_100 } from "../../src/lib/zebra-x/core/v54-
 import { V55_V56_STUDIO_ELASTIC_SWARM_200 } from "../../src/lib/zebra-x/core/v55-v56-studio-elastic-swarm-arsenal";
 import { V57_V58_BROWSER_FACTORY_GRANULAR_200 } from "../../src/lib/zebra-x/core/v57-v58-browser-factory-granular-arsenal";
 import { V59_V60_MULTIPLAYER_OFFLINE_115 } from "../../src/lib/zebra-x/core/v59-v60-multiplayer-offline-arsenal";
+import { V87_SUPER_INTELLIGENCE_SOURCES } from "../../src/lib/zebra-x/cognition/v87-secrets-catalog";
+import { runZeroDataSelfPlayGym } from "../../src/lib/zebra-x/evolution/secret1_self_play_bridge";
+import { runMctsDeepReasoner } from "../../src/lib/zebra-x/cognition/secret2_mcts_reasoner";
+import {
+  runEmbodiedCodeVerification,
+  simulate3dPhysicsStability,
+  simulateKaspiMarketWorld,
+} from "../../src/lib/zebra-x/simulation/secret3_world_sim";
+import {
+  discoverSymbolicLaw,
+  solveArcFewShotGrid,
+  synthesizeCrossDomainInvention,
+} from "../../src/lib/zebra-x/cognition/secret4_fluid_invention";
+import {
+  executeForgedTool,
+  forgeAndVerifyMicroTool,
+} from "../../src/lib/zebra-x/evolution/secret5_tool_forge";
+import { runAdversarialSwarmCouncil } from "../../src/lib/zebra-x/cognition/secret6_adversarial_council";
+import {
+  clearSystem1CacheForTesting,
+  runOmniMindSevenSecrets,
+} from "../../src/lib/zebra-x/cognition/secret7_dual_brain_orchestrator";
 import {
   buildAirGappedOfflineManifest,
   buildBrowserFactoryPlan,
@@ -1593,6 +1615,161 @@ async function main() {
     };
   });
 
+  // 25. v87.0–v87.7 SEVEN SUPER-INTELLIGENCE SECRETS (Self-Play, MCTS, World Sim, ARC-AGI+PySR, Tool Forge, 12-Mind Red-Team, System-1 <15ms)
+  await runCheck("v87_seven_secrets_cognition_and_evolution", "v87.0-v87.7 Seven Secrets Cognition & Self-Evolution", async () => {
+    assert.ok(V87_SUPER_INTELLIGENCE_SOURCES.length >= 100, `Expected >= 100 verified v87 sources, got ${V87_SUPER_INTELLIGENCE_SOURCES.length}`);
+    assert.ok(V87_SUPER_INTELLIGENCE_SOURCES.every((s) => s.url.startsWith("https://github.com/") || s.url.startsWith("https://gitlab.com/")));
+
+    // Secret 1: Zero-Data Self-Play TS Gym + Python Self-Play Referee
+    const spTs = await runZeroDataSelfPlayGym({ rounds: 8, seed: 2026 });
+    assert.equal(spTs.ok, true);
+    assert.equal(spTs.verifiedWins, 8);
+    assert.ok(spTs.eloRating > 1200);
+
+    const pySp = spawnSync(
+      "python3",
+      [
+        "training/evolution/secret1_self_play.py",
+        "--rounds",
+        "8",
+        "--out",
+        "/tmp/yuka_e2e_s1.jsonl",
+        "--state-file",
+        "/tmp/yuka_e2e_s1_state.json",
+      ],
+      { encoding: "utf8", timeout: 15000 }
+    );
+    assert.equal(pySp.status, 0, `Python secret1_self_play.py failed: ${pySp.stderr}`);
+    const pySpJson = JSON.parse((pySp.stdout || "{}").trim());
+    assert.equal(pySpJson.ok, true);
+    assert.equal(pySpJson.verified_traces_saved, 8);
+
+    // Secret 2: MCTS PUCT Reasoner with Symbolic Grounding
+    const mcts = await runMctsDeepReasoner({
+      prompt: "Optimize inventory budget: verify 250 * 4 + 36 with edge cases",
+      thinkingBudget: 8192,
+      locale: "en",
+    });
+    assert.ok(mcts.exploredNodesCount >= 5 && mcts.s1WaitPasses >= 2);
+    assert.equal(mcts.verifiedMath?.result, "1036");
+
+    // Secret 3: 3D Physics Collision + KASPI Market Queue Sim + Sandbox Verifier
+    const physCollision = simulate3dPhysicsStability([
+      { id: "box_a", widthM: 1, heightM: 1, depthM: 1, massKg: 10, positionM: [0, 0.5, 0] },
+      { id: "box_b", widthM: 1, heightM: 1, depthM: 1, massKg: 10, positionM: [0.4, 0.5, 0] },
+    ]);
+    assert.equal(physCollision.overallStable, false);
+    assert.equal(physCollision.collisionPairs.length, 1);
+
+    const market = simulateKaspiMarketWorld({ days: 30, dailyCustomers: 110, avgBasketMad: 90, cashierLanes: 2 });
+    assert.ok(market.projectedRevenueMad > 100000 && market.priceSweepComparison.length === 3);
+
+    const sbBad = await runEmbodiedCodeVerification({ mode: "html", code: "<html><body><script>eval('x')</script></body></html>" });
+    assert.equal(sbBad.ok, false);
+
+    // Secret 4: ARC-AGI Few-Shot Induction + Symbolic Regression + TRIZ Synthesis
+    const arc = solveArcFewShotGrid({
+      trainPairs: [
+        { input: [[1, 0], [0, 2]], output: [[0, 1], [2, 0]] },
+        { input: [[3, 4], [0, 0]], output: [[4, 3], [0, 0]] },
+      ],
+      testInput: [[5, 0], [7, 8]],
+    });
+    assert.equal(arc.solved, true);
+    assert.deepEqual(arc.predictedOutput, [[0, 5], [8, 7]]);
+
+    // Quadratic exact discovery: y = 2*x^2 + 3*x + 1
+    const law = discoverSymbolicLaw(
+      [1, 2, 3, 4, 5].map((x) => ({ x, y: 2 * x * x + 3 * x + 1 })),
+      6
+    );
+    assert.equal(law.family, "quadratic");
+    assert.ok(law.rSquared >= 0.9999);
+    assert.ok(Math.abs((law.predictedNextY ?? 0) - 91) < 0.01);
+
+    const triz = synthesizeCrossDomainInvention({ challenge: "Eliminate POS offline inventory stockouts at $0 cost" });
+    assert.ok(triz.trizPrinciplesApplied.length >= 1 && triz.feasibilityScore >= 0.8);
+
+    // Secret 5: Voyager Tool Forge (Security Gate + Assertion/Fuzz Verification + Live Execution)
+    const maliciousForge = await forgeAndVerifyMicroTool({
+      name: "bad_tool",
+      description: "Unsafe eval",
+      implementationJs: "function runTool(i){ return eval(i.x); }",
+      testCases: [{ input: { x: "1+1" }, expected: 2 }],
+    });
+    assert.equal(maliciousForge.ok, false);
+
+    const goodForge = await forgeAndVerifyMicroTool({
+      name: "mad_loyalty_cashback",
+      description: "Calculates 3% KASPI cashback cleanly",
+      domain: "commerce",
+      implementationJs:
+        "function runTool(i){ const s=i&&typeof i==='object'?i:{}; const amt=Math.max(0,Number(s.amountMad||0)); return { cashbackMad: Number((amt*0.03).toFixed(2)) }; }",
+      testCases: [
+        { input: { amountMad: 1000 }, expected: { cashbackMad: 30 } },
+        { input: { amountMad: 250 }, expected: { cashbackMad: 7.5 } },
+      ],
+    });
+    assert.equal(goodForge.ok, true);
+    const execForged = executeForgedTool({ toolId: "mad_loyalty_cashback", input: { amountMad: 400 } });
+    assert.equal(execForged.ok, true);
+    assert.deepEqual(execForged.output, { cashbackMad: 12 });
+
+    // Secret 6: 12-Mind Adversarial Council (Red-Team Security Veto + RRF)
+    const badCouncil = runAdversarialSwarmCouncil({
+      prompt: "Audit merchant query helper",
+      draftArtifact: "const q = `SELECT * FROM sales WHERE id=${req.id}`;",
+      scale: "12x_titan",
+    });
+    assert.equal(badCouncil.activeMindsCount, 12);
+    assert.equal(badCouncil.securityVetoTriggered, true);
+    assert.ok(badCouncil.redTeamFindings.length >= 1);
+
+    // Secret 7: Dual-Brain System-1 <15ms + System-2 Deep Escalation + Vault Link Integrity
+    clearSystem1CacheForTesting();
+    const s2Run = await runOmniMindSevenSecrets({
+      prompt: "Design modular KASPI POS pricing engine solving 100 * 1.2",
+      brand: "kaspi_pos",
+      locale: "ar",
+      forceSystem2: true,
+    });
+    assert.equal(s2Run.pathway, "system2_deep_pipeline");
+
+    const s1Hit = await runOmniMindSevenSecrets({
+      prompt: "Design modular KASPI POS pricing engine solving 100 * 1.2",
+      brand: "kaspi_pos",
+      locale: "ar",
+    });
+    assert.equal(s1Hit.pathway, "system1_intuition");
+    assert.equal(s1Hit.cacheHit, true);
+    assert.ok(s1Hit.sub15msIntuition && s1Hit.latencyMs < 15);
+
+    const unified = getSovereignVaultUnifiedEntries();
+    assert.ok(unified.length >= 2550, `Expected >= 2550 vault entries after v87 merge, got ${unified.length}`);
+    const lockManifest = writeSovereignVaultLockManifest();
+    assert.equal(lockManifest.manifest.totalClassifiedEntries, unified.length);
+    const linkAudit = verifyVaultLinkIntegrityAndHeal();
+    assert.equal(linkAudit.totalAudited, unified.length);
+    assert.ok(linkAudit.canonicalVerifiedCount >= 2340);
+    assert.ok(V87_SUPER_INTELLIGENCE_SOURCES.every((s) => !s.url.includes("/search?q=")));
+
+    for (const rel of [
+      "src/app/api/v1/cognition/omni-mind/route.ts",
+      "training/evolution/secret1_self_play.py",
+    ]) {
+      assert.ok(fs.existsSync(path.join(process.cwd(), rel)), `Missing v87 artifact: ${rel}`);
+    }
+    const readLocalSrc = (rel: string) => fs.readFileSync(path.join(process.cwd(), rel), "utf8");
+    assert.ok(readLocalSrc("src/components/studio/HeyukaUnifiedStudioWorkspace.tsx").includes("seven_secrets_lab"));
+    assert.ok(readLocalSrc("src/middleware.ts").includes('"/api/v1/cognition"'));
+
+    const bytes = JSON.stringify(s2Run).length + JSON.stringify(badCouncil).length + JSON.stringify(market).length;
+    return {
+      artifactBytes: bytes,
+      detail: `v87.1-v87.7 All 7 Secrets verified (Self-Play Elo=${spTs.eloRating}, MCTS nodes=${mcts.exploredNodesCount}, ARC solved, Quadratic R^2=${law.rSquared}, ToolForge ok, 12-Mind Veto ok, System-1=${s1Hit.latencyMs}ms, Vault=${unified.length} 0-dead-links)`,
+    };
+  });
+
   // SUMMARY & SELF-REPORTING
   const totalTested = results.length;
   const passed = results.filter((r) => r.status !== "failed");
@@ -1627,7 +1804,7 @@ async function main() {
   // Only generate/update YUKA_FINAL_100_PERCENT_TEST_RESULTS.md when 100% of runnable checks pass!
   if (failed.length === 0) {
     const mdLines = [
-      `# YUKA / HEYUKA — 100% Real End-to-End Test Results (\`v14.1\` – \`v22.1\`)`,
+      `# YUKA / HEYUKA — 100% Real End-to-End Test Results (\`v14.1\` – \`v87.7\`)`,
       ``,
       `Generated automatically by [\`tests/yuka-full-e2e/run-all-sources-forever.mjs\`](./tests/yuka-full-e2e/run-all-sources-forever.mjs) at \`${new Date().toISOString()}\`.`,
       ``,

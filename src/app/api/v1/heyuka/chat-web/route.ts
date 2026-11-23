@@ -40,6 +40,7 @@ import {
 import { searchStudiedKnowledgeCorpus } from "@/lib/heyuka/training/knowledge-corpus-engine";
 import { searchSovereignVault } from "@/lib/heyuka/vault/sovereign-permanent-vault";
 import { buildLevel1SkillPromptIndex } from "@/lib/zebra-x/core/skills-vault";
+import { runOmniMindSevenSecrets } from "@/lib/zebra-x/cognition/secret7_dual_brain_orchestrator";
 import {
   PUBLIC_APIS_CATALOG_COUNT,
   queryPublicApiHub,
@@ -676,6 +677,33 @@ export async function POST(req: NextRequest) {
       centerLabel: "HYK",
     });
     toolSupplementBlock += `\n\n[QR ARCHITECT READY]\nGenerated styled SVG QR for "${qrPayload}".`;
+  }
+
+  try {
+    const omniRes = await runOmniMindSevenSecrets({
+      prompt: lastUser,
+      brand,
+      locale,
+      scale: resolvedElasticScale,
+      forceSystem2: effectiveDeepThink,
+    });
+    toolSupplementBlock += `\n\n${omniRes.unifiedPromptDirective}`;
+    thinkingSteps.push({
+      phase:
+        omniRes.pathway === "system1_intuition"
+          ? locale === "ar"
+            ? `⚡ الحدس السريع (System-1 • ${omniRes.latencyMs}ms)`
+            : `⚡ System-1 Fast Intuition (${omniRes.latencyMs}ms)`
+          : locale === "ar"
+          ? `🧠 التفكير العميق MCTS + مجلس النقد (${omniRes.mcts?.exploredNodesCount ?? 0} عقدة)`
+          : `🧠 System-2 MCTS & Adversarial Council (${omniRes.mcts?.exploredNodesCount ?? 0} nodes)`,
+      agentModel: omniRes.pathway === "system1_intuition" ? "system1-cache" : "omni-mind-v87",
+      summary: `${omniRes.proactiveForesight.domainSignal} • Elo=${omniRes.selfPlayElo} • ForgedSkills=${omniRes.forgedToolsAvailable}`,
+      durationMs: Math.max(1, Math.round(omniRes.latencyMs)),
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+    });
+  } catch {
+    // Non-fatal cognitive enrichment fallback
   }
 
   const worldLang = detectUniversalWorldLanguage(lastUser, locale);

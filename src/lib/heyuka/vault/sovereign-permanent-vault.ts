@@ -53,6 +53,9 @@ import {
 import {
   V59_V60_MULTIPLAYER_OFFLINE_115,
 } from "@/lib/zebra-x/core/v59-v60-multiplayer-offline-arsenal";
+import {
+  V87_SUPER_INTELLIGENCE_SOURCES,
+} from "@/lib/zebra-x/cognition/v87-secrets-catalog";
 import type { CognitiveClusterId } from "@/lib/zebra-x/core/cognitive-brain-registry";
 import type { SovereignMirrorStrategy } from "@/lib/zebra-x/core/sovereign-pack-types";
 
@@ -169,6 +172,7 @@ export function getSovereignVaultUnifiedEntries(): UnifiedVaultEntry[] {
     ...V55_V56_STUDIO_ELASTIC_SWARM_200,
     ...V57_V58_BROWSER_FACTORY_GRANULAR_200,
     ...V59_V60_MULTIPLAYER_OFFLINE_115,
+    ...V87_SUPER_INTELLIGENCE_SOURCES,
   ];
   for (const item of v34PlusPacks) {
     pushEntry({
