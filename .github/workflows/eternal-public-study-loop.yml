@@ -1,6 +1,6 @@
-# HEYUKA Cloud Resumable Public-Web Study & Curation Loop ($0.00 Free Tier)
-# Runs every 6 hours on GitHub Actions using actions/cache to persist the SQLite URL frontier
-# and checkpoint cursor across scheduled runs, strictly respecting robots.txt, SSRF guards & PII scrubbing.
+# HEYUKA Planetary 20x Distributed Matrix Study Loop ($0.00 Free Tier)
+# Shards 0..19 run concurrently with Consistent-Hashing domain sharding, Bloom/HyperLogLog dedup,
+# ETag 304 delta-only skip, Sitemap.xml harvesting, and downstream multi-shard union sync.
 name: HEYUKA Eternal Public Study Loop (24/7)
 
 on:
@@ -12,8 +12,14 @@ permissions:
   contents: read
 
 jobs:
-  public-web-study:
+  public-web-study-shard:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        shard_id: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,15 +32,16 @@ jobs:
       - name: Install optional Zstd & HuggingFace Hub helpers (non-blocking)
         run: python3 -m pip install --quiet zstandard huggingface_hub || true
 
-      - name: Restore persistent URL frontier & checkpoint cursor
+      - name: Restore shard frontier & Bloom filter checkpoint
         uses: actions/cache@v4
         with:
           path: ~/.heyuka-frontier
-          key: heyuka-frontier-${{ github.run_id }}
+          key: heyuka-frontier-s${{ matrix.shard_id }}-${{ github.run_id }}
           restore-keys: |
+            heyuka-frontier-s${{ matrix.shard_id }}-
             heyuka-frontier-
 
-      - name: Run autonomous public-web batch discoverer (Double-Read + robots.txt + SSRF safe)
+      - name: Run Shard ${{ matrix.shard_id }} (Double-Read + Bloom/HLL + Sitemap + ETag)
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_TOKEN_2: ${{ secrets.HF_TOKEN_2 }}
@@ -46,25 +53,29 @@ jobs:
           mkdir -p ~/.heyuka-frontier
           python3 training/crawler/autonomous_web_discoverer.py \
             --batch-size 120 \
-            --db-file ~/.heyuka-frontier/frontier_queue.sqlite \
-            --state-file ~/.heyuka-frontier/eternal_frontier_state.json \
-            --out /tmp/heyuka_public_raw.jsonl
+            --shard-id ${{ matrix.shard_id }} \
+            --total-shards 120 \
+            --max-depth 3 \
+            --max-runtime-s 1100 \
+            --db-file ~/.heyuka-frontier/frontier_queue_s${{ matrix.shard_id }}.sqlite \
+            --state-file ~/.heyuka-frontier/eternal_frontier_state_shard_${{ matrix.shard_id }}.json \
+            --out /tmp/heyuka_public_raw_s${{ matrix.shard_id }}.jsonl
 
-      - name: Deduplicate & scrub PII from public corpus
+      - name: Deduplicate & scrub PII from shard corpus
         run: |
           python3 training/ingestion/massive_curator.py \
-            --in /tmp/heyuka_public_raw.jsonl \
-            --out-cpt /tmp/heyuka_public_cpt.jsonl \
-            --out-sft /tmp/heyuka_public_sft.jsonl
+            --in /tmp/heyuka_public_raw_s${{ matrix.shard_id }}.jsonl \
+            --out-cpt /tmp/heyuka_public_cpt_s${{ matrix.shard_id }}.jsonl \
+            --out-sft /tmp/heyuka_public_sft_s${{ matrix.shard_id }}.jsonl
 
-      - name: Compress into verified Nano-Crystal & purge temporary raw JSONL
+      - name: Compress into verified Nano-Crystal & purge raw JSONL
         run: |
           python3 training/memory/immortal_nano_vault.py \
-            --in /tmp/heyuka_public_cpt.jsonl /tmp/heyuka_public_sft.jsonl \
-            --out /tmp/heyuka_memory.crystal \
+            --in /tmp/heyuka_public_cpt_s${{ matrix.shard_id }}.jsonl /tmp/heyuka_public_sft_s${{ matrix.shard_id }}.jsonl \
+            --out /tmp/heyuka_memory_s${{ matrix.shard_id }}.crystal \
             --purge-raw
 
-      - name: Offload Nano-Crystal to configured Open Cloud Vaults (HF 4-Token Pool / Zenodo / IA)
+      - name: Offload Shard Crystal to Open Cloud Vaults (HF 4-Token Pool)
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_TOKEN_2: ${{ secrets.HF_TOKEN_2 }}
@@ -72,29 +83,55 @@ jobs:
           HF_TOKEN_4: ${{ secrets.HF_TOKEN_4 }}
           HF_DATASET_REPO: ${{ secrets.HF_DATASET_REPO }}
           HF_REPO_ID: ${{ secrets.HF_REPO_ID }}
-          ZENODO_TOKEN: ${{ secrets.ZENODO_TOKEN }}
-          IA_ACCESS_KEY: ${{ secrets.IA_ACCESS_KEY }}
-          IA_SECRET_KEY: ${{ secrets.IA_SECRET_KEY }}
         run: |
           python3 training/storage/external_vault_offloader.py \
-            --file /tmp/heyuka_memory.crystal \
-            --manifest ~/.heyuka-frontier/union_manifest.json
+            --file /tmp/heyuka_memory_s${{ matrix.shard_id }}.crystal \
+            --manifest ~/.heyuka-frontier/union_manifest_s${{ matrix.shard_id }}.json
 
-      - name: Archive compressed Nano-Crystal & frontier checkpoint
+      - name: Upload Shard Artifacts for Global Union
         uses: actions/upload-artifact@v4
         with:
-          name: heyuka-public-nano-crystal
+          name: heyuka-shard-${{ matrix.shard_id }}
           path: |
-            /tmp/heyuka_memory.crystal
-            ~/.heyuka-frontier/union_manifest.json
-            ~/.heyuka-frontier/eternal_frontier_state.json
-          retention-days: 14
+            /tmp/heyuka_memory_s${{ matrix.shard_id }}.crystal
+            ~/.heyuka-frontier/eternal_frontier_state_shard_${{ matrix.shard_id }}.json
+            ~/.heyuka-frontier/eternal_frontier_state_shard_${{ matrix.shard_id }}.bf.gz
 
-      - name: Trigger vault digest check on live deployment (if configured)
+  merge-shards:
+    needs: public-web-study-shard
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download shard Bloom & checkpoint artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: heyuka-shard-*
+          path: /tmp/heyuka_shards
+
+      - name: Merge Bloom Filters & Sync Global Manifest to Hugging Face
         env:
-          KASPI_PRODUCTION_URL: ${{ secrets.KASPI_PRODUCTION_URL }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN_2: ${{ secrets.HF_TOKEN_2 }}
+          HF_TOKEN_3: ${{ secrets.HF_TOKEN_3 }}
+          HF_TOKEN_4: ${{ secrets.HF_TOKEN_4 }}
+          HF_DATASET_REPO: ${{ secrets.HF_DATASET_REPO }}
+          HF_REPO_ID: ${{ secrets.HF_REPO_ID }}
         run: |
-          BASE_URL="${KASPI_PRODUCTION_URL:-https://kaspi-pos.vercel.app}"
-          curl -sS -X POST "$BASE_URL/api/v1/studio/ingest" \
-            -H "Content-Type: application/json" \
-            -d '{"action":"digest_vault"}' | head -c 500
+          python3 training/storage/multi_vault_union.py \
+            --shards-dir /tmp/heyuka_shards \
+            --out-bloom /tmp/heyuka_union/global_seen.bf.gz \
+            --out-manifest /tmp/heyuka_union/multi_shard_union_manifest.json
+
+      - name: Archive Unified Bloom Filter & Manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: heyuka-global-shard-union
+          path: /tmp/heyuka_union

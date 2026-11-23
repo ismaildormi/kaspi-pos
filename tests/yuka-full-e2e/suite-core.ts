@@ -138,6 +138,12 @@ import {
 } from "../../src/lib/zebra-x/superpowers/domain_brain_factory";
 import { runParallelMapReduceSwarm } from "../../src/lib/zebra-x/superpowers/parallel_map_reduce_swarm";
 import { indexInteractiveElementsSetOfMark } from "../../src/lib/zebra-x/superpowers/vision_gui_som_operator";
+import { V96_V100_PLANETARY_SWARM_SOURCES } from "../../src/lib/zebra-x/dominance/v96-v100-planetary-swarm-catalog";
+import {
+  MULTI_CLOUD_120_POOLS,
+  getSwarmNodesSummary,
+  recordSwarmNodeHeartbeat,
+} from "../../src/lib/heyuka/swarm-node-registry";
 import {
   buildAirGappedOfflineManifest,
   buildBrowserFactoryPlan,
@@ -2097,6 +2103,102 @@ async function main() {
     };
   });
 
+  // 28. v96.0 - v100.0 PLANETARY 120-SHARD MATRIX SWARM, 5 HIDDEN CRAWL SECRETS & 15 GOLDEN SOURCES
+  await runCheck("v96_to_v100_planetary_swarm_secrets_and_golden_sources", "v96.0-v100.0 Planetary 120-Shard Swarm, 5 Secrets & 15 Golden Sources", async () => {
+    assert.ok(V96_V100_PLANETARY_SWARM_SOURCES.length >= 30);
+    assert.ok(V96_V100_PLANETARY_SWARM_SOURCES.every((s) => s.url.startsWith("https://") && !s.url.includes("/search?q=")));
+
+    const unified = getSovereignVaultUnifiedEntries();
+    assert.ok(unified.length >= 2785, `Expected >= 2785 vault entries after v97-v100 merge, got ${unified.length}`);
+    const lockManifest = writeSovereignVaultLockManifest();
+    assert.equal(lockManifest.manifest.totalClassifiedEntries, unified.length);
+    const linkAudit = verifyVaultLinkIntegrityAndHeal();
+    assert.equal(linkAudit.totalAudited, unified.length);
+
+    // Verify 120-shard Multi-Cloud Pool allocation sums cleanly to 120 slots
+    const totalPoolSlots = MULTI_CLOUD_120_POOLS.reduce((s, p) => s + p.shardCapacity, 0);
+    assert.equal(totalPoolSlots, 120);
+
+    const hb = recordSwarmNodeHeartbeat({
+      nodeId: "e2e-probe-browser-110",
+      kind: "browser_p2p",
+      shardId: 110,
+      totalShards: 120,
+      pagesProcessedDelta: 3,
+      hllUniqueEstimate: 42,
+      lastDigest: "abc123",
+    });
+    assert.equal(hb.shardId, 110);
+    const swarmSum = getSwarmNodesSummary();
+    assert.ok(swarmSum.activeNodesCount >= 1 && swarmSum.configuredMatrixShards === 20 && swarmSum.goldenPrioritySourcesCount === 15);
+
+    const radar = await collectVerifiedHarvestStats({ forceRefresh: true });
+    assert.equal(radar.swarmTopology.multiCloudShardCapacity, 120);
+    assert.equal(radar.swarmTopology.goldenPrioritySourcesCount, 15);
+
+    // Check workflow matrix + deploy/worker artifacts on disk
+    const wfTxt = fs.readFileSync(path.join(process.cwd(), ".github/workflows/eternal-public-study-loop.yml"), "utf8");
+    assert.ok(wfTxt.includes("shard_id: [0, 1, 2") && wfTxt.includes("merge-shards"));
+    for (const rel of [
+      "public/swarm-worker.js",
+      "deploy/swarm-nodes/cf-worker-node.ts",
+      "deploy/swarm-nodes/hf-space-dockerfile",
+      "deploy/swarm-nodes/universal-worker.py",
+      "training/crawler/golden_sources_priority.py",
+      "training/crawler/planetary_crawl_secrets.py",
+      "training/crawler/multi_cloud_swarm_director.py",
+      "training/storage/multi_vault_union.py",
+    ]) {
+      assert.ok(fs.existsSync(path.join(process.cwd(), rel)), `Missing v96-v100 artifact: ${rel}`);
+    }
+
+    // Real Python execution test of 5 Hidden Secrets + 120-Shard Topology + 15 Golden Sources
+    const { execFileSync } = await import("node:child_process");
+    const pyOut = execFileSync(
+      "python3",
+      [
+        "-c",
+        `import sys, json; sys.path.insert(0, 'training/crawler');
+from golden_sources_priority import GOLDEN_PRIORITY_SOURCES, get_golden_sources_for_shard
+from planetary_crawl_secrets import ScalableBloomFilter, HyperLogLogCounter, ConsistentHashRing, extract_delta_paragraphs, parse_sitemap_xml_urls, compute_simhash64, canonicalize_url, adaptive_dwell_and_depth
+from multi_cloud_swarm_director import get_planetary_swarm_topology
+assert len(GOLDEN_PRIORITY_SOURCES) == 15
+assert len(get_golden_sources_for_shard(5, 20)) == 15
+b1, b2 = ScalableBloomFilter(4096), ScalableBloomFilter(4096)
+b1.add(canonicalize_url('https://Example.COM/docs/?utm_source=x'))
+b2.add(canonicalize_url('https://example.com/other/'))
+b1.merge_from(b2)
+assert canonicalize_url('https://example.com/docs') in b1 and canonicalize_url('https://example.com/other') in b1
+rt = ScalableBloomFilter.from_gzip_bytes(b1.to_gzip_bytes())
+assert 'https://example.com/docs' in rt
+hll = HyperLogLogCounter()
+for i in range(50): hll.add(f'https://site.org/p/{i}')
+assert 35 <= hll.estimate() <= 65
+delta, _ = extract_delta_paragraphs([], 'First long paragraph with sufficient characters for extraction.\\n\\nSecond updated paragraph with technical content.')
+delta2, _ = extract_delta_paragraphs(['invalid_hash'], delta)
+assert len(delta2) > 20
+urls, subs = parse_sitemap_xml_urls(b'<urlset><url><loc>https://nextjs.org/docs/app</loc></url><url><loc>https://nextjs.org/sitemap-2.xml</loc></url></urlset>')
+assert 'https://nextjs.org/docs/app' in urls and 'https://nextjs.org/sitemap-2.xml' in subs
+ring = ConsistentHashRing(120)
+s = ring.owner_shard_for_host('en.wikipedia.org')
+assert 0 <= s < 120 and s == ring.owner_shard_for_host('https://en.wikipedia.org/wiki/AI')
+assert compute_simhash64('kaspi pos inventory system') != 0
+assert adaptive_dwell_and_depth(6000, 3, 2)['recommended_depth'] == 3
+topo = get_planetary_swarm_topology()
+assert topo['totalShards'] == 120 and len(topo['pools']) == 6
+print(json.dumps({'ok': True, 'hll': hll.estimate(), 'ringShard': s, 'golden': len(GOLDEN_PRIORITY_SOURCES)}))`,
+      ],
+      { encoding: "utf8" }
+    ).trim();
+    const pyParsed = JSON.parse(pyOut);
+    assert.equal(pyParsed.ok, true);
+
+    return {
+      artifactBytes: JSON.stringify(radar).length + JSON.stringify(swarmSum).length + wfTxt.length,
+      detail: `v96-v100 Complete (Vault=${unified.length}, 120-Shards/6-Pools, 20x GH-Matrix, 15 Golden Sources, Bloom/HLL=${pyParsed.hll}, RingShard=${pyParsed.ringShard}, P2P+CF+HF Templates ok)`,
+    };
+  });
+
   // SUMMARY & SELF-REPORTING
   const totalTested = results.length;
   const passed = results.filter((r) => r.status !== "failed");
@@ -2131,7 +2233,7 @@ async function main() {
   // Only generate/update YUKA_FINAL_100_PERCENT_TEST_RESULTS.md when 100% of runnable checks pass!
   if (failed.length === 0) {
     const mdLines = [
-      `# YUKA / HEYUKA — 100% Real End-to-End Test Results (\`v14.1\` – \`v95.0\`)`,
+      `# YUKA / HEYUKA — 100% Real End-to-End Test Results (\`v14.1\` – \`v100.0\`)`,
       ``,
       `Generated automatically by [\`tests/yuka-full-e2e/run-all-sources-forever.mjs\`](./tests/yuka-full-e2e/run-all-sources-forever.mjs) at \`${new Date().toISOString()}\`.`,
       ``,

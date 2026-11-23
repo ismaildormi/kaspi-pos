@@ -6,6 +6,7 @@ import { getSelfPlayTelemetry } from "@/lib/zebra-x/evolution/secret1_self_play_
 import { listForgedTools } from "@/lib/zebra-x/evolution/secret5_tool_forge";
 import { getSevenSecretsSystemStatus } from "@/lib/zebra-x/cognition/secret7_dual_brain_orchestrator";
 import { PUBLIC_APIS_CATALOG_COUNT } from "@/lib/zebra-x/tools/public-apis-hub";
+import { getSwarmNodesSummary } from "@/lib/heyuka/swarm-node-registry";
 
 export interface VerifiedHarvestTelemetry {
   ok: true;
@@ -49,6 +50,14 @@ export interface VerifiedHarvestTelemetry {
     studyLoopLatestStatus: string;
     watchdogRuns: number;
     watchdogLatestStatus: string;
+  };
+  swarmTopology: {
+    activeNodesCount: number;
+    configuredMatrixShards: number;
+    multiCloudShardCapacity: number;
+    goldenPrioritySourcesCount: number;
+    totalPagesProcessedAcrossSwarm: number;
+    maxHllUniqueEstimate: number;
   };
   connectedSources: Array<{
     id: string;
@@ -116,6 +125,7 @@ export async function collectVerifiedHarvestStats(opts?: {
   const forged = listForgedTools();
   const secretsStatus = getSevenSecretsSystemStatus();
   const hfPool = getHfTokenPoolSummary();
+  const swarmSummary = getSwarmNodesSummary();
   const repoId = resolveHfDatasetRepo();
 
   const readKey = selectHfTokenForRole("read_fast");
@@ -216,6 +226,14 @@ export async function collectVerifiedHarvestStats(opts?: {
       studyLoopLatestStatus: String(studyLatest?.conclusion || studyLatest?.status || "awaiting_trigger"),
       watchdogRuns: ghWatchRuns,
       watchdogLatestStatus: String(watchdogLatest?.conclusion || watchdogLatest?.status || "awaiting_trigger"),
+    },
+    swarmTopology: {
+      activeNodesCount: swarmSummary.activeNodesCount,
+      configuredMatrixShards: swarmSummary.configuredMatrixShards,
+      multiCloudShardCapacity: swarmSummary.multiCloudShardCapacity,
+      goldenPrioritySourcesCount: swarmSummary.goldenPrioritySourcesCount,
+      totalPagesProcessedAcrossSwarm: swarmSummary.totalPagesProcessedAcrossSwarm,
+      maxHllUniqueEstimate: swarmSummary.maxHllUniqueEstimate,
     },
     connectedSources: [
       {

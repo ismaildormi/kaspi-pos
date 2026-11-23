@@ -1,0 +1,13 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+RUN pip install --no-cache-dir zstandard huggingface_hub trafilatura
+
+COPY training/ /app/training/
+COPY deploy/swarm-nodes/universal-worker.py /app/universal-worker.py
+
+ENV SHARD_ID=20
+ENV TOTAL_SHARDS=120
+ENV BATCH_SIZE=60
+
+CMD ["python3", "/app/universal-worker.py"]

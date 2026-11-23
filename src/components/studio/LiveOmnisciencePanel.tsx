@@ -40,6 +40,14 @@ interface LiveStatsPayload {
     watchdogRuns: number;
     watchdogLatestStatus: string;
   };
+  swarmTopology?: {
+    activeNodesCount: number;
+    configuredMatrixShards: number;
+    multiCloudShardCapacity: number;
+    goldenPrioritySourcesCount: number;
+    totalPagesProcessedAcrossSwarm: number;
+    maxHllUniqueEstimate: number;
+  };
   connectedSources: Array<{
     id: string;
     label: string;
@@ -87,6 +95,42 @@ export function LiveOmnisciencePanel({
   const [domainSlug, setDomainSlug] = useState<
     "commerce_kaspi" | "agriculture_morocco" | "coding_architect" | "legal_dgi_tax"
   >("commerce_kaspi");
+  const [p2pWorkerActive, setP2pWorkerActive] = useState(false);
+  const [p2pPulses, setP2pPulses] = useState(0);
+  const p2pWorkerRef = React.useRef<Worker | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (p2pWorkerRef.current) {
+        p2pWorkerRef.current.postMessage({ action: "stop" });
+        p2pWorkerRef.current.terminate();
+        p2pWorkerRef.current = null;
+      }
+    };
+  }, []);
+
+  const toggleBrowserSwarmNode = () => {
+    if (p2pWorkerActive) {
+      if (p2pWorkerRef.current) {
+        p2pWorkerRef.current.postMessage({ action: "stop" });
+        p2pWorkerRef.current.terminate();
+        p2pWorkerRef.current = null;
+      }
+      setP2pWorkerActive(false);
+      return;
+    }
+    if (typeof window === "undefined" || typeof Worker === "undefined") return;
+    const worker = new Worker("/swarm-worker.js");
+    worker.onmessage = (ev) => {
+      if (ev.data?.type === "pulse") {
+        setP2pPulses(Number(ev.data.pagesProcessed || 0));
+        void loadStats(false);
+      }
+    };
+    worker.postMessage({ action: "start", hubOrigin: window.location.origin, shardId: 110 + Math.floor(Math.random() * 10) });
+    p2pWorkerRef.current = worker;
+    setP2pWorkerActive(true);
+  };
 
   const apiEndpointUrl =
     typeof window !== "undefined"
@@ -350,6 +394,37 @@ export function LiveOmnisciencePanel({
           ))}
         </div>
       )}
+
+      {/* Multi-Cloud 120-Shard Swarm & Browser P2P Node Bar (v96-v100) */}
+      <div className={`p-3 rounded-xl border ${innerBorder} flex flex-wrap items-center justify-between gap-2 text-[11px]`}>
+        <div className="space-y-0.5">
+          <div className="font-semibold">
+            {isAr
+              ? `شبكة الزحف الكوني: ${stats?.swarmTopology?.multiCloudShardCapacity ?? 120} شريحة سحابية (${stats?.swarmTopology?.configuredMatrixShards ?? 20} GitHub Matrix • ${stats?.swarmTopology?.goldenPrioritySourcesCount ?? 15} مصدراً ذهنياً)`
+              : `Planetary Swarm: ${stats?.swarmTopology?.multiCloudShardCapacity ?? 120} Multi-Cloud Shards (${stats?.swarmTopology?.configuredMatrixShards ?? 20} GitHub Matrix • ${stats?.swarmTopology?.goldenPrioritySourcesCount ?? 15} Golden Sources)`}
+          </div>
+          <div className={`text-[10px] ${mutedCls}`}>
+            {isAr
+              ? `العقد الحية الآن: ${stats?.swarmTopology?.activeNodesCount ?? 0} • صفحات السرب: ${stats?.swarmTopology?.totalPagesProcessedAcrossSwarm ?? 0} • نبض المتصفح المحلي: ${p2pPulses}`
+              : `Active live nodes: ${stats?.swarmTopology?.activeNodesCount ?? 0} • Swarm pages: ${stats?.swarmTopology?.totalPagesProcessedAcrossSwarm ?? 0} • Browser pulses: ${p2pPulses}`}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={toggleBrowserSwarmNode}
+          className={`px-3 py-1.5 rounded-lg border ${innerBorder} font-medium cursor-pointer ${
+            p2pWorkerActive ? "bg-emerald-500/15 text-emerald-400" : ""
+          }`}
+        >
+          {p2pWorkerActive
+            ? isAr
+              ? "إيقاف عقدة المتصفح (WebWorker شغال)"
+              : "Stop Browser Swarm Node (Running)"
+            : isAr
+            ? "تشغيل عقدة المتصفح التشاركية (P2P Node)"
+            : "Start Browser P2P Swarm Node"}
+        </button>
+      </div>
 
       {/* Portable Sovereign Seed (v91.0) & 1-Click Domain Brain Factory (v95.0) */}
       {showSeedControls && (

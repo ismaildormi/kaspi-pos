@@ -1,7 +1,7 @@
 {
   "schemaVersion": "v35.1-lock",
-  "generatedAt": "2026-11-23T21:59:08.116Z",
-  "totalClassifiedEntries": 2759,
+  "generatedAt": "2026-11-23T22:27:06.577Z",
+  "totalClassifiedEntries": 2795,
   "byPack": {
     "v34.0": 100,
     "v35.0": 100,
@@ -35,6 +35,9 @@
     "v90.5": 13,
     "v90.6": 10,
     "v90.7": 13,
+    "v97.0": 18,
+    "v99.0": 10,
+    "v100.0": 8,
     "v30.0": 74,
     "v31.0": 94,
     "v20.2": 25,
@@ -67,9 +70,9 @@
   },
   "byCluster": {
     "games_3d_video_and_audio": 384,
-    "zip_vfs_and_file_packaging": 149,
-    "live_search_and_47_public_apis": 185,
-    "code_ide_and_surgical_editing": 474,
+    "zip_vfs_and_file_packaging": 151,
+    "live_search_and_47_public_apis": 193,
+    "code_ide_and_surgical_editing": 478,
     "hardware_cad_voip_testing_and_physics": 208,
     "image_svg_and_vision_studio": 167,
     "robotics_agents_and_mobile_lab": 201,
@@ -77,13 +80,13 @@
     "sovereign_os_shell_file_surgeon_and_sentinel": 121,
     "ai_computer_os_webcam_and_self_unblocking": 100,
     "google_ai_studio_dual_brand_workspace": 205,
-    "elastic_swarm_3_6_12_and_worker_bots": 124,
-    "browser_autopilot_oauth_cloud_factory": 103,
-    "multiplayer_crdt_huddles_and_gamification": 98,
-    "airgapped_offline_vault_and_lan_mesh": 31,
-    "kaspi_pos_merchant_intelligence": 53,
+    "elastic_swarm_3_6_12_and_worker_bots": 136,
+    "browser_autopilot_oauth_cloud_factory": 107,
+    "multiplayer_crdt_huddles_and_gamification": 99,
+    "airgapped_offline_vault_and_lan_mesh": 33,
+    "kaspi_pos_merchant_intelligence": 55,
     "patents_and_inventions_150m": 16,
-    "pdf_office_and_documents": 40
+    "pdf_office_and_documents": 41
   },
-  "manifestHash": "5a45d47c58079c66f7bf78173bd2ae7f9ad2e6332094fef7d43175a08e06b86b"
+  "manifestHash": "efbe16f461b201ede82ed727d6a7264daa9f921a65010cfd2cbf45f654d7f409"
 }
