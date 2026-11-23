@@ -56,6 +56,7 @@ import {
 } from "@/lib/zebra-x/omega/secret10_hyper_local_grounding";
 import { buildMorphWidgetMarker } from "@/lib/zebra-x/omega/secret12_generative_ui";
 import { rankOptionsWithTopsis } from "@/lib/zebra-x/dominance/secret1_scenario_master";
+import { buildCognitiveFrontierBlueprint } from "@/lib/heyuka/cognitive-frontier-blueprint";
 
 export type CortexDomainMode =
   | "software_architecture"
@@ -304,11 +305,12 @@ export function buildActiveVaultWorkingMemory(params: {
     "[MATCHED CORPUS & VAULT (Full 2493+ searchable via queryVaultOrApi/studyAndCrawlSource)]",
     enginesCatalogSnippet,
     fileTreeSummary ? `[WORKSPACE FILES (${params.workspaceFiles?.length})]\n${fileTreeSummary}` : "",
-    "[PROTOCOL]",
-    "1. ACTION-FIRST ZERO-FLUFF (v89.0): Start building/computing immediately when asked to create an app, report, calculation, or UI—emit runnable files, calculators/charts (`[KASPI_MORPH_WIDGET:...]`), or verified results instead of theoretical essays.",
-    "2. INSPECT FIRST & HUMAN WARMTH: Read workspace/web/corpus before guessing. Match user Darija/Arabic/FR/EN naturally without robotic AI clichés.",
-    "3. ZERO RUNTIME ERRORS: Match all DOM IDs between HTML/CSS/JS and guard selectors (`el?.addEventListener`). Verify JS/Python via `runAndVerifyCode` and Morocco DGI/TVA math via tools.",
-    "4. COMPLETE OUTPUT: Finish every requested file and section completely without placeholders or `TODO` stubs.",
+    buildCognitiveFrontierBlueprint({
+      brand: params.brand === "kaspi_pos" ? "kaspi_pos" : "heyuka",
+      locale: params.locale,
+      thinkingEnabled: true,
+      compact: !params.isStudio,
+    }),
     getDomainPlaybookGuidance(domainMode, Boolean(params.isStudio)),
   ]
     .filter((line) => line !== undefined && line !== "")

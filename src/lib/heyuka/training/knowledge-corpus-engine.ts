@@ -150,6 +150,52 @@ export function ensureFullVaultDigested(): { totalDigested: number } {
 }
 
 /**
+ * Hot-syncs newly crawled or distilled records into the active semantic corpus without restart (v102.0).
+ */
+export function ingestHotSyncUnits(
+  units: Array<{ title: string; url: string; content: string; sourceKind?: "web_crawl" | "user_dataset" }>,
+  sourceLabel = "cloud_swarm"
+): { ingestedCount: number; skippedDuplicates: number; totalCorpusUnits: number } {
+  ensureFullVaultDigested();
+  let ingestedCount = 0;
+  let skippedDuplicates = 0;
+  const now = new Date().toISOString();
+
+  for (const item of units.slice(0, 80)) {
+    const clean = String(item.content || "").replace(/\s+/g, " ").trim();
+    if (clean.length < 30) {
+      skippedDuplicates++;
+      continue;
+    }
+    const digest = sha256Short(`${item.title}\n${clean}`);
+    if (contentDigestSeen.has(digest)) {
+      skippedDuplicates++;
+      continue;
+    }
+    contentDigestSeen.add(digest);
+    const id = `hotsync::${digest}`;
+    studiedCorpus.set(id, {
+      id,
+      title: String(item.title || sourceLabel).slice(0, 140),
+      url: String(item.url || "vault://heyuka/hotsync"),
+      sourceKind: item.sourceKind === "user_dataset" ? "user_dataset" : "web_crawl",
+      content: clean.slice(0, 16_000),
+      sha256: digest,
+      tokensEstimate: Math.ceil(clean.length / 4),
+      doubleReadVerified: true,
+      ingestedAt: now,
+    });
+    ingestedCount++;
+  }
+
+  return {
+    ingestedCount,
+    skippedDuplicates,
+    totalCorpusUnits: studiedCorpus.size,
+  };
+}
+
+/**
  * Queries across ALL digested Vault entries AND crawled/ingested websites/datasets cleanly.
  */
 export function searchStudiedKnowledgeCorpus(params: {

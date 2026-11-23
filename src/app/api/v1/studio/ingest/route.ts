@@ -9,6 +9,10 @@ import {
 } from "@/lib/heyuka/training/knowledge-corpus-engine";
 import { exportEvolutionChatMlDataset } from "@/lib/heyuka/learning/self-evolution-engine";
 import { getHfTokenPoolSummary } from "@/lib/heyuka/compute/hf-token-pool";
+import {
+  getNervousMeshState,
+  syncCrawlBatchIntoNervousMesh,
+} from "@/lib/heyuka/global-nervous-mesh";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -73,6 +77,7 @@ export async function GET(req: NextRequest) {
       webCrawledUnits: searchResult.webCrawledUnits,
       errorLessonsCount: evoStats.errorLessonsCount,
       hfPool: getHfTokenPoolSummary(),
+      nervousMesh: getNervousMeshState(),
       hits: query ? searchResult.hits : [],
     });
   } catch (error) {
@@ -162,6 +167,31 @@ export async function POST(req: NextRequest) {
         includeWebFirst,
       });
       return NextResponse.json({ ok: true, action, ...result });
+    }
+
+    if (action === "hot_sync") {
+      const rawUnits = Array.isArray(body.units) ? body.units : [];
+      const units = rawUnits
+        .filter((u): u is Record<string, unknown> => Boolean(u && typeof u === "object"))
+        .map((u) => ({
+          title: typeof u.title === "string" ? u.title : "Cloud Swarm Discovery",
+          url: typeof u.url === "string" ? u.url : "",
+          content: typeof u.content === "string" ? u.content : "",
+          sourceKind:
+            u.sourceKind === "user_dataset"
+              ? ("user_dataset" as const)
+              : ("web_crawl" as const),
+        }))
+        .filter((u) => u.title.trim().length > 0 && u.content.trim().length > 0)
+        .slice(0, 120);
+
+      const sourceLabel =
+        typeof body.sourceLabel === "string" && body.sourceLabel.trim()
+          ? body.sourceLabel.trim()
+          : "distributed_cloud_swarm";
+
+      const synced = syncCrawlBatchIntoNervousMesh({ units, sourceLabel });
+      return NextResponse.json({ action, ...synced });
     }
 
     if (action === "export_pretrain_kit") {

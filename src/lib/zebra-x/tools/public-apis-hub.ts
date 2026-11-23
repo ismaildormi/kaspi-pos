@@ -835,19 +835,38 @@ async function executePublicQuery(
     }
 
     case "openverse_media": {
-      const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(
-        query || "product design"
-      )}&page_size=${limit}`;
-      const json = await fetchJsonWithTimeout(url);
-      const results = (Array.isArray(json?.results) ? json.results : []).map((r: any) => ({
-        title: String(r?.title || query),
-        url: String(r?.url || ""),
-        thumbnail: String(r?.thumbnail || r?.url || ""),
-        license: String(r?.license || "cc"),
-        creator: String(r?.creator || ""),
-        source: String(r?.source || "openverse"),
-      }));
-      return { sourceUrl: url, data: { results } };
+      const q = encodeURIComponent(query || "product design");
+      const url = `https://api.openverse.org/v1/images/?q=${q}&page_size=${limit}`;
+      try {
+        const json = await fetchJsonWithTimeout(url, {}, 4500);
+        const results = (Array.isArray(json?.results) ? json.results : []).map((r: any) => ({
+          title: String(r?.title || query),
+          url: String(r?.url || ""),
+          thumbnail: String(r?.thumbnail || r?.url || ""),
+          license: String(r?.license || "cc"),
+          creator: String(r?.creator || ""),
+          source: String(r?.source || "openverse"),
+        }));
+        if (results.length > 0) return { sourceUrl: url, data: { results } };
+      } catch {
+        // Fallback transparently to Wikimedia Commons Live CC Media API
+      }
+      const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${q}&gsrnamespace=6&gsrlimit=${limit}&prop=imageinfo&iiprop=url&format=json&origin=*`;
+      const wikiJson = await fetchJsonWithTimeout<any>(wikiUrl, {}, 8000);
+      const pages = Object.values((wikiJson?.query?.pages || {}) as Record<string, any>);
+      const results = pages.slice(0, limit).map((p: any) => {
+        const info = Array.isArray(p?.imageinfo) ? p.imageinfo[0] : null;
+        const imgUrl = String(info?.url || p?.fullurl || `https://commons.wikimedia.org/wiki/${encodeURIComponent(String(p?.title || "File"))}`);
+        return {
+          title: String(p?.title || query).replace(/^File:/, ""),
+          url: imgUrl,
+          thumbnail: imgUrl,
+          license: "cc-wikimedia",
+          creator: "Wikimedia Commons",
+          source: "wikimedia_commons",
+        };
+      });
+      return { sourceUrl: wikiUrl, data: { results } };
     }
 
     case "met_museum": {
@@ -1190,16 +1209,26 @@ async function executePublicQuery(
     }
 
     case "openlibrary_books": {
-      const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(
-        query || "morocco history"
-      )}&limit=${limit}&fields=key,title,author_name,first_publish_year`;
-      const json = await fetchJsonWithTimeout<any>(url, {}, 7500);
-      const docs = (json?.docs || []).slice(0, limit).map((d: any) => ({
-        title: d.title,
-        authors: d.author_name?.slice(0, 2),
-        year: d.first_publish_year,
-      }));
-      return { sourceUrl: url, data: { numFound: json?.numFound || docs.length, books: docs } };
+      const q = encodeURIComponent(query || "morocco history");
+      const url = `https://openlibrary.org/search.json?q=${q}&limit=${limit}&fields=key,title,author_name,first_publish_year`;
+      try {
+        const json = await fetchJsonWithTimeout<any>(url, {}, 11000);
+        const docs = (json?.docs || []).slice(0, limit).map((d: any) => ({
+          title: d.title,
+          authors: d.author_name?.slice(0, 2),
+          year: d.first_publish_year,
+        }));
+        return { sourceUrl: url, data: { numFound: json?.numFound || docs.length, books: docs } };
+      } catch {
+        const gutUrl = `https://gutendex.com/books?search=${q}`;
+        const gutJson = await fetchJsonWithTimeout<any>(gutUrl, {}, 9000);
+        const books = (gutJson?.results || []).slice(0, limit).map((b: any) => ({
+          title: b.title,
+          authors: Array.isArray(b.authors) ? b.authors.slice(0, 2).map((a: any) => a.name) : [],
+          year: null,
+        }));
+        return { sourceUrl: gutUrl, data: { numFound: gutJson?.count || books.length, books } };
+      }
     }
 
     case "gbif_biodiversity": {

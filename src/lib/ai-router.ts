@@ -78,6 +78,13 @@ function filterAndOrderActiveCandidates(candidates: RouterCandidate[]): RouterCa
   return [...healthy, ...cooling];
 }
 
+export interface ByokSessionKeys {
+  gemini?: string;
+  groq?: string;
+  openrouter?: string;
+  github?: string;
+}
+
 export interface RouterGovernanceScope {
   tenantId?: string;
   allowOwnerPaidProviders?: boolean;
@@ -85,6 +92,7 @@ export interface RouterGovernanceScope {
   callerComputeKey?: string;
   callerModelId?: string;
   strictCloudOnly?: boolean;
+  byokKeys?: ByokSessionKeys;
 }
 
 function isSafeCallerComputeUrl(rawUrl: string): boolean {
@@ -123,6 +131,9 @@ export interface RouterCandidate {
     | "together"
     | "deepseek"
     | "huggingface"
+    | "github"
+    | "cerebras"
+    | "sambanova"
     | "local";
   providerName: string;
   keyIndex: number;
@@ -167,6 +178,82 @@ export async function getRouterCandidates(
       });
     } catch {
       // Ignore malformed caller endpoint safely
+    }
+  }
+
+  // Priority -0.5: Caller Browser-Session Ephemeral BYOK Free Keys (in-memory only, zero disk persistence)
+  if (scope?.byokKeys) {
+    const cleanKey = (val?: string) => {
+      const t = (val || "").trim();
+      return t && !t.includes("mock") ? t : "";
+    };
+    const pushByok = (
+      provider: RouterCandidate["provider"],
+      providerName: string,
+      apiKey: string,
+      modelId: string,
+      model: LanguageModel,
+      supportsVision: boolean
+    ) => {
+      candidates.push({
+        provider,
+        providerName,
+        keyIndex: 0,
+        keyMasked: `byok...${apiKey.slice(-6)}`,
+        apiKey,
+        modelId,
+        model,
+        supportsVision,
+      });
+    };
+
+    const gKey = cleanKey(scope.byokKeys.groq);
+    if (gKey) {
+      pushByok(
+        "groq",
+        "Caller Session BYOK (Groq)",
+        gKey,
+        "openai/gpt-oss-120b",
+        createGroq({ apiKey: gKey })("openai/gpt-oss-120b") as unknown as LanguageModel,
+        false
+      );
+    }
+    const gemKey = cleanKey(scope.byokKeys.gemini);
+    if (gemKey) {
+      pushByok(
+        "google",
+        "Caller Session BYOK (Gemini)",
+        gemKey,
+        "gemini-flash-latest",
+        createGoogleGenerativeAI({ apiKey: gemKey })("gemini-flash-latest") as unknown as LanguageModel,
+        true
+      );
+    }
+    const orKey = cleanKey(scope.byokKeys.openrouter);
+    if (orKey) {
+      pushByok(
+        "openrouter",
+        "Caller Session BYOK (OpenRouter)",
+        orKey,
+        "openrouter/free",
+        createOpenRouter({ apiKey: orKey })("openrouter/free") as unknown as LanguageModel,
+        true
+      );
+    }
+    const ghByokKey = cleanKey(scope.byokKeys.github);
+    if (ghByokKey) {
+      const ghProvider = createOpenAI({
+        apiKey: ghByokKey,
+        baseURL: "https://models.inference.ai.azure.com",
+      });
+      pushByok(
+        "github",
+        "Caller Session BYOK (GitHub Models)",
+        ghByokKey,
+        "DeepSeek-R1",
+        ghProvider("DeepSeek-R1") as unknown as LanguageModel,
+        false
+      );
     }
   }
 
@@ -374,9 +461,64 @@ export async function getRouterCandidates(
     });
   }
 
-  // Priority 8: Hugging Face Multi-Token Inference Pool (rotates HF_TOKEN..HF_TOKEN_4 across 3 model roles)
+  // Priority 7.5: Ultra-Fast Free OpenAI-Compatible Frontier Pools (GitHub Models / Cerebras / SambaNova)
+  const freeOpenAiPools: Array<{
+    provider: RouterCandidate["provider"];
+    providerName: string;
+    envRaw: string | undefined;
+    baseURL: string;
+    models: string[];
+  }> = [
+    {
+      provider: "github",
+      providerName: "GitHub Models Frontier",
+      envRaw: process.env.GITHUB_MODELS_KEYS || process.env.GITHUB_MODELS_TOKEN,
+      baseURL: "https://models.inference.ai.azure.com",
+      models: ["DeepSeek-R1", "gpt-4o", "Llama-3.3-70B-Instruct"],
+    },
+    {
+      provider: "cerebras",
+      providerName: "Cerebras Wafer-Scale Free",
+      envRaw: process.env.CEREBRAS_API_KEYS || process.env.CEREBRAS_API_KEY,
+      baseURL: "https://api.cerebras.ai/v1",
+      models: ["llama-3.3-70b", "qwen-3-32b"],
+    },
+    {
+      provider: "sambanova",
+      providerName: "SambaNova RDU Free",
+      envRaw: process.env.SAMBANOVA_API_KEYS || process.env.SAMBANOVA_API_KEY,
+      baseURL: "https://api.sambanova.ai/v1",
+      models: ["Meta-Llama-3.3-70B-Instruct", "DeepSeek-R1"],
+    },
+  ];
+  for (const poolDef of freeOpenAiPools) {
+    const poolKeys = parseKeyPool(poolDef.envRaw).filter((k) => !k.includes("mock"));
+    poolKeys.forEach((key, idx) => {
+      const compatProvider = createOpenAI({
+        apiKey: key,
+        baseURL: poolDef.baseURL,
+      });
+      for (const mId of poolDef.models) {
+        candidates.push({
+          provider: poolDef.provider,
+          providerName: poolDef.providerName,
+          keyIndex: idx,
+          keyMasked: `...${key.slice(-6)}`,
+          apiKey: key,
+          modelId: mId,
+          model: compatProvider(mId) as unknown as LanguageModel,
+          supportsVision: mId === "gpt-4o",
+        });
+      }
+    });
+  }
+
+  // Priority 8: Hugging Face Multi-Token Inference Pool (Sovereign model + DeepSeek-R1 + Qwen/Llama)
   const hfPoolEntries = getHfTokenPoolTokens();
+  const sovereignHfModel = process.env.HEYUKA_SOVEREIGN_HF_MODEL?.trim();
   const hfModels = [
+    ...(sovereignHfModel ? [sovereignHfModel] : []),
+    "deepseek-ai/DeepSeek-R1",
     "Qwen/Qwen2.5-72B-Instruct",
     "Qwen/Qwen2.5-Coder-32B-Instruct",
     "meta-llama/Llama-3.3-70B-Instruct",

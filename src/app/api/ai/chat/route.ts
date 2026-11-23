@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { createUIMessageStream, createUIMessageStreamResponse, stepCountIs, tool } from "ai";
 import { z } from "zod";
-import { streamUiResponseWithRouter } from "@/lib/ai-router";
+import { streamUiResponseWithRouter, type ByokSessionKeys } from "@/lib/ai-router";
+import { runUnifiedFullPowerPipeline } from "@/lib/heyuka/global-nervous-mesh";
 import {
   buildFullCapabilitiesAndSourcesMarkdown,
   buildPatentBlueprintAndPdfMarker,
@@ -422,7 +423,17 @@ export async function POST(req: NextRequest) {
       activityContext = "",
       recalledMemoryContext = "",
       systemInstruction: callerSystemInstruction = "",
+      byokKeys: rawByokKeys,
     } = body;
+    const byokKeys: ByokSessionKeys | undefined =
+      rawByokKeys && typeof rawByokKeys === "object"
+        ? {
+            gemini: typeof rawByokKeys.gemini === "string" ? rawByokKeys.gemini.slice(0, 200) : undefined,
+            groq: typeof rawByokKeys.groq === "string" ? rawByokKeys.groq.slice(0, 200) : undefined,
+            openrouter: typeof rawByokKeys.openrouter === "string" ? rawByokKeys.openrouter.slice(0, 200) : undefined,
+            github: typeof rawByokKeys.github === "string" ? rawByokKeys.github.slice(0, 200) : undefined,
+          }
+        : undefined;
     const headerLocale = req.headers.get("x-app-locale") || req.cookies.get("NEXT_LOCALE")?.value;
     const clientLocale = (requestLocale || headerLocale || "ar").toLowerCase();
     const isEnLocale = clientLocale.startsWith("en");
@@ -1489,12 +1500,21 @@ ${phase3Refinement.systemDirectiveSnippet}`;
         typeof callerSystemInstruction === "string" ? callerSystemInstruction : undefined,
     });
 
+    const powerResult = await runUnifiedFullPowerPipeline({
+      prompt: userPrompt,
+      locale: expectedShortLocale,
+      brand: "kaspi_pos",
+      mode: cortexMemory.domainMode,
+      thinkingEnabled: true,
+      compact: true,
+    });
+
     const superAdminSystemPrompt = `You are HEYUKA Sovereign Executive, owned by KASPI. You have full access to the platform database and store operations.
 Available Super Admin & Store Tools:
 - Platform: getPlatformStats, getPlatformRevenue, getAllTenantsList, getTenantDetails, getAIUsageStats
 - Store & Actions: getTodaySales, getLowStockProducts, getTopSellingProducts, predictStockDemand, getLastCustomer, getLastReceiptTicket, getUserActivityLog, generatePdfReport, preparePosActionConfirmation, generateProductImage, searchWebImages, runKaspiStudioSwarmCouncil, inspectSovereignVaultAndCapabilities
 - Universal Web, Code Sandbox, Cyber, Math, Office & Vision Tools: unrestrictedWebSearch, executeCodeSandbox, queryPublicApi (47 live open APIs incl. CISA/OSV cyber intel & Nador marine), evaluateMathAndFinance, createRichArtifactOrExport, checkPhoneCalendarOrCron
-${closedLoopMasterDirective}\n${cortexMemory.activeMemoryPromptBlock}${progressiveSkillsSnippet}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
+${powerResult.liveFactsBlock}\n${cortexMemory.activeMemoryPromptBlock}${progressiveSkillsSnippet}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
 
     const merchantSystemPrompt = `You are HEYUKA by KASPI, the versatile, unrestricted intelligence companion & business advisor inside KASPI POS.
 Available Store & Universal Arsenal Tools:
@@ -1507,7 +1527,7 @@ Available Store & Universal Arsenal Tools:
 DOMAIN & HARDWARE EXPERTISE:
 - Thermal Printers (80mm/58mm ESC/POS USB/Bluetooth/Network), EAN-13 HID scanners, Electronic Scales (PLU/KG), CSV/Excel import, Moroccan TVA/DGI/ICE retail workflows.
 - Prices and revenues MUST be stated clearly in MAD (درهم).
-${closedLoopMasterDirective}\n${cortexMemory.activeMemoryPromptBlock}${progressiveSkillsSnippet}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
+${powerResult.liveFactsBlock}\n${cortexMemory.activeMemoryPromptBlock}${progressiveSkillsSnippet}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
 
     // 7. Multi-Gateway Key Rotation & True Stream-Level Failover Execution
     try {
@@ -1521,6 +1541,12 @@ ${closedLoopMasterDirective}\n${cortexMemory.activeMemoryPromptBlock}${progressi
           system: isSuperAdmin ? superAdminSystemPrompt : merchantSystemPrompt,
           messages: sanitizedMessages,
           tools: activeTools,
+          temperature: powerResult.trace.hyperparams.temperature,
+          governance: {
+            tenantId,
+            allowOwnerPaidProviders: false,
+            byokKeys,
+          },
           stopWhen: stepCountIs(isVercelRuntime ? 10 : 20),
           onCompletedText: async (text: string, cand?: { providerName?: string; modelId?: string; keyIndex?: number }) => {
             if (!text) return;
@@ -1570,8 +1596,11 @@ ${closedLoopMasterDirective}\n${cortexMemory.activeMemoryPromptBlock}${progressi
         {
           "x-kaspi-ai-session-id": chatSession.id,
           "x-kaspi-ai-provider": "HEYUKA Core (KASPI)",
-          "x-kaspi-ai-model": "heyuka-unified",
+          "x-kaspi-ai-model": powerResult.trace.recommendedOpenModel,
           "x-kaspi-ai-role": isSuperAdmin ? "super-admin" : "merchant",
+          "x-kaspi-ai-engines": powerResult.trace.enginesExecuted.join(","),
+          "x-kaspi-ai-temp": String(powerResult.trace.hyperparams.temperature),
+          "x-kaspi-ai-sync": powerResult.trace.lastCloudSyncAt,
         }
       );
     } catch {

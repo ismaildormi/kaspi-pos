@@ -173,6 +173,13 @@ import {
   getBoundGithubSignalsSources,
 } from "../../src/lib/zebra-x/core/v30-githubsignals-arsenal";
 import { V31_ASKGPTS_GITHUBDEV_94_SOURCES } from "../../src/lib/zebra-x/core/v31-askgpts-githubdev-arsenal";
+import {
+  getNervousMeshState,
+  runUnifiedFullPowerPipeline,
+  syncCrawlBatchIntoNervousMesh,
+} from "../../src/lib/heyuka/global-nervous-mesh";
+import { runSelfCapabilityAwakeningSession } from "../../src/lib/heyuka/self-capability-awakening";
+import { searchStudiedKnowledgeCorpus } from "../../src/lib/heyuka/training/knowledge-corpus-engine";
 import { V34_PHOTOREALISTIC_LONG_VIDEO_100 } from "../../src/lib/zebra-x/core/v34-long-video-arsenal";
 import { V35_ALL_VAULT_INFRA_200 } from "../../src/lib/zebra-x/core/v35-permanent-vault-arsenal";
 import { V36_V37_MEDIA_3D_200 } from "../../src/lib/zebra-x/core/v36-v37-media-3d-arsenal";
@@ -2199,6 +2206,112 @@ print(json.dumps({'ok': True, 'hll': hll.estimate(), 'ringShard': s, 'golden': l
     };
   });
 
+  await runCheck("v101_to_v108_nervous_mesh_awakening_and_sovereign_factory", "v101.0-v108.0 Nervous Mesh, Awakening 8/8, Frontier Routing & Sovereign Model Factory", async () => {
+    // 1. Hot-sync distributed swarm knowledge unit -> instant Studied Corpus recall
+    const markerToken = `mesh-token-${Date.now()}`;
+    const hotSyncRes = syncCrawlBatchIntoNervousMesh({
+      sourceLabel: "e2e_v108_hot_sync",
+      units: [
+        {
+          title: `Nervous Mesh Hot-Sync Verification (${markerToken})`,
+          url: `https://example.org/mesh/${markerToken}`,
+          content: `Moroccan POS CGI Art 145 compliance and ${markerToken} synchronized into live Studied Corpus.`,
+          sourceKind: "web_crawl",
+        },
+      ],
+    });
+    assert.equal(hotSyncRes.ok, true);
+    assert.ok(hotSyncRes.ingestedCount >= 1);
+    const recalled = searchStudiedKnowledgeCorpus({ query: markerToken, limit: 5, includeWebFirst: true });
+    assert.ok(recalled.hits.some((h) => h.title.includes(markerToken) || h.snippet.includes(markerToken)));
+
+    // 2. Self-Capability Awakening 8/8 Live Execution Gate
+    const awaken = await runSelfCapabilityAwakeningSession();
+    assert.equal(awaken.ok, true, `Awakening gate failed: ${JSON.stringify(awaken.probes)}`);
+    assert.equal(awaken.passedCount, 8);
+    assert.equal(awaken.totalProbes, 8);
+    const meshAfter = getNervousMeshState();
+    assert.equal(meshAfter.awakeningVerifiedCount, 8);
+
+    // 3. Unified Full-Power Pipeline for Coding (HEYUKA) & Darija/DGI Tax (KASPI POS)
+    const codingPipe = await runUnifiedFullPowerPipeline({
+      prompt: "Build TypeScript invoice calculator bug fix with code",
+      locale: "en",
+      brand: "heyuka",
+      mode: "coding",
+      workspaceFiles: [{ path: "index.html", language: "html", content: "<div id='app'></div>" }, { path: "app.js", language: "js", content: "document.getElementById('missingBtn');" }],
+      thinkingEnabled: true,
+    });
+    assert.equal(codingPipe.trace.hyperparams.temperature, 0.1);
+    assert.ok(codingPipe.trace.enginesExecuted.includes("AST-Supremacy-v90.2"));
+    assert.ok(codingPipe.liveFactsBlock.includes("missingBtn"));
+    assert.ok(codingPipe.blueprintBlock.includes("Wait"));
+
+    const darijaPipe = await runUnifiedFullPowerPipeline({
+      prompt: "احسب لي التفيية TVA والكريدي في الطابلو بالدارجة",
+      locale: "ar",
+      brand: "kaspi_pos",
+      mode: "auto",
+      thinkingEnabled: false,
+    });
+    assert.equal(darijaPipe.trace.hyperparams.temperature, 0.1);
+    assert.ok(darijaPipe.trace.enginesExecuted.includes("Darija-DGI-v88"));
+
+    // 4. Router Frontier Candidates (DeepSeek-R1 + Ephemeral BYOK Session Override Priority)
+    const ephemCands = await getRouterCandidates({
+      allowOwnerPaidProviders: false,
+      byokKeys: {
+        github: "test_github_session_token_987654",
+        groq: "test_groq_session_token_987654",
+      },
+    });
+    assert.ok(ephemCands.some((c) => c.provider === "github" && c.modelId === "DeepSeek-R1"));
+    assert.ok(ephemCands.some((c) => c.provider === "groq" && c.providerName.includes("Caller Session BYOK")));
+
+    // 5. Python Nervous Sync & Sovereign Model Factory Scripts (py_compile + dry-run)
+    const tmpDir = path.join(process.cwd(), "tmp-v108-e2e-recipes");
+    try {
+      const pyCompile = spawnSync(
+        "python3",
+        [
+          "-m",
+          "py_compile",
+          "training/sync/auto_distributed_memory_sync.py",
+          "training/sovereign_models/merge_heyuka_flagship.py",
+          "training/sovereign_models/train_grpo_dpo_sovereign.py",
+        ],
+        { encoding: "utf8" }
+      );
+      assert.equal(pyCompile.status, 0, pyCompile.stderr);
+
+      const syncOut = JSON.parse(
+        spawnSync("python3", ["training/sync/auto_distributed_memory_sync.py", "--dry-run"], { encoding: "utf8" }).stdout
+      );
+      assert.equal(syncOut.ok, true);
+      assert.ok(syncOut.unitsPrepared >= 1);
+
+      const mergeOut = JSON.parse(
+        spawnSync("python3", ["training/sovereign_models/merge_heyuka_flagship.py", "--output-dir", tmpDir], { encoding: "utf8" }).stdout
+      );
+      assert.equal(mergeOut.ok, true);
+      assert.equal(mergeOut.recipes_written.length, 3);
+      assert.ok(fs.existsSync(mergeOut.recipes_written[0].yaml_path));
+
+      const trainOut = JSON.parse(
+        spawnSync("python3", ["training/sovereign_models/train_grpo_dpo_sovereign.py", "--dry-run"], { encoding: "utf8" }).stdout
+      );
+      assert.equal(trainOut.ok, true);
+      assert.ok(trainOut.verifier_smoke_score >= 0.8);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+
+    return {
+      artifactBytes: awaken.nervousMeshSync.ingestedCount * 512 + codingPipe.blueprintBlock.length + darijaPipe.liveFactsBlock.length,
+      detail: `v101-v108 Complete (Awaken=${awaken.passedCount}/8 in ${awaken.totalLatencyMs}ms, CodingTemp=${codingPipe.trace.hyperparams.temperature}, DarijaTemp=${darijaPipe.trace.hyperparams.temperature}, EphemCandidates=${ephemCands.length}, 3 Python Sovereign Scripts OK)`,
+    };
+  });
+
   // SUMMARY & SELF-REPORTING
   const totalTested = results.length;
   const passed = results.filter((r) => r.status !== "failed");
@@ -2233,7 +2346,7 @@ print(json.dumps({'ok': True, 'hll': hll.estimate(), 'ringShard': s, 'golden': l
   // Only generate/update YUKA_FINAL_100_PERCENT_TEST_RESULTS.md when 100% of runnable checks pass!
   if (failed.length === 0) {
     const mdLines = [
-      `# YUKA / HEYUKA — 100% Real End-to-End Test Results (\`v14.1\` – \`v100.0\`)`,
+      `# YUKA / HEYUKA — 100% Real End-to-End Test Results (\`v14.1\` – \`v108.0\`)`,
       ``,
       `Generated automatically by [\`tests/yuka-full-e2e/run-all-sources-forever.mjs\`](./tests/yuka-full-e2e/run-all-sources-forever.mjs) at \`${new Date().toISOString()}\`.`,
       ``,

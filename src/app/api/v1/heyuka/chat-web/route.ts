@@ -57,6 +57,7 @@ import { scanSourceCodeForVulnerabilities } from "@/lib/zebra-x/tools/security-s
 import { renderStyledBrandQrSvg } from "@/lib/zebra-x/tools/qr-architect-engine";
 import { ALL_SOVEREIGN_MASTER_CATALOG } from "@/lib/zebra-x/core/v20-v22-master-catalog";
 import { auditMultiFileWebQuality, runPreReplyReflectionGate } from "@/lib/zebra-x/core/reflection-gate";
+import { runUnifiedFullPowerPipeline } from "@/lib/heyuka/global-nervous-mesh";
 import {
   buildFullCapabilitiesAndSourcesMarkdown,
   buildPatentBlueprintAndPdfMarker,
@@ -146,6 +147,14 @@ const WebChatRequestSchema = z.object({
       })
     )
     .max(60)
+    .optional(),
+  byokKeys: z
+    .object({
+      gemini: z.string().max(200).optional(),
+      groq: z.string().max(200).optional(),
+      openrouter: z.string().max(200).optional(),
+      github: z.string().max(200).optional(),
+    })
     .optional(),
 });
 
@@ -352,6 +361,7 @@ export async function POST(req: NextRequest) {
     imageBase64,
     audioTranscriptNote,
     workspaceFiles,
+    byokKeys,
   } = parsed.data;
 
   // Integrated Browser Search / URL Reader action (zero-key access for Antigravity Studio IDE)
@@ -1185,6 +1195,23 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     };
   };
 
+  const powerResult = await runUnifiedFullPowerPipeline({
+    prompt: lastUser,
+    locale: worldLang.shortLocale,
+    brand,
+    mode: effectiveMode,
+    workspaceFiles,
+    thinkingEnabled: effectiveDeepThink,
+    compact: false,
+  });
+  const effectiveSystemInstruction = `${systemInstruction}\n${powerResult.blueprintBlock}\n${powerResult.liveFactsBlock}`;
+  const tunedTemperature = powerResult.trace.hyperparams.temperature;
+  const routerGovernance = {
+    tenantId,
+    allowOwnerPaidProviders: false,
+    byokKeys,
+  };
+
   if (wantsStream) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -1196,6 +1223,7 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
         };
 
         emit({ type: "phase", title: thinkingSteps[0]?.phase || "Initializing Antigravity Agent...", step: thinkingSteps[0] });
+        emit({ type: "power_telemetry", telemetry: powerResult.trace });
         if (sources.length > 0) {
           emit({ type: "sources", sources });
         }
@@ -1207,15 +1235,12 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
 
         try {
           const streamRes = await streamStudioNdjsonWithRouter({
-            system: systemInstruction,
+            system: effectiveSystemInstruction,
             messages: formattedMessages as any,
             tools: streamToolkit,
             stopWhen: streamToolkit ? stepCountIs(maxStepCount) : undefined,
-            temperature: executionPolicy === "turbo" ? 0.35 : 0.42,
-            governance: {
-              tenantId,
-              allowOwnerPaidProviders: false,
-            },
+            temperature: tunedTemperature,
+            governance: routerGovernance,
             onPhase: (title) => emit({ type: "phase", title }),
             onReasoningDelta: (delta) => emit({ type: "think_delta", delta }),
             onTextDelta: (delta) => emit({ type: "text_delta", delta }),
@@ -1235,7 +1260,10 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
             },
           });
 
-          const payload = finalizeAndAuditTurn(streamRes.text, streamRes.reasoning);
+          const payload = {
+            ...finalizeAndAuditTurn(streamRes.text, streamRes.reasoning),
+            powerTelemetry: powerResult.trace,
+          };
           emit({ type: "done", payload });
         } catch (err: any) {
           const fallbackAnswer =
@@ -1247,7 +1275,10 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
                   locale: worldLang.shortLocale,
                 }).answer;
           emit({ type: "text_delta", delta: fallbackAnswer });
-          const payload = finalizeAndAuditTurn(fallbackAnswer, err?.message ? `Recovered cleanly from ${err.message}` : undefined);
+          const payload = {
+            ...finalizeAndAuditTurn(fallbackAnswer, err?.message ? `Recovered cleanly from ${err.message}` : undefined),
+            powerTelemetry: powerResult.trace,
+          };
           emit({ type: "done", payload });
         } finally {
           controller.close();
@@ -1267,15 +1298,12 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
   const studioAgentToolkit = buildTurnToolkit();
   try {
     const gen = await generateTextWithRouter({
-      system: systemInstruction,
+      system: effectiveSystemInstruction,
       messages: formattedMessages as any,
       tools: studioAgentToolkit,
       stopWhen: studioAgentToolkit ? stepCountIs(maxStepCount) : undefined,
-      temperature: executionPolicy === "turbo" ? 0.35 : 0.42,
-      governance: {
-        tenantId,
-        allowOwnerPaidProviders: false,
-      },
+      temperature: tunedTemperature,
+      governance: routerGovernance,
     });
     rawText = String(gen.text || "").trim();
     if (executedAgentLogs.length > 0) {
@@ -1309,7 +1337,7 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
             },
           ],
           temperature: 0.2,
-          governance: { tenantId, allowOwnerPaidProviders: false },
+          governance: routerGovernance,
         });
         const nextChunk = String(cont.text || "");
         if (!nextChunk.trim()) break;
@@ -1338,5 +1366,8 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     }
   }
 
-  return NextResponse.json(finalizeAndAuditTurn(rawText));
+  return NextResponse.json({
+    ...finalizeAndAuditTurn(rawText),
+    powerTelemetry: powerResult.trace,
+  });
 }

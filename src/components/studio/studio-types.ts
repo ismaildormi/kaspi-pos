@@ -101,6 +101,8 @@ export interface AttachedMediaItem {
   fps?: number;
 }
 
+import type { PowerExecutionTrace } from "@/lib/heyuka/global-nervous-mesh";
+
 export interface StudioFileNode {
   path: string;
   language: string;
@@ -148,6 +150,7 @@ export interface StudioMessage {
     spawnedBots: WorkerBotExecution[];
   };
   branchLabel?: string;
+  powerTelemetry?: PowerExecutionTrace;
   createdAt: string;
 }
 

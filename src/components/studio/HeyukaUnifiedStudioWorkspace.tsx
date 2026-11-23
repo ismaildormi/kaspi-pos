@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "next-intl";
+import type { PowerExecutionTrace } from "@/lib/heyuka/global-nervous-mesh";
 import {
   ArrowUp,
   Bot,
@@ -213,6 +214,25 @@ export function HeyukaUnifiedStudioWorkspace({
   } | null>(null);
   const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
+  const [byokSessionKeys, setByokSessionKeys] = useState<{
+    gemini: string;
+    groq: string;
+    openrouter: string;
+    github: string;
+  }>({ gemini: "", groq: "", openrouter: "", github: "" });
+  const [awakeningBusy, setAwakeningBusy] = useState(false);
+  const [awakeningReport, setAwakeningReport] = useState<{
+    passedCount: number;
+    totalProbes: number;
+    totalLatencyMs: number;
+    probes: Array<{
+      id: string;
+      capability: string;
+      passed: boolean;
+      latencyMs: number;
+      verifiedDetail: string;
+    }>;
+  } | null>(null);
   const [externalBrowserRequest, setExternalBrowserRequest] = useState<{ url: string; ts: number } | null>(null);
   const [quickSearchOpen, setQuickSearchOpen] = useState(false);
   const [quickSearchQuery, setQuickSearchQuery] = useState("");
@@ -327,8 +347,50 @@ export function HeyukaUnifiedStudioWorkspace({
         const parsedThreads = JSON.parse(savedThreads);
         if (Array.isArray(parsedThreads)) setThreads(parsedThreads);
       }
+      const savedSessionByok = sessionStorage.getItem("heyuka_session_byok_keys");
+      if (savedSessionByok) {
+        const parsedByok = JSON.parse(savedSessionByok);
+        if (parsedByok && typeof parsedByok === "object") {
+          setByokSessionKeys({
+            gemini: typeof parsedByok.gemini === "string" ? parsedByok.gemini : "",
+            groq: typeof parsedByok.groq === "string" ? parsedByok.groq : "",
+            openrouter: typeof parsedByok.openrouter === "string" ? parsedByok.openrouter : "",
+            github: typeof parsedByok.github === "string" ? parsedByok.github : "",
+          });
+        }
+      }
     } catch {}
   }, []);
+
+  const updateSessionByokKey = (
+    field: "gemini" | "groq" | "openrouter" | "github",
+    value: string
+  ) => {
+    setByokSessionKeys((prev) => {
+      const next = { ...prev, [field]: value };
+      try {
+        sessionStorage.setItem("heyuka_session_byok_keys", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const runLiveAwakeningGate = async () => {
+    setAwakeningBusy(true);
+    try {
+      const res = await fetch("/api/v1/cognition/awaken-and-test", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setAwakeningReport({
+          passedCount: Number(data.passedCount || 0),
+          totalProbes: Number(data.totalProbes || 8),
+          totalLatencyMs: Number(data.totalLatencyMs || 0),
+          probes: Array.isArray(data.probes) ? data.probes : [],
+        });
+      }
+    } catch {}
+    setAwakeningBusy(false);
+  };
 
   const updateAppearance = (next: typeof appearance) => {
     setAppearance(next);
@@ -544,6 +606,7 @@ export function HeyukaUnifiedStudioWorkspace({
     let extractedFiles: StudioFileNode[] = [];
     let citations: Array<{ title: string; url: string }> = [];
     let incompleteTruncated = false;
+    let turnPowerTelemetry: PowerExecutionTrace | undefined;
 
     const pushLivePatch = (patch: Partial<StudioMessage>) => {
       setMessages((prev) =>
@@ -598,6 +661,15 @@ export function HeyukaUnifiedStudioWorkspace({
             webSearch: settings.groundingSearchEnabled,
             locale,
             systemInstruction,
+            byokKeys:
+              byokSessionKeys.gemini || byokSessionKeys.groq || byokSessionKeys.openrouter || byokSessionKeys.github
+                ? {
+                    gemini: byokSessionKeys.gemini || undefined,
+                    groq: byokSessionKeys.groq || undefined,
+                    openrouter: byokSessionKeys.openrouter || undefined,
+                    github: byokSessionKeys.github || undefined,
+                  }
+                : undefined,
             imageBase64: isContinuationPass ? undefined : imgAtt?.dataUrl,
             workspaceFiles: workingWorkspaceFiles.slice(0, 60).map((f) => ({
               path: f.path,
@@ -630,6 +702,7 @@ export function HeyukaUnifiedStudioWorkspace({
             extractedFiles = mergeWorkspaceFilesByPath(extractedFiles, cd.studioFiles);
           }
           if (Array.isArray(cd?.sources)) citations = [...citations, ...cd.sources];
+          if (cd?.powerTelemetry) turnPowerTelemetry = cd.powerTelemetry as PowerExecutionTrace;
           if (typeof cd?.incompleteTruncated === "boolean") incompleteTruncated = cd.incompleteTruncated;
           return true;
         }
@@ -652,6 +725,9 @@ export function HeyukaUnifiedStudioWorkspace({
 
           if (ev.type === "phase" && ev.title) {
             setLivePhaseLabel(String(ev.title));
+          } else if (ev.type === "power_telemetry" && ev.telemetry) {
+            turnPowerTelemetry = ev.telemetry as PowerExecutionTrace;
+            pushLivePatch({ powerTelemetry: turnPowerTelemetry });
           } else if (ev.type === "sources" && Array.isArray(ev.sources)) {
             citations = [...citations, ...ev.sources];
             pushLivePatch({ citations });
@@ -725,6 +801,7 @@ export function HeyukaUnifiedStudioWorkspace({
               extractedFiles = mergeWorkspaceFilesByPath(extractedFiles, normalized);
             }
             if (Array.isArray(cd?.sources)) citations = cd.sources;
+            if (cd?.powerTelemetry) turnPowerTelemetry = cd.powerTelemetry as PowerExecutionTrace;
             if (Array.isArray(cd?.verifiedTerminalLogs) && cd.verifiedTerminalLogs.length > 0) {
               setTerminalLogs((p) => [...p, ...cd.verifiedTerminalLogs.slice(0, 8)]);
             }
@@ -913,6 +990,7 @@ export function HeyukaUnifiedStudioWorkspace({
         viewMode: "markdown",
         citations: citations.length > 0 ? citations : undefined,
         codeFiles: extractedFiles.length > 0 ? extractedFiles : undefined,
+        powerTelemetry: turnPowerTelemetry,
         createdAt: new Date().toISOString(),
       };
 
@@ -1557,6 +1635,18 @@ export function HeyukaUnifiedStudioWorkspace({
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-semibold">
                                   ✓ {isAr ? "تم التحقق" : "Tested & Verified"}
                                 </span>
+                                {msg.powerTelemetry && (
+                                  <span
+                                    title={`${msg.powerTelemetry.enginesExecuted.join(" • ")} | Model: ${msg.powerTelemetry.recommendedOpenModel}`}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[10px]"
+                                  >
+                                    ⚡ {msg.powerTelemetry.enginesExecuted.length}{" "}
+                                    {isAr ? "محرك" : "engines"} •{" "}
+                                    {msg.powerTelemetry.vaultedSourcesCount}+{" "}
+                                    {isAr ? "مصدر" : "src"} • T={msg.powerTelemetry.hyperparams.temperature} •{" "}
+                                    {msg.powerTelemetry.pipelineLatencyMs}ms
+                                  </span>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -2377,6 +2467,65 @@ export function HeyukaUnifiedStudioWorkspace({
                     </div>
                   ))}
                 </div>
+                <div className={`p-3 rounded-xl border ${borderCls} space-y-2 mt-3`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-semibold text-xs">
+                        {isAr ? "مفاتيح BYOK المجانية (جلسة المتصفح فقط — Zero Disk)" : "Session-Only BYOK Free Keys (Browser RAM/sessionStorage)"}
+                      </div>
+                      <div className={`text-[10px] ${mutedText}`}>
+                        {isAr
+                          ? "تُحفظ مؤقتاً في جلسة المتصفح فقط لتوسيع الحصة المجانية عبر Gemini / Groq / OpenRouter / GitHub Models."
+                          : "Kept strictly in browser sessionStorage only—never stored on disk or Git."}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const empty = { gemini: "", groq: "", openrouter: "", github: "" };
+                        setByokSessionKeys(empty);
+                        try { sessionStorage.removeItem("heyuka_session_byok_keys"); } catch {}
+                      }}
+                      className={`px-2 py-1 rounded border text-[10px] cursor-pointer ${borderCls}`}
+                    >
+                      {isAr ? "مسح الجلسة" : "Clear Session"}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <input
+                      type="password"
+                      autoComplete="off"
+                      value={byokSessionKeys.gemini}
+                      onChange={(e) => updateSessionByokKey("gemini", e.target.value)}
+                      placeholder={isAr ? "مفتاح Google AI Studio (جلسة فقط)" : "Google AI Studio Key (session-only)"}
+                      className={`px-2.5 py-1.5 rounded-lg border text-xs bg-transparent ${borderCls}`}
+                    />
+                    <input
+                      type="password"
+                      autoComplete="off"
+                      value={byokSessionKeys.groq}
+                      onChange={(e) => updateSessionByokKey("groq", e.target.value)}
+                      placeholder={isAr ? "مفتاح Groq Cloud (جلسة فقط)" : "Groq Cloud Key (session-only)"}
+                      className={`px-2.5 py-1.5 rounded-lg border text-xs bg-transparent ${borderCls}`}
+                    />
+                    <input
+                      type="password"
+                      autoComplete="off"
+                      value={byokSessionKeys.openrouter}
+                      onChange={(e) => updateSessionByokKey("openrouter", e.target.value)}
+                      placeholder={isAr ? "مفتاح OpenRouter Free (جلسة فقط)" : "OpenRouter Free Key (session-only)"}
+                      className={`px-2.5 py-1.5 rounded-lg border text-xs bg-transparent ${borderCls}`}
+                    />
+                    <input
+                      type="password"
+                      autoComplete="off"
+                      value={byokSessionKeys.github}
+                      onChange={(e) => updateSessionByokKey("github", e.target.value)}
+                      placeholder={isAr ? "توكن GitHub Models (جلسة فقط)" : "GitHub Models Token (session-only)"}
+                      className={`px-2.5 py-1.5 rounded-lg border text-xs bg-transparent ${borderCls}`}
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
@@ -2704,6 +2853,48 @@ export function HeyukaUnifiedStudioWorkspace({
 
             {settingsSection === "seven_secrets_lab" && (
               <div className="space-y-4">
+                <div className={`p-3 rounded-xl border ${borderCls} space-y-2`}>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <div className="font-semibold text-xs">
+                        {isAr ? "بوابة الإيقاظ الذاتي وفحص القدرات الحية (v108)" : "Self-Capability Awakening & Live Execution Gate (v108)"}
+                      </div>
+                      <div className={`text-[10px] ${mutedText}`}>
+                        {isAr
+                          ? "تشغيل 8 اختبارات عملية فورية (الأمان، AST، DGI/الدارجة، RAG المذاكر، Zero-Cost، والحوسبة) وتحديث الذاكرة الحية."
+                          : "Runs 8 hands-on live probes across Cyber Shield, AST, Darija/DGI, Studied Corpus, and Swarm Mesh."}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={awakeningBusy}
+                      onClick={runLiveAwakeningGate}
+                      className="px-3 py-1.5 rounded-lg text-white text-xs font-medium cursor-pointer disabled:opacity-60"
+                      style={{ backgroundColor: appearance.accentHex }}
+                    >
+                      {awakeningBusy
+                        ? isAr ? "جاري الاختبار..." : "Testing..."
+                        : isAr ? "إيقاظ وتجريب القدرات الحية (v108)" : "Awaken & Test Live Capabilities (v108)"}
+                    </button>
+                  </div>
+                  {awakeningReport && (
+                    <div className="space-y-1.5 pt-1">
+                      <div className="text-[11px] font-semibold text-emerald-500">
+                        {awakeningReport.passedCount}/{awakeningReport.totalProbes} PASS ({awakeningReport.totalLatencyMs}ms)
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                        {awakeningReport.probes.map((probe) => (
+                          <div key={probe.id} className={`px-2 py-1 rounded border ${borderCls} text-[10px]`}>
+                            <span className={probe.passed ? "text-emerald-500 font-semibold" : "text-rose-500 font-semibold"}>
+                              {probe.passed ? "✓" : "✗"} {probe.capability}
+                            </span>{" "}
+                            <span className={mutedText}>({probe.latencyMs}ms) — {probe.verifiedDetail}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-semibold">
                     {isAr ? "مختبر الأسرار الـ 7 للتفوق الذهني (v87.1 – v87.7)" : "7 Super-Intelligence Secrets Lab"}

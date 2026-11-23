@@ -8,6 +8,7 @@ import {
 } from "@/lib/heyuka/studio/studio-orchestrator-v55-v60";
 import { recordProductSelfEvolution } from "@/lib/heyuka/learning/self-evolution-engine";
 import { collectVerifiedHarvestStats } from "@/lib/heyuka/verified-harvest-counter";
+import { runUnifiedFullPowerPipeline } from "@/lib/heyuka/global-nervous-mesh";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,14 @@ export async function POST(req: NextRequest) {
     body?.locale === "en" ? "en" : body?.locale === "fr" ? "fr" : "ar";
 
   const swarm = planAndRunElasticCouncilSwarm({ prompt, scale, brand, locale });
+  const powerResult = await runUnifiedFullPowerPipeline({
+    prompt,
+    locale: locale === "fr" || locale === "en" ? locale : "ar",
+    brand: brand === "kaspi_pos" ? "kaspi_pos" : "heyuka",
+    mode: "council",
+    thinkingEnabled: true,
+    compact: false,
+  });
 
   recordProductSelfEvolution({
     prompt,
@@ -64,6 +73,7 @@ export async function POST(req: NextRequest) {
     {
       ...swarm,
       liveOmniscienceTelemetry: liveTelemetry?.verifiedMetrics || null,
+      powerTelemetry: powerResult.trace,
       huggingFaceVault: liveTelemetry?.huggingFaceVault || null,
     },
     { status: 200, headers: HEYUKA_API_CORS_HEADERS }
