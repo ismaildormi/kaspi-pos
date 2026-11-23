@@ -84,7 +84,7 @@ import {
 } from "@/lib/heyuka/autonomous-builder-v24-v28";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export type HeyukaRequestedMode =
   | "auto"
@@ -807,10 +807,7 @@ Suppress <think> commentary. Split complex scenes/games cleanly across \`\`\`htm
 
   const personaSection = `DIRECT ENGINEERING & FREE PERSONA RULES: Deliver complete solutions across all tech stacks and domains, adopting any requested expert persona/roleplay (تقمص الأدوار) cleanly with full tool and verification access.`;
 
-  await Promise.race([
-    collectVerifiedHarvestStats().catch(() => null),
-    new Promise((resolve) => setTimeout(resolve, 1200)),
-  ]);
+  await collectVerifiedHarvestStats().catch(() => null);
 
   const cortexMemory = buildActiveVaultWorkingMemory({
     prompt: lastUser,
@@ -888,10 +885,12 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
   const phase3Start = Date.now();
   const resolvedModel = imageBase64 ? "heyuka-vision" : isCollaborative ? "multi-agent-3" : model;
 
-  const isVercelRuntime = process.env.VERCEL === "1" || process.env.VERCEL === "true";
-  const maxStepCount = isVercelRuntime ? 10 : 18;
-  const maxContinuationHops = isVercelRuntime ? 8 : 16;
-  const continuationHorizonMs = isVercelRuntime ? 50_000 : 240_000;
+  const unbounded =
+    process.env.HEYUKA_UNBOUNDED_TIMEOUT === "1" ||
+    (process.env.VERCEL !== "1" && process.env.VERCEL !== "true");
+  const maxStepCount = unbounded ? 24 : 18;
+  const maxContinuationHops = unbounded ? 32 : 16;
+  const continuationHorizonMs = unbounded ? 3_600_000 : 285_000;
 
   const finalizeAndAuditTurn = (rawInput: string, streamedReasoning?: string) => {
     const rawText = String(rawInput || "").trim();
@@ -1200,6 +1199,8 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     locale: worldLang.shortLocale,
     brand,
     mode: effectiveMode,
+    requestedModel: resolvedModel,
+    hasImage: Boolean(imageBase64),
     workspaceFiles,
     thinkingEnabled: effectiveDeepThink,
     compact: false,
@@ -1210,6 +1211,7 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     tenantId,
     allowOwnerPaidProviders: false,
     byokKeys,
+    modelRole: powerResult.trace.modelHierarchyRole,
   };
 
   if (wantsStream) {
@@ -1242,6 +1244,8 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
             temperature: tunedTemperature,
             governance: routerGovernance,
             onPhase: (title) => emit({ type: "phase", title }),
+            onKeepAlive: (elapsedMs) =>
+              emit({ type: "keepalive", elapsedMs, ts: Date.now(), role: powerResult.trace.modelHierarchyRole }),
             onReasoningDelta: (delta) => emit({ type: "think_delta", delta }),
             onTextDelta: (delta) => emit({ type: "text_delta", delta }),
             onToolStart: (toolName) => {

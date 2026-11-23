@@ -43,6 +43,7 @@ const PUBLIC_API_PATHS = [
   "/api/v1/heyuka/widget",
   "/api/v1/heyuka/gmail-access",
   "/api/v1/heyuka/chat-web",
+  "/api/v1/heyuka/deep-job",
   "/api/v1/heyuka/local-sdk",
   "/api/v1/heyuka/chat-threads",
   "/api/v1/heyuka/share",

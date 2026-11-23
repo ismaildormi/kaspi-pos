@@ -80,7 +80,7 @@ import {
 } from "@/lib/zebra-x/tools/pos-live-tools";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 // ============================================================================
 // STANDARD MERCHANT TOOLS (Strict Tenant Isolation)
@@ -918,7 +918,7 @@ export async function POST(req: NextRequest) {
               )}&gsrlimit=5&prop=imageinfo&iiprop=url|mime&iiurlwidth=640&format=json`,
               {
                 headers: { "User-Agent": "KaspiPOS-HEYUKA/3.0 (https://kaspi-pos.vercel.app)" },
-                signal: AbortSignal.timeout(5000),
+                signal: AbortSignal.timeout(30000),
               }
             );
             const wJson = wRes.ok ? await wRes.json().catch(() => null) : null;
@@ -1546,6 +1546,7 @@ ${powerResult.liveFactsBlock}\n${cortexMemory.activeMemoryPromptBlock}${progress
             tenantId,
             allowOwnerPaidProviders: false,
             byokKeys,
+            modelRole: powerResult.trace.modelHierarchyRole,
           },
           stopWhen: stepCountIs(isVercelRuntime ? 10 : 20),
           onCompletedText: async (text: string, cand?: { providerName?: string; modelId?: string; keyIndex?: number }) => {

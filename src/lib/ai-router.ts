@@ -17,7 +17,28 @@ import {
 
 import { runLocalOnDeviceHeyukaBrain } from "@/lib/heyuka/local-sovereign-brain";
 import { detectTruncationState, mergeContinuationChunk } from "@/lib/heyuka/autonomous-builder-v24-v28";
-import { getHfTokenPoolTokens } from "@/lib/heyuka/compute/hf-token-pool";
+import {
+  getHfTokenPoolTokens,
+  resolveModelCommandHierarchy,
+  type HeyukaHierarchyRole,
+} from "@/lib/heyuka/compute/hf-token-pool";
+
+/**
+ * Resolves deep thinking and execution horizons (`v109.1`).
+ * Never uses sub-25s Vercel cutoffs: supports full 300s fluid compute and unbounded mode via `HEYUKA_UNBOUNDED_TIMEOUT=1`.
+ */
+export function resolveRouterBudgets() {
+  const unbounded =
+    process.env.HEYUKA_UNBOUNDED_TIMEOUT === "1" ||
+    (process.env.VERCEL !== "1" && process.env.VERCEL !== "true");
+  return {
+    failoverHorizonMs: unbounded ? 1_800_000 : 180_000,
+    totalBudgetMs: unbounded ? 3_600_000 : 285_000,
+    perAttemptPrimaryMs: unbounded ? 900_000 : 180_000,
+    perAttemptFallbackMs: unbounded ? 300_000 : 90_000,
+    maxContinuationHops: unbounded ? 32 : 16,
+  };
+}
 
 const modelCooldownUntil = new Map<string, number>();
 
@@ -93,6 +114,7 @@ export interface RouterGovernanceScope {
   callerModelId?: string;
   strictCloudOnly?: boolean;
   byokKeys?: ByokSessionKeys;
+  modelRole?: HeyukaHierarchyRole | string;
 }
 
 function isSafeCallerComputeUrl(rawUrl: string): boolean {
@@ -513,21 +535,27 @@ export async function getRouterCandidates(
     });
   }
 
-  // Priority 8: Hugging Face Multi-Token Inference Pool (Sovereign model + DeepSeek-R1 + Qwen/Llama)
+  // Priority 8: Hugging Face Multi-Token Inference Pool aligned to 3-Model Command Hierarchy
   const hfPoolEntries = getHfTokenPoolTokens();
-  const sovereignHfModel = process.env.HEYUKA_SOVEREIGN_HF_MODEL?.trim();
-  const hfModels = [
-    ...(sovereignHfModel ? [sovereignHfModel] : []),
-    "deepseek-ai/DeepSeek-R1",
-    "Qwen/Qwen2.5-72B-Instruct",
-    "Qwen/Qwen2.5-Coder-32B-Instruct",
-    "meta-llama/Llama-3.3-70B-Instruct",
-  ];
+  const hierarchy = resolveModelCommandHierarchy({
+    requestedModel: typeof scope?.modelRole === "string" ? scope.modelRole : undefined,
+  });
+  const roleStartOffset =
+    hierarchy.role === "heyuka-core" ? 1 : hierarchy.role === "heyuka-vision" ? 2 : 0;
+  const hfModels = Array.from(
+    new Set([
+      ...hierarchy.preferredHfModels,
+      "deepseek-ai/DeepSeek-R1",
+      "Qwen/Qwen2.5-72B-Instruct",
+      "Qwen/Qwen2.5-Coder-32B-Instruct",
+      "meta-llama/Llama-3.3-70B-Instruct",
+    ])
+  );
   hfModels.forEach((hfModelId, modelIdx) => {
     if (hfPoolEntries.length === 0) return;
-    // Rotate starting token per model so the 3 models automatically spread load across keys
+    // Rotate starting token per hierarchy role & model so Omni/Core/Vision spread load across 4 HF tokens
     for (let offset = 0; offset < hfPoolEntries.length; offset++) {
-      const keyEntry = hfPoolEntries[(modelIdx + offset) % hfPoolEntries.length];
+      const keyEntry = hfPoolEntries[(roleStartOffset + modelIdx + offset) % hfPoolEntries.length];
       const hfProvider = createOpenAI({
         apiKey: keyEntry.token,
         baseURL: "https://router.huggingface.co/v1",
@@ -659,7 +687,7 @@ async function callPollinationsZeroKeyHttp(params: {
       model: "openai",
       messages: flatMessages,
     }),
-    signal: AbortSignal.timeout(9_000),
+    signal: AbortSignal.timeout(45_000),
   });
   if (!res.ok) throw new Error(`Zero-Key HTTP ${res.status}`);
   const data = (await res.json()) as any;
@@ -722,9 +750,9 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
 
   const errors: { provider: string; keyIndex: number; error: string }[] = [];
   const genStartedAt = Date.now();
-  const isVercelRuntime = process.env.VERCEL === "1" || process.env.VERCEL === "true";
-  const failoverHorizonMs = isVercelRuntime ? 24_000 : 120_000;
-  const maxTotalHorizonMs = isVercelRuntime ? 50_000 : 240_000;
+  const budgets = resolveRouterBudgets();
+  const failoverHorizonMs = budgets.failoverHorizonMs;
+  const maxTotalHorizonMs = budgets.totalBudgetMs;
   const hasTools = Boolean((restGenOptions as any)?.tools);
   const genAttempts: Array<{ candidate: RouterCandidate; stripTools: boolean }> = [
     ...candidates.map((candidate) => ({ candidate, stripTools: false })),
@@ -742,18 +770,8 @@ export async function generateTextWithRouter(options: GenerateTextOptions) {
         delete callOpts.tools;
         delete callOpts.stopWhen;
       }
-      const remainingMs = Math.max(8_000, maxTotalHorizonMs - (Date.now() - genStartedAt));
-      const attemptCapMs = isVercelRuntime
-        ? isMultimodal
-          ? 24_000
-          : idx === 0
-            ? 20_000
-            : 12_000
-        : isMultimodal
-          ? 60_000
-          : idx === 0
-            ? 90_000
-            : 45_000;
+      const remainingMs = Math.max(20_000, maxTotalHorizonMs - (Date.now() - genStartedAt));
+      const attemptCapMs = idx === 0 ? budgets.perAttemptPrimaryMs : budgets.perAttemptFallbackMs;
       const perAttemptMs = Math.min(remainingMs, attemptCapMs);
       const result = await generateText({
         model: candidate.model as any,
@@ -905,11 +923,11 @@ export async function streamUiResponseWithRouter(
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
       const streamStartedAt = Date.now();
-      const isVercelRuntime = process.env.VERCEL === "1" || process.env.VERCEL === "true";
-      const failoverHorizonMs = isVercelRuntime ? 24_000 : 120_000;
-      const attemptHorizonMs = isVercelRuntime ? 50_000 : 180_000;
-      const totalStreamBudgetMs = isVercelRuntime ? 52_000 : 240_000;
-      const maxContinuationHops = isVercelRuntime ? 8 : 16;
+      const budgets = resolveRouterBudgets();
+      const failoverHorizonMs = budgets.failoverHorizonMs;
+      const attemptHorizonMs = budgets.totalBudgetMs;
+      const totalStreamBudgetMs = budgets.totalBudgetMs;
+      const maxContinuationHops = budgets.maxContinuationHops;
       let succeeded = false;
       let streamStartedOnWriter = false;
       let lastErrMsg = "All HEYUKA cloud gateways unavailable";
@@ -932,15 +950,11 @@ export async function streamUiResponseWithRouter(
           const providerCfg = buildProviderGenerationConfig(candidate, restOptions.maxOutputTokens);
           const callConfig = { ...providerCfg, ...restOptions };
           if (stripTools) delete callConfig.tools;
-          const remainingMs = Math.max(8_000, attemptHorizonMs - (Date.now() - streamStartedAt));
+          const remainingMs = Math.max(20_000, attemptHorizonMs - (Date.now() - streamStartedAt));
           const perAttemptCap =
             attemptIdx === 0
-              ? isVercelRuntime
-                ? 22_000
-                : 90_000
-              : isVercelRuntime
-                ? 12_000
-                : 45_000;
+              ? budgets.perAttemptPrimaryMs
+              : budgets.perAttemptFallbackMs;
           const attemptTimeoutMs = Math.min(remainingMs, perAttemptCap);
 
           const res = streamText({
@@ -1285,6 +1299,7 @@ export async function streamStudioNdjsonWithRouter(
     onTextDelta?: (delta: string) => void;
     onReasoningDelta?: (delta: string) => void;
     onToolStart?: (toolName: string) => void;
+    onKeepAlive?: (elapsedMs: number) => void;
   }
 ): Promise<{
   text: string;
@@ -1295,7 +1310,7 @@ export async function streamStudioNdjsonWithRouter(
   activeKeyIndex: number;
   continuationHops: number;
 }> {
-  const { governance, onPhase, onTextDelta, onReasoningDelta, onToolStart, ...restOptions } = options as any;
+  const { governance, onPhase, onTextDelta, onReasoningDelta, onToolStart, onKeepAlive, ...restOptions } = options as any;
   const allCandidates = await getRouterCandidates(governance);
   const filteredByCost =
     governance?.allowOwnerPaidProviders === true
@@ -1319,12 +1334,17 @@ export async function streamStudioNdjsonWithRouter(
   ];
 
   const startedAt = Date.now();
-  const isVercelRuntime = process.env.VERCEL === "1" || process.env.VERCEL === "true";
-  const failoverHorizonMs = isVercelRuntime ? 24_000 : 120_000;
-  const totalBudgetMs = isVercelRuntime ? 53_000 : 240_000;
-  const maxContinuationHops = isVercelRuntime ? 8 : 16;
+  const budgets = resolveRouterBudgets();
+  const failoverHorizonMs = budgets.failoverHorizonMs;
+  const totalBudgetMs = budgets.totalBudgetMs;
+  const maxContinuationHops = budgets.maxContinuationHops;
   const originalUserPrompt = extractLastUserTextFromMessages(restOptions.messages).slice(0, 1400);
 
+  const keepAliveTimer = setInterval(() => {
+    onKeepAlive?.(Date.now() - startedAt);
+  }, 8_000);
+
+  try {
   for (let idx = 0; idx < attempts.length; idx++) {
     if (idx > 0 && Date.now() - startedAt > failoverHorizonMs) break;
     const { candidate, stripTools } = attempts[idx];
@@ -1335,17 +1355,10 @@ export async function streamStudioNdjsonWithRouter(
     let emittedAnyVisible = false;
     let capturedStreamErr = "";
 
-    const remainingMs = Math.max(8_000, totalBudgetMs - (Date.now() - startedAt));
-    const perAttemptMs = Math.min(remainingMs, isVercelRuntime ? (idx === 0 ? 28_000 : 16_000) : 90_000);
+    const remainingMs = Math.max(20_000, totalBudgetMs - (Date.now() - startedAt));
+    const perAttemptMs = Math.min(remainingMs, idx === 0 ? budgets.perAttemptPrimaryMs : budgets.perAttemptFallbackMs);
     const attemptAbort = new AbortController();
     const overallTimer = setTimeout(() => attemptAbort.abort(), perAttemptMs);
-    let hasFirstActivity = false;
-    const firstActivityTimer = setTimeout(() => {
-      if (!hasFirstActivity) {
-        capturedStreamErr = capturedStreamErr || "Gateway first-token timeout (18s)";
-        attemptAbort.abort();
-      }
-    }, isVercelRuntime ? 14_000 : 18_000);
 
     try {
       const providerCfg = buildProviderGenerationConfig(candidate, restOptions.maxOutputTokens);
@@ -1395,21 +1408,17 @@ export async function streamStudioNdjsonWithRouter(
           throw new Error(String(capturedStreamErr || c.errorText || c.error?.message || "Upstream stream error"));
         }
         if (c.type === "reasoning-delta" && typeof c.delta === "string") {
-          hasFirstActivity = true;
           reasoningText += c.delta;
           onReasoningDelta?.(c.delta);
         } else if (c.type === "text-delta") {
-          hasFirstActivity = true;
           const piece = typeof c.delta === "string" ? c.delta : typeof c.textDelta === "string" ? c.textDelta : "";
           if (piece) splitter.push(piece);
         } else if (c.type === "tool-input-start" && c.toolName) {
-          hasFirstActivity = true;
           onToolStart?.(String(c.toolName));
         } else if ((c.type === "finish-step" || c.type === "finish") && typeof c.finishReason === "string" && c.finishReason) {
           streamFinishReason = c.finishReason;
         }
       }
-      clearTimeout(firstActivityTimer);
       clearTimeout(overallTimer);
       splitter.flush();
 
@@ -1502,7 +1511,6 @@ export async function streamStudioNdjsonWithRouter(
         continuationHops,
       };
     } catch (err: any) {
-      clearTimeout(firstActivityTimer);
       clearTimeout(overallTimer);
       const errMsg = [capturedStreamErr, extractRouterErrorText(err)].filter(Boolean).join(" ");
       markCandidateCoolingDown(candidate, errMsg);
@@ -1519,6 +1527,9 @@ export async function streamStudioNdjsonWithRouter(
       }
       console.warn(`[HEYUKA Studio Stream Failover] ${candidate.provider}:${candidate.modelId}: ${errMsg.slice(0, 160)}`);
     }
+  }
+  } finally {
+    clearInterval(keepAliveTimer);
   }
 
   let fallbackText = "";

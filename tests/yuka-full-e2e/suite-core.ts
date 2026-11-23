@@ -178,6 +178,9 @@ import {
   runUnifiedFullPowerPipeline,
   syncCrawlBatchIntoNervousMesh,
 } from "../../src/lib/heyuka/global-nervous-mesh";
+import { resolveModelCommandHierarchy } from "../../src/lib/heyuka/compute/hf-token-pool";
+import { getDeepAsyncJob, startDeepAsyncJob } from "../../src/lib/heyuka/deep-job-queue";
+import { readVaultLockSummary } from "../../src/lib/heyuka/verified-harvest-counter";
 import { runSelfCapabilityAwakeningSession } from "../../src/lib/heyuka/self-capability-awakening";
 import { searchStudiedKnowledgeCorpus } from "../../src/lib/heyuka/training/knowledge-corpus-engine";
 import { V34_PHOTOREALISTIC_LONG_VIDEO_100 } from "../../src/lib/zebra-x/core/v34-long-video-arsenal";
@@ -255,7 +258,7 @@ import {
   encryptVaultSecrets,
   decryptVaultSecrets,
 } from "../../src/lib/security/integration-vault";
-import { getRouterCandidates } from "../../src/lib/ai-router";
+import { getRouterCandidates, resolveRouterBudgets } from "../../src/lib/ai-router";
 import {
   PLANETARY_ARSENAL_CATALOG,
   PLANETARY_CATALOG_COUNTS,
@@ -2312,6 +2315,74 @@ print(json.dumps({'ok': True, 'hll': hll.estimate(), 'ringShard': s, 'golden': l
     };
   });
 
+  await runCheck("v109_1_unbounded_hierarchy_unification_and_deep_job", "v109.1 Master Plan, Unbounded Budgets, 3-Model Command Hierarchy & Deep Async Jobs", async () => {
+    // 1. Master Unification Plan doc exists & classifies active/newly-wired/consolidated modules
+    const masterPlanPath = path.join(process.cwd(), "docs/HEYUKA_MASTER_UNIFICATION_PLAN.md");
+    assert.ok(fs.existsSync(masterPlanPath), "docs/HEYUKA_MASTER_UNIFICATION_PLAN.md missing");
+    const planText = fs.readFileSync(masterPlanPath, "utf8");
+    assert.ok(planText.includes("maxDuration = 300") && planText.includes("heyuka-omni") && planText.includes("vault/vault-lock.json"));
+
+    // 2. Unbounded / deep execution budgets eliminate sub-25s cutoffs
+    const budgets = resolveRouterBudgets();
+    assert.ok(budgets.failoverHorizonMs >= 180_000);
+    assert.ok(budgets.totalBudgetMs >= 285_000);
+    assert.ok(budgets.maxContinuationHops >= 16);
+
+    // 3. 3-Model Command Hierarchy assigns dedicated lanes & specialized models
+    const omniRole = resolveModelCommandHierarchy({ requestedModel: "heyuka-omni", prompt: "Strategic business analysis" });
+    const coreRole = resolveModelCommandHierarchy({ requestedModel: "heyuka-core", prompt: "Fix TypeScript proof" });
+    const visionRole = resolveModelCommandHierarchy({ requestedModel: "heyuka-vision", hasImage: true });
+    assert.equal(omniRole.role, "heyuka-omni");
+    assert.equal(omniRole.hfLane, "model_1_omni");
+    assert.equal(coreRole.role, "heyuka-core");
+    assert.equal(coreRole.hfLane, "model_2_core");
+    assert.equal(visionRole.role, "heyuka-vision");
+    assert.equal(visionRole.hfLane, "model_3_vision");
+
+    // 4. Vault Lock reader + newly wired superpowers inside live Unified Pipeline
+    const lock = readVaultLockSummary();
+    assert.ok(lock.totalClassifiedEntries >= 2795, `Expected >=2795 vault-lock entries, got ${lock.totalClassifiedEntries}`);
+
+    const superPipe = await runUnifiedFullPowerPipeline({
+      prompt: "| Item | Price |\n| --- | --- |\n| Widget | 120 MAD |\nBuild WhatsApp bot handler + verify TypeScript code",
+      locale: "en",
+      brand: "heyuka",
+      mode: "coding",
+      requestedModel: "heyuka-core",
+      workspaceFiles: [{ path: "index.html", language: "html", content: "<button id='goBtn'>Run</button>" }],
+      thinkingEnabled: true,
+    });
+    assert.equal(superPipe.trace.modelHierarchyRole, "heyuka-core");
+    assert.ok(superPipe.trace.vaultLockEntries >= 2795);
+    assert.ok(superPipe.trace.enginesExecuted.includes("SoM-GUI-v91"));
+    assert.ok(superPipe.trace.enginesExecuted.includes("DeepDocGraphRAG-v91"));
+    assert.ok(superPipe.trace.enginesExecuted.includes("BotFactory-v21"));
+    assert.ok(superPipe.trace.enginesExecuted.includes("VaultLock-2795"));
+
+    // 5. Deep Async Job Queue executes cleanly without short request cutoff
+    const startedJob = startDeepAsyncJob({
+      prompt: "Summarize HEYUKA Omni + Core + Vision architecture briefly",
+      brand: "heyuka",
+      locale: "en",
+      mode: "deepthink",
+      requestedModel: "heyuka-omni",
+    });
+    assert.ok(startedJob.jobId.startsWith("djob_"));
+    let polled = getDeepAsyncJob(startedJob.jobId);
+    for (let i = 0; i < 120 && polled && polled.status === "running"; i += 1) {
+      await new Promise((r) => setTimeout(r, 250));
+      polled = getDeepAsyncJob(startedJob.jobId);
+    }
+    assert.ok(polled);
+    assert.equal(polled.status, "completed");
+    assert.ok(polled.answer && polled.answer.length > 20);
+
+    return {
+      artifactBytes: planText.length + (polled.answer?.length || 0),
+      detail: `v109.1 Unbounded Complete (VaultLock=${lock.totalClassifiedEntries}, Roles=Omni/Core/Vision, Superpowers=SoM+GraphRAG+BotFactory, DeepJob=${polled.status}/${polled.elapsedMs}ms)`,
+    };
+  });
+
   // SUMMARY & SELF-REPORTING
   const totalTested = results.length;
   const passed = results.filter((r) => r.status !== "failed");
@@ -2346,7 +2417,7 @@ print(json.dumps({'ok': True, 'hll': hll.estimate(), 'ringShard': s, 'golden': l
   // Only generate/update YUKA_FINAL_100_PERCENT_TEST_RESULTS.md when 100% of runnable checks pass!
   if (failed.length === 0) {
     const mdLines = [
-      `# YUKA / HEYUKA — 100% Real End-to-End Test Results (\`v14.1\` – \`v108.0\`)`,
+      `# YUKA / HEYUKA — 100% Real End-to-End Test Results (\`v14.1\` – \`v109.1\`)`,
       ``,
       `Generated automatically by [\`tests/yuka-full-e2e/run-all-sources-forever.mjs\`](./tests/yuka-full-e2e/run-all-sources-forever.mjs) at \`${new Date().toISOString()}\`.`,
       ``,

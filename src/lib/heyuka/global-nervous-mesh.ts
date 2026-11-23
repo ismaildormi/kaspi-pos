@@ -9,7 +9,15 @@ import { searchSovereignVault } from "@/lib/heyuka/vault/sovereign-permanent-vau
 import {
   collectVerifiedHarvestStats,
   getCachedVerifiedHarvestSnapshot,
+  readVaultLockSummary,
 } from "@/lib/heyuka/verified-harvest-counter";
+import {
+  resolveModelCommandHierarchy,
+  type HeyukaHierarchyRole,
+} from "@/lib/heyuka/compute/hf-token-pool";
+import { indexInteractiveElementsSetOfMark } from "@/lib/zebra-x/superpowers/vision_gui_som_operator";
+import { parseLayoutAwareDocAndGraph } from "@/lib/zebra-x/superpowers/deep_doc_graph_rag";
+import { compileCustomBotBlueprint } from "@/lib/zebra-x/tools/bot-factory-engine";
 import { classifyExtremeScenario } from "@/lib/zebra-x/dominance/secret1_scenario_master";
 import { analyzeRepoAstAndDependencies, type WorkspaceFileInput } from "@/lib/zebra-x/dominance/secret2_software_supremacy";
 import { inspectInputWithCyberImmuneShield } from "@/lib/zebra-x/omega/secret9_cyber_immune";
@@ -24,6 +32,7 @@ export interface PowerExecutionTrace {
   scenarioMode: string;
   cognitiveCluster: string;
   recommendedOpenModel: string;
+  modelHierarchyRole: HeyukaHierarchyRole;
   selectedHfLane: string | null;
   hfPoolActiveTokens: number;
   enginesExecuted: string[];
@@ -31,6 +40,7 @@ export interface PowerExecutionTrace {
   lastCloudSyncAt: string;
   hotSyncedUnitsCount: number;
   vaultedSourcesCount: number;
+  vaultLockEntries: number;
   doubleReadUnitsCount: number;
   awakeningVerifiedCount: number;
   hyperparams: { temperature: number; topP: number; profile: string };
@@ -93,6 +103,8 @@ export async function runUnifiedFullPowerPipeline(params: {
   locale: "ar" | "fr" | "en";
   brand: "heyuka" | "kaspi_pos";
   mode?: string;
+  requestedModel?: string;
+  hasImage?: boolean;
   workspaceFiles?: WorkspaceFileInput[];
   thinkingEnabled?: boolean;
   compact?: boolean;
@@ -102,31 +114,40 @@ export async function runUnifiedFullPowerPipeline(params: {
   const prompt = String(params.prompt || "");
   const enginesExecuted: string[] = [];
 
-  // 1. Cyber-Immune Firewall (<3ms) + Extreme Scenario Classifier
+  // 1. Cyber-Immune Firewall (<3ms) + Extreme Scenario Classifier + 3-Model Command Hierarchy
   const shield = inspectInputWithCyberImmuneShield(prompt, { sourceTrust: "user" });
   const scenario = classifyExtremeScenario(prompt);
-  enginesExecuted.push("CyberImmune-v88", `Scenario:${scenario.mode}`);
+  const hierarchy = resolveModelCommandHierarchy({
+    requestedModel: params.requestedModel,
+    prompt,
+    hasImage: params.hasImage || (params.workspaceFiles || []).some((f) => /\.(png|jpg|webp|svg)$/i.test(f.path)),
+    mode: params.mode,
+  });
+  enginesExecuted.push(
+    "CyberImmune-v88",
+    `Scenario:${scenario.mode}`,
+    `Hierarchy:${hierarchy.role}`
+  );
 
-  // 2. Non-blocking / fast Remote Omniscience Radar refresh
+  // 2. Full-Depth Remote Omniscience Radar & Vault Lock Metadata (Zero short-timeout cutoff)
+  const vaultLock = readVaultLockSummary();
   const radar =
     getCachedVerifiedHarvestSnapshot() ||
-    (await Promise.race([
-      collectVerifiedHarvestStats().catch(() => null),
-      new Promise<null>((r) => setTimeout(() => r(null), 900)),
-    ]));
+    (await collectVerifiedHarvestStats().catch(() => null));
   if (radar) enginesExecuted.push("OmniscienceRadar-v90.5");
+  if (vaultLock.totalClassifiedEntries > 0) enginesExecuted.push("VaultLock-2795");
 
-  // 3. Semantic Corpus + Vault + Cluster Classification + Omni-Router Selection
+  // 3. Deep Semantic Corpus + Sovereign Vault + Cluster Classification + Omni-Router Selection
   const cognitiveRoute = classifyCognitiveIntentAndSources(prompt, params.locale);
-  const studied = searchStudiedKnowledgeCorpus({ query: prompt, limit: 6, includeWebFirst: true });
-  const vaulted = searchSovereignVault({ query: prompt, clusterId: cognitiveRoute.primaryCluster.id, limit: 5 });
+  const studied = searchStudiedKnowledgeCorpus({ query: prompt, limit: 12, includeWebFirst: true });
+  const vaulted = searchSovereignVault({ query: prompt, clusterId: cognitiveRoute.primaryCluster.id, limit: 8 });
   const modelRoute = routeTaskToOptimalModel(prompt);
   enginesExecuted.push(
     `Cluster:${cognitiveRoute.primaryCluster.id}`,
     `OmniRouter:${modelRoute.specialty}`
   );
 
-  // 4. Contextual Domain Micro-Engines (real live deterministic insights)
+  // 4. Contextual Domain Micro-Engines & Superpowers (AST, SoM-GUI, DeepDoc GraphRAG, Bot Factory, Darija/DGI, ZeroCost)
   const enrichmentNotes: string[] = [];
   if (params.workspaceFiles && params.workspaceFiles.length > 0) {
     const ast = analyzeRepoAstAndDependencies(params.workspaceFiles);
@@ -141,6 +162,35 @@ export async function runUnifiedFullPowerPipeline(params: {
         `[Workspace SAST]: Found ${ast.securityAudit.totalFindings} security issue(s) to remediate.`
       );
     }
+    const htmlFile = params.workspaceFiles.find((f) => /\.html?$/i.test(f.path));
+    if (htmlFile?.content) {
+      const som = indexInteractiveElementsSetOfMark(htmlFile.content, 24);
+      enginesExecuted.push("SoM-GUI-v91");
+      if (som.elements.length > 0) {
+        enrichmentNotes.push(`[SoM DOM Map]: Indexed ${som.elements.length} interactive elements in ${htmlFile.path}.`);
+      }
+    }
+  }
+
+  if (prompt.includes("|") || prompt.length > 260) {
+    const docGraph = parseLayoutAwareDocAndGraph(prompt);
+    if (docGraph.tables.length > 0 || docGraph.graphEdges.length > 0) {
+      enginesExecuted.push("DeepDocGraphRAG-v91");
+      enrichmentNotes.push(
+        `[DeepDoc GraphRAG]: Parsed ${docGraph.tables.length} structured table(s) & ${docGraph.graphEdges.length} semantic graph edge(s).`
+      );
+    }
+  }
+
+  if (/(whatsapp|telegram|chatbot|bot factory|بوت|تيليجرام|واتساب)/i.test(prompt)) {
+    const botPkg = compileCustomBotBlueprint({
+      botId: "heyuka_custom_bot",
+      displayName: "HEYUKA Sovereign Bot",
+      platform: /telegram/i.test(prompt) ? "telegram" : "whatsapp",
+      guidelines: [{ condition: "Incoming user message", action: prompt.slice(0, 140) || "Process cleanly" }],
+    });
+    enginesExecuted.push("BotFactory-v21");
+    enrichmentNotes.push(`[Bot Factory Blueprint Ready]: ${botPkg.entryFilename} (${botPkg.readmeNotes})`);
   }
 
   const darijaMatches = resolveDarijaCommercialTerms(prompt);
@@ -164,7 +214,7 @@ export async function runUnifiedFullPowerPipeline(params: {
         ...vaulted.map((v) => [v.url, { name: v.name, url: v.url }] as const),
       ]
     ).values()
-  ).slice(0, 6);
+  ).slice(0, 12);
 
   const hyperparams = resolveOptimalInferenceHyperparams({
     prompt,
@@ -180,9 +230,10 @@ export async function runUnifiedFullPowerPipeline(params: {
   });
 
   const liveFactsBlock = [
-    `[NERVOUS MESH & VERIFIED STATE | Vault=${vaulted.length > 0 ? studied.totalCorpusUnits : 2795} units | Web=${studied.webCrawledUnits} | HF=${radar?.huggingFaceVault.crystalCount ?? 0} crystals (${radar?.huggingFaceVault.poolActiveTokens ?? modelRoute.hfPoolActiveTokens} keys) | LastSync=${meshState.lastCloudSyncAt}${meshState.lastAwakeningScore ? ` | Awakened=${meshState.lastAwakeningScore}` : ""}]`,
+    `[NERVOUS MESH v109.1 | Role=${hierarchy.role} (${hierarchy.hfLane}) | VaultLock=${vaultLock.totalClassifiedEntries || studied.totalCorpusUnits} (${vaultLock.packCount} packs) | Web=${studied.webCrawledUnits} | HF=${radar?.huggingFaceVault.datasetRepo ?? "zuvyrismail/heyuka-omni-vault"} (${radar?.huggingFaceVault.crystalCount ?? 0} crystals, ${radar?.huggingFaceVault.poolActiveTokens ?? modelRoute.hfPoolActiveTokens} keys) | LastSync=${meshState.lastCloudSyncAt}${meshState.lastAwakeningScore ? ` | Awakened=${meshState.lastAwakeningScore}` : ""}]`,
+    `[COMMAND MISSION (${hierarchy.title})]: ${hierarchy.mission}`,
     liveSourcesConsulted.length > 0
-      ? `[MATCHED SOURCES FOR THIS TURN]: ${liveSourcesConsulted.map((s) => `${s.name} (${s.url})`).join(" ; ")}`
+      ? `[DEEP-READ SOURCES (${liveSourcesConsulted.length})]: ${liveSourcesConsulted.map((s) => `${s.name} (${s.url})`).join(" ; ")}`
       : "",
     ...enrichmentNotes,
   ]
@@ -190,19 +241,21 @@ export async function runUnifiedFullPowerPipeline(params: {
     .join("\n");
 
   const trace: PowerExecutionTrace = {
-    version: "v108.0",
+    version: "v109.1",
     pipelineLatencyMs: Number((performance.now() - t0).toFixed(2)),
     securityVerdict: shield.verdict,
     scenarioMode: scenario.mode,
     cognitiveCluster: cognitiveRoute.primaryCluster.id,
-    recommendedOpenModel: modelRoute.recommendedOpenModel,
-    selectedHfLane: modelRoute.selectedHfLaneEnv,
+    recommendedOpenModel: hierarchy.preferredHfModels[0] || modelRoute.recommendedOpenModel,
+    modelHierarchyRole: hierarchy.role,
+    selectedHfLane: hierarchy.hfLane || modelRoute.selectedHfLaneEnv,
     hfPoolActiveTokens: modelRoute.hfPoolActiveTokens,
     enginesExecuted,
     liveSourcesConsulted,
     lastCloudSyncAt: meshState.lastCloudSyncAt,
     hotSyncedUnitsCount: meshState.hotSyncedUnitsCount,
     vaultedSourcesCount: radar?.verifiedMetrics.vaultedSourcesCount ?? studied.totalCorpusUnits,
+    vaultLockEntries: vaultLock.totalClassifiedEntries,
     doubleReadUnitsCount: radar?.verifiedMetrics.doubleReadVerifiedUnits ?? studied.totalCorpusUnits,
     awakeningVerifiedCount: meshState.awakeningVerifiedCount,
     hyperparams,

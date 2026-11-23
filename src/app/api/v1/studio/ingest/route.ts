@@ -16,7 +16,7 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /**
  * Normalizes public seed URLs passed by Studio or CLI callers for crawling.

@@ -25,8 +25,10 @@ import {
   selectBestOnlineStrategy,
 } from "@/lib/zebra-x/omega/secret8_online_distiller";
 import type { StudioBrand } from "@/lib/heyuka/studio/studio-orchestrator-v55-v60";
+import { runUnifiedFullPowerPipeline } from "@/lib/heyuka/global-nervous-mesh";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: HEYUKA_API_CORS_HEADERS });
@@ -157,14 +159,28 @@ export async function POST(req: NextRequest) {
 
       case "solve_any":
       default: {
-        const res = await solveAnyScenarioUnified({
-          prompt: String(body?.prompt || ""),
-          brand,
-          locale,
-          requestedMode: body?.mode || "auto",
-          offline: Boolean(body?.offline),
-        });
-        return NextResponse.json(res, { status: res.ok ? 200 : 403, headers: HEYUKA_API_CORS_HEADERS });
+        const promptText = String(body?.prompt || "");
+        const [res, powerResult] = await Promise.all([
+          solveAnyScenarioUnified({
+            prompt: promptText,
+            brand,
+            locale,
+            requestedMode: body?.mode || "auto",
+            offline: Boolean(body?.offline),
+          }),
+          runUnifiedFullPowerPipeline({
+            prompt: promptText,
+            locale,
+            brand: brand === "kaspi_pos" ? "kaspi_pos" : "heyuka",
+            mode: String(body?.mode || "auto"),
+            thinkingEnabled: true,
+            compact: true,
+          }),
+        ]);
+        return NextResponse.json(
+          { ...res, powerTelemetry: powerResult.trace },
+          { status: res.ok ? 200 : 403, headers: HEYUKA_API_CORS_HEADERS }
+        );
       }
     }
   } catch (err: any) {

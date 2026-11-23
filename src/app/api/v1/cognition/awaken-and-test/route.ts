@@ -4,6 +4,7 @@ import { runSelfCapabilityAwakeningSession } from "@/lib/heyuka/self-capability-
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 const LIVE_HEADERS = {
   ...HEYUKA_API_CORS_HEADERS,

@@ -11,6 +11,7 @@ import { collectVerifiedHarvestStats } from "@/lib/heyuka/verified-harvest-count
 import { runUnifiedFullPowerPipeline } from "@/lib/heyuka/global-nervous-mesh";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: HEYUKA_API_CORS_HEADERS });
@@ -62,12 +63,7 @@ export async function POST(req: NextRequest) {
     executionMode: "client_cpu",
   });
 
-  const [liveTelemetry] = await Promise.all([
-    Promise.race([
-      collectVerifiedHarvestStats().catch(() => null),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
-    ]),
-  ]);
+  const liveTelemetry = await collectVerifiedHarvestStats().catch(() => null);
 
   return NextResponse.json(
     {

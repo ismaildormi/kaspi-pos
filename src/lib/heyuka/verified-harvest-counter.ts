@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { getHfTokenPoolSummary, resolveHfDatasetRepo, selectHfTokenForRole } from "@/lib/heyuka/compute/hf-token-pool";
 import { getStudiedCorpusTelemetry } from "@/lib/heyuka/training/knowledge-corpus-engine";
 import { getSovereignVaultUnifiedEntries } from "@/lib/heyuka/vault/sovereign-permanent-vault";
@@ -72,6 +74,41 @@ export interface VerifiedHarvestTelemetry {
   };
 }
 
+let cachedVaultLock: { schemaVersion: string; totalClassifiedEntries: number; packCount: number; generatedAt: string } | null = null;
+
+/**
+ * Reads classified Vault Lock registry directly from `vault/vault-lock.json` cleanly once per runtime.
+ */
+export function readVaultLockSummary(): {
+  schemaVersion: string;
+  totalClassifiedEntries: number;
+  packCount: number;
+  generatedAt: string;
+} {
+  if (cachedVaultLock) return cachedVaultLock;
+  try {
+    const lockPath = path.join(process.cwd(), "vault", "vault-lock.json");
+    if (fs.existsSync(lockPath)) {
+      const raw = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+      cachedVaultLock = {
+        schemaVersion: String(raw?.schemaVersion || "v35.1-lock"),
+        totalClassifiedEntries: Number(raw?.totalClassifiedEntries || 0),
+        packCount: raw?.byPack && typeof raw.byPack === "object" ? Object.keys(raw.byPack).length : 0,
+        generatedAt: String(raw?.generatedAt || ""),
+      };
+      return cachedVaultLock;
+    }
+  } catch {
+    // Graceful fallback if edge FS unavailable
+  }
+  return {
+    schemaVersion: "v35.1-lock",
+    totalClassifiedEntries: getSovereignVaultUnifiedEntries().length,
+    packCount: 0,
+    generatedAt: "",
+  };
+}
+
 let cachedTelemetry: VerifiedHarvestTelemetry | null = null;
 let cachedAtMs = 0;
 const TELEMETRY_CACHE_TTL_MS = 20_000;
@@ -79,7 +116,7 @@ const TELEMETRY_CACHE_TTL_MS = 20_000;
 async function fetchJsonBounded<T>(
   url: string,
   headers?: Record<string, string>,
-  timeoutMs = 3500
+  timeoutMs = 15_000
 ): Promise<T | null> {
   try {
     const res = await fetch(url, {

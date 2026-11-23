@@ -8,6 +8,92 @@
 
 export type HfLaneRole = "model_1_omni" | "model_2_core" | "model_3_vision" | "ingest" | "read_fast";
 
+export type HeyukaHierarchyRole = "heyuka-omni" | "heyuka-core" | "heyuka-vision";
+
+export interface ModelHierarchyDirective {
+  role: HeyukaHierarchyRole;
+  title: string;
+  hfLane: HfLaneRole;
+  preferredHfModels: string[];
+  mission: string;
+}
+
+/**
+ * Classifies and routes every request through the unified 3-model command hierarchy:
+ * - `heyuka-omni`: Strategic supreme commander & multi-domain synthesizer
+ * - `heyuka-core`: Deterministic software architecture, math & Moroccan DGI verifier
+ * - `heyuka-vision`: Multimodal image, screen UI, 3D WebGL & media specialist
+ */
+export function resolveModelCommandHierarchy(params: {
+  requestedModel?: string;
+  prompt?: string;
+  hasImage?: boolean;
+  mode?: string;
+}): ModelHierarchyDirective {
+  const m = String(params.requestedModel || "").toLowerCase();
+  const mode = String(params.mode || "").toLowerCase();
+  const p = String(params.prompt || "");
+  const sovereignEnv = process.env.HEYUKA_SOVEREIGN_HF_MODEL?.trim();
+
+  const hasVisionCue =
+    params.hasImage ||
+    m.includes("vision") ||
+    mode === "image" ||
+    mode === "video" ||
+    mode === "3d" ||
+    /(?:\b(?:image|vision|screenshot|ui|ux|3d|canvas|shader)\b|صورة|فيديو|واجهة|تصميم)/i.test(p);
+
+  const hasCoreCue =
+    m.includes("core") ||
+    mode === "coding" ||
+    mode === "security" ||
+    /(?:\b(?:code|bug|typescript|python|sql|math|proof|tva|dgi|calculate)\b|برمجة|كود|ضريبة|حساب|برهان)/i.test(p);
+
+  if (params.hasImage || m.includes("vision") || (!m.includes("core") && hasVisionCue)) {
+    return {
+      role: "heyuka-vision",
+      title: "HEYUKA Vision — Multimodal, UI & 3D Media Expert",
+      hfLane: "model_3_vision",
+      preferredHfModels: [
+        ...(sovereignEnv ? [sovereignEnv] : []),
+        "Qwen/Qwen2.5-72B-Instruct",
+        "meta-llama/Llama-3.3-70B-Instruct",
+        "deepseek-ai/DeepSeek-R1",
+      ],
+      mission: "Analyze visual inputs, DOM/Set-of-Mark UI, and 3D shaders with multimodal verification.",
+    };
+  }
+
+  if (m.includes("core") || (!m.includes("omni") && hasCoreCue)) {
+    return {
+      role: "heyuka-core",
+      title: "HEYUKA Core — Engineering, Logic & Proof Architect",
+      hfLane: "model_2_core",
+      preferredHfModels: [
+        ...(sovereignEnv ? [sovereignEnv] : []),
+        "deepseek-ai/DeepSeek-R1",
+        "Qwen/Qwen2.5-Coder-32B-Instruct",
+        "Qwen/Qwen2.5-72B-Instruct",
+      ],
+      mission: "Synthesize clean zero-stub code, AST checks, and formally verified Moroccan DGI math.",
+    };
+  }
+
+  return {
+    role: "heyuka-omni",
+    title: "HEYUKA Omni — Supreme Strategic Orchestrator",
+    hfLane: "model_1_omni",
+    preferredHfModels: [
+      ...(sovereignEnv ? [sovereignEnv] : []),
+      "Qwen/Qwen2.5-72B-Instruct",
+      "deepseek-ai/DeepSeek-R1",
+      "meta-llama/Llama-3.3-70B-Instruct",
+      "Qwen/Qwen2.5-Coder-32B-Instruct",
+    ],
+    mission: "Coordinate deep multi-source synthesis, council strategy, and end-to-end execution.",
+  };
+}
+
 export interface HfPooledKey {
   index: number;
   envName: string;

@@ -588,10 +588,8 @@ export function HeyukaUnifiedStudioWorkspace({
 
     const controller = new AbortController();
     abortCtrlRef.current = controller;
-    const isLocalHost =
-      typeof window !== "undefined" &&
-      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-    const stallBudgetMs = isLocalHost ? 180_000 : 62_000;
+    // Unbounded streaming: 300s idle window resets on every 8s keep-alive pulse or stream delta
+    const stallBudgetMs = 300_000;
     let stallTimer: ReturnType<typeof setTimeout> | null = null;
     const resetStallTimer = () => {
       if (stallTimer) clearTimeout(stallTimer);
@@ -725,6 +723,8 @@ export function HeyukaUnifiedStudioWorkspace({
 
           if (ev.type === "phase" && ev.title) {
             setLivePhaseLabel(String(ev.title));
+          } else if (ev.type === "keepalive") {
+            resetStallTimer();
           } else if (ev.type === "power_telemetry" && ev.telemetry) {
             turnPowerTelemetry = ev.telemetry as PowerExecutionTrace;
             pushLivePatch({ powerTelemetry: turnPowerTelemetry });
@@ -847,7 +847,7 @@ export function HeyukaUnifiedStudioWorkspace({
       // Automatic seamless client continuation pass if interrupted mid-generation OR server flagged remaining files/text
       for (
         let clientHop = 0;
-        clientHop < 2 &&
+        clientHop < 6 &&
         (!turnCompletedCleanly || incompleteTruncated) &&
         !userStoppedRef.current &&
         answerText.trim().length > 80;
@@ -1640,7 +1640,7 @@ export function HeyukaUnifiedStudioWorkspace({
                                     title={`${msg.powerTelemetry.enginesExecuted.join(" • ")} | Model: ${msg.powerTelemetry.recommendedOpenModel}`}
                                     className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[10px]"
                                   >
-                                    ⚡ {msg.powerTelemetry.enginesExecuted.length}{" "}
+                                    ⚡ {msg.powerTelemetry.modelHierarchyRole} • {msg.powerTelemetry.enginesExecuted.length}{" "}
                                     {isAr ? "محرك" : "engines"} •{" "}
                                     {msg.powerTelemetry.vaultedSourcesCount}+{" "}
                                     {isAr ? "مصدر" : "src"} • T={msg.powerTelemetry.hyperparams.temperature} •{" "}
