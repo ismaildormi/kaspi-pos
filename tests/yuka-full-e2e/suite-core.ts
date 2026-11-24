@@ -259,7 +259,10 @@ import {
   decryptVaultSecrets,
 } from "../../src/lib/security/integration-vault";
 import { getRouterCandidates, resolveRouterBudgets } from "../../src/lib/ai-router";
-import { buildCompleteMasterArchitectureAndAuditMarkdown } from "../../scripts/build-exhaustive-master-blueprint";
+import {
+  buildCanonicalStandardFile2Markdown,
+  buildCompleteMasterArchitectureAndAuditMarkdown,
+} from "../../scripts/build-exhaustive-master-blueprint";
 import {
   PLANETARY_ARSENAL_CATALOG,
   PLANETARY_CATALOG_COUNTS,
@@ -2457,6 +2460,10 @@ print(json.dumps({'ok': True, 'hll': hll.estimate(), 'ringShard': s, 'golden': l
       fullMasterBlueprintMd,
     ];
     fs.writeFileSync(path.join(process.cwd(), "YUKA_FINAL_100_PERCENT_TEST_RESULTS.md"), mdLines.join("\n"));
+    fs.writeFileSync(
+      path.join(process.cwd(), "HEYUKA_STANDARD_FILE_2_MODELS_COGNITION_AND_SOURCES.md"),
+      buildCanonicalStandardFile2Markdown(process.cwd())
+    );
     fs.writeFileSync(
       path.join(process.cwd(), "docs", "HEYUKA_COMPLETE_AI_MODELS_AND_SOURCES_MASTER_BIBLE.md"),
       fullMasterBlueprintMd

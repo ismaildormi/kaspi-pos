@@ -1,7 +1,7 @@
 # المخطط المعماري الكامل وأوديت المنظومة الشامل من البداية إلى النهاية (`v1.0` – `v109.1`)
 # HEYUKA & KASPI POS — Complete System Architecture, Full Codebase Audit & Unabridged All-Sources Catalog
 
-> **مُولَّد آلياً بدقة `100%` مباشرةً من الملفات الحية في المستودع (`scripts/build-exhaustive-master-blueprint.ts`)** في `2026-11-24T00:06:33.338Z`.
+> **مُولَّد آلياً بدقة `100%` مباشرةً من الملفات الحية في المستودع (`scripts/build-exhaustive-master-blueprint.ts`)** في `2026-11-24T00:35:20.911Z`.
 
 ---
 
