@@ -28,7 +28,7 @@ const INJECTION_RULES: ReadonlyArray<{ code: string; weight: number; pattern: Re
   {
     code: "PROMPT_INJECTION_OVERRIDE",
     weight: 60,
-    pattern: /\b(?:ignore|disregard|forget)\b.{0,40}\b(?:all\s+)?(?:previous|prior|above|system)\s+(?:instructions?|rules?|prompts?)/i,
+    pattern: /\b(?:ignore|disregard|forget)\b.{0,50}\b(?:previous|prior|above|system)\b.{0,25}\b(?:instructions?|rules?|prompts?)/i,
     detail: "Prompt override / instruction hijacking attempt",
   },
   {

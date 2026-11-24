@@ -183,8 +183,18 @@ function extractToolsAndPriorities(rootDir: string) {
 
   const goldenTxt = fs.readFileSync(path.join(rootDir, "training/crawler/golden_sources_priority.py"), "utf8");
   const goldenSources = Array.from(
-    goldenTxt.matchAll(/"id":\s*"([^"]+)"[\s\S]{0,160}?"name":\s*"([^"]+)"[\s\S]{0,220}?"focus":\s*"([^"]+)"/g)
-  ).map((m) => ({ id: m[1], name: m[2], focus: m[3] }));
+    goldenTxt.matchAll(
+      /"id":\s*"([^"]+)"[\s\S]{0,200}?"name":\s*"([^"]+)"[\s\S]{0,120}?"category":\s*"([^"]+)"[\s\S]{0,120}?"priority":\s*(\d+)[\s\S]{0,260}?"url":\s*"([^"]+)"[\s\S]{0,160}?"homeUrl":\s*"([^"]+)"/g
+    )
+  ).map((m) => ({
+    id: m[1],
+    name: m[2],
+    category: m[3],
+    priority: Number(m[4]),
+    url: m[5],
+    homeUrl: m[6],
+    focus: `[${m[3].toUpperCase()} | Priority ${m[4]}] ${m[6]} — API: ${m[5]}`,
+  }));
 
   const papiTxt = fs.readFileSync(path.join(rootDir, "src/lib/zebra-x/tools/public-apis-hub.ts"), "utf8");
   const publicApiUrls: Record<string, string[]> = {};

@@ -3,6 +3,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { recordProductSelfEvolution } from "@/lib/heyuka/learning/self-evolution-engine";
 import { executePolyglotCodeSandbox } from "@/lib/zebra-x/tools/code-sandbox";
+import {
+  loadDurableStateSync,
+  saveDurableState,
+} from "@/lib/heyuka/frontier/persistent-episodic-memory";
 
 export type SelfPlayDomain = "math" | "logic" | "coding" | "commerce";
 
@@ -56,6 +60,19 @@ function getEloStateFile(): string {
 
 export function getSelfPlayTelemetry(): PersistentEloState {
   try {
+    const durable = loadDurableStateSync<PersistentEloState | null>(
+      "frontier_secret1_selfplay_elo_v110",
+      null
+    );
+    if (durable && typeof durable.elo === "number") {
+      inMemoryEloState = {
+        elo: durable.elo,
+        curriculumLevel: durable.curriculumLevel ?? 1,
+        totalRounds: durable.totalRounds ?? 0,
+        verifiedWins: durable.verifiedWins ?? 0,
+      };
+      return { ...inMemoryEloState };
+    }
     const fp = getEloStateFile();
     if (fs.existsSync(fp)) {
       const parsed = JSON.parse(fs.readFileSync(fp, "utf8"));
@@ -76,6 +93,7 @@ export function getSelfPlayTelemetry(): PersistentEloState {
 
 function saveSelfPlayState(state: PersistentEloState): void {
   inMemoryEloState = { ...state };
+  void saveDurableState("frontier_secret1_selfplay_elo_v110", state);
   try {
     fs.mkdirSync("/tmp/heyuka-vault", { recursive: true });
     fs.writeFileSync(getEloStateFile(), JSON.stringify(state, null, 2), "utf8");

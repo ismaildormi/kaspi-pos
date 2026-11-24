@@ -24,6 +24,11 @@ import { inspectInputWithCyberImmuneShield } from "@/lib/zebra-x/omega/secret9_c
 import { resolveDarijaCommercialTerms } from "@/lib/zebra-x/omega/secret10_hyper_local_grounding";
 import { routeTaskToOptimalModel } from "@/lib/zebra-x/dominance/secret6_omni_router";
 import { buildZeroCostConnectorScaffold } from "@/lib/zebra-x/tools/universal_mcp_bus";
+import {
+  runFrontierIntelligenceOrchestrator,
+  type FrontierExecutionMode,
+} from "@/lib/heyuka/frontier/frontier-intelligence-orchestrator";
+import type { SevenDistinctSourceStates } from "@/lib/heyuka/frontier/universal-knowledge-fabric";
 
 export interface PowerExecutionTrace {
   version: string;
@@ -44,6 +49,24 @@ export interface PowerExecutionTrace {
   doubleReadUnitsCount: number;
   awakeningVerifiedCount: number;
   hyperparams: { temperature: number; topP: number; profile: string };
+  frontier?: {
+    executionMode: FrontierExecutionMode;
+    taskCategory: string;
+    activatedSpecialistsCount: number;
+    distinctPhysicalModelsCount: number;
+    specialistRoles: string[];
+    winningBasis: string;
+    mathVerified: boolean;
+    mctsGainDelta: number;
+    sourceStates: SevenDistinctSourceStates;
+    epistemicCounts: {
+      established_facts: number;
+      strongly_supported_findings: number;
+      reasonable_inference: number;
+      unverified_claims: number;
+      conflicting_evidence: number;
+    };
+  };
 }
 
 interface NervousMeshState {
@@ -207,14 +230,29 @@ export async function runUnifiedFullPowerPipeline(params: {
     enrichmentNotes.push(`[Zero-Cost Infra Tip]: ${connector.title} (${connector.freeTierLimit}).`);
   }
 
+  // 5. Frontier Intelligence v110.0 Orchestrator (12-Stage Knowledge Fabric + 10 Specialists + 7-Layer Memory + Math Proof)
+  const hasImageFlag =
+    params.hasImage || (params.workspaceFiles || []).some((f) => /\.(png|jpg|webp|svg)$/i.test(f.path));
+  const frontierRes = await runFrontierIntelligenceOrchestrator({
+    prompt,
+    requestedModel: params.requestedModel,
+    hasImageAttachment: hasImageFlag,
+  });
+  enginesExecuted.push(
+    `FrontierMode:${frontierRes.executionMode}`,
+    `Specialists:${frontierRes.activatedSpecialistsCount}/10`,
+    `Adjudication:${frontierRes.adjudicationSummary.winningBasis}`
+  );
+
   const liveSourcesConsulted = Array.from(
     new Map(
       [
+        ...frontierRes.knowledgeFabric.topEvidenceNodes.map((n) => [n.url, { name: n.title, url: n.url }] as const),
         ...studied.hits.map((h) => [h.url, { name: h.title, url: h.url }] as const),
         ...vaulted.map((v) => [v.url, { name: v.name, url: v.url }] as const),
       ]
     ).values()
-  ).slice(0, 12);
+  ).slice(0, 14);
 
   const hyperparams = resolveOptimalInferenceHyperparams({
     prompt,
@@ -230,8 +268,9 @@ export async function runUnifiedFullPowerPipeline(params: {
   });
 
   const liveFactsBlock = [
-    `[NERVOUS MESH v109.1 | Role=${hierarchy.role} (${hierarchy.hfLane}) | VaultLock=${vaultLock.totalClassifiedEntries || studied.totalCorpusUnits} (${vaultLock.packCount} packs) | Web=${studied.webCrawledUnits} | HF=${radar?.huggingFaceVault.datasetRepo ?? "zuvyrismail/heyuka-omni-vault"} (${radar?.huggingFaceVault.crystalCount ?? 0} crystals, ${radar?.huggingFaceVault.poolActiveTokens ?? modelRoute.hfPoolActiveTokens} keys) | LastSync=${meshState.lastCloudSyncAt}${meshState.lastAwakeningScore ? ` | Awakened=${meshState.lastAwakeningScore}` : ""}]`,
+    `[NERVOUS MESH v110.0 | Role=${hierarchy.role} (${hierarchy.hfLane}) | Mode=${frontierRes.executionMode} | Specialists=${frontierRes.activatedSpecialistsCount}/10 | VaultLock=${vaultLock.totalClassifiedEntries || studied.totalCorpusUnits} (${vaultLock.packCount} packs) | Web=${studied.webCrawledUnits} | HF=${radar?.huggingFaceVault.datasetRepo ?? "zuvyrismail/heyuka-omni-vault"} (${radar?.huggingFaceVault.crystalCount ?? 0} crystals, ${radar?.huggingFaceVault.poolActiveTokens ?? modelRoute.hfPoolActiveTokens} keys) | LastSync=${meshState.lastCloudSyncAt}${meshState.lastAwakeningScore ? ` | Awakened=${meshState.lastAwakeningScore}` : ""}]`,
     `[COMMAND MISSION (${hierarchy.title})]: ${hierarchy.mission}`,
+    frontierRes.synthesizedDirectiveBlock,
     liveSourcesConsulted.length > 0
       ? `[DEEP-READ SOURCES (${liveSourcesConsulted.length})]: ${liveSourcesConsulted.map((s) => `${s.name} (${s.url})`).join(" ; ")}`
       : "",
@@ -241,7 +280,7 @@ export async function runUnifiedFullPowerPipeline(params: {
     .join("\n");
 
   const trace: PowerExecutionTrace = {
-    version: "v109.1",
+    version: "v110.0",
     pipelineLatencyMs: Number((performance.now() - t0).toFixed(2)),
     securityVerdict: shield.verdict,
     scenarioMode: scenario.mode,
@@ -259,6 +298,25 @@ export async function runUnifiedFullPowerPipeline(params: {
     doubleReadUnitsCount: radar?.verifiedMetrics.doubleReadVerifiedUnits ?? studied.totalCorpusUnits,
     awakeningVerifiedCount: meshState.awakeningVerifiedCount,
     hyperparams,
+    frontier: {
+      executionMode: frontierRes.executionMode,
+      taskCategory: frontierRes.taskCategory,
+      activatedSpecialistsCount: frontierRes.activatedSpecialistsCount,
+      distinctPhysicalModelsCount: frontierRes.distinctPhysicalModelsCount,
+      specialistRoles: frontierRes.specialists.map((s) => s.role),
+      winningBasis: frontierRes.adjudicationSummary.winningBasis,
+      mathVerified: frontierRes.mathVerification.verified,
+      mctsGainDelta: frontierRes.mctsBenchmark.mctsAccuracyGainDelta,
+      sourceStates: frontierRes.knowledgeFabric.sourceStates,
+      epistemicCounts: {
+        established_facts: frontierRes.knowledgeFabric.epistemicBreakdown.established_facts.length,
+        strongly_supported_findings:
+          frontierRes.knowledgeFabric.epistemicBreakdown.strongly_supported_findings.length,
+        reasonable_inference: frontierRes.knowledgeFabric.epistemicBreakdown.reasonable_inference.length,
+        unverified_claims: frontierRes.knowledgeFabric.epistemicBreakdown.unverified_claims.length,
+        conflicting_evidence: frontierRes.knowledgeFabric.epistemicBreakdown.conflicting_evidence.length,
+      },
+    },
   };
 
   return {

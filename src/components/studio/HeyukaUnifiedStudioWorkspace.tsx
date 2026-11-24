@@ -1637,13 +1637,29 @@ export function HeyukaUnifiedStudioWorkspace({
                                 </span>
                                 {msg.powerTelemetry && (
                                   <span
-                                    title={`${msg.powerTelemetry.enginesExecuted.join(" • ")} | Model: ${msg.powerTelemetry.recommendedOpenModel}`}
-                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[10px]"
+                                    title={`${msg.powerTelemetry.enginesExecuted.join(" • ")} | Model: ${msg.powerTelemetry.recommendedOpenModel}${
+                                      msg.powerTelemetry.frontier
+                                        ? ` | Specialists: ${msg.powerTelemetry.frontier.specialistRoles.join(", ")}`
+                                        : ""
+                                    }`}
+                                    className="inline-flex flex-wrap items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[10px]"
                                   >
-                                    ⚡ {msg.powerTelemetry.modelHierarchyRole} • {msg.powerTelemetry.enginesExecuted.length}{" "}
-                                    {isAr ? "محرك" : "engines"} •{" "}
-                                    {msg.powerTelemetry.vaultedSourcesCount}+{" "}
-                                    {isAr ? "مصدر" : "src"} • T={msg.powerTelemetry.hyperparams.temperature} •{" "}
+                                    ⚡ {msg.powerTelemetry.modelHierarchyRole}
+                                    {msg.powerTelemetry.frontier && (
+                                      <>
+                                        {" "}
+                                        • {msg.powerTelemetry.frontier.executionMode.replace("_MODE", "")} •{" "}
+                                        {msg.powerTelemetry.frontier.activatedSpecialistsCount}/10{" "}
+                                        {isAr ? "تخصص" : "specialists"} •{" "}
+                                        {msg.powerTelemetry.frontier.sourceStates.used_in_final_answer}/
+                                        {msg.powerTelemetry.frontier.sourceStates.retrieved_for_query}{" "}
+                                        {isAr ? "مراجع موثقة" : "cited"} •{" "}
+                                        {msg.powerTelemetry.frontier.winningBasis}
+                                      </>
+                                    )}{" "}
+                                    • {msg.powerTelemetry.enginesExecuted.length} {isAr ? "محرك" : "engines"} •{" "}
+                                    {msg.powerTelemetry.vaultedSourcesCount}+ {isAr ? "مصدر" : "src"} • T=
+                                    {msg.powerTelemetry.hyperparams.temperature} •{" "}
                                     {msg.powerTelemetry.pipelineLatencyMs}ms
                                   </span>
                                 )}

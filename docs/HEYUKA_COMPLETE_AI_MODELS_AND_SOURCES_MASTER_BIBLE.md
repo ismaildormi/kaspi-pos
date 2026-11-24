@@ -1,7 +1,7 @@
 # المخطط المعماري الكامل وأوديت المنظومة الشامل من البداية إلى النهاية (`v1.0` – `v109.1`)
 # HEYUKA & KASPI POS — Complete System Architecture, Full Codebase Audit & Unabridged All-Sources Catalog
 
-> **مُولَّد آلياً بدقة `100%` مباشرةً من الملفات الحية في المستودع (`scripts/build-exhaustive-master-blueprint.ts`)** في `2026-11-24T00:35:20.911Z`.
+> **مُولَّد آلياً بدقة `100%` مباشرةً من الملفات الحية في المستودع (`scripts/build-exhaustive-master-blueprint.ts`)** في `2026-11-24T01:29:53.917Z`.
 
 ---
 
@@ -41,9 +41,9 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 
 | المكون / الطبقة | العدد المحقّق الآن | الوصف الهيكلي الفعلي |
 | :--- | :---: | :--- |
-| **مكتبات النواة `src/lib/heyuka/`** | `54` | الدماغ العصبي، الموزع، البناء التلقائي، البث، التطور الذاتي، الحوسبة والرادار |
+| **مكتبات النواة `src/lib/heyuka/`** | `59` | الدماغ العصبي، الموزع، البناء التلقائي، البث، التطور الذاتي، الحوسبة والرادار |
 | **مكتبات القدرات `src/lib/zebra-x/`** | `76` | الأسرار الـ 7 (`v87`)، أوميغا (`v88`)، الهيمنة (`v90`)، القوى الخارقة (`v95`)، الكتالوجات، والـ 47 API |
-| **مسارات الخادم `src/app/api/`** | `153` | مسارات POS SaaS، التجارة، الدفع، الاستوديو، الـ الذكاء الاصطناعي، المهام العميقة، والإيقاظ |
+| **مسارات الخادم `src/app/api/`** | `154` | مسارات POS SaaS، التجارة، الدفع، الاستوديو، الـ الذكاء الاصطناعي، المهام العميقة، والإيقاظ |
 | **صفحات الواجهة `page.tsx`** | `59` | صفحات POS، الاستوديو المزدوج (`heyuka` / `kaspi_pos`)، بوابة المطورين، المشرف، والمتاجر |
 | **مكونات الواجهة `src/components/`** | `127` | مكونات visionOS Crystal Glass، الاستوديو، الكاشير POS، التحليلات، والأمان |
 | **جداول قاعدة البيانات `prisma/schema.prisma`** | `62` | نماذج PostgreSQL / Supabase لإدارة المتاجر، المبيعات، الضرائب، BYOK، وجلسات AI |
@@ -118,7 +118,7 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 
 ## الجزء 4: الأوديت الشامل لكل ملف في المستودع (`Complete File-by-File Codebase Audit`)
 
-### 4.1 جميع ملفات النواة `src/lib/heyuka/` (54 ملفاً)
+### 4.1 جميع ملفات النواة `src/lib/heyuka/` (59 ملفاً)
 
 | # | المسار الكامل للملف | الأسطر | Routes | UI | Libs | Tests | حالة الاتصال بالمنظومة |
 | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
@@ -126,10 +126,10 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 | 2 | `src/lib/heyuka/client-cpu-engine.ts` | 923 | 0 | 3 | 0 | 1 | `ACTIVE_WIRED` |
 | 3 | `src/lib/heyuka/cognitive-frontier-blueprint.ts` | 74 | 0 | 0 | 2 | 0 | `INDIRECT_LIB_SUBSYSTEM` |
 | 4 | `src/lib/heyuka/compute/capability-registry.ts` | 406 | 1 | 1 | 1 | 1 | `ACTIVE_WIRED` |
-| 5 | `src/lib/heyuka/compute/hf-token-pool.ts` | 196 | 1 | 0 | 6 | 1 | `ACTIVE_WIRED` |
+| 5 | `src/lib/heyuka/compute/hf-token-pool.ts` | 212 | 1 | 0 | 8 | 1 | `ACTIVE_WIRED` |
 | 6 | `src/lib/heyuka/compute/workers-registry.ts` | 285 | 5 | 1 | 2 | 0 | `ACTIVE_WIRED` |
 | 7 | `src/lib/heyuka/compute/zero-cost-policy.ts` | 340 | 4 | 1 | 2 | 1 | `ACTIVE_WIRED` |
-| 8 | `src/lib/heyuka/deep-job-queue.ts` | 137 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
+| 8 | `src/lib/heyuka/deep-job-queue.ts` | 254 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
 | 9 | `src/lib/heyuka/ecosystem/benchmark-engine.ts` | 716 | 1 | 1 | 0 | 0 | `ACTIVE_WIRED` |
 | 10 | `src/lib/heyuka/ecosystem/mini-products-store.ts` | 251 | 2 | 1 | 0 | 0 | `ACTIVE_WIRED` |
 | 11 | `src/lib/heyuka/ecosystem/output-vault.ts` | 149 | 1 | 1 | 1 | 0 | `ACTIVE_WIRED` |
@@ -153,39 +153,44 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 | 29 | `src/lib/heyuka/engine/three/elementalShaders.ts` | 303 | 0 | 0 | 3 | 0 | `INDIRECT_LIB_SUBSYSTEM` |
 | 30 | `src/lib/heyuka/engine/three/furShaders.ts` | 23 | 0 | 0 | 1 | 0 | `MIRROR_COMPAT (runtime uses furShaders.js)` |
 | 31 | `src/lib/heyuka/engine/three/lightingEnvironments.ts` | 235 | 0 | 1 | 0 | 0 | `ACTIVE_WIRED` |
-| 32 | `src/lib/heyuka/global-nervous-mesh.ts` | 270 | 5 | 2 | 2 | 1 | `ACTIVE_WIRED` |
-| 33 | `src/lib/heyuka/gmail-directory.ts` | 188 | 5 | 0 | 0 | 1 | `ACTIVE_WIRED` |
-| 34 | `src/lib/heyuka/heyuka-universe.ts` | 607 | 2 | 3 | 1 | 0 | `ACTIVE_WIRED` |
-| 35 | `src/lib/heyuka/html-to-pdf-export.ts` | 208 | 0 | 1 | 0 | 0 | `ACTIVE_WIRED` |
-| 36 | `src/lib/heyuka/learning/self-evolution-engine.ts` | 272 | 9 | 0 | 6 | 1 | `ACTIVE_WIRED` |
-| 37 | `src/lib/heyuka/local-sovereign-brain.ts` | 1272 | 4 | 1 | 2 | 1 | `ACTIVE_WIRED` |
-| 38 | `src/lib/heyuka/os/sovereign-pc-commander.ts` | 332 | 5 | 0 | 1 | 1 | `ACTIVE_WIRED` |
-| 39 | `src/lib/heyuka/pkzip.ts` | 92 | 1 | 2 | 1 | 1 | `ACTIVE_WIRED` |
-| 40 | `src/lib/heyuka/planetary/planetary-arsenal-catalog.ts` | 321 | 0 | 0 | 2 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
-| 41 | `src/lib/heyuka/planetary/polyglot-cas-router.ts` | 465 | 4 | 0 | 0 | 1 | `ACTIVE_WIRED` |
-| 42 | `src/lib/heyuka/self-capability-awakening.ts` | 163 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
-| 43 | `src/lib/heyuka/shield/magic-validator.ts` | 161 | 1 | 0 | 1 | 1 | `ACTIVE_WIRED` |
-| 44 | `src/lib/heyuka/shield/resilient-fetch.ts` | 131 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
-| 45 | `src/lib/heyuka/shield/tmp-storage.ts` | 81 | 0 | 0 | 0 | 1 | `LEGACY_HELPER (superseded by os.tmpdir)` |
-| 46 | `src/lib/heyuka/studio/studio-orchestrator-v55-v60.ts` | 562 | 8 | 3 | 5 | 1 | `ACTIVE_WIRED` |
-| 47 | `src/lib/heyuka/swarm-node-registry.ts` | 127 | 1 | 0 | 2 | 1 | `ACTIVE_WIRED` |
-| 48 | `src/lib/heyuka/tools/photorealistic-video-builder.ts` | 628 | 2 | 0 | 2 | 1 | `ACTIVE_WIRED` |
-| 49 | `src/lib/heyuka/tools/zero-worker-media-3d.ts` | 190 | 0 | 0 | 1 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
-| 50 | `src/lib/heyuka/training/knowledge-corpus-engine.ts` | 776 | 3 | 0 | 6 | 1 | `ACTIVE_WIRED` |
-| 51 | `src/lib/heyuka/unified-antigravity-cortex.ts` | 1274 | 2 | 0 | 0 | 0 | `ACTIVE_WIRED` |
-| 52 | `src/lib/heyuka/use-hybrid-dictation.ts` | 198 | 0 | 1 | 0 | 0 | `ACTIVE_WIRED` |
-| 53 | `src/lib/heyuka/vault/sovereign-permanent-vault.ts` | 502 | 8 | 0 | 10 | 1 | `ACTIVE_WIRED` |
-| 54 | `src/lib/heyuka/verified-harvest-counter.ts` | 312 | 4 | 0 | 5 | 1 | `ACTIVE_WIRED` |
+| 32 | `src/lib/heyuka/frontier/cognitive-evaluation-engine.ts` | 751 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
+| 33 | `src/lib/heyuka/frontier/frontier-intelligence-orchestrator.ts` | 744 | 1 | 0 | 2 | 1 | `ACTIVE_WIRED` |
+| 34 | `src/lib/heyuka/frontier/model-capability-registry.ts` | 710 | 0 | 0 | 3 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
+| 35 | `src/lib/heyuka/frontier/persistent-episodic-memory.ts` | 786 | 1 | 0 | 6 | 1 | `ACTIVE_WIRED` |
+| 36 | `src/lib/heyuka/frontier/universal-knowledge-fabric.ts` | 713 | 0 | 0 | 2 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
+| 37 | `src/lib/heyuka/global-nervous-mesh.ts` | 328 | 5 | 2 | 2 | 1 | `ACTIVE_WIRED` |
+| 38 | `src/lib/heyuka/gmail-directory.ts` | 188 | 5 | 0 | 0 | 1 | `ACTIVE_WIRED` |
+| 39 | `src/lib/heyuka/heyuka-universe.ts` | 607 | 2 | 3 | 1 | 0 | `ACTIVE_WIRED` |
+| 40 | `src/lib/heyuka/html-to-pdf-export.ts` | 208 | 0 | 1 | 0 | 0 | `ACTIVE_WIRED` |
+| 41 | `src/lib/heyuka/learning/self-evolution-engine.ts` | 272 | 9 | 0 | 7 | 1 | `ACTIVE_WIRED` |
+| 42 | `src/lib/heyuka/local-sovereign-brain.ts` | 1272 | 4 | 1 | 2 | 1 | `ACTIVE_WIRED` |
+| 43 | `src/lib/heyuka/os/sovereign-pc-commander.ts` | 332 | 5 | 0 | 1 | 1 | `ACTIVE_WIRED` |
+| 44 | `src/lib/heyuka/pkzip.ts` | 92 | 1 | 2 | 1 | 1 | `ACTIVE_WIRED` |
+| 45 | `src/lib/heyuka/planetary/planetary-arsenal-catalog.ts` | 321 | 0 | 0 | 2 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
+| 46 | `src/lib/heyuka/planetary/polyglot-cas-router.ts` | 465 | 4 | 0 | 0 | 1 | `ACTIVE_WIRED` |
+| 47 | `src/lib/heyuka/self-capability-awakening.ts` | 163 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
+| 48 | `src/lib/heyuka/shield/magic-validator.ts` | 161 | 1 | 0 | 1 | 1 | `ACTIVE_WIRED` |
+| 49 | `src/lib/heyuka/shield/resilient-fetch.ts` | 131 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
+| 50 | `src/lib/heyuka/shield/tmp-storage.ts` | 81 | 0 | 0 | 0 | 1 | `LEGACY_HELPER (superseded by os.tmpdir)` |
+| 51 | `src/lib/heyuka/studio/studio-orchestrator-v55-v60.ts` | 562 | 8 | 3 | 5 | 1 | `ACTIVE_WIRED` |
+| 52 | `src/lib/heyuka/swarm-node-registry.ts` | 127 | 1 | 0 | 2 | 1 | `ACTIVE_WIRED` |
+| 53 | `src/lib/heyuka/tools/photorealistic-video-builder.ts` | 628 | 2 | 0 | 2 | 1 | `ACTIVE_WIRED` |
+| 54 | `src/lib/heyuka/tools/zero-worker-media-3d.ts` | 190 | 0 | 0 | 1 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
+| 55 | `src/lib/heyuka/training/knowledge-corpus-engine.ts` | 799 | 3 | 0 | 8 | 1 | `ACTIVE_WIRED` |
+| 56 | `src/lib/heyuka/unified-antigravity-cortex.ts` | 1274 | 2 | 0 | 0 | 0 | `ACTIVE_WIRED` |
+| 57 | `src/lib/heyuka/use-hybrid-dictation.ts` | 198 | 0 | 1 | 0 | 0 | `ACTIVE_WIRED` |
+| 58 | `src/lib/heyuka/vault/sovereign-permanent-vault.ts` | 502 | 8 | 0 | 11 | 1 | `ACTIVE_WIRED` |
+| 59 | `src/lib/heyuka/verified-harvest-counter.ts` | 312 | 4 | 0 | 5 | 1 | `ACTIVE_WIRED` |
 
 ### 4.2 جميع ملفات القوى والكتالوجات `src/lib/zebra-x/` (76 ملفاً)
 
 | # | المسار الكامل للملف | الأسطر | Routes | UI | Libs | Tests | حالة الاتصال بالمنظومة |
 | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
 | 1 | `src/lib/zebra-x/api-auth.ts` | 296 | 13 | 0 | 2 | 0 | `ACTIVE_WIRED` |
-| 2 | `src/lib/zebra-x/api-response.ts` | 65 | 38 | 0 | 0 | 0 | `ACTIVE_WIRED` |
+| 2 | `src/lib/zebra-x/api-response.ts` | 65 | 39 | 0 | 0 | 0 | `ACTIVE_WIRED` |
 | 3 | `src/lib/zebra-x/arsenal-vault/index.ts` | 396 | 6 | 0 | 11 | 0 | `ACTIVE_WIRED` |
 | 4 | `src/lib/zebra-x/audio-transcribe-server.ts` | 118 | 1 | 0 | 1 | 0 | `ACTIVE_WIRED` |
-| 5 | `src/lib/zebra-x/cognition/secret2_mcts_reasoner.ts` | 337 | 1 | 0 | 3 | 1 | `ACTIVE_WIRED` |
+| 5 | `src/lib/zebra-x/cognition/secret2_mcts_reasoner.ts` | 337 | 1 | 0 | 4 | 1 | `ACTIVE_WIRED` |
 | 6 | `src/lib/zebra-x/cognition/secret4_fluid_invention.ts` | 514 | 1 | 0 | 3 | 1 | `ACTIVE_WIRED` |
 | 7 | `src/lib/zebra-x/cognition/secret6_adversarial_council.ts` | 268 | 1 | 0 | 2 | 1 | `ACTIVE_WIRED` |
 | 8 | `src/lib/zebra-x/cognition/secret7_dual_brain_orchestrator.ts` | 410 | 2 | 0 | 5 | 1 | `ACTIVE_WIRED` |
@@ -228,7 +233,7 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 | 45 | `src/lib/zebra-x/dominance/secret7_immortal_sovereignty.ts` | 57 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
 | 46 | `src/lib/zebra-x/dominance/v90-dominance-catalog.ts` | 167 | 0 | 0 | 1 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
 | 47 | `src/lib/zebra-x/dominance/v96-v100-planetary-swarm-catalog.ts` | 84 | 0 | 0 | 1 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
-| 48 | `src/lib/zebra-x/evolution/secret1_self_play_bridge.ts` | 284 | 1 | 0 | 3 | 1 | `ACTIVE_WIRED` |
+| 48 | `src/lib/zebra-x/evolution/secret1_self_play_bridge.ts` | 302 | 1 | 0 | 4 | 1 | `ACTIVE_WIRED` |
 | 49 | `src/lib/zebra-x/evolution/secret5_tool_forge.ts` | 307 | 1 | 0 | 5 | 1 | `ACTIVE_WIRED` |
 | 50 | `src/lib/zebra-x/learning-trace.ts` | 186 | 2 | 0 | 6 | 0 | `ACTIVE_WIRED` |
 | 51 | `src/lib/zebra-x/media-client.ts` | 183 | 1 | 4 | 0 | 0 | `ACTIVE_WIRED` |
@@ -236,7 +241,7 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 | 53 | `src/lib/zebra-x/omega/secret11_full_duplex_voice.ts` | 79 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
 | 54 | `src/lib/zebra-x/omega/secret12_generative_ui.ts` | 76 | 1 | 2 | 1 | 1 | `ACTIVE_WIRED` |
 | 55 | `src/lib/zebra-x/omega/secret8_online_distiller.ts` | 159 | 2 | 0 | 1 | 1 | `ACTIVE_WIRED` |
-| 56 | `src/lib/zebra-x/omega/secret9_cyber_immune.ts` | 166 | 2 | 0 | 3 | 1 | `ACTIVE_WIRED` |
+| 56 | `src/lib/zebra-x/omega/secret9_cyber_immune.ts` | 166 | 2 | 0 | 4 | 1 | `ACTIVE_WIRED` |
 | 57 | `src/lib/zebra-x/omega/v88_v90_catalog.ts` | 94 | 0 | 0 | 1 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
 | 58 | `src/lib/zebra-x/sidecar-bridge.ts` | 446 | 5 | 0 | 1 | 1 | `ACTIVE_WIRED` |
 | 59 | `src/lib/zebra-x/simulation/secret3_world_sim.ts` | 294 | 1 | 0 | 4 | 1 | `ACTIVE_WIRED` |
@@ -258,7 +263,7 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 | 75 | `src/lib/zebra-x/tools/universal_mcp_bus.ts` | 304 | 1 | 0 | 3 | 1 | `ACTIVE_WIRED` |
 | 76 | `src/lib/zebra-x/tools/vision-screen-tools.ts` | 293 | 0 | 2 | 0 | 0 | `ACTIVE_WIRED` |
 
-### 4.3 جميع مسارات الخادم `src/app/api/` (153 مسار API فعلياً)
+### 4.3 جميع مسارات الخادم `src/app/api/` (154 مسار API فعلياً)
 
 | # | المسار (`Endpoint`) | المهلة (`maxDuration`) | الحماية في `Middleware` | ملف التنفيذ |
 | :---: | :--- | :---: | :--- | :--- |
@@ -322,99 +327,100 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 | 58 | `/api/v1/categories` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/categories/route.ts` |
 | 59 | `/api/v1/chat/completions` | `60s` | `SESSION_OR_API_KEY` | `src/app/api/v1/chat/completions/route.ts` |
 | 60 | `/api/v1/cognition/awaken-and-test` | `300s` | `PUBLIC_PREFIX` | `src/app/api/v1/cognition/awaken-and-test/route.ts` |
-| 61 | `/api/v1/cognition/omni-mind` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/cognition/omni-mind/route.ts` |
-| 62 | `/api/v1/cognition/self-status` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/cognition/self-status/route.ts` |
-| 63 | `/api/v1/customers/[id]/credits` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/customers/[id]/credits/route.ts` |
-| 64 | `/api/v1/customers/[id]/loyalty/redeem` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/customers/[id]/loyalty/redeem/route.ts` |
-| 65 | `/api/v1/customers/[id]/loyalty` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/customers/[id]/loyalty/route.ts` |
-| 66 | `/api/v1/customers` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/customers/route.ts` |
-| 67 | `/api/v1/debug` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/debug/route.ts` |
-| 68 | `/api/v1/desktops/spawn` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/desktops/spawn/route.ts` |
-| 69 | `/api/v1/devices/conflict-ticket` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/devices/conflict-ticket/route.ts` |
-| 70 | `/api/v1/devices/poste-heartbeat` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/devices/poste-heartbeat/route.ts` |
-| 71 | `/api/v1/devices/switch-register` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/devices/switch-register/route.ts` |
-| 72 | `/api/v1/dominance/architect-system` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/dominance/architect-system/route.ts` |
-| 73 | `/api/v1/dominance/solve-any` | `300s` | `PUBLIC_PREFIX` | `src/app/api/v1/dominance/solve-any/route.ts` |
-| 74 | `/api/v1/heyuka/byok` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/heyuka/byok/route.ts` |
-| 75 | `/api/v1/heyuka/capabilities` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/capabilities/route.ts` |
-| 76 | `/api/v1/heyuka/chat-threads` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/chat-threads/route.ts` |
-| 77 | `/api/v1/heyuka/chat-web` | `300s` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/chat-web/route.ts` |
-| 78 | `/api/v1/heyuka/deep-job` | `300s` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/deep-job/route.ts` |
-| 79 | `/api/v1/heyuka/feedback` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/feedback/route.ts` |
-| 80 | `/api/v1/heyuka/gmail-access` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/gmail-access/route.ts` |
-| 81 | `/api/v1/heyuka/installer` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/installer/route.ts` |
-| 82 | `/api/v1/heyuka/lab` | `60s` | `SESSION_OR_API_KEY` | `src/app/api/v1/heyuka/lab/route.ts` |
-| 83 | `/api/v1/heyuka/local-sdk` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/local-sdk/route.ts` |
-| 84 | `/api/v1/heyuka/outputs` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/heyuka/outputs/route.ts` |
-| 85 | `/api/v1/heyuka/products` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/heyuka/products/route.ts` |
-| 86 | `/api/v1/heyuka/share` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/share/route.ts` |
-| 87 | `/api/v1/heyuka/studio-chat` | `60s` | `SESSION_OR_API_KEY` | `src/app/api/v1/heyuka/studio-chat/route.ts` |
-| 88 | `/api/v1/heyuka/widget` | `45s` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/widget/route.ts` |
-| 89 | `/api/v1/heyuka/workers` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/heyuka/workers/route.ts` |
-| 90 | `/api/v1/images/generate` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/images/generate/route.ts` |
-| 91 | `/api/v1/inventory/audit` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/inventory/audit/route.ts` |
-| 92 | `/api/v1/inventory/transfers` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/inventory/transfers/route.ts` |
-| 93 | `/api/v1/invoices/[id]/pdf` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/invoices/[id]/pdf/route.ts` |
-| 94 | `/api/v1/invoices` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/invoices/route.ts` |
-| 95 | `/api/v1/kds` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/kds/route.ts` |
-| 96 | `/api/v1/magic` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/magic/route.ts` |
-| 97 | `/api/v1/me` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/me/route.ts` |
-| 98 | `/api/v1/models` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/models/route.ts` |
-| 99 | `/api/v1/omniscience/live-stats` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/omniscience/live-stats/route.ts` |
-| 100 | `/api/v1/onboarding/setup` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/onboarding/setup/route.ts` |
-| 101 | `/api/v1/os/exec` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/os/exec/route.ts` |
-| 102 | `/api/v1/owner/vault` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/owner/vault/route.ts` |
-| 103 | `/api/v1/payments/orchestrate` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/payments/orchestrate/route.ts` |
-| 104 | `/api/v1/products/[id]` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/products/[id]/route.ts` |
-| 105 | `/api/v1/products/barcode` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/products/barcode/route.ts` |
-| 106 | `/api/v1/products/import` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/products/import/route.ts` |
-| 107 | `/api/v1/products` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/products/route.ts` |
-| 108 | `/api/v1/public-apis` | `45s` | `SESSION_OR_API_KEY` | `src/app/api/v1/public-apis/route.ts` |
-| 109 | `/api/v1/purchase-orders/[id]/receive` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/purchase-orders/[id]/receive/route.ts` |
-| 110 | `/api/v1/purchase-orders` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/purchase-orders/route.ts` |
-| 111 | `/api/v1/qr/dynamic` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/qr/dynamic/route.ts` |
-| 112 | `/api/v1/reports/accounting-export` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/reports/accounting-export/route.ts` |
-| 113 | `/api/v1/reports/sales-summary` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/reports/sales-summary/route.ts` |
-| 114 | `/api/v1/reports/tax-summary` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/reports/tax-summary/route.ts` |
-| 115 | `/api/v1/reports/top-products` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/reports/top-products/route.ts` |
-| 116 | `/api/v1/restaurant/kds/tickets/[id]` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/restaurant/kds/tickets/[id]/route.ts` |
-| 117 | `/api/v1/restaurant/kds/tickets` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/restaurant/kds/tickets/route.ts` |
-| 118 | `/api/v1/restaurant/tables/[id]` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/restaurant/tables/[id]/route.ts` |
-| 119 | `/api/v1/restaurant/tables` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/restaurant/tables/route.ts` |
-| 120 | `/api/v1/sales` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/sales/route.ts` |
-| 121 | `/api/v1/sandbox/execute` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/sandbox/execute/route.ts` |
-| 122 | `/api/v1/settings/reset-demo` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/settings/reset-demo/route.ts` |
-| 123 | `/api/v1/settings` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/settings/route.ts` |
-| 124 | `/api/v1/settings/vault` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/settings/vault/route.ts` |
-| 125 | `/api/v1/staff` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/staff/route.ts` |
-| 126 | `/api/v1/storage/upload` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/storage/upload/route.ts` |
-| 127 | `/api/v1/stores` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/stores/route.ts` |
-| 128 | `/api/v1/studio/browse` | `30s` | `PUBLIC_PREFIX` | `src/app/api/v1/studio/browse/route.ts` |
-| 129 | `/api/v1/studio/browser-factory` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/studio/browser-factory/route.ts` |
-| 130 | `/api/v1/studio/council` | `300s` | `PUBLIC_PREFIX` | `src/app/api/v1/studio/council/route.ts` |
-| 131 | `/api/v1/studio/ingest` | `300s` | `PUBLIC_PREFIX` | `src/app/api/v1/studio/ingest/route.ts` |
-| 132 | `/api/v1/studio/team` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/studio/team/route.ts` |
-| 133 | `/api/v1/suppliers/ledger` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/suppliers/ledger/route.ts` |
-| 134 | `/api/v1/suppliers/ocr` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/suppliers/ocr/route.ts` |
-| 135 | `/api/v1/suppliers` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/suppliers/route.ts` |
-| 136 | `/api/v1/support` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/support/route.ts` |
-| 137 | `/api/v1/swarm/nodes` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/swarm/nodes/route.ts` |
-| 138 | `/api/v1/tenants/[tenantId]/switch` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/tenants/[tenantId]/switch/route.ts` |
-| 139 | `/api/v1/tools/execute` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/tools/execute/route.ts` |
-| 140 | `/api/v1/tpe/terminals` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/tpe/terminals/route.ts` |
-| 141 | `/api/v1/tpe/transactions` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/tpe/transactions/route.ts` |
-| 142 | `/api/v1/vision/remove-bg` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/vision/remove-bg/route.ts` |
-| 143 | `/api/v1/web/research` | `30s` | `SESSION_OR_API_KEY` | `src/app/api/v1/web/research/route.ts` |
-| 144 | `/api/v1/webhooks/ecommerce` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/webhooks/ecommerce/route.ts` |
-| 145 | `/api/v1/webhooks/payments/[provider]` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/webhooks/payments/[provider]/route.ts` |
-| 146 | `/api/v1/zebra-x/auto-connect` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/zebra-x/auto-connect/route.ts` |
-| 147 | `/api/v1/zebra-x/keys` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/zebra-x/keys/route.ts` |
-| 148 | `/api/v1/zebra-x/openapi` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/zebra-x/openapi/route.ts` |
-| 149 | `/api/v1/zebra-x/profile` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/zebra-x/profile/route.ts` |
-| 150 | `/api/v1/zebra-x/telemetry` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/zebra-x/telemetry/route.ts` |
-| 151 | `/api/webhooks/hyperswitch` | `default` | `SESSION_OR_API_KEY` | `src/app/api/webhooks/hyperswitch/route.ts` |
-| 152 | `/api/webhooks/paddle` | `default` | `SESSION_OR_API_KEY` | `src/app/api/webhooks/paddle/route.ts` |
-| 153 | `/api/webhooks/youcanpay` | `default` | `SESSION_OR_API_KEY` | `src/app/api/webhooks/youcanpay/route.ts` |
+| 61 | `/api/v1/cognition/frontier-benchmark` | `300s` | `PUBLIC_PREFIX` | `src/app/api/v1/cognition/frontier-benchmark/route.ts` |
+| 62 | `/api/v1/cognition/omni-mind` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/cognition/omni-mind/route.ts` |
+| 63 | `/api/v1/cognition/self-status` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/cognition/self-status/route.ts` |
+| 64 | `/api/v1/customers/[id]/credits` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/customers/[id]/credits/route.ts` |
+| 65 | `/api/v1/customers/[id]/loyalty/redeem` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/customers/[id]/loyalty/redeem/route.ts` |
+| 66 | `/api/v1/customers/[id]/loyalty` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/customers/[id]/loyalty/route.ts` |
+| 67 | `/api/v1/customers` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/customers/route.ts` |
+| 68 | `/api/v1/debug` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/debug/route.ts` |
+| 69 | `/api/v1/desktops/spawn` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/desktops/spawn/route.ts` |
+| 70 | `/api/v1/devices/conflict-ticket` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/devices/conflict-ticket/route.ts` |
+| 71 | `/api/v1/devices/poste-heartbeat` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/devices/poste-heartbeat/route.ts` |
+| 72 | `/api/v1/devices/switch-register` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/devices/switch-register/route.ts` |
+| 73 | `/api/v1/dominance/architect-system` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/dominance/architect-system/route.ts` |
+| 74 | `/api/v1/dominance/solve-any` | `300s` | `PUBLIC_PREFIX` | `src/app/api/v1/dominance/solve-any/route.ts` |
+| 75 | `/api/v1/heyuka/byok` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/heyuka/byok/route.ts` |
+| 76 | `/api/v1/heyuka/capabilities` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/capabilities/route.ts` |
+| 77 | `/api/v1/heyuka/chat-threads` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/chat-threads/route.ts` |
+| 78 | `/api/v1/heyuka/chat-web` | `300s` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/chat-web/route.ts` |
+| 79 | `/api/v1/heyuka/deep-job` | `300s` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/deep-job/route.ts` |
+| 80 | `/api/v1/heyuka/feedback` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/feedback/route.ts` |
+| 81 | `/api/v1/heyuka/gmail-access` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/gmail-access/route.ts` |
+| 82 | `/api/v1/heyuka/installer` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/installer/route.ts` |
+| 83 | `/api/v1/heyuka/lab` | `60s` | `SESSION_OR_API_KEY` | `src/app/api/v1/heyuka/lab/route.ts` |
+| 84 | `/api/v1/heyuka/local-sdk` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/local-sdk/route.ts` |
+| 85 | `/api/v1/heyuka/outputs` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/heyuka/outputs/route.ts` |
+| 86 | `/api/v1/heyuka/products` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/heyuka/products/route.ts` |
+| 87 | `/api/v1/heyuka/share` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/share/route.ts` |
+| 88 | `/api/v1/heyuka/studio-chat` | `60s` | `SESSION_OR_API_KEY` | `src/app/api/v1/heyuka/studio-chat/route.ts` |
+| 89 | `/api/v1/heyuka/widget` | `45s` | `PUBLIC_PREFIX` | `src/app/api/v1/heyuka/widget/route.ts` |
+| 90 | `/api/v1/heyuka/workers` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/heyuka/workers/route.ts` |
+| 91 | `/api/v1/images/generate` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/images/generate/route.ts` |
+| 92 | `/api/v1/inventory/audit` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/inventory/audit/route.ts` |
+| 93 | `/api/v1/inventory/transfers` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/inventory/transfers/route.ts` |
+| 94 | `/api/v1/invoices/[id]/pdf` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/invoices/[id]/pdf/route.ts` |
+| 95 | `/api/v1/invoices` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/invoices/route.ts` |
+| 96 | `/api/v1/kds` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/kds/route.ts` |
+| 97 | `/api/v1/magic` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/magic/route.ts` |
+| 98 | `/api/v1/me` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/me/route.ts` |
+| 99 | `/api/v1/models` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/models/route.ts` |
+| 100 | `/api/v1/omniscience/live-stats` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/omniscience/live-stats/route.ts` |
+| 101 | `/api/v1/onboarding/setup` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/onboarding/setup/route.ts` |
+| 102 | `/api/v1/os/exec` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/os/exec/route.ts` |
+| 103 | `/api/v1/owner/vault` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/owner/vault/route.ts` |
+| 104 | `/api/v1/payments/orchestrate` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/payments/orchestrate/route.ts` |
+| 105 | `/api/v1/products/[id]` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/products/[id]/route.ts` |
+| 106 | `/api/v1/products/barcode` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/products/barcode/route.ts` |
+| 107 | `/api/v1/products/import` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/products/import/route.ts` |
+| 108 | `/api/v1/products` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/products/route.ts` |
+| 109 | `/api/v1/public-apis` | `45s` | `SESSION_OR_API_KEY` | `src/app/api/v1/public-apis/route.ts` |
+| 110 | `/api/v1/purchase-orders/[id]/receive` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/purchase-orders/[id]/receive/route.ts` |
+| 111 | `/api/v1/purchase-orders` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/purchase-orders/route.ts` |
+| 112 | `/api/v1/qr/dynamic` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/qr/dynamic/route.ts` |
+| 113 | `/api/v1/reports/accounting-export` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/reports/accounting-export/route.ts` |
+| 114 | `/api/v1/reports/sales-summary` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/reports/sales-summary/route.ts` |
+| 115 | `/api/v1/reports/tax-summary` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/reports/tax-summary/route.ts` |
+| 116 | `/api/v1/reports/top-products` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/reports/top-products/route.ts` |
+| 117 | `/api/v1/restaurant/kds/tickets/[id]` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/restaurant/kds/tickets/[id]/route.ts` |
+| 118 | `/api/v1/restaurant/kds/tickets` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/restaurant/kds/tickets/route.ts` |
+| 119 | `/api/v1/restaurant/tables/[id]` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/restaurant/tables/[id]/route.ts` |
+| 120 | `/api/v1/restaurant/tables` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/restaurant/tables/route.ts` |
+| 121 | `/api/v1/sales` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/sales/route.ts` |
+| 122 | `/api/v1/sandbox/execute` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/sandbox/execute/route.ts` |
+| 123 | `/api/v1/settings/reset-demo` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/settings/reset-demo/route.ts` |
+| 124 | `/api/v1/settings` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/settings/route.ts` |
+| 125 | `/api/v1/settings/vault` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/settings/vault/route.ts` |
+| 126 | `/api/v1/staff` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/staff/route.ts` |
+| 127 | `/api/v1/storage/upload` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/storage/upload/route.ts` |
+| 128 | `/api/v1/stores` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/stores/route.ts` |
+| 129 | `/api/v1/studio/browse` | `30s` | `PUBLIC_PREFIX` | `src/app/api/v1/studio/browse/route.ts` |
+| 130 | `/api/v1/studio/browser-factory` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/studio/browser-factory/route.ts` |
+| 131 | `/api/v1/studio/council` | `300s` | `PUBLIC_PREFIX` | `src/app/api/v1/studio/council/route.ts` |
+| 132 | `/api/v1/studio/ingest` | `300s` | `PUBLIC_PREFIX` | `src/app/api/v1/studio/ingest/route.ts` |
+| 133 | `/api/v1/studio/team` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/studio/team/route.ts` |
+| 134 | `/api/v1/suppliers/ledger` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/suppliers/ledger/route.ts` |
+| 135 | `/api/v1/suppliers/ocr` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/suppliers/ocr/route.ts` |
+| 136 | `/api/v1/suppliers` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/suppliers/route.ts` |
+| 137 | `/api/v1/support` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/support/route.ts` |
+| 138 | `/api/v1/swarm/nodes` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/swarm/nodes/route.ts` |
+| 139 | `/api/v1/tenants/[tenantId]/switch` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/tenants/[tenantId]/switch/route.ts` |
+| 140 | `/api/v1/tools/execute` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/tools/execute/route.ts` |
+| 141 | `/api/v1/tpe/terminals` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/tpe/terminals/route.ts` |
+| 142 | `/api/v1/tpe/transactions` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/tpe/transactions/route.ts` |
+| 143 | `/api/v1/vision/remove-bg` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/vision/remove-bg/route.ts` |
+| 144 | `/api/v1/web/research` | `30s` | `SESSION_OR_API_KEY` | `src/app/api/v1/web/research/route.ts` |
+| 145 | `/api/v1/webhooks/ecommerce` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/webhooks/ecommerce/route.ts` |
+| 146 | `/api/v1/webhooks/payments/[provider]` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/webhooks/payments/[provider]/route.ts` |
+| 147 | `/api/v1/zebra-x/auto-connect` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/zebra-x/auto-connect/route.ts` |
+| 148 | `/api/v1/zebra-x/keys` | `default` | `SESSION_OR_API_KEY` | `src/app/api/v1/zebra-x/keys/route.ts` |
+| 149 | `/api/v1/zebra-x/openapi` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/zebra-x/openapi/route.ts` |
+| 150 | `/api/v1/zebra-x/profile` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/zebra-x/profile/route.ts` |
+| 151 | `/api/v1/zebra-x/telemetry` | `default` | `PUBLIC_PREFIX` | `src/app/api/v1/zebra-x/telemetry/route.ts` |
+| 152 | `/api/webhooks/hyperswitch` | `default` | `SESSION_OR_API_KEY` | `src/app/api/webhooks/hyperswitch/route.ts` |
+| 153 | `/api/webhooks/paddle` | `default` | `SESSION_OR_API_KEY` | `src/app/api/webhooks/paddle/route.ts` |
+| 154 | `/api/webhooks/youcanpay` | `default` | `SESSION_OR_API_KEY` | `src/app/api/webhooks/youcanpay/route.ts` |
 
 ### 4.4 صفحات الواجهة (59)، المكونات (127)، قاعدة البيانات (62)، والتدريب والسحابة
 - **صفحات الواجهة (`59` صفحة):** `src/app/[locale]/(auth)/login/otp/page.tsx`, `src/app/[locale]/(auth)/login/page.tsx`, `src/app/[locale]/(auth)/register/page.tsx`, `src/app/[locale]/(auth)/verify-code/page.tsx`, `src/app/[locale]/(auth)/welcome-email/page.tsx`, `src/app/[locale]/admin/conflict-tickets/page.tsx`, `src/app/[locale]/admin/messages/page.tsx`, `src/app/[locale]/admin/page.tsx`, `src/app/[locale]/chat/page.tsx`, `src/app/[locale]/dashboard/billing/page.tsx`, `src/app/[locale]/dashboard/customers/page.tsx`, `src/app/[locale]/dashboard/inventory/page.tsx`, `src/app/[locale]/dashboard/page.tsx`, `src/app/[locale]/dashboard/products/ai-onboard/page.tsx`, `src/app/[locale]/dashboard/products/import/page.tsx`, `src/app/[locale]/dashboard/products/page.tsx`, `src/app/[locale]/dashboard/reports/page.tsx`, `src/app/[locale]/dashboard/restaurant/kds/page.tsx`, `src/app/[locale]/dashboard/settings/page.tsx`, `src/app/[locale]/dashboard/settings/terminals/page.tsx`, `src/app/[locale]/dashboard/staff/page.tsx`, `src/app/[locale]/dashboard/suppliers/page.tsx`, `src/app/[locale]/dashboard/support/page.tsx`, `src/app/[locale]/download/page.tsx`, `src/app/[locale]/embed/[productId]/page.tsx`, `src/app/[locale]/heyuka/page.tsx`, `src/app/[locale]/mock-paddle-checkout/page.tsx`, `src/app/[locale]/mock-youcanpay-checkout/page.tsx`, `src/app/[locale]/page.tsx`, `src/app/[locale]/pos/page.tsx`, `src/app/[locale]/share/[shareId]/page.tsx`, `src/app/[locale]/store/[slug]/page.tsx`, `src/app/[locale]/studio/page.tsx`, `src/app/[locale]/yuka/page.tsx`, `src/app/[locale]/zebra-x/api-keys/page.tsx`, `src/app/[locale]/zebra-x/apps/page.tsx`, `src/app/[locale]/zebra-x/billing/page.tsx`, `src/app/[locale]/zebra-x/contact/page.tsx`, `src/app/[locale]/zebra-x/debug/page.tsx`, `src/app/[locale]/zebra-x/docs/page.tsx`, `src/app/[locale]/zebra-x/lab/page.tsx`, `src/app/[locale]/zebra-x/models/page.tsx`, `src/app/[locale]/zebra-x/page.tsx`, `src/app/[locale]/zebra-x/playground/page.tsx`, `src/app/[locale]/zebra-x/products/page.tsx`, `src/app/[locale]/zebra-x/profile/page.tsx`, `src/app/[locale]/zebra-x/quota/page.tsx`, `src/app/[locale]/zebra-x/studio/page.tsx`, `src/app/[locale]/zebra-x/studios/[productId]/page.tsx`, `src/app/[locale]/zebra-x/studios/page.tsx`, `src/app/[locale]/zebra-x/vault/page.tsx`, `src/app/[locale]/zebra-x/workers/page.tsx`, `src/app/admin/conflict-tickets/page.tsx`, `src/app/admin/messages/page.tsx`, `src/app/admin/page.tsx`, `src/app/download/page.tsx`, `src/app/launch-desktop/page.tsx`, `src/app/page.tsx`, `src/app/q/[slug]/page.tsx`
@@ -458,6 +464,21 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 
 | # | المعرّف | المصدر الذهبي | التركيز (`Focus`) |
 | :---: | :--- | :--- | :--- |
+| 1 | `golden_01_fineweb_edu` | **HuggingFace FineWeb-Edu** | [SCIENCE_CODE_WEB \| Priority 100] https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu — API: https://datasets-server.huggingface.co/rows?dataset=HuggingFaceFW%2Ffineweb-edu&config=sample-10BT&split=train&offset=0&length=4 |
+| 2 | `golden_02_the_stack_v2` | **BigCode The Stack v2 (600+ Languages)** | [SCIENCE_CODE_WEB \| Priority 98] https://huggingface.co/datasets/bigcode/the-stack-v2 — API: https://huggingface.co/datasets/bigcode/the-stack-v2 |
+| 3 | `golden_03_wikipedia_wikidata` | **Wikipedia & Wikidata (AR / FR / EN)** | [ENCYCLOPEDIA_BOOKS \| Priority 99] https://www.wikipedia.org/ — API: https://ar.wikipedia.org/w/api.php?action=query&generator=random&grnnamespace=0&grnlimit=4&prop=extracts\|info&exintro=1&explaintext=1&inprop=url&format=json |
+| 4 | `golden_04_arxiv_papers` | **arXiv Open Science Papers** | [SCIENCE_CODE_WEB \| Priority 97] https://arxiv.org/ — API: https://export.arxiv.org/api/query?search_query=cat:cs.AI+OR+cat:cs.SE+OR+cat:math.OC&start=0&max_results=5 |
+| 5 | `golden_05_openalex` | **OpenAlex Global Works (250M+ Papers)** | [SCIENCE_CODE_WEB \| Priority 97] https://openalex.org/ — API: https://api.openalex.org/works?search=software%20engineering%20OR%20machine%20learning&per-page=5&select=id,title,publication_year,doi,open_access |
+| 6 | `golden_06_pubmed_central` | **PubMed Central & Europe PMC** | [MEDICINE_BIO \| Priority 96] https://europepmc.org/ — API: https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=clinical+evidence&format=json&pageSize=4 |
+| 7 | `golden_07_mathlib4_oeis` | **Lean Mathlib4 & OEIS Formal Proofs** | [SCIENCE_CODE_WEB \| Priority 95] https://github.com/leanprover-community/mathlib4 — API: https://leanprover-community.github.io/mathlib4_docs/ |
+| 8 | `golden_08_gutenberg_openlibrary` | **Project Gutenberg & Open Library** | [ENCYCLOPEDIA_BOOKS \| Priority 94] https://openlibrary.org/ — API: https://openlibrary.org/search.json?q=computer+science&limit=4&fields=key,title,author_name,first_publish_year |
+| 9 | `golden_09_common_crawl` | **Common Crawl (110B+ Open Web Index)** | [WEB_ARCHIVE \| Priority 99] https://commoncrawl.org/ — API: https://index.commoncrawl.org/collinfo.json |
+| 10 | `golden_10_internet_archive` | **Internet Archive Open Library Collections** | [WEB_ARCHIVE \| Priority 93] https://archive.org/ — API: https://archive.org/advancedsearch.php?q=mediatype%3Atexts+AND+collection%3Aopensource&fl%5B%5D=identifier,title,subject&rows=5&page=1&output=json |
+| 11 | `golden_11_atlasia_darija` | **AtlasIA Moroccan Darija Open Corpus** | [ARABIC_DARIJA_COMMERCE \| Priority 98] https://huggingface.co/atlasia — API: https://huggingface.co/datasets/atlasia/AL-Atlas-Moroccan-Darija-Pretraining-Dataset |
+| 12 | `golden_12_camel_lab` | **CAMeL Lab Arabic NLP & Corpora** | [ARABIC_DARIJA_COMMERCE \| Priority 95] https://github.com/CAMeL-Lab — API: https://github.com/CAMeL-Lab/camel_tools |
+| 13 | `golden_13_openstreetmap` | **OpenStreetMap / Nominatim Geo Index** | [ARABIC_DARIJA_COMMERCE \| Priority 92] https://www.openstreetmap.org/ — API: https://nominatim.openstreetmap.org/search?q=Morocco&format=json&limit=4 |
+| 14 | `golden_14_openfoodfacts` | **OpenFoodFacts Retail & Barcode DB** | [ARABIC_DARIJA_COMMERCE \| Priority 94] https://world.openfoodfacts.org/ — API: https://world.openfoodfacts.org/api/v2/search?categories_tags=beverages&page_size=4&fields=code,product_name,brands |
+| 15 | `golden_15_world_bank` | **World Bank Macro & Economic Indicators** | [ARABIC_DARIJA_COMMERCE \| Priority 93] https://data.worldbank.org/ — API: https://api.worldbank.org/v2/country/MA/indicator/NY.GDP.MKTP.CD?format=json&per_page=5 |
 
 | المسبح السحابي (`Pool`) | الوصف | نطاق الشرائح | السعة |
 | :--- | :--- | :---: | :---: |

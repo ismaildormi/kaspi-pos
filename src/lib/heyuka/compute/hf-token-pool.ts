@@ -9,6 +9,7 @@
 export type HfLaneRole = "model_1_omni" | "model_2_core" | "model_3_vision" | "ingest" | "read_fast";
 
 export type HeyukaHierarchyRole = "heyuka-omni" | "heyuka-core" | "heyuka-vision";
+export type HeyukaBrainId = HeyukaHierarchyRole;
 
 export interface ModelHierarchyDirective {
   role: HeyukaHierarchyRole;
@@ -35,21 +36,25 @@ export function resolveModelCommandHierarchy(params: {
   const p = String(params.prompt || "");
   const sovereignEnv = process.env.HEYUKA_SOVEREIGN_HF_MODEL?.trim();
 
+  const explicitVision = m === "heyuka-vision" || m === "vision";
+  const explicitCore = m === "heyuka-core" || m === "core" || m === "kaspi-pos-analyst";
+  const explicitOmni = m === "heyuka-omni" || m === "omni";
+  const allowAutoDetect = !explicitVision && !explicitCore && !explicitOmni;
+
   const hasVisionCue =
     params.hasImage ||
-    m.includes("vision") ||
     mode === "image" ||
     mode === "video" ||
     mode === "3d" ||
     /(?:\b(?:image|vision|screenshot|ui|ux|3d|canvas|shader)\b|صورة|فيديو|واجهة|تصميم)/i.test(p);
 
   const hasCoreCue =
-    m.includes("core") ||
     mode === "coding" ||
     mode === "security" ||
     /(?:\b(?:code|bug|typescript|python|sql|math|proof|tva|dgi|calculate)\b|برمجة|كود|ضريبة|حساب|برهان)/i.test(p);
 
-  if (params.hasImage || m.includes("vision") || (!m.includes("core") && hasVisionCue)) {
+  // Explicit user model selection always wins; only auto-detect when model is unset/auto/swarm
+  if (explicitVision || params.hasImage || (allowAutoDetect && hasVisionCue)) {
     return {
       role: "heyuka-vision",
       title: "HEYUKA Vision — Multimodal, UI & 3D Media Expert",
@@ -64,7 +69,7 @@ export function resolveModelCommandHierarchy(params: {
     };
   }
 
-  if (m.includes("core") || (!m.includes("omni") && hasCoreCue)) {
+  if (explicitCore || (allowAutoDetect && hasCoreCue)) {
     return {
       role: "heyuka-core",
       title: "HEYUKA Core — Engineering, Logic & Proof Architect",
@@ -191,5 +196,16 @@ export function getHfTokenPoolSummary() {
       masked: k.masked,
       coolingDown: (hfCooldownUntil.get(k.index) || 0) > now,
     })),
+  };
+}
+
+export function getPoolTelemetry() {
+  const summary = getHfTokenPoolSummary();
+  const healthyCount = summary.lanes.filter((l) => !l.coolingDown).length;
+  return {
+    activeTokens: summary.configuredCount,
+    healthyTokens: healthyCount,
+    datasetRepo: summary.datasetRepo,
+    lanes: summary.lanes,
   };
 }

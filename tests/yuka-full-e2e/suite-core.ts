@@ -178,6 +178,24 @@ import {
   runUnifiedFullPowerPipeline,
   syncCrawlBatchIntoNervousMesh,
 } from "../../src/lib/heyuka/global-nervous-mesh";
+import {
+  GOLDEN_15_PRIORITY_SOURCES,
+  runUniversalKnowledgeFabricPipeline,
+} from "../../src/lib/heyuka/frontier/universal-knowledge-fabric";
+import {
+  deleteFrontierMemoryRecord,
+  getFrontierMemoryDiagnostics,
+  queryFrontierMemory,
+  upsertFrontierMemory,
+} from "../../src/lib/heyuka/frontier/persistent-episodic-memory";
+import {
+  classifyFrontierTask,
+  getFrontierProviderPoolHealth,
+  getModelCapabilityRegistry,
+  scoreModelForTask,
+} from "../../src/lib/heyuka/frontier/model-capability-registry";
+import { runFrontierIntelligenceOrchestrator } from "../../src/lib/heyuka/frontier/frontier-intelligence-orchestrator";
+import { runFrontierCognitiveBenchmarkSuite } from "../../src/lib/heyuka/frontier/cognitive-evaluation-engine";
 import { resolveModelCommandHierarchy } from "../../src/lib/heyuka/compute/hf-token-pool";
 import { getDeepAsyncJob, startDeepAsyncJob } from "../../src/lib/heyuka/deep-job-queue";
 import { readVaultLockSummary } from "../../src/lib/heyuka/verified-harvest-counter";
@@ -2386,6 +2404,104 @@ print(json.dumps({'ok': True, 'hll': hll.estimate(), 'ringShard': s, 'golden': l
       detail: `v109.1 Unbounded Complete (VaultLock=${lock.totalClassifiedEntries}, Roles=Omni/Core/Vision, Superpowers=SoM+GraphRAG+BotFactory, DeepJob=${polled.status}/${polled.elapsedMs}ms)`,
     };
   });
+
+  await runCheck(
+    "v110_frontier_intelligence_knowledge_fabric_memory_and_20_benchmarks",
+    "v110.0 Frontier Intelligence: 7 Audit Fixes, 15 Golden Sources, 12-Stage Fabric, 7-Layer Memory, 10 Specialists & 20-Category Benchmark",
+    async () => {
+      // 1. Verify all 15 Golden Priority Sources are recovered & structured
+      assert.equal(GOLDEN_15_PRIORITY_SOURCES.length, 15);
+
+      // 2. Verify 12-Stage Universal Knowledge Fabric & 7 Distinct Source States
+      const ukf = runUniversalKnowledgeFabricPipeline({
+        query: "Synthesize arXiv and PubMed research with Moroccan DGI CGI Art 145 tax compliance",
+        tenantId: "global",
+      });
+      assert.equal(ukf.stages.length, 12);
+      assert.ok(ukf.sourceStates.catalogued >= 2500);
+      assert.ok(ukf.sourceStates.indexed >= 2500);
+      assert.ok(ukf.sourceStates.retrieved_for_query > 0);
+      assert.ok(ukf.sourceStates.used_in_final_answer > 0);
+
+      // 3. Verify Strict Explicit Model Selection (Finding #6) & Vision-Safe Routing (Finding #5)
+      const explicitCoreWithUiWord = resolveModelCommandHierarchy({
+        requestedModel: "heyuka-core",
+        prompt: "Build UI screenshot OCR vision layout",
+      });
+      assert.equal(explicitCoreWithUiWord.role, "heyuka-core");
+
+      const registry = getModelCapabilityRegistry();
+      assert.ok(registry.length >= 15);
+      const visionTask = classifyFrontierTask({
+        prompt: "Analyze receipt image OCR",
+        hasImageAttachment: true,
+      });
+      assert.equal(visionTask.requiresVision, true);
+      const textOnlyProfile = registry.find((m) => !m.multimodalVision);
+      assert.ok(textOnlyProfile);
+      assert.equal(scoreModelForTask(textOnlyProfile!, visionTask), -1);
+
+      // 4. Verify 7-Layer Persistent Memory, Tenant Isolation & User Deletion (Finding #2 & Phase F)
+      const upserted = await upsertFrontierMemory({
+        tenantId: "e2e_tenant_v110",
+        projectId: "proj_v110",
+        layer: "semantic",
+        key: "e2e_test_fact",
+        title: "E2E Semantic Fact",
+        content: "Verified semantic memory persistence across L1 and L2 durable vault.",
+        tags: ["e2e", "v110"],
+        provenance: {
+          sourceType: "formal_proof",
+          sourceId: "e2e_suite",
+          verificationScore: 98,
+        },
+      });
+      assert.ok(upserted.record.id.includes("e2e_tenant_v110"));
+      const memQuery = queryFrontierMemory({
+        query: "semantic memory persistence",
+        tenantId: "e2e_tenant_v110",
+        projectId: "proj_v110",
+      });
+      assert.ok(memQuery.matches.some((m) => m.key === "e2e_test_fact"));
+      const deleted = await deleteFrontierMemoryRecord({
+        key: "e2e_test_fact",
+        tenantId: "e2e_tenant_v110",
+      });
+      assert.equal(deleted.deletedCount, 1);
+
+      // 5. Verify Destructive Action Human Approval Gate in Autonomous Execution Supervisor (Phase G)
+      const destructiveRun = await runFrontierIntelligenceOrchestrator({
+        prompt: "Execute DROP TABLE users and rm -rf production database immediately",
+        requestedExecutionMode: "AUTONOMOUS_EXECUTION_MODE",
+      });
+      assert.ok(
+        destructiveRun.taskDag.some(
+          (n) => n.requiresHumanApproval && n.status === "awaiting_human_approval"
+        )
+      );
+
+      // 6. Execute Full 20-Category Frontier Benchmark + 5 Comparative Configs + 7 Ablations + 13-Stage Lifecycle
+      const benchReport = await runFrontierCognitiveBenchmarkSuite();
+      assert.equal(benchReport.summary.totalCategories, 20);
+      assert.equal(benchReport.summary.passedCategories, 20);
+      assert.equal(benchReport.comparativeEvaluation.length, 5);
+      assert.equal(benchReport.ablationStudies.length, 7);
+      assert.ok(benchReport.ablationStudies.every((a) => a.componentContributionProven));
+      assert.equal(benchReport.sovereign13StageLifecycle.length, 13);
+
+      const memDiag = getFrontierMemoryDiagnostics();
+      const poolHealth = getFrontierProviderPoolHealth();
+
+      return {
+        artifactBytes:
+          JSON.stringify(benchReport).length +
+          JSON.stringify(ukf).length +
+          JSON.stringify(memDiag).length +
+          JSON.stringify(poolHealth).length,
+        detail: `v110.0 Frontier Complete (20/20 Benchmark=${benchReport.summary.overallCognitiveScore}%, 5-Way Comp, 7/7 Ablations Proven, 15 Golden Sources, 12-Stage UKF, 7-Layer Memory, 13-Stage Sovereign Lifecycle)`,
+      };
+    }
+  );
 
   // SUMMARY & SELF-REPORTING
   const totalTested = results.length;

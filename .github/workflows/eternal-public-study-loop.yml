@@ -124,11 +124,16 @@ jobs:
           HF_TOKEN_4: ${{ secrets.HF_TOKEN_4 }}
           HF_DATASET_REPO: ${{ secrets.HF_DATASET_REPO }}
           HF_REPO_ID: ${{ secrets.HF_REPO_ID }}
+          HEYUKA_HUB_URL: ${{ secrets.HEYUKA_HUB_URL }}
         run: |
           python3 training/storage/multi_vault_union.py \
             --shards-dir /tmp/heyuka_shards \
             --out-bloom /tmp/heyuka_union/global_seen.bf.gz \
             --out-manifest /tmp/heyuka_union/multi_shard_union_manifest.json
+          python3 training/sync/auto_distributed_memory_sync.py \
+            --hub-url "${HEYUKA_HUB_URL:-https://kaspi-pos.vercel.app}" \
+            --source-label "github_actions_20x_study_loop" \
+            --no-hf || true
 
       - name: Archive Unified Bloom Filter & Manifest
         uses: actions/upload-artifact@v4

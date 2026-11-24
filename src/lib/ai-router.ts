@@ -22,6 +22,7 @@ import {
   resolveModelCommandHierarchy,
   type HeyukaHierarchyRole,
 } from "@/lib/heyuka/compute/hf-token-pool";
+import { rankProviderCandidatesByCapability } from "@/lib/heyuka/frontier/model-capability-registry";
 
 /**
  * Resolves deep thinking and execution horizons (`v109.1`).
@@ -115,6 +116,8 @@ export interface RouterGovernanceScope {
   strictCloudOnly?: boolean;
   byokKeys?: ByokSessionKeys;
   modelRole?: HeyukaHierarchyRole | string;
+  promptHint?: string;
+  hasImageAttachment?: boolean;
 }
 
 function isSafeCallerComputeUrl(rawUrl: string): boolean {
@@ -325,6 +328,7 @@ export async function getRouterCandidates(
 
       for (let idx = 0; idx < customSettings.length; idx++) {
         const setting = customSettings[idx];
+        if (setting.providerName.startsWith("__heyuka_state_")) continue;
         if (setting.apiKey && !setting.apiKey.includes("mock")) {
           const customOpenAI = createOpenAI({
             apiKey: setting.apiKey,
@@ -568,7 +572,7 @@ export async function getRouterCandidates(
         apiKey: keyEntry.token,
         modelId: hfModelId,
         model: hfProvider(hfModelId) as unknown as LanguageModel,
-        supportsVision: false,
+        supportsVision: /vl|vision|pixtral|llava/i.test(hfModelId),
       });
     }
   });
@@ -593,7 +597,28 @@ export async function getRouterCandidates(
     });
   }
 
-  return filterAndOrderActiveCandidates(candidates);
+  // Dynamic Capability-Based Ranking (Phase C / Finding #5)
+  const capabilityRanked =
+    scope?.promptHint || scope?.hasImageAttachment || scope?.modelRole
+      ? rankProviderCandidatesByCapability(
+          candidates.map((c) => ({ ...c, model: c.modelId })),
+          {
+            prompt: scope?.promptHint || "",
+            hasImageAttachment: scope?.hasImageAttachment,
+            requestedHeyukaBrain: hierarchy.role,
+          }
+        ).rankedCandidates.map(
+          (rc) =>
+            candidates.find(
+              (orig) =>
+                orig.provider === rc.provider &&
+                orig.modelId === rc.modelId &&
+                orig.keyIndex === rc.keyIndex
+            ) || candidates[0]
+        )
+      : candidates;
+
+  return filterAndOrderActiveCandidates(capabilityRanked.filter(Boolean));
 }
 
 function extractLastUserTextFromMessages(messages: any): string {

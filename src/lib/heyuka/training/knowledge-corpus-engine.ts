@@ -6,6 +6,10 @@ import { isSafePublicHttpUrl, runUnrestrictedWebResearch } from "@/lib/zebra-x/a
 import { getSovereignVaultUnifiedEntries } from "@/lib/heyuka/vault/sovereign-permanent-vault";
 import { exportEvolutionChatMlDataset } from "@/lib/heyuka/learning/self-evolution-engine";
 import type { CognitiveClusterId } from "@/lib/zebra-x/core/cognitive-brain-registry";
+import {
+  loadDurableStateSync,
+  saveDurableState,
+} from "@/lib/heyuka/frontier/persistent-episodic-memory";
 
 export interface StudiedKnowledgeUnit {
   id: string;
@@ -145,6 +149,18 @@ export function ensureFullVaultDigested(): { totalDigested: number } {
     });
   }
 
+  // Hydrate any hot-synced or crawled units from 3-tier durable storage (Phase B Finding #2)
+  const durableHotSynced = loadDurableStateSync<StudiedKnowledgeUnit[]>(
+    "frontier_hotsync_corpus_units_v110",
+    []
+  );
+  for (const unit of durableHotSynced) {
+    if (unit && unit.id && !studiedCorpus.has(unit.id)) {
+      contentDigestSeen.add(unit.sha256);
+      studiedCorpus.set(unit.id, unit);
+    }
+  }
+
   vaultIndexed = true;
   return { totalDigested: studiedCorpus.size };
 }
@@ -186,6 +202,13 @@ export function ingestHotSyncUnits(
       ingestedAt: now,
     });
     ingestedCount++;
+  }
+
+  if (ingestedCount > 0) {
+    const nonVaultUnits = Array.from(studiedCorpus.values())
+      .filter((u) => u.sourceKind !== "sovereign_vault")
+      .slice(-400);
+    void saveDurableState("frontier_hotsync_corpus_units_v110", nonVaultUnits);
   }
 
   return {

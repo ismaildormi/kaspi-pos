@@ -1,7 +1,7 @@
 # الملف المرجعي المعياري رقم (2): الهندسة النهائية الكاملة للنماذج وطريقة تفكيرها واتصالها الشامل بجميع المصادر
 # HEYUKA & KASPI POS — Canonical Engineering Standard File #2 (Models, Cognitive Engines & Audited Sources)
 
-> **مرجع معياري ثابت ومولَّد برمجياً مباشرةً من الكود الفعلي** بتاريخ `2026-11-24T00:35:31.927Z` ليشكّل مع الملف رقم (1) ([YUKA_FINAL_100_PERCENT_TEST_RESULTS.md](./YUKA_FINAL_100_PERCENT_TEST_RESULTS.md)) الدستور الهندسي الثابت والكامل للمنظومة.
+> **مرجع معياري ثابت ومولَّد برمجياً مباشرةً من الكود الفعلي** بتاريخ `2026-11-24T01:30:05.959Z` ليشكّل مع الملف رقم (1) ([YUKA_FINAL_100_PERCENT_TEST_RESULTS.md](./YUKA_FINAL_100_PERCENT_TEST_RESULTS.md)) الدستور الهندسي الثابت والكامل للمنظومة.
 
 ---
 
@@ -195,10 +195,25 @@ flowchart TB
 | 46 | `opensky_flights` | `https://api.adsb.lol/v2/point/35.1688/-2.9335/250 • https://opensky-network.org/api/states/all?lamin=29.0&lomin=-11.0&lamax=36.0&lomax=-1.0` | عبر أداة `queryVaultOrApi` / `queryPublicApi` أو المسار `/api/v1/public-apis?category=opensky_flights` |
 | 47 | `google_patents` | `https://patents.google.com/?q=${encQ}&scholar • https://api.openalex.org/works?search=${encQ}+patent+invention&per-page=${Math.min( • https://patents.google.com/patent/${patentId}/en` | عبر أداة `queryVaultOrApi` / `queryPublicApi` أو المسار `/api/v1/public-apis?category=google_patents` |
 
-### 4.3 تدقيق المصادر الذهبية الـ 0 وأسراب الشرائح الـ 120 وخط التدريب (`training/`)
+### 4.3 تدقيق المصادر الذهبية الـ 15 وأسراب الشرائح الـ 120 وخط التدريب (`training/`)
 
 | الترتيب | المعرف | المصدر الذهبي (`Golden Source`) | دورها الفعلي داخل خط الزحف والمناهج |
 | :---: | :--- | :--- | :--- |
+| 1 | `golden_01_fineweb_edu` | **HuggingFace FineWeb-Edu** | [SCIENCE_CODE_WEB \| Priority 100] https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu — API: https://datasets-server.huggingface.co/rows?dataset=HuggingFaceFW%2Ffineweb-edu&config=sample-10BT&split=train&offset=0&length=4 — يُوجَّه بأولوية `Golden-Tier` في `autonomous_web_discoverer.py` عبر Shards 0..119 |
+| 2 | `golden_02_the_stack_v2` | **BigCode The Stack v2 (600+ Languages)** | [SCIENCE_CODE_WEB \| Priority 98] https://huggingface.co/datasets/bigcode/the-stack-v2 — API: https://huggingface.co/datasets/bigcode/the-stack-v2 — يُوجَّه بأولوية `Golden-Tier` في `autonomous_web_discoverer.py` عبر Shards 0..119 |
+| 3 | `golden_03_wikipedia_wikidata` | **Wikipedia & Wikidata (AR / FR / EN)** | [ENCYCLOPEDIA_BOOKS \| Priority 99] https://www.wikipedia.org/ — API: https://ar.wikipedia.org/w/api.php?action=query&generator=random&grnnamespace=0&grnlimit=4&prop=extracts\|info&exintro=1&explaintext=1&inprop=url&format=json — يُوجَّه بأولوية `Golden-Tier` في `autonomous_web_discoverer.py` عبر Shards 0..119 |
+| 4 | `golden_04_arxiv_papers` | **arXiv Open Science Papers** | [SCIENCE_CODE_WEB \| Priority 97] https://arxiv.org/ — API: https://export.arxiv.org/api/query?search_query=cat:cs.AI+OR+cat:cs.SE+OR+cat:math.OC&start=0&max_results=5 — يُوجَّه بأولوية `Golden-Tier` في `autonomous_web_discoverer.py` عبر Shards 0..119 |
+| 5 | `golden_05_openalex` | **OpenAlex Global Works (250M+ Papers)** | [SCIENCE_CODE_WEB \| Priority 97] https://openalex.org/ — API: https://api.openalex.org/works?search=software%20engineering%20OR%20machine%20learning&per-page=5&select=id,title,publication_year,doi,open_access — يُوجَّه بأولوية `Golden-Tier` في `autonomous_web_discoverer.py` عبر Shards 0..119 |
+| 6 | `golden_06_pubmed_central` | **PubMed Central & Europe PMC** | [MEDICINE_BIO \| Priority 96] https://europepmc.org/ — API: https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=clinical+evidence&format=json&pageSize=4 — يُوجَّه بأولوية `Golden-Tier` في `autonomous_web_discoverer.py` عبر Shards 0..119 |
+| 7 | `golden_07_mathlib4_oeis` | **Lean Mathlib4 & OEIS Formal Proofs** | [SCIENCE_CODE_WEB \| Priority 95] https://github.com/leanprover-community/mathlib4 — API: https://leanprover-community.github.io/mathlib4_docs/ — يُوجَّه بأولوية `Golden-Tier` في `autonomous_web_discoverer.py` عبر Shards 0..119 |
+| 8 | `golden_08_gutenberg_openlibrary` | **Project Gutenberg & Open Library** | [ENCYCLOPEDIA_BOOKS \| Priority 94] https://openlibrary.org/ — API: https://openlibrary.org/search.json?q=computer+science&limit=4&fields=key,title,author_name,first_publish_year — يُوجَّه بأولوية `Golden-Tier` في `autonomous_web_discoverer.py` عبر Shards 0..119 |
+| 9 | `golden_09_common_crawl` | **Common Crawl (110B+ Open Web Index)** | [WEB_ARCHIVE \| Priority 99] https://commoncrawl.org/ — API: https://index.commoncrawl.org/collinfo.json — يُوجَّه بأولوية `Golden-Tier` في `autonomous_web_discoverer.py` عبر Shards 0..119 |
+| 10 | `golden_10_internet_archive` | **Internet Archive Open Library Collections** | [WEB_ARCHIVE \| Priority 93] https://archive.org/ — API: https://archive.org/advancedsearch.php?q=mediatype%3Atexts+AND+collection%3Aopensource&fl%5B%5D=identifier,title,subject&rows=5&page=1&output=json — يُوجَّه بأولوية `Golden-Tier` في `autonomous_web_discoverer.py` عبر Shards 0..119 |
+| 11 | `golden_11_atlasia_darija` | **AtlasIA Moroccan Darija Open Corpus** | [ARABIC_DARIJA_COMMERCE \| Priority 98] https://huggingface.co/atlasia — API: https://huggingface.co/datasets/atlasia/AL-Atlas-Moroccan-Darija-Pretraining-Dataset — يُوجَّه بأولوية `Golden-Tier` في `autonomous_web_discoverer.py` عبر Shards 0..119 |
+| 12 | `golden_12_camel_lab` | **CAMeL Lab Arabic NLP & Corpora** | [ARABIC_DARIJA_COMMERCE \| Priority 95] https://github.com/CAMeL-Lab — API: https://github.com/CAMeL-Lab/camel_tools — يُوجَّه بأولوية `Golden-Tier` في `autonomous_web_discoverer.py` عبر Shards 0..119 |
+| 13 | `golden_13_openstreetmap` | **OpenStreetMap / Nominatim Geo Index** | [ARABIC_DARIJA_COMMERCE \| Priority 92] https://www.openstreetmap.org/ — API: https://nominatim.openstreetmap.org/search?q=Morocco&format=json&limit=4 — يُوجَّه بأولوية `Golden-Tier` في `autonomous_web_discoverer.py` عبر Shards 0..119 |
+| 14 | `golden_14_openfoodfacts` | **OpenFoodFacts Retail & Barcode DB** | [ARABIC_DARIJA_COMMERCE \| Priority 94] https://world.openfoodfacts.org/ — API: https://world.openfoodfacts.org/api/v2/search?categories_tags=beverages&page_size=4&fields=code,product_name,brands — يُوجَّه بأولوية `Golden-Tier` في `autonomous_web_discoverer.py` عبر Shards 0..119 |
+| 15 | `golden_15_world_bank` | **World Bank Macro & Economic Indicators** | [ARABIC_DARIJA_COMMERCE \| Priority 93] https://data.worldbank.org/ — API: https://api.worldbank.org/v2/country/MA/indicator/NY.GDP.MKTP.CD?format=json&per_page=5 — يُوجَّه بأولوية `Golden-Tier` في `autonomous_web_discoverer.py` عبر Shards 0..119 |
 
 **مصفوفة الأسراب السحابية الـ 120 (`MULTI_CLOUD_120_POOLS`):**
 - `github_actions_matrix` (**GitHub Actions 20x Matrix**): نطاق الشرائح `0..19` — السعة `20` شريحة (النوع `github_matrix`).
@@ -3031,5 +3046,5 @@ flowchart TB
 ---
 
 ## الباب 5: خلاصة التدقيق الهيكلي للمستودع والربط مع الملف المرجعي رقم (1)
-- **إجمالي مكونات الكود المدققة آلياً الآن:** `54` ملفاً في `src/lib/heyuka/` + `76` ملفاً في `src/lib/zebra-x/` + `153` مسار API في `src/app/api/` + `59` صفحة واجهة + `127` مكون React UI + `62` نموذج Prisma + `16` سكربت Python + `9` مسار GitHub Actions + `9` ملف نشر.
+- **إجمالي مكونات الكود المدققة آلياً الآن:** `59` ملفاً في `src/lib/heyuka/` + `76` ملفاً في `src/lib/zebra-x/` + `154` مسار API في `src/app/api/` + `59` صفحة واجهة + `127` مكون React UI + `62` نموذج Prisma + `16` سكربت Python + `9` مسار GitHub Actions + `9` ملف نشر.
 - **الربط التكاملي مع الملف رقم (1):** راجع [YUKA_FINAL_100_PERCENT_TEST_RESULTS.md](./YUKA_FINAL_100_PERCENT_TEST_RESULTS.md) للاطلاع على مصفوفة الاختبار الكاملة `81/81 (100.0%)` وجرد كل ملف منفرد مع عدد المستوردات (`Routes/UI/Libs/Tests`) والأوديت الإنتاجي المباشر على `https://kaspi-pos.vercel.app`.
