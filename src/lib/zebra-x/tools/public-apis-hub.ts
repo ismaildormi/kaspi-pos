@@ -671,11 +671,16 @@ async function executePublicQuery(
     }
 
     case "paleobiology_fossils": {
-      const url = `https://paleobiodb.org/data1.2/taxa/list.json?name=${encodeURIComponent(
-        query || "Trilobita"
-      )}&rel=all_children&show=attr,app,size&limit=${limit}`;
-      const json = await fetchJsonWithTimeout<any>(url);
-      return { sourceUrl: url, data: (json?.records || []).slice(0, limit) };
+      const q = encodeURIComponent(query || "Trilobita");
+      const url = `https://paleobiodb.org/data1.2/taxa/list.json?name=${q}&rel=all_children&show=attr,app,size&limit=${limit}`;
+      try {
+        const json = await fetchJsonWithTimeout<any>(url, {}, 10_000);
+        return { sourceUrl: url, data: (json?.records || []).slice(0, limit) };
+      } catch {
+        const gbifUrl = `https://api.gbif.org/v1/species/search?q=${q}&limit=${limit}`;
+        const gbif = await fetchJsonWithTimeout<any>(gbifUrl, {}, 9000);
+        return { sourceUrl: gbifUrl, data: gbif?.results || [] };
+      }
     }
 
     case "open_tree_of_life": {
@@ -1127,7 +1132,7 @@ async function executePublicQuery(
     case "nasa_eonet_events": {
       const url = `https://eonet.gsfc.nasa.gov/api/v3/events?limit=${limit}&status=open`;
       try {
-        const json = await fetchJsonWithTimeout<any>(url, {}, 7500);
+        const json = await fetchJsonWithTimeout<any>(url, {}, 10_000);
         const events = (json?.events || []).slice(0, limit).map((ev: any) => ({
           id: ev.id,
           title: ev.title,
@@ -1135,9 +1140,14 @@ async function executePublicQuery(
         }));
         return { sourceUrl: url, data: { events } };
       } catch {
-        const apodUrl = "https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY";
-        const json = await fetchJsonWithTimeout<any>(apodUrl, {}, 7500);
-        return { sourceUrl: apodUrl, data: { title: json?.title, date: json?.date, url: json?.url } };
+        const usgsUrl = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&limit=${limit}&orderby=time`;
+        const usgs = await fetchJsonWithTimeout<any>(usgsUrl, {}, 9000);
+        const events = (usgs?.features || []).slice(0, limit).map((f: any) => ({
+          id: f.id,
+          title: f.properties?.title || "Earth Hazard Event",
+          category: "Earth Hazard",
+        }));
+        return { sourceUrl: usgsUrl, data: { events } };
       }
     }
 

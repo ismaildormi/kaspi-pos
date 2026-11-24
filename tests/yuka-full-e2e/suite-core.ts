@@ -259,6 +259,7 @@ import {
   decryptVaultSecrets,
 } from "../../src/lib/security/integration-vault";
 import { getRouterCandidates, resolveRouterBudgets } from "../../src/lib/ai-router";
+import { buildCompleteMasterArchitectureAndAuditMarkdown } from "../../scripts/build-exhaustive-master-blueprint";
 import {
   PLANETARY_ARSENAL_CATALOG,
   PLANETARY_CATALOG_COUNTS,
@@ -2416,6 +2417,7 @@ print(json.dumps({'ok': True, 'hll': hll.estimate(), 'ringShard': s, 'golden': l
 
   // Only generate/update YUKA_FINAL_100_PERCENT_TEST_RESULTS.md when 100% of runnable checks pass!
   if (failed.length === 0) {
+    const fullMasterBlueprintMd = buildCompleteMasterArchitectureAndAuditMarkdown(process.cwd());
     const mdLines = [
       `# YUKA / HEYUKA — 100% Real End-to-End Test Results (\`v14.1\` – \`v109.1\`)`,
       ``,
@@ -2450,8 +2452,15 @@ print(json.dumps({'ok': True, 'hll': hll.estimate(), 'ringShard': s, 'golden': l
       `- Native host \`ffmpeg\` CLI (offloaded cleanly to client \`@ffmpeg/ffmpeg\` Single-Thread WASM / WebCodecs + optional Sidecar Worker)`,
       `- Native Tauri/Capacitor binaries (\`.exe\`, \`.dmg\`, \`.AppImage\`, \`.apk\`, \`.ipa\`) build cleanly on GitHub Actions runners via [\`.github/workflows/release-all-binaries.yml\`](./.github/workflows/release-all-binaries.yml); Linux GTK headers (\`pkg-config\`, \`gdk-3.0\`, \`libsoup-3.0\`) and \`cargo-xwin\` CLI are configured via \`src-tauri/.cargo/config.toml\` for Windows cross-compilation.`,
       ``,
+      `---`,
+      ``,
+      fullMasterBlueprintMd,
     ];
     fs.writeFileSync(path.join(process.cwd(), "YUKA_FINAL_100_PERCENT_TEST_RESULTS.md"), mdLines.join("\n"));
+    fs.writeFileSync(
+      path.join(process.cwd(), "docs", "HEYUKA_COMPLETE_AI_MODELS_AND_SOURCES_MASTER_BIBLE.md"),
+      fullMasterBlueprintMd
+    );
     console.log("\n[YUKA-E2E] Wrote YUKA_FINAL_100_PERCENT_TEST_RESULTS.md (100% PASS)");
     process.exit(0);
   } else {
