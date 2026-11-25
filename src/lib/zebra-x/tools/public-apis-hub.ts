@@ -804,23 +804,35 @@ async function executePublicQuery(
 
     case "remote_jobs": {
       const url = "https://www.arbeitnow.com/api/job-board-api";
-      const json = await fetchJsonWithTimeout<any>(url);
+      const json = await fetchJsonWithTimeout<any>(url).catch(() => null);
+      const allJobs: any[] = Array.isArray(json?.data) ? json.data : [];
       const qLower = query.toLowerCase();
-      const jobs = (json?.data || [])
-        .filter((j: any) =>
-          !qLower
-            ? true
-            : `${j.title} ${j.company_name} ${(j.tags || []).join(" ")}`.toLowerCase().includes(qLower)
-        )
-        .slice(0, limit)
-        .map((j: any) => ({
+      const matched = allJobs.filter((j: any) =>
+        !qLower
+          ? true
+          : `${j.title} ${j.company_name} ${(j.tags || []).join(" ")}`.toLowerCase().includes(qLower)
+      );
+      const sourceList = matched.length > 0 ? matched : allJobs;
+      if (sourceList.length > 0) {
+        const jobs = sourceList.slice(0, limit).map((j: any) => ({
           title: j.title,
           company: j.company_name,
           remote: j.remote,
           location: j.location,
           url: j.url,
         }));
-      return { sourceUrl: url, data: jobs };
+        return { sourceUrl: url, data: jobs };
+      }
+      const remotiveUrl = `https://remotive.com/api/remote-jobs?limit=${limit}`;
+      const remJson = await fetchJsonWithTimeout<any>(remotiveUrl);
+      const remJobs = (remJson?.jobs || []).slice(0, limit).map((j: any) => ({
+        title: j.title,
+        company: j.company_name,
+        remote: true,
+        location: j.candidate_required_location,
+        url: j.url,
+      }));
+      return { sourceUrl: remotiveUrl, data: remJobs };
     }
 
     case "iconify_logos": {

@@ -1,0 +1,822 @@
+{
+  "version": "111.0.0",
+  "startedAt": "2026-11-24T01:59:29.944Z",
+  "finishedAt": "2026-11-24T02:03:51.300Z",
+  "catalogNotes": [
+    "Groq catalog: 11 models listed, 5 chat LLMs verified.",
+    "OpenRouter catalog: 441 models listed, 13 zero-price."
+  ],
+  "standbyUnconfiguredProviders": [
+    "openai",
+    "anthropic",
+    "gemini",
+    "deepseek",
+    "mistral",
+    "cerebras",
+    "sambanova",
+    "github",
+    "ollama"
+  ],
+  "frontierReferenceModels": {
+    "note": "GPT-6.2 Astra/Sol, Claude Fable 5.2 / Opus 5.5 / Sonnet 5.5, Gemini 4 Argon/Hydrogen/Neon are display names. No OpenAI, Anthropic or Gemini credentials are configured in this environment, so their wire model IDs could not be retrieved from the providers' /models catalogs and no comparison calls were made.",
+    "status": "STANDBY_UNCONFIGURED"
+  },
+  "results": [
+    {
+      "provider": "groq",
+      "modelId": "openai/gpt-oss-120b",
+      "contextLength": 131072,
+      "inputModalities": [
+        "text"
+      ],
+      "catalogSource": "https://api.groq.com/openai/v1/models",
+      "pricingPromptPer1M": 0.15,
+      "pricingCompletionPer1M": 0.6,
+      "connectionStatus": "ACTIVE",
+      "tests": {
+        "text": {
+          "pass": true,
+          "http": 200,
+          "status": "ACTIVE",
+          "error": "NONE",
+          "latencyMs": 1152.8,
+          "executedModelId": "openai/gpt-oss-120b",
+          "tokens": 156,
+          "sample": "323"
+        },
+        "json": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "{\"answer\":323}"
+        },
+        "tools": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "toolCall": "compute_vat({\"amount_ht\":6000})"
+        },
+        "stream": {
+          "pass": true,
+          "http": 200,
+          "chunks": 46,
+          "ttftMs": 390.9,
+          "totalMs": 480.6
+        }
+      }
+    },
+    {
+      "provider": "groq",
+      "modelId": "openai/gpt-oss-20b",
+      "contextLength": 131072,
+      "inputModalities": [
+        "text"
+      ],
+      "catalogSource": "https://api.groq.com/openai/v1/models",
+      "pricingPromptPer1M": 0.08,
+      "pricingCompletionPer1M": 0.24,
+      "connectionStatus": "ACTIVE",
+      "tests": {
+        "text": {
+          "pass": true,
+          "http": 200,
+          "status": "ACTIVE",
+          "error": "NONE",
+          "latencyMs": 336.9,
+          "executedModelId": "openai/gpt-oss-20b",
+          "tokens": 140,
+          "sample": "323"
+        },
+        "json": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "{\"answer\":323}"
+        },
+        "tools": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "toolCall": "compute_vat({\"amount_ht\":6000})"
+        },
+        "stream": {
+          "pass": true,
+          "http": 200,
+          "chunks": 42,
+          "ttftMs": 140.2,
+          "totalMs": 168.7
+        }
+      }
+    },
+    {
+      "provider": "groq",
+      "modelId": "qwen/qwen3.8-27b",
+      "contextLength": 131072,
+      "inputModalities": [
+        "text"
+      ],
+      "catalogSource": "https://api.groq.com/openai/v1/models",
+      "pricingPromptPer1M": 0.08,
+      "pricingCompletionPer1M": 0.24,
+      "connectionStatus": "ACTIVE",
+      "tests": {
+        "text": {
+          "pass": true,
+          "http": 200,
+          "status": "ACTIVE",
+          "error": "NONE",
+          "latencyMs": 238.5,
+          "executedModelId": "qwen/qwen3.8-27b",
+          "tokens": 32,
+          "sample": "323"
+        },
+        "json": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "{\"answer\": 323}"
+        },
+        "tools": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "toolCall": "compute_vat({\"amount_ht\":6000})"
+        },
+        "stream": {
+          "pass": true,
+          "http": 200,
+          "chunks": 9,
+          "ttftMs": 115.7,
+          "totalMs": 143.9
+        }
+      }
+    },
+    {
+      "provider": "groq",
+      "modelId": "allam-2-7b",
+      "contextLength": 4096,
+      "inputModalities": [
+        "text"
+      ],
+      "catalogSource": "https://api.groq.com/openai/v1/models",
+      "pricingPromptPer1M": 0.05,
+      "pricingCompletionPer1M": 0.1,
+      "connectionStatus": "ACTIVE",
+      "tests": {
+        "text": {
+          "pass": true,
+          "http": 200,
+          "status": "ACTIVE",
+          "error": "NONE",
+          "latencyMs": 262.4,
+          "executedModelId": "allam-2-7b",
+          "tokens": 29,
+          "sample": "323"
+        },
+        "json": {
+          "pass": false,
+          "http": 200,
+          "error": "NONE",
+          "sample": "{\"answer\": 301}"
+        },
+        "tools": {
+          "pass": false,
+          "http": 400,
+          "error": "404_MODEL_NOT_FOUND",
+          "toolCall": null
+        },
+        "stream": {
+          "pass": true,
+          "http": 200,
+          "chunks": 10,
+          "ttftMs": 162.9,
+          "totalMs": 176.9
+        }
+      }
+    },
+    {
+      "provider": "groq",
+      "modelId": "openai/gpt-oss-safeguard-20b",
+      "contextLength": 131072,
+      "inputModalities": [
+        "text"
+      ],
+      "catalogSource": "https://api.groq.com/openai/v1/models",
+      "pricingPromptPer1M": 0.08,
+      "pricingCompletionPer1M": 0.24,
+      "connectionStatus": "ACTIVE",
+      "tests": {
+        "text": {
+          "pass": true,
+          "http": 200,
+          "status": "ACTIVE",
+          "error": "NONE",
+          "latencyMs": 274.2,
+          "executedModelId": "openai/gpt-oss-safeguard-20b",
+          "tokens": 163,
+          "sample": "323"
+        },
+        "json": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "{\"answer\":323}"
+        },
+        "tools": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "toolCall": "compute_vat({\"amount_ht\":6000})"
+        },
+        "stream": {
+          "pass": false,
+          "http": 429,
+          "chunks": 0,
+          "ttftMs": null,
+          "totalMs": 75.1
+        }
+      }
+    },
+    {
+      "provider": "openrouter",
+      "modelId": "inclusionai/ling-3.2-flash:free",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "catalogSource": "https://openrouter.ai/api/v1/models",
+      "pricingPromptPer1M": 0,
+      "pricingCompletionPer1M": 0,
+      "tests": {
+        "text": {
+          "pass": false,
+          "http": 429,
+          "status": "DEGRADED",
+          "error": "429_RATE_LIMITED",
+          "latencyMs": 544.8,
+          "executedModelId": "inclusionai/ling-3.2-flash:free",
+          "tokens": 0,
+          "sample": "",
+          "errorDetail": "{\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"inclusionai/ling-3.2-flash:free is temporarily rate-limited upstream. Please retry s"
+        }
+      },
+      "connectionStatus": "DEGRADED"
+    },
+    {
+      "provider": "openrouter",
+      "modelId": "baidu/ernie-5.5-flash-preview:free",
+      "contextLength": 1024000,
+      "inputModalities": [
+        "text"
+      ],
+      "catalogSource": "https://openrouter.ai/api/v1/models",
+      "pricingPromptPer1M": 0,
+      "pricingCompletionPer1M": 0,
+      "tests": {
+        "text": {
+          "pass": true,
+          "http": 200,
+          "status": "ACTIVE",
+          "error": "NONE",
+          "latencyMs": 1368.3,
+          "executedModelId": "baidu/ernie-5.5-flash-preview:free",
+          "tokens": 60,
+          "sample": "323"
+        },
+        "json": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "{\"answer\": 323}"
+        },
+        "tools": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "toolCall": "compute_vat({\"amount_ht\": 6000, \"rate\": 20})"
+        },
+        "stream": {
+          "pass": true,
+          "http": 200,
+          "chunks": 3,
+          "ttftMs": 1581.8,
+          "totalMs": 1623.4
+        }
+      },
+      "connectionStatus": "ACTIVE"
+    },
+    {
+      "provider": "openrouter",
+      "modelId": "liquid/lfm-3-1.7b:free",
+      "contextLength": 262144,
+      "inputModalities": [
+        "text"
+      ],
+      "catalogSource": "https://openrouter.ai/api/v1/models",
+      "pricingPromptPer1M": 0,
+      "pricingCompletionPer1M": 0,
+      "tests": {
+        "text": {
+          "pass": false,
+          "http": 429,
+          "status": "DEGRADED",
+          "error": "429_RATE_LIMITED",
+          "latencyMs": 246.5,
+          "executedModelId": "liquid/lfm-3-1.7b:free",
+          "tokens": 0,
+          "sample": "",
+          "errorDetail": "{\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"liquid/lfm-3-1.7b:free is temporarily rate-limited upstream. Please retry shortly, o"
+        }
+      },
+      "connectionStatus": "DEGRADED"
+    },
+    {
+      "provider": "openrouter",
+      "modelId": "particle-ai/particle-1:free",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "catalogSource": "https://openrouter.ai/api/v1/models",
+      "pricingPromptPer1M": 0,
+      "pricingCompletionPer1M": 0,
+      "tests": {
+        "text": {
+          "pass": true,
+          "http": 200,
+          "status": "ACTIVE",
+          "error": "NONE",
+          "latencyMs": 1036.4,
+          "executedModelId": "particle-ai/particle-1:free",
+          "tokens": 116,
+          "sample": "323"
+        },
+        "json": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "{\"answer\":323}"
+        },
+        "tools": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "toolCall": "compute_vat({\"amount_ht\": 6000, \"rate\": 20})"
+        },
+        "stream": {
+          "pass": true,
+          "http": 200,
+          "chunks": 12,
+          "ttftMs": 568.1,
+          "totalMs": 707.1
+        },
+        "vision": {
+          "pass": false,
+          "http": 429,
+          "error": "429_RATE_LIMITED",
+          "sample": ""
+        }
+      },
+      "connectionStatus": "ACTIVE"
+    },
+    {
+      "provider": "openrouter",
+      "modelId": "recursive/flint-v1.0:free",
+      "contextLength": 262144,
+      "inputModalities": [
+        "text"
+      ],
+      "catalogSource": "https://openrouter.ai/api/v1/models",
+      "pricingPromptPer1M": 0,
+      "pricingCompletionPer1M": 0,
+      "tests": {
+        "text": {
+          "pass": true,
+          "http": 200,
+          "status": "ACTIVE",
+          "error": "NONE",
+          "latencyMs": 1238.6,
+          "executedModelId": "recursive/flint-v1.0:free",
+          "tokens": 71,
+          "sample": "323"
+        },
+        "json": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "{\"answer\": 323}"
+        },
+        "tools": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "toolCall": "compute_vat({\"amount_ht\": 6000, \"rate\": 20})"
+        },
+        "stream": {
+          "pass": true,
+          "http": 200,
+          "chunks": 60,
+          "ttftMs": 775.9,
+          "totalMs": 1933.3
+        }
+      },
+      "connectionStatus": "ACTIVE"
+    },
+    {
+      "provider": "openrouter",
+      "modelId": "nvidia/nemotron-3.5-super-vl:free",
+      "contextLength": 1000000,
+      "inputModalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "catalogSource": "https://openrouter.ai/api/v1/models",
+      "pricingPromptPer1M": 0,
+      "pricingCompletionPer1M": 0,
+      "tests": {
+        "text": {
+          "pass": true,
+          "http": 200,
+          "status": "ACTIVE",
+          "error": "NONE",
+          "latencyMs": 7501.8,
+          "executedModelId": "nvidia/nemotron-3.5-super-vl:free",
+          "tokens": 129,
+          "sample": "323"
+        },
+        "json": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "{\"answer\": 323}"
+        },
+        "tools": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "toolCall": "compute_vat({\"amount_ht\":6000})"
+        },
+        "stream": {
+          "pass": true,
+          "http": 200,
+          "chunks": 19,
+          "ttftMs": 3656.3,
+          "totalMs": 4226.8
+        },
+        "vision": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "Red"
+        }
+      },
+      "connectionStatus": "ACTIVE"
+    },
+    {
+      "provider": "openrouter",
+      "modelId": "dots-studio/dots-3-note-preview:free",
+      "contextLength": 512000,
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "catalogSource": "https://openrouter.ai/api/v1/models",
+      "pricingPromptPer1M": 0,
+      "pricingCompletionPer1M": 0,
+      "tests": {
+        "text": {
+          "pass": true,
+          "http": 200,
+          "status": "ACTIVE",
+          "error": "NONE",
+          "latencyMs": 3078.6,
+          "executedModelId": "dots-studio/dots-3-note-preview:free",
+          "tokens": 245,
+          "sample": "323"
+        },
+        "json": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "{\"answer\": 323}"
+        },
+        "tools": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "toolCall": "compute_vat({\"amount_ht\": 6000})"
+        },
+        "stream": {
+          "pass": true,
+          "http": 200,
+          "chunks": 7,
+          "ttftMs": 1475.9,
+          "totalMs": 3542.2
+        },
+        "vision": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "red"
+        }
+      },
+      "connectionStatus": "ACTIVE"
+    },
+    {
+      "provider": "openrouter",
+      "modelId": "nvidia/nemotron-3.5-lightning:free",
+      "contextLength": 1000000,
+      "inputModalities": [
+        "text"
+      ],
+      "catalogSource": "https://openrouter.ai/api/v1/models",
+      "pricingPromptPer1M": 0,
+      "pricingCompletionPer1M": 0,
+      "tests": {
+        "text": {
+          "pass": true,
+          "http": 200,
+          "status": "ACTIVE",
+          "error": "NONE",
+          "latencyMs": 1442.1,
+          "executedModelId": "nvidia/nemotron-3.5-lightning:free",
+          "tokens": 288,
+          "sample": "[Reasoning Output]: Here's a thinking process:\n\n1.  **Analyz"
+        },
+        "json": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "{\"answer\": 323}"
+        },
+        "tools": {
+          "pass": false,
+          "http": 200,
+          "error": "NONE",
+          "toolCall": null
+        },
+        "stream": {
+          "pass": true,
+          "http": 200,
+          "chunks": 48,
+          "ttftMs": 798.3,
+          "totalMs": 1516.3
+        }
+      },
+      "connectionStatus": "ACTIVE"
+    },
+    {
+      "provider": "openrouter",
+      "modelId": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "contextLength": 1000000,
+      "inputModalities": [
+        "text"
+      ],
+      "catalogSource": "https://openrouter.ai/api/v1/models",
+      "pricingPromptPer1M": 0,
+      "pricingCompletionPer1M": 0,
+      "tests": {
+        "text": {
+          "pass": true,
+          "http": 200,
+          "status": "ACTIVE",
+          "error": "NONE",
+          "latencyMs": 1421.5,
+          "executedModelId": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "tokens": 70,
+          "sample": "323"
+        },
+        "json": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "{\"answer\": 323}"
+        },
+        "tools": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "toolCall": "compute_vat({\"amount_ht\":6000})"
+        },
+        "stream": {
+          "pass": true,
+          "http": 200,
+          "chunks": 9,
+          "ttftMs": 1142,
+          "totalMs": 1386.1
+        }
+      },
+      "connectionStatus": "ACTIVE"
+    },
+    {
+      "provider": "openrouter",
+      "modelId": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+      "contextLength": 256000,
+      "inputModalities": [
+        "text",
+        "audio",
+        "image",
+        "video"
+      ],
+      "catalogSource": "https://openrouter.ai/api/v1/models",
+      "pricingPromptPer1M": 0,
+      "pricingCompletionPer1M": 0,
+      "tests": {
+        "text": {
+          "pass": true,
+          "http": 200,
+          "status": "ACTIVE",
+          "error": "NONE",
+          "latencyMs": 772.7,
+          "executedModelId": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+          "tokens": 80,
+          "sample": "323"
+        },
+        "json": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "{\"answer\": 323}"
+        },
+        "tools": {
+          "pass": false,
+          "http": 200,
+          "error": "NONE",
+          "toolCall": null
+        },
+        "stream": {
+          "pass": true,
+          "http": 200,
+          "chunks": 37,
+          "ttftMs": 336,
+          "totalMs": 838.1
+        },
+        "vision": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "Red"
+        }
+      },
+      "connectionStatus": "ACTIVE"
+    },
+    {
+      "provider": "openrouter",
+      "modelId": "google/gemma-4-26b-a4b-it:free",
+      "contextLength": 262144,
+      "inputModalities": [
+        "image",
+        "text",
+        "video"
+      ],
+      "catalogSource": "https://openrouter.ai/api/v1/models",
+      "pricingPromptPer1M": 0,
+      "pricingCompletionPer1M": 0,
+      "tests": {
+        "text": {
+          "pass": false,
+          "http": 429,
+          "status": "DEGRADED",
+          "error": "429_RATE_LIMITED",
+          "latencyMs": 183.7,
+          "executedModelId": "google/gemma-4-26b-a4b-it:free",
+          "tokens": 0,
+          "sample": "",
+          "errorDetail": "{\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-26b-a4b-it:free is temporarily rate-limited upstream. Please retry sh"
+        }
+      },
+      "connectionStatus": "DEGRADED"
+    },
+    {
+      "provider": "openrouter",
+      "modelId": "google/gemma-4-31b-it:free",
+      "contextLength": 262144,
+      "inputModalities": [
+        "image",
+        "text",
+        "video"
+      ],
+      "catalogSource": "https://openrouter.ai/api/v1/models",
+      "pricingPromptPer1M": 0,
+      "pricingCompletionPer1M": 0,
+      "tests": {
+        "text": {
+          "pass": false,
+          "http": 429,
+          "status": "DEGRADED",
+          "error": "429_RATE_LIMITED",
+          "latencyMs": 147.4,
+          "executedModelId": "google/gemma-4-31b-it:free",
+          "tokens": 0,
+          "sample": "",
+          "errorDetail": "{\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemma-4-31b-it:free is temporarily rate-limited upstream. Please retry shortl"
+        }
+      },
+      "connectionStatus": "DEGRADED"
+    },
+    {
+      "provider": "openrouter",
+      "modelId": "openrouter/free",
+      "contextLength": 200000,
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "catalogSource": "https://openrouter.ai/api/v1/models",
+      "pricingPromptPer1M": 0,
+      "pricingCompletionPer1M": 0,
+      "tests": {
+        "text": {
+          "pass": true,
+          "http": 200,
+          "status": "ACTIVE",
+          "error": "NONE",
+          "latencyMs": 3174,
+          "executedModelId": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "tokens": 72,
+          "sample": "323"
+        },
+        "json": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "{\"answer\": 323}"
+        },
+        "tools": {
+          "pass": false,
+          "http": 200,
+          "error": "NONE",
+          "toolCall": null
+        },
+        "stream": {
+          "pass": true,
+          "http": 200,
+          "chunks": 37,
+          "ttftMs": 397.8,
+          "totalMs": 1010
+        },
+        "vision": {
+          "pass": true,
+          "http": 200,
+          "error": "NONE",
+          "sample": "Red"
+        }
+      },
+      "connectionStatus": "ACTIVE"
+    },
+    {
+      "provider": "huggingface",
+      "modelId": "Qwen/Qwen2.5-72B-Instruct",
+      "contextLength": 131072,
+      "inputModalities": [
+        "text"
+      ],
+      "catalogSource": "https://router.huggingface.co/v1 (Inference Providers)",
+      "pricingPromptPer1M": null,
+      "pricingCompletionPer1M": null,
+      "tests": {
+        "text": {
+          "pass": false,
+          "http": 402,
+          "status": "DEGRADED",
+          "error": "402_CREDITS_EXHAUSTED",
+          "latencyMs": 340.6,
+          "executedModelId": "Qwen/Qwen2.5-72B-Instruct",
+          "tokens": 0,
+          "sample": "",
+          "errorDetail": "{\"error\":\"Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get monthly included credits.\"}"
+        }
+      },
+      "connectionStatus": "DEGRADED"
+    },
+    {
+      "provider": "huggingface",
+      "modelId": "Qwen/Qwen2.5-VL-72B-Instruct",
+      "contextLength": 131072,
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "catalogSource": "https://router.huggingface.co/v1 (Inference Providers)",
+      "pricingPromptPer1M": null,
+      "pricingCompletionPer1M": null,
+      "tests": {
+        "text": {
+          "pass": false,
+          "http": 402,
+          "status": "DEGRADED",
+          "error": "402_CREDITS_EXHAUSTED",
+          "latencyMs": 203.5,
+          "executedModelId": "Qwen/Qwen2.5-VL-72B-Instruct",
+          "tokens": 0,
+          "sample": "",
+          "errorDetail": "{\"error\":\"Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get monthly included credits.\"}"
+        }
+      },
+      "connectionStatus": "DEGRADED"
+    }
+  ]
+}

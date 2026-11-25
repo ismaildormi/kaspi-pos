@@ -1,7 +1,7 @@
 # المخطط المعماري الكامل وأوديت المنظومة الشامل من البداية إلى النهاية (`v1.0` – `v109.1`)
 # HEYUKA & KASPI POS — Complete System Architecture, Full Codebase Audit & Unabridged All-Sources Catalog
 
-> **مُولَّد آلياً بدقة `100%` مباشرةً من الملفات الحية في المستودع (`scripts/build-exhaustive-master-blueprint.ts`)** في `2026-11-24T01:29:53.917Z`.
+> **مُولَّد آلياً بدقة `100%` مباشرةً من الملفات الحية في المستودع (`scripts/build-exhaustive-master-blueprint.ts`)** في `2026-11-25T01:37:24.443Z`.
 
 ---
 
@@ -41,7 +41,7 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 
 | المكون / الطبقة | العدد المحقّق الآن | الوصف الهيكلي الفعلي |
 | :--- | :---: | :--- |
-| **مكتبات النواة `src/lib/heyuka/`** | `59` | الدماغ العصبي، الموزع، البناء التلقائي، البث، التطور الذاتي، الحوسبة والرادار |
+| **مكتبات النواة `src/lib/heyuka/`** | `61` | الدماغ العصبي، الموزع، البناء التلقائي، البث، التطور الذاتي، الحوسبة والرادار |
 | **مكتبات القدرات `src/lib/zebra-x/`** | `76` | الأسرار الـ 7 (`v87`)، أوميغا (`v88`)، الهيمنة (`v90`)، القوى الخارقة (`v95`)، الكتالوجات، والـ 47 API |
 | **مسارات الخادم `src/app/api/`** | `154` | مسارات POS SaaS، التجارة، الدفع، الاستوديو، الـ الذكاء الاصطناعي، المهام العميقة، والإيقاظ |
 | **صفحات الواجهة `page.tsx`** | `59` | صفحات POS، الاستوديو المزدوج (`heyuka` / `kaspi_pos`)، بوابة المطورين، المشرف، والمتاجر |
@@ -118,7 +118,7 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 
 ## الجزء 4: الأوديت الشامل لكل ملف في المستودع (`Complete File-by-File Codebase Audit`)
 
-### 4.1 جميع ملفات النواة `src/lib/heyuka/` (59 ملفاً)
+### 4.1 جميع ملفات النواة `src/lib/heyuka/` (61 ملفاً)
 
 | # | المسار الكامل للملف | الأسطر | Routes | UI | Libs | Tests | حالة الاتصال بالمنظومة |
 | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
@@ -126,7 +126,7 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 | 2 | `src/lib/heyuka/client-cpu-engine.ts` | 923 | 0 | 3 | 0 | 1 | `ACTIVE_WIRED` |
 | 3 | `src/lib/heyuka/cognitive-frontier-blueprint.ts` | 74 | 0 | 0 | 2 | 0 | `INDIRECT_LIB_SUBSYSTEM` |
 | 4 | `src/lib/heyuka/compute/capability-registry.ts` | 406 | 1 | 1 | 1 | 1 | `ACTIVE_WIRED` |
-| 5 | `src/lib/heyuka/compute/hf-token-pool.ts` | 212 | 1 | 0 | 8 | 1 | `ACTIVE_WIRED` |
+| 5 | `src/lib/heyuka/compute/hf-token-pool.ts` | 212 | 1 | 0 | 9 | 1 | `ACTIVE_WIRED` |
 | 6 | `src/lib/heyuka/compute/workers-registry.ts` | 285 | 5 | 1 | 2 | 0 | `ACTIVE_WIRED` |
 | 7 | `src/lib/heyuka/compute/zero-cost-policy.ts` | 340 | 4 | 1 | 2 | 1 | `ACTIVE_WIRED` |
 | 8 | `src/lib/heyuka/deep-job-queue.ts` | 254 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
@@ -153,34 +153,36 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 | 29 | `src/lib/heyuka/engine/three/elementalShaders.ts` | 303 | 0 | 0 | 3 | 0 | `INDIRECT_LIB_SUBSYSTEM` |
 | 30 | `src/lib/heyuka/engine/three/furShaders.ts` | 23 | 0 | 0 | 1 | 0 | `MIRROR_COMPAT (runtime uses furShaders.js)` |
 | 31 | `src/lib/heyuka/engine/three/lightingEnvironments.ts` | 235 | 0 | 1 | 0 | 0 | `ACTIVE_WIRED` |
-| 32 | `src/lib/heyuka/frontier/cognitive-evaluation-engine.ts` | 751 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
-| 33 | `src/lib/heyuka/frontier/frontier-intelligence-orchestrator.ts` | 744 | 1 | 0 | 2 | 1 | `ACTIVE_WIRED` |
-| 34 | `src/lib/heyuka/frontier/model-capability-registry.ts` | 710 | 0 | 0 | 3 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
-| 35 | `src/lib/heyuka/frontier/persistent-episodic-memory.ts` | 786 | 1 | 0 | 6 | 1 | `ACTIVE_WIRED` |
-| 36 | `src/lib/heyuka/frontier/universal-knowledge-fabric.ts` | 713 | 0 | 0 | 2 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
-| 37 | `src/lib/heyuka/global-nervous-mesh.ts` | 328 | 5 | 2 | 2 | 1 | `ACTIVE_WIRED` |
-| 38 | `src/lib/heyuka/gmail-directory.ts` | 188 | 5 | 0 | 0 | 1 | `ACTIVE_WIRED` |
-| 39 | `src/lib/heyuka/heyuka-universe.ts` | 607 | 2 | 3 | 1 | 0 | `ACTIVE_WIRED` |
-| 40 | `src/lib/heyuka/html-to-pdf-export.ts` | 208 | 0 | 1 | 0 | 0 | `ACTIVE_WIRED` |
-| 41 | `src/lib/heyuka/learning/self-evolution-engine.ts` | 272 | 9 | 0 | 7 | 1 | `ACTIVE_WIRED` |
-| 42 | `src/lib/heyuka/local-sovereign-brain.ts` | 1272 | 4 | 1 | 2 | 1 | `ACTIVE_WIRED` |
-| 43 | `src/lib/heyuka/os/sovereign-pc-commander.ts` | 332 | 5 | 0 | 1 | 1 | `ACTIVE_WIRED` |
-| 44 | `src/lib/heyuka/pkzip.ts` | 92 | 1 | 2 | 1 | 1 | `ACTIVE_WIRED` |
-| 45 | `src/lib/heyuka/planetary/planetary-arsenal-catalog.ts` | 321 | 0 | 0 | 2 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
-| 46 | `src/lib/heyuka/planetary/polyglot-cas-router.ts` | 465 | 4 | 0 | 0 | 1 | `ACTIVE_WIRED` |
-| 47 | `src/lib/heyuka/self-capability-awakening.ts` | 163 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
-| 48 | `src/lib/heyuka/shield/magic-validator.ts` | 161 | 1 | 0 | 1 | 1 | `ACTIVE_WIRED` |
-| 49 | `src/lib/heyuka/shield/resilient-fetch.ts` | 131 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
-| 50 | `src/lib/heyuka/shield/tmp-storage.ts` | 81 | 0 | 0 | 0 | 1 | `LEGACY_HELPER (superseded by os.tmpdir)` |
-| 51 | `src/lib/heyuka/studio/studio-orchestrator-v55-v60.ts` | 562 | 8 | 3 | 5 | 1 | `ACTIVE_WIRED` |
-| 52 | `src/lib/heyuka/swarm-node-registry.ts` | 127 | 1 | 0 | 2 | 1 | `ACTIVE_WIRED` |
-| 53 | `src/lib/heyuka/tools/photorealistic-video-builder.ts` | 628 | 2 | 0 | 2 | 1 | `ACTIVE_WIRED` |
-| 54 | `src/lib/heyuka/tools/zero-worker-media-3d.ts` | 190 | 0 | 0 | 1 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
-| 55 | `src/lib/heyuka/training/knowledge-corpus-engine.ts` | 799 | 3 | 0 | 8 | 1 | `ACTIVE_WIRED` |
-| 56 | `src/lib/heyuka/unified-antigravity-cortex.ts` | 1274 | 2 | 0 | 0 | 0 | `ACTIVE_WIRED` |
-| 57 | `src/lib/heyuka/use-hybrid-dictation.ts` | 198 | 0 | 1 | 0 | 0 | `ACTIVE_WIRED` |
-| 58 | `src/lib/heyuka/vault/sovereign-permanent-vault.ts` | 502 | 8 | 0 | 11 | 1 | `ACTIVE_WIRED` |
-| 59 | `src/lib/heyuka/verified-harvest-counter.ts` | 312 | 4 | 0 | 5 | 1 | `ACTIVE_WIRED` |
+| 32 | `src/lib/heyuka/frontier/cognitive-evaluation-engine.ts` | 811 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
+| 33 | `src/lib/heyuka/frontier/cost-intelligence-optimizer.ts` | 220 | 0 | 0 | 2 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
+| 34 | `src/lib/heyuka/frontier/frontier-intelligence-orchestrator.ts` | 1175 | 1 | 0 | 2 | 1 | `ACTIVE_WIRED` |
+| 35 | `src/lib/heyuka/frontier/frontier-provider-adapters.ts` | 821 | 0 | 0 | 2 | 0 | `INDIRECT_LIB_SUBSYSTEM` |
+| 36 | `src/lib/heyuka/frontier/model-capability-registry.ts` | 1536 | 0 | 0 | 4 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
+| 37 | `src/lib/heyuka/frontier/persistent-episodic-memory.ts` | 813 | 1 | 0 | 6 | 1 | `ACTIVE_WIRED` |
+| 38 | `src/lib/heyuka/frontier/universal-knowledge-fabric.ts` | 1114 | 0 | 0 | 2 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
+| 39 | `src/lib/heyuka/global-nervous-mesh.ts` | 348 | 5 | 2 | 2 | 1 | `ACTIVE_WIRED` |
+| 40 | `src/lib/heyuka/gmail-directory.ts` | 188 | 5 | 0 | 0 | 1 | `ACTIVE_WIRED` |
+| 41 | `src/lib/heyuka/heyuka-universe.ts` | 607 | 2 | 3 | 1 | 0 | `ACTIVE_WIRED` |
+| 42 | `src/lib/heyuka/html-to-pdf-export.ts` | 208 | 0 | 1 | 0 | 0 | `ACTIVE_WIRED` |
+| 43 | `src/lib/heyuka/learning/self-evolution-engine.ts` | 272 | 9 | 0 | 7 | 1 | `ACTIVE_WIRED` |
+| 44 | `src/lib/heyuka/local-sovereign-brain.ts` | 1272 | 4 | 1 | 2 | 1 | `ACTIVE_WIRED` |
+| 45 | `src/lib/heyuka/os/sovereign-pc-commander.ts` | 332 | 5 | 0 | 1 | 1 | `ACTIVE_WIRED` |
+| 46 | `src/lib/heyuka/pkzip.ts` | 92 | 1 | 2 | 1 | 1 | `ACTIVE_WIRED` |
+| 47 | `src/lib/heyuka/planetary/planetary-arsenal-catalog.ts` | 321 | 0 | 0 | 2 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
+| 48 | `src/lib/heyuka/planetary/polyglot-cas-router.ts` | 465 | 4 | 0 | 0 | 1 | `ACTIVE_WIRED` |
+| 49 | `src/lib/heyuka/self-capability-awakening.ts` | 163 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
+| 50 | `src/lib/heyuka/shield/magic-validator.ts` | 161 | 1 | 0 | 1 | 1 | `ACTIVE_WIRED` |
+| 51 | `src/lib/heyuka/shield/resilient-fetch.ts` | 131 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
+| 52 | `src/lib/heyuka/shield/tmp-storage.ts` | 81 | 0 | 0 | 0 | 1 | `LEGACY_HELPER (superseded by os.tmpdir)` |
+| 53 | `src/lib/heyuka/studio/studio-orchestrator-v55-v60.ts` | 562 | 8 | 3 | 5 | 1 | `ACTIVE_WIRED` |
+| 54 | `src/lib/heyuka/swarm-node-registry.ts` | 127 | 1 | 0 | 2 | 1 | `ACTIVE_WIRED` |
+| 55 | `src/lib/heyuka/tools/photorealistic-video-builder.ts` | 628 | 2 | 0 | 2 | 1 | `ACTIVE_WIRED` |
+| 56 | `src/lib/heyuka/tools/zero-worker-media-3d.ts` | 190 | 0 | 0 | 1 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
+| 57 | `src/lib/heyuka/training/knowledge-corpus-engine.ts` | 799 | 3 | 0 | 8 | 1 | `ACTIVE_WIRED` |
+| 58 | `src/lib/heyuka/unified-antigravity-cortex.ts` | 1274 | 2 | 0 | 0 | 0 | `ACTIVE_WIRED` |
+| 59 | `src/lib/heyuka/use-hybrid-dictation.ts` | 198 | 0 | 1 | 0 | 0 | `ACTIVE_WIRED` |
+| 60 | `src/lib/heyuka/vault/sovereign-permanent-vault.ts` | 502 | 8 | 0 | 11 | 1 | `ACTIVE_WIRED` |
+| 61 | `src/lib/heyuka/verified-harvest-counter.ts` | 312 | 4 | 0 | 5 | 1 | `ACTIVE_WIRED` |
 
 ### 4.2 جميع ملفات القوى والكتالوجات `src/lib/zebra-x/` (76 ملفاً)
 
@@ -206,7 +208,7 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 | 18 | `src/lib/zebra-x/core/prompt-refiner.ts` | 243 | 1 | 0 | 2 | 1 | `ACTIVE_WIRED` |
 | 19 | `src/lib/zebra-x/core/reasoning-eval-catalog.ts` | 415 | 0 | 0 | 4 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
 | 20 | `src/lib/zebra-x/core/reflection-gate.ts` | 188 | 4 | 1 | 1 | 1 | `ACTIVE_WIRED` |
-| 21 | `src/lib/zebra-x/core/router.ts` | 332 | 3 | 0 | 3 | 1 | `ACTIVE_WIRED` |
+| 21 | `src/lib/zebra-x/core/router.ts` | 332 | 3 | 0 | 5 | 1 | `ACTIVE_WIRED` |
 | 22 | `src/lib/zebra-x/core/skills-vault.ts` | 607 | 2 | 0 | 2 | 1 | `ACTIVE_WIRED` |
 | 23 | `src/lib/zebra-x/core/sovereign-pack-types.ts` | 103 | 0 | 0 | 15 | 0 | `INDIRECT_LIB_SUBSYSTEM` |
 | 24 | `src/lib/zebra-x/core/v20-v22-master-catalog.ts` | 366 | 1 | 0 | 2 | 1 | `ACTIVE_WIRED` |
@@ -241,7 +243,7 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 | 53 | `src/lib/zebra-x/omega/secret11_full_duplex_voice.ts` | 79 | 1 | 0 | 0 | 1 | `ACTIVE_WIRED` |
 | 54 | `src/lib/zebra-x/omega/secret12_generative_ui.ts` | 76 | 1 | 2 | 1 | 1 | `ACTIVE_WIRED` |
 | 55 | `src/lib/zebra-x/omega/secret8_online_distiller.ts` | 159 | 2 | 0 | 1 | 1 | `ACTIVE_WIRED` |
-| 56 | `src/lib/zebra-x/omega/secret9_cyber_immune.ts` | 166 | 2 | 0 | 4 | 1 | `ACTIVE_WIRED` |
+| 56 | `src/lib/zebra-x/omega/secret9_cyber_immune.ts` | 166 | 2 | 0 | 5 | 1 | `ACTIVE_WIRED` |
 | 57 | `src/lib/zebra-x/omega/v88_v90_catalog.ts` | 94 | 0 | 0 | 1 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
 | 58 | `src/lib/zebra-x/sidecar-bridge.ts` | 446 | 5 | 0 | 1 | 1 | `ACTIVE_WIRED` |
 | 59 | `src/lib/zebra-x/simulation/secret3_world_sim.ts` | 294 | 1 | 0 | 4 | 1 | `ACTIVE_WIRED` |
@@ -257,7 +259,7 @@ GitHub Actions 20x Matrix + CommonCrawl + HF Vault"] -->|"hot_sync (/api/v1/stud
 | 69 | `src/lib/zebra-x/tools/math-logic-engine.ts` | 317 | 2 | 0 | 3 | 1 | `ACTIVE_WIRED` |
 | 70 | `src/lib/zebra-x/tools/mobile-diagnostics-engine.ts` | 202 | 0 | 0 | 1 | 1 | `INDIRECT_LIB_SUBSYSTEM` |
 | 71 | `src/lib/zebra-x/tools/pos-live-tools.ts` | 436 | 1 | 0 | 0 | 0 | `ACTIVE_WIRED` |
-| 72 | `src/lib/zebra-x/tools/public-apis-hub.ts` | 1449 | 6 | 0 | 10 | 1 | `ACTIVE_WIRED` |
+| 72 | `src/lib/zebra-x/tools/public-apis-hub.ts` | 1461 | 6 | 0 | 10 | 1 | `ACTIVE_WIRED` |
 | 73 | `src/lib/zebra-x/tools/qr-architect-engine.ts` | 148 | 2 | 0 | 1 | 1 | `ACTIVE_WIRED` |
 | 74 | `src/lib/zebra-x/tools/security-sast-auditor.ts` | 137 | 1 | 1 | 2 | 1 | `ACTIVE_WIRED` |
 | 75 | `src/lib/zebra-x/tools/universal_mcp_bus.ts` | 304 | 1 | 0 | 3 | 1 | `ACTIVE_WIRED` |

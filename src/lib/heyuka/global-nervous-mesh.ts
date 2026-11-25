@@ -52,11 +52,21 @@ export interface PowerExecutionTrace {
   frontier?: {
     executionMode: FrontierExecutionMode;
     taskCategory: string;
+    underlyingProvider: string;
+    underlyingModelId: string;
+    modelConnectionState: string;
     activatedSpecialistsCount: number;
     distinctPhysicalModelsCount: number;
+    liveModelCallsExecutedCount: number;
     specialistRoles: string[];
     winningBasis: string;
     mathVerified: boolean;
+    codeSandboxVerified: boolean;
+    epistemicConfidencePct: number;
+    uncertaintyLevel: string;
+    selectedCostTierConfig: string;
+    estimatedCostUsd: number;
+    actualCostUsd: number;
     mctsGainDelta: number;
     sourceStates: SevenDistinctSourceStates;
     epistemicCounts: {
@@ -301,11 +311,21 @@ export async function runUnifiedFullPowerPipeline(params: {
     frontier: {
       executionMode: frontierRes.executionMode,
       taskCategory: frontierRes.taskCategory,
+      underlyingProvider: frontierRes.leadModel.underlyingProvider,
+      underlyingModelId: frontierRes.leadModel.underlyingPrimaryModel,
+      modelConnectionState: frontierRes.leadModel.connectionStatus,
       activatedSpecialistsCount: frontierRes.activatedSpecialistsCount,
       distinctPhysicalModelsCount: frontierRes.distinctPhysicalModelsCount,
+      liveModelCallsExecutedCount: frontierRes.liveModelCallsExecutedCount,
       specialistRoles: frontierRes.specialists.map((s) => s.role),
       winningBasis: frontierRes.adjudicationSummary.winningBasis,
       mathVerified: frontierRes.mathVerification.verified,
+      codeSandboxVerified: frontierRes.codeExecutionVerification.passed,
+      epistemicConfidencePct: frontierRes.uncertaintyCalibration.epistemicConfidencePct,
+      uncertaintyLevel: frontierRes.uncertaintyCalibration.uncertaintyLevel,
+      selectedCostTierConfig: frontierRes.costOptimization.selectedConfigId,
+      estimatedCostUsd: frontierRes.costOptimization.estimatedCostUsd,
+      actualCostUsd: frontierRes.actualCostUsd,
       mctsGainDelta: frontierRes.mctsBenchmark.mctsAccuracyGainDelta,
       sourceStates: frontierRes.knowledgeFabric.sourceStates,
       epistemicCounts: {

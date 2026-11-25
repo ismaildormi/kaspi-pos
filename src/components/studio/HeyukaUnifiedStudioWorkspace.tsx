@@ -1637,9 +1637,15 @@ export function HeyukaUnifiedStudioWorkspace({
                                 </span>
                                 {msg.powerTelemetry && (
                                   <span
-                                    title={`${msg.powerTelemetry.enginesExecuted.join(" • ")} | Model: ${msg.powerTelemetry.recommendedOpenModel}${
+                                    title={`${msg.powerTelemetry.enginesExecuted.join(" • ")} | Foundation: ${
+                                      msg.powerTelemetry.frontier?.underlyingProvider || "groq"
+                                    }:${msg.powerTelemetry.frontier?.underlyingModelId || msg.powerTelemetry.recommendedOpenModel}${
                                       msg.powerTelemetry.frontier
-                                        ? ` | Specialists: ${msg.powerTelemetry.frontier.specialistRoles.join(", ")}`
+                                        ? ` | Specialists: ${msg.powerTelemetry.frontier.specialistRoles.join(", ")} | CostTier: ${
+                                            msg.powerTelemetry.frontier.selectedCostTierConfig
+                                          } (est=$${msg.powerTelemetry.frontier.estimatedCostUsd}, actual=$${
+                                            msg.powerTelemetry.frontier.actualCostUsd
+                                          })`
                                         : ""
                                     }`}
                                     className="inline-flex flex-wrap items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[10px]"
@@ -1648,13 +1654,17 @@ export function HeyukaUnifiedStudioWorkspace({
                                     {msg.powerTelemetry.frontier && (
                                       <>
                                         {" "}
-                                        • {msg.powerTelemetry.frontier.executionMode.replace("_MODE", "")} •{" "}
+                                        ({msg.powerTelemetry.frontier.underlyingProvider}:
+                                        {msg.powerTelemetry.frontier.underlyingModelId} [{msg.powerTelemetry.frontier.modelConnectionState}]) •{" "}
+                                        {msg.powerTelemetry.frontier.executionMode.replace("_MODE", "")} •{" "}
                                         {msg.powerTelemetry.frontier.activatedSpecialistsCount}/10{" "}
                                         {isAr ? "تخصص" : "specialists"} •{" "}
                                         {msg.powerTelemetry.frontier.sourceStates.used_in_final_answer}/
                                         {msg.powerTelemetry.frontier.sourceStates.retrieved_for_query}{" "}
                                         {isAr ? "مراجع موثقة" : "cited"} •{" "}
-                                        {msg.powerTelemetry.frontier.winningBasis}
+                                        {msg.powerTelemetry.frontier.winningBasis} •{" "}
+                                        {msg.powerTelemetry.frontier.epistemicConfidencePct}% conf • est $
+                                        {msg.powerTelemetry.frontier.estimatedCostUsd}
                                       </>
                                     )}{" "}
                                     • {msg.powerTelemetry.enginesExecuted.length} {isAr ? "محرك" : "engines"} •{" "}

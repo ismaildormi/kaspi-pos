@@ -105,8 +105,10 @@ interface GlobalFrontierMemoryRuntime {
   memoryRecords: Map<string, FrontierMemoryRecord>;
   longDocuments: Map<string, IndexedLongDocument>;
   dbAvailable: boolean | null;
+  dbFailedAt?: number;
   lastDbSyncAt: string | null;
   initialized: boolean;
+  hydratedFromL3?: boolean;
 }
 
 function getRuntime(): GlobalFrontierMemoryRuntime {
@@ -184,36 +186,39 @@ export async function saveDurableState<T>(namespace: string, payload: T): Promis
   const savedDisk = writeDiskStore(diskStore);
 
   // L3 PostgreSQL Persistence via SystemSetting (`__heyuka_state_<namespace>`)
-  // Runs non-blocking with fast failure caching so offline/unreachable DB never stalls pipeline checkpoints
+  // v111.0 fix: measured cold Prisma TLS connect is ~1.7s, so the v110 1.2s timeout always failed on first write
+  // and then disabled L3 permanently. Now: 6s timeout, awaited, and a 60s back-off instead of permanent disable.
   let savedPostgres = false;
-  if (process.env.DATABASE_URL && runtime.dbAvailable !== false) {
+  const dbRetryAllowed =
+    runtime.dbAvailable !== false || Date.now() - (runtime.dbFailedAt || 0) > 60_000;
+  if (process.env.DATABASE_URL && dbRetryAllowed) {
     const providerKey = `${DB_STATE_PREFIX}${namespace}`;
     const serialized = JSON.stringify({ payload, updatedAt });
-    void Promise.race([
-      prisma.systemSetting
-        .upsert({
+    try {
+      await Promise.race([
+        prisma.systemSetting.upsert({
           where: { providerName: providerKey },
           update: {
             apiKey: serialized,
-            baseUrl: `v110-durable-state:${updatedAt}`,
+            baseUrl: `v111-durable-state:${updatedAt}`,
             isActive: false,
           },
           create: {
             providerName: providerKey,
             apiKey: serialized,
-            baseUrl: `v110-durable-state:${updatedAt}`,
+            baseUrl: `v111-durable-state:${updatedAt}`,
             isActive: false,
           },
-        })
-        .then(() => {
-          runtime.dbAvailable = true;
-          runtime.lastDbSyncAt = updatedAt;
         }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("db_timeout")), 1200)),
-    ]).catch(() => {
+        new Promise((_, reject) => setTimeout(() => reject(new Error("db_timeout")), 6000)),
+      ]);
+      runtime.dbAvailable = true;
+      runtime.lastDbSyncAt = updatedAt;
+      savedPostgres = true;
+    } catch {
       runtime.dbAvailable = false;
-    });
-    savedPostgres = runtime.dbAvailable === true;
+      runtime.dbFailedAt = Date.now();
+    }
   }
 
   return {
@@ -317,6 +322,28 @@ function extractShingles(text: string): string[] {
     .split(/\s+/)
     .filter((w) => w.length >= 2);
   return Array.from(new Set(tokens)).slice(0, 64);
+}
+
+/**
+ * v111.0: Async cold-start hydration. On a fresh serverless instance `/tmp` is empty, so the sync
+ * L1/L2 loader sees nothing; this pulls the 7-layer records from L3 PostgreSQL before first use.
+ */
+export async function hydrateFrontierMemoryFromDurableStore(): Promise<{
+  source: string;
+  recordsLoaded: number;
+}> {
+  const runtime = getRuntime();
+  if (runtime.hydratedFromL3) {
+    return { source: "already_hydrated", recordsLoaded: runtime.memoryRecords.size };
+  }
+  runtime.hydratedFromL3 = true;
+  const loaded = await loadDurableState<FrontierMemoryRecord[]>("frontier_7layer_records", []);
+  for (const rec of loaded.data) {
+    if (rec && rec.id && !runtime.memoryRecords.has(rec.id)) {
+      runtime.memoryRecords.set(rec.id, rec);
+    }
+  }
+  return { source: loaded.source, recordsLoaded: loaded.data.length };
 }
 
 function ensureBaselineMemoryInitialized(): void {

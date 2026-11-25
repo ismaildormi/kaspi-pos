@@ -1,7 +1,7 @@
 # الملف المرجعي المعياري رقم (2): الهندسة النهائية الكاملة للنماذج وطريقة تفكيرها واتصالها الشامل بجميع المصادر
 # HEYUKA & KASPI POS — Canonical Engineering Standard File #2 (Models, Cognitive Engines & Audited Sources)
 
-> **مرجع معياري ثابت ومولَّد برمجياً مباشرةً من الكود الفعلي** بتاريخ `2026-11-24T01:30:05.959Z` ليشكّل مع الملف رقم (1) ([YUKA_FINAL_100_PERCENT_TEST_RESULTS.md](./YUKA_FINAL_100_PERCENT_TEST_RESULTS.md)) الدستور الهندسي الثابت والكامل للمنظومة.
+> **مرجع معياري ثابت ومولَّد برمجياً مباشرةً من الكود الفعلي** بتاريخ `2026-11-25T01:37:34.342Z` ليشكّل مع الملف رقم (1) ([YUKA_FINAL_100_PERCENT_TEST_RESULTS.md](./YUKA_FINAL_100_PERCENT_TEST_RESULTS.md)) الدستور الهندسي الثابت والكامل للمنظومة.
 
 ---
 
@@ -171,7 +171,7 @@ flowchart TB
 | 22 | `patents_inventor` | `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(sparql • https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(` | عبر أداة `queryVaultOrApi` / `queryPublicApi` أو المسار `/api/v1/public-apis?category=patents_inventor` |
 | 23 | `nobel_prize` | `https://api.nobelprize.org/2.1/nobelPrizes?nobelPrizeCategory=${catCode}&limit=${limit} • https://api.nobelprize.org/2.1/laureates?name=${encodeURIComponent(query` | عبر أداة `queryVaultOrApi` / `queryPublicApi` أو المسار `/api/v1/public-apis?category=nobel_prize` |
 | 24 | `hacker_news` | `https://hn.algolia.com/api/v1/search?query=${encodeURIComponent( • https://news.ycombinator.com/item?id=${h.objectID} • https://hacker-news.firebaseio.com/v0/topstories.json` | عبر أداة `queryVaultOrApi` / `queryPublicApi` أو المسار `/api/v1/public-apis?category=hacker_news` |
-| 25 | `remote_jobs` | `https://www.arbeitnow.com/api/job-board-api` | عبر أداة `queryVaultOrApi` / `queryPublicApi` أو المسار `/api/v1/public-apis?category=remote_jobs` |
+| 25 | `remote_jobs` | `https://www.arbeitnow.com/api/job-board-api • https://remotive.com/api/remote-jobs?limit=${limit}` | عبر أداة `queryVaultOrApi` / `queryPublicApi` أو المسار `/api/v1/public-apis?category=remote_jobs` |
 | 26 | `iconify_logos` | `https://api.iconify.design/search?query=${encodeURIComponent(query • https://api.iconify.design/${id}.svg • https://cdn.simpleicons.org/${encodeURIComponent(query.toLowerCase(` | عبر أداة `queryVaultOrApi` / `queryPublicApi` أو المسار `/api/v1/public-apis?category=iconify_logos` |
 | 27 | `openverse_media` | `https://api.openverse.org/v1/images/?q=${q}&page_size=${limit} • https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${q}&gsrnamespace=6&gsrlimit=${limit}&prop=imageinfo&iiprop=url&format=json&origin=* • https://commons.wikimedia.org/wiki/${encodeURIComponent(String(p?.title` | عبر أداة `queryVaultOrApi` / `queryPublicApi` أو المسار `/api/v1/public-apis?category=openverse_media` |
 | 28 | `met_museum` | `https://collectionapi.metmuseum.org/public/collection/v1/search?hasImages=true&q=${encodeURIComponent( • https://collectionapi.metmuseum.org/public/collection/v1/objects/${id} • https://api.artic.edu/api/v1/artworks/search?q=${encodeURIComponent(` | عبر أداة `queryVaultOrApi` / `queryPublicApi` أو المسار `/api/v1/public-apis?category=met_museum` |
@@ -3046,5 +3046,5 @@ flowchart TB
 ---
 
 ## الباب 5: خلاصة التدقيق الهيكلي للمستودع والربط مع الملف المرجعي رقم (1)
-- **إجمالي مكونات الكود المدققة آلياً الآن:** `59` ملفاً في `src/lib/heyuka/` + `76` ملفاً في `src/lib/zebra-x/` + `154` مسار API في `src/app/api/` + `59` صفحة واجهة + `127` مكون React UI + `62` نموذج Prisma + `16` سكربت Python + `9` مسار GitHub Actions + `9` ملف نشر.
+- **إجمالي مكونات الكود المدققة آلياً الآن:** `61` ملفاً في `src/lib/heyuka/` + `76` ملفاً في `src/lib/zebra-x/` + `154` مسار API في `src/app/api/` + `59` صفحة واجهة + `127` مكون React UI + `62` نموذج Prisma + `16` سكربت Python + `9` مسار GitHub Actions + `9` ملف نشر.
 - **الربط التكاملي مع الملف رقم (1):** راجع [YUKA_FINAL_100_PERCENT_TEST_RESULTS.md](./YUKA_FINAL_100_PERCENT_TEST_RESULTS.md) للاطلاع على مصفوفة الاختبار الكاملة `81/81 (100.0%)` وجرد كل ملف منفرد مع عدد المستوردات (`Routes/UI/Libs/Tests`) والأوديت الإنتاجي المباشر على `https://kaspi-pos.vercel.app`.
