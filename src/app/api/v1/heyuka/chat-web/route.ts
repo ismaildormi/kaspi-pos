@@ -39,6 +39,10 @@ import {
   recordProductSelfEvolution,
 } from "@/lib/heyuka/learning/self-evolution-engine";
 import { searchStudiedKnowledgeCorpus } from "@/lib/heyuka/training/knowledge-corpus-engine";
+import {
+  buildPublicHighLevelCapabilityReply,
+  sanitizePublicOutputForConfidentiality,
+} from "@/lib/heyuka/frontier/confidentiality-guard";
 import { searchSovereignVault } from "@/lib/heyuka/vault/sovereign-permanent-vault";
 import { buildLevel1SkillPromptIndex } from "@/lib/zebra-x/core/skills-vault";
 import { runOmniMindSevenSecrets } from "@/lib/zebra-x/cognition/secret7_dual_brain_orchestrator";
@@ -501,7 +505,28 @@ export async function POST(req: NextRequest) {
     timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
   });
 
-  if (isCapabilitiesOrSourcesTableRequest(lastUser) || isLocalApiOrSdkRequest(lastUser)) {
+  if (isCapabilitiesOrSourcesTableRequest(lastUser)) {
+    const safeLocale = locale === "ar" || locale === "fr" ? locale : "en";
+    const safeAnswer = buildPublicHighLevelCapabilityReply(safeLocale);
+    return NextResponse.json({
+      ok: true,
+      answer: safeAnswer,
+      reasoning: thinkingSteps
+        .map((s) => `• ${s.phase}: ${s.summary}`)
+        .join("\n"),
+      thinkingSteps,
+      sources: [],
+      modelUsed: model,
+      effectiveMode,
+      autoSwitched,
+      provider: "heyuka-confidentiality-guarded",
+      executionTimeMs: Math.max(1, Date.now() - phase1Start),
+      shouldOpenStudio: false,
+      studioFiles: [],
+    });
+  }
+
+  if (isLocalApiOrSdkRequest(lastUser)) {
     const localBrainRes = runLocalOnDeviceHeyukaBrain({
       prompt: lastUser,
       mode: effectiveMode,
@@ -509,9 +534,9 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({
       ok: true,
-      answer: localBrainRes.answer,
+      answer: sanitizePublicOutputForConfidentiality(localBrainRes.answer, { isOwnerSuperAdmin: false }).sanitized,
       reasoning: thinkingSteps
-        .map((s) => `• [${s.timestamp}] ${s.phase} (${s.agentModel}, ${s.durationMs}ms): ${s.summary}`)
+        .map((s) => `• ${s.phase}: ${s.summary}`)
         .join("\n"),
       thinkingSteps,
       sources: localBrainRes.sources,
@@ -962,6 +987,8 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
         answer = `${answer}\n\n${patentBlock.markdownSupplement}`;
       }
     }
+
+    answer = sanitizePublicOutputForConfidentiality(answer, { isOwnerSuperAdmin: false }).sanitized;
 
     for (const badge of cognitiveRoute.stageBadges) {
       const badgeTitle = `${badge.icon} ${badge.label}`;

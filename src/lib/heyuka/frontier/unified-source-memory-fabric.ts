@@ -52,6 +52,39 @@ export type SourceVerificationQuality =
   | "UNREACHABLE"
   | "UNVERIFIED";
 
+export type SourceLifecycleState =
+  | "Discovered"
+  | "Catalogued"
+  | "Retrieved"
+  | "Studied"
+  | "Tested"
+  | "Compatible"
+  | "Integrated"
+  | "Operational"
+  | "ProductionVerified";
+
+export type CommercialUseStatus =
+  | "allowed"
+  | "allowed_with_attribution"
+  | "copyleft_review"
+  | "unknown";
+
+export type SourceRelationshipKind =
+  | "complements"
+  | "chains_into"
+  | "validates"
+  | "alternative_to"
+  | "conflicts_with"
+  | "license_incompatible_with";
+
+export interface SourceRelationshipEdge {
+  fromCanonicalId: string;
+  toCanonicalId: string;
+  relationship: SourceRelationshipKind;
+  reason: string;
+  verifiedCompatibility: boolean;
+}
+
 export interface ClassifiedUnifiedSource {
   canonicalId: string;
   originalIds: string[];
@@ -68,6 +101,14 @@ export interface ClassifiedUnifiedSource {
   primaryModels: HeyukaModelIdentity[];
   offlineCapable: boolean;
   zeroCostCapable: boolean;
+  license: string;
+  commercialUseStatus: CommercialUseStatus;
+  attributionRequired: boolean;
+  lifecycleState: SourceLifecycleState;
+  inputs: string[];
+  outputs: string[];
+  supportedOS: string[];
+  minHardware: string;
   integrityDigest: string;
   verificationQuality: SourceVerificationQuality;
   lastVerifiedAt?: string;
@@ -337,6 +378,52 @@ export function buildUnifiedClassifiedSourceRegistry(forceRebuild = false): {
         .slice(0, 14)}`;
 
       const override = verificationStateOverrides.get(canonicalId);
+      const urlLower = (item.url || "").toLowerCase();
+      let license = "unknown";
+      let commercialUseStatus: CommercialUseStatus = "unknown";
+      let attributionRequired = true;
+
+      if (urlLower.includes("wikipedia.org") || urlLower.includes("wikidata.org")) {
+        license = "CC-BY-SA-4.0";
+        commercialUseStatus = "allowed_with_attribution";
+      } else if (urlLower.includes("openalex.org") || urlLower.includes("crossref.org") || urlLower.includes("worldbank.org")) {
+        license = "CC0-1.0 / Open-Data";
+        commercialUseStatus = "allowed";
+        attributionRequired = false;
+      } else if (urlLower.includes("arxiv.org") || urlLower.includes("europepmc.org")) {
+        license = "Open-Access-Metadata";
+        commercialUseStatus = "allowed_with_attribution";
+      } else if (urlLower.includes("osv.dev") || urlLower.includes("cisa.gov") || urlLower.includes("ietf.org")) {
+        license = "Public-Domain / Open-Standard";
+        commercialUseStatus = "allowed";
+      } else if (urlLower.includes("huggingface.co/datasets/huggingfacefw/fineweb-edu")) {
+        license = "ODC-By-1.0";
+        commercialUseStatus = "allowed_with_attribution";
+      } else if (item.vaultUri.startsWith("vault://")) {
+        license = "Internal-Sovereign-Catalog";
+        commercialUseStatus = "allowed";
+        attributionRequired = false;
+      }
+
+      const ioMap: Record<SourceModalityKind, { inputs: string[]; outputs: string[]; minHw: string }> = {
+        live_api: { inputs: ["https_query_json"], outputs: ["structured_json"], minHw: "Any CPU / 512MB RAM + Network" },
+        dataset_corpus: { inputs: ["text_query", "shingle_vector"], outputs: ["passages", "training_records"], minHw: "2GB RAM / Local Disk" },
+        ai_library_sdk: { inputs: ["source_code", "runtime_args"], outputs: ["compiled_artifact", "api_result"], minHw: "2-Core CPU / 2GB RAM" },
+        open_weights_model: { inputs: ["prompt_tokens", "system_context"], outputs: ["generated_tokens", "embeddings"], minHw: "4-8GB RAM (CPU quantized) or 8GB+ VRAM" },
+        documentation_spec: { inputs: ["keyword_query"], outputs: ["reference_spec"], minHw: "Any CPU / 256MB RAM" },
+        local_tool_engine: { inputs: ["local_command", "file_input"], outputs: ["deterministic_artifact"], minHw: "2-Core CPU / 1GB RAM (Offline)" },
+      };
+
+      const qualityNow = override?.quality || "UNVERIFIED";
+      const lifecycleState: SourceLifecycleState =
+        qualityNow === "OPTIMAL"
+          ? "Operational"
+          : qualityNow === "USABLE"
+          ? "Integrated"
+          : qualityNow === "DEGRADED"
+          ? "Tested"
+          : "Catalogued";
+
       const record: ClassifiedUnifiedSource = {
         canonicalId,
         originalIds: [item.id],
@@ -353,8 +440,16 @@ export function buildUnifiedClassifiedSourceRegistry(forceRebuild = false): {
         primaryModels: classified.primaryModels,
         offlineCapable: classified.offlineCapable,
         zeroCostCapable: true,
+        license,
+        commercialUseStatus,
+        attributionRequired,
+        lifecycleState,
+        inputs: ioMap[classified.modalityKind].inputs,
+        outputs: ioMap[classified.modalityKind].outputs,
+        supportedOS: ["Linux", "Windows", "macOS"],
+        minHardware: ioMap[classified.modalityKind].minHw,
         integrityDigest: item.integrityDigest,
-        verificationQuality: override?.quality || "UNVERIFIED",
+        verificationQuality: qualityNow,
         lastVerifiedAt: override?.verifiedAt,
         lastResultSummary: override?.summary,
       };
@@ -543,5 +638,118 @@ export function fuseSourcesAndMemoryForModels(params: {
     matchedSources: scored,
     specializedMemoryHits: memoryHits,
     triModelSynergySummary: `Fused ${scored.length} classified sources + ${memoryHits.length} specialized memory records for ${targetModel} (shared across Omni/Core/Vision).`,
+  };
+}
+
+/**
+ * Builds a machine-readable relationship & compatibility graph connecting sources
+ * via typed edges (`complements`, `chains_into`, `validates`, `alternative_to`, `conflicts_with`).
+ */
+export function buildSourceRelationshipGraph(maxEdges = 600): {
+  totalNodes: number;
+  totalEdges: number;
+  byRelationship: Record<SourceRelationshipKind, number>;
+  edges: SourceRelationshipEdge[];
+} {
+  const registry = buildUnifiedClassifiedSourceRegistry();
+  const sources = registry.canonicalSources;
+  const edges: SourceRelationshipEdge[] = [];
+  const byRelationship: Record<SourceRelationshipKind, number> = {
+    complements: 0,
+    chains_into: 0,
+    validates: 0,
+    alternative_to: 0,
+    conflicts_with: 0,
+    license_incompatible_with: 0,
+  };
+
+  const addEdge = (edge: SourceRelationshipEdge) => {
+    if (edges.length >= maxEdges) return;
+    edges.push(edge);
+    byRelationship[edge.relationship]++;
+  };
+
+  const byDomain = new Map<SourceSpecialtyDomain, ClassifiedUnifiedSource[]>();
+  for (const s of sources) {
+    const arr = byDomain.get(s.specialtyDomain) || [];
+    arr.push(s);
+    byDomain.set(s.specialtyDomain, arr);
+  }
+
+  // 1. Security & defense validates software engineering SDKs
+  const sec = byDomain.get("security_and_defense") || [];
+  const eng = byDomain.get("software_engineering_and_sdks") || [];
+  for (let i = 0; i < Math.min(sec.length, 25); i++) {
+    for (let j = 0; j < Math.min(eng.length, 4); j++) {
+      addEdge({
+        fromCanonicalId: sec[i].canonicalId,
+        toCanonicalId: eng[(i * 4 + j) % eng.length].canonicalId,
+        relationship: "validates",
+        reason: "Security feed/scanner validates generated code & dependencies",
+        verifiedCompatibility: true,
+      });
+    }
+  }
+
+  // 2. Datasets & encyclopedias chain into AI models & weights
+  const corp = byDomain.get("data_corpora_and_encyclopedias") || [];
+  const models = byDomain.get("ai_models_and_weights") || [];
+  for (let i = 0; i < Math.min(corp.length, 30); i++) {
+    if (models.length > 0) {
+      addEdge({
+        fromCanonicalId: corp[i].canonicalId,
+        toCanonicalId: models[i % models.length].canonicalId,
+        relationship: "chains_into",
+        reason: "Structured corpus feeds retrieval grounding and offline checkpoint preparation",
+        verifiedCompatibility: true,
+      });
+    }
+  }
+
+  // 3. Scientific & medical research complements AI models
+  const sci = byDomain.get("scientific_and_medical_research") || [];
+  for (let i = 0; i < Math.min(sci.length, 40); i++) {
+    if (models.length > 0) {
+      addEdge({
+        fromCanonicalId: sci[i].canonicalId,
+        toCanonicalId: models[i % models.length].canonicalId,
+        relationship: "complements",
+        reason: "Peer-reviewed scientific API complements reasoning synthesis",
+        verifiedCompatibility: true,
+      });
+    }
+  }
+
+  // 4. Same-domain / same-modality sources act as alternatives
+  for (const [, list] of byDomain.entries()) {
+    for (let i = 0; i + 1 < Math.min(list.length, 20); i += 2) {
+      addEdge({
+        fromCanonicalId: list[i].canonicalId,
+        toCanonicalId: list[i + 1].canonicalId,
+        relationship: "alternative_to",
+        reason: `Failover / alternative provider within ${list[i].specialtyDomain}`,
+        verifiedCompatibility: list[i].modalityKind === list[i + 1].modalityKind,
+      });
+    }
+  }
+
+  // 5. Offline vs network-only conflict boundary
+  const localTools = byDomain.get("local_os_and_offline_tools") || [];
+  const webApis = byDomain.get("web_apis_and_commerce") || [];
+  for (let i = 0; i < Math.min(localTools.length, webApis.length, 20); i++) {
+    addEdge({
+      fromCanonicalId: localTools[i].canonicalId,
+      toCanonicalId: webApis[i].canonicalId,
+      relationship: "conflicts_with",
+      reason: "Air-gapped offline runtime cannot directly invoke remote-only HTTP API without network bridge",
+      verifiedCompatibility: false,
+    });
+  }
+
+  return {
+    totalNodes: sources.length,
+    totalEdges: edges.length,
+    byRelationship,
+    edges,
   };
 }

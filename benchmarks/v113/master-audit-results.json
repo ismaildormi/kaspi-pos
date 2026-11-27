@@ -1,0 +1,310 @@
+{
+  "generatedAt": "2026-11-27T23:13:12.880Z",
+  "durationMs": 2599,
+  "canonicalDocs": {
+    "doc1Lines": 3480,
+    "doc2Lines": 3051,
+    "vaultLockEntries": 2795
+  },
+  "registrySummary": {
+    "totalRawEntries": 2810,
+    "canonicalUniqueSources": 2280,
+    "byDomain": {
+      "ai_models_and_weights": 65,
+      "software_engineering_and_sdks": 602,
+      "scientific_and_medical_research": 177,
+      "security_and_defense": 49,
+      "multimodal_vision_3d_media": 584,
+      "data_corpora_and_encyclopedias": 46,
+      "local_os_and_offline_tools": 668,
+      "web_apis_and_commerce": 89
+    },
+    "byModality": {
+      "live_api": 89,
+      "dataset_corpus": 67,
+      "ai_library_sdk": 814,
+      "open_weights_model": 42,
+      "documentation_spec": 87,
+      "local_tool_engine": 1181
+    },
+    "byMemoryLayer": {
+      "working": 0,
+      "conversation": 0,
+      "episodic": 89,
+      "semantic": 111,
+      "procedural": 1252,
+      "project": 602,
+      "verified_knowledge": 226
+    }
+  },
+  "relationshipGraph": {
+    "totalNodes": 2280,
+    "totalEdges": 270,
+    "byRelationship": {
+      "complements": 40,
+      "chains_into": 30,
+      "validates": 100,
+      "alternative_to": 80,
+      "conflicts_with": 20,
+      "license_incompatible_with": 0
+    }
+  },
+  "internetDiscovery": {
+    "runId": "disc_1795821190456",
+    "startedAt": "2026-11-27T23:13:10.456Z",
+    "completedAt": "2026-11-27T23:13:12.746Z",
+    "hubsQueried": 4,
+    "hubsSucceeded": 4,
+    "rawCandidatesInspected": 18,
+    "newUniqueSourcesDiscovered": 18,
+    "duplicatesMatchedToCatalog": 0,
+    "failures": [],
+    "discoveredSources": [
+      {
+        "canonicalId": "disc_f5267c65d55e1d",
+        "name": "cyjin-yl/Qwen3.8-27B-Uncensored-Cyber-agentic-imatrix-GGUF",
+        "officialUrl": "https://huggingface.co/cyjin-yl/Qwen3.8-27B-Uncensored-Cyber-agentic-imatrix-GGUF",
+        "discoveredFromHub": "huggingface_hub",
+        "domain": "image-text-to-text",
+        "license": "apache-2.0",
+        "summary": "HF Hub model (image-text-to-text)",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:10.902Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_702a5b54aa165f",
+        "name": "yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF",
+        "officialUrl": "https://huggingface.co/yuxinlu1/gemma-4-12B-agentic-fable5-composer2.5-v2-3.5x-tau2-GGUF",
+        "discoveredFromHub": "huggingface_hub",
+        "domain": "text-generation",
+        "license": "apache-2.0",
+        "summary": "HF Hub model (text-generation)",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:10.902Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_fd373cd98e74b2",
+        "name": "huihui-ai/Huihui-gemma-4-12B-agentic-fable5-abliterated",
+        "officialUrl": "https://huggingface.co/huihui-ai/Huihui-gemma-4-12B-agentic-fable5-abliterated",
+        "discoveredFromHub": "huggingface_hub",
+        "domain": "text-generation",
+        "license": "apache-2.0",
+        "summary": "HF Hub model (text-generation)",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:10.902Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_7170db8f5b3e73",
+        "name": "ManniX-ITA/gemma-4-26B-A4B-agentic-GGUF",
+        "officialUrl": "https://huggingface.co/ManniX-ITA/gemma-4-26B-A4B-agentic-GGUF",
+        "discoveredFromHub": "huggingface_hub",
+        "domain": "text-generation",
+        "license": "apache-2.0",
+        "summary": "HF Hub model (text-generation)",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:10.902Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_c15e7651f0f435",
+        "name": "kaushikvira/DeepSeek-V4.1-Flash-1017-GSQ-agentic-strata",
+        "officialUrl": "https://huggingface.co/kaushikvira/DeepSeek-V4.1-Flash-1017-GSQ-agentic-strata",
+        "discoveredFromHub": "huggingface_hub",
+        "domain": "text-generation",
+        "license": "mit",
+        "summary": "HF Hub model (text-generation)",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:10.902Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_213607fa0054ca",
+        "name": "arterialist/agentic-video-editor",
+        "officialUrl": "https://github.com/arterialist/agentic-video-editor",
+        "discoveredFromHub": "github_api",
+        "domain": "TypeScript",
+        "license": "MIT",
+        "summary": "Web-based video editor with multi-track timeline, Gemini multimodal video reasoning, Veo generation, Lyria audio, and automated silence removal",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:11.438Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_18443b33895953",
+        "name": "tasmia-rafiq/edaptix",
+        "officialUrl": "https://github.com/tasmia-rafiq/edaptix",
+        "discoveredFromHub": "github_api",
+        "domain": "TypeScript",
+        "license": "unknown",
+        "summary": "🏆 Ignite AI Wrapper Competition Regional Selection. An AI-powered educational platform using multimodal agents (text, voice, reasoning) built for adaptive learning.",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:11.438Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_94c900526637b2",
+        "name": "nithya-prakash/SkinVisionAI",
+        "officialUrl": "https://github.com/nithya-prakash/SkinVisionAI",
+        "discoveredFromHub": "github_api",
+        "domain": "Python",
+        "license": "MIT",
+        "summary": "Full-stack multimodal AI skincare platform combining computer vision, deterministic ingredient and routine analysis, product comparison, and agentic LLM reasoning. Built with FastAPI, PostgreSQL, OpenCV, Next.js, and TypeScript, with grounded, explainable AI o",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:11.438Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_eff56cc3bdb013",
+        "name": "From LLM Reasoning to Autonomous AI Agents: A Comprehensive Review",
+        "officialUrl": "https://doi.org/10.1109/access.2026.3698694",
+        "discoveredFromHub": "openalex",
+        "domain": "scientific_and_medical_research",
+        "license": "CC0-1.0 / OpenAlex-Metadata",
+        "summary": "Published 2026 peer-reviewed work",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:12.370Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_7763ee6997d1ee",
+        "name": "JSON AND TYPESCRIPT TOOLS REPRESENTATION FOR AGENT POWERED BY LARGE LANGUAGE MODEL",
+        "officialUrl": "https://doi.org/10.31713/mcit.2026.042",
+        "discoveredFromHub": "openalex",
+        "domain": "scientific_and_medical_research",
+        "license": "CC0-1.0 / OpenAlex-Metadata",
+        "summary": "Published 2026 peer-reviewed work",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:12.370Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_beb585c7d9e0ee",
+        "name": "Supporting Multi-Step Workflows with LLM-Based Web Automation using Agentic Context Engineering and Selective Multimodal Reasoning",
+        "officialUrl": "https://doi.org/10.15488/22777",
+        "discoveredFromHub": "openalex",
+        "domain": "scientific_and_medical_research",
+        "license": "CC0-1.0 / OpenAlex-Metadata",
+        "summary": "Published 2026 peer-reviewed work",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:12.370Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_1b00d4481624fa",
+        "name": "ProofPaths: An AI Agent Framework for Assessing Student Reasoning",
+        "officialUrl": "https://doi.org/10.48550/arxiv.2611.03882",
+        "discoveredFromHub": "openalex",
+        "domain": "scientific_and_medical_research",
+        "license": "CC0-1.0 / OpenAlex-Metadata",
+        "summary": "Published 2026 peer-reviewed work",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:12.370Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_a19a5e2b8f4dc9",
+        "name": "MCPHallu: Benchmarking Reasoning, Execution, and Memory Hallucinations in MCP Agents",
+        "officialUrl": "https://doi.org/10.48550/arxiv.2611.07689",
+        "discoveredFromHub": "openalex",
+        "domain": "scientific_and_medical_research",
+        "license": "CC0-1.0 / OpenAlex-Metadata",
+        "summary": "Published 2026 peer-reviewed work",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:12.370Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_927b2f77bf9059",
+        "name": "@ag-ui/aws-strands",
+        "officialUrl": "https://www.npmjs.com/package/@ag-ui/aws-strands",
+        "discoveredFromHub": "npm_registry",
+        "domain": "software_engineering_and_sdks",
+        "license": "MIT",
+        "summary": "AWS Strands Agents integration for the AG-UI protocol",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:12.746Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_9cac0a08071681",
+        "name": "agentic-flow",
+        "officialUrl": "https://www.npmjs.com/package/agentic-flow",
+        "discoveredFromHub": "npm_registry",
+        "domain": "software_engineering_and_sdks",
+        "license": "MIT",
+        "summary": "AI agents runtime and meta-harness: routes each query to a cost-optimal model (LLM routing), evolves its own harness and orchestrates coding agents over MCP.",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:12.746Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_a27150545d15bc",
+        "name": "ultracite",
+        "officialUrl": "https://www.npmjs.com/package/ultracite",
+        "discoveredFromHub": "npm_registry",
+        "domain": "software_engineering_and_sdks",
+        "license": "MIT",
+        "summary": "The linter and formatter for agentic development.",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:12.746Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_50e0ac5b8a9aa9",
+        "name": "@playwright/mcp",
+        "officialUrl": "https://www.npmjs.com/package/@playwright/mcp",
+        "discoveredFromHub": "npm_registry",
+        "domain": "software_engineering_and_sdks",
+        "license": "Apache-2.0",
+        "summary": "Playwright Tools for MCP",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:12.746Z",
+        "isNewComparedToCatalog": true
+      },
+      {
+        "canonicalId": "disc_32ad647e216c49",
+        "name": "@raishin/vanguard-frontier-agentic",
+        "officialUrl": "https://www.npmjs.com/package/@raishin/vanguard-frontier-agentic",
+        "discoveredFromHub": "npm_registry",
+        "domain": "software_engineering_and_sdks",
+        "license": "Apache-2.0",
+        "summary": "Cloud and zero-trust agentic workflow marketplace for skills, agents, rules, MCP references, and compliance-aware architecture.",
+        "httpStatus": 200,
+        "verifiedAt": "2026-11-27T23:13:12.746Z",
+        "isNewComparedToCatalog": true
+      }
+    ]
+  },
+  "confidentialityChecks": {
+    "leakRedactionsApplied": [
+      "vault_uri",
+      "bearer_token",
+      "internal_count_leak",
+      "unix_repo_path"
+    ],
+    "passed": true
+  },
+  "generationArtifactsBytes": {
+    "csvRowsParsed": 3,
+    "zip": 340,
+    "glb": 12184,
+    "glbMeshes": 2
+  },
+  "modelProfilesCount": 20,
+  "triModelFusion": {
+    "omniMatched": 4,
+    "coreMatched": 4,
+    "visionMatched": 4
+  },
+  "hardware": {
+    "platform": "linux",
+    "arch": "x64",
+    "cpuModel": "12th Gen Intel(R) Core(TM) i7-12650H",
+    "cpuCores": 16,
+    "totalRamGb": 7.61,
+    "freeRamGb": 5.83
+  }
+}
