@@ -258,6 +258,11 @@ pub fn initiate_tpe_payment(payload: String) -> Result<String, String> {
 pub fn query_tpe_transaction_status(payload: String) -> Result<String, String> {
     let req: TpeStatusQueryRequest =
         serde_json::from_str(&payload).map_err(|e| format!("Invalid status query JSON: {e}"))?;
+    let port = req.port.unwrap_or(20002);
+    let terminal_endpoint = req
+        .terminal_ip
+        .map(|ip| format!("{}:{}", ip.trim(), port))
+        .unwrap_or_else(|| format!("UNKNOWN:{}", port));
 
     let resp = TpePaymentResponse {
         success: false,
@@ -266,7 +271,7 @@ pub fn query_tpe_transaction_status(payload: String) -> Result<String, String> {
         auth_code: None,
         amount_mad: 0.0,
         card_scheme: "UNKNOWN".to_string(),
-        terminal_id: req.terminal_ip.unwrap_or_else(|| "UNKNOWN".to_string()),
+        terminal_id: terminal_endpoint,
         recovery_required: true,
         message: "Status queried; verify merchant bank slip or run OPI LastTransaction echo.".to_string(),
         raw_response: None,

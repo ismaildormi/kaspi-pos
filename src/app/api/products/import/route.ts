@@ -143,21 +143,19 @@ async function resolveTenantAndUser(): Promise<{
     const ctx = await getRequestContext();
     return { tenantId: ctx.tenantId, userId: ctx.userId };
   } catch {
-    const session = await auth();
-    if (session?.user?.id) {
-      const dbUser = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        include: { memberships: { where: { status: "active" }, take: 1 } },
-      });
-      const tenantId =
-        dbUser?.defaultTenantId || dbUser?.memberships[0]?.tenantId;
-      if (tenantId) return { tenantId, userId: session.user.id };
-    }
-    const fallbackTenant = await prisma.tenant.findFirst({
-      select: { id: true },
-    });
-    if (fallbackTenant?.id) {
-      return { tenantId: fallbackTenant.id };
+    try {
+      const session = await auth();
+      if (session?.user?.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: session.user.id },
+          include: { memberships: { where: { status: "active" }, take: 1 } },
+        });
+        const tenantId =
+          dbUser?.defaultTenantId || dbUser?.memberships[0]?.tenantId;
+        if (tenantId) return { tenantId, userId: session.user.id };
+      }
+    } catch {
+      // Request scope unavailable or session invalid — fall through to 401
     }
     throw new Error("Unauthorized: No active tenant context");
   }

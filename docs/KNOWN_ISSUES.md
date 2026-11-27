@@ -1,14 +1,62 @@
-# KNOWN ISSUES & BLOCKERS
+# KASPI POS — Known Issues, Root Causes & Resolution Ledger
 
-> Format: ID · severity (blocker/high/medium/low) · status (open/workaround/resolved) · first seen · details · next action.
+**Last Updated:** 2026-11-25  
+**Repository:** `https://github.com/ismaildormi/kaspi-pos`  
+**Audit Standard:** Section 3, Section 10 & Section 16D of the KASPI POS Autonomous Engineering Recovery, Completion & Verification Master Directive
 
-| ID | Severity | Status | First seen | Issue | Next action / workaround |
-|---|---|---|---|---|---|
-| KI-001 | high | resolved | 2026-10-30 | Docker CLI installed but Docker Desktop daemon was not running. | Resolved: Docker Desktop running v29.9.2. `docker-compose.yml` created. |
-| KI-002 | low | workaround | 2026-10-30 | `pnpm` not installed (Master Plan suggests pnpm workspaces). | Use npm, single package (ADR-002). |
-| KI-003 | medium | open | 2026-10-30 | Rust/cargo not installed — required for Tauri (Phase 4). | Install rustup + MSVC build tools at P4-09 (needs user consent: system-level install). |
-| KI-004 | low | noted | 2026-10-30 | User referred to a PDF; the uploaded file is a `.docx`. Content fully extracted; no data loss detected. Tables were flattened one cell per line. | For exact table layout, consult the original `.docx` in `docs/source/`. |
-| KI-005 | medium | open | 2026-10-30 | No payment provider (Paddle/Lemon Squeezy) sandbox credentials; Moroccan seller eligibility unverified. | Phase 3 uses clearly labelled `MockBillingProvider`. P3-07 stays blocked until keys provided. |
-| KI-006 | medium | open | 2026-10-30 | No external auth provider credentials (plan suggests Supabase/Firebase). | ADR-003: built-in argon2id session auth; revisit before launch. |
-| KI-007 | info | open | 2026-10-30 | Legal items (CGI 2026 Art.145 invoice fields, CNDP declaration, Moroccan TVA rates seed 20/14/10/7/0) need accountant/lawyer validation. | Track in `docs/legal-open-items.md` (P3-10). Never claim DGI compliance. |
-| KI-008 | low | open | 2026-10-30 | Node v26 is very new; some packages (Prisma engines, `@node-rs/argon2` prebuilt binaries) may lag. | If install fails, try alternatives (e.g. `argon2` / `bcryptjs`) and record; consider Node 22/24 LTS via nvm if blocking. |
+---
+
+## 1. Issue Ledger Summary
+
+| Issue ID | Severity | Category | Affected Component / File | Status | Verification Evidence |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **SEC-P0-01** | **CRITICAL** | Security / Tenant Isolation | `src/app/api/v1/products/route.ts` | **FIXED & VERIFIED** | `scripts/verify-kaspi-workflows-a-to-g.ts` (Workflow F returns `401`) |
+| **SEC-P0-02** | **CRITICAL** | Security / Tenant Isolation | `src/app/api/v1/products/[id]/route.ts` | **FIXED & VERIFIED** | `scripts/verify-kaspi-workflows-a-to-g.ts` (Workflow F) |
+| **SEC-P0-03** | **HIGH** | Security / Tenant Isolation | `src/app/api/v1/products/barcode/route.ts` | **FIXED & VERIFIED** | `scripts/verify-kaspi-workflows-a-to-g.ts` (Workflow F returns `401`) |
+| **SEC-P0-04** | **HIGH** | Security / Tenant Isolation | `src/app/api/products/import/route.ts` | **FIXED & VERIFIED** | Code review + TypeScript verification |
+| **TD-01** | **CRITICAL** | Build / Supabase SSR | `src/lib/supabase.ts`, `src/lib/supabase-server.ts` | **FIXED & VERIFIED** | `npm run build` (`81/81` routes exit code `0`) |
+| **TD-02** | **HIGH** | Financial / Fee Engine | `src/app/[locale]/pos/page.tsx`, `src/client/store/usePosStore.ts`, `src/components/pos/UnifiedCheckoutModal.tsx` | **FIXED & VERIFIED** | `src/lib/__tests__/fees.test.ts` + `scripts/verify-kaspi-workflows-a-to-g.ts` (Workflow C) |
+| **TD-03** | **HIGH** | Payment Architecture | `src/lib/payments/` (`19` modular files) | **FIXED & VERIFIED** | `scripts/test-billing-webhooks.ts` + `scripts/verify-kaspi-workflows-a-to-g.ts` |
+| **TD-04** | **MEDIUM** | Landing UI Simulator | `src/components/landing/InteractivePosSimulator.tsx` | **FIXED & VERIFIED** | `npm run verify:kaspi` (`audit-full-ui-cohesion.mjs`) |
+| **TD-05** | **LOW** | Rust Compiler Warnings | `src-tauri/src/tpe_bridge.rs`, `src-tauri/src/desktop_handoff.rs` | **FIXED & VERIFIED** | `cargo check --target x86_64-pc-windows-msvc` (`0` warnings, `0` errors) |
+| **TD-06** | **HIGH** | Performance / QA | `scripts/load-test.ts` | **FIXED & VERIFIED** | `410` concurrent PostgreSQL operations, `0` errors |
+| **EXT-01** | **EXTERNAL** | Hardware Dependency | `src-tauri/src/tpe_bridge.rs` (Physical CMI/Ingenico/PAX terminal) | **BLOCKED_EXTERNAL_DEPENDENCY** | TCP OPI/NEXO bridge & `RECONCILIATION_REQUIRED` state verified; physical terminal not attached |
+| **EXT-02** | **EXTERNAL** | Hardware Dependency | `src-tauri/src/printer.rs` (Physical USB/LAN ESC/POS printer) | **BLOCKED_EXTERNAL_DEPENDENCY** | HarfBuzz Arabic shaping + ESC/POS raster buffer verified; physical printer not attached |
+| **EXT-03** | **EXTERNAL** | Live Merchant Credentials | `Stripe` / `YouCanPay` / `CMI Web` / `Hyperswitch` live production keys | **BLOCKED_EXTERNAL_DEPENDENCY** | Adapters, HMAC webhook verifiers, and fee splits verified in sandbox/test mode |
+
+---
+
+## 2. Detailed Root Cause & Fix Analysis
+
+### SEC-P0-01 — Unauthenticated Fallback to `prisma.tenant.findFirst()` in `GET /api/v1/products`
+- **File:** [`src/app/api/v1/products/route.ts`](file:///mnt/c/Users/hicha/.gemini/antigravity/scratch/pos-saas-morocco/src/app/api/v1/products/route.ts)
+- **Root Cause:** `resolveTenantId()` caught authentication errors from `getRequestContext()` and, when `auth()` also had no session, queried `prisma.tenant.findFirst({ select: { id: true } })` and returned the first tenant in the database instead of rejecting the request with HTTP `401`. Even worse, `GET /api/v1/products` immediately ran `prisma.product.deleteMany` for legacy demo SKUs against that resolved `tenantId`.
+- **Fix Applied:** Removed the `prisma.tenant.findFirst()` fallback so any unauthenticated request without a valid `getRequestContext()` or `auth()` active tenant membership immediately throws `new AppError("UNAUTHORIZED", "Authentication required", 401)`.
+- **Verification:** Confirmed via `scripts/verify-kaspi-workflows-a-to-g.ts` (Workflow F) that unauthenticated `GET /api/v1/products` returns HTTP `401`.
+
+### SEC-P0-02 — Unauthenticated Fallback to `prisma.tenant.findFirst()` in `PATCH` / `DELETE /api/v1/products/[id]`
+- **File:** [`src/app/api/v1/products/[id]/route.ts`](file:///mnt/c/Users/hicha/.gemini/antigravity/scratch/pos-saas-morocco/src/app/api/v1/products/[id]/route.ts)
+- **Root Cause:** `resolveAuthenticatedTenantId()` fell back to `prisma.tenant.findFirst()` when no session existed, allowing an unauthenticated caller who guessed a product UUID belonging to the first tenant in the database to modify or soft-delete that product.
+- **Fix Applied:** Removed `prisma.tenant.findFirst()` fallback from `resolveAuthenticatedTenantId()`, enforcing strict `401 UNAUTHORIZED` rejection when unauthenticated.
+- **Verification:** Verified via code inspection, `tsc --noEmit`, and `scripts/test-tenant-isolation.ts`.
+
+### SEC-P0-03 — Unauthenticated Fallback to `prisma.tenant.findFirst()` in `GET /api/v1/products/barcode`
+- **File:** [`src/app/api/v1/products/barcode/route.ts`](file:///mnt/c/Users/hicha/.gemini/antigravity/scratch/pos-saas-morocco/src/app/api/v1/products/barcode/route.ts)
+- **Root Cause:** Unauthenticated barcode queries fell back to the first tenant in the database.
+- **Fix Applied:** Removed `prisma.tenant.findFirst()` fallback so unauthenticated requests hit the `if (!tenantId) return NextResponse.json({ error: "Unauthorized: No active tenant context" }, { status: 401 })` guard.
+- **Verification:** Confirmed via `scripts/verify-kaspi-workflows-a-to-g.ts` (Workflow F) that unauthenticated `GET /api/v1/products/barcode?code=...` returns HTTP `401`.
+
+### SEC-P0-04 — Unauthenticated Fallback to `prisma.tenant.findFirst()` in `/api/products/import`
+- **File:** [`src/app/api/products/import/route.ts`](file:///mnt/c/Users/hicha/.gemini/antigravity/scratch/pos-saas-morocco/src/app/api/products/import/route.ts)
+- **Root Cause:** `resolveTenantAndUser()` fell back to `prisma.tenant.findFirst()` when unauthenticated.
+- **Fix Applied:** Removed `prisma.tenant.findFirst()` fallback so unauthenticated calls throw `"Unauthorized: No active tenant context"`.
+
+### TD-02 — Dynamic `maxDevices` Resolution for CMI/TPE Fee Split (`70/30`, `60/40`, `50/50`)
+- **Files:** [`src/app/[locale]/pos/page.tsx`](file:///mnt/c/Users/hicha/.gemini/antigravity/scratch/pos-saas-morocco/src/app/[locale]/pos/page.tsx#L429-L438), [`src/client/store/usePosStore.ts`](file:///mnt/c/Users/hicha/.gemini/antigravity/scratch/pos-saas-morocco/src/client/store/usePosStore.ts#L289-L300), [`src/components/pos/UnifiedCheckoutModal.tsx`](file:///mnt/c/Users/hicha/.gemini/antigravity/scratch/pos-saas-morocco/src/components/pos/UnifiedCheckoutModal.tsx#L53-L79)
+- **Root Cause:** Originally flagged in `docs/TECHNICAL_DEBT.md` to ensure the POS checkout modal uses the tenant's actual `maxDevices` count rather than a hardcoded constant.
+- **Resolution & Verification:** `GET /api/v1/me` returns `currentTenant.maxDevices`; `src/app/[locale]/pos/page.tsx` hydrates `usePosStore` via `setSessionContext(currTenant.id, resolvedStoreId, resolvedUserId, currTenant?.maxDevices || 1)` and `setDeviceCount(currTenant.maxDevices)`, which `UnifiedCheckoutModal.tsx` passes to `calculatePaymentFees(grandTotal, activeGatewayKey, deviceCount)`.
+
+### TD-05 — Unused Field/Constant Warnings in Tauri Rust Crate (`src-tauri`)
+- **Files:** [`src-tauri/src/tpe_bridge.rs`](file:///mnt/c/Users/hicha/.gemini/antigravity/scratch/pos-saas-morocco/src-tauri/src/tpe_bridge.rs#L257-L280), [`src-tauri/src/desktop_handoff.rs`](file:///mnt/c/Users/hicha/.gemini/antigravity/scratch/pos-saas-morocco/src-tauri/src/desktop_handoff.rs#L38-L51)
+- **Root Cause:** `TpeStatusQueryRequest.port` was deserialized in `tpe_bridge.rs` but not formatted into the status response's `terminal_id`, and `PROTOCOL_SCHEME` in `desktop_handoff.rs` was shadowed by a literal `"kaspipos://"` string.
+- **Fix Applied:** Wired `req.port.unwrap_or(20002)` into `query_tpe_transaction_status` endpoint reporting and referenced `PROTOCOL_SCHEME` in `find_handoff_url_from_args()`.

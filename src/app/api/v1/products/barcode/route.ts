@@ -22,19 +22,17 @@ export async function GET(req: NextRequest) {
       const ctx = await getRequestContext();
       tenantId = ctx.tenantId;
     } catch {
-      const session = await auth();
-      if (session?.user?.id) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: session.user.id },
-          include: { memberships: { where: { status: "active" }, take: 1 } },
-        });
-        tenantId = dbUser?.defaultTenantId || dbUser?.memberships[0]?.tenantId;
-      }
-      if (!tenantId) {
-        const fallbackTenant = await prisma.tenant.findFirst({
-          select: { id: true },
-        });
-        tenantId = fallbackTenant?.id;
+      try {
+        const session = await auth();
+        if (session?.user?.id) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            include: { memberships: { where: { status: "active" }, take: 1 } },
+          });
+          tenantId = dbUser?.defaultTenantId || dbUser?.memberships[0]?.tenantId;
+        }
+      } catch {
+        // Request scope unavailable or session invalid — fall through to 401
       }
     }
 

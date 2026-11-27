@@ -9,20 +9,20 @@ async function resolveTenantId(): Promise<string> {
     const ctx = await getRequestContext();
     return ctx.tenantId;
   } catch {
-    const session = await auth();
-    if (session?.user?.id) {
-      const dbUser = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        include: { memberships: { where: { status: "active" }, take: 1 } },
-      });
-      const tenantId =
-        dbUser?.defaultTenantId || dbUser?.memberships[0]?.tenantId;
-      if (tenantId) return tenantId;
+    try {
+      const session = await auth();
+      if (session?.user?.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: session.user.id },
+          include: { memberships: { where: { status: "active" }, take: 1 } },
+        });
+        const tenantId =
+          dbUser?.defaultTenantId || dbUser?.memberships[0]?.tenantId;
+        if (tenantId) return tenantId;
+      }
+    } catch {
+      // Request scope unavailable or session invalid — fall through to 401
     }
-    const fallbackTenant = await prisma.tenant.findFirst({
-      select: { id: true },
-    });
-    if (fallbackTenant?.id) return fallbackTenant.id;
     throw new AppError("UNAUTHORIZED", "Authentication required", 401);
   }
 }

@@ -71,6 +71,7 @@ function normalizeCsvRow(raw: RawCSVRow, rowNumber: number) {
   const rawPrice =
     raw.price ??
     raw.sale_price ??
+    raw.saleprice ??
     raw.prix ??
     raw.prix_vente ??
     raw["السعر"];
@@ -79,7 +80,7 @@ function normalizeCsvRow(raw: RawCSVRow, rowNumber: number) {
     errors.push("Invalid sale price (must be > 0 MAD)");
   }
 
-  const rawCost = raw.cost_price ?? raw.prix_achat ?? raw.cout;
+  const rawCost = raw.cost_price ?? raw.costprice ?? raw.prix_achat ?? raw.cout;
   const parsedCost = rawCost
     ? parseFloat(String(rawCost).replace(",", "."))
     : null;
@@ -105,12 +106,12 @@ function normalizeCsvRow(raw: RawCSVRow, rowNumber: number) {
       .trim() || "Épicerie Générale";
 
   const rawStock =
-    raw.stock ?? raw.quantity ?? raw.quantite ?? raw["المخزون"];
+    raw.stock ?? raw.stock_quantity ?? raw.stockquantity ?? raw.quantity ?? raw.quantite ?? raw["المخزون"];
   const parsedStock = rawStock
     ? parseFloat(String(rawStock).replace(",", "."))
     : 0;
 
-  const rawTax = raw.tax_rate ?? raw.tva ?? "20";
+  const rawTax = raw.tax_rate ?? raw.taxrate ?? raw.tva ?? "20";
   const parsedTax = parseFloat(String(rawTax).replace(",", ".")) || 20;
 
   return {
@@ -342,7 +343,7 @@ export async function executeCsvImportChunked(payload: ImportCsvTaskPayload) {
 
           committedCount++;
         }
-      });
+      }, { timeout: 25000, maxWait: 10000 });
     }
 
     // 5. Update ProductImportJob to committed

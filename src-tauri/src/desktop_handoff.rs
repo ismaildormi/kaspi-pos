@@ -37,8 +37,9 @@ pub fn parse_handoff_params(raw: &str) -> Option<(String, String)> {
 
 /// Find handoff URL in CLI arguments (e.g. when launched via kaspipos://open?token=...)
 pub fn find_handoff_url_from_args() -> Option<String> {
+    let scheme_prefix = format!("{}://", PROTOCOL_SCHEME);
     for arg in std::env::args().skip(1) {
-        if arg.starts_with("kaspipos://") || arg.contains("token=") {
+        if arg.starts_with(&scheme_prefix) || arg.contains("token=") {
             if let Some((token, lang)) = parse_handoff_params(&arg) {
                 return Some(format!(
                     "{}/api/v1/auth/handoff?token={}&redirect=/{}/dashboard",

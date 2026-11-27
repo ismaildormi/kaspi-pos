@@ -379,7 +379,7 @@ export async function POST(req: NextRequest) {
       }
 
         return sale;
-      });
+      }, { timeout: 25000, maxWait: 10000 });
     }
   );
 
