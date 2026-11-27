@@ -1266,20 +1266,35 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => window.dispatchEvent(new CustomEvent("open-owner-vault"))}
-                className="sheen-btn inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-black transition cursor-pointer shadow-md shrink-0 active:scale-95"
-              >
-                <Lock className="w-3.5 h-3.5" />
-                <span>
-                  {locale === "ar"
-                    ? "فتح خزنة المالك"
-                    : locale === "en"
-                    ? "Unlock Owner Vault"
-                    : "Ouvrir le Coffre"}
-                </span>
-              </button>
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                <a
+                  href={`/${locale}/login/otp?mode=reset`}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl kaspi-glass-surface border border-white/15 hover:border-emerald-400/50 text-zinc-200 hover:text-white text-xs font-bold transition cursor-pointer whitespace-nowrap"
+                >
+                  <span>
+                    {locale === "ar"
+                      ? "تغيير كلمة المرور (Gmail / WhatsApp)"
+                      : locale === "en"
+                      ? "Reset Password (Gmail / WhatsApp)"
+                      : "Changer Mot de Passe (Gmail / WhatsApp)"}
+                  </span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent("open-owner-vault"))}
+                  className="sheen-btn inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-black transition cursor-pointer shadow-md shrink-0 active:scale-95 whitespace-nowrap"
+                >
+                  <Lock className="w-3.5 h-3.5 shrink-0" />
+                  <span>
+                    {locale === "ar"
+                      ? "فتح خزنة المالك"
+                      : locale === "en"
+                      ? "Unlock Owner Vault"
+                      : "Ouvrir le Coffre"}
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* Masked Previews Grid */}

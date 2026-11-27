@@ -148,9 +148,13 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
     { name: t.nav.billing, href: "/dashboard/billing", icon: FileText },
     { name: t.nav.settings, href: "/dashboard/settings", icon: Settings },
     { name: t.nav.support, href: "/dashboard/support", icon: HelpCircle },
-    { name: "HEYUKA Studio", href: "/studio", icon: Sparkles },
-    { name: "HEYUKA Platform", href: "/zebra-x", icon: ShieldCheck },
-    { name: "HEYUKA Chat", href: "/chat", icon: Monitor },
+    ...(isSuperAdmin
+      ? [
+          { name: "HEYUKA Studio", href: "/studio", icon: Sparkles },
+          { name: "HEYUKA Platform", href: "/zebra-x", icon: ShieldCheck },
+        ]
+      : []),
+    { name: "HEYUKA Chat", href: "/heyuka", icon: Monitor },
   ];
 
   return (
@@ -298,20 +302,22 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
           <Sparkles className="w-3 h-3 text-zinc-500 group-hover:text-white group-hover:rotate-12 transition-transform duration-300" />
         </button>
 
-        <Link
-          href={localizeHref("/studio?brand=kaspi_pos")}
-          onClick={onNavigate}
-          className="group w-full flex items-center justify-between px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-200 hover:text-white transition-all"
-          title="KASPI POS Studio — Elastic 3/6/12 Swarm"
-        >
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
-            <span>KASPI POS Studio</span>
-          </div>
-          <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[9px] font-mono text-emerald-300">
-            3/6/12x
-          </span>
-        </Link>
+        {isSuperAdmin && (
+          <Link
+            href={localizeHref("/studio?brand=kaspi_pos")}
+            onClick={onNavigate}
+            className="group w-full flex items-center justify-between px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-200 hover:text-white transition-all whitespace-nowrap"
+            title="KASPI POS Studio — Elastic 3/6/12 Swarm (Owner Only)"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+              <span>KASPI POS Studio</span>
+            </div>
+            <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[9px] font-mono text-emerald-300">
+              3/6/12x
+            </span>
+          </Link>
+        )}
       </div>
     </aside>
   );

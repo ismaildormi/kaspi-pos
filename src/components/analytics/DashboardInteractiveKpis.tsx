@@ -134,6 +134,7 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
         setLiveOrdersCount((prev) => prev + 1);
       }
       readLocalDexieSales();
+      refetchAnalytics?.();
     };
 
     window.addEventListener("kaspi-pos-sync", handleSync);
@@ -159,14 +160,34 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
     };
   }, [readLocalDexieSales]);
 
-  const { data: analytics } = useKaspiAnalytics("sales", "7d", true);
+  const { data: analytics, refresh: refetchAnalytics } = useKaspiAnalytics("sales", "7d", true);
   const sparks = analytics?.sparklines;
 
   const parsedBaseTotal = parseFloat(totalSalesMad.replace(/,/g, "")) || 0;
   const effectiveBaseSales = Math.max(parsedBaseTotal, localTodaySales);
-  const displayTotalMad = (effectiveBaseSales + liveSalesAdded).toFixed(2);
+  const numericDisplayTotal = effectiveBaseSales + liveSalesAdded;
+  const displayTotalMad = numericDisplayTotal.toFixed(2);
   const effectiveBaseCount = Math.max(salesCount, localTodayOrders);
   const displaySalesCount = effectiveBaseCount + liveOrdersCount;
+
+  const mergeSparkValues = (baseValues: number[] | undefined, todayLiveVal: number) => {
+    const arr = baseValues && baseValues.length > 0 ? [...baseValues] : [0, 0, 0, 0, 0, 0, 0];
+    arr[arr.length - 1] = Math.max(arr[arr.length - 1] || 0, todayLiveVal);
+    return arr;
+  };
+  const computeDelta = (vals: number[], serverDelta: number | undefined) => {
+    const last = vals[vals.length - 1] || 0;
+    const prev = vals.length >= 2 ? vals[vals.length - 2] || 0 : 0;
+    if (prev > 0) return Number((((last - prev) / prev) * 100).toFixed(1));
+    if (last > 0 && (serverDelta === undefined || serverDelta === 0)) return 100;
+    return serverDelta ?? 0;
+  };
+  const liveSalesSpark = mergeSparkValues(sparks?.sales?.values, numericDisplayTotal);
+  const liveSalesDelta = computeDelta(liveSalesSpark, sparks?.sales?.deltaPct);
+  const liveItemsSpark = mergeSparkValues(sparks?.items?.values, displaySalesCount);
+  const liveItemsDelta = computeDelta(liveItemsSpark, sparks?.items?.deltaPct);
+  const liveAlertsSpark = mergeSparkValues(sparks?.alerts?.values, outOfStockCount);
+  const liveAlertsDelta = computeDelta(liveAlertsSpark, sparks?.alerts?.deltaPct);
   const displayAvgBasket =
     displaySalesCount > 0
       ? (parseFloat(displayTotalMad) / displaySalesCount).toFixed(2)
@@ -301,8 +322,8 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
               </p>
             </div>
             <KaspiMiniSparkline
-              values={sparks?.sales?.values}
-              deltaPct={sparks?.sales?.deltaPct ?? 0}
+              values={liveSalesSpark}
+              deltaPct={liveSalesDelta}
               positiveIsGood={true}
             />
           </div>
@@ -339,8 +360,8 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
               </p>
             </div>
             <KaspiMiniSparkline
-              values={sparks?.items?.values}
-              deltaPct={sparks?.items?.deltaPct ?? 0}
+              values={liveItemsSpark}
+              deltaPct={liveItemsDelta}
               positiveIsGood={true}
             />
           </div>
@@ -380,8 +401,8 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
               </p>
             </div>
             <KaspiMiniSparkline
-              values={sparks?.alerts?.values}
-              deltaPct={sparks?.alerts?.deltaPct ?? 0}
+              values={liveAlertsSpark}
+              deltaPct={liveAlertsDelta}
               positiveIsGood={false}
             />
           </div>

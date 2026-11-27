@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Package, ChevronDown, Check, Plus, Minus, Layers } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
+import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 interface PackQuantityPopoverProps {
   locale?: string;
@@ -18,7 +19,9 @@ export const PRESET_PACKS = [
 
 export const PackQuantityPopover: React.FC<PackQuantityPopoverProps> = ({ locale = "ar" }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [popoverCoords, setPopoverCoords] = useState<{ top: number; left: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   const {
     scanMultiplier = 1,
@@ -34,12 +37,28 @@ export const PackQuantityPopover: React.FC<PackQuantityPopoverProps> = ({ locale
     setCustomInput(String(scanMultiplier || 1));
   }, [scanMultiplier]);
 
-  // Click outside to dismiss popover
+  // Click outside to dismiss popover & update coordinates on open/resize/scroll
   useEffect(() => {
     if (!isOpen) return;
 
+    const updatePosition = () => {
+      if (!containerRef.current || typeof window === "undefined") return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const width = window.innerWidth < 640 ? 288 : 320;
+      const isRtl = document.documentElement.dir === "rtl";
+      let left = isRtl ? rect.left : rect.right - width;
+      left = Math.max(12, Math.min(left, window.innerWidth - width - 12));
+      const top = Math.min(rect.bottom + 8, window.innerHeight - 360);
+      setPopoverCoords({ top: Math.max(12, top), left });
+    };
+
+    updatePosition();
+
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const insideTrigger = containerRef.current?.contains(target);
+      const insidePopover = popoverRef.current?.contains(target);
+      if (!insideTrigger && !insidePopover) {
         setIsOpen(false);
       }
     };
@@ -52,9 +71,13 @@ export const PackQuantityPopover: React.FC<PackQuantityPopoverProps> = ({ locale
 
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
     };
   }, [isOpen]);
 
@@ -134,13 +157,16 @@ export const PackQuantityPopover: React.FC<PackQuantityPopoverProps> = ({ locale
         />
       </button>
 
-      {/* Expandable Glass Popover Panel */}
-      {isOpen && (
-        <div
-          role="dialog"
-          aria-label="Pack Quantity Selector"
-          className="absolute end-0 top-full mt-2 w-72 sm:w-80 p-3.5 rounded-2xl kaspi-opaque-glass-modal kaspi-polar-aurora-orbit border border-white/20 shadow-2xl z-50 space-y-3.5 animate-in fade-in-0 zoom-in-95 duration-150"
-        >
+      {/* Expandable Glass Popover Panel (Portaled above all product cards) */}
+      {isOpen && popoverCoords && (
+        <KaspiGlassModalPortal>
+          <div
+            ref={popoverRef}
+            role="dialog"
+            aria-label="Pack Quantity Selector"
+            style={{ top: popoverCoords.top, left: popoverCoords.left }}
+            className="fixed w-72 sm:w-80 p-3.5 rounded-2xl kaspi-opaque-glass-modal kaspi-polar-aurora-orbit border border-white/20 shadow-2xl z-[9999] space-y-3.5 animate-in fade-in-0 zoom-in-95 duration-150"
+          >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 pb-2">
             <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--kaspi-text-primary)]">
@@ -286,7 +312,8 @@ export const PackQuantityPopover: React.FC<PackQuantityPopoverProps> = ({ locale
               </span>
             </button>
           )}
-        </div>
+          </div>
+        </KaspiGlassModalPortal>
       )}
     </div>
   );

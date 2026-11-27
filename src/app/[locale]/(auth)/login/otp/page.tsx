@@ -85,10 +85,13 @@ function OtpVerifyView() {
   const t = OTP_I18N[locale];
 
   const [email, setEmail] = useState(searchParams.get("email") || "");
-  const [step, setStep] = useState<"request" | "verify">(
+  const [isResetMode, setIsResetMode] = useState(searchParams.get("mode") === "reset");
+  const [step, setStep] = useState<"request" | "verify" | "new_password">(
     searchParams.get("email") ? "verify" : "request"
   );
   const [otpCode, setOtpCode] = useState(searchParams.get("code") || "");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [otpTimer, setOtpTimer] = useState(60);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -183,7 +186,61 @@ function OtpVerifyView() {
       }).catch(() => {});
 
       playSuccessSound();
+      if (isResetMode) {
+        setStep("new_password");
+        setSuccess(
+          locale === "ar"
+            ? "تم التحقق من الرمز! أدخل كلمة المرور الجديدة لتفعيلها."
+            : locale === "fr"
+            ? "Code vérifié ! Définissez votre nouveau mot de passe."
+            : "Code verified! Enter your new password to activate."
+        );
+        setLoading(false);
+        return;
+      }
       setSuccess(t.msgVerified);
+      window.location.href = `/${locale}/dashboard`;
+    } catch {
+      playErrorSound();
+      setError(t.errNetwork);
+      setLoading(false);
+    }
+  };
+
+  const handleSaveNewPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    playTapSound();
+    if (newPassword.length < 6) {
+      playErrorSound();
+      setError(locale === "ar" ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "Password must be at least 6 characters");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      playErrorSound();
+      setError(locale === "ar" ? "كلمة المرور غير متطابقة" : "Passwords do not match");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(getApiUrl("/api/v1/auth/reset-password"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          code: otpCode.trim(),
+          newPassword,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        playErrorSound();
+        setError(data?.error?.message || data?.error || t.errNetwork);
+        setLoading(false);
+        return;
+      }
+      playSuccessSound();
+      setSuccess(locale === "ar" ? "تم تحديث كلمة المرور وتفعيلها بنجاح!" : "New password activated successfully!");
       window.location.href = `/${locale}/dashboard`;
     } catch {
       playErrorSound();
@@ -217,8 +274,59 @@ function OtpVerifyView() {
         </div>
       )}
 
-      {step === "request" ? (
+      {step === "new_password" ? (
+        <form onSubmit={handleSaveNewPassword} className="space-y-4">
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder={locale === "ar" ? "كلمة المرور الجديدة" : locale === "fr" ? "Nouveau mot de passe" : "New password"}
+            required
+            minLength={6}
+            className="w-full h-12 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 transition-all"
+          />
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder={locale === "ar" ? "تأكيد كلمة المرور الجديدة" : locale === "fr" ? "Confirmer le mot de passe" : "Confirm new password"}
+            required
+            minLength={6}
+            className="w-full h-12 px-4 bg-zinc-900/75 border border-white/15 rounded-2xl text-sm text-white placeholder-zinc-400 focus:outline-none focus:border-white/60 transition-all"
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full h-12 bg-white text-black font-extrabold text-sm sm:text-[15px] rounded-2xl shadow-[0_0_28px_rgba(255,255,255,0.45)] hover:bg-zinc-100 active:scale-[0.99] transition-all flex justify-center items-center cursor-pointer disabled:opacity-50 whitespace-nowrap"
+          >
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin text-black" />
+            ) : locale === "ar" ? (
+              "حفظ وتفعيل كلمة المرور الجديدة"
+            ) : locale === "fr" ? (
+              "Activer le nouveau mot de passe"
+            ) : (
+              "Save & Activate New Password"
+            )}
+          </button>
+        </form>
+      ) : step === "request" ? (
         <form onSubmit={handleSendOtp} className="space-y-4">
+          <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isResetMode}
+              onChange={(e) => setIsResetMode(e.target.checked)}
+              className="rounded border-white/20 bg-zinc-900 text-emerald-500"
+            />
+            <span>
+              {locale === "ar"
+                ? "إعادة تعيين كلمة المرور بعد تأكيد الرمز"
+                : locale === "fr"
+                ? "Définir un nouveau mot de passe après vérification"
+                : "Set a new password after verifying code"}
+            </span>
+          </label>
           <input
             type="email"
             dir="ltr"

@@ -792,7 +792,7 @@ export default function ProductsListPage() {
             return (
               <div
                 key={product.id}
-                className="kaspi-product-orbit-card group relative rounded-2xl p-3.5 transition-all flex flex-col overflow-visible"
+                className={`kaspi-product-orbit-card group relative rounded-2xl p-3.5 transition-all flex flex-col overflow-visible ${isMenuOpen ? "z-40" : "z-0"}`}
               >
                 {/* Product Image Container */}
                 <div className="kaspi-product-white-box relative h-36 w-full mb-3 flex items-center justify-center overflow-hidden">
@@ -830,72 +830,74 @@ export default function ProductsListPage() {
                       {product.categoryName}
                     </span>
                   )}
-
-                  {/* 3-Dot Action Button */}
-                  <div className="absolute top-2.5 end-2.5 z-20">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenMenuProductId(isMenuOpen ? null : product.id);
-                      }}
-                      disabled={isUpdating}
-                      className="h-8 w-8 rounded-xl bg-zinc-950/90 hover:bg-white text-zinc-200 hover:text-black border border-zinc-800 flex items-center justify-center transition cursor-pointer"
-                      aria-label="Product options"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-
-                    {/* 3-Dot Dropdown Menu */}
-                    {isMenuOpen && (
-                      <div className="absolute end-0 mt-2 w-60 rounded-xl bg-zinc-950 border border-zinc-800 shadow-2xl py-1.5 z-50 divide-y divide-zinc-900">
-                        <button
-                          type="button"
-                          onClick={() => handleGenerateAiImage(product)}
-                          className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-white hover:bg-zinc-900 flex items-center justify-between gap-2 transition cursor-pointer"
-                        >
-                          <span className="flex items-center gap-2">
-                            <Sparkles className="w-3.5 h-3.5 text-white shrink-0" />
-                            <span>{t.products.generateAiImage}</span>
-                          </span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => openImageModal(product)}
-                          className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-zinc-200 hover:bg-zinc-900 hover:text-white flex items-center justify-between gap-2 transition cursor-pointer"
-                        >
-                          <span className="flex items-center gap-2">
-                            <ImageIcon className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                            <span>{t.products.changeImage}</span>
-                          </span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => openPriceModal(product)}
-                          className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-zinc-200 hover:bg-zinc-900 hover:text-white flex items-center justify-between gap-2 transition cursor-pointer"
-                        >
-                          <span className="flex items-center gap-2">
-                            <DollarSign className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                            <span>{t.products.editPrice}</span>
-                          </span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handlePrintProductBarcode(product)}
-                          className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-zinc-300 hover:bg-zinc-900 hover:text-white flex items-center justify-between gap-2 transition cursor-pointer"
-                        >
-                          <span className="flex items-center gap-2">
-                            <Printer className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                            <span>{t.products.printBarcodeLabel}</span>
-                          </span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
                 </div>
+
+                {/* 3-Dot Action Button (Positioned outside overflow-hidden image box so dropdown never clips) */}
+                <div className="absolute top-6 end-6 z-30">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuProductId(isMenuOpen ? null : product.id);
+                    }}
+                    disabled={isUpdating}
+                    className="h-8 w-8 rounded-xl bg-zinc-950/90 hover:bg-white text-zinc-200 hover:text-black border border-zinc-800 flex items-center justify-center transition cursor-pointer shadow-md"
+                    aria-label="Product options"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+
+                  {/* 3-Dot Dropdown Menu */}
+                  {isMenuOpen && (
+                    <div className="absolute end-0 mt-2 w-60 rounded-xl bg-zinc-950/95 backdrop-blur-xl border border-zinc-800 shadow-2xl py-1.5 z-[120] divide-y divide-zinc-900">
+                      <button
+                        type="button"
+                        onClick={() => handleGenerateAiImage(product)}
+                        className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-white hover:bg-zinc-900 flex items-center justify-between gap-2 transition cursor-pointer whitespace-nowrap"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Sparkles className="w-3.5 h-3.5 text-white shrink-0" />
+                          <span>{t.products.generateAiImage}</span>
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => openImageModal(product)}
+                        className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-zinc-200 hover:bg-zinc-900 hover:text-white flex items-center justify-between gap-2 transition cursor-pointer whitespace-nowrap"
+                      >
+                        <span className="flex items-center gap-2">
+                          <ImageIcon className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                          <span>{t.products.changeImage}</span>
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => openPriceModal(product)}
+                        className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-zinc-200 hover:bg-zinc-900 hover:text-white flex items-center justify-between gap-2 transition cursor-pointer whitespace-nowrap"
+                      >
+                        <span className="flex items-center gap-2">
+                          <DollarSign className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                          <span>{t.products.editPrice}</span>
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handlePrintProductBarcode(product)}
+                        className="w-full px-3.5 py-2.5 text-start text-xs font-semibold text-zinc-300 hover:bg-zinc-900 hover:text-white flex items-center justify-between gap-2 transition cursor-pointer whitespace-nowrap"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Printer className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                          <span>{t.products.printBarcodeLabel}</span>
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Product Body */}
 
                 {/* Product Details Footer */}
                 <div className="flex-1 flex flex-col justify-between gap-3">

@@ -251,6 +251,18 @@ export default function BillingDashboardPage() {
   const [licenseErrorMsg, setLicenseErrorMsg] = useState<string | null>(null);
   const [isTogglingMandate, setIsTogglingMandate] = useState(false);
   const [feeSplitRatio, setFeeSplitRatio] = useState<PosFeeSplitRatio>("70/30");
+  const [selectedPostes, setSelectedPostes] = useState<number>(1);
+  const [branchMode, setBranchMode] = useState<"same_branch" | "separate_branch">("same_branch");
+  const [newBranchName, setNewBranchName] = useState("");
+
+  useEffect(() => {
+    if (subscription?.maxDevices && subscription.maxDevices > 0) {
+      setSelectedPostes(subscription.maxDevices);
+    }
+  }, [subscription?.maxDevices]);
+
+  const computedPlanMad = 200 + Math.max(0, selectedPostes - 1) * 150;
+  const computedPlanUsd = 20 + Math.max(0, selectedPostes - 1) * 15;
 
   const feePreview = React.useMemo(() => {
     const engine = new FeeEngine();
@@ -513,55 +525,143 @@ export default function BillingDashboardPage() {
             </div>
           </div>
 
-          {/* Tiered Device Pricing Grid */}
-          <div className="mb-6 p-4 rounded-2xl bg-black/40 border border-white/10">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
-                <Monitor className="w-3.5 h-3.5 text-emerald-400" />
-                {t.tierGridTitle}
-              </span>
-              <span className="text-[10px] text-zinc-400 font-mono">
-                {t.tierGridSubtitle}
-              </span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-              <div className={`p-3 rounded-xl border text-center transition-all ${
-                (subscription?.maxDevices ?? 1) === 1
-                  ? "kaspi-glass-btn kaspi-orbit-active text-white font-bold"
-                  : "kaspi-smoky-glass text-zinc-400 hover:text-white"
-              }`}>
-                <span className="block text-[11px] mb-0.5">{t.tier1Title}</span>
-                <span className="font-mono text-sm font-black text-white">200 MAD</span>
-                <span className="block text-[9.5px] font-semibold text-emerald-400 mt-0.5 leading-tight">{t.tier1Desc}</span>
+          {/* Wide Unified Register & Branch Topology Configurator */}
+          <div className="mb-6 p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-white/[0.04] to-black/50 border border-white/15 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Monitor className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-sm font-bold text-white">
+                    {locale === "ar"
+                      ? "تخصيص عدد الصناديق (Postes) وتوزيع الفروع"
+                      : locale === "en"
+                      ? "Register Capacity & Branch Topology"
+                      : "Capacité de Caisses (Postes) & Branches"}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 mt-1">
+                  {locale === "ar"
+                    ? "الصندوق الأول 200 درهم/شهر وكل صندوق إضافي +150 درهم/شهر — نفس الحساب على عدة أجهزة."
+                    : locale === "en"
+                    ? "200 MAD/mo for 1st register, +150 MAD/mo per extra device under the same owner account."
+                    : "200 MAD/mois pour la 1ère caisse, puis +150 MAD/mois par poste supplémentaire."}
+                </p>
               </div>
-              <div className={`p-3 rounded-xl border text-center transition-all ${
-                (subscription?.maxDevices ?? 1) === 2
-                  ? "kaspi-glass-btn kaspi-orbit-active text-white font-bold"
-                  : "kaspi-smoky-glass text-zinc-400 hover:text-white"
-              }`}>
-                <span className="block text-[11px] mb-0.5">{t.tier2Title}</span>
-                <span className="font-mono text-sm font-black text-white">350 MAD</span>
-                <span className="block text-[9px] text-zinc-500">{t.tier2Desc}</span>
-              </div>
-              <div className={`p-3 rounded-xl border text-center transition-all ${
-                (subscription?.maxDevices ?? 1) === 3
-                  ? "kaspi-glass-btn kaspi-orbit-active text-white font-bold"
-                  : "kaspi-smoky-glass text-zinc-400 hover:text-white"
-              }`}>
-                <span className="block text-[11px] mb-0.5">{t.tier3Title}</span>
-                <span className="font-mono text-sm font-black text-white">500 MAD</span>
-                <span className="block text-[9px] text-zinc-500">{t.tier3Desc}</span>
-              </div>
-              <div className={`p-3 rounded-xl border text-center transition-all ${
-                (subscription?.maxDevices ?? 1) >= 4
-                  ? "kaspi-glass-btn kaspi-orbit-active text-white font-bold"
-                  : "kaspi-smoky-glass text-zinc-400 hover:text-white"
-              }`}>
-                <span className="block text-[11px] mb-0.5">{t.tier4Title}</span>
-                <span className="font-mono text-sm font-black text-white">650 MAD</span>
-                <span className="block text-[9px] text-zinc-500">{t.tier4Desc}</span>
+              <div className="text-end shrink-0">
+                <div className="text-2xl font-black text-emerald-300 font-mono tabular-nums">
+                  {computedPlanMad} <span className="text-xs font-bold text-zinc-400">MAD/{t.perMonth}</span>
+                </div>
+                <div className="text-[11px] font-mono text-zinc-400">
+                  (${computedPlanUsd} USD / {selectedPostes} {selectedPostes === 1 ? "Poste" : "Postes"})
+                </div>
               </div>
             </div>
+
+            {/* Register Count Stepper & Quick Presets */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                {[1, 2, 3, 4, 6, 10].map((cnt) => (
+                  <button
+                    key={cnt}
+                    type="button"
+                    onClick={() => setSelectedPostes(cnt)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all cursor-pointer whitespace-nowrap ${
+                      selectedPostes === cnt
+                        ? "bg-white text-black shadow-md"
+                        : "kaspi-glass-surface border border-white/10 text-zinc-300 hover:text-white"
+                    }`}
+                  >
+                    {cnt} {cnt === 1 ? "Poste" : "Postes"}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSelectedPostes((p) => Math.max(1, p - 1))}
+                  className="w-8 h-8 rounded-xl kaspi-glass-surface border border-white/15 text-white font-bold flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                >
+                  -
+                </button>
+                <span className="w-12 text-center font-mono text-sm font-black text-white">
+                  {selectedPostes}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPostes((p) => Math.min(50, p + 1))}
+                  className="w-8 h-8 rounded-xl kaspi-glass-surface border border-white/15 text-white font-bold flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Same Branch vs Separate Branch Mode */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setBranchMode("same_branch")}
+                className={`p-3.5 rounded-2xl border text-start transition-all cursor-pointer ${
+                  branchMode === "same_branch"
+                    ? "bg-emerald-500/15 border-emerald-500/50 text-white"
+                    : "bg-white/[0.02] border-white/10 text-zinc-400 hover:text-white"
+                }`}
+              >
+                <div className="text-xs font-bold flex items-center justify-between gap-2">
+                  <span>
+                    {locale === "ar"
+                      ? "نفس الفرع (إحصائيات ومخزون موحّد)"
+                      : locale === "en"
+                      ? "Same Branch (Unified Store & Stats)"
+                      : "Même Magasin (Stock & Stats Unifiés)"}
+                  </span>
+                  {branchMode === "same_branch" && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+                </div>
+                <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
+                  {locale === "ar"
+                    ? `جميع الأجهزة (${selectedPostes}) تعمل في نفس المحل وتُجمع مبيعاتها ومخزونها معاً.`
+                    : `All ${selectedPostes} registers operate in one store with shared stock and aggregated totals.`}
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setBranchMode("separate_branch")}
+                className={`p-3.5 rounded-2xl border text-start transition-all cursor-pointer ${
+                  branchMode === "separate_branch"
+                    ? "bg-emerald-500/15 border-emerald-500/50 text-white"
+                    : "bg-white/[0.02] border-white/10 text-zinc-400 hover:text-white"
+                }`}
+              >
+                <div className="text-xs font-bold flex items-center justify-between gap-2">
+                  <span>
+                    {locale === "ar"
+                      ? "فرع آخر مستقل (نفس الحساب وإحصائيات منفصلة)"
+                      : locale === "en"
+                      ? "Separate Branch (Isolated Branch Stats)"
+                      : "Nouvelle Succursale (Stats Séparées)"}
+                  </span>
+                  {branchMode === "separate_branch" && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+                </div>
+                <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">
+                  {locale === "ar"
+                    ? "يمنح كل فرع مخزوناً وإحصائيات مبيعات مستقلة تحت نفس حساب المالك."
+                    : "Keeps inventory, cash shifts, and daily stats completely separate per branch."}
+                </p>
+              </button>
+            </div>
+
+            {branchMode === "separate_branch" && (
+              <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-1">
+                <input
+                  type="text"
+                  value={newBranchName}
+                  onChange={(e) => setNewBranchName(e.target.value)}
+                  placeholder={locale === "ar" ? "اسم الفرع الجديد (مثلاً: فرع المعاريف)" : "Branch name (e.g. Maarif Branch)"}
+                  className="w-full flex-1 h-9 px-3 rounded-xl bg-black/50 border border-white/15 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-emerald-400/60"
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-white/10">
@@ -570,9 +670,9 @@ export default function BillingDashboardPage() {
                 setCheckoutMode("add_device");
                 setCheckoutModalOpen(true);
               }}
-              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer"
+              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer whitespace-nowrap"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 shrink-0" />
               <span>{t.addRegisterBtn}</span>
             </button>
 
@@ -581,7 +681,7 @@ export default function BillingDashboardPage() {
                 setCheckoutMode("plan");
                 setCheckoutModalOpen(true);
               }}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl kaspi-glass-btn font-bold text-xs sm:text-sm transition cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl kaspi-glass-btn font-bold text-xs sm:text-sm transition cursor-pointer whitespace-nowrap"
             >
               {t.updatePaymentBtn}
             </button>

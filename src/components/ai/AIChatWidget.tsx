@@ -1951,93 +1951,83 @@ export function AIChatWidget() {
                       </button>
                     )}
 
-                    <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/15 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
-                      <img
-                        src="/logo-mark.png"
-                        alt="HEYUKA"
-                        className="w-5 h-5 object-contain"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <h3 className="font-bold text-xs sm:text-sm tracking-wide text-[var(--kaspi-text-primary)] truncate">
-                          {isAdminView ? t.headerTitleAdmin : t.headerTitle}
-                        </h3>
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 shrink-0">
-                          <Zap className="w-2.5 h-2.5" />
-                          {isAdminView ? t.activeBadgeAdmin : t.activeBadge}
-                        </span>
+                    <div
+                      className="flex items-center gap-2 min-w-0 cursor-pointer"
+                      onDoubleClick={() => {
+                        window.location.href = `/${activeLocale}/heyuka`;
+                      }}
+                      title={activeLocale === "ar" ? "انقر مرتين للفتح في محادثة HEYUKA الكاملة" : "Double-click to open full HEYUKA Chat"}
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/15 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                        <img
+                          src="/logo-mark.png"
+                          alt="HEYUKA"
+                          className="w-5 h-5 object-contain"
+                        />
                       </div>
-                      <p className="text-[10px] text-[var(--kaspi-text-muted)] font-normal truncate">
-                        {isAdminView ? t.subtitleAdmin : t.subtitle}
-                      </p>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <h3 className="font-bold text-xs sm:text-sm tracking-wide text-[var(--kaspi-text-primary)] whitespace-nowrap">
+                            {isAdminView ? t.headerTitleAdmin : "HEYUKA"}
+                          </h3>
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 shrink-0 whitespace-nowrap">
+                            <Zap className="w-2.5 h-2.5" />
+                            {isAdminView ? t.activeBadgeAdmin : "Live"}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-[var(--kaspi-text-muted)] font-normal truncate">
+                          {isAdminView ? t.subtitleAdmin : t.subtitle}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <Link
-                      href={`/${activeLocale}/studio?brand=kaspi_pos`}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 hover:text-white text-[11px] font-bold transition-colors"
-                      title={
-                        activeLocale === "ar"
-                          ? "فتح استوديو KASPI POS المتطور (Google AI Studio • 3/6/12 نماذج)"
-                          : "Open Full KASPI POS Studio (Elastic 3/6/12 Swarm)"
-                      }
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>{activeLocale === "ar" ? "استوديو KASPI" : "KASPI Studio"}</span>
-                      <span className="hidden sm:inline px-1 py-0.5 rounded bg-emerald-500/20 text-[9px] font-mono">
-                        3/6/12x
-                      </span>
-                    </Link>
+                    {isOwnerSuperAdmin && (
+                      <Link
+                        href={`/${activeLocale}/studio?brand=kaspi_pos`}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-xl border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 hover:text-white text-[10px] font-bold transition-colors whitespace-nowrap"
+                        title={
+                          activeLocale === "ar"
+                            ? "فتح استوديو KASPI POS المتطور (خاص بالمالك)"
+                            : "Open Full KASPI POS Studio (Owner Only)"
+                        }
+                      >
+                        <Sparkles className="w-3 h-3 text-emerald-400 shrink-0" />
+                        <span>{activeLocale === "ar" ? "استوديو" : "Studio"}</span>
+                      </Link>
+                    )}
 
                     {isOwnerSuperAdmin && (
                       <button
                         type="button"
                         onClick={() => setOwnerBrainActive((prev) => !prev)}
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-xl border text-[10px] font-bold transition-colors cursor-pointer ${
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-xl border text-[10px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
                           ownerBrainActive
                             ? "bg-amber-500/20 border-amber-400/50 text-amber-200"
                             : "kaspi-glass-surface border-white/15 text-zinc-300 hover:border-amber-500/40"
                         }`}
                         title="HEYUKA Sovereign Mode — KASPI Owner"
                       >
-                        <ShieldCheck className="w-3 h-3 text-amber-300" />
-                        <span>HEYUKA PRO</span>
+                        <ShieldCheck className="w-3 h-3 text-amber-300 shrink-0" />
+                        <span>PRO</span>
                       </button>
                     )}
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsExpanded((prev) => {
-                          const next = !prev;
-                          if (next) setPosition(null);
-                          return next;
-                        });
-                      }}
-                      className="w-8 h-8 rounded-xl kaspi-glass-surface border border-white/15 text-zinc-200 hover:text-white hover:border-emerald-400/50 flex items-center justify-center transition-colors cursor-pointer"
+                    <Link
+                      href={`/${activeLocale}/heyuka`}
+                      className="w-8 h-8 rounded-xl kaspi-glass-surface border border-white/15 text-zinc-200 hover:text-white hover:border-emerald-400/50 flex items-center justify-center transition-colors cursor-pointer shrink-0"
                       title={
-                        isExpanded
-                          ? activeLocale === "ar"
-                            ? "تصغير النافذة"
-                            : activeLocale === "fr"
-                            ? "Réduire la fenêtre"
-                            : "Compact window"
-                          : activeLocale === "ar"
-                          ? "توسيع مساحة العمل"
+                        activeLocale === "ar"
+                          ? "فتح محادثة HEYUKA الكاملة"
                           : activeLocale === "fr"
-                          ? "Agrandir l'espace de travail"
-                          : "Expand workspace"
+                          ? "Ouvrir le Chat HEYUKA complet"
+                          : "Open full HEYUKA Chat"
                       }
-                      aria-label={isExpanded ? "Compact window" : "Expand workspace"}
+                      aria-label="Open full HEYUKA Chat"
                     >
-                      {isExpanded ? (
-                        <Minimize2 className="w-3.5 h-3.5" />
-                      ) : (
-                        <Maximize2 className="w-3.5 h-3.5" />
-                      )}
-                    </button>
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </Link>
 
                     <button
                       type="button"

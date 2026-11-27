@@ -321,23 +321,23 @@ export function KaspiTpeManagerPanel({ locale = "ar" }: { locale?: string }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
             <button
               type="button"
               disabled={scanning}
               onClick={handleScanDevices}
-              className="h-9 px-4 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
+              className="h-9 px-4 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs flex items-center gap-2 transition cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
             >
-              {scanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+              {scanning ? <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" /> : <Search className="w-3.5 h-3.5 shrink-0" />}
               <span>{isAr ? "فحص الأجهزة" : "Scan for Devices"}</span>
             </button>
 
             <button
               type="button"
               onClick={() => setAddModalOpen(true)}
-              className="h-9 px-3 rounded-xl kaspi-glass-btn text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+              className="h-9 px-3.5 rounded-xl kaspi-glass-btn text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap shrink-0"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5 shrink-0" />
               <span>{isAr ? "إضافة جهاز" : "Add Device"}</span>
             </button>
           </div>

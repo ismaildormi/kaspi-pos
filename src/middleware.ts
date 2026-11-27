@@ -301,7 +301,44 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next());
   }
 
-  // 4. Page routing with next-intl (Auth redirect bypassed for local UI testing except /admin above)
+  // 4. Page routing with next-intl + Geo-IP / Browser Language Auto-Detection for worldwide merchants
+  const hasExplicitLocale = routing.locales.some(
+    (loc) => pathname === `/${loc}` || pathname.startsWith(`/${loc}/`)
+  );
+  const existingLocaleCookie = request.cookies.get("NEXT_LOCALE")?.value;
+  if (!hasExplicitLocale && !existingLocaleCookie && pathname === "/") {
+    const country = (
+      request.headers.get("x-vercel-ip-country") ||
+      request.headers.get("cf-ipcountry") ||
+      ""
+    ).toUpperCase();
+    const acceptLang = (request.headers.get("accept-language") || "").toLowerCase();
+
+    const ARAB_COUNTRIES = new Set([
+      "MA", "DZ", "TN", "LY", "EG", "SA", "AE", "KW", "QA", "BH", "OM", "JO", "LB", "IQ", "SY", "YE", "SD", "MR", "PS",
+    ]);
+    const FRANCOPHONE_COUNTRIES = new Set([
+      "FR", "BE", "CH", "LU", "MC", "SN", "CI", "CM", "ML", "BF", "NE", "TD", "GN", "MG", "CD", "CG",
+    ]);
+
+    let detectedLocale: "ar" | "fr" | "en" = "en";
+    if (ARAB_COUNTRIES.has(country) || (!country && acceptLang.startsWith("ar"))) {
+      detectedLocale = "ar";
+    } else if (FRANCOPHONE_COUNTRIES.has(country) || (!country && acceptLang.startsWith("fr"))) {
+      detectedLocale = "fr";
+    } else {
+      detectedLocale = "en";
+    }
+
+    const redirectUrl = new URL(`/${detectedLocale}${request.nextUrl.search}`, request.url);
+    const geoResponse = NextResponse.redirect(redirectUrl);
+    geoResponse.cookies.set("NEXT_LOCALE", detectedLocale, { path: "/", maxAge: 60 * 60 * 24 * 365 });
+    if (country) {
+      geoResponse.cookies.set("kaspi_geo_country", country, { path: "/", maxAge: 60 * 60 * 24 * 30 });
+    }
+    return applySecurityHeaders(geoResponse);
+  }
+
   const intlResponse = intlMiddleware(request);
   return applySecurityHeaders(intlResponse);
 }
