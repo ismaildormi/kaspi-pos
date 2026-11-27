@@ -490,30 +490,16 @@ export async function POST(req: NextRequest) {
   thinkingSteps.push({
     phase:
       locale === "ar"
-        ? "تحليل المساحة وتحديد القدرات (18 مجالاً)"
-        : "Cognitive Pre-Classification & Tool Routing (18 Clusters)",
-    agentModel: elasticSwarmPlan
-      ? `${elasticSwarmPlan.tier} (${elasticSwarmPlan.nodes.length}x Swarm)`
-      : isCollaborative
-      ? "heyuka-core (Architect)"
-      : model,
-    summary: `Route: ${strictCategory.categoryCode} • ${PUBLIC_APIS_CATALOG_COUNT} Live APIs + ${matchedCatalogCount}+ Sources`,
+        ? "فهم الطلب وتحديد خطوات التفكير"
+        : "Understanding Request & Planning",
+    agentModel: "reasoning",
+    summary:
+      locale === "ar"
+        ? "تحليل السياق وتحديد أفضل مسار للاستجابة."
+        : "Analyzing intent, context, and verification path.",
     durationMs: Math.max(1, Date.now() - phase1Start),
     timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
   });
-
-  if (elasticSwarmPlan) {
-    thinkingSteps.push({
-      phase: `Elastic Model Council (${elasticSwarmPlan.nodes.length} Cooperating Agents + ${elasticSwarmPlan.spawnedBots.length} Worker Bots)`,
-      agentModel: elasticSwarmPlan.nodes.map((n) => n.id).slice(0, 4).join(", "),
-      summary: `Brand=${brand.toUpperCase()} | Tier=${elasticSwarmPlan.tier} | Vault=${elasticSwarmPlan.matchedVaultSources
-        .slice(0, 3)
-        .map((v) => v.name)
-        .join(", ")}`,
-      durationMs: 2,
-      timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
-    });
-  }
 
   if (isCapabilitiesOrSourcesTableRequest(lastUser) || isLocalApiOrSdkRequest(lastUser)) {
     const localBrainRes = runLocalOnDeviceHeyukaBrain({
@@ -895,9 +881,12 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
   const finalizeAndAuditTurn = (rawInput: string, streamedReasoning?: string) => {
     const rawText = String(rawInput || "").trim();
     thinkingSteps.push({
-      phase: isCollaborative ? "Multi-Agent Synthesis & Review Pass" : "Neural Synthesis & Formatting",
-      agentModel: resolvedModel,
-      summary: `Synthesized response (${rawText.length} chars, ${mutatedByTool.size} direct file writes) under ${executionPolicy} policy`,
+      phase: locale === "ar" ? "التركيب والتحقق النهائي" : "Reasoning Synthesis & Verification",
+      agentModel: "reasoning",
+      summary:
+        locale === "ar"
+          ? "صياغة الإجابة النهائية والتحقق من دقتها."
+          : "Synthesizing and verifying the final response.",
       durationMs: Math.max(1, Date.now() - phase3Start),
       timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
     });
@@ -914,16 +903,19 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
       answerRaw = rawText.replace(/<think>[\s\S]*$/gi, "").trim();
     } else if (!reasoning && effectiveDeepThink) {
       reasoning = thinkingSteps
-        .map((s) => `• [${s.timestamp}] ${s.phase} (${s.agentModel}, ${s.durationMs}ms): ${s.summary}`)
+        .map((s) => `• ${s.phase}: ${s.summary}`)
         .join("\n");
     }
 
     const { repaired: repairedDraft, wasRepaired } = repairTruncatedMarkdownAndCode(answerRaw);
     if (wasRepaired) {
       thinkingSteps.push({
-        phase: "Structural Bracket & Tag Auto-Repair (v24.0)",
-        agentModel: "heyuka-repair",
-        summary: "Closed interrupted fences, brackets, or HTML tags cleanly.",
+        phase: locale === "ar" ? "تنسيق البنية" : "Formatting Check",
+        agentModel: "reasoning",
+        summary:
+          locale === "ar"
+            ? "ضبط تنسيق النص والأكواد قبل العرض."
+            : "Ensured clean formatting and code block closure.",
         durationMs: 1,
         timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
       });
@@ -1224,14 +1216,15 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
           } catch {}
         };
 
-        emit({ type: "phase", title: thinkingSteps[0]?.phase || "Initializing Antigravity Agent...", step: thinkingSteps[0] });
-        emit({ type: "power_telemetry", telemetry: powerResult.trace });
+        emit({ type: "phase", title: thinkingSteps[0]?.phase || "Thinking...", step: thinkingSteps[0] });
         if (sources.length > 0) {
           emit({ type: "sources", sources });
         }
 
         const streamToolkit = buildTurnToolkit(
-          (step) => emit({ type: "action_step", step }),
+          () => {
+            // Keep internal tool execution details private; surface only clean thinking step labels
+          },
           (file) => emit({ type: "file_update", file })
         );
 
@@ -1312,9 +1305,12 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     rawText = String(gen.text || "").trim();
     if (executedAgentLogs.length > 0) {
       thinkingSteps.push({
-        phase: "Autonomous Agent Tool Verification (Sandbox / Web / Vault)",
-        agentModel: (gen as any).activeModel || resolvedModel,
-        summary: executedAgentLogs.slice(0, 8).join(" | "),
+        phase: locale === "ar" ? "التحقق من المعطيات" : "Step Verification",
+        agentModel: "reasoning",
+        summary:
+          locale === "ar"
+            ? "مراجعة الخطوات والنتائج الوسيطة."
+            : "Reviewed intermediate reasoning and verification steps.",
         durationMs: Math.max(1, Date.now() - phase3Start),
         timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
       });

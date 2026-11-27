@@ -108,7 +108,7 @@ export const GOLDEN_15_PRIORITY_SOURCES: GoldenPrioritySource[] = [
     name: "Project Gutenberg / Gutendex World Literature & Philosophy Classics",
     category: "literature",
     priority: 95,
-    url: "https://gutendex.com/books/?search=philosophy%20science",
+    url: "https://www.gutenberg.org/",
     homeUrl: "https://www.gutenberg.org/",
     authorityScore: 96,
     isPrimarySource: true,

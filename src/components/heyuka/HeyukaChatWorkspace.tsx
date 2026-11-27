@@ -1694,11 +1694,7 @@ export function HeyukaChatWorkspace() {
                                         {msg.thinkingSteps.map((st, sIdx) => (
                                           <div key={sIdx} className="flex items-start justify-between gap-2 text-[11px]">
                                             <span>
-                                              <strong className="text-zinc-200">{st.phase}</strong>{" "}
-                                              <span className="font-mono text-[#007ACC]">[{st.agentModel}]</span>: {st.summary}
-                                            </span>
-                                            <span className="font-mono text-[10px] text-zinc-500 shrink-0">
-                                              {st.durationMs}ms
+                                              <strong className="text-zinc-200">{st.phase}</strong>: {st.summary}
                                             </span>
                                           </div>
                                         ))}
