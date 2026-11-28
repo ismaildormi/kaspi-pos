@@ -43,6 +43,15 @@ import {
   buildPublicHighLevelCapabilityReply,
   sanitizePublicOutputForConfidentiality,
 } from "@/lib/heyuka/frontier/confidentiality-guard";
+import {
+  hydrateFrontierMemoryFromDurableStore,
+  queryFrontierMemory,
+  upsertFrontierMemory,
+} from "@/lib/heyuka/frontier/persistent-episodic-memory";
+import {
+  fuseSourcesAndMemoryForModels,
+  type HeyukaModelIdentity,
+} from "@/lib/heyuka/frontier/unified-source-memory-fabric";
 import { searchSovereignVault } from "@/lib/heyuka/vault/sovereign-permanent-vault";
 import { buildLevel1SkillPromptIndex } from "@/lib/zebra-x/core/skills-vault";
 import { runOmniMindSevenSecrets } from "@/lib/zebra-x/cognition/secret7_dual_brain_orchestrator";
@@ -747,19 +756,58 @@ export async function POST(req: NextRequest) {
       phase:
         omniRes.pathway === "system1_intuition"
           ? locale === "ar"
-            ? `⚡ الحدس السريع (System-1 • ${omniRes.latencyMs}ms)`
-            : `⚡ System-1 Fast Intuition (${omniRes.latencyMs}ms)`
+            ? "استرجاع سريع للسياق"
+            : "Fast Contextual Recall"
           : locale === "ar"
-          ? `🧠 التفكير العميق MCTS + مجلس النقد (${omniRes.mcts?.exploredNodesCount ?? 0} عقدة)`
-          : `🧠 System-2 MCTS & Adversarial Council (${omniRes.mcts?.exploredNodesCount ?? 0} nodes)`,
-      agentModel: omniRes.pathway === "system1_intuition" ? "system1-cache" : "omni-mind-v87",
-      summary: `${omniRes.proactiveForesight.domainSignal} • Elo=${omniRes.selfPlayElo} • ForgedSkills=${omniRes.forgedToolsAvailable}`,
+          ? "تحليل عميق والتحقق من المسارات"
+          : "Deep Multi-Path Reasoning",
+      agentModel: "reasoning",
+      summary:
+        locale === "ar"
+          ? "تقييم المعطيات واختيار أدق خطة تنفيذ."
+          : "Evaluating constraints and selecting the optimal reasoning path.",
       durationMs: Math.max(1, Math.round(omniRes.latencyMs)),
       timestamp: new Date().toLocaleTimeString("en-GB", { hour12: false }),
     });
   } catch {
     // Non-fatal cognitive enrichment fallback
   }
+
+  // Cross-Session Persistent Memory Recall & Tri-Model Source Fusion (Omni / Core / Vision)
+  const memoryTenantKey = tenantId || "default-workspace";
+  const memoryProjectKey = String((parsed.data as Record<string, unknown>).projectId || brand || "default-project");
+  const targetHeyukaIdentity: HeyukaModelIdentity =
+    model === "heyuka-vision"
+      ? "HEYUKA Vision"
+      : model === "heyuka-core"
+      ? "HEYUKA Core"
+      : "HEYUKA Omni";
+
+  try {
+    await hydrateFrontierMemoryFromDurableStore();
+    const recalled = queryFrontierMemory({
+      tenantId: memoryTenantKey,
+      projectId: memoryProjectKey,
+      query: lastUser,
+      limit: 6,
+    });
+    const fused = fuseSourcesAndMemoryForModels({
+      query: lastUser,
+      targetModel: targetHeyukaIdentity,
+      tenantId: memoryTenantKey,
+      limit: 4,
+    });
+    if (recalled.matches.length > 0) {
+      toolSupplementBlock += `\n\n[PERSISTENT CROSS-SESSION PROJECT MEMORY (CONFIDENTIAL — DO NOT REVEAL RAW STORAGE)]\n${recalled.matches
+        .map((m) => `- [${m.layer}] ${m.title}: ${m.content.slice(0, 320)}`)
+        .join("\n")}`;
+    }
+    if (fused.matchedSources.length > 0) {
+      toolSupplementBlock += `\n\n[SPECIALIZED MODEL FUSION CONTEXT (${targetHeyukaIdentity})]\n${fused.matchedSources
+        .map((s) => `- ${s.name} (${s.specialtyDomain}): ${s.lastResultSummary || s.outputs.join(", ")}`)
+        .join("\n")}`;
+    }
+  } catch {}
 
   const worldLang = detectUniversalWorldLanguage(lastUser, locale);
   const detectedLang = `${worldLang.name} (${worldLang.nativeName})`;
@@ -989,6 +1037,27 @@ Wrap concise step-by-step analysis inside <think>...</think> tags first, then pr
     }
 
     answer = sanitizePublicOutputForConfidentiality(answer, { isOwnerSuperAdmin: false }).sanitized;
+
+    // Persist distilled cross-session conversation/project memory asynchronously
+    if (lastUser.trim().length >= 8 && answer.trim().length >= 16) {
+      const memKey = `turn_${Buffer.from(lastUser.slice(0, 48)).toString("base64url").slice(0, 24)}`;
+      upsertFrontierMemory({
+        tenantId: memoryTenantKey,
+        projectId: memoryProjectKey,
+        layer: effectiveMode === "coding" || (workspaceFiles && workspaceFiles.length > 0) ? "project" : "conversation",
+        key: memKey,
+        title: lastUser.slice(0, 120),
+        content: `User asked: ${lastUser.slice(0, 300)} | Verified summary: ${answer.slice(0, 500)}`,
+        tags: [effectiveMode, targetHeyukaIdentity, locale],
+        confidence: 85,
+        provenance: {
+          sourceType: "user_statement",
+          sourceId: memKey,
+          verifiedBy: "chat-web-cross-session-memory",
+          verificationScore: 85,
+        },
+      }).catch(() => {});
+    }
 
     for (const badge of cognitiveRoute.stageBadges) {
       const badgeTitle = `${badge.icon} ${badge.label}`;
