@@ -225,7 +225,7 @@ export const DashboardInteractiveKpis: React.FC<DashboardInteractiveKpisProps> =
     locale === "ar"
       ? "رصيد المخزون والصناديق"
       : locale === "en"
-      ? "Stock & Consigne Balance"
+      ? "Stock & Crate Balance"
       : "Solde Stock & Consignes";
 
   const clickHint =

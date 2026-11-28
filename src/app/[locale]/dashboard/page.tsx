@@ -237,8 +237,20 @@ export default async function DashboardOverviewPage({
   const shelfHealthPercent = productsCount > 0
     ? Math.max(0, Math.min(100, Math.round(((productsCount - outOfStockCount) / productsCount) * 100)))
     : 100;
-  const safeDisplayName = String(ctx.activeTenant?.displayName || t.dashboard.title);
-  const safeLegalName = String(ctx.activeTenant?.legalName || safeDisplayName);
+  const rawDisplayName = String(ctx.activeTenant?.displayName || t.dashboard.title);
+  const safeDisplayName =
+    locale === "en" && rawDisplayName.startsWith("متجر ")
+      ? `Store ${rawDisplayName.slice(5)}`
+      : locale === "fr" && rawDisplayName.startsWith("متجر ")
+      ? `Magasin ${rawDisplayName.slice(5)}`
+      : rawDisplayName;
+  const rawLegalName = String(ctx.activeTenant?.legalName || safeDisplayName);
+  const safeLegalName =
+    locale === "en" && rawLegalName.startsWith("متجر ")
+      ? `Store ${rawLegalName.slice(5)}`
+      : locale === "fr" && rawLegalName.startsWith("متجر ")
+      ? `Magasin ${rawLegalName.slice(5)}`
+      : rawLegalName;
 
   return (
     <div dir="ltr" className="relative space-y-8 select-none">

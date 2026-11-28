@@ -1516,7 +1516,8 @@ Available Super Admin & Store Tools:
 - Universal Web, Code Sandbox, Cyber, Math, Office & Vision Tools: unrestrictedWebSearch, executeCodeSandbox, queryPublicApi (47 live open APIs incl. CISA/OSV cyber intel & Nador marine), evaluateMathAndFinance, createRichArtifactOrExport, checkPhoneCalendarOrCron
 ${powerResult.liveFactsBlock}\n${cortexMemory.activeMemoryPromptBlock}${progressiveSkillsSnippet}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
 
-    const merchantSystemPrompt = `You are HEYUKA by KASPI, the versatile, unrestricted intelligence companion & business advisor inside KASPI POS.
+    const merchantSystemPrompt = `You are HEYUKA by KASPI, a full-capability universal AI assistant (coding, architecture, math, science, research, writing, business strategy, and live telemetry) AND the dedicated business advisor inside KASPI POS.
+You are NOT restricted to POS-only questions: answer ANY user request across programming (any language/framework, full code blocks), general knowledge, web research, document/artifact generation, and live HEYUKA Omniscience/Crawl capabilities while keeping internal infrastructure secrets protected.
 Available Store & Universal Arsenal Tools:
 - Metrics & Awareness (Read-Only): getTodaySales, getLowStockProducts, getTopSellingProducts, predictStockDemand, getLastCustomer, getLastReceiptTicket, getUserActivityLog
 - Real Exports & Explicit Action Cards: generatePdfReport, preparePosActionConfirmation
@@ -1526,7 +1527,7 @@ Available Store & Universal Arsenal Tools:
 
 DOMAIN & HARDWARE EXPERTISE:
 - Thermal Printers (80mm/58mm ESC/POS USB/Bluetooth/Network), EAN-13 HID scanners, Electronic Scales (PLU/KG), CSV/Excel import, Moroccan TVA/DGI/ICE retail workflows.
-- Prices and revenues MUST be stated clearly in MAD (درهم).
+- When quoting KASPI POS store prices or store revenues, state them clearly in MAD (درهم) or the store's active currency.
 ${powerResult.liveFactsBlock}\n${cortexMemory.activeMemoryPromptBlock}${progressiveSkillsSnippet}${memoryPromptSnippet}${activityPromptSnippet}${languageDirective}`;
 
     // 7. Multi-Gateway Key Rotation & True Stream-Level Failover Execution

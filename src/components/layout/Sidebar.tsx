@@ -185,6 +185,7 @@ export function Sidebar({ mobileMenuOpen = false, onNavigate }: SidebarProps) {
         {/* Sector Status Indicator Link (Quiet Settings-Only Navigation) */}
         <Link
           href={localizeHref("/dashboard/settings#store-sector")}
+          prefetch={true}
           onClick={onNavigate}
           className="kaspi-glass-surface w-full rounded-xl px-3.5 py-2.5 text-white font-semibold text-xs flex items-center justify-between cursor-pointer transition-all hover:brightness-105 mb-3"
           title={
