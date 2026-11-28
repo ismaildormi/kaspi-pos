@@ -19,6 +19,8 @@ import {
   Radio,
   Landmark,
   MessageSquare,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
 import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
@@ -84,6 +86,10 @@ export function OwnerProfileModal({
   const [gateError, setGateError] = useState<string | null>(null);
   const [storeLogoUrl, setStoreLogoUrl] = useState<string>("");
   const passwordInputRef = useRef<HTMLInputElement | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deletePhrase, setDeletePhrase] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchLogo = async () => {
@@ -823,6 +829,124 @@ export function OwnerProfileModal({
                   </label>
                 </div>
               </div>
+            </div>
+
+            {/* SECTION 5: Danger Zone — Delete Account inside Owner Vault */}
+            <div className="p-4 rounded-2xl bg-red-950/20 border border-red-500/25 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                  <div>
+                    <h4 className="text-xs font-bold text-red-200">
+                      {locale === "ar"
+                        ? "حذف الحساب نهائياً"
+                        : locale === "en"
+                        ? "Delete Account Permanently"
+                        : "Supprimer le compte définitivement"}
+                    </h4>
+                    <p className="text-[11px] text-zinc-400">
+                      {locale === "ar"
+                        ? "إلغاء الحساب وإغلاق جميع الجلسات المرتبطة به."
+                        : locale === "en"
+                        ? "Deactivate your account and revoke all active sessions."
+                        : "Désactiver votre compte et révoquer toutes les sessions."}
+                    </p>
+                  </div>
+                </div>
+                {!deleteConfirmOpen && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteConfirmOpen(true);
+                      setDeleteError(null);
+                    }}
+                    className="h-8 px-3 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/35 text-red-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>
+                      {locale === "ar"
+                        ? "حذف الحساب"
+                        : locale === "en"
+                        ? "Delete Account"
+                        : "Supprimer"}
+                    </span>
+                  </button>
+                )}
+              </div>
+
+              {deleteConfirmOpen && (
+                <div className="p-3 rounded-xl bg-black/50 border border-red-500/30 space-y-2.5">
+                  <p className="text-[11px] text-amber-300">
+                    {locale === "ar"
+                      ? "لتأكيد الحذف النهائي، اكتب كلمة DELETE في الخانة أسفله:"
+                      : locale === "en"
+                      ? "To confirm permanent deletion, type DELETE below:"
+                      : "Pour confirmer la suppression définitive, tapez DELETE ci-dessous :"}
+                  </p>
+                  {deleteError && (
+                    <div className="text-[11px] text-red-400 font-semibold">{deleteError}</div>
+                  )}
+                  <input
+                    type="text"
+                    dir="ltr"
+                    value={deletePhrase}
+                    onChange={(e) => setDeletePhrase(e.target.value)}
+                    placeholder="DELETE"
+                    className="w-full h-9 px-3 rounded-lg bg-zinc-950 border border-red-500/40 text-xs font-mono text-white focus:outline-none"
+                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={isDeletingAccount || deletePhrase.trim().toUpperCase() !== "DELETE"}
+                      onClick={async () => {
+                        setIsDeletingAccount(true);
+                        setDeleteError(null);
+                        try {
+                          const res = await fetch("/api/v1/auth/delete-account", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ confirmPhrase: deletePhrase.trim() }),
+                          });
+                          if (!res.ok) {
+                            const d = await res.json().catch(() => null);
+                            setDeleteError(d?.error?.message || "Failed to delete account");
+                            setIsDeletingAccount(false);
+                            return;
+                          }
+                          if (typeof window !== "undefined") {
+                            window.localStorage.removeItem("kaspi_active_tenant_id");
+                            window.localStorage.removeItem("kaspi_store_id");
+                          }
+                          window.location.href = `/${locale}/login`;
+                        } catch {
+                          setDeleteError("Network error");
+                          setIsDeletingAccount(false);
+                        }
+                      }}
+                      className="h-8 px-3 rounded-lg bg-red-500 hover:bg-red-400 disabled:opacity-40 text-black font-bold text-xs cursor-pointer"
+                    >
+                      {isDeletingAccount
+                        ? locale === "ar"
+                          ? "جاري الحذف..."
+                          : "Deleting..."
+                        : locale === "ar"
+                        ? "تأكيد الحذف النهائي"
+                        : "Confirm Permanent Delete"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteConfirmOpen(false);
+                        setDeletePhrase("");
+                        setDeleteError(null);
+                      }}
+                      className="h-8 px-3 rounded-lg bg-zinc-800 text-zinc-300 text-xs font-semibold cursor-pointer"
+                    >
+                      {locale === "ar" ? "إلغاء" : "Cancel"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Actions */}

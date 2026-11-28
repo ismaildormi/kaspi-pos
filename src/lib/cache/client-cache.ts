@@ -10,10 +10,30 @@ interface CacheEnvelope<T> {
 
 const memoryCache = new Map<string, CacheEnvelope<any>>();
 
+export function getActiveTenantId(): string {
+  if (typeof window === "undefined") return "default";
+  try {
+    return window.localStorage.getItem("kaspi_active_tenant_id") || "default";
+  } catch {
+    return "default";
+  }
+}
+
+export function setActiveTenantId(tenantId: string | null | undefined): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (tenantId && tenantId.trim()) {
+      window.localStorage.setItem("kaspi_active_tenant_id", tenantId.trim());
+    } else {
+      window.localStorage.removeItem("kaspi_active_tenant_id");
+    }
+  } catch {}
+}
+
 export function getScopedKey(key: string): string {
   if (typeof window === "undefined") return key;
   try {
-    const tenantId = window.localStorage.getItem("kaspi_active_tenant_id") || "default";
+    const tenantId = getActiveTenantId();
     return `${tenantId}_${key}`;
   } catch {
     return key;

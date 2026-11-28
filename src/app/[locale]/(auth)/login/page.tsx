@@ -172,8 +172,8 @@ function LoginForm() {
   const [otpCode, setOtpCode] = useState("");
   const [otpTimer, setOtpTimer] = useState(0);
 
-  // Forgot / Reset Password States
-  const [resetStep, setResetStep] = useState<"request" | "verify_and_set">("request");
+  // Forgot / Reset Password States (3-step flow: request -> verify_code -> new_password)
+  const [resetStep, setResetStep] = useState<"request" | "verify_code" | "new_password">("request");
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -253,6 +253,12 @@ function LoginForm() {
     setLocale(nextLocale);
     setError("");
     setSuccess("");
+    if (typeof document !== "undefined") {
+      document.cookie = `NEXT_LOCALE=${nextLocale}; path=/; max-age=31536000; SameSite=Lax`;
+      try {
+        window.localStorage.setItem("kaspi_preferred_locale", nextLocale);
+      } catch {}
+    }
     if (typeof window !== "undefined") {
       const nextPath = window.location.pathname.replace(/^\/(ar|fr|en)(\/|$)/, `/${nextLocale}$2`);
       window.history.replaceState(null, "", `${nextPath}${window.location.search}`);
@@ -281,7 +287,7 @@ function LoginForm() {
     if (queryCode && queryEmail) {
       if (queryPurpose === "reset") {
         setAuthMode("forgot_password");
-        setResetStep("verify_and_set");
+        setResetStep("verify_code");
         setResetCode(queryCode);
       } else {
         setAuthMode("gmail_otp");
@@ -494,8 +500,52 @@ function LoginForm() {
       }
 
       playSuccessSound();
-      setResetStep("verify_and_set");
+      setResetStep("verify_code");
       setSuccess(t.msgOtpSent);
+    } catch {
+      playErrorSound();
+      setError(t.errNetwork);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 4b. Verify Reset Code first -> then show dedicated Change Password screen
+  const handleVerifyResetCode = async (e?: React.FormEvent, explicitCode?: string) => {
+    if (e) e.preventDefault();
+    playTapSound();
+    const targetCode = (explicitCode ?? resetCode).trim();
+    if (!targetCode || targetCode.length < 6) {
+      playErrorSound();
+      setError(t.errInvalidOtp);
+      return;
+    }
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await fetch(getApiUrl("/api/v1/auth/email-otp/verify"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code: targetCode, purpose: "reset" }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        playErrorSound();
+        const rawErr = data?.error?.message || data?.error || data?.code || t.errInvalidOtp;
+        setError(getLocalizedAuthError(rawErr, locale));
+        setLoading(false);
+        return;
+      }
+      playSuccessSound();
+      setResetStep("new_password");
+      setSuccess(
+        locale === "ar"
+          ? "تم التحقق من الرمز! أدخل كلمة المرور الجديدة لحسابك."
+          : locale === "fr"
+          ? "Code vérifié ! Saisissez votre nouveau mot de passe."
+          : "Code verified! Enter your new account password."
+      );
     } catch {
       playErrorSound();
       setError(t.errNetwork);
@@ -872,8 +922,8 @@ function LoginForm() {
                 )}
               </button>
             </form>
-          ) : (
-            <form onSubmit={handleResetPasswordSubmit} className="space-y-3.5">
+          ) : resetStep === "verify_code" ? (
+            <form onSubmit={(e) => handleVerifyResetCode(e)} className="space-y-4">
               <div
                 dir="ltr"
                 className="w-full h-11 px-4 rounded-2xl bg-zinc-900/80 border border-white/15 flex items-center justify-center text-sm font-mono text-zinc-200"
@@ -884,9 +934,38 @@ function LoginForm() {
               <OtpVerification
                 value={resetCode}
                 onChange={setResetCode}
+                onComplete={(fullCode) => {
+                  setResetCode(fullCode);
+                  handleVerifyResetCode(undefined, fullCode);
+                }}
                 disabled={loading}
                 autoFocus
               />
+
+              <button
+                type="submit"
+                disabled={loading || resetCode.trim().length < 6}
+                className="kaspi-primary-cta-btn w-full h-12 font-semibold text-sm sm:text-[15px] rounded-2xl transition-all flex justify-center items-center cursor-pointer disabled:opacity-50"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-[var(--kaspi-text-primary)]" />
+                ) : locale === "ar" ? (
+                  "تحقق من الرمز والمتابعة لتغيير كلمة المرور"
+                ) : locale === "fr" ? (
+                  "Vérifier le code & Changer le mot de passe"
+                ) : (
+                  "Verify Code & Change Password"
+                )}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleResetPasswordSubmit} className="space-y-3.5">
+              <div
+                dir="ltr"
+                className="w-full h-11 px-4 rounded-2xl bg-zinc-900/80 border border-white/15 flex items-center justify-center text-sm font-mono text-zinc-200"
+              >
+                {email}
+              </div>
 
               <div className="relative rounded-2xl">
                 <input

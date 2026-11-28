@@ -222,9 +222,9 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, onOpenQuickA
           .put({
             id: managingProduct.id,
             tenantId: "current",
-            sku: updatedFields.sku,
+            sku: updatedFields.sku || managingProduct.sku || "",
             barcode: updatedFields.barcode,
-            name: updatedFields.name,
+            name: updatedFields.name || managingProduct.name,
             imageUrl: finalImg,
             salePrice: parsedPrice,
             wholesalePrice: parsedCost,

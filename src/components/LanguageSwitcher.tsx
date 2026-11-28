@@ -18,6 +18,12 @@ export function LanguageSwitcher() {
 
   const handleSelect = (nextLocale: "ar" | "fr" | "en") => {
     if (nextLocale === currentLocale) return;
+    if (typeof document !== "undefined") {
+      document.cookie = `NEXT_LOCALE=${nextLocale}; path=/; max-age=31536000; SameSite=Lax`;
+      try {
+        window.localStorage.setItem("kaspi_preferred_locale", nextLocale);
+      } catch {}
+    }
     startTransition(() => {
       router.replace(pathname, { locale: nextLocale });
     });

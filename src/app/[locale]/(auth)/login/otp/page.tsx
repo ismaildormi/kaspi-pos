@@ -109,6 +109,12 @@ function OtpVerifyView() {
     setLocale(nextLocale);
     setError("");
     setSuccess("");
+    if (typeof document !== "undefined") {
+      document.cookie = `NEXT_LOCALE=${nextLocale}; path=/; max-age=31536000; SameSite=Lax`;
+      try {
+        window.localStorage.setItem("kaspi_preferred_locale", nextLocale);
+      } catch {}
+    }
     if (typeof window !== "undefined") {
       const nextPath = window.location.pathname.replace(/^\/(ar|fr|en)(\/|$)/, `/${nextLocale}$2`);
       window.history.replaceState(null, "", `${nextPath}${window.location.search}`);
@@ -132,7 +138,7 @@ function OtpVerifyView() {
       const res = await fetch(getApiUrl("/api/v1/auth/email-otp/send"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, purpose: "login" }),
+        body: JSON.stringify({ email, purpose: isResetMode ? "reset" : "login" }),
       });
 
       const data = await res.json().catch(() => null);
@@ -167,7 +173,7 @@ function OtpVerifyView() {
         body: JSON.stringify({
           email: targetEmail,
           code: codeToVerify,
-          purpose: "login",
+          purpose: isResetMode ? "reset" : "login",
         }),
       });
 
@@ -178,12 +184,6 @@ function OtpVerifyView() {
         setLoading(false);
         return;
       }
-
-      await signIn("credentials", {
-        redirect: false,
-        email: targetEmail,
-        otpCode: codeToVerify,
-      }).catch(() => {});
 
       playSuccessSound();
       if (isResetMode) {
@@ -198,6 +198,13 @@ function OtpVerifyView() {
         setLoading(false);
         return;
       }
+
+      await signIn("credentials", {
+        redirect: false,
+        email: targetEmail,
+        otpCode: codeToVerify,
+      }).catch(() => {});
+
       setSuccess(t.msgVerified);
       window.location.href = `/${locale}/dashboard`;
     } catch {

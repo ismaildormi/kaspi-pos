@@ -789,9 +789,9 @@ export const usePosStore = create<PosState>()(
 
         await refreshOfflineQueueCount();
 
-        // 3. Check network connectivity & process outbox queue
-        let isOffline = !navigator.onLine;
-        if (!navigator.onLine) {
+        // 3. Instant Click-Through Checkout: commit locally in ~5ms, sync to cloud in non-blocking background
+        const isOffline = !navigator.onLine;
+        if (isOffline) {
           toast.success("Sale saved locally. Will sync when online.", {
             style: {
               background: "#09090b",
@@ -800,15 +800,10 @@ export const usePosStore = create<PosState>()(
             },
           });
         } else {
-          try {
-            const syncRes = await processSyncQueue();
-            isOffline = syncRes.remainingPending > 0;
-          } catch {
-            isOffline = true;
-          }
+          void processSyncQueue()
+            .then(() => refreshOfflineQueueCount())
+            .catch(() => {});
         }
-
-        await refreshOfflineQueueCount();
 
         // Broadcast real-time sync event across all tabs and dashboard
         if (typeof window !== "undefined") {

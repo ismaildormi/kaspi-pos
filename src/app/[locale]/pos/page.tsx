@@ -429,7 +429,12 @@ export default function PosPage() {
             setSessionContext(currTenant.id, resolvedStoreId, resolvedUserId, currTenant?.maxDevices || 1);
             if (typeof window !== "undefined") {
               try {
+                const prevTenantId = localStorage.getItem("kaspi_active_tenant_id");
+                localStorage.setItem("kaspi_active_tenant_id", currTenant.id);
                 localStorage.setItem("kaspi_store_id", resolvedStoreId);
+                if (prevTenantId && prevTenantId !== currTenant.id) {
+                  setProducts([]);
+                }
               } catch {}
             }
           }
@@ -507,12 +512,16 @@ export default function PosPage() {
           const finalItems = isAuthMerchant ? items : (items.length > 0 ? items : SHOWCASE_PRODUCTS);
           setProducts(finalItems);
 
-          // Cache in Dexie for offline lookup
+          // Cache in tenant-isolated Dexie for offline lookup (replace stale tenant catalog cleanly)
           if (offlineDb?.offlineProducts) {
+            const activeTid =
+              (typeof window !== "undefined" && localStorage.getItem("kaspi_active_tenant_id")) ||
+              "current";
+            await offlineDb.offlineProducts.clear().catch(() => {});
             await offlineDb.offlineProducts.bulkPut(
               finalItems.map((p) => ({
                 id: p.id,
-                tenantId: "current",
+                tenantId: activeTid,
                 name: p.name,
                 sku: p.sku,
                 barcode: p.barcode,

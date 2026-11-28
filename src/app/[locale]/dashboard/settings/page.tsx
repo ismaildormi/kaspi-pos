@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import { useAppDictionary } from "@/i18n/schema";
 import {
   Settings,
@@ -30,6 +31,7 @@ import {
   Sparkles,
   Lock,
   ChevronDown,
+  LogOut,
 } from "lucide-react";
 import { AppleBackButton } from "@/components/common/AppleBackButton";
 import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
@@ -1453,6 +1455,54 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Account Session Sign Out Card */}
+          <div className="bg-zinc-900/70 border border-white/10 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <LogOut className="w-4 h-4 text-zinc-300" />
+              <div>
+                <h2 className="text-sm font-bold text-white">
+                  {locale === "ar"
+                    ? "تسجيل الخروج وتبديل الحساب"
+                    : locale === "en"
+                    ? "Sign Out & Switch Account"
+                    : "Déconnexion & Changement de Compte"}
+                </h2>
+                <p className="text-[11px] text-zinc-400">
+                  {locale === "ar"
+                    ? "إنهاء الجلسة الحالية والعودة إلى صفحة تسجيل الدخول للدخول بحساب آخر."
+                    : locale === "en"
+                    ? "End your current session and return to the login screen to sign in with another account."
+                    : "Fermer votre session actuelle et revenir à l'écran de connexion."}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  if (typeof window !== "undefined") {
+                    window.localStorage.removeItem("kaspi_active_tenant_id");
+                    window.localStorage.removeItem("kaspi_store_id");
+                  }
+                  await fetch("/api/v1/auth/logout", { method: "POST" }).catch(() => {});
+                  await signOut({ redirect: false }).catch(() => {});
+                } finally {
+                  window.location.href = `/${locale}/login`;
+                }
+              }}
+              className="h-9 px-4 rounded-xl kaspi-glass-btn border border-white/20 text-white font-bold text-xs flex items-center gap-2 cursor-pointer hover:bg-white/15 transition"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>
+                {locale === "ar"
+                  ? "تسجيل الخروج"
+                  : locale === "en"
+                  ? "Sign Out"
+                  : "Se déconnecter"}
+              </span>
+            </button>
           </div>
         </form>
       )}

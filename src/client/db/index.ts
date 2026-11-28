@@ -4,7 +4,7 @@ export interface OfflineSaleItem {
   productId: string;
   name: string;
   sku?: string;
-  barcode?: string;
+  barcode?: string | null;
   quantity: number;
   unitPrice: number;
   taxRate: number;
@@ -51,12 +51,17 @@ export interface OfflineProduct {
   barcode?: string | null;
   imageUrl?: string | null;
   salePrice: number;
+  price?: number;
+  wholesalePrice?: number | null;
   costPrice?: number | null;
   taxRate: number;
   trackStock: boolean;
   stockQuantity?: number;
   categoryId?: string | null;
   categoryName?: string | null;
+  unit?: string | null;
+  isScaleItem?: boolean;
+  syncedAt?: number;
 }
 
 export interface OfflineCustomer {
@@ -98,8 +103,8 @@ export class KasbiOfflineDatabase extends Dexie {
   offlineHeldCarts!: Table<OfflineHeldCart, string>;
   sync_queue!: Table<SyncQueueItem, string>;
 
-  constructor() {
-    super("kasbi_pos_offline_db");
+  constructor(dbName: string = "kasbi_pos_offline_db") {
+    super(dbName);
 
     this.version(1).stores({
       offlineSales:
@@ -120,6 +125,37 @@ export class KasbiOfflineDatabase extends Dexie {
   }
 }
 
-// Global browser singleton
-export const offlineDb =
-  typeof window !== "undefined" ? new KasbiOfflineDatabase() : (null as any);
+// Per-tenant partitioned IndexedDB instances so different accounts/Gmails on the same PC never mix data
+const tenantDbInstances = new Map<string, KasbiOfflineDatabase>();
+
+export function getActiveOfflineTenantId(): string {
+  if (typeof window === "undefined") return "default";
+  try {
+    return window.localStorage.getItem("kaspi_active_tenant_id") || "default";
+  } catch {
+    return "default";
+  }
+}
+
+export function getTenantOfflineDb(explicitTenantId?: string): KasbiOfflineDatabase {
+  const tid = (explicitTenantId || getActiveOfflineTenantId()).replace(/[^a-zA-Z0-9_-]/g, "_");
+  const dbName = tid === "default" ? "kasbi_pos_offline_db" : `kasbi_pos_offline_db_${tid}`;
+  let instance = tenantDbInstances.get(dbName);
+  if (!instance) {
+    instance = new KasbiOfflineDatabase(dbName);
+    tenantDbInstances.set(dbName, instance);
+  }
+  return instance;
+}
+
+// Tenant-aware browser Proxy: dynamically routes every table/method call to the active tenant's DB
+export const offlineDb: KasbiOfflineDatabase =
+  typeof window !== "undefined"
+    ? (new Proxy({} as KasbiOfflineDatabase, {
+        get(_target, prop) {
+          const db = getTenantOfflineDb();
+          const val = (db as any)[prop];
+          return typeof val === "function" ? val.bind(db) : val;
+        },
+      }) as KasbiOfflineDatabase)
+    : (null as any);

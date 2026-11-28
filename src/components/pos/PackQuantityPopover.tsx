@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Package, ChevronDown, Check, Plus, Minus, Layers } from "lucide-react";
 import { usePosStore } from "@/client/store/usePosStore";
-import { KaspiGlassModalPortal } from "@/components/common/KaspiGlassModalPortal";
 
 interface PackQuantityPopoverProps {
   locale?: string;
@@ -157,9 +157,11 @@ export const PackQuantityPopover: React.FC<PackQuantityPopoverProps> = ({ locale
         />
       </button>
 
-      {/* Expandable Glass Popover Panel (Portaled above all product cards) */}
-      {isOpen && popoverCoords && (
-        <KaspiGlassModalPortal>
+      {/* Expandable Glass Popover Panel (Anchored directly under trigger without obscuring POS UI) */}
+      {isOpen &&
+        popoverCoords &&
+        typeof document !== "undefined" &&
+        createPortal(
           <div
             ref={popoverRef}
             role="dialog"
@@ -312,9 +314,9 @@ export const PackQuantityPopover: React.FC<PackQuantityPopoverProps> = ({ locale
               </span>
             </button>
           )}
-          </div>
-        </KaspiGlassModalPortal>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
