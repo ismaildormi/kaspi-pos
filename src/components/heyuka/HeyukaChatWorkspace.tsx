@@ -303,7 +303,17 @@ export function HeyukaChatWorkspace() {
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
   const [authenticated, setAuthenticated] = useState(false);
+  const [isOwnerSuperAdmin, setIsOwnerSuperAdmin] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/v1/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.data?.user?.isSuperAdmin) setIsOwnerSuperAdmin(true);
+      })
+      .catch(() => {});
+  }, []);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   // Unified Composer Mode Box, 3-Model Swarm & Speed Policy State
@@ -1411,21 +1421,25 @@ export function HeyukaChatWorkspace() {
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
-              <Link
-                href={`/${locale}/studio?brand=heyuka`}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300 hover:text-white transition-colors"
-                title="Open HEYUKA AI Studio"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
-                <span>Studio</span>
-              </Link>
-              <Link
-                href={`/${locale}/studio?brand=kaspi_pos`}
-                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-zinc-400 hover:text-white transition-colors"
-                title="Open KASPI POS Studio"
-              >
-                <span>KASPI POS</span>
-              </Link>
+              {isOwnerSuperAdmin && (
+                <>
+                  <Link
+                    href={`/${locale}/studio?brand=heyuka`}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-zinc-300 hover:text-white transition-colors whitespace-nowrap"
+                    title="Open HEYUKA AI Studio (Owner Only)"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>Studio</span>
+                  </Link>
+                  <Link
+                    href={`/${locale}/studio?brand=kaspi_pos`}
+                    className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-zinc-400 hover:text-white transition-colors whitespace-nowrap"
+                    title="Open KASPI POS Studio (Owner Only)"
+                  >
+                    <span>KASPI POS</span>
+                  </Link>
+                </>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -1528,13 +1542,15 @@ export function HeyukaChatWorkspace() {
                     <span>{locale === "ar" ? "بناء تطبيق كامل" : "Build App"}</span>
                   </button>
 
-                  <Link
-                    href={`/${locale}/studio?brand=kaspi_pos`}
-                    className="inline-flex items-center gap-1.5 rounded-lg hover:bg-white/[0.05] px-2.5 py-1 text-[11px] font-medium text-zinc-400 hover:text-zinc-200 transition-colors"
-                  >
-                    <Cpu className="w-3 h-3 text-zinc-500" />
-                    <span>KASPI POS Studio</span>
-                  </Link>
+                  {isOwnerSuperAdmin && (
+                    <Link
+                      href={`/${locale}/studio?brand=kaspi_pos`}
+                      className="inline-flex items-center gap-1.5 rounded-lg hover:bg-white/[0.05] px-2.5 py-1 text-[11px] font-medium text-zinc-400 hover:text-zinc-200 transition-colors whitespace-nowrap"
+                    >
+                      <Cpu className="w-3 h-3 text-zinc-500" />
+                      <span>KASPI POS Studio</span>
+                    </Link>
+                  )}
 
                   <button
                     type="button"

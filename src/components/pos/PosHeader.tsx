@@ -42,6 +42,7 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
   const { t, locale } = useAppDictionary();
   const { heldCarts } = usePosStore();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const isPlaceholderName = (n?: string | null) =>
     !n ||
@@ -87,6 +88,15 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
       if (savedLogo) setDisplayLogo(savedLogo);
     };
     syncStoreIdentity();
+
+    fetch("/api/v1/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.data?.user?.isSuperAdmin) {
+          setIsSuperAdmin(true);
+        }
+      })
+      .catch(() => {});
 
     fetch("/api/v1/settings")
       .then((r) => (r.ok ? r.json() : null))
@@ -224,15 +234,17 @@ export const PosHeader: React.FC<PosHeaderProps> = ({
           <Bot className="w-3.5 h-3.5 text-zinc-300 group-hover:text-white group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300" />
         </button>
 
-        {/* KASPI POS Studio Direct Launch (Dual-Brand Google-Style Studio) */}
-        <Link
-          href={`/${locale}/studio?brand=kaspi_pos`}
-          className="group inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-emerald-500/30 hover:border-emerald-400/60 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 hover:text-white text-[11px] font-bold transition-all"
-          title="KASPI POS AI Studio (Elastic 3/6/12 Swarm)"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
-          <span className="hidden lg:inline">POS Studio</span>
-        </Link>
+        {/* KASPI POS Studio Direct Launch (Owner Only) */}
+        {isSuperAdmin && (
+          <Link
+            href={`/${locale}/studio?brand=kaspi_pos`}
+            className="group inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-emerald-500/30 hover:border-emerald-400/60 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 hover:text-white text-[11px] font-bold transition-all whitespace-nowrap"
+            title="KASPI POS AI Studio (Owner Only)"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+            <span className="hidden lg:inline">POS Studio</span>
+          </Link>
+        )}
 
         {/* Store Settings Link */}
         <Link
